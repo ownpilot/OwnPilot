@@ -24,6 +24,7 @@ import { AutonomyPage } from './pages/AutonomyPage';
 import { PluginsPage } from './pages/PluginsPage';
 import { WorkspacesPage } from './pages/WorkspacesPage';
 import { LogsPage } from './pages/LogsPage';
+import { CustomToolsPage } from './pages/CustomToolsPage';
 
 export function App() {
   return (
@@ -46,6 +47,7 @@ export function App() {
         <Route path="inbox" element={<InboxPage />} />
         <Route path="agents" element={<AgentsPage />} />
         <Route path="tools" element={<ToolsPage />} />
+        <Route path="custom-tools" element={<CustomToolsPage />} />
         <Route path="plugins" element={<PluginsPage />} />
         <Route path="workspaces" element={<WorkspacesPage />} />
         <Route path="models" element={<ModelsPage />} />

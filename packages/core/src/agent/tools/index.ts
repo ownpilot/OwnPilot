@@ -28,6 +28,9 @@ export * from './audio-tools.js';
 export * from './data-extraction-tools.js';
 export * from './weather-tools.js';
 
+// Dynamic tools - LLM-created tools
+export * from './dynamic-tools.js';
+
 // =============================================================================
 // IMPORTS - Tool sets
 // =============================================================================
@@ -52,6 +55,16 @@ import { VECTOR_SEARCH_TOOLS, VECTOR_SEARCH_TOOL_NAMES } from './vector-search-t
 import { AUDIO_TOOLS, AUDIO_TOOL_NAMES } from './audio-tools.js';
 import { DATA_EXTRACTION_TOOLS, DATA_EXTRACTION_TOOL_NAMES } from './data-extraction-tools.js';
 import { WEATHER_TOOLS, WEATHER_TOOL_NAMES } from './weather-tools.js';
+
+// Dynamic tools (LLM-created tools management)
+import {
+  DYNAMIC_TOOL_DEFINITIONS,
+  DYNAMIC_TOOL_NAMES,
+  createDynamicToolRegistry,
+  type DynamicToolRegistry,
+  type DynamicToolDefinition,
+  type DynamicToolPermission,
+} from './dynamic-tools.js';
 
 import type { ToolDefinition, ToolExecutor, ToolRegistry as IToolRegistry } from '../tools.js';
 
@@ -163,6 +176,19 @@ export { DATA_EXTRACTION_TOOLS, DATA_EXTRACTION_TOOL_NAMES };
  * Get current weather and forecasts
  */
 export { WEATHER_TOOLS, WEATHER_TOOL_NAMES };
+
+/**
+ * Dynamic tools (Meta tools for LLM-created tools)
+ * Create, list, delete, and toggle custom tools at runtime
+ */
+export {
+  DYNAMIC_TOOL_DEFINITIONS,
+  DYNAMIC_TOOL_NAMES,
+  createDynamicToolRegistry,
+  type DynamicToolRegistry,
+  type DynamicToolDefinition,
+  type DynamicToolPermission,
+};
 
 // =============================================================================
 // ALL TOOLS COMBINED
@@ -434,6 +460,14 @@ export const TOOL_CATEGORIES = {
     'complete_step',
     'get_goal_details',
     'goal_stats',
+  ],
+
+  // Meta - Dynamic Tool Management
+  'Dynamic Tools': [
+    'create_tool',
+    'list_custom_tools',
+    'delete_custom_tool',
+    'toggle_custom_tool',
   ],
 } as const;
 

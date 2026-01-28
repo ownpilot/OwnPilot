@@ -117,6 +117,13 @@ export {
   // Personal Data Tools (definitions only)
   PERSONAL_DATA_TOOLS,
   PERSONAL_DATA_TOOL_NAMES,
+  // Dynamic Tools (LLM-created tools)
+  DYNAMIC_TOOL_DEFINITIONS,
+  DYNAMIC_TOOL_NAMES,
+  createDynamicToolRegistry,
+  type DynamicToolRegistry,
+  type DynamicToolDefinition,
+  type DynamicToolPermission,
 } from './tools/index.js';
 
 // Memory

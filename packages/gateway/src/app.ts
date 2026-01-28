@@ -44,6 +44,7 @@ import {
   mediaSettingsRoutes,
   modelConfigsRoutes,
   dashboardRoutes,
+  customToolsRoutes,
 } from './routes/index.js';
 import { debugRoutes } from './routes/debug.js';
 
@@ -184,6 +185,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Dashboard (AI-powered daily briefing)
   app.route('/api/v1/dashboard', dashboardRoutes);
 
+  // Custom Tools (LLM-created and user-defined tools)
+  app.route('/api/v1/custom-tools', customToolsRoutes);
+
   // Root route
   app.get('/', (c) => {
     return c.json({
@@ -249,6 +253,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         modelConfigs: '/api/v1/model-configs',
         // Dashboard (AI-powered daily briefing)
         dashboard: '/api/v1/dashboard',
+        // Custom Tools (LLM-created and user-defined tools)
+        customTools: '/api/v1/custom-tools',
       },
     });
   });

@@ -27,6 +27,7 @@ import {
   ChevronDown,
   ChevronRight,
   Activity,
+  Code,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 
@@ -86,6 +87,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: '/agents', icon: Bot, label: 'Agents' },
       { to: '/tools', icon: Wrench, label: 'Tools' },
+      { to: '/custom-tools', icon: Code, label: 'Custom Tools' },
       { to: '/plugins', icon: Puzzle, label: 'Plugins' },
       { to: '/workspaces', icon: HardDrive, label: 'Workspaces' },
       { to: '/models', icon: Cpu, label: 'Models' },
