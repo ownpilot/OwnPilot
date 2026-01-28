@@ -5,6 +5,8 @@
 
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
+import { jwtVerify } from 'jose';
+import { createSecretKey } from 'node:crypto';
 import type { AuthConfig } from '../types/index.js';
 
 /**
@@ -51,14 +53,12 @@ export function createAuthMiddleware(config: AuthConfig) {
       const token = authHeader.slice(7);
 
       try {
-        // Simple JWT validation (in production, use a proper library)
-        const payload = validateJWT(token, config.jwtSecret ?? '');
+        const payload = await validateJWT(token, config.jwtSecret ?? '');
         c.set('userId', payload.sub);
         c.set('jwtPayload', payload);
       } catch (error) {
-        throw new HTTPException(403, {
-          message: 'Invalid or expired token',
-        });
+        const message = error instanceof Error ? error.message : 'Invalid or expired token';
+        throw new HTTPException(403, { message });
       }
     }
 
@@ -67,35 +67,27 @@ export function createAuthMiddleware(config: AuthConfig) {
 }
 
 /**
- * Simple JWT validation
- * In production, use a proper JWT library like jose
+ * JWT validation with proper signature verification using jose
  */
-function validateJWT(
+async function validateJWT(
   token: string,
   secret: string
-): { sub: string; exp?: number; [key: string]: unknown } {
-  const parts = token.split('.');
-  if (parts.length !== 3) {
-    throw new Error('Invalid token format');
+): Promise<{ sub: string; exp?: number; [key: string]: unknown }> {
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT secret must be at least 32 characters');
   }
 
-  try {
-    // Decode payload (middle part)
-    const payload = JSON.parse(
-      Buffer.from(parts[1] ?? '', 'base64url').toString('utf8')
-    );
+  const secretKey = createSecretKey(Buffer.from(secret, 'utf-8'));
 
-    // Check expiration
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      throw new Error('Token expired');
-    }
+  const { payload } = await jwtVerify(token, secretKey, {
+    algorithms: ['HS256', 'HS384', 'HS512'],
+  });
 
-    // In production, verify signature with secret
-    // For now, just return payload
-    return payload;
-  } catch {
-    throw new Error('Invalid token');
+  if (!payload.sub) {
+    throw new Error('Token missing required "sub" claim');
   }
+
+  return payload as { sub: string; exp?: number; [key: string]: unknown };
 }
 
 /**
@@ -120,7 +112,7 @@ export function createOptionalAuthMiddleware(config: AuthConfig) {
       }
     } else if (config.type === 'jwt' && authHeader?.startsWith('Bearer ')) {
       try {
-        const payload = validateJWT(authHeader.slice(7), config.jwtSecret ?? '');
+        const payload = await validateJWT(authHeader.slice(7), config.jwtSecret ?? '');
         c.set('userId', payload.sub);
         c.set('jwtPayload', payload);
       } catch {

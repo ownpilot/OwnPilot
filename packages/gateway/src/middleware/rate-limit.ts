@@ -15,6 +15,21 @@ interface RateLimitEntry {
 }
 
 /**
+ * Track active cleanup intervals for graceful shutdown
+ */
+const activeIntervals: Set<NodeJS.Timeout> = new Set();
+
+/**
+ * Stop all rate limiter cleanup intervals (call on shutdown)
+ */
+export function stopAllRateLimiters(): void {
+  for (const interval of activeIntervals) {
+    clearInterval(interval);
+  }
+  activeIntervals.clear();
+}
+
+/**
  * Create rate limiting middleware
  *
  * Features:
@@ -36,7 +51,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
   const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health', '/api/v1/chat/stream'];
 
   // Clean up expired entries periodically
-  setInterval(() => {
+  const cleanupInterval = setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of store.entries()) {
       if (entry.resetAt < now) {
@@ -44,6 +59,10 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
       }
     }
   }, config.windowMs);
+
+  // Don't prevent process exit and track for cleanup
+  cleanupInterval.unref();
+  activeIntervals.add(cleanupInterval);
 
   return createMiddleware(async (c, next) => {
     const path = c.req.path;
@@ -143,7 +162,7 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
   const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health', '/api/v1/chat/stream'];
 
   // Clean up old entries
-  setInterval(() => {
+  const cleanupInterval = setInterval(() => {
     const cutoff = Date.now() - config.windowMs;
     for (const [key, timestamps] of requests.entries()) {
       const filtered = timestamps.filter((t) => t > cutoff);
@@ -154,6 +173,10 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
       }
     }
   }, config.windowMs / 4);
+
+  // Don't prevent process exit and track for cleanup
+  cleanupInterval.unref();
+  activeIntervals.add(cleanupInterval);
 
   return createMiddleware(async (c, next) => {
     const path = c.req.path;

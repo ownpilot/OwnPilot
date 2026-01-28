@@ -103,16 +103,16 @@ export interface OrchestratorContext {
   /** Error if failed */
   error?: string;
   /** Metadata */
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface ToolCallRecord {
   /** Tool name */
   name: string;
   /** Tool arguments */
-  arguments: Record<string, any>;
+  arguments: Record<string, unknown>;
   /** Tool result */
-  result: any;
+  result: unknown;
   /** Start time */
   startTime: Date;
   /** End time */
@@ -129,7 +129,7 @@ export interface AgentStep {
   /** Step type */
   type: 'thinking' | 'tool_call' | 'tool_result' | 'response';
   /** Step content */
-  content: any;
+  content: unknown;
   /** Timestamp */
   timestamp: Date;
 }
@@ -190,7 +190,7 @@ export class AgentOrchestrator extends EventEmitter {
   async execute(
     userMessage: string,
     conversationHistory: Message[] = [],
-    metadata: Record<string, any> = {}
+    metadata: Record<string, unknown> = {}
   ): Promise<OrchestratorContext> {
     const executionId = `exec_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
@@ -219,11 +219,11 @@ export class AgentOrchestrator extends EventEmitter {
       context.status = 'completed';
       context.endTime = new Date();
       this.emit('complete', context);
-    } catch (error: any) {
+    } catch (error: unknown) {
       context.status = 'failed';
-      context.error = error.message;
+      context.error = error instanceof Error ? error.message : String(error);
       context.endTime = new Date();
-      this.emit('error', error, context);
+      this.emit('error', error instanceof Error ? error : new Error(String(error)), context);
     } finally {
       this.currentExecution = null;
       this.abortController = null;
@@ -238,7 +238,7 @@ export class AgentOrchestrator extends EventEmitter {
   async *stream(
     userMessage: string,
     conversationHistory: Message[] = [],
-    metadata: Record<string, any> = {}
+    metadata: Record<string, unknown> = {}
   ): AsyncGenerator<AgentStep, OrchestratorContext, undefined> {
     const executionId = `exec_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
@@ -266,9 +266,9 @@ export class AgentOrchestrator extends EventEmitter {
       yield* this.runStreamingExecutionLoop(context);
       context.status = 'completed';
       context.endTime = new Date();
-    } catch (error: any) {
+    } catch (error: unknown) {
       context.status = 'failed';
-      context.error = error.message;
+      context.error = error instanceof Error ? error.message : String(error);
       context.endTime = new Date();
     } finally {
       this.currentExecution = null;
@@ -544,7 +544,7 @@ export class AgentOrchestrator extends EventEmitter {
   ): Promise<ToolCallRecord> {
     const startTime = new Date();
     const toolName = toolCall.function.name;
-    let args: Record<string, any>;
+    let args: Record<string, unknown>;
 
     try {
       args = typeof toolCall.function.arguments === 'string'
@@ -582,9 +582,10 @@ export class AgentOrchestrator extends EventEmitter {
       const result = await executor(args, toolContext);
       record.result = result.content;
       record.success = !result.isError;
-    } catch (error: any) {
-      record.error = error.message;
-      record.result = { error: error.message };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      record.error = errorMessage;
+      record.result = { error: errorMessage };
     }
 
     record.endTime = new Date();
@@ -743,9 +744,9 @@ export interface AgentTeam {
   /** Team agents */
   agents: Map<string, AgentOrchestrator>;
   /** Agent routing function */
-  router: (message: string, context: any) => string;
+  router: (message: string, context: Record<string, unknown>) => string;
   /** Shared context */
-  sharedContext: Record<string, any>;
+  sharedContext: Record<string, unknown>;
 }
 
 export class MultiAgentOrchestrator extends EventEmitter {
@@ -778,7 +779,7 @@ export class MultiAgentOrchestrator extends EventEmitter {
   async execute(
     message: string,
     teamName?: string,
-    context: Record<string, any> = {}
+    context: Record<string, unknown> = {}
   ): Promise<OrchestratorContext> {
     const team = this.teams.get(teamName || this.defaultTeam!);
     if (!team) {
@@ -828,10 +829,10 @@ export interface PlanStep {
   id: number;
   description: string;
   toolName?: string;
-  toolArgs?: Record<string, any>;
+  toolArgs?: Record<string, unknown>;
   dependsOn: number[];
   status: 'pending' | 'in_progress' | 'completed' | 'skipped' | 'failed';
-  result?: any;
+  result?: unknown;
 }
 
 /**
@@ -880,14 +881,22 @@ export function parsePlan(response: string): Plan | null {
 
     const parsed = JSON.parse(jsonMatch[0]);
 
+    interface ParsedStep {
+      id?: number;
+      description: string;
+      toolName?: string;
+      toolArgs?: Record<string, unknown>;
+      dependsOn?: number[];
+    }
+
     return {
-      goal: parsed.goal,
-      steps: parsed.steps.map((s: any, i: number) => ({
-        id: s.id || i + 1,
+      goal: parsed.goal as string,
+      steps: (parsed.steps as ParsedStep[]).map((s, i: number) => ({
+        id: s.id ?? i + 1,
         description: s.description,
-        toolName: s.toolName || null,
-        toolArgs: s.toolArgs || null,
-        dependsOn: s.dependsOn || [],
+        toolName: s.toolName,
+        toolArgs: s.toolArgs,
+        dependsOn: s.dependsOn ?? [],
         status: 'pending' as const,
       })),
       status: 'pending',

@@ -13,16 +13,23 @@ import type { ToolDefinition, ToolExecutor, ToolExecutionResult, ToolContext } f
 
 /**
  * Get allowed base directories for file operations (security)
- * Evaluated at runtime to ensure WORKSPACE_DIR is properly set
+ * For self-hosted single-user setups, workspace and temp dirs are allowed
  * @param workspaceDir Optional workspace directory override from context
  */
 function getAllowedPaths(workspaceDir?: string): string[] {
-  return [
-    process.env.HOME ?? process.env.USERPROFILE ?? '',
+  const paths = [
     workspaceDir ?? process.env.WORKSPACE_DIR ?? process.cwd(),
     '/tmp',
     'C:\\Temp',
-  ].filter(Boolean);
+  ];
+
+  // Only add home dir if explicitly enabled (security consideration)
+  if (process.env.ALLOW_HOME_DIR_ACCESS === 'true') {
+    const home = process.env.HOME ?? process.env.USERPROFILE;
+    if (home) paths.push(home);
+  }
+
+  return paths.filter(Boolean);
 }
 
 /**
@@ -34,17 +41,68 @@ function getWorkspaceDir(workspaceDir?: string): string {
 }
 
 /**
- * Check if path is allowed
+ * Check if path is within allowed directories (secure implementation)
+ * - Resolves symlinks to prevent escape attacks
+ * - Uses proper path comparison with separator check
  * @param filePath Path to check
  * @param workspaceDir Optional workspace directory override from context
  */
+async function isPathAllowedAsync(filePath: string, workspaceDir?: string): Promise<boolean> {
+  try {
+    // Resolve relative paths against workspace directory
+    const targetPath = path.isAbsolute(filePath)
+      ? path.resolve(filePath)
+      : path.resolve(getWorkspaceDir(workspaceDir), filePath);
+
+    // Try to resolve symlinks (if file exists)
+    let resolvedPath: string;
+    try {
+      resolvedPath = await fs.realpath(targetPath);
+    } catch {
+      // File doesn't exist yet, use the normalized path
+      // But still check parent directory to prevent traversal
+      resolvedPath = path.normalize(targetPath);
+    }
+
+    const allowedPaths = getAllowedPaths(workspaceDir);
+
+    for (const allowed of allowedPaths) {
+      const resolvedAllowed = path.resolve(allowed);
+
+      // Check exact match or proper subdirectory (with path separator)
+      if (
+        resolvedPath === resolvedAllowed ||
+        resolvedPath.startsWith(resolvedAllowed + path.sep)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Synchronous path check for backward compatibility (less secure, use async when possible)
+ */
 function isPathAllowed(filePath: string, workspaceDir?: string): boolean {
-  // Resolve relative paths against workspace directory
-  const resolved = path.isAbsolute(filePath)
+  const targetPath = path.isAbsolute(filePath)
     ? path.resolve(filePath)
     : path.resolve(getWorkspaceDir(workspaceDir), filePath);
+
+  // Normalize to resolve .. and . segments
+  const normalizedPath = path.normalize(targetPath);
   const allowedPaths = getAllowedPaths(workspaceDir);
-  return allowedPaths.some((allowed) => resolved.startsWith(path.resolve(allowed)));
+
+  return allowedPaths.some((allowed) => {
+    const resolvedAllowed = path.resolve(allowed);
+    return (
+      normalizedPath === resolvedAllowed ||
+      normalizedPath.startsWith(resolvedAllowed + path.sep)
+    );
+  });
 }
 
 /**
@@ -99,7 +157,7 @@ export const readFileExecutor: ToolExecutor = async (args, context): Promise<Too
   // Resolve relative paths to workspace directory
   const filePath = resolveFilePath(rawPath, context.workspaceDir);
 
-  if (!isPathAllowed(filePath, context.workspaceDir)) {
+  if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
     return { content: `Error: Access denied to path: ${filePath}`, isError: true };
   }
 
@@ -175,7 +233,7 @@ export const writeFileExecutor: ToolExecutor = async (args, context): Promise<To
   // Resolve relative paths to workspace directory
   const filePath = resolveFilePath(rawPath, context.workspaceDir);
 
-  if (!isPathAllowed(filePath, context.workspaceDir)) {
+  if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
     return { content: `Error: Access denied to path: ${filePath}`, isError: true };
   }
 
@@ -245,7 +303,7 @@ export const listDirectoryExecutor: ToolExecutor = async (args, context): Promis
   // Resolve relative paths to workspace directory
   const dirPath = resolveFilePath(rawPath, context.workspaceDir);
 
-  if (!isPathAllowed(dirPath, context.workspaceDir)) {
+  if (!(await isPathAllowedAsync(dirPath, context.workspaceDir))) {
     return { content: `Error: Access denied to path: ${dirPath}`, isError: true };
   }
 
@@ -364,7 +422,7 @@ export const searchFilesExecutor: ToolExecutor = async (args, context): Promise<
   // Resolve relative paths to workspace directory
   const dirPath = resolveFilePath(rawPath, context.workspaceDir);
 
-  if (!isPathAllowed(dirPath, context.workspaceDir)) {
+  if (!(await isPathAllowedAsync(dirPath, context.workspaceDir))) {
     return { content: `Error: Access denied to path: ${dirPath}`, isError: true };
   }
 
@@ -472,7 +530,7 @@ export const downloadFileExecutor: ToolExecutor = async (args, context): Promise
   // Resolve relative paths to workspace directory
   const filePath = resolveFilePath(rawPath, context.workspaceDir);
 
-  if (!isPathAllowed(filePath, context.workspaceDir)) {
+  if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
     return { content: `Error: Access denied to path: ${filePath}`, isError: true };
   }
 
@@ -544,7 +602,7 @@ export const fileInfoExecutor: ToolExecutor = async (args, context): Promise<Too
   // Resolve relative paths to workspace directory
   const filePath = resolveFilePath(rawPath, context.workspaceDir);
 
-  if (!isPathAllowed(filePath, context.workspaceDir)) {
+  if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
     return { content: `Error: Access denied to path: ${filePath}`, isError: true };
   }
 
@@ -599,7 +657,7 @@ export const deleteFileExecutor: ToolExecutor = async (args, context): Promise<T
   // Resolve relative paths to workspace directory
   const filePath = resolveFilePath(rawPath, context.workspaceDir);
 
-  if (!isPathAllowed(filePath, context.workspaceDir)) {
+  if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
     return { content: `Error: Access denied to path: ${filePath}`, isError: true };
   }
 
@@ -667,7 +725,12 @@ export const copyFileExecutor: ToolExecutor = async (args, context): Promise<Too
   const source = resolveFilePath(rawSource, context.workspaceDir);
   const destination = resolveFilePath(rawDestination, context.workspaceDir);
 
-  if (!isPathAllowed(source, context.workspaceDir) || !isPathAllowed(destination, context.workspaceDir)) {
+  const [sourceAllowed, destAllowed] = await Promise.all([
+    isPathAllowedAsync(source, context.workspaceDir),
+    isPathAllowedAsync(destination, context.workspaceDir),
+  ]);
+
+  if (!sourceAllowed || !destAllowed) {
     return { content: `Error: Access denied to path`, isError: true };
   }
 

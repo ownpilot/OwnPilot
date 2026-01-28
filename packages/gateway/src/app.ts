@@ -49,16 +49,23 @@ import { debugRoutes } from './routes/debug.js';
 
 /**
  * Default configuration
+ * NOTE: For self-hosted deployment, configure corsOrigins with your actual domain(s)
  */
 const DEFAULT_CONFIG: GatewayConfig = {
   port: 8080,
   host: '0.0.0.0',
-  corsOrigins: ['*'],
+  // Default to localhost only - add your domain in production config
+  corsOrigins: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+  ],
   rateLimit: {
     windowMs: 60000, // 1 minute
-    maxRequests: 500, // More relaxed default
+    maxRequests: 500, // More relaxed for self-hosted
     burstLimit: 750, // Allow 50% burst
-    softLimit: true, // Don't block, just warn
+    softLimit: false, // Enforce rate limits
     excludePaths: ['/health', '/api/v1/health', '/api/v1/chat/stream'],
   },
   auth: {
@@ -77,15 +84,16 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Security headers
   app.use('*', secureHeaders());
 
-  // CORS
+  // CORS - Never default to wildcard for security
   app.use(
     '*',
     cors({
-      origin: fullConfig.corsOrigins ?? ['*'],
+      origin: fullConfig.corsOrigins ?? [],
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID'],
       exposeHeaders: ['X-Request-ID', 'X-Response-Time', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
       maxAge: 86400,
+      credentials: true,
     })
   );
 

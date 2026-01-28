@@ -27,7 +27,8 @@
     "archiver": "^7.0.1",
     "better-sqlite3": "^11.7.0",
     "discord.js": "^14.16.3",
-    "hono": "^4.7.6",
+    "hono": "^4.11.7",
+    "jose": "^6.0.10",
     "ws": "^8.19.0"
   },
   "devDependencies": {
