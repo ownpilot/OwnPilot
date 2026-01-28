@@ -21,10 +21,10 @@ import { mediaSettingsRepo, settingsRepo } from '../db/repositories/index.js';
 /**
  * Get configured MediaService instance
  */
-function getMediaService(): MediaService {
+async function getMediaService(): Promise<MediaService> {
   return createMediaService({
-    getProviderConfig: (capability: MediaCapability): MediaProviderConfig | null => {
-      const setting = mediaSettingsRepo.getEffective('default', capability);
+    getProviderConfig: async (capability: MediaCapability): Promise<MediaProviderConfig | null> => {
+      const setting = await mediaSettingsRepo.getEffective('default', capability);
       if (!setting) return null;
 
       return {
@@ -33,8 +33,8 @@ function getMediaService(): MediaService {
         config: setting.config || undefined,
       };
     },
-    getApiKey: (keyName: string): string | undefined => {
-      return settingsRepo.get<string>(keyName) ?? undefined;
+    getApiKey: async (keyName: string): Promise<string | undefined> => {
+      return (await settingsRepo.get<string>(keyName)) ?? undefined;
     },
   });
 }
@@ -52,8 +52,8 @@ function errorResult(error: string, suggestion?: string): ToolExecutionResult {
 /**
  * Check if a capability provider is configured
  */
-function isProviderConfigured(capability: MediaCapability): boolean {
-  const setting = mediaSettingsRepo.getEffective('default', capability);
+async function isProviderConfigured(capability: MediaCapability): Promise<boolean> {
+  const setting = await mediaSettingsRepo.getEffective('default', capability);
   if (!setting) return false;
 
   // Check if API key exists for the provider
@@ -70,7 +70,7 @@ function isProviderConfigured(capability: MediaCapability): boolean {
   const keyName = keyMap[setting.provider];
   if (!keyName) return false;
 
-  const apiKey = settingsRepo.get<string>(keyName);
+  const apiKey = await settingsRepo.get<string>(keyName);
   return !!apiKey;
 }
 
@@ -96,7 +96,7 @@ export const mediaGenerateImageExecutor: ToolExecutor = async (params, context):
   }
 
   // Check if provider is configured
-  if (!isProviderConfigured('image_generation')) {
+  if (!(await isProviderConfigured('image_generation'))) {
     return errorResult(
       'No image generation provider configured',
       'Configure an image generation provider in Settings → Media Settings'
@@ -119,7 +119,7 @@ export const mediaGenerateImageExecutor: ToolExecutor = async (params, context):
     : prompt;
 
   try {
-    const mediaService = getMediaService();
+    const mediaService = await getMediaService();
 
     const result = await mediaService.generateImage({
       prompt: enhancedPrompt,
@@ -196,7 +196,7 @@ export const mediaAnalyzeImageExecutor: ToolExecutor = async (params, context): 
   const maxTokens = params.maxTokens as number | undefined;
 
   // Check if provider is configured
-  if (!isProviderConfigured('vision')) {
+  if (!(await isProviderConfigured('vision'))) {
     return errorResult(
       'No vision provider configured',
       'Configure a vision provider in Settings → Media Settings'
@@ -261,7 +261,7 @@ export const mediaAnalyzeImageExecutor: ToolExecutor = async (params, context): 
         prompt = 'Describe this image.';
     }
 
-    const mediaService = getMediaService();
+    const mediaService = await getMediaService();
 
     const result = await mediaService.analyzeImage({
       image: imageData,
@@ -312,7 +312,7 @@ export const mediaTTSExecutor: ToolExecutor = async (params, context): Promise<T
   }
 
   // Check if provider is configured
-  if (!isProviderConfigured('tts')) {
+  if (!(await isProviderConfigured('tts'))) {
     return errorResult(
       'No TTS provider configured',
       'Configure a TTS provider in Settings → Media Settings'
@@ -320,7 +320,7 @@ export const mediaTTSExecutor: ToolExecutor = async (params, context): Promise<T
   }
 
   try {
-    const mediaService = getMediaService();
+    const mediaService = await getMediaService();
 
     const result = await mediaService.textToSpeech({
       text,
@@ -377,7 +377,7 @@ export const mediaSTTExecutor: ToolExecutor = async (params, context): Promise<T
   const timestamps = params.timestamps === true;
 
   // Check if provider is configured
-  if (!isProviderConfigured('stt')) {
+  if (!(await isProviderConfigured('stt'))) {
     return errorResult(
       'No STT provider configured',
       'Configure an STT provider in Settings → Media Settings'
@@ -398,7 +398,7 @@ export const mediaSTTExecutor: ToolExecutor = async (params, context): Promise<T
       audioSource = source;
     }
 
-    const mediaService = getMediaService();
+    const mediaService = await getMediaService();
 
     const result = await mediaService.speechToText({
       audio: audioSource,
@@ -436,7 +436,7 @@ export const mediaTranslateAudioExecutor: ToolExecutor = async (params, context)
   const responseFormat = (params.responseFormat as string) || 'json';
 
   // Check if provider is configured
-  if (!isProviderConfigured('stt')) {
+  if (!(await isProviderConfigured('stt'))) {
     return errorResult(
       'No STT provider configured (translation uses same provider)',
       'Configure an STT provider in Settings → Media Settings'
@@ -453,7 +453,7 @@ export const mediaTranslateAudioExecutor: ToolExecutor = async (params, context)
     await fs.access(source);
 
     // For translation, we need OpenAI's translation endpoint
-    const apiKey = settingsRepo.get<string>('openai_api_key');
+    const apiKey = await settingsRepo.get<string>('openai_api_key');
     if (!apiKey) {
       return errorResult(
         'Audio translation requires OpenAI API key',
@@ -513,6 +513,6 @@ export const MEDIA_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
 /**
  * Check if media tools should use real implementations
  */
-export function shouldUseMediaTools(capability: MediaCapability): boolean {
-  return isProviderConfigured(capability);
+export async function shouldUseMediaTools(capability: MediaCapability): Promise<boolean> {
+  return await isProviderConfigured(capability);
 }

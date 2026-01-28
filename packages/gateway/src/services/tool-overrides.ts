@@ -13,19 +13,19 @@ import { oauthIntegrationsRepo, mediaSettingsRepo } from '../db/repositories/ind
 /**
  * Check if Gmail integration is configured for a user
  */
-function isGmailConfigured(userId = 'default'): boolean {
-  const integration = oauthIntegrationsRepo.getByUserProviderService(userId, 'google', 'gmail');
+async function isGmailConfigured(userId = 'default'): Promise<boolean> {
+  const integration = await oauthIntegrationsRepo.getByUserProviderService(userId, 'google', 'gmail');
   return integration !== null && integration.status === 'active';
 }
 
 /**
  * Check if any media settings are configured
  */
-function hasMediaSettings(): boolean {
+async function hasMediaSettings(): Promise<boolean> {
   // Check if any media provider is configured (for default user)
   const capabilities = ['image_generation', 'vision', 'tts', 'stt'] as const;
   for (const cap of capabilities) {
-    const setting = mediaSettingsRepo.getEffective('default', cap);
+    const setting = await mediaSettingsRepo.getEffective('default', cap);
     if (setting) return true;
   }
   return false;
@@ -34,8 +34,8 @@ function hasMediaSettings(): boolean {
 /**
  * Register Gmail tool executors if Gmail is configured
  */
-export function registerGmailToolOverrides(registry: ToolRegistry, userId = 'default'): number {
-  if (!isGmailConfigured(userId)) {
+export async function registerGmailToolOverrides(registry: ToolRegistry, userId = 'default'): Promise<number> {
+  if (!(await isGmailConfigured(userId))) {
     return 0;
   }
 
@@ -60,7 +60,7 @@ export function registerGmailToolOverrides(registry: ToolRegistry, userId = 'def
 /**
  * Register Media tool executors if media settings are configured
  */
-export function registerMediaToolOverrides(registry: ToolRegistry): number {
+export async function registerMediaToolOverrides(registry: ToolRegistry): Promise<number> {
   let count = 0;
 
   for (const [toolName, executor] of Object.entries(MEDIA_TOOL_EXECUTORS)) {
@@ -79,11 +79,11 @@ export function registerMediaToolOverrides(registry: ToolRegistry): number {
  * Initialize all tool overrides
  * Call this during server startup after tool registry is created
  */
-export function initializeToolOverrides(registry: ToolRegistry, userId = 'default'): {
+export async function initializeToolOverrides(registry: ToolRegistry, userId = 'default'): Promise<{
   gmail: number;
   media: number;
   total: number;
-} {
+}> {
   const results = {
     gmail: 0,
     media: 0,
@@ -92,14 +92,14 @@ export function initializeToolOverrides(registry: ToolRegistry, userId = 'defaul
 
   // Gmail overrides (only if configured)
   try {
-    results.gmail = registerGmailToolOverrides(registry, userId);
+    results.gmail = await registerGmailToolOverrides(registry, userId);
   } catch (error) {
     console.error('[tool-overrides] Failed to register Gmail overrides:', error);
   }
 
   // Media overrides (always register - they check settings at runtime)
   try {
-    results.media = registerMediaToolOverrides(registry);
+    results.media = await registerMediaToolOverrides(registry);
   } catch (error) {
     console.error('[tool-overrides] Failed to register Media overrides:', error);
   }
@@ -116,6 +116,6 @@ export function initializeToolOverrides(registry: ToolRegistry, userId = 'defaul
 /**
  * Refresh overrides when integration status changes
  */
-export function refreshToolOverrides(registry: ToolRegistry, userId = 'default'): void {
-  initializeToolOverrides(registry, userId);
+export async function refreshToolOverrides(registry: ToolRegistry, userId = 'default'): Promise<void> {
+  await initializeToolOverrides(registry, userId);
 }

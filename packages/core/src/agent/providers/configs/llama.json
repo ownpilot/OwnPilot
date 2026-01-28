@@ -40,6 +40,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -51,10 +52,10 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -66,10 +67,10 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -81,10 +82,10 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -96,10 +97,10 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     },
     {
@@ -111,10 +112,10 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     }
   ],

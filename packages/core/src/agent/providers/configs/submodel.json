@@ -28,64 +28,6 @@
       "releaseDate": "2025-08-23"
     },
     {
-      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
-      "name": "Qwen3 Coder 480B A35B Instruct",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0.2,
-      "outputPrice": 0.8,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-08-23"
-    },
-    {
-      "id": "deepseek-ai/DeepSeek-V3.1",
-      "name": "DeepSeek V3.1",
-      "contextWindow": 75000,
-      "maxOutput": 163840,
-      "inputPrice": 0.2,
-      "outputPrice": 0.8,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-08-23"
-    },
-    {
-      "id": "zai-org/GLM-4.5-FP8",
-      "name": "GLM 4.5 FP8",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.2,
-      "outputPrice": 0.8,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-28"
-    },
-    {
-      "id": "zai-org/GLM-4.5-Air",
-      "name": "GLM 4.5 Air",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.1,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-28"
-    },
-    {
       "id": "Qwen/Qwen3-235B-A22B-Instruct-2507",
       "name": "Qwen3 235B A22B Instruct 2507",
       "contextWindow": 262144,
@@ -97,6 +39,22 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
+      "releaseDate": "2025-08-23"
+    },
+    {
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.2,
+      "outputPrice": 0.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2025-08-23"
     },
     {
@@ -112,6 +70,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-23"
     },
     {
@@ -127,6 +86,23 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
+      "releaseDate": "2025-08-23"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3.1",
+      "name": "DeepSeek V3.1",
+      "contextWindow": 75000,
+      "maxOutput": 163840,
+      "inputPrice": 0.2,
+      "outputPrice": 0.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2025-08-23"
     },
     {
@@ -141,7 +117,39 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-23"
+    },
+    {
+      "id": "zai-org/GLM-4.5-FP8",
+      "name": "GLM 4.5 FP8",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.2,
+      "outputPrice": 0.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "zai-org/GLM-4.5-Air",
+      "name": "GLM 4.5 Air",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.1,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-28"
     }
   ],
   "baseUrl": "https://llm.submodel.ai/v1",

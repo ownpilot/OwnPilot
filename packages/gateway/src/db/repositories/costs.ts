@@ -1,10 +1,10 @@
 /**
- * Costs Repository
+ * Costs Repository (PostgreSQL)
  *
  * Tracks LLM API costs and token usage
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 export interface Cost {
   id: string;
@@ -40,12 +40,12 @@ function rowToCost(row: CostRow): Cost {
     provider: row.provider,
     model: row.model,
     conversationId: row.conversation_id ?? undefined,
-    inputTokens: row.input_tokens,
-    outputTokens: row.output_tokens,
-    totalTokens: row.total_tokens,
-    inputCost: row.input_cost,
-    outputCost: row.output_cost,
-    totalCost: row.total_cost,
+    inputTokens: Number(row.input_tokens),
+    outputTokens: Number(row.output_tokens),
+    totalTokens: Number(row.total_tokens),
+    inputCost: Number(row.input_cost),
+    outputCost: Number(row.output_cost),
+    totalCost: Number(row.total_cost),
     createdAt: new Date(row.created_at),
   };
 }
@@ -67,10 +67,8 @@ export interface DailyCost {
   totalCost: number;
 }
 
-export class CostsRepository {
-  private db = getDatabase();
-
-  create(data: {
+export class CostsRepository extends BaseRepository {
+  async create(data: {
     id: string;
     provider: string;
     model: string;
@@ -79,78 +77,78 @@ export class CostsRepository {
     outputTokens: number;
     inputCost: number;
     outputCost: number;
-  }): Cost {
+  }): Promise<Cost> {
     const totalTokens = data.inputTokens + data.outputTokens;
     const totalCost = data.inputCost + data.outputCost;
 
-    const stmt = this.db.prepare(`
-      INSERT INTO costs (
+    await this.execute(
+      `INSERT INTO costs (
         id, provider, model, conversation_id,
         input_tokens, output_tokens, total_tokens,
         input_cost, output_cost, total_cost
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      data.id,
-      data.provider,
-      data.model,
-      data.conversationId ?? null,
-      data.inputTokens,
-      data.outputTokens,
-      totalTokens,
-      data.inputCost,
-      data.outputCost,
-      totalCost
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        data.id,
+        data.provider,
+        data.model,
+        data.conversationId ?? null,
+        data.inputTokens,
+        data.outputTokens,
+        totalTokens,
+        data.inputCost,
+        data.outputCost,
+        totalCost,
+      ]
     );
 
-    return this.getById(data.id)!;
+    const result = await this.getById(data.id);
+    if (!result) throw new Error('Failed to create cost');
+    return result;
   }
 
-  getById(id: string): Cost | null {
-    const stmt = this.db.prepare<string, CostRow>(`
-      SELECT * FROM costs WHERE id = ?
-    `);
-
-    const row = stmt.get(id);
+  async getById(id: string): Promise<Cost | null> {
+    const row = await this.queryOne<CostRow>(
+      `SELECT * FROM costs WHERE id = $1`,
+      [id]
+    );
     return row ? rowToCost(row) : null;
   }
 
-  getAll(limit = 100, offset = 0): Cost[] {
-    const stmt = this.db.prepare<[number, number], CostRow>(`
-      SELECT * FROM costs ORDER BY created_at DESC LIMIT ? OFFSET ?
-    `);
-
-    return stmt.all(limit, offset).map(rowToCost);
+  async getAll(limit = 100, offset = 0): Promise<Cost[]> {
+    const rows = await this.query<CostRow>(
+      `SELECT * FROM costs ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    return rows.map(rowToCost);
   }
 
-  getByProvider(provider: string, limit = 100): Cost[] {
-    const stmt = this.db.prepare<[string, number], CostRow>(`
-      SELECT * FROM costs WHERE provider = ? ORDER BY created_at DESC LIMIT ?
-    `);
-
-    return stmt.all(provider, limit).map(rowToCost);
+  async getByProvider(provider: string, limit = 100): Promise<Cost[]> {
+    const rows = await this.query<CostRow>(
+      `SELECT * FROM costs WHERE provider = $1 ORDER BY created_at DESC LIMIT $2`,
+      [provider, limit]
+    );
+    return rows.map(rowToCost);
   }
 
-  getByConversation(conversationId: string): Cost[] {
-    const stmt = this.db.prepare<string, CostRow>(`
-      SELECT * FROM costs WHERE conversation_id = ? ORDER BY created_at ASC
-    `);
-
-    return stmt.all(conversationId).map(rowToCost);
+  async getByConversation(conversationId: string): Promise<Cost[]> {
+    const rows = await this.query<CostRow>(
+      `SELECT * FROM costs WHERE conversation_id = $1 ORDER BY created_at ASC`,
+      [conversationId]
+    );
+    return rows.map(rowToCost);
   }
 
-  getSummaryByProvider(): CostSummary[] {
-    const stmt = this.db.prepare<[], {
+  async getSummaryByProvider(): Promise<CostSummary[]> {
+    const rows = await this.query<{
       provider: string;
       model: string;
-      total_calls: number;
-      total_input_tokens: number;
-      total_output_tokens: number;
-      total_tokens: number;
-      total_cost: number;
-    }>(`
-      SELECT
+      total_calls: string;
+      total_input_tokens: string;
+      total_output_tokens: string;
+      total_tokens: string;
+      total_cost: string;
+    }>(
+      `SELECT
         provider,
         model,
         COUNT(*) as total_calls,
@@ -160,82 +158,84 @@ export class CostsRepository {
         SUM(total_cost) as total_cost
       FROM costs
       GROUP BY provider, model
-      ORDER BY total_cost DESC
-    `);
+      ORDER BY total_cost DESC`
+    );
 
-    return stmt.all().map((row) => ({
+    return rows.map((row) => ({
       provider: row.provider,
       model: row.model,
-      totalCalls: row.total_calls,
-      totalInputTokens: row.total_input_tokens,
-      totalOutputTokens: row.total_output_tokens,
-      totalTokens: row.total_tokens,
-      totalCost: row.total_cost,
+      totalCalls: parseInt(row.total_calls, 10),
+      totalInputTokens: parseInt(row.total_input_tokens || '0', 10),
+      totalOutputTokens: parseInt(row.total_output_tokens || '0', 10),
+      totalTokens: parseInt(row.total_tokens || '0', 10),
+      totalCost: parseFloat(row.total_cost || '0'),
     }));
   }
 
-  getDailyCosts(days = 30): DailyCost[] {
-    const stmt = this.db.prepare<number, {
+  async getDailyCosts(days = 30): Promise<DailyCost[]> {
+    const rows = await this.query<{
       date: string;
-      total_calls: number;
-      total_tokens: number;
-      total_cost: number;
-    }>(`
-      SELECT
-        date(created_at) as date,
+      total_calls: string;
+      total_tokens: string;
+      total_cost: string;
+    }>(
+      `SELECT
+        DATE(created_at) as date,
         COUNT(*) as total_calls,
         SUM(total_tokens) as total_tokens,
         SUM(total_cost) as total_cost
       FROM costs
-      WHERE created_at >= date('now', '-' || ? || ' days')
-      GROUP BY date(created_at)
-      ORDER BY date ASC
-    `);
+      WHERE created_at >= NOW() - INTERVAL '${days} days'
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC`
+    );
 
-    return stmt.all(days).map((row) => ({
+    return rows.map((row) => ({
       date: row.date,
-      totalCalls: row.total_calls,
-      totalTokens: row.total_tokens,
-      totalCost: row.total_cost,
+      totalCalls: parseInt(row.total_calls, 10),
+      totalTokens: parseInt(row.total_tokens || '0', 10),
+      totalCost: parseFloat(row.total_cost || '0'),
     }));
   }
 
-  getTotalCost(): number {
-    const stmt = this.db.prepare<[], { total: number | null }>(`
-      SELECT SUM(total_cost) as total FROM costs
-    `);
-
-    return stmt.get()?.total ?? 0;
+  async getTotalCost(): Promise<number> {
+    const row = await this.queryOne<{ total: string | null }>(
+      `SELECT SUM(total_cost) as total FROM costs`
+    );
+    return parseFloat(row?.total ?? '0');
   }
 
-  getTotalTokens(): { input: number; output: number; total: number } {
-    const stmt = this.db.prepare<[], {
-      input: number | null;
-      output: number | null;
-      total: number | null;
-    }>(`
-      SELECT
+  async getTotalTokens(): Promise<{ input: number; output: number; total: number }> {
+    const row = await this.queryOne<{
+      input: string | null;
+      output: string | null;
+      total: string | null;
+    }>(
+      `SELECT
         SUM(input_tokens) as input,
         SUM(output_tokens) as output,
         SUM(total_tokens) as total
-      FROM costs
-    `);
+      FROM costs`
+    );
 
-    const result = stmt.get();
     return {
-      input: result?.input ?? 0,
-      output: result?.output ?? 0,
-      total: result?.total ?? 0,
+      input: parseInt(row?.input ?? '0', 10),
+      output: parseInt(row?.output ?? '0', 10),
+      total: parseInt(row?.total ?? '0', 10),
     };
   }
 
-  count(): number {
-    const stmt = this.db.prepare<[], { count: number }>(`
-      SELECT COUNT(*) as count FROM costs
-    `);
-
-    return stmt.get()?.count ?? 0;
+  async count(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM costs`
+    );
+    return parseInt(row?.count ?? '0', 10);
   }
 }
 
 export const costsRepo = new CostsRepository();
+
+// Factory function
+export function createCostsRepository(): CostsRepository {
+  return new CostsRepository();
+}

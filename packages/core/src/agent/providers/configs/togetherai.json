@@ -6,11 +6,28 @@
   "features": {
     "streaming": true,
     "toolUse": true,
-    "vision": false,
+    "vision": true,
     "jsonMode": false,
     "systemMessage": true
   },
   "models": [
+    {
+      "id": "moonshotai/Kimi-K2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.5,
+      "outputPrice": 2.8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-27"
+    },
     {
       "id": "essentialai/Rnj-1-Instruct",
       "name": "Rnj-1 Instruct",
@@ -23,7 +40,7 @@
         "function_calling",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-05"
     },
     {
@@ -39,6 +56,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-06"
     },
     {
@@ -53,6 +71,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-30"
     },
     {
@@ -68,6 +87,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-21"
     },
     {
@@ -83,6 +103,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -97,6 +118,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-23"
     },
     {
@@ -111,6 +133,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-14"
     },
     {
@@ -126,6 +149,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
     },
     {
@@ -140,6 +164,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-26"
     },
     {
@@ -154,6 +179,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     }
   ],

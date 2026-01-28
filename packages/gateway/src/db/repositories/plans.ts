@@ -4,8 +4,7 @@
  * Database operations for autonomous plan execution.
  */
 
-import { getDatabase } from '../connection.js';
-import type Database from 'better-sqlite3';
+import { BaseRepository } from './base.js';
 
 // ============================================================================
 // Types
@@ -160,15 +159,78 @@ export interface UpdateStepInput {
 }
 
 // ============================================================================
+// Row Types
+// ============================================================================
+
+interface PlanRow {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  goal: string;
+  status: string;
+  current_step: number;
+  total_steps: number;
+  progress: number;
+  priority: number;
+  source: string | null;
+  source_id: string | null;
+  trigger_id: string | null;
+  goal_id: string | null;
+  autonomy_level: number;
+  max_retries: number;
+  retry_count: number;
+  timeout_ms: number | null;
+  checkpoint: string | null;
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  metadata: string;
+}
+
+interface StepRow {
+  id: string;
+  plan_id: string;
+  order_num: number;
+  type: string;
+  name: string;
+  description: string | null;
+  config: string;
+  status: string;
+  dependencies: string;
+  result: string | null;
+  error: string | null;
+  retry_count: number;
+  max_retries: number;
+  timeout_ms: number | null;
+  started_at: string | null;
+  completed_at: string | null;
+  duration_ms: number | null;
+  on_success: string | null;
+  on_failure: string | null;
+  metadata: string;
+}
+
+interface HistoryRow {
+  id: string;
+  plan_id: string;
+  step_id: string | null;
+  event_type: string;
+  details: string;
+  created_at: string;
+}
+
+// ============================================================================
 // Repository
 // ============================================================================
 
-export class PlansRepository {
-  private db: Database.Database;
+export class PlansRepository extends BaseRepository {
   private userId: string;
 
   constructor(userId = 'default') {
-    this.db = getDatabase();
+    super();
     this.userId = userId;
   }
 
@@ -179,119 +241,119 @@ export class PlansRepository {
   /**
    * Create a new plan
    */
-  create(input: CreatePlanInput): Plan {
+  async create(input: CreatePlanInput): Promise<Plan> {
     const id = `plan_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      INSERT INTO plans (
+    await this.execute(
+      `INSERT INTO plans (
         id, user_id, name, description, goal, priority,
         source, source_id, trigger_id, goal_id,
         autonomy_level, max_retries, timeout_ms, metadata,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      this.userId,
-      input.name,
-      input.description ?? null,
-      input.goal,
-      input.priority ?? 5,
-      input.source ?? null,
-      input.sourceId ?? null,
-      input.triggerId ?? null,
-      input.goalId ?? null,
-      input.autonomyLevel ?? 1,
-      input.maxRetries ?? 3,
-      input.timeoutMs ?? null,
-      JSON.stringify(input.metadata ?? {}),
-      now,
-      now
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+      [
+        id,
+        this.userId,
+        input.name,
+        input.description ?? null,
+        input.goal,
+        input.priority ?? 5,
+        input.source ?? null,
+        input.sourceId ?? null,
+        input.triggerId ?? null,
+        input.goalId ?? null,
+        input.autonomyLevel ?? 1,
+        input.maxRetries ?? 3,
+        input.timeoutMs ?? null,
+        JSON.stringify(input.metadata ?? {}),
+        now,
+        now,
+      ]
     );
 
-    return this.get(id)!;
+    return (await this.get(id))!;
   }
 
   /**
    * Get a plan by ID
    */
-  get(id: string): Plan | null {
-    const stmt = this.db.prepare(`
-      SELECT * FROM plans WHERE id = ? AND user_id = ?
-    `);
-    const row = stmt.get(id, this.userId) as PlanRow | undefined;
+  async get(id: string): Promise<Plan | null> {
+    const row = await this.queryOne<PlanRow>(
+      'SELECT * FROM plans WHERE id = $1 AND user_id = $2',
+      [id, this.userId]
+    );
     return row ? this.mapPlan(row) : null;
   }
 
   /**
    * Update a plan
    */
-  update(id: string, input: UpdatePlanInput): Plan | null {
-    const plan = this.get(id);
+  async update(id: string, input: UpdatePlanInput): Promise<Plan | null> {
+    const plan = await this.get(id);
     if (!plan) return null;
 
-    const updates: string[] = ['updated_at = ?'];
+    const updates: string[] = ['updated_at = $1'];
     const values: unknown[] = [new Date().toISOString()];
+    let paramIndex = 2;
 
     if (input.name !== undefined) {
-      updates.push('name = ?');
+      updates.push(`name = $${paramIndex++}`);
       values.push(input.name);
     }
     if (input.description !== undefined) {
-      updates.push('description = ?');
+      updates.push(`description = $${paramIndex++}`);
       values.push(input.description);
     }
     if (input.status !== undefined) {
-      updates.push('status = ?');
+      updates.push(`status = $${paramIndex++}`);
       values.push(input.status);
 
       if (input.status === 'running' && !plan.startedAt) {
-        updates.push('started_at = ?');
+        updates.push(`started_at = $${paramIndex++}`);
         values.push(new Date().toISOString());
       }
       if (input.status === 'completed' || input.status === 'failed' || input.status === 'cancelled') {
-        updates.push('completed_at = ?');
+        updates.push(`completed_at = $${paramIndex++}`);
         values.push(new Date().toISOString());
       }
     }
     if (input.currentStep !== undefined) {
-      updates.push('current_step = ?');
+      updates.push(`current_step = $${paramIndex++}`);
       values.push(input.currentStep);
     }
     if (input.progress !== undefined) {
-      updates.push('progress = ?');
+      updates.push(`progress = $${paramIndex++}`);
       values.push(input.progress);
     }
     if (input.priority !== undefined) {
-      updates.push('priority = ?');
+      updates.push(`priority = $${paramIndex++}`);
       values.push(input.priority);
     }
     if (input.autonomyLevel !== undefined) {
-      updates.push('autonomy_level = ?');
+      updates.push(`autonomy_level = $${paramIndex++}`);
       values.push(input.autonomyLevel);
     }
     if (input.checkpoint !== undefined) {
-      updates.push('checkpoint = ?');
+      updates.push(`checkpoint = $${paramIndex++}`);
       values.push(input.checkpoint);
     }
     if (input.error !== undefined) {
-      updates.push('error = ?');
+      updates.push(`error = $${paramIndex++}`);
       values.push(input.error);
     }
     if (input.metadata !== undefined) {
-      updates.push('metadata = ?');
+      updates.push(`metadata = $${paramIndex++}`);
       values.push(JSON.stringify(input.metadata));
     }
 
     values.push(id, this.userId);
 
-    const stmt = this.db.prepare(`
-      UPDATE plans SET ${updates.join(', ')}
-      WHERE id = ? AND user_id = ?
-    `);
-    stmt.run(...values);
+    await this.execute(
+      `UPDATE plans SET ${updates.join(', ')}
+       WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
+      values
+    );
 
     return this.get(id);
   }
@@ -299,77 +361,78 @@ export class PlansRepository {
   /**
    * Delete a plan
    */
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`
-      DELETE FROM plans WHERE id = ? AND user_id = ?
-    `);
-    const result = stmt.run(id, this.userId);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      'DELETE FROM plans WHERE id = $1 AND user_id = $2',
+      [id, this.userId]
+    );
     return result.changes > 0;
   }
 
   /**
    * List plans
    */
-  list(options: {
+  async list(options: {
     status?: PlanStatus;
     goalId?: string;
     triggerId?: string;
     limit?: number;
     offset?: number;
-  } = {}): Plan[] {
-    const conditions = ['user_id = ?'];
+  } = {}): Promise<Plan[]> {
+    const conditions = ['user_id = $1'];
     const values: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     if (options.status) {
-      conditions.push('status = ?');
+      conditions.push(`status = $${paramIndex++}`);
       values.push(options.status);
     }
     if (options.goalId) {
-      conditions.push('goal_id = ?');
+      conditions.push(`goal_id = $${paramIndex++}`);
       values.push(options.goalId);
     }
     if (options.triggerId) {
-      conditions.push('trigger_id = ?');
+      conditions.push(`trigger_id = $${paramIndex++}`);
       values.push(options.triggerId);
     }
 
     const limit = options.limit ?? 20;
     const offset = options.offset ?? 0;
 
-    const stmt = this.db.prepare(`
-      SELECT * FROM plans
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY priority DESC, created_at DESC
-      LIMIT ? OFFSET ?
-    `);
+    const rows = await this.query<PlanRow>(
+      `SELECT * FROM plans
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY priority DESC, created_at DESC
+       LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+      [...values, limit, offset]
+    );
 
-    const rows = stmt.all(...values, limit, offset) as PlanRow[];
     return rows.map((row) => this.mapPlan(row));
   }
 
   /**
    * Get active (running or paused) plans
    */
-  getActive(): Plan[] {
-    const stmt = this.db.prepare(`
-      SELECT * FROM plans
-      WHERE user_id = ? AND status IN ('running', 'paused')
-      ORDER BY priority DESC
-    `);
-    const rows = stmt.all(this.userId) as PlanRow[];
+  async getActive(): Promise<Plan[]> {
+    const rows = await this.query<PlanRow>(
+      `SELECT * FROM plans
+       WHERE user_id = $1 AND status IN ('running', 'paused')
+       ORDER BY priority DESC`,
+      [this.userId]
+    );
     return rows.map((row) => this.mapPlan(row));
   }
 
   /**
    * Get pending plans
    */
-  getPending(): Plan[] {
-    const stmt = this.db.prepare(`
-      SELECT * FROM plans
-      WHERE user_id = ? AND status = 'pending'
-      ORDER BY priority DESC, created_at ASC
-    `);
-    const rows = stmt.all(this.userId) as PlanRow[];
+  async getPending(): Promise<Plan[]> {
+    const rows = await this.query<PlanRow>(
+      `SELECT * FROM plans
+       WHERE user_id = $1 AND status = 'pending'
+       ORDER BY priority DESC, created_at ASC`,
+      [this.userId]
+    );
     return rows.map((row) => this.mapPlan(row));
   }
 
@@ -380,101 +443,102 @@ export class PlansRepository {
   /**
    * Add a step to a plan
    */
-  addStep(planId: string, input: CreateStepInput): PlanStep {
-    const plan = this.get(planId);
+  async addStep(planId: string, input: CreateStepInput): Promise<PlanStep> {
+    const plan = await this.get(planId);
     if (!plan) throw new Error(`Plan not found: ${planId}`);
 
     const id = `step_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-    const stmt = this.db.prepare(`
-      INSERT INTO plan_steps (
+    await this.execute(
+      `INSERT INTO plan_steps (
         id, plan_id, order_num, type, name, description,
         config, dependencies, max_retries, timeout_ms,
         on_success, on_failure, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      planId,
-      input.orderNum,
-      input.type,
-      input.name,
-      input.description ?? null,
-      JSON.stringify(input.config),
-      JSON.stringify(input.dependencies ?? []),
-      input.maxRetries ?? 3,
-      input.timeoutMs ?? null,
-      input.onSuccess ?? null,
-      input.onFailure ?? null,
-      JSON.stringify(input.metadata ?? {})
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [
+        id,
+        planId,
+        input.orderNum,
+        input.type,
+        input.name,
+        input.description ?? null,
+        JSON.stringify(input.config),
+        JSON.stringify(input.dependencies ?? []),
+        input.maxRetries ?? 3,
+        input.timeoutMs ?? null,
+        input.onSuccess ?? null,
+        input.onFailure ?? null,
+        JSON.stringify(input.metadata ?? {}),
+      ]
     );
 
     // Update total steps count
-    this.db.prepare(`
-      UPDATE plans SET total_steps = (
-        SELECT COUNT(*) FROM plan_steps WHERE plan_id = ?
-      ), updated_at = ? WHERE id = ?
-    `).run(planId, new Date().toISOString(), planId);
+    await this.execute(
+      `UPDATE plans SET total_steps = (
+        SELECT COUNT(*) FROM plan_steps WHERE plan_id = $1
+      ), updated_at = $2 WHERE id = $1`,
+      [planId, new Date().toISOString()]
+    );
 
-    return this.getStep(id)!;
+    return (await this.getStep(id))!;
   }
 
   /**
    * Get a step by ID
    */
-  getStep(id: string): PlanStep | null {
-    const stmt = this.db.prepare(`
-      SELECT ps.* FROM plan_steps ps
-      JOIN plans p ON ps.plan_id = p.id
-      WHERE ps.id = ? AND p.user_id = ?
-    `);
-    const row = stmt.get(id, this.userId) as StepRow | undefined;
+  async getStep(id: string): Promise<PlanStep | null> {
+    const row = await this.queryOne<StepRow>(
+      `SELECT ps.* FROM plan_steps ps
+       JOIN plans p ON ps.plan_id = p.id
+       WHERE ps.id = $1 AND p.user_id = $2`,
+      [id, this.userId]
+    );
     return row ? this.mapStep(row) : null;
   }
 
   /**
    * Update a step
    */
-  updateStep(id: string, input: UpdateStepInput): PlanStep | null {
-    const step = this.getStep(id);
+  async updateStep(id: string, input: UpdateStepInput): Promise<PlanStep | null> {
+    const step = await this.getStep(id);
     if (!step) return null;
 
     const updates: string[] = [];
     const values: unknown[] = [];
+    let paramIndex = 1;
 
     if (input.status !== undefined) {
-      updates.push('status = ?');
+      updates.push(`status = $${paramIndex++}`);
       values.push(input.status);
 
       if (input.status === 'running' && !step.startedAt) {
-        updates.push('started_at = ?');
+        updates.push(`started_at = $${paramIndex++}`);
         values.push(new Date().toISOString());
       }
       if (input.status === 'completed' || input.status === 'failed' || input.status === 'skipped') {
         const now = new Date();
-        updates.push('completed_at = ?');
+        updates.push(`completed_at = $${paramIndex++}`);
         values.push(now.toISOString());
         if (step.startedAt) {
-          updates.push('duration_ms = ?');
+          updates.push(`duration_ms = $${paramIndex++}`);
           values.push(now.getTime() - step.startedAt.getTime());
         }
       }
     }
     if (input.result !== undefined) {
-      updates.push('result = ?');
+      updates.push(`result = $${paramIndex++}`);
       values.push(JSON.stringify(input.result));
     }
     if (input.error !== undefined) {
-      updates.push('error = ?');
+      updates.push(`error = $${paramIndex++}`);
       values.push(input.error);
     }
     if (input.retryCount !== undefined) {
-      updates.push('retry_count = ?');
+      updates.push(`retry_count = $${paramIndex++}`);
       values.push(input.retryCount);
     }
     if (input.metadata !== undefined) {
-      updates.push('metadata = ?');
+      updates.push(`metadata = $${paramIndex++}`);
       values.push(JSON.stringify(input.metadata));
     }
 
@@ -482,11 +546,11 @@ export class PlansRepository {
 
     values.push(id);
 
-    const stmt = this.db.prepare(`
-      UPDATE plan_steps SET ${updates.join(', ')}
-      WHERE id = ?
-    `);
-    stmt.run(...values);
+    await this.execute(
+      `UPDATE plan_steps SET ${updates.join(', ')}
+       WHERE id = $${paramIndex}`,
+      values
+    );
 
     return this.getStep(id);
   }
@@ -494,49 +558,48 @@ export class PlansRepository {
   /**
    * Get all steps for a plan
    */
-  getSteps(planId: string): PlanStep[] {
-    const stmt = this.db.prepare(`
-      SELECT ps.* FROM plan_steps ps
-      JOIN plans p ON ps.plan_id = p.id
-      WHERE ps.plan_id = ? AND p.user_id = ?
-      ORDER BY ps.order_num ASC
-    `);
-    const rows = stmt.all(planId, this.userId) as StepRow[];
+  async getSteps(planId: string): Promise<PlanStep[]> {
+    const rows = await this.query<StepRow>(
+      `SELECT ps.* FROM plan_steps ps
+       JOIN plans p ON ps.plan_id = p.id
+       WHERE ps.plan_id = $1 AND p.user_id = $2
+       ORDER BY ps.order_num ASC`,
+      [planId, this.userId]
+    );
     return rows.map((row) => this.mapStep(row));
   }
 
   /**
    * Get next pending step
    */
-  getNextStep(planId: string): PlanStep | null {
-    const steps = this.getSteps(planId);
+  async getNextStep(planId: string): Promise<PlanStep | null> {
+    const steps = await this.getSteps(planId);
     return steps.find((s) => s.status === 'pending') ?? null;
   }
 
   /**
    * Get steps by status
    */
-  getStepsByStatus(planId: string, status: StepStatus): PlanStep[] {
-    const stmt = this.db.prepare(`
-      SELECT ps.* FROM plan_steps ps
-      JOIN plans p ON ps.plan_id = p.id
-      WHERE ps.plan_id = ? AND p.user_id = ? AND ps.status = ?
-      ORDER BY ps.order_num ASC
-    `);
-    const rows = stmt.all(planId, this.userId, status) as StepRow[];
+  async getStepsByStatus(planId: string, status: StepStatus): Promise<PlanStep[]> {
+    const rows = await this.query<StepRow>(
+      `SELECT ps.* FROM plan_steps ps
+       JOIN plans p ON ps.plan_id = p.id
+       WHERE ps.plan_id = $1 AND p.user_id = $2 AND ps.status = $3
+       ORDER BY ps.order_num ASC`,
+      [planId, this.userId, status]
+    );
     return rows.map((row) => this.mapStep(row));
   }
 
   /**
    * Check if all dependencies are met for a step
    */
-  areDependenciesMet(stepId: string): boolean {
-    const step = this.getStep(stepId);
+  async areDependenciesMet(stepId: string): Promise<boolean> {
+    const step = await this.getStep(stepId);
     if (!step || step.dependencies.length === 0) return true;
 
-    const completedIds = new Set(
-      this.getStepsByStatus(step.planId, 'completed').map((s) => s.id)
-    );
+    const completedSteps = await this.getStepsByStatus(step.planId, 'completed');
+    const completedIds = new Set(completedSteps.map((s) => s.id));
 
     return step.dependencies.every((depId) => completedIds.has(depId));
   }
@@ -548,28 +611,27 @@ export class PlansRepository {
   /**
    * Log a plan event
    */
-  logEvent(planId: string, eventType: PlanEventType, stepId?: string, details: Record<string, unknown> = {}): void {
+  async logEvent(planId: string, eventType: PlanEventType, stepId?: string, details: Record<string, unknown> = {}): Promise<void> {
     const id = `evt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-    const stmt = this.db.prepare(`
-      INSERT INTO plan_history (id, plan_id, step_id, event_type, details, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(id, planId, stepId ?? null, eventType, JSON.stringify(details), new Date().toISOString());
+    await this.execute(
+      `INSERT INTO plan_history (id, plan_id, step_id, event_type, details, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id, planId, stepId ?? null, eventType, JSON.stringify(details), new Date().toISOString()]
+    );
   }
 
   /**
    * Get history for a plan
    */
-  getHistory(planId: string, limit = 50): PlanHistory[] {
-    const stmt = this.db.prepare(`
-      SELECT * FROM plan_history
-      WHERE plan_id = ?
-      ORDER BY created_at DESC
-      LIMIT ?
-    `);
-    const rows = stmt.all(planId, limit) as HistoryRow[];
+  async getHistory(planId: string, limit = 50): Promise<PlanHistory[]> {
+    const rows = await this.query<HistoryRow>(
+      `SELECT * FROM plan_history
+       WHERE plan_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2`,
+      [planId, limit]
+    );
     return rows.map((row) => this.mapHistory(row));
   }
 
@@ -580,14 +642,14 @@ export class PlansRepository {
   /**
    * Recalculate plan progress based on completed steps
    */
-  recalculateProgress(planId: string): number {
-    const steps = this.getSteps(planId);
+  async recalculateProgress(planId: string): Promise<number> {
+    const steps = await this.getSteps(planId);
     if (steps.length === 0) return 0;
 
     const completed = steps.filter((s) => s.status === 'completed').length;
     const progress = (completed / steps.length) * 100;
 
-    this.update(planId, { progress, currentStep: completed });
+    await this.update(planId, { progress, currentStep: completed });
 
     return progress;
   }
@@ -599,14 +661,14 @@ export class PlansRepository {
   /**
    * Get plan statistics
    */
-  getStats(): {
+  async getStats(): Promise<{
     total: number;
     byStatus: Record<PlanStatus, number>;
     completionRate: number;
     avgStepsPerPlan: number;
     avgDurationMs: number;
-  } {
-    const plans = this.list({ limit: 1000 });
+  }> {
+    const plans = await this.list({ limit: 1000 });
     const total = plans.length;
 
     const byStatus: Record<PlanStatus, number> = {
@@ -675,7 +737,7 @@ export class PlansRepository {
       updatedAt: new Date(row.updated_at),
       startedAt: row.started_at ? new Date(row.started_at) : null,
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
-      metadata: JSON.parse(row.metadata || '{}'),
+      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : (row.metadata || {}),
     };
   }
 
@@ -687,10 +749,10 @@ export class PlansRepository {
       type: row.type as StepType,
       name: row.name,
       description: row.description,
-      config: JSON.parse(row.config || '{}'),
+      config: typeof row.config === 'string' ? JSON.parse(row.config || '{}') : (row.config || {}),
       status: row.status as StepStatus,
-      dependencies: JSON.parse(row.dependencies || '[]'),
-      result: row.result ? JSON.parse(row.result) : null,
+      dependencies: typeof row.dependencies === 'string' ? JSON.parse(row.dependencies || '[]') : (row.dependencies || []),
+      result: row.result ? (typeof row.result === 'string' ? JSON.parse(row.result) : row.result) : null,
       error: row.error,
       retryCount: row.retry_count,
       maxRetries: row.max_retries,
@@ -700,7 +762,7 @@ export class PlansRepository {
       durationMs: row.duration_ms,
       onSuccess: row.on_success,
       onFailure: row.on_failure,
-      metadata: JSON.parse(row.metadata || '{}'),
+      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : (row.metadata || {}),
     };
   }
 
@@ -710,72 +772,13 @@ export class PlansRepository {
       planId: row.plan_id,
       stepId: row.step_id,
       eventType: row.event_type as PlanEventType,
-      details: JSON.parse(row.details || '{}'),
+      details: typeof row.details === 'string' ? JSON.parse(row.details || '{}') : (row.details || {}),
       createdAt: new Date(row.created_at),
     };
   }
 }
 
-// ============================================================================
-// Row Types
-// ============================================================================
-
-interface PlanRow {
-  id: string;
-  user_id: string;
-  name: string;
-  description: string | null;
-  goal: string;
-  status: string;
-  current_step: number;
-  total_steps: number;
-  progress: number;
-  priority: number;
-  source: string | null;
-  source_id: string | null;
-  trigger_id: string | null;
-  goal_id: string | null;
-  autonomy_level: number;
-  max_retries: number;
-  retry_count: number;
-  timeout_ms: number | null;
-  checkpoint: string | null;
-  error: string | null;
-  created_at: string;
-  updated_at: string;
-  started_at: string | null;
-  completed_at: string | null;
-  metadata: string;
-}
-
-interface StepRow {
-  id: string;
-  plan_id: string;
-  order_num: number;
-  type: string;
-  name: string;
-  description: string | null;
-  config: string;
-  status: string;
-  dependencies: string;
-  result: string | null;
-  error: string | null;
-  retry_count: number;
-  max_retries: number;
-  timeout_ms: number | null;
-  started_at: string | null;
-  completed_at: string | null;
-  duration_ms: number | null;
-  on_success: string | null;
-  on_failure: string | null;
-  metadata: string;
-}
-
-interface HistoryRow {
-  id: string;
-  plan_id: string;
-  step_id: string | null;
-  event_type: string;
-  details: string;
-  created_at: string;
+// Factory function for creating repository instances
+export function createPlansRepository(userId = 'default'): PlansRepository {
+  return new PlansRepository(userId);
 }

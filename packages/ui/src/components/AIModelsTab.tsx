@@ -479,6 +479,36 @@ export function AIModelsTab() {
     }
   };
 
+  // Handle reset and resync (delete all + fresh sync)
+  const handleResetSync = async () => {
+    if (!confirm('This will delete all synced provider configs and resync fresh from models.dev. Protected providers (OpenAI, Anthropic, Google, etc.) will be preserved. Continue?')) {
+      return;
+    }
+
+    setIsSyncing(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/v1/model-configs/sync/reset', {
+        method: 'POST',
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setSuccess(`Reset complete! Deleted ${data.stats?.deleted || 0}, synced ${data.stats?.synced || 0} providers`);
+        setTimeout(() => setSuccess(null), 5000);
+        await loadData();
+      } else {
+        setError(data.error || 'Reset failed');
+      }
+    } catch (err) {
+      setError('Reset sync failed');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -606,10 +636,21 @@ export function AIModelsTab() {
             onClick={handleSync}
             disabled={isSyncing}
             className="px-3 py-2 text-sm rounded-lg border transition-colors flex items-center gap-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary disabled:opacity-50"
-            title="Sync models from models.dev"
+            title="Sync models from models.dev (updates existing configs)"
           >
             <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
             Sync
+          </button>
+
+          {/* Reset & Resync button */}
+          <button
+            onClick={handleResetSync}
+            disabled={isSyncing}
+            className="px-3 py-2 text-sm rounded-lg border transition-colors flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50"
+            title="Delete all synced configs and resync fresh from models.dev"
+          >
+            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            Reset
           </button>
         </div>
       </div>

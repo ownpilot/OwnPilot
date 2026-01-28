@@ -11,7 +11,7 @@ import type {
   ChatResponse,
   StreamChunkResponse,
 } from '../types/index.js';
-import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext } from './agents.js';
+import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
 import { getDatabase } from '../db/connection.js';
@@ -91,12 +91,12 @@ chatRoutes.post('/', async (c) => {
 
   // Get provider and model from request
   const provider = body.provider ?? 'openai';
-  const requestedModel = body.model ?? getDefaultModel(provider);
+  const requestedModel = body.model ?? await getDefaultModel(provider);
   // Use a fallback model for demo mode display, but validate for real requests
   const model = requestedModel ?? 'gpt-4o';
 
   // Check for demo mode
-  if (isDemoMode()) {
+  if (await isDemoMode()) {
     const demoResponse = generateDemoResponse(body.message, provider, model);
 
     const response: ApiResponse<ChatResponse> = {
@@ -670,7 +670,7 @@ chatRoutes.post('/', async (c) => {
     const logsRepo = new LogsRepository(userId);
 
     // Get or create conversation
-    const dbConversation = chatRepo.getOrCreateConversation(body.conversationId || conversation.id, {
+    const dbConversation = await chatRepo.getOrCreateConversation(body.conversationId || conversation.id, {
       title: body.message.slice(0, 50) + (body.message.length > 50 ? '...' : ''),
       agentId: body.agentId,
       agentName: body.agentId ? undefined : 'Chat',
@@ -679,7 +679,7 @@ chatRoutes.post('/', async (c) => {
     });
 
     // Save user message
-    chatRepo.addMessage({
+    await chatRepo.addMessage({
       conversationId: dbConversation.id,
       role: 'user',
       content: body.message,
@@ -688,7 +688,7 @@ chatRoutes.post('/', async (c) => {
     });
 
     // Save assistant message
-    chatRepo.addMessage({
+    await chatRepo.addMessage({
       conversationId: dbConversation.id,
       role: 'assistant',
       content: result.value.content,
@@ -736,7 +736,7 @@ chatRoutes.get('/conversations/:id', async (c) => {
   const agentId = c.req.query('agentId');
 
   // In demo mode, return empty conversation
-  if (isDemoMode()) {
+  if (await isDemoMode()) {
     const response: ApiResponse = {
       success: true,
       data: {
@@ -802,7 +802,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   const agentId = c.req.query('agentId');
 
   // In demo mode, just return success
-  if (isDemoMode()) {
+  if (await isDemoMode()) {
     const response: ApiResponse = {
       success: true,
       meta: {
@@ -826,7 +826,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
 
   // Also delete from database
   const chatRepo = new ChatRepository('default');
-  chatRepo.deleteConversation(id);
+  await chatRepo.deleteConversation(id);
 
   if (!deleted) {
     throw new HTTPException(404, {
@@ -861,7 +861,7 @@ chatRoutes.get('/history', async (c) => {
   const archived = c.req.query('archived') === 'true';
 
   const chatRepo = new ChatRepository(userId);
-  const conversations = chatRepo.listConversations({
+  const conversations = await chatRepo.listConversations({
     limit,
     offset,
     search,
@@ -905,7 +905,7 @@ chatRoutes.get('/history/:id', async (c) => {
   const userId = 'default'; // TODO: Get from auth context
 
   const chatRepo = new ChatRepository(userId);
-  const data = chatRepo.getConversationWithMessages(id);
+  const data = await chatRepo.getConversationWithMessages(id);
 
   if (!data) {
     throw new HTTPException(404, {
@@ -957,7 +957,7 @@ chatRoutes.delete('/history/:id', async (c) => {
   const userId = 'default'; // TODO: Get from auth context
 
   const chatRepo = new ChatRepository(userId);
-  const deleted = chatRepo.deleteConversation(id);
+  const deleted = await chatRepo.deleteConversation(id);
 
   if (!deleted) {
     throw new HTTPException(404, {
@@ -986,7 +986,7 @@ chatRoutes.patch('/history/:id/archive', async (c) => {
   const body = await c.req.json<{ archived: boolean }>();
 
   const chatRepo = new ChatRepository(userId);
-  const updated = chatRepo.updateConversation(id, { isArchived: body.archived });
+  const updated = await chatRepo.updateConversation(id, { isArchived: body.archived });
 
   if (!updated) {
     throw new HTTPException(404, {
@@ -1022,7 +1022,7 @@ chatRoutes.get('/logs', async (c) => {
   const conversationId = c.req.query('conversationId');
 
   const logsRepo = new LogsRepository(userId);
-  const logs = logsRepo.list({
+  const logs = await logsRepo.list({
     limit,
     offset,
     type,
@@ -1070,7 +1070,7 @@ chatRoutes.get('/logs/stats', async (c) => {
   startDate.setDate(startDate.getDate() - days);
 
   const logsRepo = new LogsRepository(userId);
-  const stats = logsRepo.getStats(startDate);
+  const stats = await logsRepo.getStats(startDate);
 
   const response: ApiResponse = {
     success: true,
@@ -1092,7 +1092,7 @@ chatRoutes.get('/logs/:id', async (c) => {
   const userId = 'default'; // TODO: Get from auth context
 
   const logsRepo = new LogsRepository(userId);
-  const log = logsRepo.getLog(id);
+  const log = await logsRepo.getLog(id);
 
   if (!log) {
     throw new HTTPException(404, {
@@ -1113,18 +1113,82 @@ chatRoutes.get('/logs/:id', async (c) => {
 });
 
 /**
- * Clear old logs
+ * Clear logs
+ * Query params:
+ * - all=true: Clear ALL logs
+ * - olderThanDays=N: Clear logs older than N days (default: 30)
  */
 chatRoutes.delete('/logs', async (c) => {
   const userId = 'default'; // TODO: Get from auth context
+  const clearAll = c.req.query('all') === 'true';
   const days = parseInt(c.req.query('olderThanDays') ?? '30');
 
   const logsRepo = new LogsRepository(userId);
-  const deleted = logsRepo.deleteOldLogs(days);
+  const deleted = clearAll
+    ? await logsRepo.clearAll()
+    : await logsRepo.deleteOldLogs(days);
 
   const response: ApiResponse = {
     success: true,
-    data: { deleted },
+    data: {
+      deleted,
+      mode: clearAll ? 'all' : `older than ${days} days`,
+    },
+    meta: {
+      requestId: c.get('requestId') ?? 'unknown',
+      timestamp: new Date().toISOString(),
+    },
+  };
+
+  return c.json(response);
+});
+
+// =====================================================
+// CONTEXT RESET API
+// =====================================================
+
+/**
+ * Reset chat context for a provider/model
+ * Call this when starting a "New Chat" to clear conversation memory
+ */
+chatRoutes.post('/reset-context', async (c) => {
+  const body = await c.req.json<{ provider?: string; model?: string; clearAll?: boolean }>();
+
+  if (body.clearAll) {
+    // Clear all cached chat agents
+    const count = clearAllChatAgentCaches();
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        cleared: count,
+        message: `Cleared ${count} chat agent caches`,
+      },
+      meta: {
+        requestId: c.get('requestId') ?? 'unknown',
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    return c.json(response);
+  }
+
+  // Reset specific provider/model context
+  const provider = body.provider ?? 'openai';
+  const model = body.model ?? await getDefaultModel(provider) ?? 'gpt-4o';
+
+  const reset = resetChatAgentContext(provider, model);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      reset,
+      provider,
+      model,
+      message: reset
+        ? `Context reset for ${provider}/${model}`
+        : `No cached agent found for ${provider}/${model}`,
+    },
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),

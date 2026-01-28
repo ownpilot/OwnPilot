@@ -204,7 +204,7 @@ channelRoutes.post('/', async (c) => {
     const { channelsRepo } = await import('../db/repositories/channels.js');
 
     // Check if channel exists in database
-    const existingChannel = channelsRepo.getById(channelId);
+    const existingChannel = await channelsRepo.getById(channelId);
     if (existingChannel) {
       return c.json(
         {
@@ -219,7 +219,7 @@ channelRoutes.post('/', async (c) => {
     }
 
     // Save to database first
-    channelsRepo.create({
+    await channelsRepo.create({
       id: channelId,
       type: body.type,
       name: body.name,

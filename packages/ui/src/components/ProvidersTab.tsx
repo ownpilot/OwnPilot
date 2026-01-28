@@ -45,17 +45,12 @@ interface ProvidersResponse {
   };
 }
 
-// Provider type options
+// Provider type options - must match ProviderType in configs/types.ts
 const PROVIDER_TYPES = [
-  { value: 'openai-compatible', label: 'OpenAI Compatible' },
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'anthropic', label: 'Anthropic' },
-  { value: 'google-genai', label: 'Google Gemini' },
-  { value: 'azure', label: 'Azure OpenAI' },
-  { value: 'bedrock', label: 'AWS Bedrock' },
-  { value: 'vertex', label: 'Google Vertex' },
-  { value: 'cohere', label: 'Cohere' },
-  { value: 'custom', label: 'Custom' },
+  { value: 'openai-compatible', label: 'OpenAI Compatible (Most Providers)' },
+  { value: 'openai', label: 'OpenAI (Native)' },
+  { value: 'anthropic', label: 'Anthropic (Native)' },
+  { value: 'google', label: 'Google Gemini (Native)' },
 ];
 
 export function ProvidersTab() {

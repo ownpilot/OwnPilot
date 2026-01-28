@@ -1,10 +1,10 @@
 /**
- * Calendar Events Repository
+ * Calendar Events Repository (PostgreSQL)
  *
  * CRUD operations for calendar events
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 export interface CalendarEvent {
   id: string;
@@ -79,7 +79,7 @@ interface EventRow {
   location: string | null;
   start_time: string;
   end_time: string | null;
-  all_day: number;
+  all_day: boolean;
   timezone: string;
   recurrence: string | null;
   reminder_minutes: number | null;
@@ -102,16 +102,16 @@ function rowToEvent(row: EventRow): CalendarEvent {
     location: row.location ?? undefined,
     startTime: new Date(row.start_time),
     endTime: row.end_time ? new Date(row.end_time) : undefined,
-    allDay: row.all_day === 1,
+    allDay: row.all_day === true,
     timezone: row.timezone,
     recurrence: row.recurrence ?? undefined,
     reminderMinutes: row.reminder_minutes ?? undefined,
     category: row.category ?? undefined,
-    tags: JSON.parse(row.tags || '[]'),
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
     color: row.color ?? undefined,
     externalId: row.external_id ?? undefined,
     externalSource: row.external_source ?? undefined,
-    attendees: JSON.parse(row.attendees || '[]'),
+    attendees: typeof row.attendees === 'string' ? JSON.parse(row.attendees || '[]') : (row.attendees || []),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -121,164 +121,189 @@ function toISOString(value: string | Date): string {
   return value instanceof Date ? value.toISOString() : value;
 }
 
-export class CalendarRepository {
-  private db = getDatabase();
+export class CalendarRepository extends BaseRepository {
   private userId: string;
 
   constructor(userId = 'default') {
+    super();
     this.userId = userId;
   }
 
-  create(input: CreateEventInput): CalendarEvent {
+  async create(input: CreateEventInput): Promise<CalendarEvent> {
     const id = crypto.randomUUID();
-    const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      INSERT INTO calendar_events (id, user_id, title, description, location, start_time, end_time,
+    await this.execute(
+      `INSERT INTO calendar_events (id, user_id, title, description, location, start_time, end_time,
         all_day, timezone, recurrence, reminder_minutes, category, tags, color,
-        external_id, external_source, attendees, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      this.userId,
-      input.title,
-      input.description ?? null,
-      input.location ?? null,
-      toISOString(input.startTime),
-      input.endTime ? toISOString(input.endTime) : null,
-      input.allDay ? 1 : 0,
-      input.timezone ?? 'UTC',
-      input.recurrence ?? null,
-      input.reminderMinutes ?? null,
-      input.category ?? null,
-      JSON.stringify(input.tags ?? []),
-      input.color ?? null,
-      input.externalId ?? null,
-      input.externalSource ?? null,
-      JSON.stringify(input.attendees ?? []),
-      now,
-      now
+        external_id, external_source, attendees)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+      [
+        id,
+        this.userId,
+        input.title,
+        input.description ?? null,
+        input.location ?? null,
+        toISOString(input.startTime),
+        input.endTime ? toISOString(input.endTime) : null,
+        input.allDay ?? false,
+        input.timezone ?? 'UTC',
+        input.recurrence ?? null,
+        input.reminderMinutes ?? null,
+        input.category ?? null,
+        JSON.stringify(input.tags ?? []),
+        input.color ?? null,
+        input.externalId ?? null,
+        input.externalSource ?? null,
+        JSON.stringify(input.attendees ?? []),
+      ]
     );
 
-    return this.get(id)!;
+    const result = await this.get(id);
+    if (!result) throw new Error('Failed to create calendar event');
+    return result;
   }
 
-  get(id: string): CalendarEvent | null {
-    const stmt = this.db.prepare<[string, string], EventRow>(`
-      SELECT * FROM calendar_events WHERE id = ? AND user_id = ?
-    `);
-
-    const row = stmt.get(id, this.userId);
+  async get(id: string): Promise<CalendarEvent | null> {
+    const row = await this.queryOne<EventRow>(
+      `SELECT * FROM calendar_events WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
     return row ? rowToEvent(row) : null;
   }
 
-  getByExternalId(externalId: string, source: string): CalendarEvent | null {
-    const stmt = this.db.prepare<[string, string, string], EventRow>(`
-      SELECT * FROM calendar_events
-      WHERE external_id = ? AND external_source = ? AND user_id = ?
-    `);
-
-    const row = stmt.get(externalId, source, this.userId);
+  async getByExternalId(externalId: string, source: string): Promise<CalendarEvent | null> {
+    const row = await this.queryOne<EventRow>(
+      `SELECT * FROM calendar_events WHERE external_id = $1 AND external_source = $2 AND user_id = $3`,
+      [externalId, source, this.userId]
+    );
     return row ? rowToEvent(row) : null;
   }
 
-  update(id: string, input: UpdateEventInput): CalendarEvent | null {
-    const existing = this.get(id);
+  async update(id: string, input: UpdateEventInput): Promise<CalendarEvent | null> {
+    const existing = await this.get(id);
     if (!existing) return null;
 
-    const now = new Date().toISOString();
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let paramIndex = 1;
 
-    const stmt = this.db.prepare(`
-      UPDATE calendar_events SET
-        title = COALESCE(?, title),
-        description = COALESCE(?, description),
-        location = COALESCE(?, location),
-        start_time = COALESCE(?, start_time),
-        end_time = COALESCE(?, end_time),
-        all_day = COALESCE(?, all_day),
-        timezone = COALESCE(?, timezone),
-        recurrence = COALESCE(?, recurrence),
-        reminder_minutes = COALESCE(?, reminder_minutes),
-        category = COALESCE(?, category),
-        tags = COALESCE(?, tags),
-        color = COALESCE(?, color),
-        attendees = COALESCE(?, attendees),
-        updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `);
+    if (input.title !== undefined) {
+      updates.push(`title = $${paramIndex++}`);
+      values.push(input.title);
+    }
+    if (input.description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      values.push(input.description);
+    }
+    if (input.location !== undefined) {
+      updates.push(`location = $${paramIndex++}`);
+      values.push(input.location);
+    }
+    if (input.startTime !== undefined) {
+      updates.push(`start_time = $${paramIndex++}`);
+      values.push(toISOString(input.startTime));
+    }
+    if (input.endTime !== undefined) {
+      updates.push(`end_time = $${paramIndex++}`);
+      values.push(toISOString(input.endTime));
+    }
+    if (input.allDay !== undefined) {
+      updates.push(`all_day = $${paramIndex++}`);
+      values.push(input.allDay);
+    }
+    if (input.timezone !== undefined) {
+      updates.push(`timezone = $${paramIndex++}`);
+      values.push(input.timezone);
+    }
+    if (input.recurrence !== undefined) {
+      updates.push(`recurrence = $${paramIndex++}`);
+      values.push(input.recurrence);
+    }
+    if (input.reminderMinutes !== undefined) {
+      updates.push(`reminder_minutes = $${paramIndex++}`);
+      values.push(input.reminderMinutes);
+    }
+    if (input.category !== undefined) {
+      updates.push(`category = $${paramIndex++}`);
+      values.push(input.category);
+    }
+    if (input.tags !== undefined) {
+      updates.push(`tags = $${paramIndex++}`);
+      values.push(JSON.stringify(input.tags));
+    }
+    if (input.color !== undefined) {
+      updates.push(`color = $${paramIndex++}`);
+      values.push(input.color);
+    }
+    if (input.attendees !== undefined) {
+      updates.push(`attendees = $${paramIndex++}`);
+      values.push(JSON.stringify(input.attendees));
+    }
 
-    stmt.run(
-      input.title ?? null,
-      input.description ?? null,
-      input.location ?? null,
-      input.startTime ? toISOString(input.startTime) : null,
-      input.endTime ? toISOString(input.endTime) : null,
-      input.allDay !== undefined ? (input.allDay ? 1 : 0) : null,
-      input.timezone ?? null,
-      input.recurrence ?? null,
-      input.reminderMinutes ?? null,
-      input.category ?? null,
-      input.tags ? JSON.stringify(input.tags) : null,
-      input.color ?? null,
-      input.attendees ? JSON.stringify(input.attendees) : null,
-      now,
-      id,
-      this.userId
+    if (updates.length === 0) return existing;
+
+    updates.push('updated_at = NOW()');
+    values.push(id, this.userId);
+
+    await this.execute(
+      `UPDATE calendar_events SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
+      values
     );
 
     return this.get(id);
   }
 
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM calendar_events WHERE id = ? AND user_id = ?`);
-    const result = stmt.run(id, this.userId);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM calendar_events WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
     return result.changes > 0;
   }
 
-  list(query: EventQuery = {}): CalendarEvent[] {
-    let sql = `SELECT * FROM calendar_events WHERE user_id = ?`;
+  async list(query: EventQuery = {}): Promise<CalendarEvent[]> {
+    let sql = `SELECT * FROM calendar_events WHERE user_id = $1`;
     const params: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     if (query.startAfter) {
-      sql += ` AND start_time >= ?`;
+      sql += ` AND start_time >= $${paramIndex++}`;
       params.push(toISOString(query.startAfter));
     }
 
     if (query.startBefore) {
-      sql += ` AND start_time <= ?`;
+      sql += ` AND start_time <= $${paramIndex++}`;
       params.push(toISOString(query.startBefore));
     }
 
     if (query.category) {
-      sql += ` AND category = ?`;
+      sql += ` AND category = $${paramIndex++}`;
       params.push(query.category);
     }
 
     if (query.search) {
-      sql += ` AND (title LIKE ? OR description LIKE ? OR location LIKE ?)`;
-      const searchTerm = `%${query.search}%`;
-      params.push(searchTerm, searchTerm, searchTerm);
+      sql += ` AND (title ILIKE $${paramIndex} OR description ILIKE $${paramIndex} OR location ILIKE $${paramIndex})`;
+      params.push(`%${query.search}%`);
+      paramIndex++;
     }
 
     sql += ` ORDER BY start_time ASC`;
 
     if (query.limit) {
-      sql += ` LIMIT ?`;
+      sql += ` LIMIT $${paramIndex++}`;
       params.push(query.limit);
     }
 
     if (query.offset) {
-      sql += ` OFFSET ?`;
+      sql += ` OFFSET $${paramIndex++}`;
       params.push(query.offset);
     }
 
-    const stmt = this.db.prepare<unknown[], EventRow>(sql);
-    return stmt.all(...params).map(rowToEvent);
+    const rows = await this.query<EventRow>(sql, params);
+    return rows.map(rowToEvent);
   }
 
-  getToday(): CalendarEvent[] {
+  async getToday(): Promise<CalendarEvent[]> {
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
@@ -289,7 +314,7 @@ export class CalendarRepository {
     });
   }
 
-  getUpcoming(days = 7): CalendarEvent[] {
+  async getUpcoming(days = 7): Promise<CalendarEvent[]> {
     const now = new Date();
     const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
@@ -299,54 +324,54 @@ export class CalendarRepository {
     });
   }
 
-  getByDateRange(start: Date, end: Date): CalendarEvent[] {
+  async getByDateRange(start: Date, end: Date): Promise<CalendarEvent[]> {
     return this.list({
       startAfter: start,
       startBefore: end,
     });
   }
 
-  getUpcomingReminders(minutes = 30): CalendarEvent[] {
+  async getUpcomingReminders(minutes = 30): Promise<CalendarEvent[]> {
     const now = new Date();
     const reminderWindow = new Date(now.getTime() + minutes * 60 * 1000);
 
-    const stmt = this.db.prepare<[string, string, string], EventRow>(`
-      SELECT * FROM calendar_events
-      WHERE user_id = ?
-        AND reminder_minutes IS NOT NULL
-        AND start_time > ?
-        AND datetime(start_time, '-' || reminder_minutes || ' minutes') <= ?
-      ORDER BY start_time ASC
-    `);
+    const rows = await this.query<EventRow>(
+      `SELECT * FROM calendar_events
+       WHERE user_id = $1
+         AND reminder_minutes IS NOT NULL
+         AND start_time > $2
+         AND start_time - (reminder_minutes * INTERVAL '1 minute') <= $3
+       ORDER BY start_time ASC`,
+      [this.userId, now.toISOString(), reminderWindow.toISOString()]
+    );
 
-    return stmt.all(
-      this.userId,
-      now.toISOString(),
-      reminderWindow.toISOString()
-    ).map(rowToEvent);
+    return rows.map(rowToEvent);
   }
 
-  getCategories(): string[] {
-    const stmt = this.db.prepare<string, { category: string }>(`
-      SELECT DISTINCT category FROM calendar_events
-      WHERE user_id = ? AND category IS NOT NULL
-      ORDER BY category
-    `);
-
-    return stmt.all(this.userId).map(r => r.category);
+  async getCategories(): Promise<string[]> {
+    const rows = await this.query<{ category: string }>(
+      `SELECT DISTINCT category FROM calendar_events WHERE user_id = $1 AND category IS NOT NULL ORDER BY category`,
+      [this.userId]
+    );
+    return rows.map(r => r.category);
   }
 
-  count(): number {
-    const stmt = this.db.prepare<string, { count: number }>(`
-      SELECT COUNT(*) as count FROM calendar_events WHERE user_id = ?
-    `);
-
-    return stmt.get(this.userId)?.count ?? 0;
+  async count(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM calendar_events WHERE user_id = $1`,
+      [this.userId]
+    );
+    return parseInt(row?.count ?? '0', 10);
   }
 
-  search(query: string, limit = 20): CalendarEvent[] {
-    return this.list({ search: query, limit });
+  async search(searchQuery: string, limit = 20): Promise<CalendarEvent[]> {
+    return this.list({ search: searchQuery, limit });
   }
 }
 
 export const calendarRepo = new CalendarRepository();
+
+// Factory function
+export function createCalendarRepository(userId = 'default'): CalendarRepository {
+  return new CalendarRepository(userId);
+}

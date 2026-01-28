@@ -45,6 +45,8 @@ import {
   modelConfigsRoutes,
   dashboardRoutes,
   customToolsRoutes,
+  databaseRoutes,
+  expensesRoutes,
 } from './routes/index.js';
 import { debugRoutes } from './routes/debug.js';
 
@@ -121,6 +123,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   // Mount routes
   app.route('/health', healthRoutes);
+  app.route('/api/v1/health', healthRoutes); // Also mount at /api/v1 for API consistency
   app.route('/api/v1/agents', agentRoutes);
   app.route('/api/v1/chat', chatRoutes);
   app.route('/api/v1/tools', toolsRoutes);
@@ -187,6 +190,12 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   // Custom Tools (LLM-created and user-defined tools)
   app.route('/api/v1/custom-tools', customToolsRoutes);
+
+  // Database Admin (migration, status)
+  app.route('/api/v1/database', databaseRoutes);
+
+  // Expenses
+  app.route('/api/v1/expenses', expensesRoutes);
 
   // Root route
   app.get('/', (c) => {

@@ -9,7 +9,7 @@ import { serve } from '@hono/node-server';
 import {
   createApp,
   type GatewayConfig,
-  getDatabase,
+  initializeAdapter,
   loadApiKeysToEnvironment,
   getDefaultProvider,
   getApiKey,
@@ -29,15 +29,15 @@ interface StartOptions {
 export async function startAll(options: StartOptions): Promise<void> {
   console.log('\n🚀 Starting OwnPilot...\n');
 
-  // Initialize database first
-  getDatabase();
+  // Initialize PostgreSQL database first
+  await initializeAdapter();
 
   // Load saved API keys from database into environment (for SDKs)
-  loadApiKeysToEnvironment();
+  await loadApiKeysToEnvironment();
 
   // Check provider configuration from database
-  const provider = getDefaultProvider();
-  const isDemoMode = isDemoModeFromSettings();
+  const provider = await getDefaultProvider();
+  const isDemoMode = await isDemoModeFromSettings();
 
   if (isDemoMode) {
     console.warn('⚠️  Warning: No AI provider API key configured');

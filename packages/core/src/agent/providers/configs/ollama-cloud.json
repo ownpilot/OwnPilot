@@ -41,6 +41,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-23"
     },
     {
@@ -56,7 +57,24 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "gemini-3-flash-preview",
+      "name": "gemini-3-flash-preview",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-17"
     },
     {
       "id": "nemotron-3-nano:30b",
@@ -71,6 +89,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-15"
     },
     {
@@ -84,9 +103,9 @@
         "chat",
         "vision",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-09"
     },
     {
@@ -99,9 +118,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-09"
     },
     {
@@ -116,6 +135,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-06"
     },
     {
@@ -131,6 +151,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-02"
     },
     {
@@ -146,7 +167,25 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-19"
+    },
+    {
+      "id": "gemini-3-pro-preview",
+      "name": "gemini-3-pro-preview",
+      "contextWindow": 1048576,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-18"
     },
     {
       "id": "kimi-k2-thinking",
@@ -161,6 +200,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-06"
     },
     {
@@ -175,6 +215,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-23"
     },
     {
@@ -190,6 +231,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-29"
     },
     {
@@ -206,6 +248,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-22"
     },
     {
@@ -221,6 +264,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-22"
     },
     {
@@ -236,6 +280,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-15"
     },
     {
@@ -251,6 +296,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-21"
     },
     {
@@ -266,6 +312,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -281,6 +328,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -295,6 +343,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-27"
     },
     {
@@ -307,9 +356,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-22"
     },
     {
@@ -324,6 +373,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-11"
     },
     {
@@ -339,6 +389,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-15"
     },
     {
@@ -354,6 +405,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -368,6 +420,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -383,6 +436,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -397,6 +451,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -412,38 +467,8 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-22"
-    },
-    {
-      "id": "gemini-3-flash-preview",
-      "name": "gemini-3-flash-preview",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-12-17"
-    },
-    {
-      "id": "gemini-3-pro-preview",
-      "name": "gemini-3-pro-preview",
-      "contextWindow": 1048576,
-      "maxOutput": 64000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-11-18"
     }
   ],
   "baseUrl": "https://ollama.com/v1",

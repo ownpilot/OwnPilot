@@ -40,10 +40,10 @@ function getPomodoroRepo(userId = 'default'): PomodoroRepository {
 /**
  * GET /pomodoro/session - Get active session
  */
-pomodoroRoutes.get('/session', (c) => {
+pomodoroRoutes.get('/session', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getPomodoroRepo(userId);
-  const session = repo.getActiveSession();
+  const session = await repo.getActiveSession();
 
   const response: ApiResponse = {
     success: true,
@@ -70,7 +70,7 @@ pomodoroRoutes.post('/session/start', async (c) => {
   const repo = getPomodoroRepo(userId);
 
   // Check for active session
-  const active = repo.getActiveSession();
+  const active = await repo.getActiveSession();
   if (active) {
     return c.json({
       success: false,
@@ -78,7 +78,7 @@ pomodoroRoutes.post('/session/start', async (c) => {
     }, 400);
   }
 
-  const session = repo.startSession(body);
+  const session = await repo.startSession(body);
 
   const response: ApiResponse = {
     success: true,
@@ -91,12 +91,12 @@ pomodoroRoutes.post('/session/start', async (c) => {
 /**
  * POST /pomodoro/session/:id/complete - Complete a session
  */
-pomodoroRoutes.post('/session/:id/complete', (c) => {
+pomodoroRoutes.post('/session/:id/complete', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getPomodoroRepo(userId);
-  const session = repo.completeSession(id);
+  const session = await repo.completeSession(id);
 
   if (!session) {
     return c.json({
@@ -122,7 +122,7 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
   const body = await c.req.json<{ reason?: string }>().catch((): { reason?: string } => ({}));
 
   const repo = getPomodoroRepo(userId);
-  const session = repo.interruptSession(id, body.reason);
+  const session = await repo.interruptSession(id, body.reason);
 
   if (!session) {
     return c.json({
@@ -142,13 +142,13 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
 /**
  * GET /pomodoro/sessions - List sessions
  */
-pomodoroRoutes.get('/sessions', (c) => {
+pomodoroRoutes.get('/sessions', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const type = c.req.query('type') as SessionType | undefined;
   const limit = parseInt(c.req.query('limit') ?? '20', 10);
 
   const repo = getPomodoroRepo(userId);
-  const sessions = repo.listSessions({ type, limit });
+  const sessions = await repo.listSessions({ type, limit });
 
   const response: ApiResponse = {
     success: true,
@@ -161,10 +161,10 @@ pomodoroRoutes.get('/sessions', (c) => {
 /**
  * GET /pomodoro/settings - Get settings
  */
-pomodoroRoutes.get('/settings', (c) => {
+pomodoroRoutes.get('/settings', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getPomodoroRepo(userId);
-  const settings = repo.getSettings();
+  const settings = await repo.getSettings();
 
   const response: ApiResponse = {
     success: true,
@@ -182,7 +182,7 @@ pomodoroRoutes.patch('/settings', async (c) => {
   const body = await c.req.json<UpdateSettingsInput>();
 
   const repo = getPomodoroRepo(userId);
-  const settings = repo.updateSettings(body);
+  const settings = await repo.updateSettings(body);
 
   const response: ApiResponse = {
     success: true,
@@ -195,11 +195,11 @@ pomodoroRoutes.patch('/settings', async (c) => {
 /**
  * GET /pomodoro/stats - Get statistics
  */
-pomodoroRoutes.get('/stats', (c) => {
+pomodoroRoutes.get('/stats', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getPomodoroRepo(userId);
-  const stats = repo.getTotalStats();
-  const today = repo.getDailyStats();
+  const stats = await repo.getTotalStats();
+  const today = await repo.getDailyStats();
 
   const response: ApiResponse = {
     success: true,
@@ -212,12 +212,12 @@ pomodoroRoutes.get('/stats', (c) => {
 /**
  * GET /pomodoro/stats/daily/:date - Get daily stats
  */
-pomodoroRoutes.get('/stats/daily/:date', (c) => {
+pomodoroRoutes.get('/stats/daily/:date', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const date = c.req.param('date');
 
   const repo = getPomodoroRepo(userId);
-  const stats = repo.getDailyStats(date);
+  const stats = await repo.getDailyStats(date);
 
   const response: ApiResponse = {
     success: true,
@@ -240,13 +240,13 @@ function getHabitsRepo(userId = 'default'): HabitsRepository {
 /**
  * GET /habits - List habits
  */
-habitsRoutes.get('/', (c) => {
+habitsRoutes.get('/', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const category = c.req.query('category');
   const isArchived = c.req.query('archived') === 'true';
 
   const repo = getHabitsRepo(userId);
-  const habits = repo.list({ category: category ?? undefined, isArchived });
+  const habits = await repo.list({ category: category ?? undefined, isArchived });
 
   const response: ApiResponse = {
     success: true,
@@ -271,7 +271,7 @@ habitsRoutes.post('/', async (c) => {
   }
 
   const repo = getHabitsRepo(userId);
-  const habit = repo.create(body);
+  const habit = await repo.create(body);
 
   const response: ApiResponse = {
     success: true,
@@ -284,10 +284,10 @@ habitsRoutes.post('/', async (c) => {
 /**
  * GET /habits/today - Get today's habits with status
  */
-habitsRoutes.get('/today', (c) => {
+habitsRoutes.get('/today', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getHabitsRepo(userId);
-  const progress = repo.getTodayProgress();
+  const progress = await repo.getTodayProgress();
 
   const response: ApiResponse = {
     success: true,
@@ -300,10 +300,10 @@ habitsRoutes.get('/today', (c) => {
 /**
  * GET /habits/categories - Get all categories
  */
-habitsRoutes.get('/categories', (c) => {
+habitsRoutes.get('/categories', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getHabitsRepo(userId);
-  const categories = repo.getCategories();
+  const categories = await repo.getCategories();
 
   const response: ApiResponse = {
     success: true,
@@ -316,12 +316,12 @@ habitsRoutes.get('/categories', (c) => {
 /**
  * GET /habits/:id - Get a habit
  */
-habitsRoutes.get('/:id', (c) => {
+habitsRoutes.get('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getHabitsRepo(userId);
-  const stats = repo.getHabitStats(id);
+  const stats = await repo.getHabitStats(id);
 
   if (!stats) {
     return c.json({
@@ -347,7 +347,7 @@ habitsRoutes.patch('/:id', async (c) => {
   const body = await c.req.json<UpdateHabitInput>();
 
   const repo = getHabitsRepo(userId);
-  const habit = repo.update(id, body);
+  const habit = await repo.update(id, body);
 
   if (!habit) {
     return c.json({
@@ -367,12 +367,12 @@ habitsRoutes.patch('/:id', async (c) => {
 /**
  * DELETE /habits/:id - Delete a habit
  */
-habitsRoutes.delete('/:id', (c) => {
+habitsRoutes.delete('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getHabitsRepo(userId);
-  const deleted = repo.delete(id);
+  const deleted = await repo.delete(id);
 
   if (!deleted) {
     return c.json({
@@ -392,12 +392,12 @@ habitsRoutes.delete('/:id', (c) => {
 /**
  * POST /habits/:id/archive - Archive a habit
  */
-habitsRoutes.post('/:id/archive', (c) => {
+habitsRoutes.post('/:id/archive', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getHabitsRepo(userId);
-  const habit = repo.archive(id);
+  const habit = await repo.archive(id);
 
   if (!habit) {
     return c.json({
@@ -423,7 +423,7 @@ habitsRoutes.post('/:id/log', async (c) => {
   const body = await c.req.json<{ date?: string; count?: number; notes?: string }>().catch(() => ({}));
 
   const repo = getHabitsRepo(userId);
-  const log = repo.logHabit(id, body);
+  const log = await repo.logHabit(id, body);
 
   if (!log) {
     return c.json({
@@ -433,7 +433,7 @@ habitsRoutes.post('/:id/log', async (c) => {
   }
 
   // Get updated habit stats
-  const habit = repo.get(id);
+  const habit = await repo.get(id);
 
   const response: ApiResponse = {
     success: true,
@@ -446,7 +446,7 @@ habitsRoutes.post('/:id/log', async (c) => {
 /**
  * GET /habits/:id/logs - Get habit logs
  */
-habitsRoutes.get('/:id/logs', (c) => {
+habitsRoutes.get('/:id/logs', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
   const startDate = c.req.query('startDate');
@@ -454,7 +454,7 @@ habitsRoutes.get('/:id/logs', (c) => {
   const limit = parseInt(c.req.query('limit') ?? '30', 10);
 
   const repo = getHabitsRepo(userId);
-  const logs = repo.getLogs(id, { startDate: startDate ?? undefined, endDate: endDate ?? undefined, limit });
+  const logs = await repo.getLogs(id, { startDate: startDate ?? undefined, endDate: endDate ?? undefined, limit });
 
   const response: ApiResponse = {
     success: true,
@@ -477,7 +477,7 @@ function getCapturesRepo(userId = 'default'): CapturesRepository {
 /**
  * GET /captures - List captures
  */
-capturesRoutes.get('/', (c) => {
+capturesRoutes.get('/', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const type = c.req.query('type') as CaptureType | undefined;
   const tag = c.req.query('tag');
@@ -486,7 +486,7 @@ capturesRoutes.get('/', (c) => {
   const offset = parseInt(c.req.query('offset') ?? '0', 10);
 
   const repo = getCapturesRepo(userId);
-  const captures = repo.list({
+  const captures = await repo.list({
     type,
     tag: tag ?? undefined,
     processed: processed === 'true' ? true : processed === 'false' ? false : undefined,
@@ -517,8 +517,8 @@ capturesRoutes.post('/', async (c) => {
   }
 
   const repo = getCapturesRepo(userId);
-  const capture = repo.create(body);
-  const inboxCount = repo.getInboxCount();
+  const capture = await repo.create(body);
+  const inboxCount = await repo.getInboxCount();
 
   const response: ApiResponse = {
     success: true,
@@ -535,13 +535,13 @@ capturesRoutes.post('/', async (c) => {
 /**
  * GET /captures/inbox - Get unprocessed captures
  */
-capturesRoutes.get('/inbox', (c) => {
+capturesRoutes.get('/inbox', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const limit = parseInt(c.req.query('limit') ?? '10', 10);
 
   const repo = getCapturesRepo(userId);
-  const captures = repo.getInbox(limit);
-  const totalUnprocessed = repo.getInboxCount();
+  const captures = await repo.getInbox(limit);
+  const totalUnprocessed = await repo.getInboxCount();
 
   // Group by type
   const byType: Record<string, number> = {};
@@ -568,10 +568,10 @@ capturesRoutes.get('/inbox', (c) => {
 /**
  * GET /captures/stats - Get capture statistics
  */
-capturesRoutes.get('/stats', (c) => {
+capturesRoutes.get('/stats', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getCapturesRepo(userId);
-  const stats = repo.getStats();
+  const stats = await repo.getStats();
 
   const response: ApiResponse = {
     success: true,
@@ -584,12 +584,12 @@ capturesRoutes.get('/stats', (c) => {
 /**
  * GET /captures/:id - Get a capture
  */
-capturesRoutes.get('/:id', (c) => {
+capturesRoutes.get('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getCapturesRepo(userId);
-  const capture = repo.get(id);
+  const capture = await repo.get(id);
 
   if (!capture) {
     return c.json({
@@ -622,7 +622,7 @@ capturesRoutes.post('/:id/process', async (c) => {
   }
 
   const repo = getCapturesRepo(userId);
-  const capture = repo.process(id, body);
+  const capture = await repo.process(id, body);
 
   if (!capture) {
     return c.json({
@@ -647,12 +647,12 @@ capturesRoutes.post('/:id/process', async (c) => {
 /**
  * DELETE /captures/:id - Delete a capture
  */
-capturesRoutes.delete('/:id', (c) => {
+capturesRoutes.delete('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getCapturesRepo(userId);
-  const deleted = repo.delete(id);
+  const deleted = await repo.delete(id);
 
   if (!deleted) {
     return c.json({

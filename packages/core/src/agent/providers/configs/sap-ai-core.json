@@ -42,6 +42,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-01"
     },
     {
@@ -58,6 +59,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-29"
     },
     {
@@ -75,6 +77,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -92,6 +95,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -109,6 +113,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -125,6 +130,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -141,6 +147,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -154,12 +161,12 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-25"
     },
     {
@@ -173,12 +180,12 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-25"
     },
     {
@@ -195,6 +202,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-24"
     },
     {
@@ -210,6 +218,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-22"
     },
     {
@@ -225,6 +234,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03-13"
     },
     {
@@ -240,6 +250,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03-04"
     },
     {
@@ -255,9 +266,10 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-29"
     }
   ],
-  "baseUrl": "https://api.ai.{landscape}.hana.ondemand.com/v2",
+  "baseUrl": "https://api.sapaicore.com/v1",
   "docsUrl": "https://help.sap.com/docs/sap-ai-core"
 }

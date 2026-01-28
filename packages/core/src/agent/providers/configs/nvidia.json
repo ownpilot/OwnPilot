@@ -21,7 +21,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
@@ -42,6 +41,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-23"
     },
     {
@@ -57,6 +57,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-22"
     },
     {
@@ -72,7 +73,59 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "mistralai/devstral-2-123b-instruct-2512",
+      "name": "Devstral-2-123B-Instruct-2512",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-08"
+    },
+    {
+      "id": "mistralai/mistral-large-3-675b-instruct-2512",
+      "name": "Mistral Large 3 675B Instruct 2512",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-02"
+    },
+    {
+      "id": "mistralai/ministral-14b-instruct-2512",
+      "name": "Ministral 3 14B Instruct 2512",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-01"
     },
     {
       "id": "deepseek-ai/deepseek-v3.2",
@@ -87,6 +140,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-01"
     },
     {
@@ -103,6 +157,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11"
     },
     {
@@ -118,6 +173,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-27"
     },
     {
@@ -133,7 +189,23 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-22"
+    },
+    {
+      "id": "moonshotai/kimi-k2-instruct-0905",
+      "name": "Kimi K2 0905",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-05"
     },
     {
       "id": "deepseek-ai/deepseek-v3.1",
@@ -148,6 +220,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-20"
     },
     {
@@ -163,6 +236,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-18"
     },
     {
@@ -174,10 +248,10 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-04"
     },
     {
@@ -190,9 +264,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-23"
     },
     {
@@ -209,6 +283,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-12"
     },
     {
@@ -225,7 +300,25 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-03"
+    },
+    {
+      "id": "deepseek-ai/deepseek-r1-0528",
+      "name": "Deepseek R1 0528",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-28"
     },
     {
       "id": "meta/llama-4-scout-17b-16e-instruct",
@@ -241,6 +334,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-02"
     },
     {
@@ -257,6 +351,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-01"
     },
     {
@@ -270,6 +365,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-18"
     },
     {
@@ -283,6 +379,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-16"
     },
     {
@@ -296,7 +393,24 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-16"
+    },
+    {
+      "id": "mistralai/mistral-small-3.1-24b-instruct-2503",
+      "name": "Mistral Small 3.1 24b Instruct 2503",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-11"
     },
     {
       "id": "google/gemma-3-1b-it",
@@ -312,6 +426,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-10"
     },
     {
@@ -326,6 +441,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-05"
     },
     {
@@ -341,6 +457,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-01"
     },
     {
@@ -355,6 +472,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
     },
     {
@@ -370,6 +488,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -386,6 +505,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -403,6 +523,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -417,6 +538,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -432,6 +554,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -447,6 +570,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -462,6 +586,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12"
     },
     {
@@ -477,6 +602,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-26"
     },
     {
@@ -490,9 +616,9 @@
         "chat",
         "function_calling",
         "json_mode",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-06"
     },
     {
@@ -508,6 +634,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-12"
     },
     {
@@ -523,6 +650,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-22"
     },
     {
@@ -539,6 +667,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-18"
     },
     {
@@ -554,6 +683,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-18"
     },
     {
@@ -567,9 +697,9 @@
         "chat",
         "function_calling",
         "json_mode",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-17"
     },
     {
@@ -585,6 +715,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-17"
     },
     {
@@ -601,19 +732,21 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-16"
     },
     {
       "id": "black-forest-labs/flux.1-dev",
       "name": "FLUX.1-dev",
       "contextWindow": 4096,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-01"
     },
     {
@@ -629,6 +762,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-24"
     },
     {
@@ -644,6 +778,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-16"
     },
     {
@@ -655,9 +790,9 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-16"
     },
     {
@@ -673,6 +808,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-16"
     },
     {
@@ -688,6 +824,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-16"
     },
     {
@@ -703,6 +840,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-01"
     },
     {
@@ -718,6 +856,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-06-24"
     },
     {
@@ -733,6 +872,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-06-13"
     },
     {
@@ -746,9 +886,9 @@
         "chat",
         "function_calling",
         "json_mode",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-29"
     },
     {
@@ -765,6 +905,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-19"
     },
     {
@@ -781,6 +922,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-07"
     },
     {
@@ -797,6 +939,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-07"
     },
     {
@@ -813,6 +956,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-07"
     },
     {
@@ -829,6 +973,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-07"
     },
     {
@@ -840,9 +985,9 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-30"
     },
     {
@@ -858,6 +1003,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-28"
     },
     {
@@ -873,6 +1019,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-17"
     },
     {
@@ -888,6 +1035,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-17"
     },
     {
@@ -899,9 +1047,9 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03-21"
     },
     {
@@ -913,9 +1061,9 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-29"
     },
     {
@@ -928,16 +1076,16 @@
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-01"
     },
     {
       "id": "nvidia/parakeet-tdt-0.6b-v2",
       "name": "Parakeet TDT 0.6B v2",
-      "contextWindow": 128000,
+      "contextWindow": 8192,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -946,12 +1094,13 @@
         "audio",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-01"
     },
     {
       "id": "nvidia/nemoretriever-ocr-v1",
       "name": "NeMo Retriever OCR v1",
-      "contextWindow": 128000,
+      "contextWindow": 8192,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -960,6 +1109,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-01"
     },
     {
@@ -973,15 +1123,15 @@
         "chat",
         "function_calling",
         "json_mode",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-10-29"
     },
     {
       "id": "openai/whisper-large-v3",
       "name": "Whisper Large v3",
-      "contextWindow": 128000,
+      "contextWindow": 8192,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -990,102 +1140,8 @@
         "audio",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-09-01"
-    },
-    {
-      "id": "mistralai/devstral-2-123b-instruct-2512",
-      "name": "Devstral-2-123B-Instruct-2512",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming",
-        "code"
-      ],
-      "releaseDate": "2025-12-08"
-    },
-    {
-      "id": "mistralai/mistral-large-3-675b-instruct-2512",
-      "name": "Mistral Large 3 675B Instruct 2512",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2025-12-02"
-    },
-    {
-      "id": "mistralai/ministral-14b-instruct-2512",
-      "name": "Ministral 3 14B Instruct 2512",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2025-12-01"
-    },
-    {
-      "id": "moonshotai/kimi-k2-instruct-0905",
-      "name": "Kimi K2 0905",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-09-05"
-    },
-    {
-      "id": "deepseek-ai/deepseek-r1-0528",
-      "name": "Deepseek R1 0528",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-05-28"
-    },
-    {
-      "id": "mistralai/mistral-small-3.1-24b-instruct-2503",
-      "name": "Mistral Small 3.1 24b Instruct 2503",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2025-03-11"
     }
   ],
   "baseUrl": "https://integrate.api.nvidia.com/v1",

@@ -12,6 +12,39 @@
   },
   "models": [
     {
+      "id": "deepseek/deepseek-r1-0528",
+      "name": "DeepSeek-R1-0528",
+      "contextWindow": 65536,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-05-28"
+    },
+    {
+      "id": "mistral-ai/mistral-medium-2505",
+      "name": "Mistral Medium 3 (25.05)",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-01"
+    },
+    {
       "id": "openai/gpt-4.1-nano",
       "name": "GPT-4.1-nano",
       "contextWindow": 128000,
@@ -24,7 +57,7 @@
         "function_calling",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -40,6 +73,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -55,7 +89,41 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "deepseek/deepseek-v3-0324",
+      "name": "DeepSeek-V3-0324",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-24"
+    },
+    {
+      "id": "mistral-ai/mistral-small-2503",
+      "name": "Mistral Small 3.1",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-01"
     },
     {
       "id": "openai/o3-mini",
@@ -69,6 +137,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-31"
     },
     {
@@ -84,6 +153,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-31"
     },
     {
@@ -99,6 +169,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-31"
     },
     {
@@ -115,6 +186,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-31"
     },
     {
@@ -131,6 +203,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-31"
     },
     {
@@ -146,6 +219,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
     },
     {
@@ -161,7 +235,24 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "mistral-ai/codestral-2501",
+      "name": "Codestral 25.01",
+      "contextWindow": 32000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
     },
     {
       "id": "microsoft/phi-4",
@@ -176,6 +267,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -191,6 +283,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -208,6 +301,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -223,6 +317,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -238,6 +333,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -253,6 +349,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-09"
     },
     {
@@ -268,6 +365,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-09"
     },
     {
@@ -283,6 +381,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     },
     {
@@ -298,6 +397,23 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
+      "releaseDate": "2024-11-01"
+    },
+    {
+      "id": "mistral-ai/mistral-large-2411",
+      "name": "Mistral Large 24.11",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2024-11-01"
     },
     {
@@ -313,6 +429,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-22"
     },
     {
@@ -330,6 +447,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-25"
     },
     {
@@ -347,7 +465,23 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-25"
+    },
+    {
+      "id": "openai/o1-preview",
+      "name": "OpenAI o1-preview",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-12"
     },
     {
       "id": "openai/o1",
@@ -362,6 +496,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-12"
     },
     {
@@ -376,6 +511,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-12"
     },
     {
@@ -391,6 +527,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-29"
     },
     {
@@ -406,6 +543,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-29"
     },
     {
@@ -422,6 +560,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-20"
     },
     {
@@ -437,6 +576,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-20"
     },
     {
@@ -452,7 +592,40 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-20"
+    },
+    {
+      "id": "cohere/cohere-command-r-08-2024",
+      "name": "Cohere Command R 08-2024",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-01"
+    },
+    {
+      "id": "cohere/cohere-command-r-plus-08-2024",
+      "name": "Cohere Command R+ 08-2024",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-01"
     },
     {
       "id": "meta/meta-llama-3.1-405b-instruct",
@@ -467,6 +640,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-23"
     },
     {
@@ -482,6 +656,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-23"
     },
     {
@@ -497,6 +672,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-23"
     },
     {
@@ -512,6 +688,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-18"
     },
     {
@@ -528,6 +705,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-18"
     },
     {
@@ -544,6 +722,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-13"
     },
     {
@@ -559,6 +738,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-23"
     },
     {
@@ -574,6 +754,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-23"
     },
     {
@@ -589,6 +770,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-23"
     },
     {
@@ -604,6 +786,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-23"
     },
     {
@@ -619,6 +802,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-23"
     },
     {
@@ -634,6 +818,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-23"
     },
     {
@@ -649,6 +834,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-18"
     },
     {
@@ -664,6 +850,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-18"
     },
     {
@@ -679,6 +866,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-04"
     },
     {
@@ -694,6 +882,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03-11"
     },
     {
@@ -709,146 +898,10 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-08-30"
-    },
-    {
-      "id": "deepseek/deepseek-r1-0528",
-      "name": "DeepSeek-R1-0528",
-      "contextWindow": 65536,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-05-28"
-    },
-    {
-      "id": "mistral-ai/mistral-medium-2505",
-      "name": "Mistral Medium 3 (25.05)",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-05-01"
-    },
-    {
-      "id": "deepseek/deepseek-v3-0324",
-      "name": "DeepSeek-V3-0324",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-03-24"
-    },
-    {
-      "id": "mistral-ai/mistral-small-2503",
-      "name": "Mistral Small 3.1",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-03-01"
-    },
-    {
-      "id": "mistral-ai/codestral-2501",
-      "name": "Codestral 25.01",
-      "contextWindow": 32000,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming",
-        "code"
-      ],
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "mistral-ai/mistral-large-2411",
-      "name": "Mistral Large 24.11",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2024-11-01"
-    },
-    {
-      "id": "openai/o1-preview",
-      "name": "OpenAI o1-preview",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2024-09-12"
-    },
-    {
-      "id": "cohere/cohere-command-r-08-2024",
-      "name": "Cohere Command R 08-2024",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2024-08-01"
-    },
-    {
-      "id": "cohere/cohere-command-r-plus-08-2024",
-      "name": "Cohere Command R+ 08-2024",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2024-08-01"
     }
   ],
-  "baseUrl": "https://models.github.ai/inference",
+  "baseUrl": "https://models.inference.ai.azure.com",
   "docsUrl": "https://docs.github.com/en/github-models"
 }

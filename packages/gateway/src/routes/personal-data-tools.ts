@@ -22,11 +22,11 @@ export interface ToolExecutionResult {
 /**
  * Execute personal data tool
  */
-export function executePersonalDataTool(
+export async function executePersonalDataTool(
   toolId: string,
   params: Record<string, unknown>,
   userId: string = 'default'
-): ToolExecutionResult {
+): Promise<ToolExecutionResult> {
   try {
     switch (toolId) {
       // =====================================================
@@ -37,7 +37,7 @@ export function executePersonalDataTool(
         // Map 'medium' to 'normal' for priority compatibility
         let priority = params.priority as string | undefined;
         if (priority === 'medium') priority = 'normal';
-        const task = repo.create({
+        const task = await repo.create({
           title: params.title as string,
           dueDate: params.dueDate as string | undefined,
           priority: priority as 'low' | 'normal' | 'high' | 'urgent' | undefined,
@@ -58,7 +58,7 @@ export function executePersonalDataTool(
         // Map 'medium' to 'normal' for priority compatibility
         let priority = params.priority as string | undefined;
         if (priority === 'medium') priority = 'normal';
-        const tasks = repo.list({
+        const tasks = await repo.list({
           status: params.status as 'pending' | 'in_progress' | 'completed' | 'cancelled' | undefined,
           priority: priority as 'low' | 'normal' | 'high' | 'urgent' | undefined,
           category: params.category as string | undefined,
@@ -76,7 +76,7 @@ export function executePersonalDataTool(
 
       case 'complete_task': {
         const repo = new TasksRepository(userId);
-        const task = repo.complete(params.taskId as string);
+        const task = await repo.complete(params.taskId as string);
         if (!task) {
           return { success: false, error: `Task not found: ${params.taskId}` };
         }
@@ -92,7 +92,7 @@ export function executePersonalDataTool(
       case 'update_task': {
         const repo = new TasksRepository(userId);
         const { taskId, ...updates } = params;
-        const task = repo.update(taskId as string, updates);
+        const task = await repo.update(taskId as string, updates);
         if (!task) {
           return { success: false, error: `Task not found: ${taskId}` };
         }
@@ -107,7 +107,7 @@ export function executePersonalDataTool(
 
       case 'delete_task': {
         const repo = new TasksRepository(userId);
-        const deleted = repo.delete(params.taskId as string);
+        const deleted = await repo.delete(params.taskId as string);
         if (!deleted) {
           return { success: false, error: `Task not found: ${params.taskId}` };
         }
@@ -125,7 +125,7 @@ export function executePersonalDataTool(
         const url = params.url as string;
         // Title is required - use URL as fallback
         const title = (params.title as string) || url;
-        const bookmark = repo.create({
+        const bookmark = await repo.create({
           url,
           title,
           description: params.description as string | undefined,
@@ -144,7 +144,7 @@ export function executePersonalDataTool(
 
       case 'list_bookmarks': {
         const repo = new BookmarksRepository(userId);
-        const bookmarks = repo.list({
+        const bookmarks = await repo.list({
           category: params.category as string | undefined,
           isFavorite: params.favorite as boolean | undefined,
           search: params.search as string | undefined,
@@ -161,7 +161,7 @@ export function executePersonalDataTool(
 
       case 'delete_bookmark': {
         const repo = new BookmarksRepository(userId);
-        const deleted = repo.delete(params.bookmarkId as string);
+        const deleted = await repo.delete(params.bookmarkId as string);
         if (!deleted) {
           return { success: false, error: `Bookmark not found: ${params.bookmarkId}` };
         }
@@ -176,7 +176,7 @@ export function executePersonalDataTool(
       // =====================================================
       case 'add_note': {
         const repo = new NotesRepository(userId);
-        const note = repo.create({
+        const note = await repo.create({
           title: params.title as string,
           content: params.content as string,
           category: params.category as string | undefined,
@@ -194,7 +194,7 @@ export function executePersonalDataTool(
 
       case 'list_notes': {
         const repo = new NotesRepository(userId);
-        const notes = repo.list({
+        const notes = await repo.list({
           category: params.category as string | undefined,
           isPinned: params.pinned as boolean | undefined,
           search: params.search as string | undefined,
@@ -212,7 +212,7 @@ export function executePersonalDataTool(
       case 'update_note': {
         const repo = new NotesRepository(userId);
         const { noteId, ...updates } = params;
-        const note = repo.update(noteId as string, updates);
+        const note = await repo.update(noteId as string, updates);
         if (!note) {
           return { success: false, error: `Note not found: ${noteId}` };
         }
@@ -227,7 +227,7 @@ export function executePersonalDataTool(
 
       case 'delete_note': {
         const repo = new NotesRepository(userId);
-        const deleted = repo.delete(params.noteId as string);
+        const deleted = await repo.delete(params.noteId as string);
         if (!deleted) {
           return { success: false, error: `Note not found: ${params.noteId}` };
         }
@@ -242,7 +242,7 @@ export function executePersonalDataTool(
       // =====================================================
       case 'add_calendar_event': {
         const repo = new CalendarRepository(userId);
-        const event = repo.create({
+        const event = await repo.create({
           title: params.title as string,
           startTime: params.startTime as string,
           endTime: params.endTime as string | undefined,
@@ -263,7 +263,7 @@ export function executePersonalDataTool(
 
       case 'list_calendar_events': {
         const repo = new CalendarRepository(userId);
-        const events = repo.list({
+        const events = await repo.list({
           startAfter: params.startAfter as string | undefined,
           startBefore: params.startBefore as string | undefined,
           category: params.category as string | undefined,
@@ -281,7 +281,7 @@ export function executePersonalDataTool(
 
       case 'delete_calendar_event': {
         const repo = new CalendarRepository(userId);
-        const deleted = repo.delete(params.eventId as string);
+        const deleted = await repo.delete(params.eventId as string);
         if (!deleted) {
           return { success: false, error: `Event not found: ${params.eventId}` };
         }
@@ -296,7 +296,7 @@ export function executePersonalDataTool(
       // =====================================================
       case 'add_contact': {
         const repo = new ContactsRepository(userId);
-        const contact = repo.create({
+        const contact = await repo.create({
           name: params.name as string,
           email: params.email as string | undefined,
           phone: params.phone as string | undefined,
@@ -319,7 +319,7 @@ export function executePersonalDataTool(
 
       case 'list_contacts': {
         const repo = new ContactsRepository(userId);
-        const contacts = repo.list({
+        const contacts = await repo.list({
           relationship: params.relationship as string | undefined,
           company: params.company as string | undefined,
           isFavorite: params.favorite as boolean | undefined,
@@ -338,7 +338,7 @@ export function executePersonalDataTool(
       case 'update_contact': {
         const repo = new ContactsRepository(userId);
         const { contactId, ...updates } = params;
-        const contact = repo.update(contactId as string, updates);
+        const contact = await repo.update(contactId as string, updates);
         if (!contact) {
           return { success: false, error: `Contact not found: ${contactId}` };
         }
@@ -353,7 +353,7 @@ export function executePersonalDataTool(
 
       case 'delete_contact': {
         const repo = new ContactsRepository(userId);
-        const deleted = repo.delete(params.contactId as string);
+        const deleted = await repo.delete(params.contactId as string);
         if (!deleted) {
           return { success: false, error: `Contact not found: ${params.contactId}` };
         }

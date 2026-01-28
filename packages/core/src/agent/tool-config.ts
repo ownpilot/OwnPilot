@@ -374,6 +374,22 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     defaultEnabled: false,
     tools: ['extract_structured_data', 'extract_entities', 'extract_table_data', 'summarize_text'],
   },
+
+  // =========================================================================
+  // CUSTOM TOOLS - User/LLM-created tools (always available when active)
+  // =========================================================================
+  customTools: {
+    id: 'customTools',
+    name: 'Custom Tools',
+    description: 'Create and manage custom tools (always included when active)',
+    defaultEnabled: true,
+    tools: [
+      'create_tool',
+      'list_custom_tools',
+      'delete_custom_tool',
+      'toggle_custom_tool',
+    ],
+  },
 };
 
 /**
@@ -395,6 +411,9 @@ export const DEFAULT_ENABLED_GROUPS: string[] = [
   // AI persistence
   'memory',
   'goals',
+
+  // Custom tools (always included when active, listed here for documentation)
+  'customTools',
 
   // Utilities
   'textUtils',

@@ -27,7 +27,7 @@ function getRepo(userId = 'default'): MemoriesRepository {
 /**
  * GET /memories - List memories
  */
-memoriesRoutes.get('/', (c) => {
+memoriesRoutes.get('/', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const type = c.req.query('type') as MemoryType | undefined;
   const limit = parseInt(c.req.query('limit') ?? '20', 10);
@@ -36,7 +36,7 @@ memoriesRoutes.get('/', (c) => {
     : undefined;
 
   const repo = getRepo(userId);
-  const memories = repo.list({
+  const memories = await repo.list({
     type,
     limit,
     minImportance,
@@ -47,7 +47,7 @@ memoriesRoutes.get('/', (c) => {
     success: true,
     data: {
       memories,
-      total: repo.count(type),
+      total: await repo.count(type),
     },
   };
 
@@ -77,11 +77,11 @@ memoriesRoutes.post('/', async (c) => {
   const repo = getRepo(userId);
 
   // Check for duplicate
-  const existing = repo.findSimilar(body.content, body.type);
+  const existing = await repo.findSimilar(body.content, body.type);
   if (existing) {
     // Boost existing memory instead of creating duplicate
-    repo.boost(existing.id, 0.1);
-    const updated = repo.get(existing.id);
+    await repo.boost(existing.id, 0.1);
+    const updated = await repo.get(existing.id);
     return c.json({
       success: true,
       data: {
@@ -92,7 +92,7 @@ memoriesRoutes.post('/', async (c) => {
     });
   }
 
-  const memory = repo.create(body);
+  const memory = await repo.create(body);
 
   const response: ApiResponse = {
     success: true,
@@ -108,7 +108,7 @@ memoriesRoutes.post('/', async (c) => {
 /**
  * GET /memories/search - Search memories
  */
-memoriesRoutes.get('/search', (c) => {
+memoriesRoutes.get('/search', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const query = c.req.query('q') ?? '';
   const type = c.req.query('type') as MemoryType | undefined;
@@ -128,7 +128,7 @@ memoriesRoutes.get('/search', (c) => {
   }
 
   const repo = getRepo(userId);
-  const memories = repo.search(query, { type, limit });
+  const memories = await repo.search(query, { type, limit });
 
   const response: ApiResponse = {
     success: true,
@@ -145,10 +145,10 @@ memoriesRoutes.get('/search', (c) => {
 /**
  * GET /memories/stats - Get memory statistics
  */
-memoriesRoutes.get('/stats', (c) => {
+memoriesRoutes.get('/stats', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getRepo(userId);
-  const stats = repo.getStats();
+  const stats = await repo.getStats();
 
   const response: ApiResponse = {
     success: true,
@@ -161,12 +161,12 @@ memoriesRoutes.get('/stats', (c) => {
 /**
  * GET /memories/:id - Get a specific memory
  */
-memoriesRoutes.get('/:id', (c) => {
+memoriesRoutes.get('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const memory = repo.get(id);
+  const memory = await repo.get(id);
 
   if (!memory) {
     return c.json(
@@ -202,7 +202,7 @@ memoriesRoutes.patch('/:id', async (c) => {
   }>();
 
   const repo = getRepo(userId);
-  const updated = repo.update(id, body);
+  const updated = await repo.update(id, body);
 
   if (!updated) {
     return c.json(
@@ -235,7 +235,7 @@ memoriesRoutes.post('/:id/boost', async (c) => {
   const amount = body.amount ?? 0.1;
 
   const repo = getRepo(userId);
-  const boosted = repo.boost(id, amount);
+  const boosted = await repo.boost(id, amount);
 
   if (!boosted) {
     return c.json(
@@ -264,12 +264,12 @@ memoriesRoutes.post('/:id/boost', async (c) => {
 /**
  * DELETE /memories/:id - Delete a memory
  */
-memoriesRoutes.delete('/:id', (c) => {
+memoriesRoutes.delete('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const deleted = repo.delete(id);
+  const deleted = await repo.delete(id);
 
   if (!deleted) {
     return c.json(
@@ -305,7 +305,7 @@ memoriesRoutes.post('/decay', async (c) => {
   }>().catch((): { daysThreshold?: number; decayFactor?: number } => ({}));
 
   const repo = getRepo(userId);
-  const affected = repo.decay(body);
+  const affected = await repo.decay(body);
 
   const response: ApiResponse = {
     success: true,
@@ -329,7 +329,7 @@ memoriesRoutes.post('/cleanup', async (c) => {
   }>().catch((): { maxAge?: number; minImportance?: number } => ({}));
 
   const repo = getRepo(userId);
-  const deleted = repo.cleanup(body);
+  const deleted = await repo.cleanup(body);
 
   const response: ApiResponse = {
     success: true,
@@ -355,11 +355,11 @@ export interface ToolExecutionResult {
 /**
  * Execute memory tool
  */
-export function executeMemoryTool(
+export async function executeMemoryTool(
   toolId: string,
   params: Record<string, unknown>,
   userId = 'default'
-): ToolExecutionResult {
+): Promise<ToolExecutionResult> {
   const repo = getRepo(userId);
 
   try {
@@ -377,20 +377,20 @@ export function executeMemoryTool(
         }
 
         // Check for duplicates
-        const existing = repo.findSimilar(content, type);
+        const existing = await repo.findSimilar(content, type);
         if (existing) {
-          repo.boost(existing.id, 0.1);
+          await repo.boost(existing.id, 0.1);
           return {
             success: true,
             result: {
               message: 'Similar memory already exists. Boosted its importance instead.',
-              memory: repo.get(existing.id),
+              memory: await repo.get(existing.id),
               deduplicated: true,
             },
           };
         }
 
-        const memory = repo.create({
+        const memory = await repo.create({
           content,
           type,
           importance: importance ?? 0.5,
@@ -422,7 +422,7 @@ export function executeMemoryTool(
           return { success: false, error: 'query is required' };
         }
 
-        const memories = repo.list({
+        const memories = await repo.list({
           search: query,
           type,
           tags,
@@ -462,12 +462,12 @@ export function executeMemoryTool(
           return { success: false, error: 'memoryId is required' };
         }
 
-        const memory = repo.get(memoryId, false);
+        const memory = await repo.get(memoryId, false);
         if (!memory) {
           return { success: false, error: `Memory not found: ${memoryId}` };
         }
 
-        repo.delete(memoryId);
+        await repo.delete(memoryId);
 
         return {
           success: true,
@@ -484,14 +484,14 @@ export function executeMemoryTool(
           minImportance?: number;
         };
 
-        const memories = repo.list({
+        const memories = await repo.list({
           type,
           limit,
           minImportance,
           orderBy: 'importance',
         });
 
-        const total = repo.count(type);
+        const total = await repo.count(type);
 
         return {
           success: true,
@@ -520,7 +520,7 @@ export function executeMemoryTool(
           return { success: false, error: 'memoryId is required' };
         }
 
-        const boosted = repo.boost(memoryId, amount);
+        const boosted = await repo.boost(memoryId, amount);
         if (!boosted) {
           return { success: false, error: `Memory not found: ${memoryId}` };
         }
@@ -539,7 +539,7 @@ export function executeMemoryTool(
       }
 
       case 'memory_stats': {
-        const stats = repo.getStats();
+        const stats = await repo.getStats();
 
         return {
           success: true,

@@ -15,7 +15,7 @@
       "id": "granite-4.0-h-micro",
       "name": "@cf/ibm-granite/granite-4.0-h-micro",
       "contextWindow": 131000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.017,
       "outputPrice": 0.11,
       "capabilities": [
@@ -30,7 +30,7 @@
       "id": "gemma-sea-lion-v4-27b-it",
       "name": "@cf/aisingapore/gemma-sea-lion-v4-27b-it",
       "contextWindow": 128000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.35,
       "outputPrice": 0.56,
       "capabilities": [
@@ -38,45 +38,49 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-23"
     },
     {
       "id": "aura-1",
       "name": "@cf/deepgram/aura-1",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.015,
       "outputPrice": 0.015,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-27"
     },
     {
       "id": "lucid-origin",
       "name": "@cf/leonardo/lucid-origin",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.007,
       "outputPrice": 0.007,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-25"
     },
     {
       "id": "phoenix-1.0",
       "name": "@cf/leonardo/phoenix-1.0",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.0058,
       "outputPrice": 0.0058,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-25"
     },
     {
@@ -91,6 +95,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-04"
     },
     {
@@ -105,13 +110,14 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-04"
     },
     {
       "id": "nova-3",
       "name": "@cf/deepgram/nova-3",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.0052,
       "outputPrice": 0.0052,
       "capabilities": [
@@ -119,13 +125,14 @@
         "audio",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-05"
     },
     {
       "id": "qwen3-30b-a3b-fp8",
       "name": "@cf/qwen/qwen3-30b-a3b-fp8",
       "contextWindow": 32768,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.051,
       "outputPrice": 0.34,
       "capabilities": [
@@ -134,6 +141,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-30"
     },
     {
@@ -148,6 +156,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-02"
     },
     {
@@ -162,6 +171,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-11"
     },
     {
@@ -176,6 +186,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-05"
     },
     {
@@ -190,6 +201,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-01"
     },
     {
@@ -205,6 +217,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
     },
     {
@@ -219,6 +232,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     },
     {
@@ -231,16 +245,16 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-06"
     },
     {
       "id": "whisper-large-v3-turbo",
       "name": "@cf/openai/whisper-large-v3-turbo",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.00051,
       "outputPrice": 0.00051,
       "capabilities": [
@@ -248,6 +262,7 @@
         "audio",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-01"
     },
     {
@@ -262,6 +277,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-18"
     },
     {
@@ -276,6 +292,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-18"
     },
     {
@@ -290,19 +307,21 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-18"
     },
     {
       "id": "flux-1-schnell",
       "name": "@cf/black-forest-labs/flux-1-schnell",
       "contextWindow": 2048,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.000053,
       "outputPrice": 0.00011,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-31"
     },
     {
@@ -317,6 +336,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-25"
     },
     {
@@ -331,33 +351,35 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-25"
     },
     {
       "id": "llama-guard-3-8b",
       "name": "@cf/meta/llama-guard-3-8b",
       "contextWindow": 131072,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.48,
       "outputPrice": 0.03,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-22"
     },
     {
       "id": "melotts",
       "name": "@cf/myshell-ai/melotts",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.0002,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-19"
     },
     {
@@ -372,6 +394,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-18"
     },
     {
@@ -386,6 +409,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-18"
     },
     {
@@ -400,6 +424,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-16"
     },
     {
@@ -414,6 +439,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-09"
     },
     {
@@ -428,6 +454,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-17"
     },
     {
@@ -442,6 +469,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-02"
     },
     {
@@ -456,6 +484,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-02"
     },
     {
@@ -470,6 +499,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-01"
     },
     {
@@ -484,6 +514,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03-19"
     },
     {
@@ -498,52 +529,56 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03-11"
     },
     {
       "id": "stable-diffusion-v1-5-inpainting",
       "name": "@cf/runwayml/stable-diffusion-v1-5-inpainting",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-27"
     },
     {
       "id": "stable-diffusion-v1-5-img2img",
       "name": "@cf/runwayml/stable-diffusion-v1-5-img2img",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-27"
     },
     {
       "id": "stable-diffusion-xl-lightning",
       "name": "@cf/bytedance/stable-diffusion-xl-lightning",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-20"
     },
     {
       "id": "uform-gen2-qwen-500m",
       "name": "@cf/unum/uform-gen2-qwen-500m",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -551,6 +586,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-15"
     },
     {
@@ -565,6 +601,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-13"
     },
     {
@@ -577,9 +614,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-05"
     },
     {
@@ -594,6 +631,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-05"
     },
     {
@@ -608,6 +646,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-03"
     },
     {
@@ -622,6 +661,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-03"
     },
     {
@@ -636,6 +676,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-31"
     },
     {
@@ -650,6 +691,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-30"
     },
     {
@@ -664,7 +706,23 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-18"
+    },
+    {
+      "id": "openchat-3.5-0106",
+      "name": "@cf/openchat/openchat-3.5-0106",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-07"
     },
     {
       "id": "tinyllama-1.1b-chat-v1.0",
@@ -678,6 +736,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-12-30"
     },
     {
@@ -692,6 +751,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-12-13"
     },
     {
@@ -706,6 +766,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-12-11"
     },
     {
@@ -720,27 +781,28 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-12-11"
     },
     {
       "id": "dreamshaper-8-lcm",
       "name": "@cf/lykon/dreamshaper-8-lcm",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-12-06"
     },
     {
       "id": "llava-1.5-7b-hf",
       "name": "@cf/llava-hf/llava-1.5-7b-hf",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -748,6 +810,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-12-05"
     },
     {
@@ -762,6 +825,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-12-02"
     },
     {
@@ -776,13 +840,14 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-11-15"
     },
     {
       "id": "whisper",
       "name": "@cf/openai/whisper",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.00045,
       "outputPrice": 0.00045,
       "capabilities": [
@@ -790,6 +855,7 @@
         "audio",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-11-07"
     },
     {
@@ -802,9 +868,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-11-05"
     },
     {
@@ -817,9 +883,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-11-05"
     },
     {
@@ -834,6 +900,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-11-02"
     },
     {
@@ -848,6 +915,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-10-27"
     },
     {
@@ -862,6 +930,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-09-27"
     },
     {
@@ -876,6 +945,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-09-27"
     },
     {
@@ -890,6 +960,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-09-25"
     },
     {
@@ -904,6 +975,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-09-19"
     },
     {
@@ -918,19 +990,21 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-07-26"
     },
     {
       "id": "stable-diffusion-xl-base-1.0",
       "name": "@cf/stabilityai/stable-diffusion-xl-base-1.0",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-07-25"
     },
     {
@@ -945,6 +1019,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-07-13"
     },
     {
@@ -959,13 +1034,14 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-04-25"
     },
     {
       "id": "whisper-tiny-en",
       "name": "@cf/openai/whisper-tiny-en",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -973,13 +1049,14 @@
         "audio",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2022-09-26"
     },
     {
       "id": "resnet-50",
       "name": "@cf/microsoft/resnet-50",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.0000025,
       "outputPrice": 0,
       "capabilities": [
@@ -987,49 +1064,38 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2022-03-16"
     },
     {
       "id": "bart-large-cnn",
       "name": "@cf/facebook/bart-large-cnn",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2022-03-02"
     },
     {
       "id": "m2m100-1.2b",
       "name": "@cf/meta/m2m100-1.2b",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.34,
       "outputPrice": 0.34,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2022-03-02"
-    },
-    {
-      "id": "openchat-3.5-0106",
-      "name": "@cf/openchat/openchat-3.5-0106",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-01-07"
     }
   ],
-  "baseUrl": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run",
+  "baseUrl": "https://api.cloudflareworkersai.com/v1",
   "docsUrl": "https://developers.cloudflare.com/workers-ai/models/"
 }

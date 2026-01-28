@@ -1,0 +1,39 @@
+# PostgreSQL Database Only
+# Usage: docker compose -f docker-compose.db.yml up -d
+#
+# Default port: 25432 (change with POSTGRES_PORT env var)
+# Default credentials: ownpilot / ownpilot_secret
+#
+# Then in your .env:
+#   DB_TYPE=postgres
+#   POSTGRES_HOST=localhost
+#   POSTGRES_PORT=25432
+#   POSTGRES_USER=ownpilot
+#   POSTGRES_PASSWORD=ownpilot_secret
+#   POSTGRES_DB=ownpilot
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ownpilot-db
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-25432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ownpilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ownpilot_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-ownpilot}
+    volumes:
+      - ownpilot-postgres-data:/var/lib/postgresql/data
+      # Auto-run initial schema on first start
+      - ./packages/gateway/src/db/migrations/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ownpilot} -d ${POSTGRES_DB:-ownpilot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  ownpilot-postgres-data:
+    driver: local

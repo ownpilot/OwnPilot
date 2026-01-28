@@ -1,20 +1,64 @@
 /**
  * Database Repositories Index
+ *
+ * All repositories now use PostgreSQL with async initialization.
+ * Use the factory functions to create repository instances.
  */
 
+// Base repository
+export { BaseRepository } from './base.js';
+
 // Core repositories
-export { ConversationsRepository, conversationsRepo, type Conversation } from './conversations.js';
-export { MessagesRepository, messagesRepo, type Message } from './messages.js';
-export { ChannelsRepository, channelsRepo, type Channel } from './channels.js';
-export { ChannelMessagesRepository, channelMessagesRepo, type ChannelMessage } from './channel-messages.js';
-export { CostsRepository, costsRepo, type Cost, type CostSummary, type DailyCost } from './costs.js';
-export { AgentsRepository, agentsRepo, type AgentRecord } from './agents.js';
-export { SettingsRepository, settingsRepo, type Setting } from './settings.js';
+export {
+  ConversationsRepository,
+  createConversationsRepository,
+  type Conversation,
+} from './conversations.js';
+
+export {
+  MessagesRepository,
+  createMessagesRepository,
+  type Message,
+} from './messages.js';
+
+export {
+  ChannelsRepository,
+  createChannelsRepository,
+  type Channel,
+} from './channels.js';
+
+export {
+  ChannelMessagesRepository,
+  createChannelMessagesRepository,
+  type ChannelMessage,
+} from './channel-messages.js';
+
+export {
+  CostsRepository,
+  createCostsRepository,
+  type Cost,
+  type CostSummary,
+  type DailyCost,
+} from './costs.js';
+
+export {
+  AgentsRepository,
+  createAgentsRepository,
+  agentsRepo,
+  type AgentRecord,
+} from './agents.js';
+
+export {
+  SettingsRepository,
+  createSettingsRepository,
+  settingsRepo,
+  type Setting,
+} from './settings.js';
 
 // Personal data repositories
 export {
   TasksRepository,
-  tasksRepo,
+  createTasksRepository,
   type Task,
   type CreateTaskInput,
   type UpdateTaskInput,
@@ -23,7 +67,7 @@ export {
 
 export {
   BookmarksRepository,
-  bookmarksRepo,
+  createBookmarksRepository,
   type Bookmark,
   type CreateBookmarkInput,
   type UpdateBookmarkInput,
@@ -32,7 +76,7 @@ export {
 
 export {
   NotesRepository,
-  notesRepo,
+  createNotesRepository,
   type Note,
   type CreateNoteInput,
   type UpdateNoteInput,
@@ -41,7 +85,7 @@ export {
 
 export {
   CalendarRepository,
-  calendarRepo,
+  createCalendarRepository,
   type CalendarEvent,
   type CreateEventInput,
   type UpdateEventInput,
@@ -50,7 +94,7 @@ export {
 
 export {
   ContactsRepository,
-  contactsRepo,
+  createContactsRepository,
   type Contact,
   type CreateContactInput,
   type UpdateContactInput,
@@ -60,7 +104,7 @@ export {
 // Autonomous AI repositories
 export {
   MemoriesRepository,
-  memoriesRepo,
+  createMemoriesRepository,
   type Memory,
   type MemoryType,
   type CreateMemoryInput,
@@ -70,7 +114,7 @@ export {
 
 export {
   GoalsRepository,
-  goalsRepo,
+  createGoalsRepository,
   type Goal,
   type GoalStep,
   type GoalStatus,
@@ -84,7 +128,7 @@ export {
 
 export {
   TriggersRepository,
-  triggersRepo,
+  createTriggersRepository,
   type Trigger,
   type TriggerHistory,
   type TriggerType,
@@ -102,6 +146,7 @@ export {
 
 export {
   PlansRepository,
+  createPlansRepository,
   type Plan,
   type PlanStep,
   type PlanHistory,
@@ -119,7 +164,7 @@ export {
 // Productivity plugin repositories
 export {
   PomodoroRepository,
-  pomodoroRepo,
+  createPomodoroRepository,
   type PomodoroSession,
   type PomodoroSettings,
   type PomodoroDailyStats,
@@ -131,7 +176,7 @@ export {
 
 export {
   HabitsRepository,
-  habitsRepo,
+  createHabitsRepository,
   type Habit,
   type HabitLog,
   type HabitFrequency,
@@ -143,7 +188,7 @@ export {
 
 export {
   CapturesRepository,
-  capturesRepo,
+  createCapturesRepository,
   type Capture,
   type CaptureType,
   type ProcessedAsType,
@@ -155,6 +200,7 @@ export {
 // OAuth & Media Settings repositories
 export {
   OAuthIntegrationsRepository,
+  createOAuthIntegrationsRepository,
   oauthIntegrationsRepo,
   type OAuthIntegration,
   type OAuthProvider,
@@ -166,6 +212,7 @@ export {
 
 export {
   MediaSettingsRepository,
+  createMediaSettingsRepository,
   mediaSettingsRepo,
   type MediaProviderSetting,
   type MediaCapability,
@@ -178,19 +225,23 @@ export {
 // AI Model Configs repository
 export {
   ModelConfigsRepository,
+  createModelConfigsRepository,
   modelConfigsRepo,
   type UserModelConfig,
   type CustomProvider,
+  type UserProviderConfig,
   type CreateModelConfigInput,
   type UpdateModelConfigInput,
   type CreateProviderInput,
   type UpdateProviderInput,
+  type CreateUserProviderConfigInput,
+  type UpdateUserProviderConfigInput,
 } from './model-configs.js';
 
 // Chat History repository (enhanced conversations + messages)
 export {
   ChatRepository,
-  chatRepository,
+  createChatRepository,
   type Conversation as ChatConversation,
   type Message as ChatMessage,
   type CreateConversationInput,
@@ -201,9 +252,40 @@ export {
 // Request Logs repository (for debugging)
 export {
   LogsRepository,
-  logsRepository,
+  createLogsRepository,
   type RequestLog,
   type CreateLogInput,
   type LogQuery,
   type LogStats,
 } from './logs.js';
+
+// Custom Data repository
+export {
+  CustomDataRepository,
+  createCustomDataRepository,
+  type CustomTableSchema,
+  type CustomDataRecord,
+  type ColumnDefinition,
+} from './custom-data.js';
+
+// Custom Tools repository
+export {
+  CustomToolsRepository,
+  createCustomToolsRepo,
+  type CustomToolRecord,
+  type ToolPermission,
+  type ToolStatus,
+} from './custom-tools.js';
+
+// Workspaces repository
+export {
+  WorkspacesRepository,
+  createWorkspacesRepository,
+  type UserWorkspace,
+  type CodeExecution,
+  type WorkspaceStatus,
+  type ContainerStatus,
+  type ExecutionStatus,
+  type CreateWorkspaceInput as CreateWorkspaceRepoInput,
+  type UpdateWorkspaceInput as UpdateWorkspaceRepoInput,
+} from './workspaces.js';

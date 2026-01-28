@@ -6,14 +6,12 @@
  */
 
 import { Hono } from 'hono';
-import { randomUUID, createHash } from 'node:crypto';
 import type { ApiResponse } from '../types/index.js';
-import { getDatabase } from '../db/connection.js';
+import { WorkspacesRepository } from '../db/repositories/workspaces.js';
 import {
   getOrchestrator,
   getWorkspaceStorage,
   isDockerAvailable,
-  type UserWorkspace,
   type CreateWorkspaceRequest,
   type UpdateWorkspaceRequest,
   type ExecuteCodeRequest,
@@ -35,38 +33,6 @@ function getUserId(c: { get: (key: string) => unknown }): string {
   return (c.get('userId') as string) || DEFAULT_USER_ID;
 }
 
-/**
- * Helper to log audit entry
- */
-async function logAudit(
-  userId: string,
-  action: string,
-  resourceType: string,
-  resource?: string,
-  success: boolean = true,
-  error?: string,
-  ipAddress?: string
-): Promise<void> {
-  try {
-    const db = getDatabase();
-    db.prepare(
-      `INSERT INTO workspace_audit (id, user_id, workspace_id, action, resource, success, error, ip_address, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
-    ).run(
-      randomUUID(),
-      userId,
-      null,
-      action,
-      resource || resourceType,
-      success ? 1 : 0,
-      error || null,
-      ipAddress || null
-    );
-  } catch {
-    // Don't fail on audit logging errors
-  }
-}
-
 // ============================================
 // Workspace CRUD
 // ============================================
@@ -76,42 +42,26 @@ async function logAudit(
  */
 app.get('/', async (c) => {
   const userId = getUserId(c);
+  const repo = new WorkspacesRepository(userId);
 
   try {
-    const db = getDatabase();
-    const workspaces = db
-      .prepare(
-        `SELECT * FROM user_workspaces WHERE user_id = ? AND status != 'deleted' ORDER BY updated_at DESC`
-      )
-      .all(userId) as Array<{
-      id: string;
-      user_id: string;
-      name: string;
-      description: string | null;
-      status: string;
-      storage_path: string;
-      container_config: string;
-      container_id: string | null;
-      container_status: string;
-      created_at: string;
-      updated_at: string;
-    }>;
+    const workspaces = await repo.list();
 
     const response: ApiResponse = {
       success: true,
       data: {
         workspaces: workspaces.map((w) => ({
           id: w.id,
-          userId: w.user_id,
+          userId: w.userId,
           name: w.name,
           description: w.description,
           status: w.status,
-          storagePath: w.storage_path,
-          containerConfig: JSON.parse(w.container_config || '{}'),
-          containerId: w.container_id,
-          containerStatus: w.container_status,
-          createdAt: w.created_at,
-          updatedAt: w.updated_at,
+          storagePath: w.storagePath,
+          containerConfig: w.containerConfig,
+          containerId: w.containerId,
+          containerStatus: w.containerStatus,
+          createdAt: w.createdAt.toISOString(),
+          updatedAt: w.updatedAt.toISOString(),
         })),
         count: workspaces.length,
       },
@@ -141,6 +91,7 @@ app.get('/', async (c) => {
  */
 app.post('/', async (c) => {
   const userId = getUserId(c);
+  const repo = new WorkspacesRepository(userId);
 
   try {
     const body = (await c.req.json()) as CreateWorkspaceRequest;
@@ -158,15 +109,11 @@ app.post('/', async (c) => {
       );
     }
 
-    const db = getDatabase();
-
     // Check workspace limit
-    const existingCount = db
-      .prepare(`SELECT COUNT(*) as count FROM user_workspaces WHERE user_id = ? AND status != 'deleted'`)
-      .get(userId) as { count: number };
+    const existingCount = await repo.count();
 
     const maxWorkspaces = 5; // Could be from settings
-    if (existingCount.count >= maxWorkspaces) {
+    if (existingCount >= maxWorkspaces) {
       return c.json(
         {
           success: false,
@@ -179,9 +126,9 @@ app.post('/', async (c) => {
       );
     }
 
-    // Create workspace
-    const workspaceId = randomUUID();
+    // Create workspace storage
     const storage = getWorkspaceStorage();
+    const workspaceId = crypto.randomUUID();
     const storagePath = await storage.createUserStorage(`${userId}/${workspaceId}`);
 
     const containerConfig: ContainerConfig = {
@@ -189,32 +136,28 @@ app.post('/', async (c) => {
       ...body.containerConfig,
     };
 
-    db.prepare(
-      `INSERT INTO user_workspaces (id, user_id, name, description, status, storage_path, container_config, container_status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'active', ?, ?, 'stopped', datetime('now'), datetime('now'))`
-    ).run(
-      workspaceId,
-      userId,
-      body.name,
-      body.description || null,
+    // Create workspace in repository
+    const workspace = await repo.create({
+      name: body.name,
+      description: body.description,
       storagePath,
-      JSON.stringify(containerConfig)
-    );
+      containerConfig,
+    });
 
-    await logAudit(userId, 'create', 'workspace', workspaceId);
+    await repo.logAudit('create', 'workspace', workspace.id);
 
     const response: ApiResponse = {
       success: true,
       data: {
-        id: workspaceId,
-        userId,
-        name: body.name,
-        description: body.description,
-        status: 'active',
-        storagePath,
-        containerConfig,
-        containerStatus: 'stopped',
-        createdAt: new Date().toISOString(),
+        id: workspace.id,
+        userId: workspace.userId,
+        name: workspace.name,
+        description: workspace.description,
+        status: workspace.status,
+        storagePath: workspace.storagePath,
+        containerConfig: workspace.containerConfig,
+        containerStatus: workspace.containerStatus,
+        createdAt: workspace.createdAt.toISOString(),
       },
       meta: {
         requestId: c.get('requestId') ?? 'unknown',
@@ -224,7 +167,7 @@ app.post('/', async (c) => {
 
     return c.json(response, 201);
   } catch (error) {
-    await logAudit(userId, 'create', 'workspace', undefined, false, error instanceof Error ? error.message : 'Unknown error');
+    await repo.logAudit('create', 'workspace', undefined, false, error instanceof Error ? error.message : 'Unknown error');
     return c.json(
       {
         success: false,
@@ -244,24 +187,10 @@ app.post('/', async (c) => {
 app.get('/:id', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
+  const repo = new WorkspacesRepository(userId);
 
   try {
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId) as {
-      id: string;
-      user_id: string;
-      name: string;
-      description: string | null;
-      status: string;
-      storage_path: string;
-      container_config: string;
-      container_id: string | null;
-      container_status: string;
-      created_at: string;
-      updated_at: string;
-    } | undefined;
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -284,16 +213,16 @@ app.get('/:id', async (c) => {
       success: true,
       data: {
         id: workspace.id,
-        userId: workspace.user_id,
+        userId: workspace.userId,
         name: workspace.name,
         description: workspace.description,
         status: workspace.status,
-        storagePath: workspace.storage_path,
-        containerConfig: JSON.parse(workspace.container_config || '{}'),
-        containerId: workspace.container_id,
-        containerStatus: workspace.container_status,
-        createdAt: workspace.created_at,
-        updatedAt: workspace.updated_at,
+        storagePath: workspace.storagePath,
+        containerConfig: workspace.containerConfig,
+        containerId: workspace.containerId,
+        containerStatus: workspace.containerStatus,
+        createdAt: workspace.createdAt.toISOString(),
+        updatedAt: workspace.updatedAt.toISOString(),
         storageUsage,
       },
       meta: {
@@ -323,15 +252,13 @@ app.get('/:id', async (c) => {
 app.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
+  const repo = new WorkspacesRepository(userId);
 
   try {
     const body = (await c.req.json()) as UpdateWorkspaceRequest;
-    const db = getDatabase();
 
     // Check workspace exists and belongs to user
-    const existing = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId);
+    const existing = await repo.get(workspaceId);
 
     if (!existing) {
       return c.json(
@@ -346,35 +273,24 @@ app.patch('/:id', async (c) => {
       );
     }
 
-    // Build update query
-    const updates: string[] = [];
-    const values: unknown[] = [];
+    // Build update input
+    const updateInput: { name?: string; description?: string; containerConfig?: ContainerConfig } = {};
 
     if (body.name) {
-      updates.push('name = ?');
-      values.push(body.name);
+      updateInput.name = body.name;
     }
     if (body.description !== undefined) {
-      updates.push('description = ?');
-      values.push(body.description);
+      updateInput.description = body.description;
     }
     if (body.containerConfig) {
-      const existingConfig = JSON.parse((existing as { container_config: string }).container_config || '{}');
-      const newConfig = { ...existingConfig, ...body.containerConfig };
-      updates.push('container_config = ?');
-      values.push(JSON.stringify(newConfig));
+      updateInput.containerConfig = { ...existing.containerConfig, ...body.containerConfig };
     }
 
-    if (updates.length > 0) {
-      updates.push('updated_at = datetime(\'now\')');
-      values.push(workspaceId, userId);
-
-      db.prepare(
-        `UPDATE user_workspaces SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`
-      ).run(...values);
+    if (Object.keys(updateInput).length > 0) {
+      await repo.update(workspaceId, updateInput);
     }
 
-    await logAudit(userId, 'write', 'workspace', workspaceId);
+    await repo.logAudit('write', 'workspace', workspaceId);
 
     const response: ApiResponse = {
       success: true,
@@ -406,14 +322,11 @@ app.patch('/:id', async (c) => {
 app.delete('/:id', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
+  const repo = new WorkspacesRepository(userId);
 
   try {
-    const db = getDatabase();
-
     // Check workspace exists and belongs to user
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId) as { container_id: string | null } | undefined;
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -429,21 +342,19 @@ app.delete('/:id', async (c) => {
     }
 
     // Stop container if running
-    if (workspace.container_id) {
+    if (workspace.containerId) {
       const orchestrator = getOrchestrator();
-      await orchestrator.stopContainer(workspace.container_id);
+      await orchestrator.stopContainer(workspace.containerId);
     }
 
     // Soft delete (set status to deleted)
-    db.prepare(
-      `UPDATE user_workspaces SET status = 'deleted', updated_at = datetime('now') WHERE id = ? AND user_id = ?`
-    ).run(workspaceId, userId);
+    await repo.delete(workspaceId);
 
     // Optionally delete storage
     // const storage = getWorkspaceStorage();
     // await storage.deleteUserStorage(`${userId}/${workspaceId}`);
 
-    await logAudit(userId, 'delete', 'workspace', workspaceId);
+    await repo.logAudit('delete', 'workspace', workspaceId);
 
     const response: ApiResponse = {
       success: true,
@@ -481,13 +392,11 @@ app.get('/:id/files', async (c) => {
   const workspaceId = c.req.param('id');
   const path = c.req.query('path') || '.';
   const recursive = c.req.query('recursive') === 'true';
+  const repo = new WorkspacesRepository(userId);
 
   try {
     // Verify workspace ownership
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId);
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -552,13 +461,11 @@ app.get('/:id/files/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const filePath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
+  const repo = new WorkspacesRepository(userId);
 
   try {
     // Verify workspace ownership
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId);
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -577,7 +484,7 @@ app.get('/:id/files/*', async (c) => {
     const content = await storage.readFile(`${userId}/${workspaceId}`, filePath);
     const fileInfo = await storage.getFileInfo(`${userId}/${workspaceId}`, filePath);
 
-    await logAudit(userId, 'read', 'file', filePath);
+    await repo.logAudit('read', 'file', filePath);
 
     const response: ApiResponse = {
       success: true,
@@ -627,13 +534,11 @@ app.put('/:id/files/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const filePath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
+  const repo = new WorkspacesRepository(userId);
 
   try {
     // Verify workspace ownership
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId);
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -667,7 +572,7 @@ app.put('/:id/files/*', async (c) => {
     const storage = getWorkspaceStorage();
     await storage.writeFile(`${userId}/${workspaceId}`, filePath, content);
 
-    await logAudit(userId, 'write', 'file', filePath);
+    await repo.logAudit('write', 'file', filePath);
 
     const response: ApiResponse = {
       success: true,
@@ -683,8 +588,9 @@ app.put('/:id/files/*', async (c) => {
 
     return c.json(response);
   } catch (error) {
+    const repo = new WorkspacesRepository(userId);
     if (error instanceof StorageSecurityError) {
-      await logAudit(userId, 'write', 'file', filePath, false, error.message);
+      await repo.logAudit('write', 'file', filePath, false, error.message);
       return c.json(
         {
           success: false,
@@ -716,13 +622,11 @@ app.delete('/:id/files/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const filePath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
+  const repo = new WorkspacesRepository(userId);
 
   try {
     // Verify workspace ownership
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId);
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -740,7 +644,7 @@ app.delete('/:id/files/*', async (c) => {
     const storage = getWorkspaceStorage();
     await storage.deleteFile(`${userId}/${workspaceId}`, filePath);
 
-    await logAudit(userId, 'delete', 'file', filePath);
+    await repo.logAudit('delete', 'file', filePath);
 
     const response: ApiResponse = {
       success: true,
@@ -791,16 +695,11 @@ app.delete('/:id/files/*', async (c) => {
 app.get('/:id/download', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
+  const repo = new WorkspacesRepository(userId);
 
   try {
     // Verify workspace ownership
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId) as {
-      name: string;
-      storage_path: string;
-    } | undefined;
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -850,7 +749,7 @@ app.get('/:id/download', async (c) => {
       }
     }
 
-    await logAudit(userId, 'download', 'workspace', workspaceId);
+    await repo.logAudit('download', 'workspace', workspaceId);
 
     // Return as JSON archive (can be processed client-side)
     const sanitizedName = workspace.name.replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -884,13 +783,11 @@ app.get('/:id/download', async (c) => {
 app.get('/:id/stats', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
+  const repo = new WorkspacesRepository(userId);
 
   try {
     // Verify workspace ownership
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId);
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -925,9 +822,7 @@ app.get('/:id/stats', async (c) => {
     }
 
     // Get execution count
-    const executionCount = db
-      .prepare(`SELECT COUNT(*) as count FROM code_executions WHERE workspace_id = ?`)
-      .get(workspaceId) as { count: number };
+    const executionCount = await repo.countExecutions(workspaceId);
 
     const response: ApiResponse = {
       success: true,
@@ -936,7 +831,7 @@ app.get('/:id/stats', async (c) => {
         directoryCount: totalDirectories,
         storageUsage,
         fileTypes,
-        executionCount: executionCount.count,
+        executionCount,
       },
       meta: {
         requestId: c.get('requestId') ?? 'unknown',
@@ -969,17 +864,11 @@ app.get('/:id/stats', async (c) => {
 app.post('/:id/execute', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
+  const repo = new WorkspacesRepository(userId);
 
   try {
     // Verify workspace ownership
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId) as {
-      storage_path: string;
-      container_config: string;
-      container_id: string | null;
-    } | undefined;
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -1039,7 +928,7 @@ app.post('/:id/execute', async (c) => {
     }
 
     const orchestrator = getOrchestrator();
-    const containerConfig: ContainerConfig = JSON.parse(workspace.container_config || '{}');
+    const containerConfig: ContainerConfig = workspace.containerConfig;
 
     // Create files if provided
     if (body.files && body.files.length > 0) {
@@ -1050,30 +939,22 @@ app.post('/:id/execute', async (c) => {
     }
 
     // Get or create container
-    let containerId = workspace.container_id;
+    let containerId = workspace.containerId;
     if (!containerId) {
       containerId = await orchestrator.createContainer(
         userId,
         workspaceId,
-        workspace.storage_path,
+        workspace.storagePath,
         containerConfig,
         body.language
       );
 
       // Update workspace with container ID
-      db.prepare(
-        `UPDATE user_workspaces SET container_id = ?, container_status = 'running', updated_at = datetime('now') WHERE id = ?`
-      ).run(containerId, workspaceId);
+      await repo.updateContainerStatus(workspaceId, containerId, 'running');
     }
 
     // Record execution
-    const executionId = randomUUID();
-    const codeHash = createHash('sha256').update(body.code).digest('hex');
-
-    db.prepare(
-      `INSERT INTO code_executions (id, workspace_id, user_id, language, code_hash, status, created_at)
-       VALUES (?, ?, ?, ?, ?, 'running', datetime('now'))`
-    ).run(executionId, workspaceId, userId, body.language, codeHash);
+    const execution = await repo.createExecution(workspaceId, body.language, body.code);
 
     // Execute code
     const timeout = body.timeout || containerConfig.timeoutMs || 30000;
@@ -1085,24 +966,21 @@ app.post('/:id/execute', async (c) => {
     );
 
     // Update execution record
-    db.prepare(
-      `UPDATE code_executions SET status = ?, stdout = ?, stderr = ?, exit_code = ?, execution_time_ms = ?
-       WHERE id = ?`
-    ).run(
-      result.status,
-      result.stdout || null,
-      result.stderr || null,
-      result.exitCode || null,
-      result.executionTimeMs || null,
-      executionId
+    await repo.updateExecution(
+      execution.id,
+      result.status as 'completed' | 'failed' | 'timeout',
+      result.stdout,
+      result.stderr,
+      result.exitCode,
+      result.executionTimeMs
     );
 
-    await logAudit(userId, 'execute', 'execution', `${body.language}:${codeHash.substring(0, 8)}`);
+    await repo.logAudit('execute', 'execution', `${body.language}:${execution.codeHash.substring(0, 8)}`);
 
     const response: ApiResponse = {
       success: true,
       data: {
-        executionId,
+        executionId: execution.id,
         status: result.status,
         stdout: result.stdout,
         stderr: result.stderr,
@@ -1117,7 +995,7 @@ app.post('/:id/execute', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    await logAudit(userId, 'execute', 'execution', undefined, false, error instanceof Error ? error.message : 'Unknown error');
+    await repo.logAudit('execute', 'execution', undefined, false, error instanceof Error ? error.message : 'Unknown error');
     return c.json(
       {
         success: false,
@@ -1138,14 +1016,11 @@ app.get('/:id/executions', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const limit = parseInt(c.req.query('limit') || '50');
+  const repo = new WorkspacesRepository(userId);
 
   try {
-    const db = getDatabase();
-
     // Verify workspace ownership
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId);
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -1160,16 +1035,24 @@ app.get('/:id/executions', async (c) => {
       );
     }
 
-    const executions = db
-      .prepare(
-        `SELECT * FROM code_executions WHERE workspace_id = ? ORDER BY created_at DESC LIMIT ?`
-      )
-      .all(workspaceId, limit);
+    const executions = await repo.listExecutions(workspaceId, limit);
 
     const response: ApiResponse = {
       success: true,
       data: {
-        executions,
+        executions: executions.map((e) => ({
+          id: e.id,
+          workspaceId: e.workspaceId,
+          userId: e.userId,
+          language: e.language,
+          codeHash: e.codeHash,
+          status: e.status,
+          stdout: e.stdout,
+          stderr: e.stderr,
+          exitCode: e.exitCode,
+          executionTimeMs: e.executionTimeMs,
+          createdAt: e.createdAt.toISOString(),
+        })),
         count: executions.length,
       },
       meta: {
@@ -1203,17 +1086,10 @@ app.get('/:id/executions', async (c) => {
 app.post('/:id/container/start', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
+  const repo = new WorkspacesRepository(userId);
 
   try {
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId) as {
-      storage_path: string;
-      container_config: string;
-      container_id: string | null;
-      container_status: string;
-    } | undefined;
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -1229,11 +1105,11 @@ app.post('/:id/container/start', async (c) => {
     }
 
     // Check if already running
-    if (workspace.container_status === 'running' && workspace.container_id) {
+    if (workspace.containerStatus === 'running' && workspace.containerId) {
       return c.json({
         success: true,
         data: {
-          containerId: workspace.container_id,
+          containerId: workspace.containerId,
           status: 'running',
           message: 'Container already running',
         },
@@ -1245,21 +1121,19 @@ app.post('/:id/container/start', async (c) => {
     }
 
     const orchestrator = getOrchestrator();
-    const containerConfig: ContainerConfig = JSON.parse(workspace.container_config || '{}');
+    const containerConfig: ContainerConfig = workspace.containerConfig;
 
     const containerId = await orchestrator.createContainer(
       userId,
       workspaceId,
-      workspace.storage_path,
+      workspace.storagePath,
       containerConfig
     );
 
     // Update workspace
-    db.prepare(
-      `UPDATE user_workspaces SET container_id = ?, container_status = 'running', updated_at = datetime('now') WHERE id = ?`
-    ).run(containerId, workspaceId);
+    await repo.updateContainerStatus(workspaceId, containerId, 'running');
 
-    await logAudit(userId, 'start', 'container', workspaceId);
+    await repo.logAudit('start', 'container', workspaceId);
 
     const response: ApiResponse = {
       success: true,
@@ -1294,14 +1168,10 @@ app.post('/:id/container/start', async (c) => {
 app.post('/:id/container/stop', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
+  const repo = new WorkspacesRepository(userId);
 
   try {
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId) as {
-      container_id: string | null;
-    } | undefined;
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -1316,17 +1186,15 @@ app.post('/:id/container/stop', async (c) => {
       );
     }
 
-    if (workspace.container_id) {
+    if (workspace.containerId) {
       const orchestrator = getOrchestrator();
-      await orchestrator.stopContainer(workspace.container_id);
+      await orchestrator.stopContainer(workspace.containerId);
     }
 
     // Update workspace
-    db.prepare(
-      `UPDATE user_workspaces SET container_id = NULL, container_status = 'stopped', updated_at = datetime('now') WHERE id = ?`
-    ).run(workspaceId);
+    await repo.updateContainerStatus(workspaceId, null, 'stopped');
 
-    await logAudit(userId, 'stop', 'container', workspaceId);
+    await repo.logAudit('stop', 'container', workspaceId);
 
     const response: ApiResponse = {
       success: true,
@@ -1360,15 +1228,10 @@ app.post('/:id/container/stop', async (c) => {
 app.get('/:id/container/status', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
+  const repo = new WorkspacesRepository(userId);
 
   try {
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId) as {
-      container_id: string | null;
-      container_status: string;
-    } | undefined;
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -1383,26 +1246,24 @@ app.get('/:id/container/status', async (c) => {
       );
     }
 
-    let status = workspace.container_status;
+    let status = workspace.containerStatus;
     let resourceUsage = null;
 
-    if (workspace.container_id) {
+    if (workspace.containerId) {
       const orchestrator = getOrchestrator();
-      status = await orchestrator.getContainerStatus(workspace.container_id);
-      resourceUsage = await orchestrator.getResourceUsage(workspace.container_id);
+      status = await orchestrator.getContainerStatus(workspace.containerId);
+      resourceUsage = await orchestrator.getResourceUsage(workspace.containerId);
 
       // Update status in DB if changed
-      if (status !== workspace.container_status) {
-        db.prepare(
-          `UPDATE user_workspaces SET container_status = ?, updated_at = datetime('now') WHERE id = ?`
-        ).run(status, workspaceId);
+      if (status !== workspace.containerStatus) {
+        await repo.updateContainerStatus(workspaceId, workspace.containerId, status as 'running' | 'stopped' | 'error');
       }
     }
 
     const response: ApiResponse = {
       success: true,
       data: {
-        containerId: workspace.container_id,
+        containerId: workspace.containerId,
         status,
         resourceUsage,
       },
@@ -1434,14 +1295,10 @@ app.get('/:id/container/logs', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const tail = parseInt(c.req.query('tail') || '100');
+  const repo = new WorkspacesRepository(userId);
 
   try {
-    const db = getDatabase();
-    const workspace = db
-      .prepare(`SELECT * FROM user_workspaces WHERE id = ? AND user_id = ?`)
-      .get(workspaceId, userId) as {
-      container_id: string | null;
-    } | undefined;
+    const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
       return c.json(
@@ -1457,9 +1314,9 @@ app.get('/:id/container/logs', async (c) => {
     }
 
     let logs = '';
-    if (workspace.container_id) {
+    if (workspace.containerId) {
       const orchestrator = getOrchestrator();
-      logs = await orchestrator.getContainerLogs(workspace.container_id, tail);
+      logs = await orchestrator.getContainerLogs(workspace.containerId, tail);
     }
 
     const response: ApiResponse = {

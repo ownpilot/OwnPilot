@@ -79,9 +79,9 @@ function getGoogleOAuthConfig(): GoogleOAuthConfig | null {
 /**
  * Store OAuth state for CSRF protection
  */
-function storeOAuthState(state: OAuthState): string {
+async function storeOAuthState(state: OAuthState): Promise<string> {
   const stateToken = Buffer.from(JSON.stringify(state)).toString('base64url');
-  settingsRepo.set(`oauth_state:${stateToken}`, {
+  await settingsRepo.set(`oauth_state:${stateToken}`, {
     ...state,
     createdAt: new Date().toISOString(),
   });
@@ -91,7 +91,7 @@ function storeOAuthState(state: OAuthState): string {
 /**
  * Retrieve and validate OAuth state
  */
-function retrieveOAuthState(stateToken: string): OAuthState | null {
+async function retrieveOAuthState(stateToken: string): Promise<OAuthState | null> {
   const key = `oauth_state:${stateToken}`;
   const state = settingsRepo.get<OAuthState & { createdAt: string }>(key);
 
@@ -100,7 +100,7 @@ function retrieveOAuthState(stateToken: string): OAuthState | null {
   }
 
   // Delete the state (one-time use)
-  settingsRepo.delete(key);
+  await settingsRepo.delete(key);
 
   // Check if state is expired (10 minutes)
   const createdAt = new Date(state.createdAt);
@@ -148,11 +148,11 @@ authRoutes.post('/config/google', async (c) => {
       return c.json({ success: false, error: 'Client ID and Client Secret are required' }, 400);
     }
 
-    settingsRepo.set('google_oauth_client_id', body.clientId);
-    settingsRepo.set('google_oauth_client_secret', body.clientSecret);
+    await settingsRepo.set('google_oauth_client_id', body.clientId);
+    await settingsRepo.set('google_oauth_client_secret', body.clientSecret);
 
     if (body.redirectUri) {
-      settingsRepo.set('google_oauth_redirect_uri', body.redirectUri);
+      await settingsRepo.set('google_oauth_redirect_uri', body.redirectUri);
     }
 
     return c.json({
@@ -168,10 +168,10 @@ authRoutes.post('/config/google', async (c) => {
 /**
  * Delete OAuth configuration
  */
-authRoutes.delete('/config/google', (c) => {
-  settingsRepo.delete('google_oauth_client_id');
-  settingsRepo.delete('google_oauth_client_secret');
-  settingsRepo.delete('google_oauth_redirect_uri');
+authRoutes.delete('/config/google', async (c) => {
+  await settingsRepo.delete('google_oauth_client_id');
+  await settingsRepo.delete('google_oauth_client_secret');
+  await settingsRepo.delete('google_oauth_redirect_uri');
 
   return c.json({
     success: true,
@@ -182,7 +182,7 @@ authRoutes.delete('/config/google', (c) => {
 /**
  * Start Google OAuth flow
  */
-authRoutes.get('/google/start', (c) => {
+authRoutes.get('/google/start', async (c) => {
   const service = (c.req.query('service') || 'gmail') as OAuthService;
   const returnUrl = c.req.query('returnUrl') || '/settings';
   const userId = c.req.query('userId') || 'default';
@@ -220,7 +220,7 @@ authRoutes.get('/google/start', (c) => {
     returnUrl,
     timestamp: Date.now(),
   };
-  const stateToken = storeOAuthState(state);
+  const stateToken = await storeOAuthState(state);
 
   // Generate authorization URL
   const scopes = GOOGLE_SCOPES[service] || GOOGLE_SCOPES.gmail;
@@ -257,7 +257,7 @@ authRoutes.get('/google/callback', async (c) => {
     return c.redirect('/settings?oauth_error=missing_state');
   }
 
-  const state = retrieveOAuthState(stateToken);
+  const state = await retrieveOAuthState(stateToken);
   if (!state) {
     return c.redirect('/settings?oauth_error=invalid_or_expired_state');
   }
@@ -295,7 +295,7 @@ authRoutes.get('/google/callback', async (c) => {
     const email = userInfo.data.email;
 
     // Check if integration already exists
-    const existing = oauthIntegrationsRepo.getByUserProviderService(
+    const existing = await oauthIntegrationsRepo.getByUserProviderService(
       state.userId,
       state.provider,
       state.service
@@ -303,14 +303,14 @@ authRoutes.get('/google/callback', async (c) => {
 
     if (existing) {
       // Update existing integration
-      oauthIntegrationsRepo.updateTokens(existing.id, {
+      await oauthIntegrationsRepo.updateTokens(existing.id, {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token || undefined,
         expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined,
       });
     } else {
       // Create new integration
-      oauthIntegrationsRepo.create({
+      await oauthIntegrationsRepo.create({
         userId: state.userId,
         provider: state.provider,
         service: state.service,
@@ -347,13 +347,13 @@ authRoutes.post('/google/revoke', async (c) => {
     }
 
     // Get integration
-    const integration = oauthIntegrationsRepo.getById(integrationId);
+    const integration = await oauthIntegrationsRepo.getById(integrationId);
     if (!integration) {
       return c.json({ success: false, error: 'Integration not found' }, 404);
     }
 
     // Get tokens for revocation
-    const tokens = oauthIntegrationsRepo.getTokens(integrationId);
+    const tokens = await oauthIntegrationsRepo.getTokens(integrationId);
 
     if (tokens?.accessToken) {
       // Try to revoke token with Google
@@ -374,7 +374,7 @@ authRoutes.post('/google/revoke', async (c) => {
     }
 
     // Delete from database
-    oauthIntegrationsRepo.delete(integrationId);
+    await oauthIntegrationsRepo.delete(integrationId);
 
     return c.json({
       success: true,
@@ -399,15 +399,15 @@ authRoutes.post('/google/refresh', async (c) => {
     }
 
     // Get integration
-    const integration = oauthIntegrationsRepo.getById(integrationId);
+    const integration = await oauthIntegrationsRepo.getById(integrationId);
     if (!integration) {
       return c.json({ success: false, error: 'Integration not found' }, 404);
     }
 
     // Get tokens
-    const tokens = oauthIntegrationsRepo.getTokens(integrationId);
+    const tokens = await oauthIntegrationsRepo.getTokens(integrationId);
     if (!tokens?.refreshToken) {
-      oauthIntegrationsRepo.updateStatus(integrationId, 'expired', 'No refresh token available');
+      await oauthIntegrationsRepo.updateStatus(integrationId, 'expired', 'No refresh token available');
       return c.json({ success: false, error: 'No refresh token available' }, 400);
     }
 
@@ -435,7 +435,7 @@ authRoutes.post('/google/refresh', async (c) => {
     }
 
     // Update tokens in database
-    oauthIntegrationsRepo.updateTokens(integrationId, {
+    await oauthIntegrationsRepo.updateTokens(integrationId, {
       accessToken: credentials.access_token,
       refreshToken: credentials.refresh_token || tokens.refreshToken,
       expiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : undefined,
@@ -454,7 +454,7 @@ authRoutes.post('/google/refresh', async (c) => {
     // Mark integration as expired if refresh fails
     const body = await c.req.json<{ integrationId: string }>().catch(() => ({ integrationId: '' }));
     if (body.integrationId) {
-      oauthIntegrationsRepo.updateStatus(
+      await oauthIntegrationsRepo.updateStatus(
         body.integrationId,
         'expired',
         error instanceof Error ? error.message : 'Token refresh failed'

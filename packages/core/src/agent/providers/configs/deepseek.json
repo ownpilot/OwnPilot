@@ -6,7 +6,7 @@
   "features": {
     "streaming": true,
     "toolUse": true,
-    "vision": true,
+    "vision": false,
     "jsonMode": false,
     "systemMessage": true
   },
@@ -20,7 +20,6 @@
       "outputPrice": 0.42,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
@@ -37,10 +36,10 @@
       "outputPrice": 0.42,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-26"
     }
   ],

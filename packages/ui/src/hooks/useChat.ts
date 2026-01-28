@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Message, ChatResponse, ApiResponse } from '../types';
 
 interface UseChatOptions {
@@ -24,6 +24,7 @@ interface UseChatReturn {
   sendMessage: (content: string) => Promise<void>;
   retryLastMessage: () => Promise<void>;
   clearMessages: () => void;
+  cancelRequest: () => void;
 }
 
 // Default provider and model - empty until set by parent component from API
@@ -40,7 +41,37 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
   const [agentId, setAgentId] = useState<string | null>(options?.agentId || null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(options?.workspaceId || null);
 
+  // AbortController for canceling ongoing requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // Cancel any ongoing request
+  const cancelRequest = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsLoading(false);
+    }
+  }, []);
+
   const sendMessage = useCallback(async (content: string, isRetry = false) => {
+    // Cancel any previous ongoing request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new AbortController for this request
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setError(null);
     setIsLoading(true);
 
@@ -82,9 +113,20 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
             content: m.content,
           })),
         }),
+        signal: controller.signal,
       });
 
+      // Check if request was aborted
+      if (controller.signal.aborted) {
+        return;
+      }
+
       const data: ApiResponse<ChatResponse> = await response.json();
+
+      // Check again after parsing (in case abort happened during parse)
+      if (controller.signal.aborted) {
+        return;
+      }
 
       if (!data.success || !data.data) {
         throw new Error(data.error?.message ?? 'Failed to get response');
@@ -106,6 +148,11 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
+      // Ignore abort errors - they're intentional
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+
       const errorText = err instanceof Error ? err.message : 'An error occurred';
       setError(errorText);
 
@@ -122,7 +169,11 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false);
+      // Only clear loading state if this controller is still the current one
+      if (abortControllerRef.current === controller) {
+        setIsLoading(false);
+        abortControllerRef.current = null;
+      }
     }
   }, [provider, model, agentId, workspaceId, messages]);
 
@@ -132,10 +183,12 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
   }, [lastFailedMessage, sendMessage]);
 
   const clearMessages = useCallback(() => {
+    // Cancel any ongoing request when clearing messages (new chat)
+    cancelRequest();
     setMessages([]);
     setError(null);
     setLastFailedMessage(null);
-  }, []);
+  }, [cancelRequest]);
 
   return {
     messages,
@@ -153,5 +206,6 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     sendMessage,
     retryLastMessage,
     clearMessages,
+    cancelRequest,
   };
 }

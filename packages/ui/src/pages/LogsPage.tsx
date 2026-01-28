@@ -165,6 +165,24 @@ export function LogsPage() {
     }
   };
 
+  const clearAllLogs = async () => {
+    if (!confirm('Delete ALL request logs? This cannot be undone.')) return;
+
+    try {
+      const res = await fetch('/api/v1/chat/logs?all=true', {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Deleted ${data.data.deleted} logs`);
+        fetchLogs();
+        fetchStats();
+      }
+    } catch {
+      setError('Failed to delete logs');
+    }
+  };
+
   const clearDebugLogs = async () => {
     if (!confirm('Clear all debug logs?')) return;
     try {
@@ -308,7 +326,13 @@ export function LogsPage() {
                 onClick={() => clearOldLogs(30)}
                 className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
               >
-                Clear Old Logs
+                Clear Old
+              </button>
+              <button
+                onClick={clearAllLogs}
+                className="px-3 py-1.5 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+              >
+                Clear All
               </button>
               <button
                 onClick={() => { fetchLogs(); fetchStats(); }}

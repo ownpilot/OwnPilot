@@ -5,8 +5,7 @@
  * Supports long-term objectives tracking with decomposition into steps.
  */
 
-import { getDatabase } from '../connection.js';
-import type Database from 'better-sqlite3';
+import { BaseRepository } from './base.js';
 
 // ============================================================================
 // Types
@@ -123,12 +122,11 @@ interface StepRow {
 // Repository
 // ============================================================================
 
-export class GoalsRepository {
-  private db: Database.Database;
+export class GoalsRepository extends BaseRepository {
   private userId: string;
 
   constructor(userId = 'default') {
-    this.db = getDatabase();
+    super();
     this.userId = userId;
   }
 
@@ -139,121 +137,121 @@ export class GoalsRepository {
   /**
    * Create a new goal
    */
-  create(input: CreateGoalInput): Goal {
+  async create(input: CreateGoalInput): Promise<Goal> {
     const id = `goal_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      INSERT INTO goals (id, user_id, title, description, status, priority, parent_id, due_date, progress, created_at, updated_at, metadata)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      this.userId,
-      input.title,
-      input.description ?? null,
-      input.status ?? 'active',
-      input.priority ?? 5,
-      input.parentId ?? null,
-      input.dueDate ?? null,
-      0,
-      now,
-      now,
-      JSON.stringify(input.metadata ?? {})
+    await this.execute(
+      `INSERT INTO goals (id, user_id, title, description, status, priority, parent_id, due_date, progress, created_at, updated_at, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        id,
+        this.userId,
+        input.title,
+        input.description ?? null,
+        input.status ?? 'active',
+        input.priority ?? 5,
+        input.parentId ?? null,
+        input.dueDate ?? null,
+        0,
+        now,
+        now,
+        JSON.stringify(input.metadata ?? {}),
+      ]
     );
 
-    return this.get(id)!;
+    return (await this.get(id))!;
   }
 
   /**
    * Get a goal by ID
    */
-  get(id: string): Goal | null {
-    const stmt = this.db.prepare(`
-      SELECT * FROM goals WHERE id = ? AND user_id = ?
-    `);
-
-    const row = stmt.get(id, this.userId) as GoalRow | undefined;
+  async get(id: string): Promise<Goal | null> {
+    const row = await this.queryOne<GoalRow>(
+      'SELECT * FROM goals WHERE id = $1 AND user_id = $2',
+      [id, this.userId]
+    );
     return row ? this.mapGoal(row) : null;
   }
 
   /**
    * Update a goal
    */
-  update(id: string, input: UpdateGoalInput): Goal | null {
-    const existing = this.get(id);
+  async update(id: string, input: UpdateGoalInput): Promise<Goal | null> {
+    const existing = await this.get(id);
     if (!existing) return null;
 
-    const updates: string[] = ['updated_at = ?'];
+    const updates: string[] = ['updated_at = $1'];
     const values: unknown[] = [new Date().toISOString()];
+    let paramIndex = 2;
 
     if (input.title !== undefined) {
-      updates.push('title = ?');
+      updates.push(`title = $${paramIndex++}`);
       values.push(input.title);
     }
     if (input.description !== undefined) {
-      updates.push('description = ?');
+      updates.push(`description = $${paramIndex++}`);
       values.push(input.description);
     }
     if (input.status !== undefined) {
-      updates.push('status = ?');
+      updates.push(`status = $${paramIndex++}`);
       values.push(input.status);
       if (input.status === 'completed') {
-        updates.push('completed_at = ?');
+        updates.push(`completed_at = $${paramIndex++}`);
         values.push(new Date().toISOString());
       }
     }
     if (input.priority !== undefined) {
-      updates.push('priority = ?');
+      updates.push(`priority = $${paramIndex++}`);
       values.push(Math.max(1, Math.min(10, input.priority)));
     }
     if (input.dueDate !== undefined) {
-      updates.push('due_date = ?');
+      updates.push(`due_date = $${paramIndex++}`);
       values.push(input.dueDate);
     }
     if (input.progress !== undefined) {
-      updates.push('progress = ?');
+      updates.push(`progress = $${paramIndex++}`);
       values.push(Math.max(0, Math.min(100, input.progress)));
     }
     if (input.metadata !== undefined) {
-      updates.push('metadata = ?');
+      updates.push(`metadata = $${paramIndex++}`);
       values.push(JSON.stringify(input.metadata));
     }
 
     values.push(id, this.userId);
 
-    const stmt = this.db.prepare(`
-      UPDATE goals SET ${updates.join(', ')} WHERE id = ? AND user_id = ?
-    `);
+    await this.execute(
+      `UPDATE goals SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
+      values
+    );
 
-    stmt.run(...values);
     return this.get(id);
   }
 
   /**
    * Delete a goal
    */
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`
-      DELETE FROM goals WHERE id = ? AND user_id = ?
-    `);
-
-    const result = stmt.run(id, this.userId);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      'DELETE FROM goals WHERE id = $1 AND user_id = $2',
+      [id, this.userId]
+    );
     return result.changes > 0;
   }
 
   /**
    * List goals with filters
    */
-  list(query: GoalQuery = {}): Goal[] {
-    let sql = 'SELECT * FROM goals WHERE user_id = ?';
+  async list(query: GoalQuery = {}): Promise<Goal[]> {
+    let sql = 'SELECT * FROM goals WHERE user_id = $1';
     const params: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     // Status filter
     if (query.status) {
       const statuses = Array.isArray(query.status) ? query.status : [query.status];
-      sql += ` AND status IN (${statuses.map(() => '?').join(', ')})`;
+      const placeholders = statuses.map(() => `$${paramIndex++}`).join(', ');
+      sql += ` AND status IN (${placeholders})`;
       params.push(...statuses);
     }
 
@@ -262,22 +260,22 @@ export class GoalsRepository {
       if (query.parentId === null) {
         sql += ' AND parent_id IS NULL';
       } else {
-        sql += ' AND parent_id = ?';
+        sql += ` AND parent_id = $${paramIndex++}`;
         params.push(query.parentId);
       }
     }
 
     // Priority filter
     if (query.minPriority !== undefined) {
-      sql += ' AND priority >= ?';
+      sql += ` AND priority >= $${paramIndex++}`;
       params.push(query.minPriority);
     }
 
-    // Search
+    // Search (using ILIKE for PostgreSQL)
     if (query.search) {
-      sql += ' AND (title LIKE ? OR description LIKE ?)';
-      const searchTerm = `%${query.search}%`;
-      params.push(searchTerm, searchTerm);
+      sql += ` AND (title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
+      params.push(`%${query.search}%`);
+      paramIndex++;
     }
 
     // Order by
@@ -297,23 +295,22 @@ export class GoalsRepository {
 
     // Pagination
     if (query.limit) {
-      sql += ' LIMIT ?';
+      sql += ` LIMIT $${paramIndex++}`;
       params.push(query.limit);
     }
     if (query.offset) {
-      sql += ' OFFSET ?';
+      sql += ` OFFSET $${paramIndex++}`;
       params.push(query.offset);
     }
 
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as GoalRow[];
+    const rows = await this.query<GoalRow>(sql, params);
     return rows.map((row) => this.mapGoal(row));
   }
 
   /**
    * Get active goals (for AI context)
    */
-  getActive(limit = 10): Goal[] {
+  async getActive(limit = 10): Promise<Goal[]> {
     return this.list({
       status: 'active',
       orderBy: 'priority',
@@ -324,34 +321,34 @@ export class GoalsRepository {
   /**
    * Get goals with upcoming due dates
    */
-  getUpcoming(days = 7): Goal[] {
+  async getUpcoming(days = 7): Promise<Goal[]> {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + days);
 
-    const stmt = this.db.prepare(`
-      SELECT * FROM goals
-      WHERE user_id = ?
-        AND status = 'active'
-        AND due_date IS NOT NULL
-        AND due_date <= ?
-      ORDER BY due_date ASC
-    `);
+    const rows = await this.query<GoalRow>(
+      `SELECT * FROM goals
+       WHERE user_id = $1
+         AND status = 'active'
+         AND due_date IS NOT NULL
+         AND due_date <= $2
+       ORDER BY due_date ASC`,
+      [this.userId, futureDate.toISOString()]
+    );
 
-    const rows = stmt.all(this.userId, futureDate.toISOString()) as GoalRow[];
     return rows.map((row) => this.mapGoal(row));
   }
 
   /**
    * Update goal progress based on completed steps
    */
-  recalculateProgress(goalId: string): number {
-    const steps = this.getSteps(goalId);
+  async recalculateProgress(goalId: string): Promise<number> {
+    const steps = await this.getSteps(goalId);
     if (steps.length === 0) return 0;
 
     const completedSteps = steps.filter((s) => s.status === 'completed').length;
     const progress = Math.round((completedSteps / steps.length) * 100);
 
-    this.update(goalId, { progress });
+    await this.update(goalId, { progress });
     return progress;
   }
 
@@ -362,8 +359,8 @@ export class GoalsRepository {
   /**
    * Add a step to a goal
    */
-  addStep(goalId: string, input: CreateStepInput): GoalStep | null {
-    const goal = this.get(goalId);
+  async addStep(goalId: string, input: CreateStepInput): Promise<GoalStep | null> {
+    const goal = await this.get(goalId);
     if (!goal) return null;
 
     const id = `step_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -372,27 +369,26 @@ export class GoalsRepository {
     // Get max order num if not provided
     let orderNum = input.orderNum;
     if (orderNum === undefined) {
-      const maxStmt = this.db.prepare(`
-        SELECT MAX(order_num) as max_order FROM goal_steps WHERE goal_id = ?
-      `);
-      const result = maxStmt.get(goalId) as { max_order: number | null };
+      const result = await this.queryOne<{ max_order: number | null }>(
+        'SELECT MAX(order_num) as max_order FROM goal_steps WHERE goal_id = $1',
+        [goalId]
+      );
       orderNum = (result?.max_order ?? -1) + 1;
     }
 
-    const stmt = this.db.prepare(`
-      INSERT INTO goal_steps (id, goal_id, title, description, status, order_num, dependencies, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      goalId,
-      input.title,
-      input.description ?? null,
-      'pending',
-      orderNum,
-      JSON.stringify(input.dependencies ?? []),
-      now
+    await this.execute(
+      `INSERT INTO goal_steps (id, goal_id, title, description, status, order_num, dependencies, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        id,
+        goalId,
+        input.title,
+        input.description ?? null,
+        'pending',
+        orderNum,
+        JSON.stringify(input.dependencies ?? []),
+        now,
+      ]
     );
 
     return this.getStep(id);
@@ -401,53 +397,53 @@ export class GoalsRepository {
   /**
    * Get a step by ID
    */
-  getStep(id: string): GoalStep | null {
-    const stmt = this.db.prepare(`
-      SELECT s.* FROM goal_steps s
-      JOIN goals g ON s.goal_id = g.id
-      WHERE s.id = ? AND g.user_id = ?
-    `);
-
-    const row = stmt.get(id, this.userId) as StepRow | undefined;
+  async getStep(id: string): Promise<GoalStep | null> {
+    const row = await this.queryOne<StepRow>(
+      `SELECT s.* FROM goal_steps s
+       JOIN goals g ON s.goal_id = g.id
+       WHERE s.id = $1 AND g.user_id = $2`,
+      [id, this.userId]
+    );
     return row ? this.mapStep(row) : null;
   }
 
   /**
    * Update a step
    */
-  updateStep(id: string, input: UpdateStepInput): GoalStep | null {
-    const existing = this.getStep(id);
+  async updateStep(id: string, input: UpdateStepInput): Promise<GoalStep | null> {
+    const existing = await this.getStep(id);
     if (!existing) return null;
 
     const updates: string[] = [];
     const values: unknown[] = [];
+    let paramIndex = 1;
 
     if (input.title !== undefined) {
-      updates.push('title = ?');
+      updates.push(`title = $${paramIndex++}`);
       values.push(input.title);
     }
     if (input.description !== undefined) {
-      updates.push('description = ?');
+      updates.push(`description = $${paramIndex++}`);
       values.push(input.description);
     }
     if (input.status !== undefined) {
-      updates.push('status = ?');
+      updates.push(`status = $${paramIndex++}`);
       values.push(input.status);
       if (input.status === 'completed') {
-        updates.push('completed_at = ?');
+        updates.push(`completed_at = $${paramIndex++}`);
         values.push(new Date().toISOString());
       }
     }
     if (input.orderNum !== undefined) {
-      updates.push('order_num = ?');
+      updates.push(`order_num = $${paramIndex++}`);
       values.push(input.orderNum);
     }
     if (input.dependencies !== undefined) {
-      updates.push('dependencies = ?');
+      updates.push(`dependencies = $${paramIndex++}`);
       values.push(JSON.stringify(input.dependencies));
     }
     if (input.result !== undefined) {
-      updates.push('result = ?');
+      updates.push(`result = $${paramIndex++}`);
       values.push(input.result);
     }
 
@@ -455,14 +451,13 @@ export class GoalsRepository {
 
     values.push(id);
 
-    const stmt = this.db.prepare(`
-      UPDATE goal_steps SET ${updates.join(', ')} WHERE id = ?
-    `);
-
-    stmt.run(...values);
+    await this.execute(
+      `UPDATE goal_steps SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      values
+    );
 
     // Recalculate goal progress
-    this.recalculateProgress(existing.goalId);
+    await this.recalculateProgress(existing.goalId);
 
     return this.getStep(id);
   }
@@ -470,59 +465,59 @@ export class GoalsRepository {
   /**
    * Delete a step
    */
-  deleteStep(id: string): boolean {
-    const step = this.getStep(id);
+  async deleteStep(id: string): Promise<boolean> {
+    const step = await this.getStep(id);
     if (!step) return false;
 
-    const stmt = this.db.prepare(`
-      DELETE FROM goal_steps WHERE id = ?
-    `);
-
-    const result = stmt.run(id);
+    const result = await this.execute('DELETE FROM goal_steps WHERE id = $1', [id]);
+    const deleted = result.changes > 0;
 
     // Recalculate goal progress
-    if (result.changes > 0) {
-      this.recalculateProgress(step.goalId);
+    if (deleted) {
+      await this.recalculateProgress(step.goalId);
     }
 
-    return result.changes > 0;
+    return deleted;
   }
 
   /**
    * Get all steps for a goal
    */
-  getSteps(goalId: string): GoalStep[] {
-    const stmt = this.db.prepare(`
-      SELECT s.* FROM goal_steps s
-      JOIN goals g ON s.goal_id = g.id
-      WHERE s.goal_id = ? AND g.user_id = ?
-      ORDER BY s.order_num ASC
-    `);
-
-    const rows = stmt.all(goalId, this.userId) as StepRow[];
+  async getSteps(goalId: string): Promise<GoalStep[]> {
+    const rows = await this.query<StepRow>(
+      `SELECT s.* FROM goal_steps s
+       JOIN goals g ON s.goal_id = g.id
+       WHERE s.goal_id = $1 AND g.user_id = $2
+       ORDER BY s.order_num ASC`,
+      [goalId, this.userId]
+    );
     return rows.map((row) => this.mapStep(row));
   }
 
   /**
    * Get next actionable steps across all goals
    */
-  getNextActions(limit = 5): Array<GoalStep & { goalTitle: string }> {
-    const stmt = this.db.prepare(`
-      SELECT s.*, g.title as goal_title FROM goal_steps s
-      JOIN goals g ON s.goal_id = g.id
-      WHERE g.user_id = ?
-        AND g.status = 'active'
-        AND s.status IN ('pending', 'in_progress')
-        AND NOT EXISTS (
-          SELECT 1 FROM goal_steps dep
-          WHERE dep.id IN (SELECT value FROM json_each(s.dependencies))
-            AND dep.status != 'completed'
-        )
-      ORDER BY g.priority DESC, s.order_num ASC
-      LIMIT ?
-    `);
+  async getNextActions(limit = 5): Promise<Array<GoalStep & { goalTitle: string }>> {
+    // Note: PostgreSQL doesn't have json_each like SQLite
+    // Using a different approach with array containment
+    const rows = await this.query<StepRow & { goal_title: string }>(
+      `SELECT s.*, g.title as goal_title FROM goal_steps s
+       JOIN goals g ON s.goal_id = g.id
+       WHERE g.user_id = $1
+         AND g.status = 'active'
+         AND s.status IN ('pending', 'in_progress')
+         AND NOT EXISTS (
+           SELECT 1 FROM goal_steps dep
+           WHERE dep.id = ANY(
+             SELECT jsonb_array_elements_text(s.dependencies::jsonb)
+           )
+           AND dep.status != 'completed'
+         )
+       ORDER BY g.priority DESC, s.order_num ASC
+       LIMIT $2`,
+      [this.userId, limit]
+    );
 
-    const rows = stmt.all(this.userId, limit) as Array<StepRow & { goal_title: string }>;
     return rows.map((row) => ({
       ...this.mapStep(row),
       goalTitle: row.goal_title,
@@ -536,37 +531,42 @@ export class GoalsRepository {
   /**
    * Get goal statistics
    */
-  getStats(): {
+  async getStats(): Promise<{
     total: number;
     byStatus: Record<GoalStatus, number>;
     completedThisWeek: number;
     averageProgress: number;
     overdueCount: number;
-  } {
-    const total = this.db.prepare(`
-      SELECT COUNT(*) as count FROM goals WHERE user_id = ?
-    `).get(this.userId) as { count: number };
+  }> {
+    const total = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM goals WHERE user_id = $1',
+      [this.userId]
+    );
 
-    const byStatus = this.db.prepare(`
-      SELECT status, COUNT(*) as count FROM goals WHERE user_id = ? GROUP BY status
-    `).all(this.userId) as Array<{ status: GoalStatus; count: number }>;
+    const byStatus = await this.query<{ status: GoalStatus; count: string }>(
+      'SELECT status, COUNT(*) as count FROM goals WHERE user_id = $1 GROUP BY status',
+      [this.userId]
+    );
 
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const completedThisWeek = this.db.prepare(`
-      SELECT COUNT(*) as count FROM goals
-      WHERE user_id = ? AND status = 'completed' AND completed_at >= ?
-    `).get(this.userId, weekAgo.toISOString()) as { count: number };
+    const completedThisWeek = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM goals
+       WHERE user_id = $1 AND status = 'completed' AND completed_at >= $2`,
+      [this.userId, weekAgo.toISOString()]
+    );
 
-    const avgProgress = this.db.prepare(`
-      SELECT AVG(progress) as avg FROM goals WHERE user_id = ? AND status = 'active'
-    `).get(this.userId) as { avg: number | null };
+    const avgProgress = await this.queryOne<{ avg: string | null }>(
+      `SELECT AVG(progress) as avg FROM goals WHERE user_id = $1 AND status = 'active'`,
+      [this.userId]
+    );
 
     const now = new Date().toISOString();
-    const overdue = this.db.prepare(`
-      SELECT COUNT(*) as count FROM goals
-      WHERE user_id = ? AND status = 'active' AND due_date IS NOT NULL AND due_date < ?
-    `).get(this.userId, now) as { count: number };
+    const overdue = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM goals
+       WHERE user_id = $1 AND status = 'active' AND due_date IS NOT NULL AND due_date < $2`,
+      [this.userId, now]
+    );
 
     const statusMap: Record<GoalStatus, number> = {
       active: 0,
@@ -575,15 +575,15 @@ export class GoalsRepository {
       abandoned: 0,
     };
     for (const row of byStatus) {
-      statusMap[row.status] = row.count;
+      statusMap[row.status] = parseInt(row.count, 10);
     }
 
     return {
-      total: total.count,
+      total: parseInt(total?.count ?? '0', 10),
       byStatus: statusMap,
-      completedThisWeek: completedThisWeek.count,
-      averageProgress: Math.round(avgProgress.avg ?? 0),
-      overdueCount: overdue.count,
+      completedThisWeek: parseInt(completedThisWeek?.count ?? '0', 10),
+      averageProgress: Math.round(parseFloat(avgProgress?.avg ?? '0')),
+      overdueCount: parseInt(overdue?.count ?? '0', 10),
     };
   }
 
@@ -605,7 +605,7 @@ export class GoalsRepository {
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
-      metadata: JSON.parse(row.metadata),
+      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata,
     };
   }
 
@@ -617,7 +617,7 @@ export class GoalsRepository {
       description: row.description,
       status: row.status,
       orderNum: row.order_num,
-      dependencies: JSON.parse(row.dependencies),
+      dependencies: typeof row.dependencies === 'string' ? JSON.parse(row.dependencies) : row.dependencies,
       result: row.result,
       createdAt: new Date(row.created_at),
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
@@ -625,5 +625,7 @@ export class GoalsRepository {
   }
 }
 
-// Singleton instance for default user
-export const goalsRepo = new GoalsRepository();
+// Factory function for creating repository instances
+export function createGoalsRepository(userId = 'default'): GoalsRepository {
+  return new GoalsRepository(userId);
+}

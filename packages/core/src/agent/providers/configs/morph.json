@@ -36,6 +36,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-15"
     },
     {
@@ -49,6 +50,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-06-01"
     }
   ],

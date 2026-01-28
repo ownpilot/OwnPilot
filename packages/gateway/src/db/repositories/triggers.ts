@@ -5,8 +5,7 @@
  * Supports scheduled, event-based, condition-based, and webhook triggers.
  */
 
-import { getDatabase } from '../connection.js';
-import type Database from 'better-sqlite3';
+import { BaseRepository } from './base.js';
 
 // ============================================================================
 // Types
@@ -104,7 +103,7 @@ interface TriggerRow {
   type: TriggerType;
   config: string;
   action: string;
-  enabled: number;
+  enabled: boolean;
   priority: number;
   last_fired: string | null;
   next_fire: string | null;
@@ -127,12 +126,11 @@ interface HistoryRow {
 // Repository
 // ============================================================================
 
-export class TriggersRepository {
-  private db: Database.Database;
+export class TriggersRepository extends BaseRepository {
   private userId: string;
 
   constructor(userId = 'default') {
-    this.db = getDatabase();
+    super();
     this.userId = userId;
   }
 
@@ -143,7 +141,7 @@ export class TriggersRepository {
   /**
    * Create a new trigger
    */
-  create(input: CreateTriggerInput): Trigger {
+  async create(input: CreateTriggerInput): Promise<Trigger> {
     const id = `trigger_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const now = new Date().toISOString();
 
@@ -153,73 +151,72 @@ export class TriggersRepository {
       nextFire = this.calculateNextFire(input.config as ScheduleConfig);
     }
 
-    const stmt = this.db.prepare(`
-      INSERT INTO triggers (id, user_id, name, description, type, config, action, enabled, priority, next_fire, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      this.userId,
-      input.name,
-      input.description ?? null,
-      input.type,
-      JSON.stringify(input.config),
-      JSON.stringify(input.action),
-      input.enabled !== false ? 1 : 0,
-      input.priority ?? 5,
-      nextFire,
-      now,
-      now
+    await this.execute(
+      `INSERT INTO triggers (id, user_id, name, description, type, config, action, enabled, priority, next_fire, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        id,
+        this.userId,
+        input.name,
+        input.description ?? null,
+        input.type,
+        JSON.stringify(input.config),
+        JSON.stringify(input.action),
+        input.enabled !== false,
+        input.priority ?? 5,
+        nextFire,
+        now,
+        now,
+      ]
     );
 
-    return this.get(id)!;
+    return (await this.get(id))!;
   }
 
   /**
    * Get a trigger by ID
    */
-  get(id: string): Trigger | null {
-    const stmt = this.db.prepare(`
-      SELECT * FROM triggers WHERE id = ? AND user_id = ?
-    `);
-
-    const row = stmt.get(id, this.userId) as TriggerRow | undefined;
+  async get(id: string): Promise<Trigger | null> {
+    const row = await this.queryOne<TriggerRow>(
+      'SELECT * FROM triggers WHERE id = $1 AND user_id = $2',
+      [id, this.userId]
+    );
     return row ? this.mapTrigger(row) : null;
   }
 
   /**
    * Update a trigger
    */
-  update(id: string, input: UpdateTriggerInput): Trigger | null {
-    const existing = this.get(id);
+  async update(id: string, input: UpdateTriggerInput): Promise<Trigger | null> {
+    const existing = await this.get(id);
     if (!existing) return null;
 
-    const updates: string[] = ['updated_at = ?'];
+    const updates: string[] = ['updated_at = $1'];
     const values: unknown[] = [new Date().toISOString()];
+    let paramIndex = 2;
 
     if (input.name !== undefined) {
-      updates.push('name = ?');
+      updates.push(`name = $${paramIndex++}`);
       values.push(input.name);
     }
     if (input.description !== undefined) {
-      updates.push('description = ?');
+      updates.push(`description = $${paramIndex++}`);
       values.push(input.description);
     }
     if (input.config !== undefined) {
-      updates.push('config = ?');
+      updates.push(`config = $${paramIndex++}`);
       values.push(JSON.stringify(input.config));
     }
     if (input.action !== undefined) {
-      updates.push('action = ?');
+      updates.push(`action = $${paramIndex++}`);
       values.push(JSON.stringify(input.action));
     }
     if (input.enabled !== undefined) {
-      updates.push('enabled = ?');
-      values.push(input.enabled ? 1 : 0);
+      updates.push(`enabled = $${paramIndex++}`);
+      values.push(input.enabled);
     }
     if (input.priority !== undefined) {
-      updates.push('priority = ?');
+      updates.push(`priority = $${paramIndex++}`);
       values.push(Math.max(1, Math.min(10, input.priority)));
     }
 
@@ -228,100 +225,100 @@ export class TriggersRepository {
       const config = input.config ?? existing.config;
       const enabled = input.enabled ?? existing.enabled;
       if (existing.type === 'schedule' && enabled) {
-        updates.push('next_fire = ?');
+        updates.push(`next_fire = $${paramIndex++}`);
         values.push(this.calculateNextFire(config as ScheduleConfig));
       }
     }
 
     values.push(id, this.userId);
 
-    const stmt = this.db.prepare(`
-      UPDATE triggers SET ${updates.join(', ')} WHERE id = ? AND user_id = ?
-    `);
+    await this.execute(
+      `UPDATE triggers SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
+      values
+    );
 
-    stmt.run(...values);
     return this.get(id);
   }
 
   /**
    * Delete a trigger
    */
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`
-      DELETE FROM triggers WHERE id = ? AND user_id = ?
-    `);
-
-    const result = stmt.run(id, this.userId);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      'DELETE FROM triggers WHERE id = $1 AND user_id = $2',
+      [id, this.userId]
+    );
     return result.changes > 0;
   }
 
   /**
    * List triggers with filters
    */
-  list(query: TriggerQuery = {}): Trigger[] {
-    let sql = 'SELECT * FROM triggers WHERE user_id = ?';
+  async list(query: TriggerQuery = {}): Promise<Trigger[]> {
+    let sql = 'SELECT * FROM triggers WHERE user_id = $1';
     const params: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     if (query.type) {
       const types = Array.isArray(query.type) ? query.type : [query.type];
-      sql += ` AND type IN (${types.map(() => '?').join(', ')})`;
+      const placeholders = types.map(() => `$${paramIndex++}`).join(', ');
+      sql += ` AND type IN (${placeholders})`;
       params.push(...types);
     }
 
     if (query.enabled !== undefined) {
-      sql += ' AND enabled = ?';
-      params.push(query.enabled ? 1 : 0);
+      sql += ` AND enabled = $${paramIndex++}`;
+      params.push(query.enabled);
     }
 
     sql += ' ORDER BY priority DESC, created_at DESC';
 
     if (query.limit) {
-      sql += ' LIMIT ?';
+      sql += ` LIMIT $${paramIndex++}`;
       params.push(query.limit);
     }
     if (query.offset) {
-      sql += ' OFFSET ?';
+      sql += ` OFFSET $${paramIndex++}`;
       params.push(query.offset);
     }
 
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as TriggerRow[];
+    const rows = await this.query<TriggerRow>(sql, params);
     return rows.map((row) => this.mapTrigger(row));
   }
 
   /**
    * Get triggers due to fire
    */
-  getDueTriggers(): Trigger[] {
+  async getDueTriggers(): Promise<Trigger[]> {
     const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      SELECT * FROM triggers
-      WHERE user_id = ?
-        AND enabled = 1
-        AND type = 'schedule'
-        AND next_fire IS NOT NULL
-        AND next_fire <= ?
-      ORDER BY priority DESC, next_fire ASC
-    `);
+    const rows = await this.query<TriggerRow>(
+      `SELECT * FROM triggers
+       WHERE user_id = $1
+         AND enabled = true
+         AND type = 'schedule'
+         AND next_fire IS NOT NULL
+         AND next_fire <= $2
+       ORDER BY priority DESC, next_fire ASC`,
+      [this.userId, now]
+    );
 
-    const rows = stmt.all(this.userId, now) as TriggerRow[];
     return rows.map((row) => this.mapTrigger(row));
   }
 
   /**
    * Get triggers by event type
    */
-  getByEventType(eventType: string): Trigger[] {
-    const stmt = this.db.prepare(`
-      SELECT * FROM triggers
-      WHERE user_id = ?
-        AND enabled = 1
-        AND type = 'event'
-      ORDER BY priority DESC
-    `);
+  async getByEventType(eventType: string): Promise<Trigger[]> {
+    const rows = await this.query<TriggerRow>(
+      `SELECT * FROM triggers
+       WHERE user_id = $1
+         AND enabled = true
+         AND type = 'event'
+       ORDER BY priority DESC`,
+      [this.userId]
+    );
 
-    const rows = stmt.all(this.userId) as TriggerRow[];
     return rows
       .map((row) => this.mapTrigger(row))
       .filter((t) => (t.config as EventConfig).eventType === eventType);
@@ -330,32 +327,31 @@ export class TriggersRepository {
   /**
    * Get condition-based triggers
    */
-  getConditionTriggers(): Trigger[] {
-    const stmt = this.db.prepare(`
-      SELECT * FROM triggers
-      WHERE user_id = ?
-        AND enabled = 1
-        AND type = 'condition'
-      ORDER BY priority DESC
-    `);
+  async getConditionTriggers(): Promise<Trigger[]> {
+    const rows = await this.query<TriggerRow>(
+      `SELECT * FROM triggers
+       WHERE user_id = $1
+         AND enabled = true
+         AND type = 'condition'
+       ORDER BY priority DESC`,
+      [this.userId]
+    );
 
-    const rows = stmt.all(this.userId) as TriggerRow[];
     return rows.map((row) => this.mapTrigger(row));
   }
 
   /**
    * Mark trigger as fired
    */
-  markFired(id: string, nextFire?: string): void {
+  async markFired(id: string, nextFire?: string): Promise<void> {
     const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      UPDATE triggers
-      SET last_fired = ?, next_fire = ?, fire_count = fire_count + 1, updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `);
-
-    stmt.run(now, nextFire ?? null, now, id, this.userId);
+    await this.execute(
+      `UPDATE triggers
+       SET last_fired = $1, next_fire = $2, fire_count = fire_count + 1, updated_at = $3
+       WHERE id = $4 AND user_id = $5`,
+      [now, nextFire ?? null, now, id, this.userId]
+    );
   }
 
   // ==========================================================================
@@ -365,75 +361,71 @@ export class TriggersRepository {
   /**
    * Log trigger execution
    */
-  logExecution(
+  async logExecution(
     triggerId: string,
     status: TriggerStatus,
     result?: unknown,
     error?: string,
     durationMs?: number
-  ): TriggerHistory {
+  ): Promise<TriggerHistory> {
     const id = `hist_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-    const stmt = this.db.prepare(`
-      INSERT INTO trigger_history (id, trigger_id, status, result, error, duration_ms)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      triggerId,
-      status,
-      result ? JSON.stringify(result) : null,
-      error ?? null,
-      durationMs ?? null
+    await this.execute(
+      `INSERT INTO trigger_history (id, trigger_id, status, result, error, duration_ms)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        id,
+        triggerId,
+        status,
+        result ? JSON.stringify(result) : null,
+        error ?? null,
+        durationMs ?? null,
+      ]
     );
 
-    return this.getHistory(id)!;
+    return (await this.getHistory(id))!;
   }
 
   /**
    * Get history entry by ID
    */
-  getHistory(id: string): TriggerHistory | null {
-    const stmt = this.db.prepare(`
-      SELECT h.* FROM trigger_history h
-      JOIN triggers t ON h.trigger_id = t.id
-      WHERE h.id = ? AND t.user_id = ?
-    `);
-
-    const row = stmt.get(id, this.userId) as HistoryRow | undefined;
+  async getHistory(id: string): Promise<TriggerHistory | null> {
+    const row = await this.queryOne<HistoryRow>(
+      `SELECT h.* FROM trigger_history h
+       JOIN triggers t ON h.trigger_id = t.id
+       WHERE h.id = $1 AND t.user_id = $2`,
+      [id, this.userId]
+    );
     return row ? this.mapHistory(row) : null;
   }
 
   /**
    * Get history for a trigger
    */
-  getHistoryForTrigger(triggerId: string, limit = 20): TriggerHistory[] {
-    const stmt = this.db.prepare(`
-      SELECT h.* FROM trigger_history h
-      JOIN triggers t ON h.trigger_id = t.id
-      WHERE h.trigger_id = ? AND t.user_id = ?
-      ORDER BY h.fired_at DESC
-      LIMIT ?
-    `);
-
-    const rows = stmt.all(triggerId, this.userId, limit) as HistoryRow[];
+  async getHistoryForTrigger(triggerId: string, limit = 20): Promise<TriggerHistory[]> {
+    const rows = await this.query<HistoryRow>(
+      `SELECT h.* FROM trigger_history h
+       JOIN triggers t ON h.trigger_id = t.id
+       WHERE h.trigger_id = $1 AND t.user_id = $2
+       ORDER BY h.fired_at DESC
+       LIMIT $3`,
+      [triggerId, this.userId, limit]
+    );
     return rows.map((row) => this.mapHistory(row));
   }
 
   /**
    * Get recent history across all triggers
    */
-  getRecentHistory(limit = 50): Array<TriggerHistory & { triggerName: string }> {
-    const stmt = this.db.prepare(`
-      SELECT h.*, t.name as trigger_name FROM trigger_history h
-      JOIN triggers t ON h.trigger_id = t.id
-      WHERE t.user_id = ?
-      ORDER BY h.fired_at DESC
-      LIMIT ?
-    `);
-
-    const rows = stmt.all(this.userId, limit) as Array<HistoryRow & { trigger_name: string }>;
+  async getRecentHistory(limit = 50): Promise<Array<TriggerHistory & { triggerName: string }>> {
+    const rows = await this.query<HistoryRow & { trigger_name: string }>(
+      `SELECT h.*, t.name as trigger_name FROM trigger_history h
+       JOIN triggers t ON h.trigger_id = t.id
+       WHERE t.user_id = $1
+       ORDER BY h.fired_at DESC
+       LIMIT $2`,
+      [this.userId, limit]
+    );
     return rows.map((row) => ({
       ...this.mapHistory(row),
       triggerName: row.trigger_name,
@@ -443,17 +435,17 @@ export class TriggersRepository {
   /**
    * Clean up old history
    */
-  cleanupHistory(maxAgeDays = 30): number {
+  async cleanupHistory(maxAgeDays = 30): Promise<number> {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - maxAgeDays);
 
-    const stmt = this.db.prepare(`
-      DELETE FROM trigger_history
-      WHERE trigger_id IN (SELECT id FROM triggers WHERE user_id = ?)
-        AND fired_at < ?
-    `);
+    const result = await this.execute(
+      `DELETE FROM trigger_history
+       WHERE trigger_id IN (SELECT id FROM triggers WHERE user_id = $1)
+         AND fired_at < $2`,
+      [this.userId, cutoff.toISOString()]
+    );
 
-    const result = stmt.run(this.userId, cutoff.toISOString());
     return result.changes;
   }
 
@@ -464,49 +456,56 @@ export class TriggersRepository {
   /**
    * Get trigger statistics
    */
-  getStats(): {
+  async getStats(): Promise<{
     total: number;
     enabled: number;
     byType: Record<TriggerType, number>;
     totalFires: number;
     firesThisWeek: number;
     successRate: number;
-  } {
-    const total = this.db.prepare(`
-      SELECT COUNT(*) as count FROM triggers WHERE user_id = ?
-    `).get(this.userId) as { count: number };
+  }> {
+    const total = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM triggers WHERE user_id = $1',
+      [this.userId]
+    );
 
-    const enabled = this.db.prepare(`
-      SELECT COUNT(*) as count FROM triggers WHERE user_id = ? AND enabled = 1
-    `).get(this.userId) as { count: number };
+    const enabled = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM triggers WHERE user_id = $1 AND enabled = true',
+      [this.userId]
+    );
 
-    const byType = this.db.prepare(`
-      SELECT type, COUNT(*) as count FROM triggers WHERE user_id = ? GROUP BY type
-    `).all(this.userId) as Array<{ type: TriggerType; count: number }>;
+    const byType = await this.query<{ type: TriggerType; count: string }>(
+      'SELECT type, COUNT(*) as count FROM triggers WHERE user_id = $1 GROUP BY type',
+      [this.userId]
+    );
 
-    const totalFires = this.db.prepare(`
-      SELECT SUM(fire_count) as total FROM triggers WHERE user_id = ?
-    `).get(this.userId) as { total: number | null };
+    const totalFires = await this.queryOne<{ total: string | null }>(
+      'SELECT SUM(fire_count) as total FROM triggers WHERE user_id = $1',
+      [this.userId]
+    );
 
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const firesThisWeek = this.db.prepare(`
-      SELECT COUNT(*) as count FROM trigger_history h
-      JOIN triggers t ON h.trigger_id = t.id
-      WHERE t.user_id = ? AND h.fired_at >= ?
-    `).get(this.userId, weekAgo.toISOString()) as { count: number };
+    const firesThisWeek = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM trigger_history h
+       JOIN triggers t ON h.trigger_id = t.id
+       WHERE t.user_id = $1 AND h.fired_at >= $2`,
+      [this.userId, weekAgo.toISOString()]
+    );
 
-    const successCount = this.db.prepare(`
-      SELECT COUNT(*) as count FROM trigger_history h
-      JOIN triggers t ON h.trigger_id = t.id
-      WHERE t.user_id = ? AND h.status = 'success'
-    `).get(this.userId) as { count: number };
+    const successCount = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM trigger_history h
+       JOIN triggers t ON h.trigger_id = t.id
+       WHERE t.user_id = $1 AND h.status = 'success'`,
+      [this.userId]
+    );
 
-    const totalHistory = this.db.prepare(`
-      SELECT COUNT(*) as count FROM trigger_history h
-      JOIN triggers t ON h.trigger_id = t.id
-      WHERE t.user_id = ?
-    `).get(this.userId) as { count: number };
+    const totalHistory = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM trigger_history h
+       JOIN triggers t ON h.trigger_id = t.id
+       WHERE t.user_id = $1`,
+      [this.userId]
+    );
 
     const typeMap: Record<TriggerType, number> = {
       schedule: 0,
@@ -515,17 +514,20 @@ export class TriggersRepository {
       webhook: 0,
     };
     for (const row of byType) {
-      typeMap[row.type] = row.count;
+      typeMap[row.type] = parseInt(row.count, 10);
     }
 
+    const totalHistoryCount = parseInt(totalHistory?.count ?? '0', 10);
+    const successCountNum = parseInt(successCount?.count ?? '0', 10);
+
     return {
-      total: total.count,
-      enabled: enabled.count,
+      total: parseInt(total?.count ?? '0', 10),
+      enabled: parseInt(enabled?.count ?? '0', 10),
       byType: typeMap,
-      totalFires: totalFires.total ?? 0,
-      firesThisWeek: firesThisWeek.count,
-      successRate: totalHistory.count > 0
-        ? Math.round((successCount.count / totalHistory.count) * 100)
+      totalFires: parseInt(totalFires?.total ?? '0', 10),
+      firesThisWeek: parseInt(firesThisWeek?.count ?? '0', 10),
+      successRate: totalHistoryCount > 0
+        ? Math.round((successCountNum / totalHistoryCount) * 100)
         : 100,
     };
   }
@@ -559,9 +561,9 @@ export class TriggersRepository {
       name: row.name,
       description: row.description,
       type: row.type,
-      config: JSON.parse(row.config),
-      action: JSON.parse(row.action),
-      enabled: row.enabled === 1,
+      config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config,
+      action: typeof row.action === 'string' ? JSON.parse(row.action) : row.action,
+      enabled: row.enabled,
       priority: row.priority,
       lastFired: row.last_fired ? new Date(row.last_fired) : null,
       nextFire: row.next_fire ? new Date(row.next_fire) : null,
@@ -577,12 +579,14 @@ export class TriggersRepository {
       triggerId: row.trigger_id,
       firedAt: new Date(row.fired_at),
       status: row.status,
-      result: row.result ? JSON.parse(row.result) : null,
+      result: row.result ? (typeof row.result === 'string' ? JSON.parse(row.result) : row.result) : null,
       error: row.error,
       durationMs: row.duration_ms,
     };
   }
 }
 
-// Singleton instance for default user
-export const triggersRepo = new TriggersRepository();
+// Factory function for creating repository instances
+export function createTriggersRepository(userId = 'default'): TriggersRepository {
+  return new TriggersRepository(userId);
+}

@@ -10,7 +10,7 @@ import {
   type GatewayConfig,
   initializeScheduler,
   initializeChannelFactories,
-  getDatabase,
+  initializeAdapter,
   loadApiKeysToEnvironment,
   settingsRepo,
   initializePlugins,
@@ -30,11 +30,11 @@ interface ServerOptions {
 }
 
 export async function startServer(options: ServerOptions): Promise<void> {
-  // Initialize database first
-  getDatabase();
+  // Initialize PostgreSQL database first
+  await initializeAdapter();
 
   // Load saved API keys from database into environment (for SDKs)
-  loadApiKeysToEnvironment();
+  await loadApiKeysToEnvironment();
 
   const port = parseInt(options.port, 10);
   const host = options.host;
@@ -48,8 +48,8 @@ export async function startServer(options: ServerOptions): Promise<void> {
   // Configure auth from database
   if (options.auth !== false) {
     // Check database first, then fall back to ENV for backward compatibility
-    const dbApiKeys = settingsRepo.get<string>(GATEWAY_API_KEYS_KEY);
-    const dbJwtSecret = settingsRepo.get<string>(GATEWAY_JWT_SECRET_KEY);
+    const dbApiKeys = await settingsRepo.get<string>(GATEWAY_API_KEYS_KEY);
+    const dbJwtSecret = await settingsRepo.get<string>(GATEWAY_JWT_SECRET_KEY);
 
     const apiKeys = dbApiKeys?.split(',').filter(Boolean) ?? process.env.API_KEYS?.split(',').filter(Boolean);
     const jwtSecret = dbJwtSecret ?? process.env.JWT_SECRET;
@@ -67,8 +67,8 @@ export async function startServer(options: ServerOptions): Promise<void> {
 
   // Configure rate limiting from database
   if (options.rateLimit !== false) {
-    const dbRateLimitMax = settingsRepo.get<number>(GATEWAY_RATE_LIMIT_MAX_KEY);
-    const dbRateLimitWindow = settingsRepo.get<number>(GATEWAY_RATE_LIMIT_WINDOW_KEY);
+    const dbRateLimitMax = await settingsRepo.get<number>(GATEWAY_RATE_LIMIT_MAX_KEY);
+    const dbRateLimitWindow = await settingsRepo.get<number>(GATEWAY_RATE_LIMIT_WINDOW_KEY);
 
     config.rateLimit = {
       windowMs: dbRateLimitWindow ?? parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? '60000', 10),

@@ -19,5 +19,8 @@ export * from './google.js';
 // Provider router (smart selection)
 export * from './router.js';
 
+// Fallback provider (automatic failover)
+export * from './fallback.js';
+
 // Aggregator providers (fal.ai, together.ai, groq, etc.)
 export * from './aggregators.js';

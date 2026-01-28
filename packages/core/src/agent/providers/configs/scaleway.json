@@ -12,6 +12,68 @@
   },
   "models": [
     {
+      "id": "devstral-2-123b-instruct-2512",
+      "name": "Devstral 2 123B Instruct (2512)",
+      "contextWindow": 256000,
+      "maxOutput": 8192,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-07"
+    },
+    {
+      "id": "qwen3-235b-a22b-instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "contextWindow": 260000,
+      "maxOutput": 8192,
+      "inputPrice": 0.75,
+      "outputPrice": 2.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-01"
+    },
+    {
+      "id": "voxtral-small-24b-2507",
+      "name": "Voxtral Small 24B 2507",
+      "contextWindow": 32000,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 0.35,
+      "capabilities": [
+        "chat",
+        "audio",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-01"
+    },
+    {
+      "id": "mistral-small-3.2-24b-instruct-2506",
+      "name": "Mistral Small 3.2 24B Instruct (2506)",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 0.35,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-20"
+    },
+    {
       "id": "qwen3-coder-30b-a3b-instruct",
       "name": "Qwen3-Coder 30B-A3B Instruct",
       "contextWindow": 128000,
@@ -21,10 +83,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -40,6 +101,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
     },
     {
@@ -54,6 +116,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -65,10 +128,10 @@
       "outputPrice": 0.9,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     },
     {
@@ -85,110 +148,8 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "bge-multilingual-gemma2",
-      "name": "BGE Multilingual Gemma2",
-      "contextWindow": 8191,
-      "maxOutput": 3072,
-      "inputPrice": 0.13,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-07-26"
-    },
-    {
-      "id": "gpt-oss-120b",
-      "name": "GPT-OSS 120B",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-01-01"
-    },
-    {
-      "id": "whisper-large-v3",
-      "name": "Whisper Large v3",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.003,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "audio",
-        "streaming"
-      ],
-      "releaseDate": "2023-09-01"
-    },
-    {
-      "id": "devstral-2-123b-instruct-2512",
-      "name": "Devstral 2 123B Instruct (2512)",
-      "contextWindow": 256000,
-      "maxOutput": 8192,
-      "inputPrice": 0.4,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming",
-        "code"
-      ],
-      "releaseDate": "2026-01-07"
-    },
-    {
-      "id": "qwen3-235b-a22b-instruct-2507",
-      "name": "Qwen3 235B A22B Instruct 2507",
-      "contextWindow": 260000,
-      "maxOutput": 8192,
-      "inputPrice": 0.75,
-      "outputPrice": 2.25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-01"
-    },
-    {
-      "id": "voxtral-small-24b-2507",
-      "name": "Voxtral Small 24B 2507",
-      "contextWindow": 32000,
-      "maxOutput": 8192,
-      "inputPrice": 0.15,
-      "outputPrice": 0.35,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-01"
-    },
-    {
-      "id": "mistral-small-3.2-24b-instruct-2506",
-      "name": "Mistral Small 3.2 24B Instruct (2506)",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.15,
-      "outputPrice": 0.35,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-06-20"
     },
     {
       "id": "pixtral-12b-2409",
@@ -203,7 +164,22 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-25"
+    },
+    {
+      "id": "bge-multilingual-gemma2",
+      "name": "BGE Multilingual Gemma2",
+      "contextWindow": 8191,
+      "maxOutput": 3072,
+      "inputPrice": 0.13,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-26"
     },
     {
       "id": "mistral-nemo-instruct-2407",
@@ -214,11 +190,41 @@
       "outputPrice": 0.2,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-25"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "GPT-OSS 120B",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-01"
+    },
+    {
+      "id": "whisper-large-v3",
+      "name": "Whisper Large v3",
+      "contextWindow": 8192,
+      "maxOutput": 4096,
+      "inputPrice": 0.003,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-09-01"
     }
   ],
   "baseUrl": "https://api.scaleway.ai/v1",

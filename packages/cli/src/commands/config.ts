@@ -7,7 +7,7 @@
 
 import { createInterface } from 'node:readline';
 import {
-  getDatabase,
+  initializeAdapter,
   settingsRepo,
   getDatabasePath,
 } from '@ownpilot/gateway';
@@ -118,7 +118,7 @@ export async function configSet(options: ConfigSetOptions): Promise<void> {
   const { key, value } = options;
 
   // Initialize database
-  getDatabase();
+  await initializeAdapter();
 
   const { dbKey, isApiKey } = parseKey(key);
 
@@ -134,7 +134,7 @@ export async function configSet(options: ConfigSetOptions): Promise<void> {
   }
 
   // Store in database
-  settingsRepo.set(dbKey, configValue.trim());
+  await settingsRepo.set(dbKey, configValue.trim());
 
   // For API keys, also set in environment for immediate use
   if (isApiKey) {
@@ -153,10 +153,10 @@ export async function configGet(options: ConfigGetOptions): Promise<void> {
   const { key } = options;
 
   // Initialize database
-  getDatabase();
+  await initializeAdapter();
 
   const { dbKey, isSensitive } = parseKey(key);
-  const value = settingsRepo.get<string>(dbKey);
+  const value = await settingsRepo.get<string>(dbKey);
 
   if (value) {
     // Mask sensitive values
@@ -180,12 +180,12 @@ export async function configDelete(options: ConfigDeleteOptions): Promise<void> 
   const { key } = options;
 
   // Initialize database
-  getDatabase();
+  await initializeAdapter();
 
   const { dbKey, isApiKey } = parseKey(key);
 
-  if (settingsRepo.has(dbKey)) {
-    settingsRepo.delete(dbKey);
+  if (await settingsRepo.has(dbKey)) {
+    await settingsRepo.delete(dbKey);
 
     // For API keys, also remove from environment
     if (isApiKey) {
@@ -205,7 +205,7 @@ export async function configDelete(options: ConfigDeleteOptions): Promise<void> 
  */
 export async function configList(): Promise<void> {
   // Initialize database
-  getDatabase();
+  await initializeAdapter();
 
   console.log('\n🔐 Configuration (stored in database):\n');
 
@@ -213,7 +213,7 @@ export async function configList(): Promise<void> {
   console.log('API Keys:');
   for (const provider of VALID_PROVIDERS) {
     const dbKey = `${API_KEY_PREFIX}${provider}`;
-    const hasKey = settingsRepo.has(dbKey);
+    const hasKey = await settingsRepo.has(dbKey);
     const status = hasKey ? '✅ Set' : '⬜ Not set';
     console.log(`   ${provider}-api-key: ${status}`);
   }
@@ -226,14 +226,14 @@ export async function configList(): Promise<void> {
   // List AI settings
   console.log('\nAI Settings:');
   for (const key of aiSettings) {
-    const value = settingsRepo.get<string>(key);
+    const value = await settingsRepo.get<string>(key);
     console.log(`   ${key}: ${value ?? '(not set)'}`);
   }
 
   // List channel settings
   console.log('\nChannel Settings:');
   for (const key of channelSettings) {
-    const value = settingsRepo.get<string>(key);
+    const value = await settingsRepo.get<string>(key);
     if (value) {
       const masked = value.length > 12
         ? value.substring(0, 8) + '...' + value.substring(value.length - 4)
@@ -247,7 +247,7 @@ export async function configList(): Promise<void> {
   // List gateway settings
   console.log('\nGateway Settings:');
   for (const key of gatewaySettings) {
-    const value = settingsRepo.get<string>(key);
+    const value = await settingsRepo.get<string>(key);
     if (value) {
       // Mask sensitive values
       if (key.includes('secret') || key === 'gateway_api_keys') {
@@ -273,10 +273,10 @@ export async function configList(): Promise<void> {
  * Just initializes the database
  */
 export async function setup(): Promise<void> {
-  // Initialize database
-  getDatabase();
+  // Initialize PostgreSQL database
+  await initializeAdapter();
 
-  console.log('\n✅ Database initialized!');
+  console.log('\n✅ PostgreSQL database initialized!');
   console.log(`   Location: ${getDatabasePath()}`);
   console.log('\nNext steps:');
   console.log('   ownpilot config set openai-api-key     # Add your OpenAI key');
@@ -292,8 +292,8 @@ export async function setup(): Promise<void> {
  */
 export async function configChangePassword(): Promise<void> {
   console.log('\n⚠️  Password-based encryption has been removed.');
-  console.log('   All settings are now stored in the SQLite database.');
-  console.log('   Use filesystem permissions to protect the database file.');
+  console.log('   All settings are now stored in the PostgreSQL database.');
+  console.log('   Use database access controls to protect the data.');
   console.log('');
 }
 
@@ -302,10 +302,10 @@ export async function configChangePassword(): Promise<void> {
  */
 export async function loadCredentialsToEnv(): Promise<void> {
   // Initialize database
-  getDatabase();
+  await initializeAdapter();
 
   // Load all API keys from database to environment
-  const apiKeySettings = settingsRepo.getByPrefix(API_KEY_PREFIX);
+  const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
 
   for (const setting of apiKeySettings) {
     const provider = setting.key.replace(API_KEY_PREFIX, '');

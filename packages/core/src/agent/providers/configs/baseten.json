@@ -39,6 +39,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-01"
     },
     {
@@ -54,6 +55,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-06"
     },
     {
@@ -68,21 +70,8 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-16"
-    },
-    {
-      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
-      "name": "Qwen3 Coder 480B A35B Instruct",
-      "contextWindow": 262144,
-      "maxOutput": 66536,
-      "inputPrice": 0.38,
-      "outputPrice": 1.53,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-23"
     },
     {
       "id": "moonshotai/Kimi-K2-Instruct-0905",
@@ -96,7 +85,23 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 66536,
+      "inputPrice": 0.38,
+      "outputPrice": 1.53,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-23"
     }
   ],
   "baseUrl": "https://inference.baseten.co/v1",

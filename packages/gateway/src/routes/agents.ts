@@ -25,6 +25,7 @@ import {
   DYNAMIC_TOOL_DEFINITIONS,
   getDefaultPluginRegistry,
   TOOL_GROUPS,
+  getProviderConfig as coreGetProviderConfig,
   type AgentConfig,
   type AIProvider,
   type ToolExecutionResult as CoreToolResult,
@@ -62,11 +63,11 @@ import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getD
 /**
  * Build memory context string from important memories
  */
-function buildMemoryContext(userId = 'default'): string {
+async function buildMemoryContext(userId = 'default'): Promise<string> {
   const repo = new MemoriesRepository(userId);
 
   // Get important memories
-  const importantMemories = repo.getImportant(0.5, 10);
+  const importantMemories = await repo.getImportant(0.5, 10);
 
   const sections: string[] = [];
 
@@ -126,12 +127,12 @@ You have access to a persistent memory system. Use it wisely:
 /**
  * Build goal context string from active goals
  */
-function buildGoalContext(userId = 'default'): string {
+async function buildGoalContext(userId = 'default'): Promise<string> {
   const repo = new GoalsRepository(userId);
 
   // Get active goals
-  const activeGoals = repo.getActive(5);
-  const nextActions = repo.getNextActions(3);
+  const activeGoals = await repo.getActive(5);
+  const nextActions = await repo.getNextActions(3);
 
   const sections: string[] = [];
 
@@ -197,34 +198,20 @@ export function getWorkspaceContext(sessionWorkspaceDir?: string): WorkspaceCont
 }
 
 // Path to provider configs
-const CONFIGS_DIR = path.join(__dirname, '..', '..', '..', 'core', 'src', 'agent', 'providers', 'configs');
-
-// Provider config cache
-const providerConfigCache = new Map<string, { baseUrl?: string; apiKeyEnv?: string }>();
-
 /**
- * Load provider config from JSON file
+ * Load provider config from core module
+ * Uses the core's getProviderConfig which properly resolves JSON paths
  */
-function loadProviderConfig(providerId: string): { baseUrl?: string; apiKeyEnv?: string } | null {
-  if (providerConfigCache.has(providerId)) {
-    return providerConfigCache.get(providerId)!;
-  }
-
-  try {
-    const configPath = path.join(CONFIGS_DIR, `${providerId}.json`);
-    if (!fs.existsSync(configPath)) {
-      return null;
-    }
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    const result = {
-      baseUrl: config.baseUrl,
-      apiKeyEnv: config.apiKeyEnv,
-    };
-    providerConfigCache.set(providerId, result);
-    return result;
-  } catch {
+function loadProviderConfig(providerId: string): { baseUrl?: string; apiKeyEnv?: string; type?: string } | null {
+  const config = coreGetProviderConfig(providerId);
+  if (!config) {
     return null;
   }
+  return {
+    baseUrl: config.baseUrl,
+    apiKeyEnv: config.apiKeyEnv,
+    type: config.type,
+  };
 }
 
 /**
@@ -260,6 +247,16 @@ const agentCache = new Map<string, Agent>();
 const agentConfigCache = new Map<string, AgentConfig>();
 
 /**
+ * Clear all agent caches
+ * Call this when custom tools, plugins, or other dynamic resources change
+ */
+export function invalidateAgentCache(): void {
+  agentCache.clear();
+  agentConfigCache.clear();
+  console.log('[Agents] Agent cache invalidated due to tool/plugin changes');
+}
+
+/**
  * Generate unique agent ID
  */
 function generateAgentId(): string {
@@ -271,7 +268,7 @@ function generateAgentId(): string {
  */
 async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Resolve "default" provider/model to actual values
-  const { provider: resolvedProvider, model: resolvedModel } = resolveProviderAndModel(
+  const { provider: resolvedProvider, model: resolvedModel } = await resolveProviderAndModel(
     record.provider,
     record.model
   );
@@ -284,7 +281,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     throw new Error(`No model configured for provider: ${resolvedProvider}`);
   }
 
-  const apiKey = getProviderApiKey(resolvedProvider);
+  const apiKey = await getProviderApiKey(resolvedProvider);
   if (!apiKey) {
     throw new Error(`API key not configured for provider: ${resolvedProvider}`);
   }
@@ -307,7 +304,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
 
-      const result = executeMemoryTool(toolDef.name, args as Record<string, unknown>, userId);
+      const result = await executeMemoryTool(toolDef.name, args as Record<string, unknown>, userId);
 
       // Trace memory operation
       if (toolDef.name === 'remember') {
@@ -344,7 +341,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
 
-      const result = executeGoalTool(toolDef.name, args as Record<string, unknown>, userId);
+      const result = await executeGoalTool(toolDef.name, args as Record<string, unknown>, userId);
 
       // Trace goal/database operation
       if (toolDef.name === 'create_goal') {
@@ -376,7 +373,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
 
-      const result = executeCustomDataTool(toolDef.name, args as Record<string, unknown>);
+      const result = await executeCustomDataTool(toolDef.name, args as Record<string, unknown>);
 
       // Trace database operations
       if (toolDef.name === 'create_custom_table' || toolDef.name === 'delete_custom_table') {
@@ -414,7 +411,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
 
-      const result = executePersonalDataTool(toolDef.name, args as Record<string, unknown>);
+      const result = await executePersonalDataTool(toolDef.name, args as Record<string, unknown>);
 
       // Trace database operations
       const toolName = toolDef.name;
@@ -451,7 +448,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
 
-      const result = executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
+      const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
 
       // Trace database operations
       if (toolDef.name === 'create_tool') {
@@ -481,7 +478,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   }
 
   // Register active custom tools (user-created dynamic tools)
-  const activeCustomToolDefs = getActiveCustomToolDefinitions(userId);
+  const activeCustomToolDefs = await getActiveCustomToolDefinitions(userId);
   for (const toolDef of activeCustomToolDefs) {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
@@ -538,24 +535,35 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   // Get tool definitions for prompt injection
   const channelToolDefs = CHANNEL_TOOLS.map(t => t.definition);
-  const allToolDefs = [...getToolDefinitions(), ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...channelToolDefs, ...pluginToolDefs];
+
+  // Separate standard tools (from TOOL_GROUPS) and special tools that bypass filtering
+  const standardToolDefs = [...getToolDefinitions(), ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...channelToolDefs];
+
+  // These tools ALWAYS bypass toolGroup filtering:
+  // - DYNAMIC_TOOL_DEFINITIONS: Meta-tools for managing custom tools (create_tool, etc.)
+  // - activeCustomToolDefs: User's custom tools (always available when active)
+  // - pluginToolDefs: Plugin-provided tools (explicitly installed by user)
+  const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs];
 
   // Filter tools based on agent's toolGroups configuration
   const configuredToolGroups = (record.config.toolGroups as string[] | undefined);
   const configuredTools = (record.config.tools as string[] | undefined);
   const allowedToolNames = new Set(resolveToolGroups(configuredToolGroups, configuredTools));
 
-  // Only include tools that the agent is configured to use
-  // If no toolGroups are configured, include all tools (for backwards compatibility)
-  const toolDefs = allowedToolNames.size > 0
-    ? allToolDefs.filter(tool => allowedToolNames.has(tool.name))
-    : allToolDefs;
+  // Only filter standard tools by toolGroups
+  // Custom tools, dynamic tools, and plugin tools are ALWAYS included
+  // If no toolGroups are configured, include all standard tools (backwards compatibility)
+  const filteredStandardTools = allowedToolNames.size > 0
+    ? standardToolDefs.filter(tool => allowedToolNames.has(tool.name))
+    : standardToolDefs;
+
+  const toolDefs = [...filteredStandardTools, ...alwaysIncludedToolDefs];
 
   // Build memory context from persistent memories
-  const memoryContext = buildMemoryContext('default');
+  const memoryContext = await buildMemoryContext('default');
 
   // Build goal context from active goals
-  const goalContext = buildGoalContext('default');
+  const goalContext = await buildGoalContext('default');
 
   // Inject memory and goal context into system prompt
   const basePrompt = record.systemPrompt ?? 'You are a helpful personal AI assistant.';
@@ -614,8 +622,8 @@ export const agentRoutes = new Hono();
 /**
  * List all agents
  */
-agentRoutes.get('/', (c) => {
-  const records = agentsRepo.getAll();
+agentRoutes.get('/', async (c) => {
+  const records = await agentsRepo.getAll();
 
   const agentList: AgentInfo[] = records.map((record) => {
     // Resolve tools from config (explicit tools and/or toolGroups)
@@ -661,17 +669,12 @@ agentRoutes.post('/', async (c) => {
     });
   }
 
-  // Check for API key
-  const apiKey = getProviderApiKey(body.provider);
-  if (!apiKey) {
-    throw new HTTPException(400, {
-      message: `API key not configured for provider: ${body.provider}`,
-    });
-  }
+  // Note: API key validation is skipped during agent creation
+  // The key is only required when actually using the agent
 
   // Generate agent ID
   const id = generateAgentId();
-  const requestedModel = body.model ?? getDefaultModel(body.provider);
+  const requestedModel = body.model ?? await getDefaultModel(body.provider);
 
   // Validate model
   if (!requestedModel) {
@@ -682,7 +685,7 @@ agentRoutes.post('/', async (c) => {
   const model = requestedModel;
 
   // Store in database
-  const record = agentsRepo.create({
+  const record = await agentsRepo.create({
     id,
     name: body.name,
     systemPrompt: body.systemPrompt,
@@ -697,8 +700,10 @@ agentRoutes.post('/', async (c) => {
     },
   });
 
-  // Create runtime instance
-  const agent = await createAgentFromRecord(record);
+  // Return the stored record without creating runtime agent
+  // Runtime agent will be created on-demand when the agent is used
+  const config = record.config as Record<string, unknown>;
+  const tools = (config.tools as string[]) ?? [];
 
   const response: ApiResponse<AgentInfo> = {
     success: true,
@@ -707,7 +712,7 @@ agentRoutes.post('/', async (c) => {
       name: record.name,
       provider: record.provider,
       model: record.model,
-      tools: agent.getTools().map((t) => t.name),
+      tools,
       createdAt: record.createdAt.toISOString(),
     },
     meta: {
@@ -722,9 +727,9 @@ agentRoutes.post('/', async (c) => {
 /**
  * Get agent by ID (with full details)
  */
-agentRoutes.get('/:id', (c) => {
+agentRoutes.get('/:id', async (c) => {
   const id = c.req.param('id');
-  const record = agentsRepo.getById(id);
+  const record = await agentsRepo.getById(id);
 
   if (!record) {
     throw new HTTPException(404, {
@@ -788,7 +793,7 @@ agentRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<UpdateAgentRequest>();
 
-  const existing = agentsRepo.getById(id);
+  const existing = await agentsRepo.getById(id);
   if (!existing) {
     throw new HTTPException(404, {
       message: `Agent not found: ${id}`,
@@ -797,7 +802,7 @@ agentRoutes.patch('/:id', async (c) => {
 
   // If provider is being changed, validate API key
   if (body.provider && body.provider !== existing.provider) {
-    const apiKey = getProviderApiKey(body.provider);
+    const apiKey = await getProviderApiKey(body.provider);
     if (!apiKey) {
       throw new HTTPException(400, {
         message: `API key not configured for provider: ${body.provider}`,
@@ -816,7 +821,7 @@ agentRoutes.patch('/:id', async (c) => {
   if (body.tools !== undefined) newConfig.tools = body.tools;
 
   // Update database
-  const updated = agentsRepo.update(id, {
+  const updated = await agentsRepo.update(id, {
     name: body.name,
     systemPrompt: body.systemPrompt,
     provider: body.provider,
@@ -867,10 +872,10 @@ agentRoutes.patch('/:id', async (c) => {
 /**
  * Delete agent
  */
-agentRoutes.delete('/:id', (c) => {
+agentRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
 
-  const deleted = agentsRepo.delete(id);
+  const deleted = await agentsRepo.delete(id);
 
   if (!deleted) {
     throw new HTTPException(404, {
@@ -898,7 +903,7 @@ agentRoutes.delete('/:id', (c) => {
  */
 agentRoutes.post('/:id/reset', async (c) => {
   const id = c.req.param('id');
-  const record = agentsRepo.getById(id);
+  const record = await agentsRepo.getById(id);
 
   if (!record) {
     throw new HTTPException(404, {
@@ -937,11 +942,11 @@ agentRoutes.post('/resync', async (c) => {
 
   for (const agent of defaultAgents) {
     try {
-      const existing = agentsRepo.getById(agent.id);
+      const existing = await agentsRepo.getById(agent.id);
 
       if (existing) {
         // Update existing agent config with new toolGroups
-        agentsRepo.update(agent.id, {
+        await agentsRepo.update(agent.id, {
           config: {
             ...existing.config,
             ...agent.config,
@@ -953,7 +958,7 @@ agentRoutes.post('/resync', async (c) => {
         updated++;
       } else {
         // Create new agent
-        agentsRepo.create({
+        await agentsRepo.create({
           id: agent.id,
           name: agent.name,
           systemPrompt: agent.systemPrompt,
@@ -994,7 +999,7 @@ export async function getAgent(id: string): Promise<Agent | undefined> {
   if (agent) return agent;
 
   // Try to load from database
-  const record = agentsRepo.getById(id);
+  const record = await agentsRepo.getById(id);
   if (!record) return undefined;
 
   // Create runtime instance
@@ -1017,21 +1022,21 @@ export async function getOrCreateDefaultAgent(): Promise<Agent> {
   if (defaultAgent) return defaultAgent;
 
   // Check database
-  let record = agentsRepo.getById(defaultId);
+  let record = await agentsRepo.getById(defaultId);
 
   if (!record) {
     // Find first configured provider dynamically
-    const provider = getDefaultProvider();
+    const provider = await getDefaultProvider();
     if (!provider) {
       throw new Error('No API key configured for any provider. Configure a provider in Settings.');
     }
 
-    const model = getDefaultModel(provider);
+    const model = await getDefaultModel(provider);
     if (!model) {
       throw new Error(`No model available for provider: ${provider}`);
     }
 
-    record = agentsRepo.create({
+    record = await agentsRepo.create({
       id: defaultId,
       name: 'Personal Assistant',
       systemPrompt: 'You are a helpful personal AI assistant. You help the user with their daily tasks, remember their preferences, and proactively assist them.',
@@ -1066,7 +1071,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   if (agent) return agent;
 
   // Get API key for the provider
-  const apiKey = getProviderApiKey(provider);
+  const apiKey = await getProviderApiKey(provider);
   if (!apiKey) {
     throw new Error(`API key not configured for provider: ${provider}`);
   }
@@ -1089,7 +1094,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   const userId = 'default';
   for (const toolDef of MEMORY_TOOLS) {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = executeMemoryTool(toolDef.name, args as Record<string, unknown>, userId);
+      const result = await executeMemoryTool(toolDef.name, args as Record<string, unknown>, userId);
       if (result.success) {
         return {
           content: typeof result.result === 'string'
@@ -1104,7 +1109,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   // Register goal tools with gateway executors
   for (const toolDef of GOAL_TOOLS) {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = executeGoalTool(toolDef.name, args as Record<string, unknown>, userId);
+      const result = await executeGoalTool(toolDef.name, args as Record<string, unknown>, userId);
       if (result.success) {
         return {
           content: typeof result.result === 'string'
@@ -1119,7 +1124,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   // Register custom data tools with gateway executors
   for (const toolDef of CUSTOM_DATA_TOOLS) {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = executeCustomDataTool(toolDef.name, args as Record<string, unknown>);
+      const result = await executeCustomDataTool(toolDef.name, args as Record<string, unknown>);
       if (result.success) {
         return {
           content: typeof result.result === 'string'
@@ -1134,7 +1139,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   // Register personal data tools with gateway executors
   for (const toolDef of PERSONAL_DATA_TOOLS) {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = executePersonalDataTool(toolDef.name, args as Record<string, unknown>);
+      const result = await executePersonalDataTool(toolDef.name, args as Record<string, unknown>);
       if (result.success) {
         return {
           content: typeof result.result === 'string'
@@ -1149,7 +1154,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
+      const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
       if (result.success) {
         return {
           content: typeof result.result === 'string'
@@ -1162,7 +1167,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   }
 
   // Register active custom tools (user-created dynamic tools)
-  const activeCustomToolDefs = getActiveCustomToolDefinitions(userId);
+  const activeCustomToolDefs = await getActiveCustomToolDefinitions(userId);
   for (const toolDef of activeCustomToolDefs) {
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const result = await executeActiveCustomTool(toolDef.name, args as Record<string, unknown>, userId, {
@@ -1246,11 +1251,48 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
 }
 
 /**
+ * Reset chat agent context - clears conversation memory
+ * Call this when user starts a "New Chat"
+ */
+export function resetChatAgentContext(provider: string, model: string): boolean {
+  const cacheKey = `chat:${provider}:${model}`;
+  const agent = chatAgentCache.get(cacheKey);
+
+  if (agent) {
+    // Clear the conversation memory and create a fresh conversation
+    const memory = agent.getMemory();
+    const currentConversation = agent.getConversation();
+
+    // Delete the old conversation
+    memory.delete(currentConversation.id);
+
+    // Create a new conversation with the same system prompt
+    const newConversation = memory.create(currentConversation.systemPrompt);
+    agent.loadConversation(newConversation.id);
+
+    console.log(`[Chat] Reset context for ${provider}/${model}, new conversation: ${newConversation.id}`);
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Clear all chat agent caches - useful for full reset
+ */
+export function clearAllChatAgentCaches(): number {
+  const count = chatAgentCache.size;
+  chatAgentCache.clear();
+  console.log(`[Chat] Cleared ${count} cached chat agents`);
+  return count;
+}
+
+/**
  * Helper: Get API key for a provider
  * Uses getApiKey from settings which checks both env vars and database
  */
-export function getProviderApiKey(provider: string): string | undefined {
-  return getApiKey(provider);
+export async function getProviderApiKey(provider: string): Promise<string | undefined> {
+  return await getApiKey(provider);
 }
 
 // getDefaultModel is imported from settings.ts
@@ -1259,12 +1301,17 @@ export { getDefaultModel } from './settings.js';
 /**
  * Check if demo mode is enabled (no API keys configured)
  */
-export function isDemoMode(): boolean {
+export async function isDemoMode(): Promise<boolean> {
   // Check all supported providers
   const providers = [
     'openai', 'anthropic', 'zhipu', 'deepseek', 'groq',
     'google', 'xai', 'mistral', 'together', 'fireworks', 'perplexity'
   ];
 
-  return !providers.some(provider => hasApiKey(provider));
+  for (const provider of providers) {
+    if (await hasApiKey(provider)) {
+      return false;
+    }
+  }
+  return true;
 }

@@ -37,11 +37,11 @@
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-08"
     },
     {
@@ -57,6 +57,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-30"
     },
     {
@@ -69,11 +70,11 @@
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-11"
     },
     {
@@ -89,6 +90,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-28"
     },
     {
@@ -104,6 +106,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-28"
     },
     {
@@ -119,6 +122,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-28"
     }
   ],

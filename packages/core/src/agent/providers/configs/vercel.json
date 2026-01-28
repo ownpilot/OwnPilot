@@ -21,7 +21,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
@@ -42,6 +41,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-22"
     },
     {
@@ -57,6 +57,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-17"
     },
     {
@@ -73,6 +74,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-17"
     },
     {
@@ -85,9 +87,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-09"
     },
     {
@@ -102,6 +104,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-02"
     },
     {
@@ -116,6 +119,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-01"
     },
     {
@@ -131,6 +135,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-01"
     },
     {
@@ -144,6 +149,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-01"
     },
     {
@@ -157,6 +163,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12"
     },
     {
@@ -171,9 +178,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12"
     },
     {
@@ -189,6 +196,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-26"
     },
     {
@@ -205,7 +213,26 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-24"
+    },
+    {
+      "id": "google/gemini-3-pro-preview",
+      "name": "Gemini 3 Pro Preview",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 2,
+      "outputPrice": 12,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-18"
     },
     {
       "id": "alibaba/qwen3-embedding-0.6b",
@@ -218,6 +245,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-14"
     },
     {
@@ -233,6 +261,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-06"
     },
     {
@@ -248,6 +277,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-06"
     },
     {
@@ -263,6 +293,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-27"
     },
     {
@@ -278,6 +309,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-27"
     },
     {
@@ -293,6 +325,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-27"
     },
     {
@@ -305,9 +338,9 @@
       "capabilities": [
         "chat",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-24"
     },
     {
@@ -324,6 +357,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-15"
     },
     {
@@ -340,6 +374,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10"
     },
     {
@@ -356,6 +391,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-30"
     },
     {
@@ -371,6 +407,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-30"
     },
     {
@@ -387,6 +424,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-30"
     },
     {
@@ -402,6 +440,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-29"
     },
     {
@@ -418,7 +457,44 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "google/gemini-2.5-flash-preview-09-2025",
+      "name": "Gemini 2.5 Flash Preview 09-25",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-25"
+    },
+    {
+      "id": "google/gemini-2.5-flash-lite-preview-09-2025",
+      "name": "Gemini 2.5 Flash Lite Preview 09-25",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-25"
     },
     {
       "id": "alibaba/qwen3-vl-instruct",
@@ -433,6 +509,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-24"
     },
     {
@@ -449,6 +526,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-24"
     },
     {
@@ -463,6 +541,22 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
+      "releaseDate": "2025-09-23"
+    },
+    {
+      "id": "alibaba/qwen3-max-preview",
+      "name": "Qwen3 Max Preview",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 1.2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2025-09-23"
     },
     {
@@ -478,6 +572,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-23"
     },
     {
@@ -493,6 +588,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-22"
     },
     {
@@ -508,6 +604,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-19"
     },
     {
@@ -523,9 +620,9 @@
         "function_calling",
         "json_mode",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-15"
     },
     {
@@ -540,6 +637,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-12"
     },
     {
@@ -555,6 +653,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-12"
     },
     {
@@ -569,6 +668,21 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
+      "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "moonshotai/kimi-k2-0905",
+      "name": "Kimi K2 0905",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.6,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2025-09-05"
     },
     {
@@ -584,6 +698,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09"
     },
     {
@@ -597,6 +712,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09"
     },
     {
@@ -611,6 +727,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-30"
     },
     {
@@ -624,9 +741,9 @@
         "chat",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-28"
     },
     {
@@ -642,6 +759,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-21"
     },
     {
@@ -657,6 +775,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-18"
     },
     {
@@ -673,6 +792,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-11"
     },
     {
@@ -689,6 +809,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -703,9 +824,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -722,6 +843,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -738,6 +860,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -754,6 +877,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -770,6 +894,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -784,9 +909,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -803,6 +928,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -819,6 +945,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -836,6 +963,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -853,6 +981,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -870,6 +999,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -885,6 +1015,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -900,6 +1031,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -915,6 +1047,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-28"
     },
     {
@@ -930,6 +1063,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-28"
     },
     {
@@ -942,9 +1076,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-23"
     },
     {
@@ -959,6 +1093,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-14"
     },
     {
@@ -974,6 +1109,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-09"
     },
     {
@@ -989,6 +1125,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-09"
     },
     {
@@ -1003,6 +1140,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-09"
     },
     {
@@ -1018,6 +1156,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-09"
     },
     {
@@ -1031,11 +1170,11 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-17"
     },
     {
@@ -1052,6 +1191,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-09"
     },
     {
@@ -1065,6 +1205,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-05"
     },
     {
@@ -1078,45 +1219,49 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-05"
     },
     {
       "id": "bfl/flux-kontext-pro",
       "name": "FLUX.1 Kontext Pro",
       "contextWindow": 512,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06"
     },
     {
       "id": "bfl/flux-kontext-max",
       "name": "FLUX.1 Kontext Max",
       "contextWindow": 512,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06"
     },
     {
       "id": "google/imagen-4.0-fast-generate-001",
       "name": "Imagen 4 Fast",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06"
     },
     {
@@ -1128,22 +1273,23 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-28"
     },
     {
       "id": "google/imagen-4.0-ultra-generate-001",
       "name": "Imagen 4 Ultra",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-24"
     },
     {
@@ -1160,19 +1306,21 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
       "id": "google/imagen-4.0-generate-001",
       "name": "Imagen 4",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -1189,6 +1337,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -1205,6 +1354,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -1221,6 +1371,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -1234,6 +1385,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-20"
     },
     {
@@ -1247,6 +1399,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-20"
     },
     {
@@ -1260,6 +1413,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-20"
     },
     {
@@ -1274,9 +1428,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-16"
     },
     {
@@ -1291,9 +1445,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-16"
     },
     {
@@ -1309,6 +1463,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-07"
     },
     {
@@ -1321,9 +1476,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-07"
     },
     {
@@ -1336,9 +1491,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-07"
     },
     {
@@ -1355,6 +1510,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-16"
     },
     {
@@ -1372,6 +1528,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-16"
     },
     {
@@ -1389,6 +1546,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-16"
     },
     {
@@ -1402,6 +1560,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-15"
     },
     {
@@ -1418,6 +1577,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -1434,6 +1594,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -1450,6 +1611,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -1465,6 +1627,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -1480,6 +1643,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -1492,9 +1656,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -1510,6 +1674,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -1524,6 +1689,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -1539,6 +1705,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -1555,6 +1722,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -1570,6 +1738,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -1583,9 +1752,9 @@
         "chat",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -1599,6 +1768,21 @@
         "chat",
         "streaming"
       ],
+      "default": false,
+      "releaseDate": "2025-03-20"
+    },
+    {
+      "id": "google/gemini-2.5-flash-image-preview",
+      "name": "Nano Banana Preview (Gemini 2.5 Flash Image Preview)",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2025-03-20"
     },
     {
@@ -1612,12 +1796,12 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-20"
     },
     {
@@ -1631,12 +1815,12 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-20"
     },
     {
@@ -1652,6 +1836,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-17"
     },
     {
@@ -1667,6 +1852,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-17"
     },
     {
@@ -1681,6 +1867,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-13"
     },
     {
@@ -1693,9 +1880,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-26"
     },
     {
@@ -1710,6 +1897,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-19"
     },
     {
@@ -1725,6 +1913,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-19"
     },
     {
@@ -1740,6 +1929,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-19"
     },
     {
@@ -1754,6 +1944,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-19"
     },
     {
@@ -1770,6 +1961,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-19"
     },
     {
@@ -1785,6 +1977,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-17"
     },
     {
@@ -1800,6 +1993,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-17"
     },
     {
@@ -1814,6 +2008,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-17"
     },
     {
@@ -1828,6 +2023,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-17"
     },
     {
@@ -1843,6 +2039,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
     },
     {
@@ -1857,6 +2054,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-26"
     },
     {
@@ -1873,6 +2071,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-20"
     },
     {
@@ -1886,11 +2085,11 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -1904,11 +2103,11 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -1920,10 +2119,10 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     },
     {
@@ -1941,6 +2140,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-05"
     },
     {
@@ -1955,6 +2155,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-03"
     },
     {
@@ -1967,10 +2168,10 @@
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-03"
     },
     {
@@ -1983,10 +2184,10 @@
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-03"
     },
     {
@@ -2002,6 +2203,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -2017,6 +2219,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -2033,6 +2236,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12"
     },
     {
@@ -2047,6 +2251,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12"
     },
     {
@@ -2062,19 +2267,21 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-01"
     },
     {
       "id": "bfl/flux-pro-1.1-ultra",
       "name": "FLUX1.1 [pro] Ultra",
       "contextWindow": 512,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11"
     },
     {
@@ -2090,6 +2297,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-22"
     },
     {
@@ -2105,6 +2313,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-22"
     },
     {
@@ -2119,6 +2328,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-01"
     },
     {
@@ -2133,45 +2343,49 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-01"
     },
     {
       "id": "recraft/recraft-v3",
       "name": "Recraft V3",
       "contextWindow": 512,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10"
     },
     {
       "id": "bfl/flux-pro-1.1",
       "name": "FLUX1.1 [pro]",
       "contextWindow": 512,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10"
     },
     {
       "id": "bfl/flux-pro-1.0-fill",
       "name": "FLUX.1 Fill [pro]",
       "contextWindow": 512,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10"
     },
     {
@@ -2187,6 +2401,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-25"
     },
     {
@@ -2202,6 +2417,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-25"
     },
     {
@@ -2215,6 +2431,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-18"
     },
     {
@@ -2228,6 +2445,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-18"
     },
     {
@@ -2243,6 +2461,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-01"
     },
     {
@@ -2258,6 +2477,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-01"
     },
     {
@@ -2269,9 +2489,9 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09"
     },
     {
@@ -2285,6 +2505,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09"
     },
     {
@@ -2300,6 +2521,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-20"
     },
     {
@@ -2313,6 +2535,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-15"
     },
     {
@@ -2326,6 +2549,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-15"
     },
     {
@@ -2339,6 +2563,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08"
     },
     {
@@ -2353,6 +2578,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-23"
     },
     {
@@ -2367,6 +2593,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-23"
     },
     {
@@ -2383,6 +2610,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-18"
     },
     {
@@ -2397,6 +2625,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-01"
     },
     {
@@ -2413,7 +2642,24 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-06-26"
+    },
+    {
+      "id": "anthropic/claude-3.5-sonnet-20240620",
+      "name": "Claude 3.5 Sonnet (2024-06-20)",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-06-20"
     },
     {
       "id": "mistral/codestral",
@@ -2425,9 +2671,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-29"
     },
     {
@@ -2444,6 +2690,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-13"
     },
     {
@@ -2458,6 +2705,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-17"
     },
     {
@@ -2471,6 +2719,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04"
     },
     {
@@ -2486,19 +2735,21 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03-13"
     },
     {
       "id": "recraft/recraft-v2",
       "name": "Recraft V2",
       "contextWindow": 512,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03"
     },
     {
@@ -2512,6 +2763,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03"
     },
     {
@@ -2525,6 +2777,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03"
     },
     {
@@ -2538,6 +2791,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03"
     },
     {
@@ -2553,6 +2807,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-02-29"
     },
     {
@@ -2566,6 +2821,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-25"
     },
     {
@@ -2579,6 +2835,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-25"
     },
     {
@@ -2590,9 +2847,9 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01"
     },
     {
@@ -2606,6 +2863,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-12-11"
     },
     {
@@ -2621,6 +2879,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-11-06"
     },
     {
@@ -2634,6 +2893,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-03-01"
     },
     {
@@ -2647,6 +2907,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-03-01"
     },
     {
@@ -2660,118 +2921,10 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2022-12-15"
-    },
-    {
-      "id": "google/gemini-3-pro-preview",
-      "name": "Gemini 3 Pro Preview",
-      "contextWindow": 1000000,
-      "maxOutput": 64000,
-      "inputPrice": 2,
-      "outputPrice": 12,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "video",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-11-18"
-    },
-    {
-      "id": "google/gemini-2.5-flash-preview-09-2025",
-      "name": "Gemini 2.5 Flash Preview 09-25",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.3,
-      "outputPrice": 2.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "video",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-09-25"
-    },
-    {
-      "id": "google/gemini-2.5-flash-lite-preview-09-2025",
-      "name": "Gemini 2.5 Flash Lite Preview 09-25",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "video",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-09-25"
-    },
-    {
-      "id": "alibaba/qwen3-max-preview",
-      "name": "Qwen3 Max Preview",
-      "contextWindow": 262144,
-      "maxOutput": 32768,
-      "inputPrice": 1.2,
-      "outputPrice": 6,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-09-23"
-    },
-    {
-      "id": "moonshotai/kimi-k2-0905",
-      "name": "Kimi K2 0905",
-      "contextWindow": 131072,
-      "maxOutput": 16384,
-      "inputPrice": 0.6,
-      "outputPrice": 2.5,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2025-09-05"
-    },
-    {
-      "id": "google/gemini-2.5-flash-image-preview",
-      "name": "Nano Banana Preview (Gemini 2.5 Flash Image Preview)",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.3,
-      "outputPrice": 2.5,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2025-03-20"
-    },
-    {
-      "id": "anthropic/claude-3.5-sonnet-20240620",
-      "name": "Claude 3.5 Sonnet (2024-06-20)",
-      "contextWindow": 200000,
-      "maxOutput": 8192,
-      "inputPrice": 3,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-06-20"
     }
   ],
-  "baseUrl": "https://api.vercel.ai/v1",
+  "baseUrl": "https://api.vercel.com/v1",
   "docsUrl": "https://github.com/vercel/ai/tree/5eb85cc45a259553501f535b8ac79a77d0e79223/packages/gateway"
 }

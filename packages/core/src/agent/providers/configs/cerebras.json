@@ -39,6 +39,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -53,9 +54,10 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-22"
     }
   ],
-  "baseUrl": "https://api.cerebras.ai/v1",
+  "baseUrl": "https://api.cerebras.com/v1",
   "docsUrl": "https://inference-docs.cerebras.ai/models/overview"
 }

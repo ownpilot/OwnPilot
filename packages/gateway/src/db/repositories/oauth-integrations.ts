@@ -5,8 +5,8 @@
  * Tokens are encrypted using AES-256-GCM before storage.
  */
 
-import { getDatabase } from '../connection.js';
-import { randomUUID, randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
+import { BaseRepository } from './base.js';
+import { randomUUID, randomBytes, createCipheriv, createDecipheriv, createHash } from 'node:crypto';
 
 // ============================================================================
 // Types
@@ -52,6 +52,7 @@ export interface UpdateIntegrationInput {
 }
 
 interface IntegrationRow {
+  [key: string]: unknown;
   id: string;
   user_id: string;
   provider: string;
@@ -80,9 +81,8 @@ function getEncryptionKey(): Buffer {
     return Buffer.from(keyHex, 'hex');
   }
   // Fallback: derive from a secret (less secure, but works for development)
-  const crypto = require('node:crypto');
   const secret = process.env.JWT_SECRET || process.env.API_KEYS || 'ownpilot-default-key';
-  return crypto.createHash('sha256').update(secret).digest();
+  return createHash('sha256').update(secret).digest();
 }
 
 function encryptToken(token: string): { encrypted: string; iv: string } {
@@ -130,7 +130,7 @@ function rowToIntegration(row: IntegrationRow): OAuthIntegration {
     provider: row.provider as OAuthProvider,
     service: row.service as OAuthService,
     expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-    scopes: JSON.parse(row.scopes),
+    scopes: typeof row.scopes === 'string' ? JSON.parse(row.scopes) : row.scopes,
     email: row.email || undefined,
     status: row.status as IntegrationStatus,
     lastSyncAt: row.last_sync_at ? new Date(row.last_sync_at) : undefined,
@@ -144,15 +144,14 @@ function rowToIntegration(row: IntegrationRow): OAuthIntegration {
 // Repository
 // ============================================================================
 
-export class OAuthIntegrationsRepository {
-  private db = getDatabase();
-
+export class OAuthIntegrationsRepository extends BaseRepository {
   /**
    * Create a new OAuth integration
    */
-  create(input: CreateIntegrationInput): OAuthIntegration {
+  async create(input: CreateIntegrationInput): Promise<OAuthIntegration> {
     const id = randomUUID();
     const userId = input.userId || 'default';
+    const now = new Date().toISOString();
 
     // Encrypt tokens
     const { encrypted: accessEncrypted, iv } = encryptToken(input.accessToken);
@@ -160,66 +159,67 @@ export class OAuthIntegrationsRepository {
       ? encryptToken(input.refreshToken).encrypted
       : null;
 
-    const stmt = this.db.prepare(`
-      INSERT INTO oauth_integrations (
+    await this.execute(
+      `INSERT INTO oauth_integrations (
         id, user_id, provider, service,
         access_token_encrypted, refresh_token_encrypted, token_iv,
-        expires_at, scopes, email, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
-    `);
-
-    stmt.run(
-      id,
-      userId,
-      input.provider,
-      input.service,
-      accessEncrypted,
-      refreshEncrypted,
-      iv,
-      input.expiresAt?.toISOString() || null,
-      JSON.stringify(input.scopes),
-      input.email || null
+        expires_at, scopes, email, status, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active', $11, $12)`,
+      [
+        id,
+        userId,
+        input.provider,
+        input.service,
+        accessEncrypted,
+        refreshEncrypted,
+        iv,
+        input.expiresAt?.toISOString() || null,
+        JSON.stringify(input.scopes),
+        input.email || null,
+        now,
+        now,
+      ]
     );
 
-    return this.getById(id)!;
+    return (await this.getById(id))!;
   }
 
   /**
    * Get integration by ID
    */
-  getById(id: string): OAuthIntegration | null {
-    const stmt = this.db.prepare<string, IntegrationRow>(`
-      SELECT * FROM oauth_integrations WHERE id = ?
-    `);
-    const row = stmt.get(id);
+  async getById(id: string): Promise<OAuthIntegration | null> {
+    const row = await this.queryOne<IntegrationRow>(
+      'SELECT * FROM oauth_integrations WHERE id = $1',
+      [id]
+    );
     return row ? rowToIntegration(row) : null;
   }
 
   /**
    * Get integration by user, provider, and service
    */
-  getByUserProviderService(
+  async getByUserProviderService(
     userId: string,
     provider: OAuthProvider,
     service: OAuthService
-  ): OAuthIntegration | null {
-    const stmt = this.db.prepare<[string, string, string], IntegrationRow>(`
-      SELECT * FROM oauth_integrations
-      WHERE user_id = ? AND provider = ? AND service = ?
-    `);
-    const row = stmt.get(userId, provider, service);
+  ): Promise<OAuthIntegration | null> {
+    const row = await this.queryOne<IntegrationRow>(
+      `SELECT * FROM oauth_integrations
+       WHERE user_id = $1 AND provider = $2 AND service = $3`,
+      [userId, provider, service]
+    );
     return row ? rowToIntegration(row) : null;
   }
 
   /**
    * Get decrypted tokens for an integration
    */
-  getTokens(id: string): { accessToken: string; refreshToken?: string; expiresAt?: Date } | null {
-    const stmt = this.db.prepare<string, IntegrationRow>(`
-      SELECT access_token_encrypted, refresh_token_encrypted, token_iv, expires_at
-      FROM oauth_integrations WHERE id = ?
-    `);
-    const row = stmt.get(id);
+  async getTokens(id: string): Promise<{ accessToken: string; refreshToken?: string; expiresAt?: Date } | null> {
+    const row = await this.queryOne<IntegrationRow>(
+      `SELECT access_token_encrypted, refresh_token_encrypted, token_iv, expires_at
+       FROM oauth_integrations WHERE id = $1`,
+      [id]
+    );
 
     if (!row) return null;
 
@@ -240,33 +240,32 @@ export class OAuthIntegrationsRepository {
   /**
    * Update integration tokens
    */
-  updateTokens(
+  async updateTokens(
     id: string,
     tokens: { accessToken: string; refreshToken?: string; expiresAt?: Date }
-  ): boolean {
+  ): Promise<boolean> {
     const { encrypted: accessEncrypted, iv } = encryptToken(tokens.accessToken);
     const refreshEncrypted = tokens.refreshToken
       ? encryptToken(tokens.refreshToken).encrypted
       : null;
 
-    const stmt = this.db.prepare(`
-      UPDATE oauth_integrations SET
-        access_token_encrypted = ?,
-        refresh_token_encrypted = COALESCE(?, refresh_token_encrypted),
-        token_iv = ?,
-        expires_at = ?,
+    const result = await this.execute(
+      `UPDATE oauth_integrations SET
+        access_token_encrypted = $1,
+        refresh_token_encrypted = COALESCE($2, refresh_token_encrypted),
+        token_iv = $3,
+        expires_at = $4,
         status = 'active',
         error_message = NULL,
-        updated_at = datetime('now')
-      WHERE id = ?
-    `);
-
-    const result = stmt.run(
-      accessEncrypted,
-      refreshEncrypted,
-      iv,
-      tokens.expiresAt?.toISOString() || null,
-      id
+        updated_at = NOW()
+      WHERE id = $5`,
+      [
+        accessEncrypted,
+        refreshEncrypted,
+        iv,
+        tokens.expiresAt?.toISOString() || null,
+        id,
+      ]
     );
 
     return result.changes > 0;
@@ -275,113 +274,121 @@ export class OAuthIntegrationsRepository {
   /**
    * Update integration status
    */
-  updateStatus(id: string, status: IntegrationStatus, errorMessage?: string): boolean {
-    const stmt = this.db.prepare(`
-      UPDATE oauth_integrations SET
-        status = ?,
-        error_message = ?,
-        updated_at = datetime('now')
-      WHERE id = ?
-    `);
+  async updateStatus(id: string, status: IntegrationStatus, errorMessage?: string): Promise<boolean> {
+    const result = await this.execute(
+      `UPDATE oauth_integrations SET
+        status = $1,
+        error_message = $2,
+        updated_at = NOW()
+      WHERE id = $3`,
+      [status, errorMessage || null, id]
+    );
 
-    const result = stmt.run(status, errorMessage || null, id);
     return result.changes > 0;
   }
 
   /**
    * Update last sync time
    */
-  updateLastSync(id: string): boolean {
-    const stmt = this.db.prepare(`
-      UPDATE oauth_integrations SET
-        last_sync_at = datetime('now'),
-        updated_at = datetime('now')
-      WHERE id = ?
-    `);
+  async updateLastSync(id: string): Promise<boolean> {
+    const result = await this.execute(
+      `UPDATE oauth_integrations SET
+        last_sync_at = NOW(),
+        updated_at = NOW()
+      WHERE id = $1`,
+      [id]
+    );
 
-    const result = stmt.run(id);
     return result.changes > 0;
   }
 
   /**
    * List all integrations for a user
    */
-  listByUser(userId: string = 'default'): OAuthIntegration[] {
-    const stmt = this.db.prepare<string, IntegrationRow>(`
-      SELECT * FROM oauth_integrations
-      WHERE user_id = ?
-      ORDER BY provider, service
-    `);
-    return stmt.all(userId).map(rowToIntegration);
+  async listByUser(userId: string = 'default'): Promise<OAuthIntegration[]> {
+    const rows = await this.query<IntegrationRow>(
+      `SELECT * FROM oauth_integrations
+       WHERE user_id = $1
+       ORDER BY provider, service`,
+      [userId]
+    );
+    return rows.map(rowToIntegration);
   }
 
   /**
    * List active integrations for a user
    */
-  listActiveByUser(userId: string = 'default'): OAuthIntegration[] {
-    const stmt = this.db.prepare<string, IntegrationRow>(`
-      SELECT * FROM oauth_integrations
-      WHERE user_id = ? AND status = 'active'
-      ORDER BY provider, service
-    `);
-    return stmt.all(userId).map(rowToIntegration);
+  async listActiveByUser(userId: string = 'default'): Promise<OAuthIntegration[]> {
+    const rows = await this.query<IntegrationRow>(
+      `SELECT * FROM oauth_integrations
+       WHERE user_id = $1 AND status = 'active'
+       ORDER BY provider, service`,
+      [userId]
+    );
+    return rows.map(rowToIntegration);
   }
 
   /**
    * List integrations by provider
    */
-  listByProvider(userId: string, provider: OAuthProvider): OAuthIntegration[] {
-    const stmt = this.db.prepare<[string, string], IntegrationRow>(`
-      SELECT * FROM oauth_integrations
-      WHERE user_id = ? AND provider = ?
-      ORDER BY service
-    `);
-    return stmt.all(userId, provider).map(rowToIntegration);
+  async listByProvider(userId: string, provider: OAuthProvider): Promise<OAuthIntegration[]> {
+    const rows = await this.query<IntegrationRow>(
+      `SELECT * FROM oauth_integrations
+       WHERE user_id = $1 AND provider = $2
+       ORDER BY service`,
+      [userId, provider]
+    );
+    return rows.map(rowToIntegration);
   }
 
   /**
    * Check if a service is connected
    */
-  isConnected(userId: string, provider: OAuthProvider, service: OAuthService): boolean {
-    const stmt = this.db.prepare<[string, string, string], { count: number }>(`
-      SELECT COUNT(*) as count FROM oauth_integrations
-      WHERE user_id = ? AND provider = ? AND service = ? AND status = 'active'
-    `);
-    const result = stmt.get(userId, provider, service);
-    return (result?.count ?? 0) > 0;
+  async isConnected(userId: string, provider: OAuthProvider, service: OAuthService): Promise<boolean> {
+    const result = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM oauth_integrations
+       WHERE user_id = $1 AND provider = $2 AND service = $3 AND status = 'active'`,
+      [userId, provider, service]
+    );
+    return parseInt(result?.count ?? '0', 10) > 0;
   }
 
   /**
    * Delete an integration
    */
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM oauth_integrations WHERE id = ?`);
-    const result = stmt.run(id);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute('DELETE FROM oauth_integrations WHERE id = $1', [id]);
     return result.changes > 0;
   }
 
   /**
    * Delete all integrations for a user
    */
-  deleteByUser(userId: string): number {
-    const stmt = this.db.prepare(`DELETE FROM oauth_integrations WHERE user_id = ?`);
-    const result = stmt.run(userId);
+  async deleteByUser(userId: string): Promise<number> {
+    const result = await this.execute('DELETE FROM oauth_integrations WHERE user_id = $1', [userId]);
     return result.changes;
   }
 
   /**
    * Find expired integrations that need token refresh
    */
-  findExpiring(minutesBeforeExpiry: number = 5): OAuthIntegration[] {
-    const stmt = this.db.prepare<number, IntegrationRow>(`
-      SELECT * FROM oauth_integrations
-      WHERE status = 'active'
-        AND expires_at IS NOT NULL
-        AND datetime(expires_at) <= datetime('now', '+' || ? || ' minutes')
-      ORDER BY expires_at ASC
-    `);
-    return stmt.all(minutesBeforeExpiry).map(rowToIntegration);
+  async findExpiring(minutesBeforeExpiry: number = 5): Promise<OAuthIntegration[]> {
+    const rows = await this.query<IntegrationRow>(
+      `SELECT * FROM oauth_integrations
+       WHERE status = 'active'
+         AND expires_at IS NOT NULL
+         AND expires_at <= NOW() + ($1 || ' minutes')::INTERVAL
+       ORDER BY expires_at ASC`,
+      [minutesBeforeExpiry]
+    );
+    return rows.map(rowToIntegration);
   }
 }
 
+// Singleton instance
 export const oauthIntegrationsRepo = new OAuthIntegrationsRepository();
+
+// Factory function
+export function createOAuthIntegrationsRepository(): OAuthIntegrationsRepository {
+  return new OAuthIntegrationsRepository();
+}

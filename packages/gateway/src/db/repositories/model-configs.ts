@@ -5,7 +5,7 @@
  * and custom providers (aggregators like fal.ai, together.ai, etc.)
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 import { randomUUID } from 'node:crypto';
 import type { ModelCapability } from '@ownpilot/core';
 
@@ -131,6 +131,7 @@ export interface UpdateProviderInput {
 // ============================================================================
 
 interface ModelConfigRow {
+  [key: string]: unknown;
   id: string;
   user_id: string;
   provider_id: string;
@@ -141,14 +142,15 @@ interface ModelConfigRow {
   pricing_output: number | null;
   context_window: number | null;
   max_output: number | null;
-  is_enabled: number;
-  is_custom: number;
+  is_enabled: boolean;
+  is_custom: boolean;
   config: string;
   created_at: string;
   updated_at: string;
 }
 
 interface CustomProviderRow {
+  [key: string]: unknown;
   id: string;
   user_id: string;
   provider_id: string;
@@ -156,19 +158,20 @@ interface CustomProviderRow {
   api_base_url: string | null;
   api_key_setting: string | null;
   provider_type: string;
-  is_enabled: number;
+  is_enabled: boolean;
   config: string;
   created_at: string;
   updated_at: string;
 }
 
 interface UserProviderConfigRow {
+  [key: string]: unknown;
   id: string;
   user_id: string;
   provider_id: string;
   base_url: string | null;
   provider_type: string | null;
-  is_enabled: number;
+  is_enabled: boolean;
   api_key_env: string | null;
   notes: string | null;
   config: string;
@@ -187,14 +190,14 @@ function rowToModelConfig(row: ModelConfigRow): UserModelConfig {
     providerId: row.provider_id,
     modelId: row.model_id,
     displayName: row.display_name || undefined,
-    capabilities: JSON.parse(row.capabilities) as ModelCapability[],
+    capabilities: (typeof row.capabilities === 'string' ? JSON.parse(row.capabilities) : row.capabilities) as ModelCapability[],
     pricingInput: row.pricing_input ?? undefined,
     pricingOutput: row.pricing_output ?? undefined,
     contextWindow: row.context_window ?? undefined,
     maxOutput: row.max_output ?? undefined,
-    isEnabled: row.is_enabled === 1,
-    isCustom: row.is_custom === 1,
-    config: JSON.parse(row.config),
+    isEnabled: row.is_enabled,
+    isCustom: row.is_custom,
+    config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -209,8 +212,8 @@ function rowToProvider(row: CustomProviderRow): CustomProvider {
     apiBaseUrl: row.api_base_url || undefined,
     apiKeySetting: row.api_key_setting || undefined,
     providerType: row.provider_type as 'openai_compatible' | 'custom',
-    isEnabled: row.is_enabled === 1,
-    config: JSON.parse(row.config),
+    isEnabled: row.is_enabled,
+    config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -223,10 +226,10 @@ function rowToUserProviderConfig(row: UserProviderConfigRow): UserProviderConfig
     providerId: row.provider_id,
     baseUrl: row.base_url || undefined,
     providerType: row.provider_type || undefined,
-    isEnabled: row.is_enabled === 1,
+    isEnabled: row.is_enabled,
     apiKeyEnv: row.api_key_env || undefined,
     notes: row.notes || undefined,
-    config: JSON.parse(row.config),
+    config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -236,9 +239,7 @@ function rowToUserProviderConfig(row: UserProviderConfigRow): UserProviderConfig
 // Repository
 // ============================================================================
 
-export class ModelConfigsRepository {
-  private db = getDatabase();
-
+export class ModelConfigsRepository extends BaseRepository {
   // ==========================================================================
   // Model Configs CRUD
   // ==========================================================================
@@ -246,143 +247,149 @@ export class ModelConfigsRepository {
   /**
    * List all model configs for a user
    */
-  listModels(userId: string = 'default', providerId?: string): UserModelConfig[] {
+  async listModels(userId: string = 'default', providerId?: string): Promise<UserModelConfig[]> {
     if (providerId) {
-      const stmt = this.db.prepare<[string, string], ModelConfigRow>(`
-        SELECT * FROM user_model_configs
-        WHERE user_id = ? AND provider_id = ?
-        ORDER BY provider_id, model_id
-      `);
-      return stmt.all(userId, providerId).map(rowToModelConfig);
+      const rows = await this.query<ModelConfigRow>(
+        `SELECT * FROM user_model_configs
+         WHERE user_id = $1 AND provider_id = $2
+         ORDER BY provider_id, model_id`,
+        [userId, providerId]
+      );
+      return rows.map(rowToModelConfig);
     }
 
-    const stmt = this.db.prepare<string, ModelConfigRow>(`
-      SELECT * FROM user_model_configs
-      WHERE user_id = ?
-      ORDER BY provider_id, model_id
-    `);
-    return stmt.all(userId).map(rowToModelConfig);
+    const rows = await this.query<ModelConfigRow>(
+      `SELECT * FROM user_model_configs
+       WHERE user_id = $1
+       ORDER BY provider_id, model_id`,
+      [userId]
+    );
+    return rows.map(rowToModelConfig);
   }
 
   /**
    * Get a specific model config
    */
-  getModel(userId: string, providerId: string, modelId: string): UserModelConfig | null {
-    const stmt = this.db.prepare<[string, string, string], ModelConfigRow>(`
-      SELECT * FROM user_model_configs
-      WHERE user_id = ? AND provider_id = ? AND model_id = ?
-    `);
-    const row = stmt.get(userId, providerId, modelId);
+  async getModel(userId: string, providerId: string, modelId: string): Promise<UserModelConfig | null> {
+    const row = await this.queryOne<ModelConfigRow>(
+      `SELECT * FROM user_model_configs
+       WHERE user_id = $1 AND provider_id = $2 AND model_id = $3`,
+      [userId, providerId, modelId]
+    );
     return row ? rowToModelConfig(row) : null;
   }
 
   /**
    * Create or update a model config
    */
-  upsertModel(input: CreateModelConfigInput): UserModelConfig {
+  async upsertModel(input: CreateModelConfigInput): Promise<UserModelConfig> {
     const userId = input.userId || 'default';
-    const existing = this.getModel(userId, input.providerId, input.modelId);
+    const existing = await this.getModel(userId, input.providerId, input.modelId);
+    const now = new Date().toISOString();
 
     if (existing) {
       // Update existing
-      const stmt = this.db.prepare(`
-        UPDATE user_model_configs SET
-          display_name = COALESCE(?, display_name),
-          capabilities = COALESCE(?, capabilities),
-          pricing_input = COALESCE(?, pricing_input),
-          pricing_output = COALESCE(?, pricing_output),
-          context_window = COALESCE(?, context_window),
-          max_output = COALESCE(?, max_output),
-          is_enabled = COALESCE(?, is_enabled),
-          config = COALESCE(?, config),
-          updated_at = datetime('now')
-        WHERE user_id = ? AND provider_id = ? AND model_id = ?
-      `);
-
-      stmt.run(
-        input.displayName ?? null,
-        input.capabilities ? JSON.stringify(input.capabilities) : null,
-        input.pricingInput ?? null,
-        input.pricingOutput ?? null,
-        input.contextWindow ?? null,
-        input.maxOutput ?? null,
-        input.isEnabled !== undefined ? (input.isEnabled ? 1 : 0) : null,
-        input.config ? JSON.stringify(input.config) : null,
-        userId,
-        input.providerId,
-        input.modelId
+      await this.execute(
+        `UPDATE user_model_configs SET
+          display_name = COALESCE($1, display_name),
+          capabilities = COALESCE($2, capabilities),
+          pricing_input = COALESCE($3, pricing_input),
+          pricing_output = COALESCE($4, pricing_output),
+          context_window = COALESCE($5, context_window),
+          max_output = COALESCE($6, max_output),
+          is_enabled = COALESCE($7, is_enabled),
+          config = COALESCE($8, config),
+          updated_at = $9
+        WHERE user_id = $10 AND provider_id = $11 AND model_id = $12`,
+        [
+          input.displayName ?? null,
+          input.capabilities ? JSON.stringify(input.capabilities) : null,
+          input.pricingInput ?? null,
+          input.pricingOutput ?? null,
+          input.contextWindow ?? null,
+          input.maxOutput ?? null,
+          input.isEnabled !== undefined ? input.isEnabled : null,
+          input.config ? JSON.stringify(input.config) : null,
+          now,
+          userId,
+          input.providerId,
+          input.modelId,
+        ]
       );
 
-      return this.getModel(userId, input.providerId, input.modelId)!;
+      return (await this.getModel(userId, input.providerId, input.modelId))!;
     } else {
       // Insert new
       const id = randomUUID();
-      const stmt = this.db.prepare(`
-        INSERT INTO user_model_configs (
+      await this.execute(
+        `INSERT INTO user_model_configs (
           id, user_id, provider_id, model_id, display_name,
           capabilities, pricing_input, pricing_output,
-          context_window, max_output, is_enabled, is_custom, config
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      stmt.run(
-        id,
-        userId,
-        input.providerId,
-        input.modelId,
-        input.displayName || null,
-        JSON.stringify(input.capabilities || []),
-        input.pricingInput ?? null,
-        input.pricingOutput ?? null,
-        input.contextWindow ?? null,
-        input.maxOutput ?? null,
-        input.isEnabled !== false ? 1 : 0,
-        input.isCustom ? 1 : 0,
-        JSON.stringify(input.config || {})
+          context_window, max_output, is_enabled, is_custom, config, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+        [
+          id,
+          userId,
+          input.providerId,
+          input.modelId,
+          input.displayName || null,
+          JSON.stringify(input.capabilities || []),
+          input.pricingInput ?? null,
+          input.pricingOutput ?? null,
+          input.contextWindow ?? null,
+          input.maxOutput ?? null,
+          input.isEnabled !== false,
+          input.isCustom || false,
+          JSON.stringify(input.config || {}),
+          now,
+          now,
+        ]
       );
 
-      return this.getModel(userId, input.providerId, input.modelId)!;
+      return (await this.getModel(userId, input.providerId, input.modelId))!;
     }
   }
 
   /**
    * Update a model config
    */
-  updateModel(
+  async updateModel(
     userId: string,
     providerId: string,
     modelId: string,
     input: UpdateModelConfigInput
-  ): UserModelConfig | null {
-    const existing = this.getModel(userId, providerId, modelId);
+  ): Promise<UserModelConfig | null> {
+    const existing = await this.getModel(userId, providerId, modelId);
     if (!existing) return null;
 
-    const stmt = this.db.prepare(`
-      UPDATE user_model_configs SET
-        display_name = COALESCE(?, display_name),
-        capabilities = COALESCE(?, capabilities),
-        pricing_input = COALESCE(?, pricing_input),
-        pricing_output = COALESCE(?, pricing_output),
-        context_window = COALESCE(?, context_window),
-        max_output = COALESCE(?, max_output),
-        is_enabled = COALESCE(?, is_enabled),
-        config = COALESCE(?, config),
-        updated_at = datetime('now')
-      WHERE user_id = ? AND provider_id = ? AND model_id = ?
-    `);
+    const now = new Date().toISOString();
 
-    stmt.run(
-      input.displayName ?? null,
-      input.capabilities ? JSON.stringify(input.capabilities) : null,
-      input.pricingInput ?? null,
-      input.pricingOutput ?? null,
-      input.contextWindow ?? null,
-      input.maxOutput ?? null,
-      input.isEnabled !== undefined ? (input.isEnabled ? 1 : 0) : null,
-      input.config ? JSON.stringify(input.config) : null,
-      userId,
-      providerId,
-      modelId
+    await this.execute(
+      `UPDATE user_model_configs SET
+        display_name = COALESCE($1, display_name),
+        capabilities = COALESCE($2, capabilities),
+        pricing_input = COALESCE($3, pricing_input),
+        pricing_output = COALESCE($4, pricing_output),
+        context_window = COALESCE($5, context_window),
+        max_output = COALESCE($6, max_output),
+        is_enabled = COALESCE($7, is_enabled),
+        config = COALESCE($8, config),
+        updated_at = $9
+      WHERE user_id = $10 AND provider_id = $11 AND model_id = $12`,
+      [
+        input.displayName ?? null,
+        input.capabilities ? JSON.stringify(input.capabilities) : null,
+        input.pricingInput ?? null,
+        input.pricingOutput ?? null,
+        input.contextWindow ?? null,
+        input.maxOutput ?? null,
+        input.isEnabled !== undefined ? input.isEnabled : null,
+        input.config ? JSON.stringify(input.config) : null,
+        now,
+        userId,
+        providerId,
+        modelId,
+      ]
     );
 
     return this.getModel(userId, providerId, modelId);
@@ -391,63 +398,64 @@ export class ModelConfigsRepository {
   /**
    * Delete a model config
    */
-  deleteModel(userId: string, providerId: string, modelId: string): boolean {
-    const stmt = this.db.prepare(`
-      DELETE FROM user_model_configs
-      WHERE user_id = ? AND provider_id = ? AND model_id = ?
-    `);
-    const result = stmt.run(userId, providerId, modelId);
+  async deleteModel(userId: string, providerId: string, modelId: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM user_model_configs
+       WHERE user_id = $1 AND provider_id = $2 AND model_id = $3`,
+      [userId, providerId, modelId]
+    );
     return result.changes > 0;
   }
 
   /**
    * Toggle model enabled status
    */
-  toggleModel(userId: string, providerId: string, modelId: string, enabled: boolean): boolean {
-    const stmt = this.db.prepare(`
-      UPDATE user_model_configs SET
-        is_enabled = ?,
-        updated_at = datetime('now')
-      WHERE user_id = ? AND provider_id = ? AND model_id = ?
-    `);
-    const result = stmt.run(enabled ? 1 : 0, userId, providerId, modelId);
+  async toggleModel(userId: string, providerId: string, modelId: string, enabled: boolean): Promise<boolean> {
+    const result = await this.execute(
+      `UPDATE user_model_configs SET
+        is_enabled = $1,
+        updated_at = NOW()
+      WHERE user_id = $2 AND provider_id = $3 AND model_id = $4`,
+      [enabled, userId, providerId, modelId]
+    );
     return result.changes > 0;
   }
 
   /**
    * Get all enabled model IDs for a user
    */
-  getEnabledModelIds(userId: string = 'default'): Set<string> {
-    const stmt = this.db.prepare<string, { provider_id: string; model_id: string }>(`
-      SELECT provider_id, model_id FROM user_model_configs
-      WHERE user_id = ? AND is_enabled = 1
-    `);
-    const rows = stmt.all(userId);
+  async getEnabledModelIds(userId: string = 'default'): Promise<Set<string>> {
+    const rows = await this.query<{ provider_id: string; model_id: string }>(
+      `SELECT provider_id, model_id FROM user_model_configs
+       WHERE user_id = $1 AND is_enabled = true`,
+      [userId]
+    );
     return new Set(rows.map((r) => `${r.provider_id}/${r.model_id}`));
   }
 
   /**
    * Get all disabled model IDs for a user
    */
-  getDisabledModelIds(userId: string = 'default'): Set<string> {
-    const stmt = this.db.prepare<string, { provider_id: string; model_id: string }>(`
-      SELECT provider_id, model_id FROM user_model_configs
-      WHERE user_id = ? AND is_enabled = 0
-    `);
-    const rows = stmt.all(userId);
+  async getDisabledModelIds(userId: string = 'default'): Promise<Set<string>> {
+    const rows = await this.query<{ provider_id: string; model_id: string }>(
+      `SELECT provider_id, model_id FROM user_model_configs
+       WHERE user_id = $1 AND is_enabled = false`,
+      [userId]
+    );
     return new Set(rows.map((r) => `${r.provider_id}/${r.model_id}`));
   }
 
   /**
    * Get custom models only
    */
-  getCustomModels(userId: string = 'default'): UserModelConfig[] {
-    const stmt = this.db.prepare<string, ModelConfigRow>(`
-      SELECT * FROM user_model_configs
-      WHERE user_id = ? AND is_custom = 1
-      ORDER BY provider_id, model_id
-    `);
-    return stmt.all(userId).map(rowToModelConfig);
+  async getCustomModels(userId: string = 'default'): Promise<UserModelConfig[]> {
+    const rows = await this.query<ModelConfigRow>(
+      `SELECT * FROM user_model_configs
+       WHERE user_id = $1 AND is_custom = true
+       ORDER BY provider_id, model_id`,
+      [userId]
+    );
+    return rows.map(rowToModelConfig);
   }
 
   // ==========================================================================
@@ -457,118 +465,123 @@ export class ModelConfigsRepository {
   /**
    * List all custom providers for a user
    */
-  listProviders(userId: string = 'default'): CustomProvider[] {
-    const stmt = this.db.prepare<string, CustomProviderRow>(`
-      SELECT * FROM custom_providers
-      WHERE user_id = ?
-      ORDER BY display_name
-    `);
-    return stmt.all(userId).map(rowToProvider);
+  async listProviders(userId: string = 'default'): Promise<CustomProvider[]> {
+    const rows = await this.query<CustomProviderRow>(
+      `SELECT * FROM custom_providers
+       WHERE user_id = $1
+       ORDER BY display_name`,
+      [userId]
+    );
+    return rows.map(rowToProvider);
   }
 
   /**
    * Get a specific custom provider
    */
-  getProvider(userId: string, providerId: string): CustomProvider | null {
-    const stmt = this.db.prepare<[string, string], CustomProviderRow>(`
-      SELECT * FROM custom_providers
-      WHERE user_id = ? AND provider_id = ?
-    `);
-    const row = stmt.get(userId, providerId);
+  async getProvider(userId: string, providerId: string): Promise<CustomProvider | null> {
+    const row = await this.queryOne<CustomProviderRow>(
+      `SELECT * FROM custom_providers
+       WHERE user_id = $1 AND provider_id = $2`,
+      [userId, providerId]
+    );
     return row ? rowToProvider(row) : null;
   }
 
   /**
    * Create or update a custom provider
    */
-  upsertProvider(input: CreateProviderInput): CustomProvider {
+  async upsertProvider(input: CreateProviderInput): Promise<CustomProvider> {
     const userId = input.userId || 'default';
-    const existing = this.getProvider(userId, input.providerId);
+    const existing = await this.getProvider(userId, input.providerId);
+    const now = new Date().toISOString();
 
     if (existing) {
       // Update existing
-      const stmt = this.db.prepare(`
-        UPDATE custom_providers SET
-          display_name = COALESCE(?, display_name),
-          api_base_url = COALESCE(?, api_base_url),
-          api_key_setting = COALESCE(?, api_key_setting),
-          provider_type = COALESCE(?, provider_type),
-          is_enabled = COALESCE(?, is_enabled),
-          config = COALESCE(?, config),
-          updated_at = datetime('now')
-        WHERE user_id = ? AND provider_id = ?
-      `);
-
-      stmt.run(
-        input.displayName ?? null,
-        input.apiBaseUrl ?? null,
-        input.apiKeySetting ?? null,
-        input.providerType ?? null,
-        input.isEnabled !== undefined ? (input.isEnabled ? 1 : 0) : null,
-        input.config ? JSON.stringify(input.config) : null,
-        userId,
-        input.providerId
+      await this.execute(
+        `UPDATE custom_providers SET
+          display_name = COALESCE($1, display_name),
+          api_base_url = COALESCE($2, api_base_url),
+          api_key_setting = COALESCE($3, api_key_setting),
+          provider_type = COALESCE($4, provider_type),
+          is_enabled = COALESCE($5, is_enabled),
+          config = COALESCE($6, config),
+          updated_at = $7
+        WHERE user_id = $8 AND provider_id = $9`,
+        [
+          input.displayName ?? null,
+          input.apiBaseUrl ?? null,
+          input.apiKeySetting ?? null,
+          input.providerType ?? null,
+          input.isEnabled !== undefined ? input.isEnabled : null,
+          input.config ? JSON.stringify(input.config) : null,
+          now,
+          userId,
+          input.providerId,
+        ]
       );
 
-      return this.getProvider(userId, input.providerId)!;
+      return (await this.getProvider(userId, input.providerId))!;
     } else {
       // Insert new
       const id = randomUUID();
-      const stmt = this.db.prepare(`
-        INSERT INTO custom_providers (
+      await this.execute(
+        `INSERT INTO custom_providers (
           id, user_id, provider_id, display_name,
-          api_base_url, api_key_setting, provider_type, is_enabled, config
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      stmt.run(
-        id,
-        userId,
-        input.providerId,
-        input.displayName,
-        input.apiBaseUrl || null,
-        input.apiKeySetting || null,
-        input.providerType || 'openai_compatible',
-        input.isEnabled !== false ? 1 : 0,
-        JSON.stringify(input.config || {})
+          api_base_url, api_key_setting, provider_type, is_enabled, config, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        [
+          id,
+          userId,
+          input.providerId,
+          input.displayName,
+          input.apiBaseUrl || null,
+          input.apiKeySetting || null,
+          input.providerType || 'openai_compatible',
+          input.isEnabled !== false,
+          JSON.stringify(input.config || {}),
+          now,
+          now,
+        ]
       );
 
-      return this.getProvider(userId, input.providerId)!;
+      return (await this.getProvider(userId, input.providerId))!;
     }
   }
 
   /**
    * Update a custom provider
    */
-  updateProvider(
+  async updateProvider(
     userId: string,
     providerId: string,
     input: UpdateProviderInput
-  ): CustomProvider | null {
-    const existing = this.getProvider(userId, providerId);
+  ): Promise<CustomProvider | null> {
+    const existing = await this.getProvider(userId, providerId);
     if (!existing) return null;
 
-    const stmt = this.db.prepare(`
-      UPDATE custom_providers SET
-        display_name = COALESCE(?, display_name),
-        api_base_url = COALESCE(?, api_base_url),
-        api_key_setting = COALESCE(?, api_key_setting),
-        provider_type = COALESCE(?, provider_type),
-        is_enabled = COALESCE(?, is_enabled),
-        config = COALESCE(?, config),
-        updated_at = datetime('now')
-      WHERE user_id = ? AND provider_id = ?
-    `);
+    const now = new Date().toISOString();
 
-    stmt.run(
-      input.displayName ?? null,
-      input.apiBaseUrl ?? null,
-      input.apiKeySetting ?? null,
-      input.providerType ?? null,
-      input.isEnabled !== undefined ? (input.isEnabled ? 1 : 0) : null,
-      input.config ? JSON.stringify(input.config) : null,
-      userId,
-      providerId
+    await this.execute(
+      `UPDATE custom_providers SET
+        display_name = COALESCE($1, display_name),
+        api_base_url = COALESCE($2, api_base_url),
+        api_key_setting = COALESCE($3, api_key_setting),
+        provider_type = COALESCE($4, provider_type),
+        is_enabled = COALESCE($5, is_enabled),
+        config = COALESCE($6, config),
+        updated_at = $7
+      WHERE user_id = $8 AND provider_id = $9`,
+      [
+        input.displayName ?? null,
+        input.apiBaseUrl ?? null,
+        input.apiKeySetting ?? null,
+        input.providerType ?? null,
+        input.isEnabled !== undefined ? input.isEnabled : null,
+        input.config ? JSON.stringify(input.config) : null,
+        now,
+        userId,
+        providerId,
+      ]
     );
 
     return this.getProvider(userId, providerId);
@@ -577,46 +590,46 @@ export class ModelConfigsRepository {
   /**
    * Delete a custom provider and its models
    */
-  deleteProvider(userId: string, providerId: string): boolean {
+  async deleteProvider(userId: string, providerId: string): Promise<boolean> {
     // First delete all models for this provider
-    const deleteModels = this.db.prepare(`
-      DELETE FROM user_model_configs
-      WHERE user_id = ? AND provider_id = ?
-    `);
-    deleteModels.run(userId, providerId);
+    await this.execute(
+      `DELETE FROM user_model_configs
+       WHERE user_id = $1 AND provider_id = $2`,
+      [userId, providerId]
+    );
 
     // Then delete the provider
-    const deleteProvider = this.db.prepare(`
-      DELETE FROM custom_providers
-      WHERE user_id = ? AND provider_id = ?
-    `);
-    const result = deleteProvider.run(userId, providerId);
+    const result = await this.execute(
+      `DELETE FROM custom_providers
+       WHERE user_id = $1 AND provider_id = $2`,
+      [userId, providerId]
+    );
     return result.changes > 0;
   }
 
   /**
    * Toggle provider enabled status
    */
-  toggleProvider(userId: string, providerId: string, enabled: boolean): boolean {
-    const stmt = this.db.prepare(`
-      UPDATE custom_providers SET
-        is_enabled = ?,
-        updated_at = datetime('now')
-      WHERE user_id = ? AND provider_id = ?
-    `);
-    const result = stmt.run(enabled ? 1 : 0, userId, providerId);
+  async toggleProvider(userId: string, providerId: string, enabled: boolean): Promise<boolean> {
+    const result = await this.execute(
+      `UPDATE custom_providers SET
+        is_enabled = $1,
+        updated_at = NOW()
+      WHERE user_id = $2 AND provider_id = $3`,
+      [enabled, userId, providerId]
+    );
     return result.changes > 0;
   }
 
   /**
    * Get all enabled provider IDs for a user
    */
-  getEnabledProviderIds(userId: string = 'default'): Set<string> {
-    const stmt = this.db.prepare<string, { provider_id: string }>(`
-      SELECT provider_id FROM custom_providers
-      WHERE user_id = ? AND is_enabled = 1
-    `);
-    const rows = stmt.all(userId);
+  async getEnabledProviderIds(userId: string = 'default'): Promise<Set<string>> {
+    const rows = await this.query<{ provider_id: string }>(
+      `SELECT provider_id FROM custom_providers
+       WHERE user_id = $1 AND is_enabled = true`,
+      [userId]
+    );
     return new Set(rows.map((r) => r.provider_id));
   }
 
@@ -627,118 +640,123 @@ export class ModelConfigsRepository {
   /**
    * List all user provider configs for a user
    */
-  listUserProviderConfigs(userId: string = 'default'): UserProviderConfig[] {
-    const stmt = this.db.prepare<string, UserProviderConfigRow>(`
-      SELECT * FROM user_provider_configs
-      WHERE user_id = ?
-      ORDER BY provider_id
-    `);
-    return stmt.all(userId).map(rowToUserProviderConfig);
+  async listUserProviderConfigs(userId: string = 'default'): Promise<UserProviderConfig[]> {
+    const rows = await this.query<UserProviderConfigRow>(
+      `SELECT * FROM user_provider_configs
+       WHERE user_id = $1
+       ORDER BY provider_id`,
+      [userId]
+    );
+    return rows.map(rowToUserProviderConfig);
   }
 
   /**
    * Get a specific user provider config
    */
-  getUserProviderConfig(userId: string, providerId: string): UserProviderConfig | null {
-    const stmt = this.db.prepare<[string, string], UserProviderConfigRow>(`
-      SELECT * FROM user_provider_configs
-      WHERE user_id = ? AND provider_id = ?
-    `);
-    const row = stmt.get(userId, providerId);
+  async getUserProviderConfig(userId: string, providerId: string): Promise<UserProviderConfig | null> {
+    const row = await this.queryOne<UserProviderConfigRow>(
+      `SELECT * FROM user_provider_configs
+       WHERE user_id = $1 AND provider_id = $2`,
+      [userId, providerId]
+    );
     return row ? rowToUserProviderConfig(row) : null;
   }
 
   /**
    * Create or update a user provider config
    */
-  upsertUserProviderConfig(input: CreateUserProviderConfigInput): UserProviderConfig {
+  async upsertUserProviderConfig(input: CreateUserProviderConfigInput): Promise<UserProviderConfig> {
     const userId = input.userId || 'default';
-    const existing = this.getUserProviderConfig(userId, input.providerId);
+    const existing = await this.getUserProviderConfig(userId, input.providerId);
+    const now = new Date().toISOString();
 
     if (existing) {
       // Update existing
-      const stmt = this.db.prepare(`
-        UPDATE user_provider_configs SET
-          base_url = COALESCE(?, base_url),
-          provider_type = COALESCE(?, provider_type),
-          is_enabled = COALESCE(?, is_enabled),
-          api_key_env = COALESCE(?, api_key_env),
-          notes = COALESCE(?, notes),
-          config = COALESCE(?, config),
-          updated_at = datetime('now')
-        WHERE user_id = ? AND provider_id = ?
-      `);
-
-      stmt.run(
-        input.baseUrl ?? null,
-        input.providerType ?? null,
-        input.isEnabled !== undefined ? (input.isEnabled ? 1 : 0) : null,
-        input.apiKeyEnv ?? null,
-        input.notes ?? null,
-        input.config ? JSON.stringify(input.config) : null,
-        userId,
-        input.providerId
+      await this.execute(
+        `UPDATE user_provider_configs SET
+          base_url = COALESCE($1, base_url),
+          provider_type = COALESCE($2, provider_type),
+          is_enabled = COALESCE($3, is_enabled),
+          api_key_env = COALESCE($4, api_key_env),
+          notes = COALESCE($5, notes),
+          config = COALESCE($6, config),
+          updated_at = $7
+        WHERE user_id = $8 AND provider_id = $9`,
+        [
+          input.baseUrl ?? null,
+          input.providerType ?? null,
+          input.isEnabled !== undefined ? input.isEnabled : null,
+          input.apiKeyEnv ?? null,
+          input.notes ?? null,
+          input.config ? JSON.stringify(input.config) : null,
+          now,
+          userId,
+          input.providerId,
+        ]
       );
 
-      return this.getUserProviderConfig(userId, input.providerId)!;
+      return (await this.getUserProviderConfig(userId, input.providerId))!;
     } else {
       // Insert new
       const id = randomUUID();
-      const stmt = this.db.prepare(`
-        INSERT INTO user_provider_configs (
+      await this.execute(
+        `INSERT INTO user_provider_configs (
           id, user_id, provider_id, base_url, provider_type,
-          is_enabled, api_key_env, notes, config
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      stmt.run(
-        id,
-        userId,
-        input.providerId,
-        input.baseUrl || null,
-        input.providerType || null,
-        input.isEnabled !== false ? 1 : 0,
-        input.apiKeyEnv || null,
-        input.notes || null,
-        JSON.stringify(input.config || {})
+          is_enabled, api_key_env, notes, config, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        [
+          id,
+          userId,
+          input.providerId,
+          input.baseUrl || null,
+          input.providerType || null,
+          input.isEnabled !== false,
+          input.apiKeyEnv || null,
+          input.notes || null,
+          JSON.stringify(input.config || {}),
+          now,
+          now,
+        ]
       );
 
-      return this.getUserProviderConfig(userId, input.providerId)!;
+      return (await this.getUserProviderConfig(userId, input.providerId))!;
     }
   }
 
   /**
    * Update a user provider config
    */
-  updateUserProviderConfig(
+  async updateUserProviderConfig(
     userId: string,
     providerId: string,
     input: UpdateUserProviderConfigInput
-  ): UserProviderConfig | null {
-    const existing = this.getUserProviderConfig(userId, providerId);
+  ): Promise<UserProviderConfig | null> {
+    const existing = await this.getUserProviderConfig(userId, providerId);
     if (!existing) return null;
 
-    const stmt = this.db.prepare(`
-      UPDATE user_provider_configs SET
-        base_url = COALESCE(?, base_url),
-        provider_type = COALESCE(?, provider_type),
-        is_enabled = COALESCE(?, is_enabled),
-        api_key_env = COALESCE(?, api_key_env),
-        notes = COALESCE(?, notes),
-        config = COALESCE(?, config),
-        updated_at = datetime('now')
-      WHERE user_id = ? AND provider_id = ?
-    `);
+    const now = new Date().toISOString();
 
-    stmt.run(
-      input.baseUrl ?? null,
-      input.providerType ?? null,
-      input.isEnabled !== undefined ? (input.isEnabled ? 1 : 0) : null,
-      input.apiKeyEnv ?? null,
-      input.notes ?? null,
-      input.config ? JSON.stringify(input.config) : null,
-      userId,
-      providerId
+    await this.execute(
+      `UPDATE user_provider_configs SET
+        base_url = COALESCE($1, base_url),
+        provider_type = COALESCE($2, provider_type),
+        is_enabled = COALESCE($3, is_enabled),
+        api_key_env = COALESCE($4, api_key_env),
+        notes = COALESCE($5, notes),
+        config = COALESCE($6, config),
+        updated_at = $7
+      WHERE user_id = $8 AND provider_id = $9`,
+      [
+        input.baseUrl ?? null,
+        input.providerType ?? null,
+        input.isEnabled !== undefined ? input.isEnabled : null,
+        input.apiKeyEnv ?? null,
+        input.notes ?? null,
+        input.config ? JSON.stringify(input.config) : null,
+        now,
+        userId,
+        providerId,
+      ]
     );
 
     return this.getUserProviderConfig(userId, providerId);
@@ -747,23 +765,23 @@ export class ModelConfigsRepository {
   /**
    * Delete a user provider config
    */
-  deleteUserProviderConfig(userId: string, providerId: string): boolean {
-    const stmt = this.db.prepare(`
-      DELETE FROM user_provider_configs
-      WHERE user_id = ? AND provider_id = ?
-    `);
-    const result = stmt.run(userId, providerId);
+  async deleteUserProviderConfig(userId: string, providerId: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM user_provider_configs
+       WHERE user_id = $1 AND provider_id = $2`,
+      [userId, providerId]
+    );
     return result.changes > 0;
   }
 
   /**
    * Toggle user provider config enabled status
    */
-  toggleUserProviderConfig(userId: string, providerId: string, enabled: boolean): boolean {
+  async toggleUserProviderConfig(userId: string, providerId: string, enabled: boolean): Promise<boolean> {
     // First check if config exists, if not create it
-    const existing = this.getUserProviderConfig(userId, providerId);
+    const existing = await this.getUserProviderConfig(userId, providerId);
     if (!existing) {
-      this.upsertUserProviderConfig({
+      await this.upsertUserProviderConfig({
         userId,
         providerId,
         isEnabled: enabled,
@@ -771,25 +789,25 @@ export class ModelConfigsRepository {
       return true;
     }
 
-    const stmt = this.db.prepare(`
-      UPDATE user_provider_configs SET
-        is_enabled = ?,
-        updated_at = datetime('now')
-      WHERE user_id = ? AND provider_id = ?
-    `);
-    const result = stmt.run(enabled ? 1 : 0, userId, providerId);
+    const result = await this.execute(
+      `UPDATE user_provider_configs SET
+        is_enabled = $1,
+        updated_at = NOW()
+      WHERE user_id = $2 AND provider_id = $3`,
+      [enabled, userId, providerId]
+    );
     return result.changes > 0;
   }
 
   /**
    * Get all disabled built-in provider IDs for a user
    */
-  getDisabledBuiltinProviderIds(userId: string = 'default'): Set<string> {
-    const stmt = this.db.prepare<string, { provider_id: string }>(`
-      SELECT provider_id FROM user_provider_configs
-      WHERE user_id = ? AND is_enabled = 0
-    `);
-    const rows = stmt.all(userId);
+  async getDisabledBuiltinProviderIds(userId: string = 'default'): Promise<Set<string>> {
+    const rows = await this.query<{ provider_id: string }>(
+      `SELECT provider_id FROM user_provider_configs
+       WHERE user_id = $1 AND is_enabled = false`,
+      [userId]
+    );
     return new Set(rows.map((r) => r.provider_id));
   }
 
@@ -797,14 +815,63 @@ export class ModelConfigsRepository {
    * Get provider override (baseUrl, type) for a built-in provider
    * Returns null if no override exists
    */
-  getProviderOverride(userId: string, providerId: string): { baseUrl?: string; providerType?: string } | null {
-    const config = this.getUserProviderConfig(userId, providerId);
+  async getProviderOverride(userId: string, providerId: string): Promise<{ baseUrl?: string; providerType?: string } | null> {
+    const config = await this.getUserProviderConfig(userId, providerId);
     if (!config) return null;
     return {
       baseUrl: config.baseUrl,
       providerType: config.providerType,
     };
   }
+
+  /**
+   * Delete ALL user provider configs (for full reset)
+   */
+  async deleteAllUserProviderConfigs(userId: string = 'default'): Promise<number> {
+    const result = await this.execute(
+      `DELETE FROM user_provider_configs WHERE user_id = $1`,
+      [userId]
+    );
+    return result.changes;
+  }
+
+  /**
+   * Delete ALL user model configs (for full reset)
+   */
+  async deleteAllUserModelConfigs(userId: string = 'default'): Promise<number> {
+    const result = await this.execute(
+      `DELETE FROM user_model_configs WHERE user_id = $1`,
+      [userId]
+    );
+    return result.changes;
+  }
+
+  /**
+   * Delete ALL custom providers (for full reset)
+   */
+  async deleteAllCustomProviders(userId: string = 'default'): Promise<number> {
+    const result = await this.execute(
+      `DELETE FROM custom_providers WHERE user_id = $1`,
+      [userId]
+    );
+    return result.changes;
+  }
+
+  /**
+   * Full reset - delete all user model data
+   */
+  async fullReset(userId: string = 'default'): Promise<{ providerConfigs: number; modelConfigs: number; customProviders: number }> {
+    const providerConfigs = await this.deleteAllUserProviderConfigs(userId);
+    const modelConfigs = await this.deleteAllUserModelConfigs(userId);
+    const customProviders = await this.deleteAllCustomProviders(userId);
+    return { providerConfigs, modelConfigs, customProviders };
+  }
 }
 
+// Singleton instance
 export const modelConfigsRepo = new ModelConfigsRepository();
+
+// Factory function
+export function createModelConfigsRepository(): ModelConfigsRepository {
+  return new ModelConfigsRepository();
+}

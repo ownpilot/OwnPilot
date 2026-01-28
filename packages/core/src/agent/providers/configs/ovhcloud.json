@@ -22,8 +22,7 @@
         "chat",
         "function_calling",
         "json_mode",
-        "streaming",
-        "code"
+        "streaming"
       ],
       "default": true,
       "releaseDate": "2025-10-28"
@@ -42,6 +41,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-28"
     },
     {
@@ -58,7 +58,25 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-28"
+    },
+    {
+      "id": "mistral-small-3.2-24b-instruct-2506",
+      "name": "Mistral-Small-3.2-24B-Instruct-2506",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.1,
+      "outputPrice": 0.31,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-16"
     },
     {
       "id": "qwen3-32b",
@@ -74,6 +92,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-16"
     },
     {
@@ -89,6 +108,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-11"
     },
     {
@@ -103,6 +123,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-01"
     },
     {
@@ -118,6 +139,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-01"
     },
     {
@@ -133,6 +155,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-01"
     },
     {
@@ -148,6 +171,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-31"
     },
     {
@@ -160,9 +184,9 @@
       "capabilities": [
         "chat",
         "json_mode",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-24"
     },
     {
@@ -179,23 +203,8 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-30"
-    },
-    {
-      "id": "mistral-small-3.2-24b-instruct-2506",
-      "name": "Mistral-Small-3.2-24B-Instruct-2506",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.1,
-      "outputPrice": 0.31,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-16"
     },
     {
       "id": "mistral-nemo-instruct-2407",
@@ -210,6 +219,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-20"
     }
   ],

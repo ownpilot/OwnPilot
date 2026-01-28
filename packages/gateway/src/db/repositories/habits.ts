@@ -4,7 +4,7 @@
  * CRUD operations for habit tracking with streaks and statistics
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 // =============================================================================
 // Types
@@ -98,7 +98,7 @@ interface HabitRow {
   color: string | null;
   icon: string | null;
   reminder_time: string | null;
-  is_archived: number;
+  is_archived: boolean;
   streak_current: number;
   streak_longest: number;
   total_completions: number;
@@ -134,7 +134,7 @@ function rowToHabit(row: HabitRow): Habit {
     color: row.color ?? undefined,
     icon: row.icon ?? undefined,
     reminderTime: row.reminder_time ?? undefined,
-    isArchived: row.is_archived === 1,
+    isArchived: row.is_archived === true,
     streakCurrent: row.streak_current,
     streakLongest: row.streak_longest,
     totalCompletions: row.total_completions,
@@ -155,15 +155,15 @@ function rowToHabitLog(row: HabitLogRow): HabitLog {
   };
 }
 
-// =============================================================================
+// ==============================================================================
 // Repository
-// =============================================================================
+// ==============================================================================
 
-export class HabitsRepository {
-  private db = getDatabase();
+export class HabitsRepository extends BaseRepository {
   private userId: string;
 
   constructor(userId = 'default') {
+    super();
     this.userId = userId;
   }
 
@@ -171,9 +171,8 @@ export class HabitsRepository {
   // Habits CRUD
   // ---------------------------------------------------------------------------
 
-  create(input: CreateHabitInput): Habit {
+  async create(input: CreateHabitInput): Promise<Habit> {
     const id = `hab_${Date.now()}`;
-    const now = new Date().toISOString();
 
     // Default target days based on frequency
     let targetDays = input.targetDays ?? [];
@@ -191,239 +190,238 @@ export class HabitsRepository {
       }
     }
 
-    const stmt = this.db.prepare(`
-      INSERT INTO habits (id, user_id, name, description, frequency, target_days, target_count,
+    await this.execute(
+      `INSERT INTO habits (id, user_id, name, description, frequency, target_days, target_count,
         unit, category, color, icon, reminder_time, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      this.userId,
-      input.name,
-      input.description ?? null,
-      input.frequency ?? 'daily',
-      JSON.stringify(targetDays),
-      input.targetCount ?? 1,
-      input.unit ?? null,
-      input.category ?? null,
-      input.color ?? null,
-      input.icon ?? null,
-      input.reminderTime ?? null,
-      now,
-      now
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())`,
+      [
+        id,
+        this.userId,
+        input.name,
+        input.description ?? null,
+        input.frequency ?? 'daily',
+        JSON.stringify(targetDays),
+        input.targetCount ?? 1,
+        input.unit ?? null,
+        input.category ?? null,
+        input.color ?? null,
+        input.icon ?? null,
+        input.reminderTime ?? null,
+      ]
     );
 
-    return this.get(id)!;
+    return (await this.get(id))!;
   }
 
-  get(id: string): Habit | null {
-    const stmt = this.db.prepare<[string, string], HabitRow>(`
-      SELECT * FROM habits WHERE id = ? AND user_id = ?
-    `);
+  async get(id: string): Promise<Habit | null> {
+    const row = await this.queryOne<HabitRow>(
+      `SELECT * FROM habits WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
 
-    const row = stmt.get(id, this.userId);
     return row ? rowToHabit(row) : null;
   }
 
-  update(id: string, input: UpdateHabitInput): Habit | null {
-    const existing = this.get(id);
+  async update(id: string, input: UpdateHabitInput): Promise<Habit | null> {
+    const existing = await this.get(id);
     if (!existing) return null;
 
-    const now = new Date().toISOString();
-
-    const stmt = this.db.prepare(`
-      UPDATE habits SET
-        name = COALESCE(?, name),
-        description = COALESCE(?, description),
-        frequency = COALESCE(?, frequency),
-        target_days = COALESCE(?, target_days),
-        target_count = COALESCE(?, target_count),
-        unit = COALESCE(?, unit),
-        category = COALESCE(?, category),
-        color = COALESCE(?, color),
-        icon = COALESCE(?, icon),
-        reminder_time = COALESCE(?, reminder_time),
-        is_archived = COALESCE(?, is_archived),
-        updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `);
-
-    stmt.run(
-      input.name ?? null,
-      input.description ?? null,
-      input.frequency ?? null,
-      input.targetDays ? JSON.stringify(input.targetDays) : null,
-      input.targetCount ?? null,
-      input.unit ?? null,
-      input.category ?? null,
-      input.color ?? null,
-      input.icon ?? null,
-      input.reminderTime ?? null,
-      input.isArchived !== undefined ? (input.isArchived ? 1 : 0) : null,
-      now,
-      id,
-      this.userId
+    await this.execute(
+      `UPDATE habits SET
+        name = COALESCE($1, name),
+        description = COALESCE($2, description),
+        frequency = COALESCE($3, frequency),
+        target_days = COALESCE($4, target_days),
+        target_count = COALESCE($5, target_count),
+        unit = COALESCE($6, unit),
+        category = COALESCE($7, category),
+        color = COALESCE($8, color),
+        icon = COALESCE($9, icon),
+        reminder_time = COALESCE($10, reminder_time),
+        is_archived = COALESCE($11, is_archived),
+        updated_at = NOW()
+      WHERE id = $12 AND user_id = $13`,
+      [
+        input.name ?? null,
+        input.description ?? null,
+        input.frequency ?? null,
+        input.targetDays ? JSON.stringify(input.targetDays) : null,
+        input.targetCount ?? null,
+        input.unit ?? null,
+        input.category ?? null,
+        input.color ?? null,
+        input.icon ?? null,
+        input.reminderTime ?? null,
+        input.isArchived !== undefined ? input.isArchived : null,
+        id,
+        this.userId,
+      ]
     );
 
     return this.get(id);
   }
 
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM habits WHERE id = ? AND user_id = ?`);
-    const result = stmt.run(id, this.userId);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM habits WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
     return result.changes > 0;
   }
 
-  archive(id: string): Habit | null {
+  async archive(id: string): Promise<Habit | null> {
     return this.update(id, { isArchived: true });
   }
 
-  unarchive(id: string): Habit | null {
+  async unarchive(id: string): Promise<Habit | null> {
     return this.update(id, { isArchived: false });
   }
 
-  list(query: HabitQuery = {}): Habit[] {
-    let sql = `SELECT * FROM habits WHERE user_id = ?`;
+  async list(query: HabitQuery = {}): Promise<Habit[]> {
+    let sql = `SELECT * FROM habits WHERE user_id = $1`;
     const params: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     if (query.category) {
-      sql += ` AND category = ?`;
+      sql += ` AND category = $${paramIndex++}`;
       params.push(query.category);
     }
 
     if (query.isArchived !== undefined) {
-      sql += ` AND is_archived = ?`;
-      params.push(query.isArchived ? 1 : 0);
+      sql += ` AND is_archived = $${paramIndex++}`;
+      params.push(query.isArchived);
     }
 
     sql += ` ORDER BY created_at DESC`;
 
     if (query.limit) {
-      sql += ` LIMIT ?`;
+      sql += ` LIMIT $${paramIndex++}`;
       params.push(query.limit);
     }
 
-    const stmt = this.db.prepare<unknown[], HabitRow>(sql);
-    return stmt.all(...params).map(rowToHabit);
+    const rows = await this.query<HabitRow>(sql, params);
+    return rows.map(rowToHabit);
   }
+
 
   // ---------------------------------------------------------------------------
   // Habit Logs
   // ---------------------------------------------------------------------------
 
-  logHabit(habitId: string, options: { date?: string; count?: number; notes?: string } = {}): HabitLog | null {
-    const habit = this.get(habitId);
+  async logHabit(habitId: string, options: { date?: string; count?: number; notes?: string } = {}): Promise<HabitLog | null> {
+    const habit = await this.get(habitId);
     if (!habit) return null;
 
     const date: string = options.date ?? new Date().toISOString().split('T')[0]!;
     const count = options.count ?? 1;
 
     // Check if log exists for this date
-    const existing = this.getLog(habitId, date);
+    const existing = await this.getLog(habitId, date);
 
     if (existing) {
       // Update existing log
       const newCount = existing.count + count;
-      const stmt = this.db.prepare(`
-        UPDATE habit_logs SET count = ?, notes = COALESCE(?, notes), logged_at = ?
-        WHERE habit_id = ? AND date = ?
-      `);
-
-      stmt.run(newCount, options.notes ?? null, new Date().toISOString(), habitId, date);
+      await this.execute(
+        `UPDATE habit_logs SET count = $1, notes = COALESCE($2, notes), logged_at = NOW()
+        WHERE habit_id = $3 AND date = $4`,
+        [newCount, options.notes ?? null, habitId, date]
+      );
     } else {
       // Insert new log
       const id = `hlog_${Date.now()}`;
-      const stmt = this.db.prepare(`
-        INSERT INTO habit_logs (id, habit_id, user_id, date, count, notes, logged_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      stmt.run(id, habitId, this.userId, date, count, options.notes ?? null, new Date().toISOString());
+      await this.execute(
+        `INSERT INTO habit_logs (id, habit_id, user_id, date, count, notes, logged_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+        [id, habitId, this.userId, date, count, options.notes ?? null]
+      );
     }
 
     // Update habit stats
-    this.updateHabitStats(habitId);
+    await this.updateHabitStats(habitId);
 
     return this.getLog(habitId, date);
   }
 
-  getLog(habitId: string, date: string): HabitLog | null {
-    const stmt = this.db.prepare<[string, string], HabitLogRow>(`
-      SELECT * FROM habit_logs WHERE habit_id = ? AND date = ?
-    `);
+  async getLog(habitId: string, date: string): Promise<HabitLog | null> {
+    const row = await this.queryOne<HabitLogRow>(
+      `SELECT * FROM habit_logs WHERE habit_id = $1 AND date = $2`,
+      [habitId, date]
+    );
 
-    const row = stmt.get(habitId, date);
     return row ? rowToHabitLog(row) : null;
   }
 
-  getLogs(habitId: string, options: { startDate?: string; endDate?: string; limit?: number } = {}): HabitLog[] {
-    let sql = `SELECT * FROM habit_logs WHERE habit_id = ?`;
+  async getLogs(habitId: string, options: { startDate?: string; endDate?: string; limit?: number } = {}): Promise<HabitLog[]> {
+    let sql = `SELECT * FROM habit_logs WHERE habit_id = $1`;
     const params: unknown[] = [habitId];
+    let paramIndex = 2;
 
     if (options.startDate) {
-      sql += ` AND date >= ?`;
+      sql += ` AND date >= $${paramIndex++}`;
       params.push(options.startDate);
     }
 
     if (options.endDate) {
-      sql += ` AND date <= ?`;
+      sql += ` AND date <= $${paramIndex++}`;
       params.push(options.endDate);
     }
 
     sql += ` ORDER BY date DESC`;
 
     if (options.limit) {
-      sql += ` LIMIT ?`;
+      sql += ` LIMIT $${paramIndex++}`;
       params.push(options.limit);
     }
 
-    const stmt = this.db.prepare<unknown[], HabitLogRow>(sql);
-    return stmt.all(...params).map(rowToHabitLog);
+    const rows = await this.query<HabitLogRow>(sql, params);
+    return rows.map(rowToHabitLog);
   }
 
-  deleteLog(habitId: string, date: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM habit_logs WHERE habit_id = ? AND date = ?`);
-    const result = stmt.run(habitId, date);
+  async deleteLog(habitId: string, date: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM habit_logs WHERE habit_id = $1 AND date = $2`,
+      [habitId, date]
+    );
 
     if (result.changes > 0) {
-      this.updateHabitStats(habitId);
+      await this.updateHabitStats(habitId);
     }
 
     return result.changes > 0;
   }
 
+
   // ---------------------------------------------------------------------------
   // Stats & Streaks
   // ---------------------------------------------------------------------------
 
-  private updateHabitStats(habitId: string): void {
-    const habit = this.get(habitId);
+  private async updateHabitStats(habitId: string): Promise<void> {
+    const habit = await this.get(habitId);
     if (!habit) return;
 
     // Calculate total completions
-    const totalStmt = this.db.prepare<[string], { total: number }>(`
-      SELECT COALESCE(SUM(count), 0) as total FROM habit_logs WHERE habit_id = ?
-    `);
-    const totalCompletions = totalStmt.get(habitId)?.total ?? 0;
+    const totalResult = await this.queryOne<{ total: number }>(
+      `SELECT COAESCE(SUM(count), 0) as total FROM habit_logs WHERE habit_id = $1`,
+      [habitId]
+    );
+    const totalCompletions = totalResult?.total ?? 0;
 
     // Calculate streak
-    const { currentStreak, longestStreak } = this.calculateStreak(habit);
+    const { currentStreak, longestStreak } = await this.calculateStreak(habit);
 
     // Update habit
-    const stmt = this.db.prepare(`
-      UPDATE habits SET
-        total_completions = ?,
-        streak_current = ?,
-        streak_longest = ?
-      WHERE id = ?
-    `);
-
-    stmt.run(totalCompletions, currentStreak, Math.max(longestStreak, habit.streakLongest), habitId);
+    await this.execute(
+      `UPDATE habits SET
+        total_completions = $1,
+        streak_current = $2,
+        streak_longest = $3
+      WHERE id = $4`,
+      [totalCompletions, currentStreak, Math.max(longestStreak, habit.streakLongest), habitId]
+    );
   }
 
-  private calculateStreak(habit: Habit): { currentStreak: number; longestStreak: number } {
-    const logs = this.getLogs(habit.id, { limit: 365 }); // Last year
+  private async calculateStreak(habit: Habit): Promise<{ currentStreak: number; longestStreak: number }> {
+    const logs = await this.getLogs(habit.id, { limit: 365 }); // Last year
 
     if (logs.length === 0) {
       return { currentStreak: 0, longestStreak: 0 };
@@ -499,14 +497,15 @@ export class HabitsRepository {
     return { currentStreak, longestStreak };
   }
 
-  getHabitStats(habitId: string): {
+
+  async getHabitStats(habitId: string): Promise<{
     habit: Habit;
     weeklyCompletions: number;
     monthlyCompletions: number;
     completionRate: number;
     recentLogs: HabitLog[];
-  } | null {
-    const habit = this.get(habitId);
+  } | null> {
+    const habit = await this.get(habitId);
     if (!habit) return null;
 
     const today = new Date();
@@ -515,8 +514,8 @@ export class HabitsRepository {
     const monthAgo = new Date(today);
     monthAgo.setDate(today.getDate() - 30);
 
-    const weeklyLogs = this.getLogs(habitId, { startDate: weekAgo.toISOString().split('T')[0] });
-    const monthlyLogs = this.getLogs(habitId, { startDate: monthAgo.toISOString().split('T')[0] });
+    const weeklyLogs = await this.getLogs(habitId, { startDate: weekAgo.toISOString().split('T')[0] });
+    const monthlyLogs = await this.getLogs(habitId, { startDate: monthAgo.toISOString().split('T')[0] });
 
     const weeklyCompletions = weeklyLogs.reduce((sum, log) => sum + log.count, 0);
     const monthlyCompletions = monthlyLogs.reduce((sum, log) => sum + log.count, 0);
@@ -550,36 +549,45 @@ export class HabitsRepository {
   // Today's Habits
   // ---------------------------------------------------------------------------
 
-  getTodayHabits(): HabitWithTodayStatus[] {
+  async getTodayHabits(): Promise<HabitWithTodayStatus[]> {
     const today = new Date();
     const todayStr: string = today.toISOString().split('T')[0]!;
     const dayOfWeek = today.getDay();
 
-    const habits = this.list({ isArchived: false });
+    const habits = await this.list({ isArchived: false });
 
-    return habits
-      .filter(habit => {
-        if (habit.frequency === 'daily') return true;
-        if (habit.frequency === 'weekdays') return dayOfWeek >= 1 && dayOfWeek <= 5;
-        return habit.targetDays.includes(dayOfWeek);
-      })
-      .map(habit => {
-        const todayLog = this.getLog(habit.id, todayStr);
-        return {
+    const results: HabitWithTodayStatus[] = [];
+
+    for (const habit of habits) {
+      let isTargetDay = false;
+      if (habit.frequency === 'daily') {
+        isTargetDay = true;
+      } else if (habit.frequency === 'weekdays') {
+        isTargetDay = dayOfWeek >= 1 && dayOfWeek <= 5;
+      } else {
+        isTargetDay = habit.targetDays.includes(dayOfWeek);
+      }
+
+      if (isTargetDay) {
+        const todayLog = await this.getLog(habit.id, todayStr);
+        results.push({
           ...habit,
           completedToday: todayLog ? todayLog.count >= habit.targetCount : false,
           todayCount: todayLog?.count ?? 0,
-        };
-      });
+        });
+      }
+    }
+
+    return results;
   }
 
-  getTodayProgress(): {
+  async getTodayProgress(): Promise<{
     total: number;
     completed: number;
     percentage: number;
     habits: HabitWithTodayStatus[];
-  } {
-    const habits = this.getTodayHabits();
+  }> {
+    const habits = await this.getTodayHabits();
     const completed = habits.filter(h => h.completedToday).length;
 
     return {
@@ -594,15 +602,21 @@ export class HabitsRepository {
   // Categories
   // ---------------------------------------------------------------------------
 
-  getCategories(): string[] {
-    const stmt = this.db.prepare<string, { category: string }>(`
-      SELECT DISTINCT category FROM habits
-      WHERE user_id = ? AND category IS NOT NULL
-      ORDER BY category
-    `);
+  async getCategories(): Promise<string[]> {
+    const rows = await this.query<{ category: string }>(
+      `SELECT DISTINCT category FROM habits
+      WHERE user_id = $1 AND category IS NOT NULL
+      ORDER BY category`,
+      [this.userId]
+    );
 
-    return stmt.all(this.userId).map(r => r.category);
+    return rows.map(r => r.category);
   }
 }
 
 export const habitsRepo = new HabitsRepository();
+
+// Factory function
+export function createHabitsRepository(userId = 'default'): HabitsRepository {
+  return new HabitsRepository(userId);
+}

@@ -220,7 +220,7 @@ export class WSGateway {
         }
 
         // Check demo mode
-        if (isDemoMode()) {
+        if (await isDemoMode()) {
           // Demo mode: send simulated response
           const demoResponse = `This is a demo response. In production, configure an API key (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.) to get real AI responses.\n\nYour message: "${data.content}"`;
 

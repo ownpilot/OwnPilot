@@ -4,10 +4,222 @@
  * Fetches latest model data from models.dev and updates local JSON configs
  */
 
-import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ProviderConfig, ModelConfig, ModelCapability, ProviderType } from './types.js';
+
+/**
+ * Fields that should NEVER be overwritten by sync
+ * These are preserved from existing config files
+ */
+const PROTECTED_FIELDS: (keyof ProviderConfig)[] = [
+  'type',       // Provider type (google, anthropic, openai, openai-compatible)
+  'baseUrl',    // API endpoint URL
+  'apiKeyEnv',  // Environment variable name for API key
+];
+
+/**
+ * CANONICAL configurations for known providers
+ * These ALWAYS take precedence over both sync data and existing configs
+ * This ensures providers use the correct API client regardless of sync/config errors
+ */
+const CANONICAL_CONFIGS: Record<string, Partial<Pick<ProviderConfig, 'type' | 'baseUrl' | 'apiKeyEnv'>>> = {
+  // Native OpenAI
+  'openai': {
+    type: 'openai',
+    baseUrl: 'https://api.openai.com/v1',
+    apiKeyEnv: 'OPENAI_API_KEY',
+  },
+  // Native Anthropic
+  'anthropic': {
+    type: 'anthropic',
+    baseUrl: 'https://api.anthropic.com/v1',
+    apiKeyEnv: 'ANTHROPIC_API_KEY',
+  },
+  // Google Gemini (NOT OpenAI-compatible, uses its own API format)
+  'google': {
+    type: 'google',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    apiKeyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY',
+  },
+  // Google Vertex AI (Google Cloud)
+  'google-vertex': {
+    type: 'google',
+    // baseUrl is project-specific, don't override
+    apiKeyEnv: 'GOOGLE_VERTEX_API_KEY',
+  },
+  // Google Vertex with Anthropic models
+  'google-vertex-anthropic': {
+    type: 'anthropic',
+    apiKeyEnv: 'GOOGLE_VERTEX_API_KEY',
+  },
+  // xAI (Grok) - OpenAI compatible
+  'xai': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.x.ai/v1',
+    apiKeyEnv: 'XAI_API_KEY',
+  },
+  // Groq - OpenAI compatible
+  'groq': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    apiKeyEnv: 'GROQ_API_KEY',
+  },
+  // Mistral - OpenAI compatible
+  'mistral': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.mistral.ai/v1',
+    apiKeyEnv: 'MISTRAL_API_KEY',
+  },
+  // Cohere - OpenAI compatible
+  'cohere': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.cohere.ai/v1',
+    apiKeyEnv: 'COHERE_API_KEY',
+  },
+  // OpenRouter - OpenAI compatible aggregator
+  'openrouter': {
+    type: 'openai-compatible',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    apiKeyEnv: 'OPENROUTER_API_KEY',
+  },
+  // Together AI - OpenAI compatible
+  'togetherai': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.together.xyz/v1',
+    apiKeyEnv: 'TOGETHER_API_KEY',
+  },
+  // Fireworks AI - OpenAI compatible
+  'fireworks-ai': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.fireworks.ai/inference/v1',
+    apiKeyEnv: 'FIREWORKS_API_KEY',
+  },
+  // Perplexity - OpenAI compatible
+  'perplexity': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.perplexity.ai',
+    apiKeyEnv: 'PERPLEXITY_API_KEY',
+  },
+  // DeepInfra - OpenAI compatible
+  'deepinfra': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.deepinfra.com/v1/openai',
+    apiKeyEnv: 'DEEPINFRA_API_KEY',
+  },
+  // Azure OpenAI (needs custom baseUrl per deployment)
+  'azure': {
+    type: 'openai',
+    apiKeyEnv: 'AZURE_OPENAI_API_KEY',
+  },
+  // Alibaba (DashScope) - from models.dev
+  'alibaba': {
+    type: 'openai-compatible',
+    baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+    apiKeyEnv: 'DASHSCOPE_API_KEY',
+  },
+  'alibaba-cn': {
+    type: 'openai-compatible',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    apiKeyEnv: 'DASHSCOPE_API_KEY',
+  },
+  // Nvidia - from models.dev
+  'nvidia': {
+    type: 'openai-compatible',
+    baseUrl: 'https://integrate.api.nvidia.com/v1',
+    apiKeyEnv: 'NVIDIA_API_KEY',
+  },
+  // Vultr - from models.dev
+  'vultr': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.vultrinference.com/v1',
+    apiKeyEnv: 'VULTR_API_KEY',
+  },
+  // Moonshot AI
+  'moonshotai': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.moonshot.ai/v1',
+    apiKeyEnv: 'MOONSHOT_API_KEY',
+  },
+  'moonshotai-cn': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.moonshot.cn/v1',
+    apiKeyEnv: 'MOONSHOT_API_KEY',
+  },
+  // GitHub Models
+  'github-models': {
+    type: 'openai-compatible',
+    baseUrl: 'https://models.inference.ai.azure.com',
+    apiKeyEnv: 'GITHUB_TOKEN',
+  },
+  // Hugging Face
+  'huggingface': {
+    type: 'openai-compatible',
+    baseUrl: 'https://api-inference.huggingface.co/v1',
+    apiKeyEnv: 'HF_TOKEN',
+  },
+};
+
+/**
+ * Load existing provider config from file
+ */
+function loadExistingConfig(filePath: string): Partial<ProviderConfig> | null {
+  if (!existsSync(filePath)) {
+    return null;
+  }
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    return JSON.parse(content) as Partial<ProviderConfig>;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Merge new config with existing, preserving protected fields
+ * Then apply canonical overrides for known providers
+ */
+function mergeConfigs(
+  newConfig: ProviderConfig,
+  existingConfig: Partial<ProviderConfig> | null
+): ProviderConfig {
+  const merged = existingConfig ? { ...newConfig } : newConfig;
+
+  if (existingConfig) {
+    // Preserve protected fields from existing config
+    for (const field of PROTECTED_FIELDS) {
+      if (existingConfig[field] !== undefined) {
+        (merged as unknown as Record<string, unknown>)[field] = existingConfig[field];
+      }
+    }
+
+    // Also preserve features if they were manually configured
+    if (existingConfig.features) {
+      merged.features = {
+        ...newConfig.features,
+        ...existingConfig.features,
+      };
+    }
+  }
+
+  // CRITICAL: Apply canonical overrides for known providers
+  // This ensures the correct provider type is ALWAYS used regardless of sync/config errors
+  const canonical = CANONICAL_CONFIGS[newConfig.id];
+  if (canonical) {
+    if (canonical.type) {
+      merged.type = canonical.type;
+    }
+    if (canonical.baseUrl) {
+      merged.baseUrl = canonical.baseUrl;
+    }
+    if (canonical.apiKeyEnv) {
+      merged.apiKeyEnv = canonical.apiKeyEnv;
+    }
+  }
+
+  return merged;
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -192,7 +404,7 @@ export function syncProvider(
   providerData: ModelsDevProvider,
   outputDir?: string
 ): ProviderConfig {
-  const config = convertProvider(providerId, providerData);
+  const newConfig = convertProvider(providerId, providerData);
   const dir = outputDir ?? __dirname;
 
   // Ensure directory exists
@@ -200,11 +412,15 @@ export function syncProvider(
     mkdirSync(dir, { recursive: true });
   }
 
-  // Write config file
+  // Load existing config and merge to preserve protected fields
   const filePath = join(dir, `${providerId}.json`);
-  writeFileSync(filePath, JSON.stringify(config, null, 2), 'utf-8');
+  const existingConfig = loadExistingConfig(filePath);
+  const mergedConfig = mergeConfigs(newConfig, existingConfig);
 
-  return config;
+  // Write merged config file
+  writeFileSync(filePath, JSON.stringify(mergedConfig, null, 2), 'utf-8');
+
+  return mergedConfig;
 }
 
 /**

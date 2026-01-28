@@ -1,10 +1,10 @@
 /**
- * Contacts Repository
+ * Contacts Repository (PostgreSQL)
  *
  * CRUD operations for personal contacts
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 export interface Contact {
   id: string;
@@ -94,7 +94,7 @@ interface ContactRow {
   notes: string | null;
   relationship: string | null;
   tags: string;
-  is_favorite: number;
+  is_favorite: boolean;
   external_id: string | null;
   external_source: string | null;
   social_links: string;
@@ -119,311 +119,318 @@ function rowToContact(row: ContactRow): Contact {
     address: row.address ?? undefined,
     notes: row.notes ?? undefined,
     relationship: row.relationship ?? undefined,
-    tags: JSON.parse(row.tags || '[]'),
-    isFavorite: row.is_favorite === 1,
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
+    isFavorite: row.is_favorite === true,
     externalId: row.external_id ?? undefined,
     externalSource: row.external_source ?? undefined,
-    socialLinks: JSON.parse(row.social_links || '{}'),
-    customFields: JSON.parse(row.custom_fields || '{}'),
+    socialLinks: typeof row.social_links === 'string' ? JSON.parse(row.social_links || '{}') : (row.social_links || {}),
+    customFields: typeof row.custom_fields === 'string' ? JSON.parse(row.custom_fields || '{}') : (row.custom_fields || {}),
     lastContactedAt: row.last_contacted_at ? new Date(row.last_contacted_at) : undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
 }
 
-export class ContactsRepository {
-  private db = getDatabase();
+export class ContactsRepository extends BaseRepository {
   private userId: string;
 
   constructor(userId = 'default') {
+    super();
     this.userId = userId;
   }
 
-  create(input: CreateContactInput): Contact {
+  async create(input: CreateContactInput): Promise<Contact> {
     const id = crypto.randomUUID();
-    const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      INSERT INTO contacts (id, user_id, name, nickname, email, phone, company, job_title,
+    await this.execute(
+      `INSERT INTO contacts (id, user_id, name, nickname, email, phone, company, job_title,
         avatar, birthday, address, notes, relationship, tags, is_favorite,
-        external_id, external_source, social_links, custom_fields, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      this.userId,
-      input.name,
-      input.nickname ?? null,
-      input.email ?? null,
-      input.phone ?? null,
-      input.company ?? null,
-      input.jobTitle ?? null,
-      input.avatar ?? null,
-      input.birthday ?? null,
-      input.address ?? null,
-      input.notes ?? null,
-      input.relationship ?? null,
-      JSON.stringify(input.tags ?? []),
-      input.isFavorite ? 1 : 0,
-      input.externalId ?? null,
-      input.externalSource ?? null,
-      JSON.stringify(input.socialLinks ?? {}),
-      JSON.stringify(input.customFields ?? {}),
-      now,
-      now
+        external_id, external_source, social_links, custom_fields)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
+      [
+        id,
+        this.userId,
+        input.name,
+        input.nickname ?? null,
+        input.email ?? null,
+        input.phone ?? null,
+        input.company ?? null,
+        input.jobTitle ?? null,
+        input.avatar ?? null,
+        input.birthday ?? null,
+        input.address ?? null,
+        input.notes ?? null,
+        input.relationship ?? null,
+        JSON.stringify(input.tags ?? []),
+        input.isFavorite ?? false,
+        input.externalId ?? null,
+        input.externalSource ?? null,
+        JSON.stringify(input.socialLinks ?? {}),
+        JSON.stringify(input.customFields ?? {}),
+      ]
     );
 
-    return this.get(id)!;
+    const result = await this.get(id);
+    if (!result) throw new Error('Failed to create contact');
+    return result;
   }
 
-  get(id: string): Contact | null {
-    const stmt = this.db.prepare<[string, string], ContactRow>(`
-      SELECT * FROM contacts WHERE id = ? AND user_id = ?
-    `);
-
-    const row = stmt.get(id, this.userId);
+  async get(id: string): Promise<Contact | null> {
+    const row = await this.queryOne<ContactRow>(
+      `SELECT * FROM contacts WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
     return row ? rowToContact(row) : null;
   }
 
-  getByEmail(email: string): Contact | null {
-    const stmt = this.db.prepare<[string, string], ContactRow>(`
-      SELECT * FROM contacts WHERE email = ? AND user_id = ?
-    `);
-
-    const row = stmt.get(email, this.userId);
+  async getByEmail(email: string): Promise<Contact | null> {
+    const row = await this.queryOne<ContactRow>(
+      `SELECT * FROM contacts WHERE email = $1 AND user_id = $2`,
+      [email, this.userId]
+    );
     return row ? rowToContact(row) : null;
   }
 
-  getByPhone(phone: string): Contact | null {
-    const stmt = this.db.prepare<[string, string], ContactRow>(`
-      SELECT * FROM contacts WHERE phone = ? AND user_id = ?
-    `);
-
-    const row = stmt.get(phone, this.userId);
+  async getByPhone(phone: string): Promise<Contact | null> {
+    const row = await this.queryOne<ContactRow>(
+      `SELECT * FROM contacts WHERE phone = $1 AND user_id = $2`,
+      [phone, this.userId]
+    );
     return row ? rowToContact(row) : null;
   }
 
-  update(id: string, input: UpdateContactInput): Contact | null {
-    const existing = this.get(id);
+  async update(id: string, input: UpdateContactInput): Promise<Contact | null> {
+    const existing = await this.get(id);
     if (!existing) return null;
 
-    const now = new Date().toISOString();
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let paramIndex = 1;
 
-    const stmt = this.db.prepare(`
-      UPDATE contacts SET
-        name = COALESCE(?, name),
-        nickname = COALESCE(?, nickname),
-        email = COALESCE(?, email),
-        phone = COALESCE(?, phone),
-        company = COALESCE(?, company),
-        job_title = COALESCE(?, job_title),
-        avatar = COALESCE(?, avatar),
-        birthday = COALESCE(?, birthday),
-        address = COALESCE(?, address),
-        notes = COALESCE(?, notes),
-        relationship = COALESCE(?, relationship),
-        tags = COALESCE(?, tags),
-        is_favorite = COALESCE(?, is_favorite),
-        social_links = COALESCE(?, social_links),
-        custom_fields = COALESCE(?, custom_fields),
-        updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `);
+    if (input.name !== undefined) {
+      updates.push(`name = $${paramIndex++}`);
+      values.push(input.name);
+    }
+    if (input.nickname !== undefined) {
+      updates.push(`nickname = $${paramIndex++}`);
+      values.push(input.nickname);
+    }
+    if (input.email !== undefined) {
+      updates.push(`email = $${paramIndex++}`);
+      values.push(input.email);
+    }
+    if (input.phone !== undefined) {
+      updates.push(`phone = $${paramIndex++}`);
+      values.push(input.phone);
+    }
+    if (input.company !== undefined) {
+      updates.push(`company = $${paramIndex++}`);
+      values.push(input.company);
+    }
+    if (input.jobTitle !== undefined) {
+      updates.push(`job_title = $${paramIndex++}`);
+      values.push(input.jobTitle);
+    }
+    if (input.avatar !== undefined) {
+      updates.push(`avatar = $${paramIndex++}`);
+      values.push(input.avatar);
+    }
+    if (input.birthday !== undefined) {
+      updates.push(`birthday = $${paramIndex++}`);
+      values.push(input.birthday);
+    }
+    if (input.address !== undefined) {
+      updates.push(`address = $${paramIndex++}`);
+      values.push(input.address);
+    }
+    if (input.notes !== undefined) {
+      updates.push(`notes = $${paramIndex++}`);
+      values.push(input.notes);
+    }
+    if (input.relationship !== undefined) {
+      updates.push(`relationship = $${paramIndex++}`);
+      values.push(input.relationship);
+    }
+    if (input.tags !== undefined) {
+      updates.push(`tags = $${paramIndex++}`);
+      values.push(JSON.stringify(input.tags));
+    }
+    if (input.isFavorite !== undefined) {
+      updates.push(`is_favorite = $${paramIndex++}`);
+      values.push(input.isFavorite);
+    }
+    if (input.socialLinks !== undefined) {
+      updates.push(`social_links = $${paramIndex++}`);
+      values.push(JSON.stringify(input.socialLinks));
+    }
+    if (input.customFields !== undefined) {
+      updates.push(`custom_fields = $${paramIndex++}`);
+      values.push(JSON.stringify(input.customFields));
+    }
 
-    stmt.run(
-      input.name ?? null,
-      input.nickname ?? null,
-      input.email ?? null,
-      input.phone ?? null,
-      input.company ?? null,
-      input.jobTitle ?? null,
-      input.avatar ?? null,
-      input.birthday ?? null,
-      input.address ?? null,
-      input.notes ?? null,
-      input.relationship ?? null,
-      input.tags ? JSON.stringify(input.tags) : null,
-      input.isFavorite !== undefined ? (input.isFavorite ? 1 : 0) : null,
-      input.socialLinks ? JSON.stringify(input.socialLinks) : null,
-      input.customFields ? JSON.stringify(input.customFields) : null,
-      now,
-      id,
-      this.userId
+    if (updates.length === 0) return existing;
+
+    updates.push('updated_at = NOW()');
+    values.push(id, this.userId);
+
+    await this.execute(
+      `UPDATE contacts SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
+      values
     );
 
     return this.get(id);
   }
 
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM contacts WHERE id = ? AND user_id = ?`);
-    const result = stmt.run(id, this.userId);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM contacts WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
     return result.changes > 0;
   }
 
-  recordContact(id: string): Contact | null {
-    const now = new Date().toISOString();
-    const stmt = this.db.prepare(`
-      UPDATE contacts SET
-        last_contacted_at = ?,
-        updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `);
-
-    stmt.run(now, now, id, this.userId);
+  async recordContact(id: string): Promise<Contact | null> {
+    await this.execute(
+      `UPDATE contacts SET last_contacted_at = NOW(), updated_at = NOW() WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
     return this.get(id);
   }
 
-  toggleFavorite(id: string): Contact | null {
-    const existing = this.get(id);
+  async toggleFavorite(id: string): Promise<Contact | null> {
+    const existing = await this.get(id);
     if (!existing) return null;
-
     return this.update(id, { isFavorite: !existing.isFavorite });
   }
 
-  list(query: ContactQuery = {}): Contact[] {
-    let sql = `SELECT * FROM contacts WHERE user_id = ?`;
+  async list(query: ContactQuery = {}): Promise<Contact[]> {
+    let sql = `SELECT * FROM contacts WHERE user_id = $1`;
     const params: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     if (query.relationship) {
-      sql += ` AND relationship = ?`;
+      sql += ` AND relationship = $${paramIndex++}`;
       params.push(query.relationship);
     }
 
     if (query.company) {
-      sql += ` AND company = ?`;
+      sql += ` AND company = $${paramIndex++}`;
       params.push(query.company);
     }
 
     if (query.isFavorite !== undefined) {
-      sql += ` AND is_favorite = ?`;
-      params.push(query.isFavorite ? 1 : 0);
+      sql += ` AND is_favorite = $${paramIndex++}`;
+      params.push(query.isFavorite);
     }
 
     if (query.tags && query.tags.length > 0) {
       for (const tag of query.tags) {
-        sql += ` AND tags LIKE ?`;
+        sql += ` AND tags::text LIKE $${paramIndex++}`;
         params.push(`%"${tag}"%`);
       }
     }
 
     if (query.search) {
-      sql += ` AND (name LIKE ? OR nickname LIKE ? OR email LIKE ? OR phone LIKE ? OR company LIKE ?)`;
-      const searchTerm = `%${query.search}%`;
-      params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+      sql += ` AND (name ILIKE $${paramIndex} OR nickname ILIKE $${paramIndex} OR email ILIKE $${paramIndex} OR phone ILIKE $${paramIndex} OR company ILIKE $${paramIndex})`;
+      params.push(`%${query.search}%`);
+      paramIndex++;
     }
 
     sql += ` ORDER BY is_favorite DESC, name ASC`;
 
     if (query.limit) {
-      sql += ` LIMIT ?`;
+      sql += ` LIMIT $${paramIndex++}`;
       params.push(query.limit);
     }
 
     if (query.offset) {
-      sql += ` OFFSET ?`;
+      sql += ` OFFSET $${paramIndex++}`;
       params.push(query.offset);
     }
 
-    const stmt = this.db.prepare<unknown[], ContactRow>(sql);
-    return stmt.all(...params).map(rowToContact);
+    const rows = await this.query<ContactRow>(sql, params);
+    return rows.map(rowToContact);
   }
 
-  getFavorites(): Contact[] {
+  async getFavorites(): Promise<Contact[]> {
     return this.list({ isFavorite: true });
   }
 
-  getByRelationship(relationship: string): Contact[] {
+  async getByRelationship(relationship: string): Promise<Contact[]> {
     return this.list({ relationship });
   }
 
-  getByCompany(company: string): Contact[] {
+  async getByCompany(company: string): Promise<Contact[]> {
     return this.list({ company });
   }
 
-  getRecentlyContacted(limit = 10): Contact[] {
-    const stmt = this.db.prepare<[string, number], ContactRow>(`
-      SELECT * FROM contacts
-      WHERE user_id = ? AND last_contacted_at IS NOT NULL
-      ORDER BY last_contacted_at DESC
-      LIMIT ?
-    `);
-
-    return stmt.all(this.userId, limit).map(rowToContact);
+  async getRecentlyContacted(limit = 10): Promise<Contact[]> {
+    const rows = await this.query<ContactRow>(
+      `SELECT * FROM contacts WHERE user_id = $1 AND last_contacted_at IS NOT NULL ORDER BY last_contacted_at DESC LIMIT $2`,
+      [this.userId, limit]
+    );
+    return rows.map(rowToContact);
   }
 
-  getUpcomingBirthdays(days = 30): Contact[] {
+  async getUpcomingBirthdays(days = 30): Promise<Contact[]> {
+    // Get all contacts with birthdays and filter in JS
+    const rows = await this.query<ContactRow>(
+      `SELECT * FROM contacts WHERE user_id = $1 AND birthday IS NOT NULL`,
+      [this.userId]
+    );
+
     const today = new Date();
     const results: Contact[] = [];
 
-    // Get all contacts with birthdays
-    const stmt = this.db.prepare<string, ContactRow>(`
-      SELECT * FROM contacts
-      WHERE user_id = ? AND birthday IS NOT NULL
-    `);
-
-    for (const row of stmt.all(this.userId)) {
+    for (const row of rows) {
       const contact = rowToContact(row);
       if (!contact.birthday) continue;
 
-      // Parse birthday (format: MM-DD or YYYY-MM-DD)
       const parts = contact.birthday.split('-');
       if (parts.length < 2) continue;
 
       const month = parseInt(parts.length === 3 ? parts[1]! : parts[0]!, 10) - 1;
       const day = parseInt(parts.length === 3 ? parts[2]! : parts[1]!, 10);
 
-      // Create date for this year's birthday
       const birthdayThisYear = new Date(today.getFullYear(), month, day);
-
-      // If birthday has passed this year, check next year
       if (birthdayThisYear < today) {
         birthdayThisYear.setFullYear(today.getFullYear() + 1);
       }
 
-      // Check if within range
       const daysUntil = Math.ceil((birthdayThisYear.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       if (daysUntil <= days) {
         results.push(contact);
       }
     }
 
-    return results.sort((a, b) => {
-      // Sort by days until birthday
-      const aDate = new Date(a.birthday!);
-      const bDate = new Date(b.birthday!);
-      return aDate.getTime() - bDate.getTime();
-    });
+    return results;
   }
 
-  getRelationships(): string[] {
-    const stmt = this.db.prepare<string, { relationship: string }>(`
-      SELECT DISTINCT relationship FROM contacts
-      WHERE user_id = ? AND relationship IS NOT NULL
-      ORDER BY relationship
-    `);
-
-    return stmt.all(this.userId).map(r => r.relationship);
+  async getRelationships(): Promise<string[]> {
+    const rows = await this.query<{ relationship: string }>(
+      `SELECT DISTINCT relationship FROM contacts WHERE user_id = $1 AND relationship IS NOT NULL ORDER BY relationship`,
+      [this.userId]
+    );
+    return rows.map(r => r.relationship);
   }
 
-  getCompanies(): string[] {
-    const stmt = this.db.prepare<string, { company: string }>(`
-      SELECT DISTINCT company FROM contacts
-      WHERE user_id = ? AND company IS NOT NULL
-      ORDER BY company
-    `);
-
-    return stmt.all(this.userId).map(r => r.company);
+  async getCompanies(): Promise<string[]> {
+    const rows = await this.query<{ company: string }>(
+      `SELECT DISTINCT company FROM contacts WHERE user_id = $1 AND company IS NOT NULL ORDER BY company`,
+      [this.userId]
+    );
+    return rows.map(r => r.company);
   }
 
-  getTags(): string[] {
-    const stmt = this.db.prepare<string, { tags: string }>(`
-      SELECT tags FROM contacts WHERE user_id = ?
-    `);
+  async getTags(): Promise<string[]> {
+    const rows = await this.query<{ tags: string }>(
+      `SELECT tags FROM contacts WHERE user_id = $1`,
+      [this.userId]
+    );
 
     const allTags = new Set<string>();
-    for (const row of stmt.all(this.userId)) {
-      const tags = JSON.parse(row.tags || '[]') as string[];
+    for (const row of rows) {
+      const tags = typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []);
       for (const tag of tags) {
         allTags.add(tag);
       }
@@ -432,17 +439,22 @@ export class ContactsRepository {
     return Array.from(allTags).sort();
   }
 
-  count(): number {
-    const stmt = this.db.prepare<string, { count: number }>(`
-      SELECT COUNT(*) as count FROM contacts WHERE user_id = ?
-    `);
-
-    return stmt.get(this.userId)?.count ?? 0;
+  async count(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM contacts WHERE user_id = $1`,
+      [this.userId]
+    );
+    return parseInt(row?.count ?? '0', 10);
   }
 
-  search(query: string, limit = 20): Contact[] {
-    return this.list({ search: query, limit });
+  async search(searchQuery: string, limit = 20): Promise<Contact[]> {
+    return this.list({ search: searchQuery, limit });
   }
 }
 
 export const contactsRepo = new ContactsRepository();
+
+// Factory function
+export function createContactsRepository(userId = 'default'): ContactsRepository {
+  return new ContactsRepository(userId);
+}

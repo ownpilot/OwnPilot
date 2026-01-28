@@ -37,3 +37,5 @@ export {
   getActiveCustomToolDefinitions,
   isCustomTool,
 } from './custom-tools.js';
+export { databaseRoutes } from './database.js';
+export { expensesRoutes } from './expenses.js';

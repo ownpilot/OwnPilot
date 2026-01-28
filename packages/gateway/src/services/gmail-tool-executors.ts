@@ -28,22 +28,22 @@ import { oauthIntegrationsRepo, settingsRepo } from '../db/repositories/index.js
  */
 async function getGmailClient(userId: string = 'default'): Promise<GmailClient | null> {
   // Get OAuth credentials from settings
-  const clientId = settingsRepo.get<string>('google_oauth_client_id');
-  const clientSecret = settingsRepo.get<string>('google_oauth_client_secret');
+  const clientId = await settingsRepo.get<string>('google_oauth_client_id');
+  const clientSecret = await settingsRepo.get<string>('google_oauth_client_secret');
 
   if (!clientId || !clientSecret) {
     return null;
   }
 
   // Get OAuth integration
-  const integration = oauthIntegrationsRepo.getByUserProviderService(userId, 'google', 'gmail');
+  const integration = await oauthIntegrationsRepo.getByUserProviderService(userId, 'google', 'gmail');
 
   if (!integration) {
     return null;
   }
 
   // Get tokens
-  const tokens = oauthIntegrationsRepo.getTokens(integration.id);
+  const tokens = await oauthIntegrationsRepo.getTokens(integration.id);
 
   if (!tokens?.accessToken) {
     return null;
@@ -63,7 +63,7 @@ async function getGmailClient(userId: string = 'default'): Promise<GmailClient |
   // Create client with token refresh callback
   return createGmailClient(credentials, gmailTokens, async (newTokens: GmailTokens) => {
     // Update tokens in database when refreshed
-    oauthIntegrationsRepo.updateTokens(integration.id, {
+    await oauthIntegrationsRepo.updateTokens(integration.id, {
       accessToken: newTokens.accessToken,
       refreshToken: newTokens.refreshToken,
       expiresAt: newTokens.expiresAt,
@@ -74,8 +74,8 @@ async function getGmailClient(userId: string = 'default'): Promise<GmailClient |
 /**
  * Check if Gmail is connected for user
  */
-function isGmailConnected(userId: string = 'default'): boolean {
-  return oauthIntegrationsRepo.isConnected(userId, 'google', 'gmail');
+async function isGmailConnected(userId: string = 'default'): Promise<boolean> {
+  return await oauthIntegrationsRepo.isConnected(userId, 'google', 'gmail');
 }
 
 /**
@@ -126,7 +126,7 @@ export const gmailSendEmailExecutor: ToolExecutor = async (params, context): Pro
   }
 
   // Check Gmail connection
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -177,7 +177,7 @@ export const gmailListEmailsExecutor: ToolExecutor = async (params, context): Pr
   const userId = (params.userId as string) || 'default';
 
   // Check Gmail connection
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -247,7 +247,7 @@ export const gmailReadEmailExecutor: ToolExecutor = async (params, context): Pro
   }
 
   // Check Gmail connection
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -310,7 +310,7 @@ export const gmailDeleteEmailExecutor: ToolExecutor = async (params, context): P
   }
 
   // Check Gmail connection
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -367,7 +367,7 @@ export const gmailSearchEmailsExecutor: ToolExecutor = async (params, context): 
   }
 
   // Check Gmail connection
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -439,7 +439,7 @@ export const gmailReplyEmailExecutor: ToolExecutor = async (params, context): Pr
   }
 
   // Check Gmail connection
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -486,7 +486,7 @@ export const gmailMarkReadExecutor: ToolExecutor = async (params, context): Prom
     return errorResult('Email ID is required');
   }
 
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -527,7 +527,7 @@ export const gmailStarExecutor: ToolExecutor = async (params, context): Promise<
     return errorResult('Email ID is required');
   }
 
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -567,7 +567,7 @@ export const gmailArchiveExecutor: ToolExecutor = async (params, context): Promi
     return errorResult('Email ID is required');
   }
 
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -597,7 +597,7 @@ export const gmailArchiveExecutor: ToolExecutor = async (params, context): Promi
 export const gmailGetLabelsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
   const userId = (params.userId as string) || 'default';
 
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -640,7 +640,7 @@ export const gmailGetAttachmentExecutor: ToolExecutor = async (params, context):
     return errorResult('Message ID and Attachment ID are required');
   }
 
-  if (!isGmailConnected(userId)) {
+  if (!await isGmailConnected(userId)) {
     return notConnectedError();
   }
 
@@ -690,6 +690,6 @@ export const GMAIL_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
 /**
  * Check if Gmail tools should be used (i.e., Gmail is connected)
  */
-export function shouldUseGmailTools(userId: string = 'default'): boolean {
-  return isGmailConnected(userId);
+export async function shouldUseGmailTools(userId: string = 'default'): Promise<boolean> {
+  return await isGmailConnected(userId);
 }

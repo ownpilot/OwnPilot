@@ -12,6 +12,24 @@
   },
   "models": [
     {
+      "id": "google/gemini-3-flash-preview",
+      "name": "Gemini 3 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.5,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-17"
+    },
+    {
       "id": "anthropic/claude-opus-4-5",
       "name": "Claude Opus 4.5",
       "contextWindow": 200000,
@@ -25,8 +43,26 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-11-24"
+    },
+    {
+      "id": "google/gemini-3-pro-preview",
+      "name": "Gemini 3 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 2,
+      "outputPrice": 12,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-18"
     },
     {
       "id": "anthropic/claude-haiku-4-5",
@@ -42,6 +78,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-15"
     },
     {
@@ -58,6 +95,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-29"
     },
     {
@@ -69,11 +107,11 @@
       "outputPrice": 0.5,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-19"
     },
     {
@@ -90,6 +128,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-09"
     },
     {
@@ -101,11 +140,11 @@
       "outputPrice": 0.4,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -122,6 +161,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -135,11 +175,11 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -156,6 +196,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -169,11 +210,11 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-17"
     },
     {
@@ -187,11 +228,11 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-17"
     },
     {
@@ -208,6 +249,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -224,6 +266,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -240,6 +283,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-16"
     },
     {
@@ -255,6 +299,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -270,6 +315,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -286,6 +332,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-19"
     },
     {
@@ -301,43 +348,8 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-18"
-    },
-    {
-      "id": "google/gemini-3-flash-preview",
-      "name": "Gemini 3 Flash",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.5,
-      "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "video",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-12-17"
-    },
-    {
-      "id": "google/gemini-3-pro-preview",
-      "name": "Gemini 3 Pro",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 2,
-      "outputPrice": 12,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "video",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-11-18"
     }
   ],
   "baseUrl": "https://router.requesty.ai/v1",

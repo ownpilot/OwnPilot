@@ -21,7 +21,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
@@ -42,6 +41,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-23"
     },
     {
@@ -57,6 +57,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-22"
     },
     {
@@ -72,6 +73,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-01"
     },
     {
@@ -87,6 +89,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-06"
     },
     {
@@ -102,6 +105,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-27"
     },
     {
@@ -117,6 +121,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-01"
     },
     {
@@ -132,6 +137,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-21"
     },
     {
@@ -147,6 +153,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -162,6 +169,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -177,6 +185,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-01"
     },
     {
@@ -192,6 +201,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-29"
     },
     {
@@ -204,9 +214,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-22"
     },
     {
@@ -221,22 +231,8 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-11"
-    },
-    {
-      "id": "accounts/fireworks/models/qwen3-235b-a22b",
-      "name": "Qwen3 235B-A22B",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.22,
-      "outputPrice": 0.88,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-04-29"
     },
     {
       "id": "accounts/fireworks/models/deepseek-r1-0528",
@@ -251,7 +247,24 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-28"
+    },
+    {
+      "id": "accounts/fireworks/models/qwen3-235b-a22b",
+      "name": "Qwen3 235B-A22B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.22,
+      "outputPrice": 0.88,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-29"
     },
     {
       "id": "accounts/fireworks/models/deepseek-v3-0324",
@@ -265,9 +278,10 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-24"
     }
   ],
-  "baseUrl": "https://api.fireworks.ai/inference/v1/",
+  "baseUrl": "https://api.fireworks.ai/inference/v1",
   "docsUrl": "https://fireworks.ai/docs/"
 }

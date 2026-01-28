@@ -265,55 +265,55 @@ export class DashboardService {
 
     const today = new Date().toISOString().split('T')[0] ?? '';
 
-    // Aggregate all data (synchronous operations from sqlite)
+    // Aggregate all data (async operations from database)
     // Tasks
-    const allTasks = tasksRepo.list({ limit: 1000 });
+    const allTasks = await tasksRepo.list({ limit: 1000 });
     const pendingTasks = allTasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
     const dueTodayTasks = allTasks.filter(t => t.dueDate === today && t.status !== 'completed' && t.status !== 'cancelled');
     const overdueTasks = allTasks.filter(t => t.dueDate && t.dueDate < today && t.status !== 'completed' && t.status !== 'cancelled');
 
     // Calendar
-    const todayEvents = calendarRepo.getToday();
-    const upcomingEvents = calendarRepo.getUpcoming(7);
+    const todayEvents = await calendarRepo.getToday();
+    const upcomingEvents = await calendarRepo.getUpcoming(7);
 
     // Goals
-    const activeGoals = goalsRepo.getActive(10);
-    const nextActions = goalsRepo.getNextActions(5);
+    const activeGoals = await goalsRepo.getActive(10);
+    const nextActions = await goalsRepo.getNextActions(5);
     const goalStats = this.calculateGoalStats(activeGoals);
 
     // Triggers
-    const allTriggers = triggersRepo.list({ limit: 100 });
+    const allTriggers = await triggersRepo.list({ limit: 100 });
     const enabledTriggers = allTriggers.filter(t => t.enabled);
     const scheduledToday = enabledTriggers.filter(t => {
       if (!t.nextFire) return false;
       const fireDate = new Date(t.nextFire).toISOString().split('T')[0];
       return fireDate === today;
     });
-    const triggerHistory = triggersRepo.getRecentHistory(10);
+    const triggerHistory = await triggersRepo.getRecentHistory(10);
 
     // Memories
-    const recentMemories = memoriesRepo.getRecent(10);
-    const importantMemories = memoriesRepo.getImportant(0.7, 5);
-    const memoryStats = memoriesRepo.getStats();
+    const recentMemories = await memoriesRepo.getRecent(10);
+    const importantMemories = await memoriesRepo.getImportant(0.7, 5);
+    const memoryStats = await memoriesRepo.getStats();
 
     // Habits
-    const todayHabits = this.getHabitProgress(habitsRepo);
+    const todayHabits = await this.getHabitProgress(habitsRepo);
     const streaksAtRisk = todayHabits.habits.filter((h: HabitProgressItem) => !h.completedToday && h.streakCurrent > 0);
 
     // Notes
-    const pinnedNotes = notesRepo.getPinned();
-    const recentNotes = notesRepo.getRecent(5);
+    const pinnedNotes = await notesRepo.getPinned();
+    const recentNotes = await notesRepo.getRecent(5);
 
     // Costs
-    const dailyCosts = this.getDailyCosts(costsRepo);
-    const monthlyCosts = this.getMonthlyCosts(costsRepo);
+    const dailyCosts = await this.getDailyCosts(costsRepo);
+    const monthlyCosts = await this.getMonthlyCosts(costsRepo);
 
     // Custom Data
-    const customTables = customDataRepo.listTables();
-    const customDataSummary = this.getCustomDataSummary(customDataRepo, customTables);
+    const customTables = await customDataRepo.listTables();
+    const customDataSummary = await this.getCustomDataSummary(customDataRepo, customTables);
 
     // Plans
-    const allPlans = plansRepo.list({ limit: 50 });
+    const allPlans = await plansRepo.list({ limit: 50 });
     const runningPlans = allPlans.filter(p => p.status === 'running');
     const pendingApprovalPlans = allPlans.filter(p => p.status === 'pending');
 
@@ -644,8 +644,8 @@ Format your response as JSON:
   /**
    * Get habit progress for today
    */
-  private getHabitProgress(repo: HabitsRepository): HabitProgress {
-    const progress = repo.getTodayProgress();
+  private async getHabitProgress(repo: HabitsRepository): Promise<HabitProgress> {
+    const progress = await repo.getTodayProgress();
 
     return {
       completed: progress.completed,
@@ -662,8 +662,8 @@ Format your response as JSON:
   /**
    * Get daily cost summary
    */
-  private getDailyCosts(repo: CostsRepository): CostSummaryData {
-    const dailyCosts = repo.getDailyCosts(1);
+  private async getDailyCosts(repo: CostsRepository): Promise<CostSummaryData> {
+    const dailyCosts = await repo.getDailyCosts(1);
     const today = dailyCosts[0];
     return {
       totalTokens: today?.totalTokens ?? 0,
@@ -675,8 +675,8 @@ Format your response as JSON:
   /**
    * Get monthly cost summary
    */
-  private getMonthlyCosts(repo: CostsRepository): CostSummaryData {
-    const monthlyCosts = repo.getDailyCosts(30);
+  private async getMonthlyCosts(repo: CostsRepository): Promise<CostSummaryData> {
+    const monthlyCosts = await repo.getDailyCosts(30);
     return monthlyCosts.reduce(
       (acc, day) => ({
         totalTokens: acc.totalTokens + day.totalTokens,
@@ -690,21 +690,23 @@ Format your response as JSON:
   /**
    * Get custom data summary
    */
-  private getCustomDataSummary(
+  private async getCustomDataSummary(
     repo: ReturnType<typeof getCustomDataRepository>,
     tables: CustomTableSchema[]
-  ): CustomDataSummary {
+  ): Promise<CustomDataSummary> {
     let totalRecords = 0;
-    const tableSummaries = tables.map(t => {
-      const stats = repo.getTableStats(t.id);
+    const tableSummaries: CustomTableSummaryItem[] = [];
+
+    for (const t of tables) {
+      const stats = await repo.getTableStats(t.id);
       const recordCount = stats?.recordCount ?? 0;
       totalRecords += recordCount;
-      return {
+      tableSummaries.push({
         id: t.id,
         name: t.displayName,
         recordCount,
-      };
-    });
+      });
+    }
 
     return {
       tables: tableSummaries,

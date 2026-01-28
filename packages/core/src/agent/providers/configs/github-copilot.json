@@ -12,6 +12,25 @@
   },
   "models": [
     {
+      "id": "gemini-3-flash-preview",
+      "name": "Gemini 3 Flash",
+      "contextWindow": 128000,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-17"
+    },
+    {
       "id": "gpt-5.2-codex",
       "name": "GPT-5.2-Codex",
       "contextWindow": 272000,
@@ -23,10 +42,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-11"
     },
     {
@@ -43,6 +61,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-11"
     },
     {
@@ -57,9 +76,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-04"
     },
     {
@@ -76,7 +95,27 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-24"
+    },
+    {
+      "id": "gemini-3-pro-preview",
+      "name": "Gemini 3 Pro Preview",
+      "contextWindow": 128000,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-18"
     },
     {
       "id": "gpt-5.1-codex",
@@ -90,9 +129,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-13"
     },
     {
@@ -107,9 +146,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-13"
     },
     {
@@ -126,6 +165,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-13"
     },
     {
@@ -142,6 +182,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-15"
     },
     {
@@ -158,6 +199,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-29"
     },
     {
@@ -171,9 +213,9 @@
         "chat",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-27"
     },
     {
@@ -190,6 +232,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-13"
     },
     {
@@ -206,6 +249,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -221,6 +265,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -237,6 +282,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -252,6 +298,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -265,10 +312,10 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-20"
     },
     {
@@ -284,45 +331,8 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-13"
-    },
-    {
-      "id": "gemini-3-flash-preview",
-      "name": "Gemini 3 Flash",
-      "contextWindow": 128000,
-      "maxOutput": 64000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "video",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-12-17"
-    },
-    {
-      "id": "gemini-3-pro-preview",
-      "name": "Gemini 3 Pro Preview",
-      "contextWindow": 128000,
-      "maxOutput": 64000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "video",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-11-18"
     }
   ],
   "baseUrl": "https://api.githubcopilot.com",

@@ -365,54 +365,11 @@ export function getSmartestModel(criteriaOrCapabilities: ProviderSelectionCriter
 // Models.dev API Sync Functions
 // =============================================================================
 
-const MODELS_DEV_API_URL = 'https://models.dev/api.json';
-
-interface ModelsDevProvider {
-  id: string;
-  name: string;
-  models: Record<string, unknown>;
-}
-
-/**
- * Fetch the models.dev API data
- */
-export async function fetchModelsDevApi(): Promise<Record<string, ModelsDevProvider>> {
-  const response = await fetch(MODELS_DEV_API_URL);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch models.dev API: ${response.status}`);
-  }
-  return await response.json() as Record<string, ModelsDevProvider>;
-}
-
-/**
- * List all providers from models.dev API
- */
-export async function listModelsDevProviders(): Promise<string[]> {
-  const data = await fetchModelsDevApi();
-  return Object.keys(data);
-}
-
-/**
- * Sync a single provider from models.dev API
- * Note: This is a placeholder - actual sync logic is in generate-provider-configs.ts
- */
-export async function syncProvider(providerId: string): Promise<boolean> {
-  console.log(`[ProviderSync] Use 'npx tsx scripts/generate-provider-configs.ts' to sync ${providerId}`);
-  return false;
-}
-
-/**
- * Sync all providers from models.dev API
- */
-export async function syncAllProviders(): Promise<{ synced: string[]; failed: string[] }> {
-  console.log(`[ProviderSync] Use 'npx tsx scripts/generate-provider-configs.ts' to sync all providers`);
-  return { synced: [], failed: [] };
-}
-
-/**
- * Sync specific providers from models.dev API
- */
-export async function syncProviders(providerIds: string[]): Promise<{ synced: string[]; failed: string[] }> {
-  console.log(`[ProviderSync] Use 'npx tsx scripts/generate-provider-configs.ts' to sync: ${providerIds.join(', ')}`);
-  return { synced: [], failed: [] };
-}
+// Re-export all sync functions from sync.ts
+export {
+  fetchModelsDevApi,
+  syncProvider,
+  syncAllProviders,
+  syncProviders,
+  listModelsDevProviders,
+} from './sync.js';

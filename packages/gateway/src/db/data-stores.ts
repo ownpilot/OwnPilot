@@ -1,7 +1,7 @@
 /**
- * SQLite-backed Data Stores
+ * PostgreSQL-backed Data Stores
  *
- * Implements the DataStore interface from @ownpilot/core using SQLite repositories.
+ * Implements the DataStore interface from @ownpilot/core using PostgreSQL repositories.
  * This allows the DataGateway to use persistent storage.
  */
 
@@ -24,9 +24,9 @@ import {
 } from './repositories/index.js';
 
 /**
- * SQLite-backed Bookmark Store
+ * PostgreSQL-backed Bookmark Store
  */
-export class SQLiteBookmarkStore implements DataStore<Bookmark> {
+export class BookmarkStore implements DataStore<Bookmark> {
   private repo: BookmarksRepository;
 
   constructor(userId = 'default') {
@@ -34,7 +34,7 @@ export class SQLiteBookmarkStore implements DataStore<Bookmark> {
   }
 
   async get(id: string): Promise<Bookmark | null> {
-    const bookmark = this.repo.get(id);
+    const bookmark = await this.repo.get(id);
     if (!bookmark) return null;
     return {
       id: bookmark.id,
@@ -50,7 +50,7 @@ export class SQLiteBookmarkStore implements DataStore<Bookmark> {
   }
 
   async list(filter?: Record<string, unknown>): Promise<Bookmark[]> {
-    const bookmarks = this.repo.list({
+    const bookmarks = await this.repo.list({
       category: filter?.category as string | undefined,
       tags: filter?.tags as string[] | undefined,
       isFavorite: filter?.isFavorite as boolean | undefined,
@@ -69,7 +69,7 @@ export class SQLiteBookmarkStore implements DataStore<Bookmark> {
   }
 
   async search(query: string): Promise<Bookmark[]> {
-    const bookmarks = this.repo.search(query);
+    const bookmarks = await this.repo.search(query);
     return bookmarks.map((b) => ({
       id: b.id,
       url: b.url,
@@ -84,7 +84,7 @@ export class SQLiteBookmarkStore implements DataStore<Bookmark> {
   }
 
   async create(data: Omit<Bookmark, 'id' | 'createdAt'>): Promise<Bookmark> {
-    const bookmark = this.repo.create({
+    const bookmark = await this.repo.create({
       url: data.url,
       title: data.title,
       description: data.description,
@@ -106,7 +106,7 @@ export class SQLiteBookmarkStore implements DataStore<Bookmark> {
   }
 
   async update(id: string, data: Partial<Bookmark>): Promise<Bookmark | null> {
-    const bookmark = this.repo.update(id, {
+    const bookmark = await this.repo.update(id, {
       url: data.url,
       title: data.title,
       description: data.description,
@@ -134,9 +134,9 @@ export class SQLiteBookmarkStore implements DataStore<Bookmark> {
 }
 
 /**
- * SQLite-backed Note Store
+ * PostgreSQL-backed Note Store
  */
-export class SQLiteNoteStore implements DataStore<Note> {
+export class NoteStore implements DataStore<Note> {
   private repo: NotesRepository;
 
   constructor(userId = 'default') {
@@ -144,7 +144,7 @@ export class SQLiteNoteStore implements DataStore<Note> {
   }
 
   async get(id: string): Promise<Note | null> {
-    const note = this.repo.get(id);
+    const note = await this.repo.get(id);
     if (!note) return null;
     return {
       id: note.id,
@@ -158,7 +158,7 @@ export class SQLiteNoteStore implements DataStore<Note> {
   }
 
   async list(filter?: Record<string, unknown>): Promise<Note[]> {
-    const notes = this.repo.list({
+    const notes = await this.repo.list({
       category: filter?.category as string | undefined,
       tags: filter?.tags as string[] | undefined,
       isPinned: filter?.isPinned as boolean | undefined,
@@ -176,7 +176,7 @@ export class SQLiteNoteStore implements DataStore<Note> {
   }
 
   async search(query: string): Promise<Note[]> {
-    const notes = this.repo.search(query);
+    const notes = await this.repo.search(query);
     return notes.map((n) => ({
       id: n.id,
       title: n.title,
@@ -189,7 +189,7 @@ export class SQLiteNoteStore implements DataStore<Note> {
   }
 
   async create(data: Omit<Note, 'id' | 'createdAt'>): Promise<Note> {
-    const note = this.repo.create({
+    const note = await this.repo.create({
       title: data.title ?? '',
       content: data.content,
       tags: data.tags,
@@ -207,7 +207,7 @@ export class SQLiteNoteStore implements DataStore<Note> {
   }
 
   async update(id: string, data: Partial<Note>): Promise<Note | null> {
-    const note = this.repo.update(id, {
+    const note = await this.repo.update(id, {
       title: data.title,
       content: data.content,
       tags: data.tags,
@@ -231,9 +231,9 @@ export class SQLiteNoteStore implements DataStore<Note> {
 }
 
 /**
- * SQLite-backed Task Store
+ * PostgreSQL-backed Task Store
  */
-export class SQLiteTaskStore implements DataStore<Task> {
+export class TaskStore implements DataStore<Task> {
   private repo: TasksRepository;
 
   constructor(userId = 'default') {
@@ -241,13 +241,13 @@ export class SQLiteTaskStore implements DataStore<Task> {
   }
 
   async get(id: string): Promise<Task | null> {
-    const task = this.repo.get(id);
+    const task = await this.repo.get(id);
     if (!task) return null;
     return this.mapTask(task);
   }
 
   async list(filter?: Record<string, unknown>): Promise<Task[]> {
-    const tasks = this.repo.list({
+    const tasks = await this.repo.list({
       status: filter?.status as 'pending' | 'in_progress' | 'completed' | 'cancelled' | undefined,
       priority: filter?.priority as 'low' | 'normal' | 'high' | 'urgent' | undefined,
       projectId: filter?.projectId as string | undefined,
@@ -256,12 +256,12 @@ export class SQLiteTaskStore implements DataStore<Task> {
   }
 
   async search(query: string): Promise<Task[]> {
-    const tasks = this.repo.search(query);
+    const tasks = await this.repo.search(query);
     return tasks.map((t) => this.mapTask(t));
   }
 
   async create(data: Omit<Task, 'id' | 'createdAt'>): Promise<Task> {
-    const task = this.repo.create({
+    const task = await this.repo.create({
       title: data.title,
       description: data.description,
       priority: data.priority,
@@ -278,7 +278,7 @@ export class SQLiteTaskStore implements DataStore<Task> {
   }
 
   async update(id: string, data: Partial<Task>): Promise<Task | null> {
-    const task = this.repo.update(id, {
+    const task = await this.repo.update(id, {
       title: data.title,
       description: data.description,
       status: data.status,
@@ -298,7 +298,7 @@ export class SQLiteTaskStore implements DataStore<Task> {
     return this.repo.delete(id);
   }
 
-  private mapTask(task: ReturnType<TasksRepository['get']> & object): Task {
+  private mapTask(task: Awaited<ReturnType<TasksRepository['get']>> & object): Task {
     return {
       id: task.id,
       title: task.title,
@@ -321,9 +321,9 @@ export class SQLiteTaskStore implements DataStore<Task> {
 }
 
 /**
- * SQLite-backed Calendar Store
+ * PostgreSQL-backed Calendar Store
  */
-export class SQLiteCalendarStore implements DataStore<PersonalCalendarEvent> {
+export class CalendarStore implements DataStore<PersonalCalendarEvent> {
   private repo: CalendarRepository;
 
   constructor(userId = 'default') {
@@ -331,25 +331,25 @@ export class SQLiteCalendarStore implements DataStore<PersonalCalendarEvent> {
   }
 
   async get(id: string): Promise<PersonalCalendarEvent | null> {
-    const event = this.repo.get(id);
+    const event = await this.repo.get(id);
     if (!event) return null;
     return this.mapEvent(event);
   }
 
   async list(filter?: Record<string, unknown>): Promise<PersonalCalendarEvent[]> {
-    const events = this.repo.list({
+    const events = await this.repo.list({
       category: filter?.category as string | undefined,
     });
     return events.map((e) => this.mapEvent(e));
   }
 
   async search(query: string): Promise<PersonalCalendarEvent[]> {
-    const events = this.repo.search(query);
+    const events = await this.repo.search(query);
     return events.map((e) => this.mapEvent(e));
   }
 
   async create(data: Omit<PersonalCalendarEvent, 'id' | 'createdAt'>): Promise<PersonalCalendarEvent> {
-    const event = this.repo.create({
+    const event = await this.repo.create({
       title: data.title,
       description: data.description,
       location: data.location,
@@ -370,7 +370,7 @@ export class SQLiteCalendarStore implements DataStore<PersonalCalendarEvent> {
   }
 
   async update(id: string, data: Partial<PersonalCalendarEvent>): Promise<PersonalCalendarEvent | null> {
-    const event = this.repo.update(id, {
+    const event = await this.repo.update(id, {
       title: data.title,
       description: data.description,
       location: data.location,
@@ -393,7 +393,7 @@ export class SQLiteCalendarStore implements DataStore<PersonalCalendarEvent> {
     return this.repo.delete(id);
   }
 
-  private mapEvent(event: ReturnType<CalendarRepository['get']> & object): PersonalCalendarEvent {
+  private mapEvent(event: Awaited<ReturnType<CalendarRepository['get']>> & object): PersonalCalendarEvent {
     return {
       id: event.id,
       title: event.title,
@@ -418,9 +418,9 @@ export class SQLiteCalendarStore implements DataStore<PersonalCalendarEvent> {
 }
 
 /**
- * SQLite-backed Contact Store
+ * PostgreSQL-backed Contact Store
  */
-export class SQLiteContactStore implements DataStore<Contact> {
+export class ContactStore implements DataStore<Contact> {
   private repo: ContactsRepository;
 
   constructor(userId = 'default') {
@@ -428,13 +428,13 @@ export class SQLiteContactStore implements DataStore<Contact> {
   }
 
   async get(id: string): Promise<Contact | null> {
-    const contact = this.repo.get(id);
+    const contact = await this.repo.get(id);
     if (!contact) return null;
     return this.mapContact(contact);
   }
 
   async list(filter?: Record<string, unknown>): Promise<Contact[]> {
-    const contacts = this.repo.list({
+    const contacts = await this.repo.list({
       relationship: filter?.relationship as string | undefined,
       company: filter?.company as string | undefined,
       isFavorite: filter?.isFavorite as boolean | undefined,
@@ -443,12 +443,12 @@ export class SQLiteContactStore implements DataStore<Contact> {
   }
 
   async search(query: string): Promise<Contact[]> {
-    const contacts = this.repo.search(query);
+    const contacts = await this.repo.search(query);
     return contacts.map((c) => this.mapContact(c));
   }
 
   async create(data: Omit<Contact, 'id' | 'createdAt'>): Promise<Contact> {
-    const contact = this.repo.create({
+    const contact = await this.repo.create({
       name: data.name,
       nickname: data.nickname,
       email: data.email,
@@ -469,7 +469,7 @@ export class SQLiteContactStore implements DataStore<Contact> {
   }
 
   async update(id: string, data: Partial<Contact>): Promise<Contact | null> {
-    const contact = this.repo.update(id, {
+    const contact = await this.repo.update(id, {
       name: data.name,
       nickname: data.nickname,
       email: data.email,
@@ -494,7 +494,7 @@ export class SQLiteContactStore implements DataStore<Contact> {
     return this.repo.delete(id);
   }
 
-  private mapContact(contact: ReturnType<ContactsRepository['get']> & object): Contact {
+  private mapContact(contact: Awaited<ReturnType<ContactsRepository['get']>> & object): Contact {
     return {
       id: contact.id,
       name: contact.name,
@@ -520,14 +520,28 @@ export class SQLiteContactStore implements DataStore<Contact> {
 }
 
 /**
- * Create all SQLite-backed data stores
+ * Create all PostgreSQL-backed data stores
  */
-export function createSQLiteDataStores(userId = 'default') {
+export function createDataStores(userId = 'default') {
   return {
-    bookmarks: new SQLiteBookmarkStore(userId),
-    notes: new SQLiteNoteStore(userId),
-    tasks: new SQLiteTaskStore(userId),
-    calendar: new SQLiteCalendarStore(userId),
-    contacts: new SQLiteContactStore(userId),
+    bookmarks: new BookmarkStore(userId),
+    notes: new NoteStore(userId),
+    tasks: new TaskStore(userId),
+    calendar: new CalendarStore(userId),
+    contacts: new ContactStore(userId),
   };
 }
+
+// Backwards compatibility aliases (deprecated)
+/** @deprecated Use BookmarkStore instead */
+export const SQLiteBookmarkStore = BookmarkStore;
+/** @deprecated Use NoteStore instead */
+export const SQLiteNoteStore = NoteStore;
+/** @deprecated Use TaskStore instead */
+export const SQLiteTaskStore = TaskStore;
+/** @deprecated Use CalendarStore instead */
+export const SQLiteCalendarStore = CalendarStore;
+/** @deprecated Use ContactStore instead */
+export const SQLiteContactStore = ContactStore;
+/** @deprecated Use createDataStores instead */
+export const createSQLiteDataStores = createDataStores;

@@ -24,8 +24,7 @@
         "function_calling",
         "json_mode",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
       "default": true,
       "releaseDate": "2025-12-11"
@@ -45,6 +44,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-11"
     },
     {
@@ -62,6 +62,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-11"
     },
     {
@@ -78,6 +79,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-11"
     },
     {
@@ -93,9 +95,9 @@
         "function_calling",
         "json_mode",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-13"
     },
     {
@@ -111,9 +113,9 @@
         "function_calling",
         "json_mode",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-13"
     },
     {
@@ -130,6 +132,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-13"
     },
     {
@@ -145,9 +148,9 @@
         "function_calling",
         "json_mode",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-13"
     },
     {
@@ -165,6 +168,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-13"
     },
     {
@@ -182,6 +186,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-06"
     },
     {
@@ -197,9 +202,9 @@
         "function_calling",
         "json_mode",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-15"
     },
     {
@@ -217,6 +222,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -234,6 +240,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -250,6 +257,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -267,6 +275,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -284,6 +293,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-10"
     },
     {
@@ -295,12 +305,11 @@
       "outputPrice": 6,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-16"
     },
     {
@@ -318,6 +327,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-16"
     },
     {
@@ -335,6 +345,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-16"
     },
     {
@@ -351,6 +362,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -367,6 +379,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -383,6 +396,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -400,6 +414,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-19"
     },
     {
@@ -416,6 +431,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-20"
     },
     {
@@ -433,168 +449,8 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-05"
-    },
-    {
-      "id": "o1-mini",
-      "name": "o1-mini",
-      "contextWindow": 128000,
-      "maxOutput": 65536,
-      "inputPrice": 1.1,
-      "outputPrice": 4.4,
-      "capabilities": [
-        "chat",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2024-09-12"
-    },
-    {
-      "id": "gpt-4o-mini",
-      "name": "GPT-4o mini",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2024-07-18"
-    },
-    {
-      "id": "o3-deep-research",
-      "name": "o3-deep-research",
-      "contextWindow": 200000,
-      "maxOutput": 100000,
-      "inputPrice": 10,
-      "outputPrice": 40,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2024-06-26"
-    },
-    {
-      "id": "o4-mini-deep-research",
-      "name": "o4-mini-deep-research",
-      "contextWindow": 200000,
-      "maxOutput": 100000,
-      "inputPrice": 2,
-      "outputPrice": 8,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2024-06-26"
-    },
-    {
-      "id": "gpt-4o",
-      "name": "GPT-4o",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 2.5,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2024-05-13"
-    },
-    {
-      "id": "text-embedding-3-small",
-      "name": "text-embedding-3-small",
-      "contextWindow": 8191,
-      "maxOutput": 1536,
-      "inputPrice": 0.02,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-01-25"
-    },
-    {
-      "id": "text-embedding-3-large",
-      "name": "text-embedding-3-large",
-      "contextWindow": 8191,
-      "maxOutput": 3072,
-      "inputPrice": 0.13,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-01-25"
-    },
-    {
-      "id": "gpt-4",
-      "name": "GPT-4",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 30,
-      "outputPrice": 60,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2023-11-06"
-    },
-    {
-      "id": "gpt-4-turbo",
-      "name": "GPT-4 Turbo",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 10,
-      "outputPrice": 30,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2023-11-06"
-    },
-    {
-      "id": "gpt-3.5-turbo",
-      "name": "GPT-3.5-turbo",
-      "contextWindow": 16385,
-      "maxOutput": 4096,
-      "inputPrice": 0.5,
-      "outputPrice": 1.5,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2023-03-01"
-    },
-    {
-      "id": "text-embedding-ada-002",
-      "name": "text-embedding-ada-002",
-      "contextWindow": 8192,
-      "maxOutput": 1536,
-      "inputPrice": 0.1,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2022-12-15"
     },
     {
       "id": "gpt-4o-2024-11-20",
@@ -610,6 +466,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-20"
     },
     {
@@ -624,6 +481,23 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
+      "releaseDate": "2024-09-12"
+    },
+    {
+      "id": "o1-mini",
+      "name": "o1-mini",
+      "contextWindow": 128000,
+      "maxOutput": 65536,
+      "inputPrice": 1.1,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2024-09-12"
     },
     {
@@ -640,7 +514,59 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-06"
+    },
+    {
+      "id": "gpt-4o-mini",
+      "name": "GPT-4o mini",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-18"
+    },
+    {
+      "id": "o3-deep-research",
+      "name": "o3-deep-research",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 10,
+      "outputPrice": 40,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-06-26"
+    },
+    {
+      "id": "o4-mini-deep-research",
+      "name": "o4-mini-deep-research",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 2,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-06-26"
     },
     {
       "id": "gpt-4o-2024-05-13",
@@ -656,7 +582,112 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-13"
+    },
+    {
+      "id": "gpt-4o",
+      "name": "GPT-4o",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-05-13"
+    },
+    {
+      "id": "text-embedding-3-small",
+      "name": "text-embedding-3-small",
+      "contextWindow": 8191,
+      "maxOutput": 1536,
+      "inputPrice": 0.02,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-25"
+    },
+    {
+      "id": "text-embedding-3-large",
+      "name": "text-embedding-3-large",
+      "contextWindow": 8191,
+      "maxOutput": 3072,
+      "inputPrice": 0.13,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-25"
+    },
+    {
+      "id": "gpt-4",
+      "name": "GPT-4",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 30,
+      "outputPrice": 60,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-11-06"
+    },
+    {
+      "id": "gpt-4-turbo",
+      "name": "GPT-4 Turbo",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 10,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-11-06"
+    },
+    {
+      "id": "gpt-3.5-turbo",
+      "name": "GPT-3.5-turbo",
+      "contextWindow": 16385,
+      "maxOutput": 4096,
+      "inputPrice": 0.5,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-03-01"
+    },
+    {
+      "id": "text-embedding-ada-002",
+      "name": "text-embedding-ada-002",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.1,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2022-12-15"
     }
   ],
   "baseUrl": "https://api.openai.com/v1",

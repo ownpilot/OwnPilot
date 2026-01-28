@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "moonshotai/kimi-k2-instruct-0905",
+      "name": "Kimi K2 Instruct 0905",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-09-05"
+    },
+    {
       "id": "openai/gpt-oss-20b",
       "name": "GPT OSS 20B",
       "contextWindow": 131072,
@@ -25,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -42,6 +58,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -56,6 +73,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-14"
     },
     {
@@ -72,6 +90,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -88,6 +107,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -102,6 +122,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -116,6 +137,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-06"
     },
     {
@@ -131,6 +153,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
     },
     {
@@ -146,6 +169,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-23"
     },
     {
@@ -160,6 +184,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     },
     {
@@ -175,6 +200,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-27"
     },
     {
@@ -189,6 +215,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-23"
     },
     {
@@ -202,6 +229,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-23"
     },
     {
@@ -216,22 +244,8 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-06-27"
-    },
-    {
-      "id": "moonshotai/kimi-k2-instruct-0905",
-      "name": "Kimi K2 Instruct 0905",
-      "contextWindow": 262144,
-      "maxOutput": 16384,
-      "inputPrice": 1,
-      "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2025-09-05"
     },
     {
       "id": "llama3-8b-8192",
@@ -245,6 +259,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-18"
     },
     {
@@ -259,6 +274,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-18"
     }
   ],

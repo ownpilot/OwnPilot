@@ -42,6 +42,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-09"
     },
     {
@@ -58,9 +59,10 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     }
   ],
-  "baseUrl": "https://api.v0.dev/v1",
+  "baseUrl": "https://api.v0.com/v1",
   "docsUrl": "https://sdk.vercel.ai/providers/ai-sdk-providers/vercel"
 }

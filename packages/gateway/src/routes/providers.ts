@@ -232,12 +232,12 @@ function getProviderIds(): string[] {
 /**
  * GET /providers - List all available providers
  */
-app.get('/', (c) => {
+app.get('/', async (c) => {
   const userId = 'default';
   const providerIds = getProviderIds();
 
   // Get all user overrides at once for efficiency
-  const userOverrides = modelConfigsRepo.listUserProviderConfigs(userId);
+  const userOverrides = await modelConfigsRepo.listUserProviderConfigs(userId);
   const overrideMap = new Map(userOverrides.map((o) => [o.providerId, o]));
 
   const providers = providerIds
@@ -323,7 +323,7 @@ app.get('/categories', (c) => {
 /**
  * GET /providers/:id - Get full provider config
  */
-app.get('/:id', (c) => {
+app.get('/:id', async (c) => {
   const id = c.req.param('id');
   const userId = 'default';
   const config = loadProviderConfig(id);
@@ -345,7 +345,7 @@ app.get('/:id', (c) => {
   const uiMeta = PROVIDER_UI_METADATA[config.id] ?? DEFAULT_UI_METADATA;
 
   // Get user override if exists
-  const override = modelConfigsRepo.getUserProviderConfig(userId, id);
+  const override = await modelConfigsRepo.getUserProviderConfig(userId, id);
 
   const response: ApiResponse = {
     success: true,
@@ -422,7 +422,7 @@ app.get('/:id/models', (c) => {
 /**
  * GET /providers/:id/config - Get user config overrides for a provider
  */
-app.get('/:id/config', (c) => {
+app.get('/:id/config', async (c) => {
   const id = c.req.param('id');
   const userId = 'default';
   const config = loadProviderConfig(id);
@@ -441,7 +441,7 @@ app.get('/:id/config', (c) => {
   }
 
   // Get user override
-  const userConfig = modelConfigsRepo.getUserProviderConfig(userId, id);
+  const userConfig = await modelConfigsRepo.getUserProviderConfig(userId, id);
 
   const response: ApiResponse = {
     success: true,
@@ -505,7 +505,7 @@ app.put('/:id/config', async (c) => {
     const body = await c.req.json();
     const { baseUrl, providerType, isEnabled, apiKeyEnv, notes } = body;
 
-    const updated = modelConfigsRepo.upsertUserProviderConfig({
+    const updated = await modelConfigsRepo.upsertUserProviderConfig({
       userId,
       providerId: id,
       baseUrl,
@@ -551,11 +551,11 @@ app.put('/:id/config', async (c) => {
 /**
  * DELETE /providers/:id/config - Delete user config override for a provider
  */
-app.delete('/:id/config', (c) => {
+app.delete('/:id/config', async (c) => {
   const id = c.req.param('id');
   const userId = 'default';
 
-  const deleted = modelConfigsRepo.deleteUserProviderConfig(userId, id);
+  const deleted = await modelConfigsRepo.deleteUserProviderConfig(userId, id);
 
   const response: ApiResponse = {
     success: true,
@@ -610,8 +610,8 @@ app.patch('/:id/toggle', async (c) => {
       );
     }
 
-    modelConfigsRepo.toggleUserProviderConfig(userId, id, enabled);
-    const userConfig = modelConfigsRepo.getUserProviderConfig(userId, id);
+    await modelConfigsRepo.toggleUserProviderConfig(userId, id, enabled);
+    const userConfig = await modelConfigsRepo.getUserProviderConfig(userId, id);
 
     const response: ApiResponse = {
       success: true,
@@ -643,9 +643,9 @@ app.patch('/:id/toggle', async (c) => {
 /**
  * GET /providers/overrides - Get all user provider overrides
  */
-app.get('/overrides/all', (c) => {
+app.get('/overrides/all', async (c) => {
   const userId = 'default';
-  const overrides = modelConfigsRepo.listUserProviderConfigs(userId);
+  const overrides = await modelConfigsRepo.listUserProviderConfigs(userId);
 
   const response: ApiResponse = {
     success: true,

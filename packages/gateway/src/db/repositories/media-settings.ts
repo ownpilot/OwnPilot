@@ -5,7 +5,7 @@
  * Each capability can be configured with a specific provider and model.
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 import { randomUUID } from 'node:crypto';
 
 // ============================================================================
@@ -34,6 +34,7 @@ export interface SetMediaProviderInput {
 }
 
 interface MediaSettingRow {
+  [key: string]: unknown;
   id: string;
   user_id: string;
   capability: string;
@@ -206,7 +207,7 @@ function rowToSetting(row: MediaSettingRow): MediaProviderSetting {
     capability: row.capability as MediaCapability,
     provider: row.provider,
     model: row.model || undefined,
-    config: JSON.parse(row.config),
+    config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -216,29 +217,26 @@ function rowToSetting(row: MediaSettingRow): MediaProviderSetting {
 // Repository
 // ============================================================================
 
-export class MediaSettingsRepository {
-  private db = getDatabase();
-
+export class MediaSettingsRepository extends BaseRepository {
   /**
    * Get media provider setting for a capability
    */
-  get(userId: string, capability: MediaCapability): MediaProviderSetting | null {
-    const stmt = this.db.prepare<[string, string], MediaSettingRow>(`
-      SELECT * FROM media_provider_settings
-      WHERE user_id = ? AND capability = ?
-    `);
-    const row = stmt.get(userId, capability);
+  async get(userId: string, capability: MediaCapability): Promise<MediaProviderSetting | null> {
+    const row = await this.queryOne<MediaSettingRow>(
+      'SELECT * FROM media_provider_settings WHERE user_id = $1 AND capability = $2',
+      [userId, capability]
+    );
     return row ? rowToSetting(row) : null;
   }
 
   /**
    * Get effective provider for a capability (with defaults)
    */
-  getEffective(
+  async getEffective(
     userId: string,
     capability: MediaCapability
-  ): { provider: string; model?: string; config: Record<string, unknown> } {
-    const setting = this.get(userId, capability);
+  ): Promise<{ provider: string; model?: string; config: Record<string, unknown> }> {
+    const setting = await this.get(userId, capability);
 
     if (setting) {
       return {
@@ -260,76 +258,77 @@ export class MediaSettingsRepository {
   /**
    * Set media provider for a capability
    */
-  set(input: SetMediaProviderInput): MediaProviderSetting {
+  async set(input: SetMediaProviderInput): Promise<MediaProviderSetting> {
     const userId = input.userId || 'default';
-    const existing = this.get(userId, input.capability);
+    const existing = await this.get(userId, input.capability);
 
     if (existing) {
       // Update
-      const stmt = this.db.prepare(`
-        UPDATE media_provider_settings SET
-          provider = ?,
-          model = ?,
-          config = ?,
-          updated_at = datetime('now')
-        WHERE user_id = ? AND capability = ?
-      `);
-
-      stmt.run(
-        input.provider,
-        input.model || null,
-        JSON.stringify(input.config || {}),
-        userId,
-        input.capability
+      await this.execute(
+        `UPDATE media_provider_settings SET
+          provider = $1,
+          model = $2,
+          config = $3,
+          updated_at = NOW()
+        WHERE user_id = $4 AND capability = $5`,
+        [
+          input.provider,
+          input.model || null,
+          JSON.stringify(input.config || {}),
+          userId,
+          input.capability,
+        ]
       );
 
-      return this.get(userId, input.capability)!;
+      return (await this.get(userId, input.capability))!;
     } else {
       // Insert
       const id = randomUUID();
-      const stmt = this.db.prepare(`
-        INSERT INTO media_provider_settings (
-          id, user_id, capability, provider, model, config
-        ) VALUES (?, ?, ?, ?, ?, ?)
-      `);
+      const now = new Date().toISOString();
 
-      stmt.run(
-        id,
-        userId,
-        input.capability,
-        input.provider,
-        input.model || null,
-        JSON.stringify(input.config || {})
+      await this.execute(
+        `INSERT INTO media_provider_settings (
+          id, user_id, capability, provider, model, config, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          id,
+          userId,
+          input.capability,
+          input.provider,
+          input.model || null,
+          JSON.stringify(input.config || {}),
+          now,
+          now,
+        ]
       );
 
-      return this.get(userId, input.capability)!;
+      return (await this.get(userId, input.capability))!;
     }
   }
 
   /**
    * List all media settings for a user
    */
-  listByUser(userId: string = 'default'): MediaProviderSetting[] {
-    const stmt = this.db.prepare<string, MediaSettingRow>(`
-      SELECT * FROM media_provider_settings
-      WHERE user_id = ?
-      ORDER BY capability
-    `);
-    return stmt.all(userId).map(rowToSetting);
+  async listByUser(userId: string = 'default'): Promise<MediaProviderSetting[]> {
+    const rows = await this.query<MediaSettingRow>(
+      'SELECT * FROM media_provider_settings WHERE user_id = $1 ORDER BY capability',
+      [userId]
+    );
+    return rows.map(rowToSetting);
   }
 
   /**
    * Get all effective settings for a user (includes defaults)
    */
-  getAllEffective(userId: string = 'default'): Record<
+  async getAllEffective(userId: string = 'default'): Promise<Record<
     MediaCapability,
     { provider: string; model?: string; config: Record<string, unknown> }
-  > {
+  >> {
     const capabilities: MediaCapability[] = ['image_generation', 'vision', 'tts', 'stt', 'weather'];
     const result: Record<string, { provider: string; model?: string; config: Record<string, unknown> }> = {};
 
     for (const capability of capabilities) {
-      result[capability] = this.getEffective(userId, capability);
+      result[capability] = await this.getEffective(userId, capability);
     }
 
     return result as Record<
@@ -341,23 +340,22 @@ export class MediaSettingsRepository {
   /**
    * Delete a media setting
    */
-  delete(userId: string, capability: MediaCapability): boolean {
-    const stmt = this.db.prepare(`
-      DELETE FROM media_provider_settings
-      WHERE user_id = ? AND capability = ?
-    `);
-    const result = stmt.run(userId, capability);
+  async delete(userId: string, capability: MediaCapability): Promise<boolean> {
+    const result = await this.execute(
+      'DELETE FROM media_provider_settings WHERE user_id = $1 AND capability = $2',
+      [userId, capability]
+    );
     return result.changes > 0;
   }
 
   /**
    * Reset all media settings for a user to defaults
    */
-  resetToDefaults(userId: string = 'default'): void {
-    const stmt = this.db.prepare(`
-      DELETE FROM media_provider_settings WHERE user_id = ?
-    `);
-    stmt.run(userId);
+  async resetToDefaults(userId: string = 'default'): Promise<void> {
+    await this.execute(
+      'DELETE FROM media_provider_settings WHERE user_id = $1',
+      [userId]
+    );
   }
 
   /**
@@ -375,4 +373,10 @@ export class MediaSettingsRepository {
   }
 }
 
+// Singleton instance
 export const mediaSettingsRepo = new MediaSettingsRepository();
+
+// Factory function
+export function createMediaSettingsRepository(): MediaSettingsRepository {
+  return new MediaSettingsRepository();
+}

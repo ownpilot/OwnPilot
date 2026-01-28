@@ -4,7 +4,7 @@
  * CRUD operations for pomodoro timer sessions, settings, and stats
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 // =============================================================================
 // Types
@@ -85,8 +85,8 @@ interface SettingsRow {
   short_break_duration: number;
   long_break_duration: number;
   sessions_before_long_break: number;
-  auto_start_breaks: number;
-  auto_start_work: number;
+  auto_start_breaks: boolean;
+  auto_start_work: boolean;
   updated_at: string;
 }
 
@@ -126,8 +126,8 @@ function rowToSettings(row: SettingsRow): PomodoroSettings {
     shortBreakDuration: row.short_break_duration,
     longBreakDuration: row.long_break_duration,
     sessionsBeforeLongBreak: row.sessions_before_long_break,
-    autoStartBreaks: row.auto_start_breaks === 1,
-    autoStartWork: row.auto_start_work === 1,
+    autoStartBreaks: row.auto_start_breaks,
+    autoStartWork: row.auto_start_work,
     updatedAt: new Date(row.updated_at),
   };
 }
@@ -148,11 +148,11 @@ function rowToDailyStats(row: DailyStatsRow): PomodoroDailyStats {
 // Repository
 // =============================================================================
 
-export class PomodoroRepository {
-  private db = getDatabase();
+export class PomodoroRepository extends BaseRepository {
   private userId: string;
 
   constructor(userId = 'default') {
+    super();
     this.userId = userId;
   }
 
@@ -160,111 +160,108 @@ export class PomodoroRepository {
   // Sessions
   // ---------------------------------------------------------------------------
 
-  startSession(input: CreateSessionInput): PomodoroSession {
+  async startSession(input: CreateSessionInput): Promise<PomodoroSession> {
     const id = `pom_${Date.now()}`;
     const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      INSERT INTO pomodoro_sessions (id, user_id, type, status, task_description, duration_minutes, started_at)
-      VALUES (?, ?, ?, 'running', ?, ?, ?)
-    `);
+    await this.execute(
+      `INSERT INTO pomodoro_sessions (id, user_id, type, status, task_description, duration_minutes, started_at)
+       VALUES ($1, $2, $3, 'running', $4, $5, $6)`,
+      [id, this.userId, input.type, input.taskDescription ?? null, input.durationMinutes, now]
+    );
 
-    stmt.run(id, this.userId, input.type, input.taskDescription ?? null, input.durationMinutes, now);
-
-    return this.getSession(id)!;
+    return (await this.getSession(id))!;
   }
 
-  getSession(id: string): PomodoroSession | null {
-    const stmt = this.db.prepare<[string, string], SessionRow>(`
-      SELECT * FROM pomodoro_sessions WHERE id = ? AND user_id = ?
-    `);
+  async getSession(id: string): Promise<PomodoroSession | null> {
+    const row = await this.queryOne<SessionRow>(
+      `SELECT * FROM pomodoro_sessions WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
 
-    const row = stmt.get(id, this.userId);
     return row ? rowToSession(row) : null;
   }
 
-  getActiveSession(): PomodoroSession | null {
-    const stmt = this.db.prepare<[string], SessionRow>(`
-      SELECT * FROM pomodoro_sessions WHERE user_id = ? AND status = 'running'
-      ORDER BY started_at DESC LIMIT 1
-    `);
+  async getActiveSession(): Promise<PomodoroSession | null> {
+    const row = await this.queryOne<SessionRow>(
+      `SELECT * FROM pomodoro_sessions WHERE user_id = $1 AND status = 'running'
+       ORDER BY started_at DESC LIMIT 1`,
+      [this.userId]
+    );
 
-    const row = stmt.get(this.userId);
     return row ? rowToSession(row) : null;
   }
 
-  completeSession(id: string): PomodoroSession | null {
-    const session = this.getSession(id);
+  async completeSession(id: string): Promise<PomodoroSession | null> {
+    const session = await this.getSession(id);
     if (!session || session.status !== 'running') return null;
 
     const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      UPDATE pomodoro_sessions SET status = 'completed', completed_at = ? WHERE id = ? AND user_id = ?
-    `);
-
-    stmt.run(now, id, this.userId);
+    await this.execute(
+      `UPDATE pomodoro_sessions SET status = 'completed', completed_at = $1 WHERE id = $2 AND user_id = $3`,
+      [now, id, this.userId]
+    );
 
     // Update daily stats
-    this.updateDailyStats(session.type, session.durationMinutes, false);
+    await this.updateDailyStats(session.type, session.durationMinutes, false);
 
     return this.getSession(id);
   }
 
-  interruptSession(id: string, reason?: string): PomodoroSession | null {
-    const session = this.getSession(id);
+  async interruptSession(id: string, reason?: string): Promise<PomodoroSession | null> {
+    const session = await this.getSession(id);
     if (!session || session.status !== 'running') return null;
 
     const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      UPDATE pomodoro_sessions SET status = 'interrupted', interrupted_at = ?, interruption_reason = ?
-      WHERE id = ? AND user_id = ?
-    `);
-
-    stmt.run(now, reason ?? null, id, this.userId);
+    await this.execute(
+      `UPDATE pomodoro_sessions SET status = 'interrupted', interrupted_at = $1, interruption_reason = $2
+       WHERE id = $3 AND user_id = $4`,
+      [now, reason ?? null, id, this.userId]
+    );
 
     // Update daily stats for interruption
-    this.updateDailyStats(session.type, 0, true);
+    await this.updateDailyStats(session.type, 0, true);
 
     return this.getSession(id);
   }
 
-  listSessions(options: { limit?: number; type?: SessionType; status?: SessionStatus } = {}): PomodoroSession[] {
-    let sql = `SELECT * FROM pomodoro_sessions WHERE user_id = ?`;
+  async listSessions(options: { limit?: number; type?: SessionType; status?: SessionStatus } = {}): Promise<PomodoroSession[]> {
+    let sql = `SELECT * FROM pomodoro_sessions WHERE user_id = $1`;
     const params: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     if (options.type) {
-      sql += ` AND type = ?`;
+      sql += ` AND type = $${paramIndex++}`;
       params.push(options.type);
     }
 
     if (options.status) {
-      sql += ` AND status = ?`;
+      sql += ` AND status = $${paramIndex++}`;
       params.push(options.status);
     }
 
     sql += ` ORDER BY started_at DESC`;
 
     if (options.limit) {
-      sql += ` LIMIT ?`;
+      sql += ` LIMIT $${paramIndex++}`;
       params.push(options.limit);
     }
 
-    const stmt = this.db.prepare<unknown[], SessionRow>(sql);
-    return stmt.all(...params).map(rowToSession);
+    const rows = await this.query<SessionRow>(sql, params);
+    return rows.map(rowToSession);
   }
 
   // ---------------------------------------------------------------------------
   // Settings
   // ---------------------------------------------------------------------------
 
-  getSettings(): PomodoroSettings {
-    const stmt = this.db.prepare<[string], SettingsRow>(`
-      SELECT * FROM pomodoro_settings WHERE user_id = ?
-    `);
-
-    const row = stmt.get(this.userId);
+  async getSettings(): Promise<PomodoroSettings> {
+    const row = await this.queryOne<SettingsRow>(
+      `SELECT * FROM pomodoro_settings WHERE user_id = $1`,
+      [this.userId]
+    );
 
     if (!row) {
       // Create default settings
@@ -274,45 +271,40 @@ export class PomodoroRepository {
     return rowToSettings(row);
   }
 
-  private createDefaultSettings(): PomodoroSettings {
-    const now = new Date().toISOString();
+  private async createDefaultSettings(): Promise<PomodoroSettings> {
+    await this.execute(
+      `INSERT INTO pomodoro_settings (user_id, updated_at)
+       VALUES ($1, NOW())
+       ON CONFLICT (user_id) DO NOTHING`,
+      [this.userId]
+    );
 
-    const stmt = this.db.prepare(`
-      INSERT OR IGNORE INTO pomodoro_settings (user_id, updated_at)
-      VALUES (?, ?)
-    `);
-
-    stmt.run(this.userId, now);
     return this.getSettings();
   }
 
-  updateSettings(input: UpdateSettingsInput): PomodoroSettings {
+  async updateSettings(input: UpdateSettingsInput): Promise<PomodoroSettings> {
     // Ensure settings exist
-    this.getSettings();
+    await this.getSettings();
 
-    const now = new Date().toISOString();
-
-    const stmt = this.db.prepare(`
-      UPDATE pomodoro_settings SET
-        work_duration = COALESCE(?, work_duration),
-        short_break_duration = COALESCE(?, short_break_duration),
-        long_break_duration = COALESCE(?, long_break_duration),
-        sessions_before_long_break = COALESCE(?, sessions_before_long_break),
-        auto_start_breaks = COALESCE(?, auto_start_breaks),
-        auto_start_work = COALESCE(?, auto_start_work),
-        updated_at = ?
-      WHERE user_id = ?
-    `);
-
-    stmt.run(
-      input.workDuration ?? null,
-      input.shortBreakDuration ?? null,
-      input.longBreakDuration ?? null,
-      input.sessionsBeforeLongBreak ?? null,
-      input.autoStartBreaks !== undefined ? (input.autoStartBreaks ? 1 : 0) : null,
-      input.autoStartWork !== undefined ? (input.autoStartWork ? 1 : 0) : null,
-      now,
-      this.userId
+    await this.execute(
+      `UPDATE pomodoro_settings SET
+        work_duration = COALESCE($1, work_duration),
+        short_break_duration = COALESCE($2, short_break_duration),
+        long_break_duration = COALESCE($3, long_break_duration),
+        sessions_before_long_break = COALESCE($4, sessions_before_long_break),
+        auto_start_breaks = COALESCE($5, auto_start_breaks),
+        auto_start_work = COALESCE($6, auto_start_work),
+        updated_at = NOW()
+       WHERE user_id = $7`,
+      [
+        input.workDuration ?? null,
+        input.shortBreakDuration ?? null,
+        input.longBreakDuration ?? null,
+        input.sessionsBeforeLongBreak ?? null,
+        input.autoStartBreaks ?? null,
+        input.autoStartWork ?? null,
+        this.userId
+      ]
     );
 
     return this.getSettings();
@@ -322,85 +314,87 @@ export class PomodoroRepository {
   // Daily Stats
   // ---------------------------------------------------------------------------
 
-  private updateDailyStats(sessionType: SessionType, minutes: number, isInterruption: boolean): void {
+  private async updateDailyStats(sessionType: SessionType, minutes: number, isInterruption: boolean): Promise<void> {
     const today: string = new Date().toISOString().split('T')[0]!;
     const id = `pds_${this.userId}_${today}`;
 
     // Try to get existing stats
-    const existingStmt = this.db.prepare<[string, string], DailyStatsRow>(`
-      SELECT * FROM pomodoro_daily_stats WHERE user_id = ? AND date = ?
-    `);
-
-    const existing = existingStmt.get(this.userId, today);
+    const existing = await this.queryOne<DailyStatsRow>(
+      `SELECT * FROM pomodoro_daily_stats WHERE user_id = $1 AND date = $2`,
+      [this.userId, today]
+    );
 
     if (existing) {
       // Update existing
-      let updateSql = `UPDATE pomodoro_daily_stats SET `;
-      const params: unknown[] = [];
-
       if (isInterruption) {
-        updateSql += `interruptions = interruptions + 1`;
+        await this.execute(
+          `UPDATE pomodoro_daily_stats SET interruptions = interruptions + 1
+           WHERE user_id = $1 AND date = $2`,
+          [this.userId, today]
+        );
       } else if (sessionType === 'work') {
-        updateSql += `completed_sessions = completed_sessions + 1, total_work_minutes = total_work_minutes + ?`;
-        params.push(minutes);
+        await this.execute(
+          `UPDATE pomodoro_daily_stats SET completed_sessions = completed_sessions + 1, total_work_minutes = total_work_minutes + $1
+           WHERE user_id = $2 AND date = $3`,
+          [minutes, this.userId, today]
+        );
       } else {
-        updateSql += `total_break_minutes = total_break_minutes + ?`;
-        params.push(minutes);
+        await this.execute(
+          `UPDATE pomodoro_daily_stats SET total_break_minutes = total_break_minutes + $1
+           WHERE user_id = $2 AND date = $3`,
+          [minutes, this.userId, today]
+        );
       }
-
-      updateSql += ` WHERE user_id = ? AND date = ?`;
-      params.push(this.userId, today);
-
-      this.db.prepare(updateSql).run(...params);
     } else {
       // Insert new
-      const stmt = this.db.prepare(`
-        INSERT INTO pomodoro_daily_stats (id, user_id, date, completed_sessions, total_work_minutes, total_break_minutes, interruptions)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      stmt.run(
-        id,
-        this.userId,
-        today,
-        !isInterruption && sessionType === 'work' ? 1 : 0,
-        sessionType === 'work' ? minutes : 0,
-        sessionType !== 'work' ? minutes : 0,
-        isInterruption ? 1 : 0
+      await this.execute(
+        `INSERT INTO pomodoro_daily_stats (id, user_id, date, completed_sessions, total_work_minutes, total_break_minutes, interruptions)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          id,
+          this.userId,
+          today,
+          !isInterruption && sessionType === 'work' ? 1 : 0,
+          sessionType === 'work' ? minutes : 0,
+          sessionType !== 'work' ? minutes : 0,
+          isInterruption ? 1 : 0
+        ]
       );
     }
   }
 
-  getDailyStats(date?: string): PomodoroDailyStats | null {
+  async getDailyStats(date?: string): Promise<PomodoroDailyStats | null> {
     const targetDate: string = date ?? new Date().toISOString().split('T')[0]!;
 
-    const stmt = this.db.prepare<[string, string], DailyStatsRow>(`
-      SELECT * FROM pomodoro_daily_stats WHERE user_id = ? AND date = ?
-    `);
+    const row = await this.queryOne<DailyStatsRow>(
+      `SELECT * FROM pomodoro_daily_stats WHERE user_id = $1 AND date = $2`,
+      [this.userId, targetDate]
+    );
 
-    const row = stmt.get(this.userId, targetDate);
     return row ? rowToDailyStats(row) : null;
   }
 
-  getStatsRange(startDate: string, endDate: string): PomodoroDailyStats[] {
-    const stmt = this.db.prepare<[string, string, string], DailyStatsRow>(`
-      SELECT * FROM pomodoro_daily_stats
-      WHERE user_id = ? AND date >= ? AND date <= ?
-      ORDER BY date ASC
-    `);
+  async getStatsRange(startDate: string, endDate: string): Promise<PomodoroDailyStats[]> {
+    const rows = await this.query<DailyStatsRow>(
+      `SELECT * FROM pomodoro_daily_stats
+       WHERE user_id = $1 AND date >= $2 AND date <= $3
+       ORDER BY date ASC`,
+      [this.userId, startDate, endDate]
+    );
 
-    return stmt.all(this.userId, startDate, endDate).map(rowToDailyStats);
+    return rows.map(rowToDailyStats);
   }
 
-  getStreak(): number {
+  async getStreak(): Promise<number> {
     // Get consecutive days with at least one completed work session
-    const stmt = this.db.prepare<[string], DailyStatsRow>(`
-      SELECT * FROM pomodoro_daily_stats
-      WHERE user_id = ? AND completed_sessions > 0
-      ORDER BY date DESC
-    `);
+    const rows = await this.query<DailyStatsRow>(
+      `SELECT * FROM pomodoro_daily_stats
+       WHERE user_id = $1 AND completed_sessions > 0
+       ORDER BY date DESC`,
+      [this.userId]
+    );
 
-    const stats = stmt.all(this.userId).map(rowToDailyStats);
+    const stats = rows.map(rowToDailyStats);
 
     if (stats.length === 0) return 0;
 
@@ -432,38 +426,41 @@ export class PomodoroRepository {
     return streak;
   }
 
-  getTotalStats(): {
+  async getTotalStats(): Promise<{
     totalSessions: number;
     totalWorkMinutes: number;
     totalBreakMinutes: number;
     totalInterruptions: number;
     currentStreak: number;
     bestStreak: number;
-  } {
-    const stmt = this.db.prepare<[string], {
+  }> {
+    const row = await this.queryOne<{
       total_sessions: number;
       total_work: number;
       total_break: number;
       total_interruptions: number;
-    }>(`
-      SELECT
+    }>(
+      `SELECT
         COALESCE(SUM(completed_sessions), 0) as total_sessions,
         COALESCE(SUM(total_work_minutes), 0) as total_work,
         COALESCE(SUM(total_break_minutes), 0) as total_break,
         COALESCE(SUM(interruptions), 0) as total_interruptions
-      FROM pomodoro_daily_stats
-      WHERE user_id = ?
-    `);
+       FROM pomodoro_daily_stats
+       WHERE user_id = $1`,
+      [this.userId]
+    );
 
-    const row = stmt.get(this.userId)!;
-    const currentStreak = this.getStreak();
+    const currentStreak = await this.getStreak();
 
     // Calculate best streak
-    const allStats = this.db.prepare<[string], DailyStatsRow>(`
-      SELECT * FROM pomodoro_daily_stats
-      WHERE user_id = ? AND completed_sessions > 0
-      ORDER BY date ASC
-    `).all(this.userId).map(rowToDailyStats);
+    const allStatsRows = await this.query<DailyStatsRow>(
+      `SELECT * FROM pomodoro_daily_stats
+       WHERE user_id = $1 AND completed_sessions > 0
+       ORDER BY date ASC`,
+      [this.userId]
+    );
+
+    const allStats = allStatsRows.map(rowToDailyStats);
 
     let bestStreak = 0;
     let currentRun = 0;
@@ -491,10 +488,10 @@ export class PomodoroRepository {
     }
 
     return {
-      totalSessions: row.total_sessions,
-      totalWorkMinutes: row.total_work,
-      totalBreakMinutes: row.total_break,
-      totalInterruptions: row.total_interruptions,
+      totalSessions: row?.total_sessions ?? 0,
+      totalWorkMinutes: row?.total_work ?? 0,
+      totalBreakMinutes: row?.total_break ?? 0,
+      totalInterruptions: row?.total_interruptions ?? 0,
       currentStreak,
       bestStreak,
     };
@@ -502,3 +499,8 @@ export class PomodoroRepository {
 }
 
 export const pomodoroRepo = new PomodoroRepository();
+
+// Factory function
+export function createPomodoroRepository(userId = 'default'): PomodoroRepository {
+  return new PomodoroRepository(userId);
+}

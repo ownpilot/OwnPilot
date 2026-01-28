@@ -21,7 +21,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -44,6 +43,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11"
     }
   ],

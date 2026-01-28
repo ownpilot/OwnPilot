@@ -200,7 +200,7 @@ export class ChannelManager {
 
       let response: string;
 
-      if (isDemoMode()) {
+      if (await isDemoMode()) {
         response = `[Demo Mode] I received your message: "${message.content.substring(0, 100)}"\n\nTo get real AI responses, configure an API key (OPENAI_API_KEY or ANTHROPIC_API_KEY).`;
       } else {
         // Process with AI agent
@@ -358,7 +358,7 @@ async function loadChannelsFromDatabase(): Promise<void> {
   try {
     const { channelsRepo } = await import('../db/repositories/channels.js');
     console.log('[Channels] Repository imported, getting all channels...');
-    const channels = channelsRepo.getAll();
+    const channels = await channelsRepo.getAll();
     console.log(`[Channels] Found ${channels.length} channel(s) in database.`);
 
     if (channels.length === 0) {
@@ -388,12 +388,12 @@ async function loadChannelsFromDatabase(): Promise<void> {
         ]);
 
         await connectWithTimeout;
-        channelsRepo.updateStatus(channel.id, 'connected');
+        await channelsRepo.updateStatus(channel.id, 'connected');
         console.log(`  [OK] ${channel.type}:${channel.name} (${channel.id})`);
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         console.error(`  [FAIL] ${channel.type}:${channel.name}: ${errMsg}`);
-        channelsRepo.updateStatus(channel.id, 'error');
+        await channelsRepo.updateStatus(channel.id, 'error');
       }
     }
     console.log('[Channels] Finished loading channels from database.');

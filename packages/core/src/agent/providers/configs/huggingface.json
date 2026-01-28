@@ -21,7 +21,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
@@ -42,6 +41,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-23"
     },
     {
@@ -57,6 +57,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-22"
     },
     {
@@ -72,6 +73,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-16"
     },
     {
@@ -87,6 +89,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-01"
     },
     {
@@ -102,6 +105,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-06"
     },
     {
@@ -116,6 +120,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-11"
     },
     {
@@ -130,7 +135,23 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-11"
+    },
+    {
+      "id": "moonshotai/Kimi-K2-Instruct-0905",
+      "name": "Kimi-K2-Instruct-0905",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-04"
     },
     {
       "id": "zai-org/GLM-4.7-Flash",
@@ -145,75 +166,8 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-08"
-    },
-    {
-      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
-      "name": "Qwen3-Coder-480B-A35B-Instruct",
-      "contextWindow": 262144,
-      "maxOutput": 66536,
-      "inputPrice": 2,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-23"
-    },
-    {
-      "id": "moonshotai/Kimi-K2-Instruct",
-      "name": "Kimi-K2-Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 16384,
-      "inputPrice": 1,
-      "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-14"
-    },
-    {
-      "id": "Qwen/Qwen3-Embedding-8B",
-      "name": "Qwen 3 Embedding 8B",
-      "contextWindow": 32000,
-      "maxOutput": 4096,
-      "inputPrice": 0.01,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "Qwen/Qwen3-Embedding-4B",
-      "name": "Qwen 3 Embedding 4B",
-      "contextWindow": 32000,
-      "maxOutput": 2048,
-      "inputPrice": 0.01,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "moonshotai/Kimi-K2-Instruct-0905",
-      "name": "Kimi-K2-Instruct-0905",
-      "contextWindow": 262144,
-      "maxOutput": 16384,
-      "inputPrice": 1,
-      "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-09-04"
     },
     {
       "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
@@ -228,7 +182,38 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-25"
+    },
+    {
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "name": "Qwen3-Coder-480B-A35B-Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 66536,
+      "inputPrice": 2,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-23"
+    },
+    {
+      "id": "moonshotai/Kimi-K2-Instruct",
+      "name": "Kimi-K2-Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-14"
     },
     {
       "id": "deepseek-ai/DeepSeek-R1-0528",
@@ -243,9 +228,38 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-28"
+    },
+    {
+      "id": "Qwen/Qwen3-Embedding-8B",
+      "name": "Qwen 3 Embedding 8B",
+      "contextWindow": 32000,
+      "maxOutput": 4096,
+      "inputPrice": 0.01,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "Qwen/Qwen3-Embedding-4B",
+      "name": "Qwen 3 Embedding 4B",
+      "contextWindow": 32000,
+      "maxOutput": 2048,
+      "inputPrice": 0.01,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
     }
   ],
-  "baseUrl": "https://router.huggingface.co/v1",
+  "baseUrl": "https://api-inference.huggingface.co/v1",
   "docsUrl": "https://huggingface.co/docs/inference-providers"
 }

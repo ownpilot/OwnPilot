@@ -40,7 +40,40 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "mistralai/devstral-2-123b-instruct-2512",
+      "name": "Devstral 2 123b Instruct 2512",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-11"
+    },
+    {
+      "id": "mistralai/mistral-large-3-675b-instruct-2512",
+      "name": "Mistral Large 3 675b Instruct 2512",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-02"
     },
     {
       "id": "deepseek/deepseek-v3.2:thinking",
@@ -56,6 +89,23 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "mistralai/ministral-14b-instruct-2512",
+      "name": "Ministral 14b Instruct 2512",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2025-12-01"
     },
     {
@@ -71,6 +121,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-08"
     },
     {
@@ -86,7 +137,25 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "qwen/qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "contextWindow": 262144,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-01"
     },
     {
       "id": "openai/gpt-oss-120b",
@@ -101,6 +170,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-23"
     },
     {
@@ -117,6 +187,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-07"
     },
     {
@@ -133,6 +204,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-07"
     },
     {
@@ -149,6 +221,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-07"
     },
     {
@@ -164,6 +237,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -180,6 +254,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
     },
     {
@@ -193,9 +268,9 @@
         "chat",
         "function_calling",
         "json_mode",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-15"
     },
     {
@@ -211,6 +286,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     },
     {
@@ -226,6 +302,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-15"
     },
     {
@@ -242,6 +319,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-01"
     },
     {
@@ -258,6 +336,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-13"
     },
     {
@@ -273,68 +352,8 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-18"
-    },
-    {
-      "id": "mistralai/devstral-2-123b-instruct-2512",
-      "name": "Devstral 2 123b Instruct 2512",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 1,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2025-12-11"
-    },
-    {
-      "id": "mistralai/mistral-large-3-675b-instruct-2512",
-      "name": "Mistral Large 3 675b Instruct 2512",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 1,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2025-12-02"
-    },
-    {
-      "id": "mistralai/ministral-14b-instruct-2512",
-      "name": "Ministral 14b Instruct 2512",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 1,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2025-12-01"
-    },
-    {
-      "id": "qwen/qwen3-235b-a22b-thinking-2507",
-      "name": "Qwen3 235B A22B Thinking 2507",
-      "contextWindow": 262144,
-      "maxOutput": 8192,
-      "inputPrice": 1,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-01"
     }
   ],
   "baseUrl": "https://nano-gpt.com/api/v1",

@@ -1,10 +1,10 @@
 /**
- * Settings Repository
+ * Settings Repository (PostgreSQL)
  *
  * Key-value store for application settings
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository, ensureTable } from './base.js';
 
 export interface Setting {
   key: string;
@@ -26,73 +26,143 @@ function rowToSetting(row: SettingRow): Setting {
   };
 }
 
-export class SettingsRepository {
-  private db = getDatabase();
+const CREATE_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW()
+  )
+`;
 
+// In-memory cache for sync access (populated at startup)
+let settingsCache: Map<string, unknown> = new Map();
+let cacheInitialized = false;
+
+export class SettingsRepository extends BaseRepository {
+  /**
+   * Initialize the settings table and cache
+   */
+  async initialize(): Promise<void> {
+    await ensureTable('settings', CREATE_TABLE_SQL);
+    await this.loadCache();
+  }
+
+  /**
+   * Load all settings into cache for sync access
+   */
+  private async loadCache(): Promise<void> {
+    const rows = await this.query<SettingRow>('SELECT * FROM settings');
+    settingsCache = new Map(rows.map(row => [row.key, JSON.parse(row.value)]));
+    cacheInitialized = true;
+  }
+
+  /**
+   * Get a setting value (sync - uses cache)
+   */
   get<T = unknown>(key: string): T | null {
-    const stmt = this.db.prepare<string, SettingRow>(`
-      SELECT * FROM settings WHERE key = ?
-    `);
+    if (!cacheInitialized) {
+      console.warn(`[Settings] Cache not initialized, returning null for key: ${key}`);
+      return null;
+    }
+    return (settingsCache.get(key) as T) ?? null;
+  }
 
-    const row = stmt.get(key);
+  /**
+   * Get a setting value (async - from database)
+   */
+  async getAsync<T = unknown>(key: string): Promise<T | null> {
+    const row = await this.queryOne<SettingRow>('SELECT * FROM settings WHERE key = $1', [key]);
     return row ? (JSON.parse(row.value) as T) : null;
   }
 
-  set<T = unknown>(key: string, value: T): void {
-    const stmt = this.db.prepare(`
-      INSERT INTO settings (key, value, updated_at)
-      VALUES (?, ?, datetime('now'))
-      ON CONFLICT(key) DO UPDATE SET
-        value = excluded.value,
-        updated_at = excluded.updated_at
-    `);
-
-    stmt.run(key, JSON.stringify(value));
+  /**
+   * Set a setting value
+   */
+  async set<T = unknown>(key: string, value: T): Promise<void> {
+    await this.execute(
+      `INSERT INTO settings (key, value, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT(key) DO UPDATE SET
+         value = EXCLUDED.value,
+         updated_at = EXCLUDED.updated_at`,
+      [key, JSON.stringify(value)]
+    );
+    // Update cache
+    settingsCache.set(key, value);
   }
 
-  getAll(): Setting[] {
-    const stmt = this.db.prepare<[], SettingRow>(`
-      SELECT * FROM settings ORDER BY key ASC
-    `);
-
-    return stmt.all().map(rowToSetting);
+  /**
+   * Get all settings
+   */
+  async getAll(): Promise<Setting[]> {
+    const rows = await this.query<SettingRow>('SELECT * FROM settings ORDER BY key ASC');
+    return rows.map(rowToSetting);
   }
 
-  getByPrefix(prefix: string): Setting[] {
-    const stmt = this.db.prepare<string, SettingRow>(`
-      SELECT * FROM settings WHERE key LIKE ? ORDER BY key ASC
-    `);
-
-    return stmt.all(`${prefix}%`).map(rowToSetting);
+  /**
+   * Get settings by prefix
+   */
+  async getByPrefix(prefix: string): Promise<Setting[]> {
+    const rows = await this.query<SettingRow>(
+      'SELECT * FROM settings WHERE key LIKE $1 ORDER BY key ASC',
+      [`${prefix}%`]
+    );
+    return rows.map(rowToSetting);
   }
 
-  delete(key: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM settings WHERE key = ?`);
-    const result = stmt.run(key);
+  /**
+   * Delete a setting
+   */
+  async delete(key: string): Promise<boolean> {
+    const result = await this.execute('DELETE FROM settings WHERE key = $1', [key]);
+    settingsCache.delete(key);
     return result.changes > 0;
   }
 
-  deleteByPrefix(prefix: string): number {
-    const stmt = this.db.prepare(`DELETE FROM settings WHERE key LIKE ?`);
-    const result = stmt.run(`${prefix}%`);
+  /**
+   * Delete settings by prefix
+   */
+  async deleteByPrefix(prefix: string): Promise<number> {
+    const result = await this.execute('DELETE FROM settings WHERE key LIKE $1', [`${prefix}%`]);
+    // Clear affected cache entries
+    for (const key of settingsCache.keys()) {
+      if (key.startsWith(prefix)) {
+        settingsCache.delete(key);
+      }
+    }
     return result.changes;
   }
 
-  has(key: string): boolean {
-    const stmt = this.db.prepare<string, { count: number }>(`
-      SELECT COUNT(*) as count FROM settings WHERE key = ?
-    `);
-
-    return (stmt.get(key)?.count ?? 0) > 0;
+  /**
+   * Check if a setting exists
+   */
+  async has(key: string): Promise<boolean> {
+    const row = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM settings WHERE key = $1',
+      [key]
+    );
+    return parseInt(row?.count ?? '0', 10) > 0;
   }
 
-  count(): number {
-    const stmt = this.db.prepare<[], { count: number }>(`
-      SELECT COUNT(*) as count FROM settings
-    `);
-
-    return stmt.get()?.count ?? 0;
+  /**
+   * Count all settings
+   */
+  async count(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>('SELECT COUNT(*) as count FROM settings');
+    return parseInt(row?.count ?? '0', 10);
   }
 }
 
 export const settingsRepo = new SettingsRepository();
+
+// Factory function
+export function createSettingsRepository(): SettingsRepository {
+  return new SettingsRepository();
+}
+
+/**
+ * Initialize settings repository (call at startup)
+ */
+export async function initializeSettingsRepo(): Promise<void> {
+  await settingsRepo.initialize();
+}

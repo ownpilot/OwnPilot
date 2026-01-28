@@ -1,8 +1,8 @@
 /**
- * Messages Repository
+ * Messages Repository (PostgreSQL)
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 export interface Message {
   id: string;
@@ -29,108 +29,121 @@ interface MessageRow {
 }
 
 function rowToMessage(row: MessageRow): Message {
+  let toolCalls = undefined;
+  if (row.tool_calls) {
+    try {
+      toolCalls = typeof row.tool_calls === 'string' ? JSON.parse(row.tool_calls) : row.tool_calls;
+    } catch {
+      toolCalls = undefined;
+    }
+  }
+
   return {
     id: row.id,
     conversationId: row.conversation_id,
     role: row.role as Message['role'],
     content: row.content,
-    toolCalls: row.tool_calls ? JSON.parse(row.tool_calls) : undefined,
+    toolCalls,
     toolCallId: row.tool_call_id ?? undefined,
     createdAt: new Date(row.created_at),
   };
 }
 
-export class MessagesRepository {
-  private db = getDatabase();
-
-  create(data: {
+export class MessagesRepository extends BaseRepository {
+  async create(data: {
     id: string;
     conversationId: string;
     role: Message['role'];
     content: string;
     toolCalls?: Message['toolCalls'];
     toolCallId?: string;
-  }): Message {
-    const stmt = this.db.prepare(`
-      INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      data.id,
-      data.conversationId,
-      data.role,
-      data.content,
-      data.toolCalls ? JSON.stringify(data.toolCalls) : null,
-      data.toolCallId ?? null
+  }): Promise<Message> {
+    await this.execute(
+      `INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        data.id,
+        data.conversationId,
+        data.role,
+        data.content,
+        data.toolCalls ? JSON.stringify(data.toolCalls) : null,
+        data.toolCallId ?? null,
+      ]
     );
 
-    return this.getById(data.id)!;
+    const result = await this.getById(data.id);
+    if (!result) throw new Error('Failed to create message');
+    return result;
   }
 
-  getById(id: string): Message | null {
-    const stmt = this.db.prepare<string, MessageRow>(`
-      SELECT * FROM messages WHERE id = ?
-    `);
-
-    const row = stmt.get(id);
+  async getById(id: string): Promise<Message | null> {
+    const row = await this.queryOne<MessageRow>(
+      `SELECT * FROM messages WHERE id = $1`,
+      [id]
+    );
     return row ? rowToMessage(row) : null;
   }
 
-  getByConversation(conversationId: string, limit?: number): Message[] {
+  async getByConversation(conversationId: string, limit?: number): Promise<Message[]> {
     const query = limit
-      ? `SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ?`
-      : `SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC`;
-
-    const stmt = limit
-      ? this.db.prepare<[string, number], MessageRow>(query)
-      : this.db.prepare<string, MessageRow>(query);
+      ? `SELECT * FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT $2`
+      : `SELECT * FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC`;
 
     const rows = limit
-      ? (stmt as ReturnType<typeof this.db.prepare<[string, number], MessageRow>>).all(conversationId, limit)
-      : (stmt as ReturnType<typeof this.db.prepare<string, MessageRow>>).all(conversationId);
+      ? await this.query<MessageRow>(query, [conversationId, limit])
+      : await this.query<MessageRow>(query, [conversationId]);
 
     return rows.map(rowToMessage);
   }
 
-  getRecent(conversationId: string, count: number): Message[] {
-    const stmt = this.db.prepare<[string, number], MessageRow>(`
-      SELECT * FROM (
+  async getRecent(conversationId: string, count: number): Promise<Message[]> {
+    const rows = await this.query<MessageRow>(
+      `SELECT * FROM (
         SELECT * FROM messages
-        WHERE conversation_id = ?
+        WHERE conversation_id = $1
         ORDER BY created_at DESC
-        LIMIT ?
-      ) ORDER BY created_at ASC
-    `);
-
-    return stmt.all(conversationId, count).map(rowToMessage);
+        LIMIT $2
+      ) subq ORDER BY created_at ASC`,
+      [conversationId, count]
+    );
+    return rows.map(rowToMessage);
   }
 
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM messages WHERE id = ?`);
-    const result = stmt.run(id);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM messages WHERE id = $1`,
+      [id]
+    );
     return result.changes > 0;
   }
 
-  deleteByConversation(conversationId: string): number {
-    const stmt = this.db.prepare(`DELETE FROM messages WHERE conversation_id = ?`);
-    const result = stmt.run(conversationId);
+  async deleteByConversation(conversationId: string): Promise<number> {
+    const result = await this.execute(
+      `DELETE FROM messages WHERE conversation_id = $1`,
+      [conversationId]
+    );
     return result.changes;
   }
 
-  count(conversationId?: string): number {
+  async count(conversationId?: string): Promise<number> {
     if (conversationId) {
-      const stmt = this.db.prepare<string, { count: number }>(`
-        SELECT COUNT(*) as count FROM messages WHERE conversation_id = ?
-      `);
-      return stmt.get(conversationId)?.count ?? 0;
+      const row = await this.queryOne<{ count: string }>(
+        `SELECT COUNT(*) as count FROM messages WHERE conversation_id = $1`,
+        [conversationId]
+      );
+      return parseInt(row?.count ?? '0', 10);
     }
 
-    const stmt = this.db.prepare<[], { count: number }>(`
-      SELECT COUNT(*) as count FROM messages
-    `);
-    return stmt.get()?.count ?? 0;
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM messages`
+    );
+    return parseInt(row?.count ?? '0', 10);
   }
 }
 
 export const messagesRepo = new MessagesRepository();
+
+// Factory function
+export function createMessagesRepository(): MessagesRepository {
+  return new MessagesRepository();
+}

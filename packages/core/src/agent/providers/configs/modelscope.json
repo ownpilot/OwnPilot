@@ -39,22 +39,8 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-31"
-    },
-    {
-      "id": "ZhipuAI/GLM-4.5",
-      "name": "GLM-4.5",
-      "contextWindow": 131072,
-      "maxOutput": 98304,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-28"
     },
     {
       "id": "Qwen/Qwen3-30B-A3B-Thinking-2507",
@@ -69,6 +55,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-30"
     },
     {
@@ -83,7 +70,24 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-30"
+    },
+    {
+      "id": "ZhipuAI/GLM-4.5",
+      "name": "GLM-4.5",
+      "contextWindow": 131072,
+      "maxOutput": 98304,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-28"
     },
     {
       "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
@@ -98,6 +102,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-25"
     },
     {
@@ -112,6 +117,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-28"
     }
   ],

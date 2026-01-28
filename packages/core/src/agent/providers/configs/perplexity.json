@@ -37,6 +37,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-01"
     },
     {
@@ -52,6 +53,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-01"
     }
   ],

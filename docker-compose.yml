@@ -1,6 +1,31 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database (optional, for production)
+  postgres:
+    image: postgres:16-alpine
+    container_name: ownpilot-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-25432}:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-ownpilot}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ownpilot_secret}
+      - POSTGRES_DB=${POSTGRES_DB:-ownpilot}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./packages/gateway/src/db/migrations/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ownpilot} -d ${POSTGRES_DB:-ownpilot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ownpilot-network
+    profiles:
+      - postgres
+
   # OwnPilot API Server
   gateway:
     build:
@@ -15,11 +40,24 @@ services:
       - PORT=8080
       - HOST=0.0.0.0
       - DATA_DIR=/app/data
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Database configuration
+      - DB_TYPE=${DB_TYPE:-sqlite}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-ownpilot}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ownpilot_secret}
+      - POSTGRES_DB=${POSTGRES_DB:-ownpilot}
+      # API Keys
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # Telegram
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS}
       - TELEGRAM_ALLOWED_CHATS=${TELEGRAM_ALLOWED_CHATS}
+      # System
       - SYSTEM_PROMPT=${SYSTEM_PROMPT:-You are a helpful AI assistant.}
       - AUTH_TYPE=${AUTH_TYPE:-none}
       - API_KEYS=${API_KEYS}
@@ -41,6 +79,10 @@ services:
       start_period: 10s
     networks:
       - ownpilot-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
 
   # Web UI (development)
   ui:
@@ -62,6 +104,8 @@ services:
 
 volumes:
   gateway-data:
+    driver: local
+  postgres-data:
     driver: local
 
 networks:

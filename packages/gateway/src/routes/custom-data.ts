@@ -21,18 +21,20 @@ export const customDataRoutes = new Hono();
 /**
  * GET /custom-data/tables - List all custom tables
  */
-customDataRoutes.get('/tables', (c) => {
+customDataRoutes.get('/tables', async (c) => {
   const repo = getCustomDataRepository();
-  const tables = repo.listTables();
+  const tables = await repo.listTables();
 
   // Add stats for each table
-  const tablesWithStats = tables.map((table) => {
-    const stats = repo.getTableStats(table.id);
-    return {
-      ...table,
-      recordCount: stats?.recordCount ?? 0,
-    };
-  });
+  const tablesWithStats = await Promise.all(
+    tables.map(async (table) => {
+      const stats = await repo.getTableStats(table.id);
+      return {
+        ...table,
+        recordCount: stats?.recordCount ?? 0,
+      };
+    })
+  );
 
   const response: ApiResponse = {
     success: true,
@@ -68,7 +70,7 @@ customDataRoutes.post('/tables', async (c) => {
 
   try {
     const repo = getCustomDataRepository();
-    const table = repo.createTable(body.name, body.displayName, body.columns, body.description);
+    const table = await repo.createTable(body.name, body.displayName, body.columns, body.description);
 
     const response: ApiResponse = {
       success: true,
@@ -93,11 +95,11 @@ customDataRoutes.post('/tables', async (c) => {
 /**
  * GET /custom-data/tables/:table - Get table details
  */
-customDataRoutes.get('/tables/:table', (c) => {
+customDataRoutes.get('/tables/:table', async (c) => {
   const tableId = c.req.param('table');
   const repo = getCustomDataRepository();
 
-  const table = repo.getTable(tableId);
+  const table = await repo.getTable(tableId);
   if (!table) {
     return c.json(
       {
@@ -111,7 +113,7 @@ customDataRoutes.get('/tables/:table', (c) => {
     );
   }
 
-  const stats = repo.getTableStats(table.id);
+  const stats = await repo.getTableStats(table.id);
 
   const response: ApiResponse = {
     success: true,
@@ -136,7 +138,7 @@ customDataRoutes.put('/tables/:table', async (c) => {
   }>();
 
   const repo = getCustomDataRepository();
-  const updated = repo.updateTable(tableId, body);
+  const updated = await repo.updateTable(tableId, body);
 
   if (!updated) {
     return c.json(
@@ -162,11 +164,11 @@ customDataRoutes.put('/tables/:table', async (c) => {
 /**
  * DELETE /custom-data/tables/:table - Delete table and all data
  */
-customDataRoutes.delete('/tables/:table', (c) => {
+customDataRoutes.delete('/tables/:table', async (c) => {
   const tableId = c.req.param('table');
   const repo = getCustomDataRepository();
 
-  const deleted = repo.deleteTable(tableId);
+  const deleted = await repo.deleteTable(tableId);
   if (!deleted) {
     return c.json(
       {
@@ -195,7 +197,7 @@ customDataRoutes.delete('/tables/:table', (c) => {
 /**
  * GET /custom-data/tables/:table/records - List records
  */
-customDataRoutes.get('/tables/:table/records', (c) => {
+customDataRoutes.get('/tables/:table/records', async (c) => {
   const tableId = c.req.param('table');
   const limit = parseInt(c.req.query('limit') ?? '50');
   const offset = parseInt(c.req.query('offset') ?? '0');
@@ -212,7 +214,7 @@ customDataRoutes.get('/tables/:table/records', (c) => {
 
   try {
     const repo = getCustomDataRepository();
-    const { records, total } = repo.listRecords(tableId, { limit, offset, filter });
+    const { records, total } = await repo.listRecords(tableId, { limit, offset, filter });
 
     const response: ApiResponse = {
       success: true,
@@ -262,7 +264,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
 
   try {
     const repo = getCustomDataRepository();
-    const record = repo.addRecord(tableId, body.data);
+    const record = await repo.addRecord(tableId, body.data);
 
     const response: ApiResponse = {
       success: true,
@@ -287,7 +289,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
 /**
  * GET /custom-data/tables/:table/search - Search records
  */
-customDataRoutes.get('/tables/:table/search', (c) => {
+customDataRoutes.get('/tables/:table/search', async (c) => {
   const tableId = c.req.param('table');
   const query = c.req.query('q') ?? '';
   const limit = parseInt(c.req.query('limit') ?? '20');
@@ -307,7 +309,7 @@ customDataRoutes.get('/tables/:table/search', (c) => {
 
   try {
     const repo = getCustomDataRepository();
-    const records = repo.searchRecords(tableId, query, { limit });
+    const records = await repo.searchRecords(tableId, query, { limit });
 
     const response: ApiResponse = {
       success: true,
@@ -332,11 +334,11 @@ customDataRoutes.get('/tables/:table/search', (c) => {
 /**
  * GET /custom-data/records/:id - Get a single record
  */
-customDataRoutes.get('/records/:id', (c) => {
+customDataRoutes.get('/records/:id', async (c) => {
   const recordId = c.req.param('id');
   const repo = getCustomDataRepository();
 
-  const record = repo.getRecord(recordId);
+  const record = await repo.getRecord(recordId);
   if (!record) {
     return c.json(
       {
@@ -380,7 +382,7 @@ customDataRoutes.put('/records/:id', async (c) => {
 
   try {
     const repo = getCustomDataRepository();
-    const updated = repo.updateRecord(recordId, body.data);
+    const updated = await repo.updateRecord(recordId, body.data);
 
     if (!updated) {
       return c.json(
@@ -418,11 +420,11 @@ customDataRoutes.put('/records/:id', async (c) => {
 /**
  * DELETE /custom-data/records/:id - Delete a record
  */
-customDataRoutes.delete('/records/:id', (c) => {
+customDataRoutes.delete('/records/:id', async (c) => {
   const recordId = c.req.param('id');
   const repo = getCustomDataRepository();
 
-  const deleted = repo.deleteRecord(recordId);
+  const deleted = await repo.deleteRecord(recordId);
   if (!deleted) {
     return c.json(
       {
@@ -457,10 +459,10 @@ export interface ToolExecutionResult {
 /**
  * Execute custom data tool
  */
-export function executeCustomDataTool(
+export async function executeCustomDataTool(
   toolId: string,
   params: Record<string, unknown>
-): ToolExecutionResult {
+): Promise<ToolExecutionResult> {
   const repo = getCustomDataRepository();
 
   try {
@@ -472,7 +474,7 @@ export function executeCustomDataTool(
           description?: string;
           columns: ColumnDefinition[];
         };
-        const table = repo.createTable(name, displayName, columns, description);
+        const table = await repo.createTable(name, displayName, columns, description);
         return {
           success: true,
           result: {
@@ -483,7 +485,7 @@ export function executeCustomDataTool(
       }
 
       case 'list_custom_tables': {
-        const tables = repo.listTables();
+        const tables = await repo.listTables();
         if (tables.length === 0) {
           return {
             success: true,
@@ -493,13 +495,15 @@ export function executeCustomDataTool(
             },
           };
         }
-        const tablesWithStats = tables.map((t) => ({
-          name: t.name,
-          displayName: t.displayName,
-          description: t.description,
-          columnCount: t.columns.length,
-          recordCount: repo.getTableStats(t.id)?.recordCount ?? 0,
-        }));
+        const tablesWithStats = await Promise.all(
+          tables.map(async (t) => ({
+            name: t.name,
+            displayName: t.displayName,
+            description: t.description,
+            columnCount: t.columns.length,
+            recordCount: (await repo.getTableStats(t.id))?.recordCount ?? 0,
+          }))
+        );
         return {
           success: true,
           result: {
@@ -511,11 +515,11 @@ export function executeCustomDataTool(
 
       case 'describe_custom_table': {
         const { table: tableId } = params as { table: string };
-        const table = repo.getTable(tableId);
+        const table = await repo.getTable(tableId);
         if (!table) {
           return { success: false, error: `Table not found: ${tableId}` };
         }
-        const stats = repo.getTableStats(table.id);
+        const stats = await repo.getTableStats(table.id);
         return {
           success: true,
           result: {
@@ -533,12 +537,12 @@ export function executeCustomDataTool(
         if (!confirm) {
           return { success: false, error: 'Must set confirm: true to delete a table' };
         }
-        const table = repo.getTable(tableId);
+        const table = await repo.getTable(tableId);
         if (!table) {
           return { success: false, error: `Table not found: ${tableId}` };
         }
         const displayName = table.displayName;
-        repo.deleteTable(tableId);
+        await repo.deleteTable(tableId);
         return {
           success: true,
           result: {
@@ -552,8 +556,8 @@ export function executeCustomDataTool(
           table: string;
           data: Record<string, unknown>;
         };
-        const record = repo.addRecord(tableId, data);
-        const table = repo.getTable(tableId);
+        const record = await repo.addRecord(tableId, data);
+        const table = await repo.getTable(tableId);
         return {
           success: true,
           result: {
@@ -570,8 +574,8 @@ export function executeCustomDataTool(
           offset?: number;
           filter?: Record<string, unknown>;
         };
-        const { records, total } = repo.listRecords(tableId, { limit, offset, filter });
-        const table = repo.getTable(tableId);
+        const { records, total } = await repo.listRecords(tableId, { limit, offset, filter });
+        const table = await repo.getTable(tableId);
         return {
           success: true,
           result: {
@@ -589,8 +593,8 @@ export function executeCustomDataTool(
           query: string;
           limit?: number;
         };
-        const records = repo.searchRecords(tableId, query, { limit });
-        const table = repo.getTable(tableId);
+        const records = await repo.searchRecords(tableId, query, { limit });
+        const table = await repo.getTable(tableId);
         return {
           success: true,
           result: {
@@ -602,7 +606,7 @@ export function executeCustomDataTool(
 
       case 'get_custom_record': {
         const { recordId } = params as { recordId: string };
-        const record = repo.getRecord(recordId);
+        const record = await repo.getRecord(recordId);
         if (!record) {
           return { success: false, error: `Record not found: ${recordId}` };
         }
@@ -620,7 +624,7 @@ export function executeCustomDataTool(
           recordId: string;
           data: Record<string, unknown>;
         };
-        const updated = repo.updateRecord(recordId, data);
+        const updated = await repo.updateRecord(recordId, data);
         if (!updated) {
           return { success: false, error: `Record not found: ${recordId}` };
         }
@@ -635,7 +639,7 @@ export function executeCustomDataTool(
 
       case 'delete_custom_record': {
         const { recordId } = params as { recordId: string };
-        const deleted = repo.deleteRecord(recordId);
+        const deleted = await repo.deleteRecord(recordId);
         if (!deleted) {
           return { success: false, error: `Record not found: ${recordId}` };
         }

@@ -287,11 +287,14 @@ export class ToolRegistry {
       };
     }
 
-    // Convert result content to string
+    // Convert result content to string (handle undefined/null cases)
+    const rawContent = result.value.content;
     const content =
-      typeof result.value.content === 'string'
-        ? result.value.content
-        : JSON.stringify(result.value.content);
+      rawContent === undefined || rawContent === null
+        ? ''
+        : typeof rawContent === 'string'
+          ? rawContent
+          : JSON.stringify(rawContent);
 
     // Log successful tool result
     logToolResult({

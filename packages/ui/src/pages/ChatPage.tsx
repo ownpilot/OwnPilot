@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ChatInput } from '../components/ChatInput';
 import { MessageList } from '../components/MessageList';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
-import { useChat } from '../hooks/useChat';
+import { useChatStore } from '../hooks/useChatStore';
 import { AlertCircle, Settings, Bot } from '../components/icons';
 
 interface ModelInfo {
@@ -73,7 +73,8 @@ export function ChatPage() {
     sendMessage,
     retryLastMessage,
     clearMessages,
-  } = useChat();
+    cancelRequest,
+  } = useChatStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showProviderMenu, setShowProviderMenu] = useState(false);
@@ -83,10 +84,45 @@ export function ChatPage() {
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [currentAgent, setCurrentAgent] = useState<AgentInfo | null>(null);
 
-  // Fetch data on mount
+  // Fetch data on mount (only if provider not set - preserves state on navigation)
   useEffect(() => {
-    fetchData();
+    if (!provider) {
+      fetchData();
+    } else {
+      // Provider already set, just load models list for dropdown
+      fetchModelsOnly();
+    }
   }, []);
+
+  // Fetch only models list (for dropdown) without changing provider/model
+  const fetchModelsOnly = async () => {
+    try {
+      const [modelsRes, providersRes] = await Promise.all([
+        fetch('/api/v1/models'),
+        fetch('/api/v1/providers'),
+      ]);
+
+      const modelsData: ModelsResponse = await modelsRes.json();
+      const providersData: ProvidersResponse = await providersRes.json();
+
+      if (providersData.success) {
+        const namesMap: Record<string, string> = {};
+        for (const p of providersData.data.providers) {
+          namesMap[p.id] = p.name;
+        }
+        setProviderNames(namesMap);
+      }
+
+      if (modelsData.success) {
+        setModels(modelsData.data.models);
+        setConfiguredProviders(modelsData.data.configuredProviders);
+      }
+    } catch (err) {
+      console.error('Failed to fetch models:', err);
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -232,11 +268,23 @@ export function ChatPage() {
     // Agent's personality/tools remain, only the underlying LLM changes
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
+    // Cancel any ongoing request and clear frontend messages
     clearMessages();
     setCurrentAgent(null);
     setAgentId(null); // Clear agent for chat requests
     setSearchParams({});
+
+    // Reset backend context for fresh conversation
+    try {
+      await fetch('/api/v1/chat/reset-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, model }),
+      });
+    } catch {
+      // Ignore errors - context reset is best-effort
+    }
   };
 
   const currentProviderName = providerNames[provider] ?? provider;
@@ -511,7 +559,7 @@ export function ChatPage() {
 
       {/* Input */}
       <div className="px-6 py-4 border-t border-border dark:border-dark-border">
-        <ChatInput onSend={sendMessage} isLoading={isLoading} />
+        <ChatInput onSend={sendMessage} onStop={cancelRequest} isLoading={isLoading} />
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
 /**
- * Captures Repository
+ * Captures Repository (PostgreSQL)
  *
  * Quick capture inbox for ideas, thoughts, and snippets
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 // =============================================================================
 // Types
@@ -61,7 +61,7 @@ interface CaptureRow {
   tags: string;
   source: string | null;
   url: string | null;
-  processed: number;
+  processed: boolean;
   processed_as_type: string | null;
   processed_as_id: string | null;
   created_at: string;
@@ -78,10 +78,10 @@ function rowToCapture(row: CaptureRow): Capture {
     userId: row.user_id,
     content: row.content,
     type: row.type as CaptureType,
-    tags: JSON.parse(row.tags || '[]'),
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
     source: row.source ?? undefined,
     url: row.url ?? undefined,
-    processed: row.processed === 1,
+    processed: row.processed === true,
     processedAsType: row.processed_as_type as ProcessedAsType | undefined,
     processedAsId: row.processed_as_id ?? undefined,
     createdAt: new Date(row.created_at),
@@ -96,22 +96,11 @@ function rowToCapture(row: CaptureRow): Capture {
 function detectType(content: string): CaptureType {
   const lower = content.toLowerCase();
 
-  // URL detection
   if (/https?:\/\/[^\s]+/.test(content)) return 'link';
-
-  // Quote detection
   if (/^["'].*["']$/.test(content.trim()) || /^>/.test(content)) return 'quote';
-
-  // Question detection
   if (/\?$/.test(content.trim()) || /^(what|why|how|when|where|who|can|should|would)/i.test(content)) return 'question';
-
-  // Todo detection
   if (/^(todo|task|remember to|don't forget|need to|must|should)/i.test(lower)) return 'todo';
-
-  // Code snippet detection
   if (/```|function\s|const\s|let\s|var\s|import\s|class\s|def\s|public\s/.test(content)) return 'snippet';
-
-  // Idea indicators
   if (/^(idea|what if|maybe|could|might be|consider)/i.test(lower)) return 'idea';
 
   return 'thought';
@@ -120,13 +109,11 @@ function detectType(content: string): CaptureType {
 function extractTags(content: string): string[] {
   const tags: string[] = [];
 
-  // Extract hashtags
   const hashtagMatches = content.match(/#(\w+)/g);
   if (hashtagMatches) {
     tags.push(...hashtagMatches.map(t => t.slice(1).toLowerCase()));
   }
 
-  // Extract @mentions as context tags
   const mentionMatches = content.match(/@(\w+)/g);
   if (mentionMatches) {
     tags.push(...mentionMatches.map(t => `person:${t.slice(1).toLowerCase()}`));
@@ -144,17 +131,16 @@ function extractUrl(content: string): string | undefined {
 // Repository
 // =============================================================================
 
-export class CapturesRepository {
-  private db = getDatabase();
+export class CapturesRepository extends BaseRepository {
   private userId: string;
 
   constructor(userId = 'default') {
+    super();
     this.userId = userId;
   }
 
-  create(input: CreateCaptureInput): Capture {
+  async create(input: CreateCaptureInput): Promise<Capture> {
     const id = `cap_${Date.now()}`;
-    const now = new Date().toISOString();
 
     const autoTags = extractTags(input.content);
     const manualTags = input.tags ?? [];
@@ -163,130 +149,129 @@ export class CapturesRepository {
     const type = input.type ?? detectType(input.content);
     const url = extractUrl(input.content);
 
-    const stmt = this.db.prepare(`
-      INSERT INTO captures (id, user_id, content, type, tags, source, url, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    await this.execute(
+      `INSERT INTO captures (id, user_id, content, type, tags, source, url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [id, this.userId, input.content, type, JSON.stringify(allTags), input.source ?? null, url ?? null]
+    );
 
-    stmt.run(id, this.userId, input.content, type, JSON.stringify(allTags), input.source ?? null, url ?? null, now);
-
-    return this.get(id)!;
+    const result = await this.get(id);
+    if (!result) throw new Error('Failed to create capture');
+    return result;
   }
 
-  get(id: string): Capture | null {
-    const stmt = this.db.prepare<[string, string], CaptureRow>(`
-      SELECT * FROM captures WHERE id = ? AND user_id = ?
-    `);
-
-    const row = stmt.get(id, this.userId);
+  async get(id: string): Promise<Capture | null> {
+    const row = await this.queryOne<CaptureRow>(
+      `SELECT * FROM captures WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
     return row ? rowToCapture(row) : null;
   }
 
-  process(id: string, input: ProcessCaptureInput): Capture | null {
-    const existing = this.get(id);
+  async process(id: string, input: ProcessCaptureInput): Promise<Capture | null> {
+    const existing = await this.get(id);
     if (!existing) return null;
 
-    const now = new Date().toISOString();
-
-    const stmt = this.db.prepare(`
-      UPDATE captures SET
-        processed = 1,
-        processed_as_type = ?,
-        processed_as_id = ?,
-        processed_at = ?
-      WHERE id = ? AND user_id = ?
-    `);
-
-    stmt.run(input.processedAsType, input.processedAsId ?? null, now, id, this.userId);
+    await this.execute(
+      `UPDATE captures SET
+        processed = TRUE,
+        processed_as_type = $1,
+        processed_as_id = $2,
+        processed_at = NOW()
+      WHERE id = $3 AND user_id = $4`,
+      [input.processedAsType, input.processedAsId ?? null, id, this.userId]
+    );
 
     return this.get(id);
   }
 
-  unprocess(id: string): Capture | null {
-    const existing = this.get(id);
+  async unprocess(id: string): Promise<Capture | null> {
+    const existing = await this.get(id);
     if (!existing) return null;
 
-    const stmt = this.db.prepare(`
-      UPDATE captures SET
-        processed = 0,
+    await this.execute(
+      `UPDATE captures SET
+        processed = FALSE,
         processed_as_type = NULL,
         processed_as_id = NULL,
         processed_at = NULL
-      WHERE id = ? AND user_id = ?
-    `);
-
-    stmt.run(id, this.userId);
+      WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
 
     return this.get(id);
   }
 
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM captures WHERE id = ? AND user_id = ?`);
-    const result = stmt.run(id, this.userId);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM captures WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
     return result.changes > 0;
   }
 
-  list(query: CaptureQuery = {}): Capture[] {
-    let sql = `SELECT * FROM captures WHERE user_id = ?`;
+  async list(query: CaptureQuery = {}): Promise<Capture[]> {
+    let sql = `SELECT * FROM captures WHERE user_id = $1`;
     const params: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     if (query.type) {
-      sql += ` AND type = ?`;
+      sql += ` AND type = $${paramIndex++}`;
       params.push(query.type);
     }
 
     if (query.tag) {
-      sql += ` AND tags LIKE ?`;
+      sql += ` AND tags::text LIKE $${paramIndex++}`;
       params.push(`%"${query.tag.toLowerCase()}"%`);
     }
 
     if (query.processed !== undefined) {
-      sql += ` AND processed = ?`;
-      params.push(query.processed ? 1 : 0);
+      sql += ` AND processed = $${paramIndex++}`;
+      params.push(query.processed);
     }
 
     if (query.search) {
-      sql += ` AND content LIKE ?`;
+      sql += ` AND content ILIKE $${paramIndex++}`;
       params.push(`%${query.search}%`);
     }
 
     sql += ` ORDER BY created_at DESC`;
 
     if (query.limit) {
-      sql += ` LIMIT ?`;
+      sql += ` LIMIT $${paramIndex++}`;
       params.push(query.limit);
     }
 
     if (query.offset) {
-      sql += ` OFFSET ?`;
+      sql += ` OFFSET $${paramIndex++}`;
       params.push(query.offset);
     }
 
-    const stmt = this.db.prepare<unknown[], CaptureRow>(sql);
-    return stmt.all(...params).map(rowToCapture);
+    const rows = await this.query<CaptureRow>(sql, params);
+    return rows.map(rowToCapture);
   }
 
-  getInbox(limit = 10): Capture[] {
+  async getInbox(limit = 10): Promise<Capture[]> {
     return this.list({ processed: false, limit });
   }
 
-  getInboxCount(): number {
-    const stmt = this.db.prepare<[string], { count: number }>(`
-      SELECT COUNT(*) as count FROM captures WHERE user_id = ? AND processed = 0
-    `);
-
-    return stmt.get(this.userId)?.count ?? 0;
+  async getInboxCount(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM captures WHERE user_id = $1 AND processed = FALSE`,
+      [this.userId]
+    );
+    return parseInt(row?.count ?? '0', 10);
   }
 
-  getStats(): {
+  async getStats(): Promise<{
     total: number;
     processed: number;
     unprocessed: number;
     byType: Record<CaptureType, number>;
     topTags: Array<{ tag: string; count: number }>;
     processedAs: Record<ProcessedAsType, number>;
-  } {
-    const allCaptures = this.list({ limit: 10000 });
+  }> {
+    const allCaptures = await this.list({ limit: 10000 });
     const processed = allCaptures.filter(c => c.processed);
     const unprocessed = allCaptures.filter(c => !c.processed);
 
@@ -295,15 +280,12 @@ export class CapturesRepository {
     const processedAs: Record<string, number> = {};
 
     for (const capture of allCaptures) {
-      // By type
       byType[capture.type] = (byType[capture.type] || 0) + 1;
 
-      // Tags
       for (const tag of capture.tags) {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;
       }
 
-      // Processed as
       if (capture.processedAsType) {
         processedAs[capture.processedAsType] = (processedAs[capture.processedAsType] || 0) + 1;
       }
@@ -324,12 +306,12 @@ export class CapturesRepository {
     };
   }
 
-  getRecentByType(): Record<CaptureType, Capture[]> {
+  async getRecentByType(): Promise<Record<CaptureType, Capture[]>> {
     const types: CaptureType[] = ['idea', 'thought', 'todo', 'link', 'quote', 'snippet', 'question', 'other'];
     const result: Record<string, Capture[]> = {};
 
     for (const type of types) {
-      result[type] = this.list({ type, limit: 5 });
+      result[type] = await this.list({ type, limit: 5 });
     }
 
     return result as Record<CaptureType, Capture[]>;
@@ -337,3 +319,8 @@ export class CapturesRepository {
 }
 
 export const capturesRepo = new CapturesRepository();
+
+// Factory function
+export function createCapturesRepository(userId = 'default'): CapturesRepository {
+  return new CapturesRepository(userId);
+}

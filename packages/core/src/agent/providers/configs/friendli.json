@@ -42,6 +42,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-31"
     },
     {
@@ -58,99 +59,8 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-31"
-    },
-    {
-      "id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
-      "name": "Llama 4 Maverick 17B 128E Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 8000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-06-16"
-    },
-    {
-      "id": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
-      "name": "Llama 4 Scout 17B 16E Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 8000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-06-16"
-    },
-    {
-      "id": "Qwen/Qwen3-30B-A3B",
-      "name": "Qwen3 30B A3B",
-      "contextWindow": 131072,
-      "maxOutput": 8000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-06-16"
-    },
-    {
-      "id": "Qwen/Qwen3-32B",
-      "name": "Qwen3 32B",
-      "contextWindow": 131072,
-      "maxOutput": 8000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-06-16"
-    },
-    {
-      "id": "meta-llama-3.3-70b-instruct",
-      "name": "Llama 3.3 70B Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.6,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2024-08-01"
-    },
-    {
-      "id": "meta-llama-3.1-8b-instruct",
-      "name": "Llama 3.1 8B Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 8000,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "releaseDate": "2024-08-01"
     },
     {
       "id": "Qwen/Qwen3-235B-A22B-Instruct-2507",
@@ -165,6 +75,7 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-29"
     },
     {
@@ -181,7 +92,106 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-29"
+    },
+    {
+      "id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+      "name": "Llama 4 Maverick 17B 128E Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 8000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-16"
+    },
+    {
+      "id": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "name": "Llama 4 Scout 17B 16E Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 8000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-16"
+    },
+    {
+      "id": "Qwen/Qwen3-30B-A3B",
+      "name": "Qwen3 30B A3B",
+      "contextWindow": 131072,
+      "maxOutput": 8000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-16"
+    },
+    {
+      "id": "Qwen/Qwen3-32B",
+      "name": "Qwen3 32B",
+      "contextWindow": 131072,
+      "maxOutput": 8000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-16"
+    },
+    {
+      "id": "meta-llama-3.3-70b-instruct",
+      "name": "Llama 3.3 70B Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.6,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-01"
+    },
+    {
+      "id": "meta-llama-3.1-8b-instruct",
+      "name": "Llama 3.1 8B Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 8000,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-01"
     }
   ],
   "baseUrl": "https://api.friendli.ai/serverless/v1",

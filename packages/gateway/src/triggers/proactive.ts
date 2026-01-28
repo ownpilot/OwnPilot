@@ -139,12 +139,12 @@ export const DEFAULT_TRIGGERS: CreateTriggerInput[] = [
  * Initialize default triggers for a user
  * Only creates triggers that don't already exist
  */
-export function initializeDefaultTriggers(userId = 'default'): {
+export async function initializeDefaultTriggers(userId = 'default'): Promise<{
   created: number;
   skipped: number;
-} {
+}> {
   const repo = new TriggersRepository(userId);
-  const existing = repo.list({ limit: 100 });
+  const existing = await repo.list({ limit: 100 });
   const existingNames = new Set(existing.map((t) => t.name));
 
   let created = 0;
@@ -157,7 +157,7 @@ export function initializeDefaultTriggers(userId = 'default'): {
     }
 
     try {
-      repo.create(trigger);
+      await repo.create(trigger);
       created++;
     } catch (error) {
       console.error(`[Proactive] Failed to create trigger "${trigger.name}":`, error);
@@ -175,7 +175,7 @@ export function initializeDefaultTriggers(userId = 'default'): {
 /**
  * Get status of proactive features
  */
-export function getProactiveStatus(userId = 'default'): {
+export async function getProactiveStatus(userId = 'default'): Promise<{
   triggers: Array<{
     name: string;
     enabled: boolean;
@@ -184,9 +184,9 @@ export function getProactiveStatus(userId = 'default'): {
   }>;
   enabledCount: number;
   totalFires: number;
-} {
+}> {
   const repo = new TriggersRepository(userId);
-  const triggers = repo.list({ limit: 100 });
+  const triggers = await repo.list({ limit: 100 });
 
   // Filter to only show the default proactive triggers
   const defaultNames = new Set(DEFAULT_TRIGGERS.map((t) => t.name));
@@ -207,53 +207,53 @@ export function getProactiveStatus(userId = 'default'): {
 /**
  * Enable a proactive feature by name
  */
-export function enableProactiveFeature(
+export async function enableProactiveFeature(
   name: string,
   userId = 'default'
-): boolean {
+): Promise<boolean> {
   const repo = new TriggersRepository(userId);
-  const triggers = repo.list({ limit: 100 });
+  const triggers = await repo.list({ limit: 100 });
   const trigger = triggers.find((t) => t.name === name);
 
   if (!trigger) {
     return false;
   }
 
-  repo.update(trigger.id, { enabled: true });
+  await repo.update(trigger.id, { enabled: true });
   return true;
 }
 
 /**
  * Disable a proactive feature by name
  */
-export function disableProactiveFeature(
+export async function disableProactiveFeature(
   name: string,
   userId = 'default'
-): boolean {
+): Promise<boolean> {
   const repo = new TriggersRepository(userId);
-  const triggers = repo.list({ limit: 100 });
+  const triggers = await repo.list({ limit: 100 });
   const trigger = triggers.find((t) => t.name === name);
 
   if (!trigger) {
     return false;
   }
 
-  repo.update(trigger.id, { enabled: false });
+  await repo.update(trigger.id, { enabled: false });
   return true;
 }
 
 /**
  * Enable all proactive features
  */
-export function enableAllProactive(userId = 'default'): number {
+export async function enableAllProactive(userId = 'default'): Promise<number> {
   const repo = new TriggersRepository(userId);
-  const triggers = repo.list({ limit: 100 });
+  const triggers = await repo.list({ limit: 100 });
   const defaultNames = new Set(DEFAULT_TRIGGERS.map((t) => t.name));
 
   let enabled = 0;
   for (const trigger of triggers) {
     if (defaultNames.has(trigger.name) && !trigger.enabled) {
-      repo.update(trigger.id, { enabled: true });
+      await repo.update(trigger.id, { enabled: true });
       enabled++;
     }
   }
@@ -264,15 +264,15 @@ export function enableAllProactive(userId = 'default'): number {
 /**
  * Disable all proactive features
  */
-export function disableAllProactive(userId = 'default'): number {
+export async function disableAllProactive(userId = 'default'): Promise<number> {
   const repo = new TriggersRepository(userId);
-  const triggers = repo.list({ limit: 100 });
+  const triggers = await repo.list({ limit: 100 });
   const defaultNames = new Set(DEFAULT_TRIGGERS.map((t) => t.name));
 
   let disabled = 0;
   for (const trigger of triggers) {
     if (defaultNames.has(trigger.name) && trigger.enabled) {
-      repo.update(trigger.id, { enabled: false });
+      await repo.update(trigger.id, { enabled: false });
       disabled++;
     }
   }

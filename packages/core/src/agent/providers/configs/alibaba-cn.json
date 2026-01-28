@@ -40,6 +40,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-23"
     },
     {
@@ -53,11 +54,11 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-15"
     },
     {
@@ -74,6 +75,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-15"
     },
     {
@@ -88,6 +90,7 @@
         "audio",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-08"
     },
     {
@@ -102,6 +105,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09"
     },
     {
@@ -117,6 +121,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09"
     },
     {
@@ -129,9 +134,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-28"
     },
     {
@@ -147,6 +152,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-28"
     },
     {
@@ -159,10 +165,26 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-23"
+    },
+    {
+      "id": "deepseek-r1-0528",
+      "name": "DeepSeek R1 0528",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.574,
+      "outputPrice": 2.294,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-28"
     },
     {
       "id": "qwen-omni-turbo-realtime",
@@ -178,6 +200,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-08"
     },
     {
@@ -194,6 +217,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -210,6 +234,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -225,6 +250,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -237,9 +263,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -255,6 +281,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -270,6 +297,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -282,9 +310,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -300,6 +328,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -316,6 +345,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-25"
     },
     {
@@ -331,6 +361,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-05"
     },
     {
@@ -345,6 +376,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-25"
     },
     {
@@ -358,10 +390,10 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-19"
     },
     {
@@ -377,6 +409,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -391,6 +424,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -406,6 +440,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -421,6 +456,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -435,6 +471,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -449,6 +486,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -464,6 +502,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -479,6 +518,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -494,6 +534,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -509,6 +550,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-01"
     },
     {
@@ -522,6 +564,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01"
     },
     {
@@ -535,6 +578,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01"
     },
     {
@@ -549,6 +593,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-01"
     },
     {
@@ -562,10 +607,10 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12"
     },
     {
@@ -581,6 +626,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12"
     },
     {
@@ -596,6 +642,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-01"
     },
     {
@@ -608,9 +655,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11"
     },
     {
@@ -623,9 +670,9 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11"
     },
     {
@@ -640,6 +687,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-28"
     },
     {
@@ -654,6 +702,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-19"
     },
     {
@@ -668,6 +717,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09"
     },
     {
@@ -682,6 +732,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09"
     },
     {
@@ -697,6 +748,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09"
     },
     {
@@ -711,6 +763,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09"
     },
     {
@@ -725,6 +778,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09"
     },
     {
@@ -739,6 +793,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09"
     },
     {
@@ -754,6 +809,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09"
     },
     {
@@ -768,6 +824,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09"
     },
     {
@@ -782,6 +839,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-16"
     },
     {
@@ -797,6 +855,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-08"
     },
     {
@@ -811,6 +870,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-03"
     },
     {
@@ -826,6 +886,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-25"
     },
     {
@@ -841,6 +902,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-25"
     },
     {
@@ -855,6 +917,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01"
     },
     {
@@ -869,6 +932,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01"
     },
     {
@@ -883,6 +947,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01"
     },
     {
@@ -896,22 +961,8 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01"
-    },
-    {
-      "id": "deepseek-r1-0528",
-      "name": "DeepSeek R1 0528",
-      "contextWindow": 131072,
-      "maxOutput": 16384,
-      "inputPrice": 0.574,
-      "outputPrice": 2.294,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-05-28"
     }
   ],
   "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",

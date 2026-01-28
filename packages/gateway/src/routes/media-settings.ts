@@ -106,24 +106,26 @@ function getProvidersWithStatus(capability: MediaCapability): ProviderWithStatus
 /**
  * Get all media settings
  */
-mediaSettingsRoutes.get('/', (c) => {
+mediaSettingsRoutes.get('/', async (c) => {
   const userId = c.req.query('userId') || 'default';
 
   const capabilities: MediaCapability[] = ['image_generation', 'vision', 'tts', 'stt'];
 
-  const settings: CapabilitySettings[] = capabilities.map((capability) => {
-    const current = mediaSettingsRepo.getEffective(userId, capability);
-    const availableProviders = getProvidersWithStatus(capability);
+  const settings: CapabilitySettings[] = await Promise.all(
+    capabilities.map(async (capability) => {
+      const current = await mediaSettingsRepo.getEffective(userId, capability);
+      const availableProviders = getProvidersWithStatus(capability);
 
-    return {
-      capability,
-      name: CAPABILITY_META[capability].name,
-      description: CAPABILITY_META[capability].description,
-      currentProvider: current?.provider || null,
-      currentModel: current?.model || null,
-      availableProviders,
-    };
-  });
+      return {
+        capability,
+        name: CAPABILITY_META[capability].name,
+        description: CAPABILITY_META[capability].description,
+        currentProvider: current?.provider || null,
+        currentModel: current?.model || null,
+        availableProviders,
+      };
+    })
+  );
 
   return c.json({
     success: true,
@@ -134,7 +136,7 @@ mediaSettingsRoutes.get('/', (c) => {
 /**
  * Get settings for a specific capability
  */
-mediaSettingsRoutes.get('/:capability', (c) => {
+mediaSettingsRoutes.get('/:capability', async (c) => {
   const capability = c.req.param('capability') as MediaCapability;
   const userId = c.req.query('userId') || 'default';
 
@@ -143,7 +145,7 @@ mediaSettingsRoutes.get('/:capability', (c) => {
     return c.json({ success: false, error: `Invalid capability: ${capability}` }, 400);
   }
 
-  const current = mediaSettingsRepo.getEffective(userId, capability);
+  const current = await mediaSettingsRepo.getEffective(userId, capability);
   const availableProviders = getProvidersWithStatus(capability);
 
   return c.json({
@@ -228,7 +230,7 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
     }
 
     // Save setting
-    mediaSettingsRepo.set({
+    await mediaSettingsRepo.set({
       userId,
       capability,
       provider: body.provider,
@@ -254,7 +256,7 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
 /**
  * Delete/reset setting for a capability
  */
-mediaSettingsRoutes.delete('/:capability', (c) => {
+mediaSettingsRoutes.delete('/:capability', async (c) => {
   const capability = c.req.param('capability') as MediaCapability;
   const userId = c.req.query('userId') || 'default';
 
@@ -263,7 +265,7 @@ mediaSettingsRoutes.delete('/:capability', (c) => {
     return c.json({ success: false, error: `Invalid capability: ${capability}` }, 400);
   }
 
-  mediaSettingsRepo.delete(userId, capability);
+  await mediaSettingsRepo.delete(userId, capability);
 
   return c.json({
     success: true,
@@ -275,7 +277,7 @@ mediaSettingsRoutes.delete('/:capability', (c) => {
  * Get available providers for all capabilities
  * (Useful for populating UI dropdowns)
  */
-mediaSettingsRoutes.get('/providers/all', (c) => {
+mediaSettingsRoutes.get('/providers/all', async (c) => {
   const capabilities: MediaCapability[] = ['image_generation', 'vision', 'tts', 'stt'];
 
   const allProviders: Record<MediaCapability, ProviderWithStatus[]> = {} as Record<
@@ -296,23 +298,25 @@ mediaSettingsRoutes.get('/providers/all', (c) => {
 /**
  * Check which capabilities are configured
  */
-mediaSettingsRoutes.get('/status/summary', (c) => {
+mediaSettingsRoutes.get('/status/summary', async (c) => {
   const userId = c.req.query('userId') || 'default';
   const capabilities: MediaCapability[] = ['image_generation', 'vision', 'tts', 'stt'];
 
-  const status = capabilities.map((capability) => {
-    const setting = mediaSettingsRepo.getEffective(userId, capability);
-    const isConfigured = setting ? isProviderConfigured(setting.provider) : false;
+  const status = await Promise.all(
+    capabilities.map(async (capability) => {
+      const setting = await mediaSettingsRepo.getEffective(userId, capability);
+      const isConfigured = setting ? isProviderConfigured(setting.provider) : false;
 
-    return {
-      capability,
-      name: CAPABILITY_META[capability].name,
-      hasProvider: !!setting,
-      provider: setting?.provider,
-      model: setting?.model,
-      isConfigured,
-    };
-  });
+      return {
+        capability,
+        name: CAPABILITY_META[capability].name,
+        hasProvider: !!setting,
+        provider: setting?.provider,
+        model: setting?.model,
+        isConfigured,
+      };
+    })
+  );
 
   const summary = {
     total: capabilities.length,

@@ -171,3 +171,44 @@ debugRoutes.get('/tools', async (c) => {
 
   return c.json(response);
 });
+
+/**
+ * Get sandbox executions only (execute_shell, execute_python, execute_javascript)
+ */
+debugRoutes.get('/sandbox', async (c) => {
+  const count = parseInt(c.req.query('count') ?? '20', 10);
+  const allEntries = debugLog.getAll();
+  const sandboxExecutions = allEntries
+    .filter(e => e.type === 'sandbox_execution')
+    .slice(-count);
+
+  // Calculate summary statistics
+  const stats = {
+    total: sandboxExecutions.length,
+    byLanguage: {
+      javascript: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.language === 'javascript').length,
+      python: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.language === 'python').length,
+      shell: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.language === 'shell').length,
+    },
+    sandboxed: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.sandboxed === true).length,
+    unsandboxed: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.sandboxed === false).length,
+    successful: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.success === true).length,
+    failed: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.success === false).length,
+    timedOut: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.timedOut === true).length,
+  };
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      count: sandboxExecutions.length,
+      stats,
+      entries: sandboxExecutions,
+    },
+    meta: {
+      requestId: c.get('requestId') ?? 'unknown',
+      timestamp: new Date().toISOString(),
+    },
+  };
+
+  return c.json(response);
+});

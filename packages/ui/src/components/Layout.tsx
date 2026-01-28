@@ -28,6 +28,7 @@ import {
   ChevronRight,
   Activity,
   Code,
+  Receipt,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 
@@ -64,6 +65,7 @@ const navGroups: NavGroup[] = [
       { to: '/calendar', icon: Calendar, label: 'Calendar' },
       { to: '/contacts', icon: Users, label: 'Contacts' },
       { to: '/bookmarks', icon: Bookmark, label: 'Bookmarks' },
+      { to: '/expenses', icon: Receipt, label: 'Expenses' },
       { to: '/custom-data', icon: Database, label: 'Custom Data' },
       { to: '/data-browser', icon: Table, label: 'Data Browser' },
     ],

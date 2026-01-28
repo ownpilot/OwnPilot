@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "name": "Qwen3-235B-A22B-Thinking-2507",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-07-25"
+    },
+    {
       "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
       "name": "Qwen3-Coder-480B-A35B-Instruct",
       "contextWindow": 262144,
@@ -23,7 +39,7 @@
         "function_calling",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-07-23"
     },
     {
@@ -38,7 +54,54 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-14"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1-0528",
+      "name": "DeepSeek-R1-0528",
+      "contextWindow": 161000,
+      "maxOutput": 163840,
+      "inputPrice": 1.35,
+      "outputPrice": 5.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-28"
+    },
+    {
+      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-28"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3-0324",
+      "name": "DeepSeek-V3-0324",
+      "contextWindow": 161000,
+      "maxOutput": 8192,
+      "inputPrice": 1.14,
+      "outputPrice": 2.75,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-24"
     },
     {
       "id": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
@@ -54,6 +117,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-31"
     },
     {
@@ -69,6 +133,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -84,6 +149,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     },
     {
@@ -99,65 +165,8 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "name": "Qwen3-235B-A22B-Thinking-2507",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-07-25"
-    },
-    {
-      "id": "deepseek-ai/DeepSeek-R1-0528",
-      "name": "DeepSeek-R1-0528",
-      "contextWindow": 161000,
-      "maxOutput": 163840,
-      "inputPrice": 1.35,
-      "outputPrice": 5.4,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-05-28"
-    },
-    {
-      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507",
-      "name": "Qwen3 235B A22B Instruct 2507",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-04-28"
-    },
-    {
-      "id": "deepseek-ai/DeepSeek-V3-0324",
-      "name": "DeepSeek-V3-0324",
-      "contextWindow": 161000,
-      "maxOutput": 8192,
-      "inputPrice": 1.14,
-      "outputPrice": 2.75,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-03-24"
     }
   ],
   "baseUrl": "https://api.inference.wandb.ai/v1",

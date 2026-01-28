@@ -29,7 +29,7 @@ function getRepo(userId = 'default'): PlansRepository {
 /**
  * GET /plans - List plans
  */
-plansRoutes.get('/', (c) => {
+plansRoutes.get('/', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const status = c.req.query('status') as PlanStatus | undefined;
   const goalId = c.req.query('goalId');
@@ -38,7 +38,7 @@ plansRoutes.get('/', (c) => {
   const offset = parseInt(c.req.query('offset') ?? '0', 10);
 
   const repo = getRepo(userId);
-  const plans = repo.list({ status, goalId, triggerId, limit, offset });
+  const plans = await repo.list({ status, goalId, triggerId, limit, offset });
 
   const response: ApiResponse = {
     success: true,
@@ -74,7 +74,7 @@ plansRoutes.post('/', async (c) => {
   }
 
   const repo = getRepo(userId);
-  const plan = repo.create(body);
+  const plan = await repo.create(body);
 
   const response: ApiResponse = {
     success: true,
@@ -90,10 +90,10 @@ plansRoutes.post('/', async (c) => {
 /**
  * GET /plans/stats - Get plan statistics
  */
-plansRoutes.get('/stats', (c) => {
+plansRoutes.get('/stats', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getRepo(userId);
-  const stats = repo.getStats();
+  const stats = await repo.getStats();
 
   const response: ApiResponse = {
     success: true,
@@ -106,10 +106,10 @@ plansRoutes.get('/stats', (c) => {
 /**
  * GET /plans/active - Get active plans
  */
-plansRoutes.get('/active', (c) => {
+plansRoutes.get('/active', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getRepo(userId);
-  const plans = repo.getActive();
+  const plans = await repo.getActive();
 
   const response: ApiResponse = {
     success: true,
@@ -125,10 +125,10 @@ plansRoutes.get('/active', (c) => {
 /**
  * GET /plans/pending - Get pending plans
  */
-plansRoutes.get('/pending', (c) => {
+plansRoutes.get('/pending', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getRepo(userId);
-  const plans = repo.getPending();
+  const plans = await repo.getPending();
 
   const response: ApiResponse = {
     success: true,
@@ -144,12 +144,12 @@ plansRoutes.get('/pending', (c) => {
 /**
  * GET /plans/:id - Get a specific plan
  */
-plansRoutes.get('/:id', (c) => {
+plansRoutes.get('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const plan = repo.get(id);
+  const plan = await repo.get(id);
 
   if (!plan) {
     return c.json(
@@ -165,8 +165,8 @@ plansRoutes.get('/:id', (c) => {
   }
 
   // Get steps and history
-  const steps = repo.getSteps(id);
-  const history = repo.getHistory(id, 20);
+  const steps = await repo.getSteps(id);
+  const history = await repo.getHistory(id, 20);
 
   const response: ApiResponse = {
     success: true,
@@ -189,7 +189,7 @@ plansRoutes.patch('/:id', async (c) => {
   const body = await c.req.json<UpdatePlanInput>();
 
   const repo = getRepo(userId);
-  const updated = repo.update(id, body);
+  const updated = await repo.update(id, body);
 
   if (!updated) {
     return c.json(
@@ -215,12 +215,12 @@ plansRoutes.patch('/:id', async (c) => {
 /**
  * DELETE /plans/:id - Delete a plan
  */
-plansRoutes.delete('/:id', (c) => {
+plansRoutes.delete('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const deleted = repo.delete(id);
+  const deleted = await repo.delete(id);
 
   if (!deleted) {
     return c.json(
@@ -257,7 +257,7 @@ plansRoutes.post('/:id/execute', async (c) => {
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const plan = repo.get(id);
+  const plan = await repo.get(id);
 
   if (!plan) {
     return c.json(
@@ -324,12 +324,12 @@ plansRoutes.post('/:id/execute', async (c) => {
 /**
  * POST /plans/:id/pause - Pause a running plan
  */
-plansRoutes.post('/:id/pause', (c) => {
+plansRoutes.post('/:id/pause', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const plan = repo.get(id);
+  const plan = await repo.get(id);
 
   if (!plan) {
     return c.json(
@@ -345,7 +345,7 @@ plansRoutes.post('/:id/pause', (c) => {
   }
 
   const executor = getPlanExecutor({ userId });
-  const paused = executor.pause(id);
+  const paused = await executor.pause(id);
 
   const response: ApiResponse = {
     success: paused,
@@ -366,7 +366,7 @@ plansRoutes.post('/:id/resume', async (c) => {
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const plan = repo.get(id);
+  const plan = await repo.get(id);
 
   if (!plan) {
     return c.json(
@@ -425,12 +425,12 @@ plansRoutes.post('/:id/resume', async (c) => {
 /**
  * POST /plans/:id/abort - Abort a running plan
  */
-plansRoutes.post('/:id/abort', (c) => {
+plansRoutes.post('/:id/abort', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const plan = repo.get(id);
+  const plan = await repo.get(id);
 
   if (!plan) {
     return c.json(
@@ -446,7 +446,7 @@ plansRoutes.post('/:id/abort', (c) => {
   }
 
   const executor = getPlanExecutor({ userId });
-  const aborted = executor.abort(id);
+  const aborted = await executor.abort(id);
 
   const response: ApiResponse = {
     success: true,
@@ -468,7 +468,7 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
   const body = await c.req.json<{ data?: unknown }>().catch((): { data?: unknown } => ({}));
 
   const repo = getRepo(userId);
-  const plan = repo.get(id);
+  const plan = await repo.get(id);
 
   if (!plan) {
     return c.json(
@@ -503,12 +503,12 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
 /**
  * GET /plans/:id/steps - Get all steps for a plan
  */
-plansRoutes.get('/:id/steps', (c) => {
+plansRoutes.get('/:id/steps', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const plan = repo.get(id);
+  const plan = await repo.get(id);
 
   if (!plan) {
     return c.json(
@@ -523,7 +523,7 @@ plansRoutes.get('/:id/steps', (c) => {
     );
   }
 
-  const steps = repo.getSteps(id);
+  const steps = await repo.getSteps(id);
 
   const response: ApiResponse = {
     success: true,
@@ -559,7 +559,7 @@ plansRoutes.post('/:id/steps', async (c) => {
   }
 
   const repo = getRepo(userId);
-  const plan = repo.get(id);
+  const plan = await repo.get(id);
 
   if (!plan) {
     return c.json(
@@ -575,7 +575,7 @@ plansRoutes.post('/:id/steps', async (c) => {
   }
 
   try {
-    const step = repo.addStep(id, body);
+    const step = await repo.addStep(id, body);
 
     const response: ApiResponse = {
       success: true,
@@ -604,12 +604,12 @@ plansRoutes.post('/:id/steps', async (c) => {
 /**
  * GET /plans/:id/steps/:stepId - Get a specific step
  */
-plansRoutes.get('/:id/steps/:stepId', (c) => {
+plansRoutes.get('/:id/steps/:stepId', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const stepId = c.req.param('stepId');
 
   const repo = getRepo(userId);
-  const step = repo.getStep(stepId);
+  const step = await repo.getStep(stepId);
 
   if (!step) {
     return c.json(
@@ -641,7 +641,7 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
   const body = await c.req.json();
 
   const repo = getRepo(userId);
-  const updated = repo.updateStep(stepId, body);
+  const updated = await repo.updateStep(stepId, body);
 
   if (!updated) {
     return c.json(
@@ -671,13 +671,13 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
 /**
  * GET /plans/:id/history - Get history for a plan
  */
-plansRoutes.get('/:id/history', (c) => {
+plansRoutes.get('/:id/history', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
   const limit = parseInt(c.req.query('limit') ?? '50', 10);
 
   const repo = getRepo(userId);
-  const plan = repo.get(id);
+  const plan = await repo.get(id);
 
   if (!plan) {
     return c.json(
@@ -692,7 +692,7 @@ plansRoutes.get('/:id/history', (c) => {
     );
   }
 
-  const history = repo.getHistory(id, limit);
+  const history = await repo.getHistory(id, limit);
 
   const response: ApiResponse = {
     success: true,

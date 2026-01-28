@@ -23,6 +23,26 @@ import {
   type ProviderConfig,
   type ResolvedProviderConfig,
 } from './configs/index.js';
+import { logRequest, logResponse, logRetry, buildRequestDebugInfo, buildResponseDebugInfo } from '../debug.js';
+
+/**
+ * Retry configuration
+ */
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  initialDelayMs: 1000,
+  maxDelayMs: 10000,
+  backoffMultiplier: 2,
+  retryableErrors: ['AbortError', 'ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN'],
+  retryableStatusCodes: [429, 500, 502, 503, 504],
+};
+
+/**
+ * Sleep helper
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 /**
  * Gemini API response types
@@ -128,11 +148,96 @@ export class GoogleProvider {
       return err(new ValidationError('No model specified'));
     }
 
-    const url = `${this.config.baseUrl}/models/${model}:generateContent?key=${this.config.apiKey}`;
+    // Retry loop with exponential backoff
+    let lastError: Error | null = null;
+    let delay = RETRY_CONFIG.initialDelayMs;
+
+    for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+      const result = await this.executeRequest(request, model, attempt);
+
+      if (result.ok) {
+        return result;
+      }
+
+      // Check if error is retryable
+      const error = result.error;
+      const isRetryable = this.isRetryableError(error);
+
+      if (!isRetryable || attempt === RETRY_CONFIG.maxRetries) {
+        return result;
+      }
+
+      // Log retry attempt
+      lastError = error;
+      logRetry(attempt, RETRY_CONFIG.maxRetries, error, delay);
+      console.log(`🔄 [Google] Retry ${attempt}/${RETRY_CONFIG.maxRetries} after ${delay}ms - ${error.message}`);
+
+      // Wait before retry
+      await sleep(delay);
+      delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
+    }
+
+    // Should not reach here, but just in case
+    return err(new InternalError(`Google request failed after ${RETRY_CONFIG.maxRetries} retries: ${lastError?.message}`));
+  }
+
+  /**
+   * Check if an error is retryable
+   */
+  private isRetryableError(error: Error): boolean {
+    // Timeout errors are retryable
+    if (error instanceof TimeoutError) return true;
+    if (error.name === 'AbortError') return true;
+
+    // Network errors are retryable
+    const errorName = error.name || '';
+    const errorMessage = error.message || '';
+
+    for (const retryableError of RETRY_CONFIG.retryableErrors) {
+      if (errorName.includes(retryableError) || errorMessage.includes(retryableError)) {
+        return true;
+      }
+    }
+
+    // Check for retryable status codes in error message
+    for (const statusCode of RETRY_CONFIG.retryableStatusCodes) {
+      if (errorMessage.includes(`${statusCode}`)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Execute a single request attempt
+   */
+  private async executeRequest(
+    request: CompletionRequest,
+    model: string,
+    attempt: number
+  ): Promise<Result<CompletionResponse, InternalError | TimeoutError | ValidationError>> {
     const body = this.buildGeminiRequest(request);
+    const startTime = Date.now();
+    const endpoint = `${this.config.baseUrl}/models/${model}:generateContent`;
+
+    // Log request with debug system (only on first attempt to avoid spam)
+    if (attempt === 1) {
+      logRequest(buildRequestDebugInfo(
+        'google',
+        model,
+        endpoint,
+        request.messages,
+        request.tools,
+        request.model.maxTokens,
+        request.model.temperature,
+        request.stream ?? false
+      ));
+    }
 
     try {
-      const response = await fetch(url, {
+      const actualUrl = `${endpoint}?key=${this.config.apiKey}`;
+      const response = await fetch(actualUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,9 +246,17 @@ export class GoogleProvider {
         signal: this.createAbortSignal(),
       });
 
+      const durationMs = Date.now() - startTime;
+
       if (!response.ok) {
-        const error = await response.text();
-        return err(new InternalError(`Google API error: ${response.status} - ${error}`));
+        const errorText = await response.text();
+        logResponse(buildResponseDebugInfo('google', model, durationMs, {
+          error: `${response.status} - ${errorText}`,
+        }));
+
+        // Create appropriate error for retry logic
+        const error = new InternalError(`Google API error: ${response.status} - ${errorText}`);
+        return err(error);
       }
 
       const data = (await response.json()) as GeminiResponse;
@@ -167,12 +280,6 @@ export class GoogleProvider {
           }
         }
         if (part.functionCall) {
-          // Debug: Log thoughtSignature capture
-          if (part.thoughtSignature) {
-            console.log('[Google] Captured thoughtSignature for function call:', part.functionCall.name, part.thoughtSignature.substring(0, 50) + '...');
-          } else {
-            console.warn('[Google] No thoughtSignature received for function call:', part.functionCall.name);
-          }
           toolCalls.push({
             id: `call_${Date.now()}_${Math.random().toString(36).slice(2)}`,
             name: part.functionCall.name,
@@ -188,29 +295,50 @@ export class GoogleProvider {
         ? `<thinking>\n${thinkingContent}\n</thinking>\n\n${textContent}`
         : textContent;
 
+      const finishReason = this.mapFinishReason(candidate.finishReason ?? 'STOP');
+      const usage = data.usageMetadata
+        ? {
+            promptTokens: data.usageMetadata.promptTokenCount ?? 0,
+            completionTokens: (data.usageMetadata.candidatesTokenCount ?? 0) +
+                             (data.usageMetadata.thoughtsTokenCount ?? 0),
+            totalTokens: data.usageMetadata.totalTokenCount ?? 0,
+          }
+        : undefined;
+
+      // Log successful response
+      logResponse(buildResponseDebugInfo('google', model, durationMs, {
+        content: finalContent,
+        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+        finishReason,
+        usage,
+      }));
+
       return ok({
         id: `gemini_${Date.now()}`,
         content: finalContent,
         toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-        finishReason: this.mapFinishReason(candidate.finishReason ?? 'STOP'),
-        usage: data.usageMetadata
-          ? {
-              promptTokens: data.usageMetadata.promptTokenCount ?? 0,
-              completionTokens: (data.usageMetadata.candidatesTokenCount ?? 0) +
-                               (data.usageMetadata.thoughtsTokenCount ?? 0),
-              totalTokens: data.usageMetadata.totalTokenCount ?? 0,
-            }
-          : undefined,
+        finishReason,
+        usage,
         model,
         createdAt: new Date(),
       });
     } catch (error) {
+      const elapsed = Date.now() - startTime;
+
       if (error instanceof Error && error.name === 'AbortError') {
-        return err(new TimeoutError('Google request', this.config.timeout ?? 300000));
+        const timeout = this.config.timeout ?? 60000;
+        logResponse(buildResponseDebugInfo('google', model, elapsed, {
+          error: `TIMEOUT: Request aborted after ${timeout}ms (attempt ${attempt})`,
+        }));
+        return err(new TimeoutError('Google request', timeout));
       }
-      return err(
-        new InternalError(`Google request failed: ${error instanceof Error ? error.message : String(error)}`)
-      );
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logResponse(buildResponseDebugInfo('google', model, elapsed, {
+        error: `${errorMessage} (attempt ${attempt})`,
+      }));
+
+      return err(new InternalError(`Google request failed: ${errorMessage}`));
     }
   }
 
@@ -278,12 +406,6 @@ export class GoogleProvider {
                   });
                 }
                 if (part.functionCall) {
-                  // Debug: Log thoughtSignature capture in streaming
-                  if (part.thoughtSignature) {
-                    console.log('[Google Stream] Captured thoughtSignature for function call:', part.functionCall.name, part.thoughtSignature.substring(0, 50) + '...');
-                  } else {
-                    console.warn('[Google Stream] No thoughtSignature received for function call:', part.functionCall.name);
-                  }
                   yield ok({
                     id: `gemini_${Date.now()}`,
                     toolCalls: [{
@@ -365,7 +487,8 @@ export class GoogleProvider {
 
   private createAbortSignal(): AbortSignal {
     this.abortController = new AbortController();
-    const timeout = this.config.timeout ?? 120000;
+    // 30 second timeout per attempt - with 3 retries this gives ~90s total
+    const timeout = this.config.timeout ?? 30000;
 
     setTimeout(() => {
       this.abortController?.abort();
@@ -492,14 +615,13 @@ export class GoogleProvider {
               },
             };
 
-            // Include thoughtSignature if present (for Gemini 3+ thinking models)
+            // Include thoughtSignature if present (required for Gemini thinking models)
             const signature = tc.metadata?.thoughtSignature;
             if (typeof signature === 'string') {
               functionCallPart.thoughtSignature = signature;
-              console.log('[Google Build] Including thoughtSignature for function call:', tc.name);
-            } else {
-              console.warn('[Google Build] Missing thoughtSignature for function call:', tc.name, 'metadata:', JSON.stringify(tc.metadata));
             }
+            // Note: thoughtSignature is only provided by thinking models (gemini-*-thinking-*)
+            // Non-thinking models won't have this, and that's expected behavior
 
             parts.push(functionCallPart);
           }

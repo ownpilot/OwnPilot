@@ -39,6 +39,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-06"
     },
     {
@@ -52,9 +53,9 @@
         "chat",
         "function_calling",
         "json_mode",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04"
     },
     {
@@ -71,21 +72,22 @@
         "json_mode",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-12"
     },
     {
       "id": "whisper-large-v3",
       "name": "Whisper large-v3",
-      "contextWindow": 128000,
+      "contextWindow": 8192,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "audio",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-09-01"
     }
   ],

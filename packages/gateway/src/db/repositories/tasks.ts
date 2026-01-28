@@ -1,10 +1,10 @@
 /**
- * Tasks Repository
+ * Tasks Repository (PostgreSQL)
  *
  * CRUD operations for personal tasks/todos
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 export interface Task {
   id: string;
@@ -100,7 +100,7 @@ function rowToTask(row: TaskRow): Task {
     dueTime: row.due_time ?? undefined,
     reminderAt: row.reminder_at ?? undefined,
     category: row.category ?? undefined,
-    tags: JSON.parse(row.tags || '[]'),
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
     parentId: row.parent_id ?? undefined,
     projectId: row.project_id ?? undefined,
     recurrence: row.recurrence ?? undefined,
@@ -110,161 +110,188 @@ function rowToTask(row: TaskRow): Task {
   };
 }
 
-export class TasksRepository {
-  private db = getDatabase();
+export class TasksRepository extends BaseRepository {
   private userId: string;
 
   constructor(userId = 'default') {
+    super();
     this.userId = userId;
   }
 
-  create(input: CreateTaskInput): Task {
+  async create(input: CreateTaskInput): Promise<Task> {
     const id = crypto.randomUUID();
-    const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      INSERT INTO tasks (id, user_id, title, description, priority, due_date, due_time,
-        reminder_at, category, tags, parent_id, project_id, recurrence, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      this.userId,
-      input.title,
-      input.description ?? null,
-      input.priority ?? 'normal',
-      input.dueDate ?? null,
-      input.dueTime ?? null,
-      input.reminderAt ?? null,
-      input.category ?? null,
-      JSON.stringify(input.tags ?? []),
-      input.parentId ?? null,
-      input.projectId ?? null,
-      input.recurrence ?? null,
-      now,
-      now
+    await this.execute(
+      `INSERT INTO tasks (id, user_id, title, description, priority, due_date, due_time,
+        reminder_at, category, tags, parent_id, project_id, recurrence)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [
+        id,
+        this.userId,
+        input.title,
+        input.description ?? null,
+        input.priority ?? 'normal',
+        input.dueDate ?? null,
+        input.dueTime ?? null,
+        input.reminderAt ?? null,
+        input.category ?? null,
+        JSON.stringify(input.tags ?? []),
+        input.parentId ?? null,
+        input.projectId ?? null,
+        input.recurrence ?? null,
+      ]
     );
 
-    return this.get(id)!;
+    const result = await this.get(id);
+    if (!result) throw new Error('Failed to create task');
+    return result;
   }
 
-  get(id: string): Task | null {
-    const stmt = this.db.prepare<[string, string], TaskRow>(`
-      SELECT * FROM tasks WHERE id = ? AND user_id = ?
-    `);
-
-    const row = stmt.get(id, this.userId);
+  async get(id: string): Promise<Task | null> {
+    const row = await this.queryOne<TaskRow>(
+      `SELECT * FROM tasks WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
     return row ? rowToTask(row) : null;
   }
 
-  update(id: string, input: UpdateTaskInput): Task | null {
-    const existing = this.get(id);
+  async update(id: string, input: UpdateTaskInput): Promise<Task | null> {
+    const existing = await this.get(id);
     if (!existing) return null;
 
-    const now = new Date().toISOString();
-    const completedAt = input.status === 'completed' && existing.status !== 'completed'
-      ? now
-      : input.status !== 'completed' ? null : existing.completedAt;
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let paramIndex = 1;
 
-    const stmt = this.db.prepare(`
-      UPDATE tasks SET
-        title = COALESCE(?, title),
-        description = COALESCE(?, description),
-        status = COALESCE(?, status),
-        priority = COALESCE(?, priority),
-        due_date = COALESCE(?, due_date),
-        due_time = COALESCE(?, due_time),
-        reminder_at = COALESCE(?, reminder_at),
-        category = COALESCE(?, category),
-        tags = COALESCE(?, tags),
-        parent_id = COALESCE(?, parent_id),
-        project_id = COALESCE(?, project_id),
-        recurrence = COALESCE(?, recurrence),
-        completed_at = ?,
-        updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `);
+    if (input.title !== undefined) {
+      updates.push(`title = $${paramIndex++}`);
+      values.push(input.title);
+    }
+    if (input.description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      values.push(input.description);
+    }
+    if (input.status !== undefined) {
+      updates.push(`status = $${paramIndex++}`);
+      values.push(input.status);
 
-    stmt.run(
-      input.title ?? null,
-      input.description ?? null,
-      input.status ?? null,
-      input.priority ?? null,
-      input.dueDate ?? null,
-      input.dueTime ?? null,
-      input.reminderAt ?? null,
-      input.category ?? null,
-      input.tags ? JSON.stringify(input.tags) : null,
-      input.parentId ?? null,
-      input.projectId ?? null,
-      input.recurrence ?? null,
-      completedAt,
-      now,
-      id,
-      this.userId
+      // Handle completed_at timestamp
+      if (input.status === 'completed' && existing.status !== 'completed') {
+        updates.push(`completed_at = NOW()`);
+      } else if (input.status !== 'completed') {
+        updates.push(`completed_at = NULL`);
+      }
+    }
+    if (input.priority !== undefined) {
+      updates.push(`priority = $${paramIndex++}`);
+      values.push(input.priority);
+    }
+    if (input.dueDate !== undefined) {
+      updates.push(`due_date = $${paramIndex++}`);
+      values.push(input.dueDate);
+    }
+    if (input.dueTime !== undefined) {
+      updates.push(`due_time = $${paramIndex++}`);
+      values.push(input.dueTime);
+    }
+    if (input.reminderAt !== undefined) {
+      updates.push(`reminder_at = $${paramIndex++}`);
+      values.push(input.reminderAt);
+    }
+    if (input.category !== undefined) {
+      updates.push(`category = $${paramIndex++}`);
+      values.push(input.category);
+    }
+    if (input.tags !== undefined) {
+      updates.push(`tags = $${paramIndex++}`);
+      values.push(JSON.stringify(input.tags));
+    }
+    if (input.parentId !== undefined) {
+      updates.push(`parent_id = $${paramIndex++}`);
+      values.push(input.parentId);
+    }
+    if (input.projectId !== undefined) {
+      updates.push(`project_id = $${paramIndex++}`);
+      values.push(input.projectId);
+    }
+    if (input.recurrence !== undefined) {
+      updates.push(`recurrence = $${paramIndex++}`);
+      values.push(input.recurrence);
+    }
+
+    if (updates.length === 0) return existing;
+
+    updates.push('updated_at = NOW()');
+    values.push(id, this.userId);
+
+    await this.execute(
+      `UPDATE tasks SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
+      values
     );
 
     return this.get(id);
   }
 
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM tasks WHERE id = ? AND user_id = ?`);
-    const result = stmt.run(id, this.userId);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM tasks WHERE id = $1 AND user_id = $2`,
+      [id, this.userId]
+    );
     return result.changes > 0;
   }
 
-  complete(id: string): Task | null {
+  async complete(id: string): Promise<Task | null> {
     return this.update(id, { status: 'completed' });
   }
 
-  list(query: TaskQuery = {}): Task[] {
-    let sql = `SELECT * FROM tasks WHERE user_id = ?`;
+  async list(query: TaskQuery = {}): Promise<Task[]> {
+    let sql = `SELECT * FROM tasks WHERE user_id = $1`;
     const params: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     if (query.status) {
       const statuses = Array.isArray(query.status) ? query.status : [query.status];
-      sql += ` AND status IN (${statuses.map(() => '?').join(',')})`;
+      sql += ` AND status IN (${statuses.map(() => `$${paramIndex++}`).join(',')})`;
       params.push(...statuses);
     }
 
     if (query.priority) {
       const priorities = Array.isArray(query.priority) ? query.priority : [query.priority];
-      sql += ` AND priority IN (${priorities.map(() => '?').join(',')})`;
+      sql += ` AND priority IN (${priorities.map(() => `$${paramIndex++}`).join(',')})`;
       params.push(...priorities);
     }
 
     if (query.category) {
-      sql += ` AND category = ?`;
+      sql += ` AND category = $${paramIndex++}`;
       params.push(query.category);
     }
 
     if (query.projectId) {
-      sql += ` AND project_id = ?`;
+      sql += ` AND project_id = $${paramIndex++}`;
       params.push(query.projectId);
     }
 
     if (query.parentId === null) {
       sql += ` AND parent_id IS NULL`;
     } else if (query.parentId) {
-      sql += ` AND parent_id = ?`;
+      sql += ` AND parent_id = $${paramIndex++}`;
       params.push(query.parentId);
     }
 
     if (query.dueBefore) {
-      sql += ` AND due_date <= ?`;
+      sql += ` AND due_date <= $${paramIndex++}`;
       params.push(query.dueBefore);
     }
 
     if (query.dueAfter) {
-      sql += ` AND due_date >= ?`;
+      sql += ` AND due_date >= $${paramIndex++}`;
       params.push(query.dueAfter);
     }
 
     if (query.search) {
-      sql += ` AND (title LIKE ? OR description LIKE ?)`;
-      const searchTerm = `%${query.search}%`;
-      params.push(searchTerm, searchTerm);
+      sql += ` AND (title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
+      params.push(`%${query.search}%`);
+      paramIndex++;
     }
 
     sql += ` ORDER BY
@@ -278,38 +305,38 @@ export class TasksRepository {
       created_at DESC`;
 
     if (query.limit) {
-      sql += ` LIMIT ?`;
+      sql += ` LIMIT $${paramIndex++}`;
       params.push(query.limit);
     }
 
     if (query.offset) {
-      sql += ` OFFSET ?`;
+      sql += ` OFFSET $${paramIndex++}`;
       params.push(query.offset);
     }
 
-    const stmt = this.db.prepare<unknown[], TaskRow>(sql);
-    return stmt.all(...params).map(rowToTask);
+    const rows = await this.query<TaskRow>(sql, params);
+    return rows.map(rowToTask);
   }
 
-  getSubtasks(parentId: string): Task[] {
+  async getSubtasks(parentId: string): Promise<Task[]> {
     return this.list({ parentId });
   }
 
-  getByProject(projectId: string): Task[] {
+  async getByProject(projectId: string): Promise<Task[]> {
     return this.list({ projectId });
   }
 
-  getDueToday(): Task[] {
+  async getDueToday(): Promise<Task[]> {
     const today = new Date().toISOString().split('T')[0];
     return this.list({ dueAfter: today, dueBefore: today, status: ['pending', 'in_progress'] });
   }
 
-  getOverdue(): Task[] {
+  async getOverdue(): Promise<Task[]> {
     const today = new Date().toISOString().split('T')[0];
     return this.list({ dueBefore: today, status: ['pending', 'in_progress'] });
   }
 
-  getUpcoming(days = 7): Task[] {
+  async getUpcoming(days = 7): Promise<Task[]> {
     const today = new Date();
     const futureDate = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
     return this.list({
@@ -319,38 +346,42 @@ export class TasksRepository {
     });
   }
 
-  count(query: TaskQuery = {}): number {
-    let sql = `SELECT COUNT(*) as count FROM tasks WHERE user_id = ?`;
+  async count(query: TaskQuery = {}): Promise<number> {
+    let sql = `SELECT COUNT(*) as count FROM tasks WHERE user_id = $1`;
     const params: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     if (query.status) {
       const statuses = Array.isArray(query.status) ? query.status : [query.status];
-      sql += ` AND status IN (${statuses.map(() => '?').join(',')})`;
+      sql += ` AND status IN (${statuses.map(() => `$${paramIndex++}`).join(',')})`;
       params.push(...statuses);
     }
 
     if (query.projectId) {
-      sql += ` AND project_id = ?`;
+      sql += ` AND project_id = $${paramIndex++}`;
       params.push(query.projectId);
     }
 
-    const stmt = this.db.prepare<unknown[], { count: number }>(sql);
-    return stmt.get(...params)?.count ?? 0;
+    const row = await this.queryOne<{ count: string }>(sql, params);
+    return parseInt(row?.count ?? '0', 10);
   }
 
-  getCategories(): string[] {
-    const stmt = this.db.prepare<string, { category: string }>(`
-      SELECT DISTINCT category FROM tasks
-      WHERE user_id = ? AND category IS NOT NULL
-      ORDER BY category
-    `);
-
-    return stmt.all(this.userId).map(r => r.category);
+  async getCategories(): Promise<string[]> {
+    const rows = await this.query<{ category: string }>(
+      `SELECT DISTINCT category FROM tasks WHERE user_id = $1 AND category IS NOT NULL ORDER BY category`,
+      [this.userId]
+    );
+    return rows.map(r => r.category);
   }
 
-  search(query: string, limit = 20): Task[] {
-    return this.list({ search: query, limit });
+  async search(searchQuery: string, limit = 20): Promise<Task[]> {
+    return this.list({ search: searchQuery, limit });
   }
 }
 
 export const tasksRepo = new TasksRepository();
+
+// Factory function
+export function createTasksRepository(userId = 'default'): TasksRepository {
+  return new TasksRepository(userId);
+}

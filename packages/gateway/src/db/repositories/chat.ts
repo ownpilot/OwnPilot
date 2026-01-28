@@ -4,7 +4,7 @@
  * CRUD operations for conversations and messages
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 // =====================================================
 // TYPES
@@ -88,7 +88,7 @@ interface ConversationRow {
   model: string | null;
   system_prompt: string | null;
   message_count: number;
-  is_archived: number;
+  is_archived: boolean;
   created_at: string;
   updated_at: string;
   metadata: string;
@@ -104,7 +104,7 @@ interface MessageRow {
   tool_calls: string | null;
   tool_call_id: string | null;
   trace: string | null;
-  is_error: number;
+  is_error: boolean;
   input_tokens: number | null;
   output_tokens: number | null;
   created_at: string;
@@ -125,10 +125,10 @@ function rowToConversation(row: ConversationRow): Conversation {
     model: row.model,
     systemPrompt: row.system_prompt,
     messageCount: row.message_count,
-    isArchived: row.is_archived === 1,
+    isArchived: row.is_archived,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    metadata: JSON.parse(row.metadata || '{}'),
+    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : row.metadata,
   };
 }
 
@@ -140,10 +140,10 @@ function rowToMessage(row: MessageRow): Message {
     content: row.content,
     provider: row.provider,
     model: row.model,
-    toolCalls: row.tool_calls ? JSON.parse(row.tool_calls) : null,
+    toolCalls: row.tool_calls ? (typeof row.tool_calls === 'string' ? JSON.parse(row.tool_calls) : row.tool_calls) : null,
     toolCallId: row.tool_call_id,
-    trace: row.trace ? JSON.parse(row.trace) : null,
-    isError: row.is_error === 1,
+    trace: row.trace ? (typeof row.trace === 'string' ? JSON.parse(row.trace) : row.trace) : null,
+    isError: row.is_error,
     inputTokens: row.input_tokens,
     outputTokens: row.output_tokens,
     createdAt: new Date(row.created_at),
@@ -154,11 +154,11 @@ function rowToMessage(row: MessageRow): Message {
 // REPOSITORY
 // =====================================================
 
-export class ChatRepository {
-  private db = getDatabase();
+export class ChatRepository extends BaseRepository {
   private userId: string;
 
   constructor(userId = 'default') {
+    super();
     this.userId = userId;
   }
 
@@ -166,126 +166,127 @@ export class ChatRepository {
   // CONVERSATIONS
   // =====================================================
 
-  createConversation(input: CreateConversationInput): Conversation {
+  async createConversation(input: CreateConversationInput): Promise<Conversation> {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      INSERT INTO conversations (id, user_id, title, agent_id, agent_name, provider, model, system_prompt, metadata, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      this.userId,
-      input.title || null,
-      input.agentId || null,
-      input.agentName || null,
-      input.provider || null,
-      input.model || null,
-      input.systemPrompt || null,
-      JSON.stringify(input.metadata || {}),
-      now,
-      now
+    await this.execute(
+      `INSERT INTO conversations (id, user_id, title, agent_id, agent_name, provider, model, system_prompt, metadata, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        id,
+        this.userId,
+        input.title || null,
+        input.agentId || null,
+        input.agentName || null,
+        input.provider || null,
+        input.model || null,
+        input.systemPrompt || null,
+        JSON.stringify(input.metadata || {}),
+        now,
+        now,
+      ]
     );
 
-    return this.getConversation(id)!;
+    return (await this.getConversation(id))!;
   }
 
-  getConversation(id: string): Conversation | null {
-    const stmt = this.db.prepare(`
-      SELECT * FROM conversations WHERE id = ? AND user_id = ?
-    `);
-    const row = stmt.get(id, this.userId) as ConversationRow | undefined;
+  async getConversation(id: string): Promise<Conversation | null> {
+    const row = await this.queryOne<ConversationRow>(
+      'SELECT * FROM conversations WHERE id = $1 AND user_id = $2',
+      [id, this.userId]
+    );
     return row ? rowToConversation(row) : null;
   }
 
-  listConversations(query: ConversationQuery = {}): Conversation[] {
-    const conditions: string[] = ['user_id = ?'];
+  async listConversations(query: ConversationQuery = {}): Promise<Conversation[]> {
+    const conditions: string[] = ['user_id = $1'];
     const params: unknown[] = [this.userId];
+    let paramIndex = 2;
 
     if (query.agentId !== undefined) {
-      conditions.push('agent_id = ?');
+      conditions.push(`agent_id = $${paramIndex++}`);
       params.push(query.agentId);
     }
 
     if (query.isArchived !== undefined) {
-      conditions.push('is_archived = ?');
-      params.push(query.isArchived ? 1 : 0);
+      conditions.push(`is_archived = $${paramIndex++}`);
+      params.push(query.isArchived);
     }
 
     if (query.search) {
-      conditions.push('(title LIKE ? OR agent_name LIKE ?)');
-      params.push(`%${query.search}%`, `%${query.search}%`);
+      conditions.push(`(title ILIKE $${paramIndex} OR agent_name ILIKE $${paramIndex})`);
+      params.push(`%${query.search}%`);
+      paramIndex++;
     }
 
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
 
-    const sql = `
-      SELECT * FROM conversations
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY updated_at DESC
-      LIMIT ? OFFSET ?
-    `;
+    const rows = await this.query<ConversationRow>(
+      `SELECT * FROM conversations
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY updated_at DESC
+       LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+      [...params, limit, offset]
+    );
 
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params, limit, offset) as ConversationRow[];
     return rows.map(rowToConversation);
   }
 
-  updateConversation(id: string, updates: Partial<CreateConversationInput & { isArchived?: boolean }>): Conversation | null {
-    const sets: string[] = ['updated_at = datetime("now")'];
+  async updateConversation(id: string, updates: Partial<CreateConversationInput & { isArchived?: boolean }>): Promise<Conversation | null> {
+    const sets: string[] = ['updated_at = NOW()'];
     const params: unknown[] = [];
+    let paramIndex = 1;
 
     if (updates.title !== undefined) {
-      sets.push('title = ?');
+      sets.push(`title = $${paramIndex++}`);
       params.push(updates.title);
     }
     if (updates.agentId !== undefined) {
-      sets.push('agent_id = ?');
+      sets.push(`agent_id = $${paramIndex++}`);
       params.push(updates.agentId);
     }
     if (updates.agentName !== undefined) {
-      sets.push('agent_name = ?');
+      sets.push(`agent_name = $${paramIndex++}`);
       params.push(updates.agentName);
     }
     if (updates.provider !== undefined) {
-      sets.push('provider = ?');
+      sets.push(`provider = $${paramIndex++}`);
       params.push(updates.provider);
     }
     if (updates.model !== undefined) {
-      sets.push('model = ?');
+      sets.push(`model = $${paramIndex++}`);
       params.push(updates.model);
     }
     if (updates.isArchived !== undefined) {
-      sets.push('is_archived = ?');
-      params.push(updates.isArchived ? 1 : 0);
+      sets.push(`is_archived = $${paramIndex++}`);
+      params.push(updates.isArchived);
     }
 
     if (sets.length === 1) return this.getConversation(id);
 
     params.push(id, this.userId);
 
-    const stmt = this.db.prepare(`
-      UPDATE conversations SET ${sets.join(', ')} WHERE id = ? AND user_id = ?
-    `);
-    stmt.run(...params);
+    await this.execute(
+      `UPDATE conversations SET ${sets.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
+      params
+    );
 
     return this.getConversation(id);
   }
 
-  deleteConversation(id: string): boolean {
-    const stmt = this.db.prepare(`
-      DELETE FROM conversations WHERE id = ? AND user_id = ?
-    `);
-    const result = stmt.run(id, this.userId);
+  async deleteConversation(id: string): Promise<boolean> {
+    const result = await this.execute(
+      'DELETE FROM conversations WHERE id = $1 AND user_id = $2',
+      [id, this.userId]
+    );
     return result.changes > 0;
   }
 
   // Auto-generate title from first user message
-  generateTitle(conversationId: string): string | null {
-    const messages = this.getMessages(conversationId, { limit: 1 });
+  async generateTitle(conversationId: string): Promise<string | null> {
+    const messages = await this.getMessages(conversationId, { limit: 1 });
     const firstMessage = messages[0];
     if (!firstMessage) return null;
 
@@ -294,7 +295,7 @@ export class ChatRepository {
       title += '...';
     }
 
-    this.updateConversation(conversationId, { title });
+    await this.updateConversation(conversationId, { title });
     return title;
   }
 
@@ -302,85 +303,87 @@ export class ChatRepository {
   // MESSAGES
   // =====================================================
 
-  addMessage(input: CreateMessageInput): Message {
+  async addMessage(input: CreateMessageInput): Promise<Message> {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      INSERT INTO messages (id, conversation_id, role, content, provider, model, tool_calls, tool_call_id, trace, is_error, input_tokens, output_tokens, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      id,
-      input.conversationId,
-      input.role,
-      input.content,
-      input.provider || null,
-      input.model || null,
-      input.toolCalls ? JSON.stringify(input.toolCalls) : null,
-      input.toolCallId || null,
-      input.trace ? JSON.stringify(input.trace) : null,
-      input.isError ? 1 : 0,
-      input.inputTokens || null,
-      input.outputTokens || null,
-      now
+    await this.execute(
+      `INSERT INTO messages (id, conversation_id, role, content, provider, model, tool_calls, tool_call_id, trace, is_error, input_tokens, output_tokens, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [
+        id,
+        input.conversationId,
+        input.role,
+        input.content,
+        input.provider || null,
+        input.model || null,
+        input.toolCalls ? JSON.stringify(input.toolCalls) : null,
+        input.toolCallId || null,
+        input.trace ? JSON.stringify(input.trace) : null,
+        input.isError || false,
+        input.inputTokens || null,
+        input.outputTokens || null,
+        now,
+      ]
     );
 
     // Update conversation message count and updated_at
-    this.db.prepare(`
-      UPDATE conversations
-      SET message_count = message_count + 1, updated_at = datetime('now')
-      WHERE id = ?
-    `).run(input.conversationId);
+    await this.execute(
+      `UPDATE conversations
+       SET message_count = message_count + 1, updated_at = NOW()
+       WHERE id = $1`,
+      [input.conversationId]
+    );
 
-    return this.getMessage(id)!;
+    return (await this.getMessage(id))!;
   }
 
-  getMessage(id: string): Message | null {
-    const stmt = this.db.prepare(`SELECT * FROM messages WHERE id = ?`);
-    const row = stmt.get(id) as MessageRow | undefined;
+  async getMessage(id: string): Promise<Message | null> {
+    const row = await this.queryOne<MessageRow>(
+      'SELECT * FROM messages WHERE id = $1',
+      [id]
+    );
     return row ? rowToMessage(row) : null;
   }
 
-  getMessages(conversationId: string, options: { limit?: number; offset?: number; beforeId?: string } = {}): Message[] {
-    const conditions: string[] = ['conversation_id = ?'];
+  async getMessages(conversationId: string, options: { limit?: number; offset?: number; beforeId?: string } = {}): Promise<Message[]> {
+    const conditions: string[] = ['conversation_id = $1'];
     const params: unknown[] = [conversationId];
+    let paramIndex = 2;
 
     if (options.beforeId) {
-      conditions.push('created_at < (SELECT created_at FROM messages WHERE id = ?)');
+      conditions.push(`created_at < (SELECT created_at FROM messages WHERE id = $${paramIndex++})`);
       params.push(options.beforeId);
     }
 
     const limit = options.limit ?? 100;
     const offset = options.offset ?? 0;
 
-    const sql = `
-      SELECT * FROM messages
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY created_at ASC
-      LIMIT ? OFFSET ?
-    `;
+    const rows = await this.query<MessageRow>(
+      `SELECT * FROM messages
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY created_at ASC
+       LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+      [...params, limit, offset]
+    );
 
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params, limit, offset) as MessageRow[];
     return rows.map(rowToMessage);
   }
 
-  deleteMessage(id: string): boolean {
+  async deleteMessage(id: string): Promise<boolean> {
     // Get conversation_id first to update count
-    const msg = this.getMessage(id);
+    const msg = await this.getMessage(id);
     if (!msg) return false;
 
-    const stmt = this.db.prepare(`DELETE FROM messages WHERE id = ?`);
-    const result = stmt.run(id);
+    const result = await this.execute('DELETE FROM messages WHERE id = $1', [id]);
 
     if (result.changes > 0) {
-      this.db.prepare(`
-        UPDATE conversations
-        SET message_count = message_count - 1, updated_at = datetime('now')
-        WHERE id = ?
-      `).run(msg.conversationId);
+      await this.execute(
+        `UPDATE conversations
+         SET message_count = message_count - 1, updated_at = NOW()
+         WHERE id = $1`,
+        [msg.conversationId]
+      );
     }
 
     return result.changes > 0;
@@ -390,38 +393,43 @@ export class ChatRepository {
   // UTILITIES
   // =====================================================
 
-  getOrCreateConversation(conversationId: string | null, input: CreateConversationInput): Conversation {
+  async getOrCreateConversation(conversationId: string | null, input: CreateConversationInput): Promise<Conversation> {
     if (conversationId) {
-      const existing = this.getConversation(conversationId);
+      const existing = await this.getConversation(conversationId);
       if (existing) return existing;
     }
     return this.createConversation(input);
   }
 
-  getConversationWithMessages(conversationId: string): { conversation: Conversation; messages: Message[] } | null {
-    const conversation = this.getConversation(conversationId);
+  async getConversationWithMessages(conversationId: string): Promise<{ conversation: Conversation; messages: Message[] } | null> {
+    const conversation = await this.getConversation(conversationId);
     if (!conversation) return null;
 
-    const messages = this.getMessages(conversationId);
+    const messages = await this.getMessages(conversationId);
     return { conversation, messages };
   }
 
   // Get recent conversations with preview (last message)
-  getRecentConversations(limit = 20): Array<Conversation & { lastMessage?: string; lastMessageAt?: Date }> {
-    const conversations = this.listConversations({ limit, isArchived: false });
+  async getRecentConversations(limit = 20): Promise<Array<Conversation & { lastMessage?: string; lastMessageAt?: Date }>> {
+    const conversations = await this.listConversations({ limit, isArchived: false });
 
-    return conversations.map(conv => {
-      const messages = this.getMessages(conv.id, { limit: 1 });
+    const result: Array<Conversation & { lastMessage?: string; lastMessageAt?: Date }> = [];
+    for (const conv of conversations) {
+      const messages = await this.getMessages(conv.id, { limit: 1 });
       const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
 
-      return {
+      result.push({
         ...conv,
         lastMessage: lastMsg?.content.slice(0, 100),
         lastMessageAt: lastMsg?.createdAt,
-      };
-    });
+      });
+    }
+
+    return result;
   }
 }
 
-// Default export for convenience
-export const chatRepository = new ChatRepository();
+// Factory function
+export function createChatRepository(userId = 'default'): ChatRepository {
+  return new ChatRepository(userId);
+}

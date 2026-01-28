@@ -43,8 +43,8 @@ export interface MediaProviderConfig {
 }
 
 export interface MediaServiceConfig {
-  getProviderConfig: (capability: MediaCapability) => MediaProviderConfig | null;
-  getApiKey: (keyName: string) => string | undefined;
+  getProviderConfig: (capability: MediaCapability) => MediaProviderConfig | null | Promise<MediaProviderConfig | null>;
+  getApiKey: (keyName: string) => string | undefined | Promise<string | undefined>;
 }
 
 // Image Generation Types
@@ -709,13 +709,13 @@ export class MediaService {
    * Generate image using configured provider
    */
   async generateImage(options: ImageGenerationOptions): Promise<ImageGenerationResult> {
-    const providerConfig = this.config.getProviderConfig('image_generation');
+    const providerConfig = await this.config.getProviderConfig('image_generation');
 
     if (!providerConfig) {
       throw new Error('No image generation provider configured');
     }
 
-    const apiKey = this.getApiKeyForProvider(providerConfig.provider, 'image_generation');
+    const apiKey = await this.getApiKeyForProvider(providerConfig.provider, 'image_generation');
     if (!apiKey) {
       throw new Error(`API key not found for ${providerConfig.provider}`);
     }
@@ -736,13 +736,13 @@ export class MediaService {
    * Analyze image using configured provider
    */
   async analyzeImage(options: VisionAnalysisOptions): Promise<VisionAnalysisResult> {
-    const providerConfig = this.config.getProviderConfig('vision');
+    const providerConfig = await this.config.getProviderConfig('vision');
 
     if (!providerConfig) {
       throw new Error('No vision provider configured');
     }
 
-    const apiKey = this.getApiKeyForProvider(providerConfig.provider, 'vision');
+    const apiKey = await this.getApiKeyForProvider(providerConfig.provider, 'vision');
     if (!apiKey) {
       throw new Error(`API key not found for ${providerConfig.provider}`);
     }
@@ -763,13 +763,13 @@ export class MediaService {
    * Text to speech using configured provider
    */
   async textToSpeech(options: TTSOptions): Promise<TTSResult> {
-    const providerConfig = this.config.getProviderConfig('tts');
+    const providerConfig = await this.config.getProviderConfig('tts');
 
     if (!providerConfig) {
       throw new Error('No TTS provider configured');
     }
 
-    const apiKey = this.getApiKeyForProvider(providerConfig.provider, 'tts');
+    const apiKey = await this.getApiKeyForProvider(providerConfig.provider, 'tts');
     if (!apiKey) {
       throw new Error(`API key not found for ${providerConfig.provider}`);
     }
@@ -788,13 +788,13 @@ export class MediaService {
    * Speech to text using configured provider
    */
   async speechToText(options: STTOptions): Promise<STTResult> {
-    const providerConfig = this.config.getProviderConfig('stt');
+    const providerConfig = await this.config.getProviderConfig('stt');
 
     if (!providerConfig) {
       throw new Error('No STT provider configured');
     }
 
-    const apiKey = this.getApiKeyForProvider(providerConfig.provider, 'stt');
+    const apiKey = await this.getApiKeyForProvider(providerConfig.provider, 'stt');
     if (!apiKey) {
       throw new Error(`API key not found for ${providerConfig.provider}`);
     }
@@ -814,7 +814,7 @@ export class MediaService {
   /**
    * Get API key for provider
    */
-  private getApiKeyForProvider(provider: string, capability: MediaCapability): string | undefined {
+  private async getApiKeyForProvider(provider: string, _capability: MediaCapability): Promise<string | undefined> {
     // Map provider to API key name
     const keyMap: Record<string, string> = {
       openai: 'openai_api_key',
@@ -829,7 +829,7 @@ export class MediaService {
     const keyName = keyMap[provider];
     if (!keyName) return undefined;
 
-    return this.config.getApiKey(keyName);
+    return await this.config.getApiKey(keyName);
   }
 }
 

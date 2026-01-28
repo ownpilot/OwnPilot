@@ -273,6 +273,14 @@ export {
   type AggregatorProvider,
 } from './providers/aggregators.js';
 
+// Fallback Provider (automatic failover between providers)
+export {
+  FallbackProvider,
+  createFallbackProvider,
+  createProviderWithFallbacks,
+  type FallbackProviderConfig,
+} from './providers/fallback.js';
+
 // Permission System
 export {
   // Types

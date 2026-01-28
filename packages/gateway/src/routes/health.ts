@@ -5,16 +5,41 @@
 import { Hono } from 'hono';
 import { VERSION, getSandboxStatus, resetSandboxCache, ensureImage } from '@ownpilot/core';
 import type { HealthResponse, HealthCheck, ApiResponse } from '../types/index.js';
+import { getAdapterSync } from '../db/adapters/index.js';
+import { getDatabaseConfig } from '../db/adapters/types.js';
 
 const startTime = Date.now();
 
 export const healthRoutes = new Hono();
 
 /**
- * Basic health check
+ * Basic health check - includes Docker sandbox status
  */
-healthRoutes.get('/', (c) => {
+healthRoutes.get('/', async (c) => {
   const uptime = (Date.now() - startTime) / 1000;
+
+  // Get sandbox status (cached, fast)
+  let sandboxStatus;
+  try {
+    sandboxStatus = await getSandboxStatus(false);
+  } catch {
+    sandboxStatus = null;
+  }
+
+  // Get PostgreSQL database status
+  const config = getDatabaseConfig();
+  let databaseStatus: { type: 'postgres'; connected: boolean; host?: string } = {
+    type: 'postgres',
+    connected: false,
+    host: config.postgresHost,
+  };
+
+  try {
+    const adapter = getAdapterSync();
+    databaseStatus.connected = adapter.isConnected();
+  } catch {
+    // Adapter not initialized yet
+  }
 
   const checks: HealthCheck[] = [
     {
@@ -22,18 +47,52 @@ healthRoutes.get('/', (c) => {
       status: 'pass',
       message: 'Core module loaded',
     },
+    {
+      name: 'database',
+      status: databaseStatus.connected ? 'pass' : 'warn',
+      message: databaseStatus.connected
+        ? `${databaseStatus.type.toUpperCase()} connected${databaseStatus.host ? ` (${databaseStatus.host})` : ''}`
+        : `${databaseStatus.type.toUpperCase()} not connected`,
+    },
+    {
+      name: 'docker',
+      status: sandboxStatus?.dockerAvailable ? 'pass' : 'fail',
+      message: sandboxStatus?.dockerAvailable
+        ? `Docker available (v${sandboxStatus.dockerVersion ?? 'unknown'})`
+        : 'Docker not available - code execution disabled',
+    },
   ];
 
   const allPassing = checks.every((check) => check.status === 'pass');
   const hasWarnings = checks.some((check) => check.status === 'warn');
+  const hasFails = checks.some((check) => check.status === 'fail');
 
-  const response: ApiResponse<HealthResponse> = {
+  const response: ApiResponse<HealthResponse & {
+    database: {
+      type: 'postgres';
+      connected: boolean;
+      host?: string;
+    };
+    sandbox: {
+      dockerAvailable: boolean;
+      dockerVersion: string | null;
+      codeExecutionEnabled: boolean;
+      securityMode: string;
+    };
+  }> = {
     success: true,
     data: {
-      status: allPassing ? 'healthy' : hasWarnings ? 'degraded' : 'unhealthy',
+      status: hasFails ? 'degraded' : allPassing ? 'healthy' : hasWarnings ? 'degraded' : 'unhealthy',
       version: VERSION,
       uptime,
       checks,
+      database: databaseStatus,
+      sandbox: {
+        dockerAvailable: sandboxStatus?.dockerAvailable ?? false,
+        dockerVersion: sandboxStatus?.dockerVersion ?? null,
+        codeExecutionEnabled: sandboxStatus?.dockerAvailable ?? false,
+        securityMode: sandboxStatus?.relaxedSecurityRequired ? 'relaxed' : 'strict',
+      },
     },
     meta: {
       requestId: c.get('requestId') ?? 'unknown',

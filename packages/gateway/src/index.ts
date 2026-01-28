@@ -77,6 +77,7 @@ export {
 
 // Database
 export { getDatabase, closeDatabase } from './db/connection.js';
+export { initializeAdapter, closeAdapter, getAdapter } from './db/adapters/index.js';
 export { settingsRepo } from './db/repositories/index.js';
 
 // Plugins

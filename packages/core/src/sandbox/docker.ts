@@ -380,6 +380,8 @@ function buildDockerArgs(
     `--memory=${config.memoryMB}m`, // Memory limit
     `--cpus=${config.cpus}`, // CPU limit
     '--pids-limit=100', // Limit number of processes
+    '--hostname=sandbox', // Hide host machine name
+    '--user=65534:65534', // Run as nobody (non-root, no privileges)
   ];
 
   // Add security flags unless relaxedSecurity is enabled

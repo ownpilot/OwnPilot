@@ -10,9 +10,9 @@ import { getDefaultAgents } from './default-agents.js';
 /**
  * Seed default agents if none exist
  */
-export function seedDefaultAgents(): number {
+export async function seedDefaultAgents(): Promise<number> {
   // Check if any agents exist
-  const existingAgents = agentsRepo.getAll();
+  const existingAgents = await agentsRepo.getAll();
   if (existingAgents.length > 0) {
     return 0; // Don't seed if agents already exist
   }
@@ -27,7 +27,7 @@ export function seedDefaultAgents(): number {
   let seeded = 0;
   for (const agent of defaultAgents) {
     try {
-      agentsRepo.create({
+      await agentsRepo.create({
         id: agent.id,
         name: agent.name,
         systemPrompt: agent.systemPrompt,

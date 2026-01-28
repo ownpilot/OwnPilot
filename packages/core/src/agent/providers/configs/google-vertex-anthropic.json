@@ -1,8 +1,8 @@
 {
   "id": "google-vertex-anthropic",
   "name": "Vertex (Anthropic)",
-  "type": "vertex-anthropic",
-  "apiKeyEnv": "GOOGLE_VERTEX_PROJECT",
+  "type": "anthropic",
+  "apiKeyEnv": "GOOGLE_VERTEX_API_KEY",
   "features": {
     "streaming": true,
     "toolUse": true,
@@ -42,6 +42,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-15"
     },
     {
@@ -58,6 +59,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-29"
     },
     {
@@ -74,6 +76,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -90,6 +93,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -106,6 +110,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
@@ -122,6 +127,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-19"
     },
     {
@@ -137,6 +143,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-22"
     },
     {
@@ -152,9 +159,10 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-22"
     }
   ],
-  "baseUrl": "https://{region}-aiplatform.googleapis.com/v1",
+  "baseUrl": "https://api.googlevertexanthropic.com/v1",
   "docsUrl": "https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude"
 }

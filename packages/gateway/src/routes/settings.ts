@@ -31,16 +31,16 @@ const DEFAULT_MODEL_KEY = 'default_ai_model';
  * Get current settings (without exposing actual keys)
  * All settings come from database - no ENV fallbacks
  */
-settingsRoutes.get('/', (c) => {
+settingsRoutes.get('/', async (c) => {
   // Get all API key settings from database only
-  const apiKeySettings = settingsRepo.getByPrefix(API_KEY_PREFIX);
+  const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
   const configuredProviders = apiKeySettings.map((s) =>
     s.key.replace(API_KEY_PREFIX, '')
   );
 
   // Get default provider/model settings
-  const defaultProvider = settingsRepo.get<string>(DEFAULT_PROVIDER_KEY);
-  const defaultModel = settingsRepo.get<string>(DEFAULT_MODEL_KEY);
+  const defaultProvider = await settingsRepo.get<string>(DEFAULT_PROVIDER_KEY);
+  const defaultModel = await settingsRepo.get<string>(DEFAULT_MODEL_KEY);
 
   // Available providers from config
   const availableProviders = getAvailableProviders();
@@ -66,7 +66,7 @@ settingsRoutes.get('/', (c) => {
 /**
  * Get data directory information
  */
-settingsRoutes.get('/data-info', (c) => {
+settingsRoutes.get('/data-info', async (c) => {
   const dataInfo = getDataDirectoryInfo();
   const migrationStatus = getMigrationStatus();
 
@@ -113,7 +113,7 @@ settingsRoutes.post('/default-provider', async (c) => {
     );
   }
 
-  settingsRepo.set(DEFAULT_PROVIDER_KEY, body.provider);
+  await settingsRepo.set(DEFAULT_PROVIDER_KEY, body.provider);
 
   const response: ApiResponse = {
     success: true,
@@ -148,7 +148,7 @@ settingsRoutes.post('/default-model', async (c) => {
     );
   }
 
-  settingsRepo.set(DEFAULT_MODEL_KEY, body.model);
+  await settingsRepo.set(DEFAULT_MODEL_KEY, body.model);
 
   const response: ApiResponse = {
     success: true,
@@ -185,7 +185,7 @@ settingsRoutes.post('/api-keys', async (c) => {
 
   // Store API key in database
   const key = `${API_KEY_PREFIX}${body.provider}`;
-  settingsRepo.set(key, body.apiKey);
+  await settingsRepo.set(key, body.apiKey);
 
   // Also set as environment variable for the current process
   // This allows providers to work immediately without restart
@@ -210,12 +210,12 @@ settingsRoutes.post('/api-keys', async (c) => {
 /**
  * Delete API key for a provider
  */
-settingsRoutes.delete('/api-keys/:provider', (c) => {
+settingsRoutes.delete('/api-keys/:provider', async (c) => {
   const provider = c.req.param('provider');
 
   // Delete from database
   const key = `${API_KEY_PREFIX}${provider}`;
-  settingsRepo.delete(key);
+  await settingsRepo.delete(key);
 
   // Remove from environment
   const envVarName = `${provider.toUpperCase()}_API_KEY`;
@@ -239,25 +239,25 @@ settingsRoutes.delete('/api-keys/:provider', (c) => {
 /**
  * Check if a provider has an API key configured (database only)
  */
-export function hasApiKey(provider: string): boolean {
+export async function hasApiKey(provider: string): Promise<boolean> {
   const key = `${API_KEY_PREFIX}${provider}`;
-  return settingsRepo.has(key);
+  return await settingsRepo.has(key);
 }
 
 /**
  * Get API key for a provider (database only)
  */
-export function getApiKey(provider: string): string | undefined {
+export async function getApiKey(provider: string): Promise<string | undefined> {
   const key = `${API_KEY_PREFIX}${provider}`;
-  return settingsRepo.get<string>(key) ?? undefined;
+  return (await settingsRepo.get<string>(key)) ?? undefined;
 }
 
 /**
  * Load all API keys from database into process.env for provider SDKs
  * Called at startup - this allows SDKs that read from env to work
  */
-export function loadApiKeysToEnvironment(): void {
-  const apiKeySettings = settingsRepo.getByPrefix(API_KEY_PREFIX);
+export async function loadApiKeysToEnvironment(): Promise<void> {
+  const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
 
   for (const setting of apiKeySettings) {
     const provider = setting.key.replace(API_KEY_PREFIX, '');
@@ -271,15 +271,15 @@ export function loadApiKeysToEnvironment(): void {
  * Get the default AI provider (database only, no hardcoded fallback)
  * Returns null if no provider is configured
  */
-export function getDefaultProvider(): string | null {
+export async function getDefaultProvider(): Promise<string | null> {
   // Check database setting
-  const savedProvider = settingsRepo.get<string>(DEFAULT_PROVIDER_KEY);
-  if (savedProvider && hasApiKey(savedProvider)) {
+  const savedProvider = await settingsRepo.get<string>(DEFAULT_PROVIDER_KEY);
+  if (savedProvider && (await hasApiKey(savedProvider))) {
     return savedProvider;
   }
 
   // Fall back to first configured provider
-  const apiKeySettings = settingsRepo.getByPrefix(API_KEY_PREFIX);
+  const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
   const firstSetting = apiKeySettings[0];
   if (firstSetting) {
     return firstSetting.key.replace(API_KEY_PREFIX, '');
@@ -292,23 +292,23 @@ export function getDefaultProvider(): string | null {
 /**
  * Set the default AI provider
  */
-export function setDefaultProvider(provider: string): void {
-  settingsRepo.set(DEFAULT_PROVIDER_KEY, provider);
+export async function setDefaultProvider(provider: string): Promise<void> {
+  await settingsRepo.set(DEFAULT_PROVIDER_KEY, provider);
 }
 
 /**
  * Get the default model for a provider (database + config, no hardcoded fallback)
  * Returns null if no model can be determined
  */
-export function getDefaultModel(provider?: string): string | null {
+export async function getDefaultModel(provider?: string): Promise<string | null> {
   // Check database setting for specific default model
-  const savedModel = settingsRepo.get<string>(DEFAULT_MODEL_KEY);
+  const savedModel = await settingsRepo.get<string>(DEFAULT_MODEL_KEY);
   if (savedModel) {
     return savedModel;
   }
 
   // Fall back to provider-specific defaults from config
-  const actualProvider = provider ?? getDefaultProvider();
+  const actualProvider = provider ?? (await getDefaultProvider());
   if (!actualProvider) {
     return null;
   }
@@ -320,25 +320,25 @@ export function getDefaultModel(provider?: string): string | null {
 /**
  * Set the default AI model
  */
-export function setDefaultModel(model: string): void {
-  settingsRepo.set(DEFAULT_MODEL_KEY, model);
+export async function setDefaultModel(model: string): Promise<void> {
+  await settingsRepo.set(DEFAULT_MODEL_KEY, model);
 }
 
 /**
  * Resolve "default" provider/model to actual values
  * Returns null values if no defaults are configured
  */
-export function resolveProviderAndModel(provider: string, model: string): { provider: string | null; model: string | null } {
-  const resolvedProvider = provider === 'default' ? getDefaultProvider() : provider;
-  const resolvedModel = model === 'default' ? getDefaultModel(resolvedProvider ?? undefined) : model;
+export async function resolveProviderAndModel(provider: string, model: string): Promise<{ provider: string | null; model: string | null }> {
+  const resolvedProvider = provider === 'default' ? await getDefaultProvider() : provider;
+  const resolvedModel = model === 'default' ? await getDefaultModel(resolvedProvider ?? undefined) : model;
   return { provider: resolvedProvider, model: resolvedModel };
 }
 
 /**
  * Check if demo mode (no providers configured)
  */
-export function isDemoModeFromSettings(): boolean {
-  const apiKeySettings = settingsRepo.getByPrefix(API_KEY_PREFIX);
+export async function isDemoModeFromSettings(): Promise<boolean> {
+  const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
   return apiKeySettings.length === 0;
 }
 
@@ -346,9 +346,9 @@ export function isDemoModeFromSettings(): boolean {
  * Get the source of an API key (database only now)
  * Returns 'database' if key exists, null otherwise
  */
-export function getApiKeySource(provider: string): 'database' | null {
+export async function getApiKeySource(provider: string): Promise<'database' | null> {
   const key = `${API_KEY_PREFIX}${provider}`;
-  return settingsRepo.has(key) ? 'database' : null;
+  return (await settingsRepo.has(key)) ? 'database' : null;
 }
 
 // ============================================
@@ -360,11 +360,11 @@ const SANDBOX_SETTINGS_PREFIX = 'sandbox:';
 /**
  * Get sandbox settings
  */
-export function getSandboxSettings(): SandboxSettings {
+export async function getSandboxSettings(): Promise<SandboxSettings> {
   const settings = { ...DEFAULT_SANDBOX_SETTINGS } as { [K in keyof SandboxSettings]: SandboxSettings[K] };
 
   // Override with saved settings
-  const savedSettings = settingsRepo.getByPrefix(SANDBOX_SETTINGS_PREFIX);
+  const savedSettings = await settingsRepo.getByPrefix(SANDBOX_SETTINGS_PREFIX);
   for (const setting of savedSettings) {
     const key = setting.key.replace(SANDBOX_SETTINGS_PREFIX, '') as keyof SandboxSettings;
     if (key in settings) {
@@ -396,23 +396,23 @@ export function getSandboxSettings(): SandboxSettings {
 /**
  * Set a sandbox setting
  */
-export function setSandboxSetting<K extends keyof SandboxSettings>(
+export async function setSandboxSetting<K extends keyof SandboxSettings>(
   key: K,
   value: SandboxSettings[K]
-): void {
+): Promise<void> {
   const settingKey = `${SANDBOX_SETTINGS_PREFIX}${key}`;
   if (Array.isArray(value)) {
-    settingsRepo.set(settingKey, JSON.stringify(value));
+    await settingsRepo.set(settingKey, JSON.stringify(value));
   } else {
-    settingsRepo.set(settingKey, String(value));
+    await settingsRepo.set(settingKey, String(value));
   }
 }
 
 /**
  * Check if sandbox is enabled
  */
-export function isSandboxEnabled(): boolean {
-  const enabledSetting = settingsRepo.get<string>(`${SANDBOX_SETTINGS_PREFIX}enabled`);
+export async function isSandboxEnabled(): Promise<boolean> {
+  const enabledSetting = await settingsRepo.get<string>(`${SANDBOX_SETTINGS_PREFIX}enabled`);
   return enabledSetting === 'true';
 }
 
@@ -421,7 +421,7 @@ export function isSandboxEnabled(): boolean {
  */
 settingsRoutes.get('/sandbox', async (c) => {
   try {
-    const settings = getSandboxSettings();
+    const settings = await getSandboxSettings();
     const dockerAvailable = await isDockerAvailable();
 
     const response: ApiResponse = {
@@ -545,12 +545,12 @@ settingsRoutes.post('/sandbox', async (c) => {
           );
         }
 
-        setSandboxSetting(key, value as SandboxSettings[typeof key]);
+        await setSandboxSetting(key, value as SandboxSettings[typeof key]);
         updated.push(key);
       }
     }
 
-    const newSettings = getSandboxSettings();
+    const newSettings = await getSandboxSettings();
 
     const response: ApiResponse = {
       success: true,
@@ -599,7 +599,7 @@ settingsRoutes.post('/sandbox/enable', async (c) => {
       );
     }
 
-    setSandboxSetting('enabled', true);
+    await setSandboxSetting('enabled', true);
 
     const response: ApiResponse = {
       success: true,
@@ -633,7 +633,7 @@ settingsRoutes.post('/sandbox/enable', async (c) => {
  */
 settingsRoutes.post('/sandbox/disable', async (c) => {
   try {
-    setSandboxSetting('enabled', false);
+    await setSandboxSetting('enabled', false);
 
     const response: ApiResponse = {
       success: true,

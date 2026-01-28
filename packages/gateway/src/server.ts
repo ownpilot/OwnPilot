@@ -1,9 +1,34 @@
 /**
  * HTTP Server entry point
  *
- * All settings are loaded from the SQLite database.
+ * All settings are loaded from the PostgreSQL database.
  * Data is stored in platform-specific application data directory.
  */
+
+// Load .env file FIRST before any other imports
+// Use explicit path to find .env in monorepo root (2 levels up from packages/gateway/src)
+import { config } from 'dotenv';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Try multiple locations for .env file
+const envPaths = [
+  resolve(__dirname, '..', '..', '..', '.env'),  // monorepo root from src/
+  resolve(__dirname, '..', '..', '.env'),         // packages/gateway/.env
+  resolve(process.cwd(), '.env'),                 // current working directory
+];
+
+for (const envPath of envPaths) {
+  if (existsSync(envPath)) {
+    config({ path: envPath });
+    console.log(`[Config] Loaded .env from: ${envPath}`);
+    break;
+  }
+}
 
 import { serve } from '@hono/node-server';
 import type { Server } from 'node:http';
@@ -11,10 +36,10 @@ import { createApp } from './app.js';
 import type { GatewayConfig } from './types/index.js';
 import { wsGateway } from './ws/index.js';
 import { initializeChannelFactories } from './channels/index.js';
-import { getDatabase } from './db/connection.js';
+import { initializeAdapter } from './db/adapters/index.js';
 import { loadApiKeysToEnvironment } from './routes/settings.js';
 import { initializeFileWorkspace } from './workspace/index.js';
-import { settingsRepo } from './db/repositories/index.js';
+import { settingsRepo, initializeSettingsRepo } from './db/repositories/settings.js';
 import { initializeDataDirectories, getDataDirectoryInfo } from './paths/index.js';
 import { autoMigrateIfNeeded } from './paths/migration.js';
 import { initializePlugins } from './plugins/index.js';
@@ -71,6 +96,12 @@ function loadConfig(): Partial<GatewayConfig> {
  * Start the server
  */
 async function main() {
+  // Log PostgreSQL configuration
+  console.log(`[Config] Database: PostgreSQL`);
+  console.log(`[Config] POSTGRES_HOST=${process.env.POSTGRES_HOST || 'localhost'}`);
+  console.log(`[Config] POSTGRES_PORT=${process.env.POSTGRES_PORT || '5432'}`);
+  console.log(`[Config] POSTGRES_DB=${process.env.POSTGRES_DB || 'ownpilot'}`);
+
   // Initialize data directories (creates platform-specific directories)
   const dataPaths = initializeDataDirectories();
   const dataInfo = getDataDirectoryInfo();
@@ -80,8 +111,21 @@ async function main() {
   // Auto-migrate legacy data if needed
   autoMigrateIfNeeded();
 
-  // Initialize database (creates tables if needed)
-  getDatabase();
+  // Initialize PostgreSQL database adapter (REQUIRED)
+  console.log('[Startup] Initializing PostgreSQL database...');
+  try {
+    const dbAdapter = await initializeAdapter();
+    console.log(`[Startup] PostgreSQL connected: ${dbAdapter.isConnected()}`);
+  } catch (error) {
+    console.error('[Startup] PostgreSQL connection failed:', error);
+    console.error('[Startup] Make sure PostgreSQL is running and configured correctly.');
+    console.error('[Startup] Start PostgreSQL with: docker compose -f docker-compose.db.yml up -d');
+    process.exit(1);
+  }
+
+  // Initialize settings repository (creates table and loads cache)
+  console.log('[Startup] Initializing settings...');
+  await initializeSettingsRepo();
 
   // Load saved API keys from database into environment
   loadApiKeysToEnvironment();
@@ -111,7 +155,7 @@ async function main() {
   console.log(`  Auth: ${config.auth?.type ?? 'none'}`);
   console.log(`  Rate limit: ${config.rateLimit ? `${config.rateLimit.maxRequests} req/${config.rateLimit.windowMs}ms` : 'disabled'}`);
   console.log(`  Workspace: ${workspace.workspaceDir}`);
-  console.log(`  Settings: Stored in SQLite database`);
+  console.log(`  Settings: Stored in PostgreSQL database`);
 
   const server = serve({
     fetch: app.fetch,

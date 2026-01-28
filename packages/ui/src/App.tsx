@@ -25,6 +25,7 @@ import { PluginsPage } from './pages/PluginsPage';
 import { WorkspacesPage } from './pages/WorkspacesPage';
 import { LogsPage } from './pages/LogsPage';
 import { CustomToolsPage } from './pages/CustomToolsPage';
+import { ExpensesPage } from './pages/ExpensesPage';
 
 export function App() {
   return (
@@ -42,6 +43,7 @@ export function App() {
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="contacts" element={<ContactsPage />} />
         <Route path="bookmarks" element={<BookmarksPage />} />
+        <Route path="expenses" element={<ExpensesPage />} />
         <Route path="custom-data" element={<CustomDataPage />} />
         <Route path="data-browser" element={<DataBrowserPage />} />
         <Route path="inbox" element={<InboxPage />} />

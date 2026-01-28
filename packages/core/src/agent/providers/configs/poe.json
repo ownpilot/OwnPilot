@@ -20,7 +20,6 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
@@ -37,18 +36,18 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-22"
     },
     {
       "id": "openai/gpt-image-1.5",
       "name": "gpt-image-1.5",
       "contextWindow": 128000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -57,39 +56,39 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-16"
     },
     {
       "id": "novita/kat-coder-pro",
       "name": "kat-coder-pro",
       "contextWindow": 256000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-16"
     },
     {
       "id": "google/gemini-deep-research",
       "name": "gemini-deep-research",
       "contextWindow": 1048576,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 1.6,
       "outputPrice": 9.6,
       "capabilities": [
         "chat",
         "vision",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-11"
     },
     {
@@ -105,6 +104,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-11"
     },
     {
@@ -121,6 +121,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-11"
     },
     {
@@ -137,6 +138,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-09"
     },
     {
@@ -151,9 +153,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-08"
     },
     {
@@ -170,23 +172,23 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-08"
     },
     {
       "id": "poetools/claude-code",
       "name": "claude-code",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-27"
     },
     {
@@ -203,6 +205,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-21"
     },
     {
@@ -219,6 +222,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-19"
     },
     {
@@ -234,13 +238,14 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-19"
     },
     {
       "id": "google/nano-banana-pro",
       "name": "Nano-Banana-Pro",
       "contextWindow": 65536,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 1.7,
       "outputPrice": 10,
       "capabilities": [
@@ -249,6 +254,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-19"
     },
     {
@@ -263,9 +269,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-12"
     },
     {
@@ -277,12 +283,11 @@
       "outputPrice": 1.8,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-12"
     },
     {
@@ -298,6 +303,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-12"
     },
     {
@@ -314,6 +320,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-12"
     },
     {
@@ -325,27 +332,27 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-11"
     },
     {
       "id": "novita/kimi-k2-thinking",
       "name": "kimi-k2-thinking",
       "contextWindow": 256000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-07"
     },
     {
@@ -359,41 +366,41 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-22"
     },
     {
       "id": "google/veo-3.1",
       "name": "Veo-3.1",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-15"
     },
     {
       "id": "google/veo-3.1-fast",
       "name": "Veo-3.1-Fast",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-15"
     },
     {
@@ -410,21 +417,22 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-15"
     },
     {
       "id": "google/veo-3-fast",
       "name": "Veo-3-Fast",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-13"
     },
     {
@@ -438,18 +446,18 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-07"
     },
     {
       "id": "openai/sora-2",
       "name": "Sora-2",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -458,13 +466,14 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-06"
     },
     {
       "id": "openai/sora-2-pro",
       "name": "Sora-2-Pro",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -473,6 +482,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-06"
     },
     {
@@ -489,21 +499,22 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-06"
     },
     {
       "id": "novita/glm-4.6",
       "name": "GLM-4.6",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-30"
     },
     {
@@ -520,6 +531,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-26"
     },
     {
@@ -534,9 +546,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-23"
     },
     {
@@ -552,6 +564,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-16"
     },
     {
@@ -568,28 +581,29 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-16"
     },
     {
       "id": "elevenlabs/elevenlabs-music",
       "name": "ElevenLabs-Music",
       "contextWindow": 2000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-29"
     },
     {
       "id": "openai/gpt-image-1-mini",
       "name": "GPT-Image-1-Mini",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -598,6 +612,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-26"
     },
     {
@@ -609,19 +624,18 @@
       "outputPrice": 1.5,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-22"
     },
     {
       "id": "google/nano-banana",
       "name": "Nano-Banana",
       "contextWindow": 32768,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0.21,
       "outputPrice": 1.8,
       "capabilities": [
@@ -630,6 +644,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-21"
     },
     {
@@ -645,22 +660,23 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
       "id": "cerebras/gpt-oss-120b-cs",
       "name": "gpt-oss-120b-cs",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-06"
     },
     {
@@ -677,6 +693,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -693,6 +710,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -709,6 +727,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-05"
     },
     {
@@ -725,6 +744,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-10"
     },
     {
@@ -736,11 +756,11 @@
       "outputPrice": 36,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-27"
     },
     {
@@ -752,26 +772,26 @@
       "outputPrice": 7.2,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-27"
     },
     {
       "id": "google/imagen-4-fast",
       "name": "Imagen-4-Fast",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-25"
     },
     {
@@ -788,6 +808,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-25"
     },
     {
@@ -804,6 +825,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-20"
     },
     {
@@ -820,6 +842,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-20"
     },
     {
@@ -833,11 +856,11 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-19"
     },
     {
@@ -854,81 +877,82 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-10"
     },
     {
       "id": "elevenlabs/elevenlabs-v3",
       "name": "ElevenLabs-v3",
       "contextWindow": 128000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-05"
     },
     {
       "id": "google/lyria",
       "name": "Lyria",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-06-04"
     },
     {
       "id": "google/imagen-4-ultra",
       "name": "Imagen-4-Ultra",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-24"
     },
     {
       "id": "google/imagen-4",
       "name": "Imagen-4",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-22"
     },
     {
       "id": "google/veo-3",
       "name": "Veo-3",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-21"
     },
     {
@@ -945,6 +969,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-21"
     },
     {
@@ -961,6 +986,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-21"
     },
     {
@@ -977,6 +1003,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-21"
     },
     {
@@ -993,6 +1020,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-21"
     },
     {
@@ -1008,6 +1036,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-15"
     },
     {
@@ -1024,13 +1053,14 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-15"
     },
     {
       "id": "runwayml/runway-gen-4-turbo",
       "name": "Runway-Gen-4-Turbo",
       "contextWindow": 256,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1039,6 +1069,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-09"
     },
     {
@@ -1052,11 +1083,11 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-26"
     },
     {
@@ -1073,6 +1104,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-16"
     },
     {
@@ -1089,6 +1121,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-16"
     },
     {
@@ -1104,6 +1137,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-15"
     },
     {
@@ -1119,6 +1153,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-15"
     },
     {
@@ -1134,6 +1169,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -1145,10 +1181,10 @@
       "outputPrice": 15,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-11"
     },
     {
@@ -1160,18 +1196,18 @@
       "outputPrice": 0.5,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-11"
     },
     {
       "id": "openai/gpt-image-1",
       "name": "GPT-Image-1",
       "contextWindow": 128000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1180,6 +1216,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-31"
     },
     {
@@ -1196,6 +1233,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-19"
     },
     {
@@ -1207,10 +1245,10 @@
       "outputPrice": 9,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-11"
     },
     {
@@ -1222,47 +1260,47 @@
       "outputPrice": 0.54,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-11"
     },
     {
       "id": "ideogramai/ideogram-v2a",
       "name": "Ideogram-v2a",
       "contextWindow": 150,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-27"
     },
     {
       "id": "ideogramai/ideogram-v2a-turbo",
       "name": "Ideogram-v2a-Turbo",
       "contextWindow": 150,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-27"
     },
     {
       "id": "lumalabs/ray2",
       "name": "Ray2",
       "contextWindow": 5000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1271,6 +1309,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-20"
     },
     {
@@ -1287,6 +1326,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-19"
     },
     {
@@ -1303,6 +1343,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-19"
     },
     {
@@ -1316,10 +1357,10 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-05"
     },
     {
@@ -1333,11 +1374,11 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-05"
     },
     {
@@ -1354,6 +1395,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-31"
     },
     {
@@ -1370,6 +1412,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-31"
     },
     {
@@ -1386,6 +1429,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-18"
     },
     {
@@ -1399,40 +1443,40 @@
         "chat",
         "vision",
         "audio",
-        "video",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
       "id": "topazlabs-co/topazlabs",
       "name": "TopazLabs",
       "contextWindow": 204,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-03"
     },
     {
       "id": "google/veo-2",
       "name": "Veo-2",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-02"
     },
     {
@@ -1448,6 +1492,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-21"
     },
     {
@@ -1463,58 +1508,59 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-11-18"
     },
     {
       "id": "elevenlabs/elevenlabs-v2.5-turbo",
       "name": "ElevenLabs-v2.5-Turbo",
       "contextWindow": 128000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-28"
     },
     {
       "id": "google/imagen-3-fast",
       "name": "Imagen-3-Fast",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-17"
     },
     {
       "id": "google/imagen-3",
       "name": "Imagen-3",
       "contextWindow": 480,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-15"
     },
     {
       "id": "runwayml/runway",
       "name": "Runway",
       "contextWindow": 256,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1523,6 +1569,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-11"
     },
     {
@@ -1538,13 +1585,14 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-01"
     },
     {
       "id": "lumalabs/dream-machine",
       "name": "Dream-Machine",
       "contextWindow": 5000,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1553,13 +1601,30 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-18"
+    },
+    {
+      "id": "openai/gpt-4-classic-0314",
+      "name": "GPT-4-Classic-0314",
+      "contextWindow": 8192,
+      "maxOutput": 4096,
+      "inputPrice": 27,
+      "outputPrice": 54,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-26"
     },
     {
       "id": "ideogramai/ideogram-v2",
       "name": "Ideogram-v2",
       "contextWindow": 150,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1568,21 +1633,22 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-21"
     },
     {
       "id": "trytako/tako",
       "name": "Tako",
       "contextWindow": 2048,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-15"
     },
     {
@@ -1598,6 +1664,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-14"
     },
     {
@@ -1613,6 +1680,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-07-18"
     },
     {
@@ -1628,6 +1696,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-06-05"
     },
     {
@@ -1643,13 +1712,14 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-05-13"
     },
     {
       "id": "ideogramai/ideogram",
       "name": "Ideogram",
       "contextWindow": 150,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1658,6 +1728,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-04-03"
     },
     {
@@ -1673,6 +1744,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03-25"
     },
     {
@@ -1688,6 +1760,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03-09"
     },
     {
@@ -1703,21 +1776,22 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-03-04"
     },
     {
       "id": "openai/dall-e-3",
       "name": "DALL-E-3",
       "contextWindow": 800,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-11-06"
     },
     {
@@ -1733,6 +1807,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-09-27"
     },
     {
@@ -1748,6 +1823,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-09-20"
     },
     {
@@ -1763,6 +1839,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-09-13"
     },
     {
@@ -1778,13 +1855,14 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-09-13"
     },
     {
       "id": "stabilityai/stablediffusionxl",
       "name": "StableDiffusionXL",
       "contextWindow": 200,
-      "maxOutput": 8192,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1793,22 +1871,8 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-07-09"
-    },
-    {
-      "id": "openai/gpt-4-classic-0314",
-      "name": "GPT-4-Classic-0314",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
-      "inputPrice": 27,
-      "outputPrice": 54,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-08-26"
     }
   ],
   "baseUrl": "https://api.poe.com/v1",

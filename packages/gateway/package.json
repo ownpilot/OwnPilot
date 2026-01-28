@@ -18,23 +18,27 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "seed:triggers-plans": "tsx scripts/seed-triggers-plans.ts"
+    "seed": "tsx scripts/seed-database.ts",
+    "seed:triggers-plans": "tsx scripts/seed-triggers-plans.ts",
+    "migrate:postgres": "tsx scripts/migrate-to-postgres.ts",
+    "migrate:postgres:dry": "tsx scripts/migrate-to-postgres.ts --dry-run"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",
     "@ownpilot/core": "workspace:*",
     "@slack/bolt": "^4.1.0",
     "archiver": "^7.0.1",
-    "better-sqlite3": "^11.7.0",
     "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
     "hono": "^4.11.7",
     "jose": "^6.0.10",
+    "pg": "^8.13.1",
     "ws": "^8.19.0"
   },
   "devDependencies": {
     "@types/archiver": "^6.0.3",
-    "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.15.21",
+    "@types/pg": "^8.11.10",
     "@types/ws": "^8.18.1",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",

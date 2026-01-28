@@ -1,10 +1,10 @@
 /**
- * Channel Messages Repository
+ * Channel Messages Repository (PostgreSQL)
  *
  * Stores incoming and outgoing messages from channels (inbox)
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 export interface ChannelMessage {
   id: string;
@@ -50,17 +50,17 @@ function rowToChannelMessage(row: ChannelMessageRow): ChannelMessage {
     senderName: row.sender_name ?? undefined,
     content: row.content,
     contentType: row.content_type,
-    attachments: row.attachments ? JSON.parse(row.attachments) : undefined,
+    attachments: row.attachments
+      ? (typeof row.attachments === 'string' ? JSON.parse(row.attachments) : row.attachments)
+      : undefined,
     replyToId: row.reply_to_id ?? undefined,
-    metadata: JSON.parse(row.metadata || '{}'),
+    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : (row.metadata || {}),
     createdAt: new Date(row.created_at),
   };
 }
 
-export class ChannelMessagesRepository {
-  private db = getDatabase();
-
-  create(data: {
+export class ChannelMessagesRepository extends BaseRepository {
+  async create(data: {
     id: string;
     channelId: string;
     externalId?: string;
@@ -72,129 +72,139 @@ export class ChannelMessagesRepository {
     attachments?: ChannelMessage['attachments'];
     replyToId?: string;
     metadata?: Record<string, unknown>;
-  }): ChannelMessage {
-    const stmt = this.db.prepare(`
-      INSERT INTO channel_messages (
+  }): Promise<ChannelMessage> {
+    await this.execute(
+      `INSERT INTO channel_messages (
         id, channel_id, external_id, direction, sender_id, sender_name,
         content, content_type, attachments, reply_to_id, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      data.id,
-      data.channelId,
-      data.externalId ?? null,
-      data.direction,
-      data.senderId ?? null,
-      data.senderName ?? null,
-      data.content,
-      data.contentType ?? 'text',
-      data.attachments ? JSON.stringify(data.attachments) : null,
-      data.replyToId ?? null,
-      JSON.stringify(data.metadata ?? {})
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        data.id,
+        data.channelId,
+        data.externalId ?? null,
+        data.direction,
+        data.senderId ?? null,
+        data.senderName ?? null,
+        data.content,
+        data.contentType ?? 'text',
+        data.attachments ? JSON.stringify(data.attachments) : null,
+        data.replyToId ?? null,
+        JSON.stringify(data.metadata ?? {}),
+      ]
     );
 
-    return this.getById(data.id)!;
+    const result = await this.getById(data.id);
+    if (!result) throw new Error('Failed to create channel message');
+    return result;
   }
 
-  getById(id: string): ChannelMessage | null {
-    const stmt = this.db.prepare<string, ChannelMessageRow>(`
-      SELECT * FROM channel_messages WHERE id = ?
-    `);
-
-    const row = stmt.get(id);
+  async getById(id: string): Promise<ChannelMessage | null> {
+    const row = await this.queryOne<ChannelMessageRow>(
+      `SELECT * FROM channel_messages WHERE id = $1`,
+      [id]
+    );
     return row ? rowToChannelMessage(row) : null;
   }
 
-  getByChannel(channelId: string, limit = 100, offset = 0): ChannelMessage[] {
-    const stmt = this.db.prepare<[string, number, number], ChannelMessageRow>(`
-      SELECT * FROM channel_messages
-      WHERE channel_id = ?
-      ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
-    `);
-
-    return stmt.all(channelId, limit, offset).map(rowToChannelMessage);
+  async getByChannel(channelId: string, limit = 100, offset = 0): Promise<ChannelMessage[]> {
+    const rows = await this.query<ChannelMessageRow>(
+      `SELECT * FROM channel_messages
+       WHERE channel_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [channelId, limit, offset]
+    );
+    return rows.map(rowToChannelMessage);
   }
 
-  getInbox(limit = 100, offset = 0): ChannelMessage[] {
-    const stmt = this.db.prepare<[number, number], ChannelMessageRow>(`
-      SELECT * FROM channel_messages
-      WHERE direction = 'inbound'
-      ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
-    `);
-
-    return stmt.all(limit, offset).map(rowToChannelMessage);
+  async getInbox(limit = 100, offset = 0): Promise<ChannelMessage[]> {
+    const rows = await this.query<ChannelMessageRow>(
+      `SELECT * FROM channel_messages
+       WHERE direction = 'inbound'
+       ORDER BY created_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    return rows.map(rowToChannelMessage);
   }
 
-  getOutbox(limit = 100, offset = 0): ChannelMessage[] {
-    const stmt = this.db.prepare<[number, number], ChannelMessageRow>(`
-      SELECT * FROM channel_messages
-      WHERE direction = 'outbound'
-      ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
-    `);
-
-    return stmt.all(limit, offset).map(rowToChannelMessage);
+  async getOutbox(limit = 100, offset = 0): Promise<ChannelMessage[]> {
+    const rows = await this.query<ChannelMessageRow>(
+      `SELECT * FROM channel_messages
+       WHERE direction = 'outbound'
+       ORDER BY created_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    return rows.map(rowToChannelMessage);
   }
 
-  getRecent(channelId: string, count: number): ChannelMessage[] {
-    const stmt = this.db.prepare<[string, number], ChannelMessageRow>(`
-      SELECT * FROM (
+  async getRecent(channelId: string, count: number): Promise<ChannelMessage[]> {
+    const rows = await this.query<ChannelMessageRow>(
+      `SELECT * FROM (
         SELECT * FROM channel_messages
-        WHERE channel_id = ?
+        WHERE channel_id = $1
         ORDER BY created_at DESC
-        LIMIT ?
-      ) ORDER BY created_at ASC
-    `);
-
-    return stmt.all(channelId, count).map(rowToChannelMessage);
+        LIMIT $2
+      ) subq ORDER BY created_at ASC`,
+      [channelId, count]
+    );
+    return rows.map(rowToChannelMessage);
   }
 
-  search(query: string, limit = 50): ChannelMessage[] {
-    const stmt = this.db.prepare<[string, number], ChannelMessageRow>(`
-      SELECT * FROM channel_messages
-      WHERE content LIKE ?
-      ORDER BY created_at DESC
-      LIMIT ?
-    `);
-
-    return stmt.all(`%${query}%`, limit).map(rowToChannelMessage);
+  async search(searchQuery: string, limit = 50): Promise<ChannelMessage[]> {
+    const rows = await this.query<ChannelMessageRow>(
+      `SELECT * FROM channel_messages
+       WHERE content ILIKE $1
+       ORDER BY created_at DESC
+       LIMIT $2`,
+      [`%${searchQuery}%`, limit]
+    );
+    return rows.map(rowToChannelMessage);
   }
 
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM channel_messages WHERE id = ?`);
-    const result = stmt.run(id);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM channel_messages WHERE id = $1`,
+      [id]
+    );
     return result.changes > 0;
   }
 
-  deleteByChannel(channelId: string): number {
-    const stmt = this.db.prepare(`DELETE FROM channel_messages WHERE channel_id = ?`);
-    const result = stmt.run(channelId);
+  async deleteByChannel(channelId: string): Promise<number> {
+    const result = await this.execute(
+      `DELETE FROM channel_messages WHERE channel_id = $1`,
+      [channelId]
+    );
     return result.changes;
   }
 
-  count(channelId?: string): number {
+  async count(channelId?: string): Promise<number> {
     if (channelId) {
-      const stmt = this.db.prepare<string, { count: number }>(`
-        SELECT COUNT(*) as count FROM channel_messages WHERE channel_id = ?
-      `);
-      return stmt.get(channelId)?.count ?? 0;
+      const row = await this.queryOne<{ count: string }>(
+        `SELECT COUNT(*) as count FROM channel_messages WHERE channel_id = $1`,
+        [channelId]
+      );
+      return parseInt(row?.count ?? '0', 10);
     }
 
-    const stmt = this.db.prepare<[], { count: number }>(`
-      SELECT COUNT(*) as count FROM channel_messages
-    `);
-    return stmt.get()?.count ?? 0;
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM channel_messages`
+    );
+    return parseInt(row?.count ?? '0', 10);
   }
 
-  countInbox(): number {
-    const stmt = this.db.prepare<[], { count: number }>(`
-      SELECT COUNT(*) as count FROM channel_messages WHERE direction = 'inbound'
-    `);
-    return stmt.get()?.count ?? 0;
+  async countInbox(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM channel_messages WHERE direction = 'inbound'`
+    );
+    return parseInt(row?.count ?? '0', 10);
   }
 }
 
 export const channelMessagesRepo = new ChannelMessagesRepository();
+
+// Factory function
+export function createChannelMessagesRepository(): ChannelMessagesRepository {
+  return new ChannelMessagesRepository();
+}

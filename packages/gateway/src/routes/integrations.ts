@@ -69,19 +69,24 @@ const AVAILABLE_INTEGRATIONS: Array<{
 /**
  * List available integrations
  */
-integrationsRoutes.get('/available', (c) => {
-  const integrations: AvailableIntegration[] = AVAILABLE_INTEGRATIONS.map((integration) => {
-    // Check if required config exists
-    const isConfigured = integration.requiredConfig.every((key) => {
-      const value = settingsRepo.get<string>(key);
-      return value && value.length > 0;
-    });
+integrationsRoutes.get('/available', async (c) => {
+  const integrations: AvailableIntegration[] = await Promise.all(
+    AVAILABLE_INTEGRATIONS.map(async (integration) => {
+      // Check if required config exists
+      const configChecks = await Promise.all(
+        integration.requiredConfig.map(async (key) => {
+          const value = await settingsRepo.get<string>(key);
+          return value && value.length > 0;
+        })
+      );
+      const isConfigured = configChecks.every(Boolean);
 
-    return {
-      ...integration,
-      isConfigured,
-    };
-  });
+      return {
+        ...integration,
+        isConfigured,
+      };
+    })
+  );
 
   return c.json({
     success: true,
@@ -92,10 +97,10 @@ integrationsRoutes.get('/available', (c) => {
 /**
  * List user's connected integrations
  */
-integrationsRoutes.get('/', (c) => {
+integrationsRoutes.get('/', async (c) => {
   const userId = c.req.query('userId') || 'default';
 
-  const integrations = oauthIntegrationsRepo.listByUser(userId);
+  const integrations = await oauthIntegrationsRepo.listByUser(userId);
 
   // Don't expose tokens, only metadata
   const safeIntegrations = integrations.map((integration) => ({
@@ -120,10 +125,10 @@ integrationsRoutes.get('/', (c) => {
 /**
  * Get integration details
  */
-integrationsRoutes.get('/:id', (c) => {
+integrationsRoutes.get('/:id', async (c) => {
   const id = c.req.param('id');
 
-  const integration = oauthIntegrationsRepo.getById(id);
+  const integration = await oauthIntegrationsRepo.getById(id);
 
   if (!integration) {
     return c.json({ success: false, error: 'Integration not found' }, 404);
@@ -152,13 +157,13 @@ integrationsRoutes.get('/:id', (c) => {
 /**
  * Check if a specific integration is connected
  */
-integrationsRoutes.get('/status/:provider/:service', (c) => {
+integrationsRoutes.get('/status/:provider/:service', async (c) => {
   const provider = c.req.param('provider') as OAuthProvider;
   const service = c.req.param('service') as OAuthService;
   const userId = c.req.query('userId') || 'default';
 
-  const isConnected = oauthIntegrationsRepo.isConnected(userId, provider, service);
-  const integration = oauthIntegrationsRepo.getByUserProviderService(userId, provider, service);
+  const isConnected = await oauthIntegrationsRepo.isConnected(userId, provider, service);
+  const integration = await oauthIntegrationsRepo.getByUserProviderService(userId, provider, service);
 
   return c.json({
     success: true,
@@ -177,7 +182,7 @@ integrationsRoutes.get('/status/:provider/:service', (c) => {
 integrationsRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
 
-  const integration = oauthIntegrationsRepo.getById(id);
+  const integration = await oauthIntegrationsRepo.getById(id);
 
   if (!integration) {
     return c.json({ success: false, error: 'Integration not found' }, 404);
@@ -185,12 +190,12 @@ integrationsRoutes.delete('/:id', async (c) => {
 
   // For Google integrations, try to revoke the token
   if (integration.provider === 'google') {
-    const tokens = oauthIntegrationsRepo.getTokens(id);
+    const tokens = await oauthIntegrationsRepo.getTokens(id);
     if (tokens?.accessToken) {
       try {
         const { google } = await import('googleapis');
-        const clientId = settingsRepo.get<string>('google_oauth_client_id');
-        const clientSecret = settingsRepo.get<string>('google_oauth_client_secret');
+        const clientId = await settingsRepo.get<string>('google_oauth_client_id');
+        const clientSecret = await settingsRepo.get<string>('google_oauth_client_secret');
 
         if (clientId && clientSecret) {
           const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
@@ -204,7 +209,7 @@ integrationsRoutes.delete('/:id', async (c) => {
   }
 
   // Delete from database
-  oauthIntegrationsRepo.delete(id);
+  await oauthIntegrationsRepo.delete(id);
 
   return c.json({
     success: true,
@@ -218,17 +223,17 @@ integrationsRoutes.delete('/:id', async (c) => {
 integrationsRoutes.post('/:id/sync', async (c) => {
   const id = c.req.param('id');
 
-  const integration = oauthIntegrationsRepo.getById(id);
+  const integration = await oauthIntegrationsRepo.getById(id);
 
   if (!integration) {
     return c.json({ success: false, error: 'Integration not found' }, 404);
   }
 
   // Get tokens
-  const tokens = oauthIntegrationsRepo.getTokens(id);
+  const tokens = await oauthIntegrationsRepo.getTokens(id);
 
   if (!tokens?.refreshToken) {
-    oauthIntegrationsRepo.updateStatus(id, 'expired', 'No refresh token available');
+    await oauthIntegrationsRepo.updateStatus(id, 'expired', 'No refresh token available');
     return c.json({ success: false, error: 'No refresh token available' }, 400);
   }
 
@@ -236,8 +241,8 @@ integrationsRoutes.post('/:id/sync', async (c) => {
   if (integration.provider === 'google') {
     try {
       const { google } = await import('googleapis');
-      const clientId = settingsRepo.get<string>('google_oauth_client_id');
-      const clientSecret = settingsRepo.get<string>('google_oauth_client_secret');
+      const clientId = await settingsRepo.get<string>('google_oauth_client_id');
+      const clientSecret = await settingsRepo.get<string>('google_oauth_client_secret');
 
       if (!clientId || !clientSecret) {
         return c.json({ success: false, error: 'OAuth not configured' }, 400);
@@ -253,7 +258,7 @@ integrationsRoutes.post('/:id/sync', async (c) => {
       }
 
       // Update tokens
-      oauthIntegrationsRepo.updateTokens(id, {
+      await oauthIntegrationsRepo.updateTokens(id, {
         accessToken: credentials.access_token,
         refreshToken: credentials.refresh_token || tokens.refreshToken,
         expiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : undefined,
@@ -268,7 +273,7 @@ integrationsRoutes.post('/:id/sync', async (c) => {
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sync failed';
-      oauthIntegrationsRepo.updateStatus(id, 'error', errorMessage);
+      await oauthIntegrationsRepo.updateStatus(id, 'error', errorMessage);
       return c.json({ success: false, error: errorMessage }, 500);
     }
   }
@@ -279,9 +284,9 @@ integrationsRoutes.post('/:id/sync', async (c) => {
 /**
  * Get integration health/status summary
  */
-integrationsRoutes.get('/health/summary', (c) => {
+integrationsRoutes.get('/health/summary', async (c) => {
   const userId = c.req.query('userId') || 'default';
-  const integrations = oauthIntegrationsRepo.listByUser(userId);
+  const integrations = await oauthIntegrationsRepo.listByUser(userId);
 
   const summary = {
     total: integrations.length,

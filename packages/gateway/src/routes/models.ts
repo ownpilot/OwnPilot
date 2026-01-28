@@ -73,11 +73,11 @@ app.get('/', async (c) => {
   const availableProviders = getAvailableProviders();
 
   // Get disabled models for filtering
-  const disabledModels = enabledOnly ? modelConfigsRepo.getDisabledModelIds(userId) : new Set<string>();
+  const disabledModels = enabledOnly ? await modelConfigsRepo.getDisabledModelIds(userId) : new Set<string>();
 
   // Check all available providers
   for (const provider of availableProviders) {
-    if (hasApiKey(provider)) {
+    if (await hasApiKey(provider)) {
       configuredProviders.push(provider);
       let models = convertToModelInfo(provider);
 

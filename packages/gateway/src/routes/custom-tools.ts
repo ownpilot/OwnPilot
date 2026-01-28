@@ -19,6 +19,7 @@ import {
   type ToolDefinition,
 } from '@ownpilot/core';
 import type { ApiResponse } from '../types/index.js';
+import { invalidateAgentCache } from './agents.js';
 
 export const customToolsRoutes = new Hono();
 
@@ -59,9 +60,9 @@ function syncToolToRegistry(tool: CustomToolRecord): void {
 /**
  * Get custom tools statistics
  */
-customToolsRoutes.get('/stats', (c) => {
+customToolsRoutes.get('/stats', async (c) => {
   const repo = createCustomToolsRepo(getUserId(c));
-  const stats = repo.getStats();
+  const stats = await repo.getStats();
 
   const response: ApiResponse = {
     success: true,
@@ -78,7 +79,7 @@ customToolsRoutes.get('/stats', (c) => {
 /**
  * List custom tools with filtering
  */
-customToolsRoutes.get('/', (c) => {
+customToolsRoutes.get('/', async (c) => {
   const repo = createCustomToolsRepo(getUserId(c));
 
   const status = c.req.query('status') as ToolStatus | undefined;
@@ -87,7 +88,7 @@ customToolsRoutes.get('/', (c) => {
   const limit = c.req.query('limit') ? parseInt(c.req.query('limit')!) : undefined;
   const offset = c.req.query('offset') ? parseInt(c.req.query('offset')!) : undefined;
 
-  const tools = repo.list({ status, category, createdBy, limit, offset });
+  const tools = await repo.list({ status, category, createdBy, limit, offset });
 
   const response: ApiResponse = {
     success: true,
@@ -107,9 +108,9 @@ customToolsRoutes.get('/', (c) => {
 /**
  * Get pending approval tools
  */
-customToolsRoutes.get('/pending', (c) => {
+customToolsRoutes.get('/pending', async (c) => {
   const repo = createCustomToolsRepo(getUserId(c));
-  const tools = repo.getPendingApproval();
+  const tools = await repo.getPendingApproval();
 
   const response: ApiResponse = {
     success: true,
@@ -129,11 +130,11 @@ customToolsRoutes.get('/pending', (c) => {
 /**
  * Get a specific custom tool
  */
-customToolsRoutes.get('/:id', (c) => {
+customToolsRoutes.get('/:id', async (c) => {
   const id = c.req.param('id');
   const repo = createCustomToolsRepo(getUserId(c));
 
-  const tool = repo.get(id);
+  const tool = await repo.get(id);
   if (!tool) {
     throw new HTTPException(404, {
       message: `Custom tool not found: ${id}`,
@@ -204,14 +205,14 @@ customToolsRoutes.post('/', async (c) => {
   const repo = createCustomToolsRepo(getUserId(c));
 
   // Check if tool name already exists
-  const existing = repo.getByName(body.name);
+  const existing = await repo.getByName(body.name);
   if (existing) {
     throw new HTTPException(409, {
       message: `Tool with name '${body.name}' already exists`,
     });
   }
 
-  const tool = repo.create({
+  const tool = await repo.create({
     name: body.name,
     description: body.description,
     parameters: body.parameters,
@@ -225,6 +226,9 @@ customToolsRoutes.post('/', async (c) => {
 
   // Sync to dynamic registry if active
   syncToolToRegistry(tool);
+
+  // Invalidate agent cache so new tool is available
+  invalidateAgentCache();
 
   const response: ApiResponse = {
     success: true,
@@ -284,7 +288,7 @@ customToolsRoutes.patch('/:id', async (c) => {
     }
   }
 
-  const tool = repo.update(id, body);
+  const tool = await repo.update(id, body);
   if (!tool) {
     throw new HTTPException(404, {
       message: `Custom tool not found: ${id}`,
@@ -293,6 +297,9 @@ customToolsRoutes.patch('/:id', async (c) => {
 
   // Re-sync to dynamic registry
   syncToolToRegistry(tool);
+
+  // Invalidate agent cache so tool changes take effect
+  invalidateAgentCache();
 
   const response: ApiResponse = {
     success: true,
@@ -309,22 +316,25 @@ customToolsRoutes.patch('/:id', async (c) => {
 /**
  * Delete a custom tool
  */
-customToolsRoutes.delete('/:id', (c) => {
+customToolsRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
   const repo = createCustomToolsRepo(getUserId(c));
 
   // Get tool name for unregistering
-  const tool = repo.get(id);
+  const tool = await repo.get(id);
   if (tool) {
     dynamicRegistry.unregister(tool.name);
   }
 
-  const deleted = repo.delete(id);
+  const deleted = await repo.delete(id);
   if (!deleted) {
     throw new HTTPException(404, {
       message: `Custom tool not found: ${id}`,
     });
   }
+
+  // Invalidate agent cache so tool removal takes effect
+  invalidateAgentCache();
 
   const response: ApiResponse = {
     success: true,
@@ -345,11 +355,11 @@ customToolsRoutes.delete('/:id', (c) => {
 /**
  * Enable a custom tool
  */
-customToolsRoutes.post('/:id/enable', (c) => {
+customToolsRoutes.post('/:id/enable', async (c) => {
   const id = c.req.param('id');
   const repo = createCustomToolsRepo(getUserId(c));
 
-  const tool = repo.enable(id);
+  const tool = await repo.enable(id);
   if (!tool) {
     throw new HTTPException(404, {
       message: `Custom tool not found: ${id}`,
@@ -357,6 +367,9 @@ customToolsRoutes.post('/:id/enable', (c) => {
   }
 
   syncToolToRegistry(tool);
+
+  // Invalidate agent cache so enabled tool becomes available
+  invalidateAgentCache();
 
   const response: ApiResponse = {
     success: true,
@@ -373,11 +386,11 @@ customToolsRoutes.post('/:id/enable', (c) => {
 /**
  * Disable a custom tool
  */
-customToolsRoutes.post('/:id/disable', (c) => {
+customToolsRoutes.post('/:id/disable', async (c) => {
   const id = c.req.param('id');
   const repo = createCustomToolsRepo(getUserId(c));
 
-  const tool = repo.disable(id);
+  const tool = await repo.disable(id);
   if (!tool) {
     throw new HTTPException(404, {
       message: `Custom tool not found: ${id}`,
@@ -385,6 +398,9 @@ customToolsRoutes.post('/:id/disable', (c) => {
   }
 
   syncToolToRegistry(tool);
+
+  // Invalidate agent cache so disabled tool is removed
+  invalidateAgentCache();
 
   const response: ApiResponse = {
     success: true,
@@ -401,11 +417,11 @@ customToolsRoutes.post('/:id/disable', (c) => {
 /**
  * Approve a pending tool
  */
-customToolsRoutes.post('/:id/approve', (c) => {
+customToolsRoutes.post('/:id/approve', async (c) => {
   const id = c.req.param('id');
   const repo = createCustomToolsRepo(getUserId(c));
 
-  const tool = repo.get(id);
+  const tool = await repo.get(id);
   if (!tool) {
     throw new HTTPException(404, {
       message: `Custom tool not found: ${id}`,
@@ -418,9 +434,11 @@ customToolsRoutes.post('/:id/approve', (c) => {
     });
   }
 
-  const approved = repo.approve(id);
+  const approved = await repo.approve(id);
   if (approved) {
     syncToolToRegistry(approved);
+    // Invalidate agent cache so approved tool becomes available
+    invalidateAgentCache();
   }
 
   const response: ApiResponse = {
@@ -438,11 +456,11 @@ customToolsRoutes.post('/:id/approve', (c) => {
 /**
  * Reject a pending tool
  */
-customToolsRoutes.post('/:id/reject', (c) => {
+customToolsRoutes.post('/:id/reject', async (c) => {
   const id = c.req.param('id');
   const repo = createCustomToolsRepo(getUserId(c));
 
-  const tool = repo.get(id);
+  const tool = await repo.get(id);
   if (!tool) {
     throw new HTTPException(404, {
       message: `Custom tool not found: ${id}`,
@@ -455,7 +473,7 @@ customToolsRoutes.post('/:id/reject', (c) => {
     });
   }
 
-  const rejected = repo.reject(id);
+  const rejected = await repo.reject(id);
 
   const response: ApiResponse = {
     success: true,
@@ -481,7 +499,7 @@ customToolsRoutes.post('/:id/execute', async (c) => {
   const body = await c.req.json<{ arguments?: Record<string, unknown> }>();
 
   const repo = createCustomToolsRepo(getUserId(c));
-  const tool = repo.get(id);
+  const tool = await repo.get(id);
 
   if (!tool) {
     throw new HTTPException(404, {
@@ -511,7 +529,7 @@ customToolsRoutes.post('/:id/execute', async (c) => {
   const duration = Date.now() - startTime;
 
   // Record usage
-  repo.recordUsage(id);
+  await repo.recordUsage(id);
 
   const response: ApiResponse = {
     success: true,
@@ -618,9 +636,9 @@ customToolsRoutes.post('/test', async (c) => {
  * Get active tools for LLM context
  * Returns tools in a format suitable for LLM tool definitions
  */
-customToolsRoutes.get('/active/definitions', (c) => {
+customToolsRoutes.get('/active/definitions', async (c) => {
   const repo = createCustomToolsRepo(getUserId(c));
-  const tools = repo.getActiveTools();
+  const tools = await repo.getActiveTools();
 
   const definitions = tools.map((tool) => ({
     name: tool.name,
@@ -654,6 +672,7 @@ interface ToolExecutionResult {
   result?: unknown;
   error?: string;
   requiresApproval?: boolean;
+  requiresConfirmation?: boolean;
   pendingToolId?: string;
 }
 
@@ -684,11 +703,11 @@ function validateToolCode(code: string): { valid: boolean; error?: string } {
  * Execute custom tool management tools (meta-tools)
  * Used by LLM to create, list, delete, and toggle custom tools
  */
-export function executeCustomToolTool(
+export async function executeCustomToolTool(
   toolId: string,
   params: Record<string, unknown>,
   userId = 'default'
-): ToolExecutionResult {
+): Promise<ToolExecutionResult> {
   const repo = createCustomToolsRepo(userId);
 
   try {
@@ -734,7 +753,7 @@ export function executeCustomToolTool(
         }
 
         // Check if tool already exists
-        const existing = repo.getByName(name);
+        const existing = await repo.getByName(name);
         if (existing) {
           return { success: false, error: `Tool with name '${name}' already exists` };
         }
@@ -746,7 +765,7 @@ export function executeCustomToolTool(
         }
 
         // Create the tool (LLM-created tools may need approval for dangerous permissions)
-        const tool = repo.create({
+        const tool = await repo.create({
           name,
           description,
           parameters,
@@ -774,6 +793,9 @@ export function executeCustomToolTool(
         // Sync to registry if active
         syncToolToRegistry(tool);
 
+        // Invalidate agent cache so new tool becomes available
+        invalidateAgentCache();
+
         return {
           success: true,
           result: {
@@ -791,12 +813,12 @@ export function executeCustomToolTool(
           status?: 'active' | 'disabled' | 'pending_approval';
         };
 
-        const tools = repo.list({
+        const tools = await repo.list({
           category,
           status: status as ToolStatus,
         });
 
-        const stats = repo.getStats();
+        const stats = await repo.getStats();
 
         return {
           success: true,
@@ -821,22 +843,45 @@ export function executeCustomToolTool(
       }
 
       case 'delete_custom_tool': {
-        const { name } = params as { name: string };
+        const { name, confirm } = params as { name: string; confirm?: boolean };
 
         if (!name) {
           return { success: false, error: 'Tool name is required' };
         }
 
-        const tool = repo.getByName(name);
+        const tool = await repo.getByName(name);
         if (!tool) {
           return { success: false, error: `Tool '${name}' not found` };
+        }
+
+        // PROTECTION: LLM cannot delete user-created tools
+        // Only tools created by LLM can be deleted by LLM
+        if (tool.createdBy === 'user') {
+          return {
+            success: false,
+            error: `Cannot delete tool '${name}' - this tool was created by the user and is protected. Only the user can delete it through the UI or API. If the user explicitly asked you to delete it, please inform them they need to delete it manually from the Custom Tools page.`,
+          };
+        }
+
+        // For LLM-created tools, still require explicit confirmation
+        if (!confirm) {
+          return {
+            success: false,
+            requiresConfirmation: true,
+            error: `Are you sure you want to delete the tool '${name}'? Call delete_custom_tool again with confirm: true to proceed.`,
+          };
         }
 
         // Unregister from dynamic registry
         dynamicRegistry.unregister(name);
 
         // Delete from database
-        const deleted = repo.delete(tool.id);
+        const deleted = await repo.delete(tool.id);
+
+        // Invalidate agent cache so tool removal takes effect
+        if (deleted) {
+          invalidateAgentCache();
+        }
 
         return {
           success: deleted,
@@ -853,14 +898,16 @@ export function executeCustomToolTool(
           return { success: false, error: 'Tool name and enabled status are required' };
         }
 
-        const tool = repo.getByName(name);
+        const tool = await repo.getByName(name);
         if (!tool) {
           return { success: false, error: `Tool '${name}' not found` };
         }
 
-        const updated = enabled ? repo.enable(tool.id) : repo.disable(tool.id);
+        const updated = enabled ? await repo.enable(tool.id) : await repo.disable(tool.id);
         if (updated) {
           syncToolToRegistry(updated);
+          // Invalidate agent cache so status change takes effect
+          invalidateAgentCache();
         }
 
         return {
@@ -894,7 +941,7 @@ export async function executeActiveCustomTool(
   const repo = createCustomToolsRepo(userId);
 
   // Find tool by name
-  const tool = repo.getByName(toolName);
+  const tool = await repo.getByName(toolName);
   if (!tool) {
     return { success: false, error: `Custom tool '${toolName}' not found` };
   }
@@ -924,7 +971,7 @@ export async function executeActiveCustomTool(
     });
 
     // Record usage
-    repo.recordUsage(tool.id);
+    await repo.recordUsage(tool.id);
 
     return {
       success: !result.isError,
@@ -940,9 +987,9 @@ export async function executeActiveCustomTool(
 /**
  * Get all active custom tool definitions for LLM
  */
-export function getActiveCustomToolDefinitions(userId = 'default'): ToolDefinition[] {
+export async function getActiveCustomToolDefinitions(userId = 'default'): Promise<ToolDefinition[]> {
   const repo = createCustomToolsRepo(userId);
-  const tools = repo.getActiveTools();
+  const tools = await repo.getActiveTools();
 
   return tools.map((t) => ({
     name: t.name,
@@ -956,7 +1003,7 @@ export function getActiveCustomToolDefinitions(userId = 'default'): ToolDefiniti
 /**
  * Check if a tool name is a custom tool
  */
-export function isCustomTool(toolName: string, userId = 'default'): boolean {
+export async function isCustomTool(toolName: string, userId = 'default'): Promise<boolean> {
   const repo = createCustomToolsRepo(userId);
-  return repo.getByName(toolName) !== null;
+  return (await repo.getByName(toolName)) !== null;
 }

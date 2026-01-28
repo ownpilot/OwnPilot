@@ -56,7 +56,7 @@ export async function buildEnhancedSystemPrompt(
   let goalsUsed = 0;
 
   // === MEMORIES SECTION ===
-  const memories = memoriesRepo.list({
+  const memories = await memoriesRepo.list({
     limit: maxMemories,
     orderBy: 'importance',
   });
@@ -91,7 +91,7 @@ export async function buildEnhancedSystemPrompt(
   }
 
   // === GOALS SECTION ===
-  const goals = goalsRepo.list({ status: 'active', limit: maxGoals });
+  const goals = await goalsRepo.list({ status: 'active', limit: maxGoals });
 
   if (goals.length > 0) {
     goalsUsed = goals.length;
@@ -106,7 +106,7 @@ export async function buildEnhancedSystemPrompt(
       }
 
       // Include pending steps
-      const steps = goalsRepo.getSteps(goal.id);
+      const steps = await goalsRepo.getSteps(goal.id);
       const pendingSteps = steps.filter((s) => s.status === 'pending' || s.status === 'in_progress');
       if (pendingSteps.length > 0) {
         goalLines.push('  Next steps:');
@@ -260,7 +260,7 @@ export async function evaluateTriggers(
   response: string
 ): Promise<{ triggered: string[]; pending: string[]; executed: string[] }> {
   const triggersRepo = new TriggersRepository(userId);
-  const triggers = triggersRepo.list({ enabled: true });
+  const triggers = await triggersRepo.list({ enabled: true });
   const triggerEngine = getTriggerEngine({ userId });
 
   const triggered: string[] = [];
@@ -360,9 +360,9 @@ export async function extractMemories(
       const content = pattern.template.replace('$1', match[1] ?? '');
 
       // Check for duplicates using search
-      const existing = memoriesRepo.search(content.substring(0, 20), { type: pattern.type, limit: 1 });
+      const existing = await memoriesRepo.search(content.substring(0, 20), { type: pattern.type, limit: 1 });
       if (existing.length === 0) {
-        memoriesRepo.create({
+        await memoriesRepo.create({
           type: pattern.type,
           content,
           source: 'conversation',
@@ -386,10 +386,10 @@ export async function updateGoalProgress(
   _toolCalls?: readonly ToolCall[]
 ): Promise<void> {
   const goalsRepo = new GoalsRepository(userId);
-  const activeGoals = goalsRepo.list({ status: 'active' });
+  const activeGoals = await goalsRepo.list({ status: 'active' });
 
   for (const goal of activeGoals) {
-    const steps = goalsRepo.getSteps(goal.id);
+    const steps = await goalsRepo.getSteps(goal.id);
     const pendingSteps = steps.filter((s) => s.status === 'pending' || s.status === 'in_progress');
 
     for (const step of pendingSteps) {
@@ -400,8 +400,8 @@ export async function updateGoalProgress(
           response.includes('done') ||
           response.includes('finished'))
       ) {
-        goalsRepo.updateStep(step.id, { status: 'completed' });
-        goalsRepo.recalculateProgress(goal.id);
+        await goalsRepo.updateStep(step.id, { status: 'completed' });
+        await goalsRepo.recalculateProgress(goal.id);
       }
     }
   }
@@ -410,13 +410,13 @@ export async function updateGoalProgress(
 /**
  * Get orchestrator stats for a user
  */
-export function getOrchestratorStats(userId: string): {
+export async function getOrchestratorStats(userId: string): Promise<{
   totalMemories: number;
   activeGoals: number;
   activeTriggers: number;
   pendingApprovals: number;
   autonomyLevel: number;
-} {
+}> {
   const memoriesRepo = new MemoriesRepository(userId);
   const goalsRepo = new GoalsRepository(userId);
   const triggersRepo = new TriggersRepository(userId);
@@ -425,10 +425,16 @@ export function getOrchestratorStats(userId: string): {
   const config = approvalManager.getUserConfig(userId);
   const pending = approvalManager.getPendingActions(userId);
 
+  const [memoryStats, activeGoals, activeTriggers] = await Promise.all([
+    memoriesRepo.getStats(),
+    goalsRepo.list({ status: 'active' }),
+    triggersRepo.list({ enabled: true }),
+  ]);
+
   return {
-    totalMemories: memoriesRepo.getStats().total,
-    activeGoals: goalsRepo.list({ status: 'active' }).length,
-    activeTriggers: triggersRepo.list({ enabled: true }).length,
+    totalMemories: memoryStats.total,
+    activeGoals: activeGoals.length,
+    activeTriggers: activeTriggers.length,
     pendingApprovals: pending.length,
     autonomyLevel: config.level,
   };

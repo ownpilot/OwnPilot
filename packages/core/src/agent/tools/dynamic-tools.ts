@@ -369,13 +369,18 @@ export const listToolsDefinition: ToolDefinition = {
  */
 export const deleteToolDefinition: ToolDefinition = {
   name: 'delete_custom_tool',
-  description: 'Delete a custom tool by name',
+  description:
+    'Delete a custom tool by name. IMPORTANT: Can only delete LLM-created tools. User-created tools are protected and cannot be deleted by the LLM.',
   parameters: {
     type: 'object',
     properties: {
       name: {
         type: 'string',
         description: 'Name of the tool to delete',
+      },
+      confirm: {
+        type: 'boolean',
+        description: 'Set to true to confirm deletion. Required for safety.',
       },
     },
     required: ['name'],

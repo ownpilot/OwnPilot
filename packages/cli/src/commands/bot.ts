@@ -8,7 +8,7 @@
 import { createSimpleAgent } from '@ownpilot/core';
 import { createTelegramBot, type TelegramConfig } from '@ownpilot/channels';
 import {
-  getDatabase,
+  initializeAdapter,
   loadApiKeysToEnvironment,
   getDefaultProvider,
   getApiKey,
@@ -29,13 +29,13 @@ const TELEGRAM_TOKEN_KEY = 'telegram_bot_token';
 
 export async function startBot(options: BotOptions): Promise<void> {
   // Initialize database first
-  getDatabase();
+  await initializeAdapter();
 
   // Load saved API keys from database into environment (for SDKs)
-  loadApiKeysToEnvironment();
+  await loadApiKeysToEnvironment();
 
   // Get Telegram token from options or database
-  const token = options.token ?? settingsRepo.get<string>(TELEGRAM_TOKEN_KEY);
+  const token = options.token ?? (await settingsRepo.get<string>(TELEGRAM_TOKEN_KEY));
 
   if (!token) {
     console.error('❌ Error: Telegram bot token is required');
@@ -44,7 +44,7 @@ export async function startBot(options: BotOptions): Promise<void> {
   }
 
   // Get provider from database
-  const provider = getDefaultProvider();
+  const provider = await getDefaultProvider();
 
   if (!provider) {
     console.error('❌ Error: No AI provider API key configured');
@@ -52,13 +52,13 @@ export async function startBot(options: BotOptions): Promise<void> {
     process.exit(1);
   }
 
-  const apiKey = getApiKey(provider);
+  const apiKey = await getApiKey(provider);
   if (!apiKey) {
     console.error(`❌ Error: API key for ${provider} not found`);
     process.exit(1);
   }
 
-  const model = getDefaultModel(provider);
+  const model = await getDefaultModel(provider);
 
   // Validate provider is supported by createSimpleAgent
   const supportedProviders = ['openai', 'anthropic'] as const;

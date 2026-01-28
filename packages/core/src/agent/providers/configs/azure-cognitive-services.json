@@ -23,8 +23,7 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
       "default": true,
       "releaseDate": "2026-01-14"
@@ -44,6 +43,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-11"
     },
     {
@@ -59,6 +59,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-01"
     },
     {
@@ -73,6 +74,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-12-01"
     },
     {
@@ -89,6 +91,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-24"
     },
     {
@@ -106,6 +109,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-18"
     },
     {
@@ -123,6 +127,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-18"
     },
     {
@@ -140,6 +145,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-18"
     },
     {
@@ -157,6 +163,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-14"
     },
     {
@@ -174,6 +181,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-14"
     },
     {
@@ -188,9 +196,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-14"
     },
     {
@@ -206,9 +214,9 @@
         "audio",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-14"
     },
     {
@@ -224,6 +232,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-11-06"
     },
     {
@@ -241,6 +250,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-10-06"
     },
     {
@@ -257,6 +267,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-19"
     },
     {
@@ -272,6 +283,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-19"
     },
     {
@@ -286,9 +298,9 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-09-15"
     },
     {
@@ -302,9 +314,9 @@
         "chat",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-28"
     },
     {
@@ -320,6 +332,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-21"
     },
     {
@@ -336,6 +349,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -352,6 +366,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -368,6 +383,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -383,6 +399,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-08-07"
     },
     {
@@ -398,7 +415,24 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-07-09"
+    },
+    {
+      "id": "deepseek-r1-0528",
+      "name": "DeepSeek-R1-0528",
+      "contextWindow": 163840,
+      "maxOutput": 163840,
+      "inputPrice": 1.35,
+      "outputPrice": 5.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-28"
     },
     {
       "id": "model-router",
@@ -413,6 +447,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-19"
     },
     {
@@ -424,13 +459,28 @@
       "outputPrice": 6,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
-        "streaming",
-        "code"
+        "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-05-16"
+    },
+    {
+      "id": "mistral-medium-2505",
+      "name": "Mistral Medium 3",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-07"
     },
     {
       "id": "o3",
@@ -446,6 +496,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-16"
     },
     {
@@ -462,6 +513,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-16"
     },
     {
@@ -476,6 +528,7 @@
         "vision",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-15"
     },
     {
@@ -491,6 +544,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -506,6 +560,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -521,6 +576,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-14"
     },
     {
@@ -536,6 +592,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
     },
     {
@@ -551,7 +608,23 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "deepseek-v3-0324",
+      "name": "DeepSeek-V3-0324",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 1.14,
+      "outputPrice": 4.56,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-24"
     },
     {
       "id": "cohere-command-a",
@@ -566,7 +639,24 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-03-13"
+    },
+    {
+      "id": "mistral-small-2503",
+      "name": "Mistral Small 3.1",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-01"
     },
     {
       "id": "grok-3-mini",
@@ -581,6 +671,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-17"
     },
     {
@@ -595,6 +686,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-02-17"
     },
     {
@@ -609,6 +701,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
     },
     {
@@ -623,7 +716,23 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "codestral-2501",
+      "name": "Codestral 25.01",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.3,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
     },
     {
       "id": "o3-mini",
@@ -638,6 +747,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-20"
     },
     {
@@ -652,6 +762,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -666,6 +777,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -681,6 +793,7 @@
         "audio",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -696,6 +809,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -709,6 +823,7 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -723,6 +838,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-11"
     },
     {
@@ -737,6 +853,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-06"
     },
     {
@@ -753,7 +870,23 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-12-05"
+    },
+    {
+      "id": "mistral-large-2411",
+      "name": "Mistral Large 24.11",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-11-01"
     },
     {
       "id": "ministral-3b",
@@ -767,6 +900,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-10-22"
     },
     {
@@ -782,6 +916,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-25"
     },
     {
@@ -797,6 +932,7 @@
         "function_calling",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-25"
     },
     {
@@ -812,447 +948,8 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-12"
-    },
-    {
-      "id": "phi-3.5-moe-instruct",
-      "name": "Phi-3.5-MoE-instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.16,
-      "outputPrice": 0.64,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-08-20"
-    },
-    {
-      "id": "phi-3.5-mini-instruct",
-      "name": "Phi-3.5-mini-instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.13,
-      "outputPrice": 0.52,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-08-20"
-    },
-    {
-      "id": "meta-llama-3.1-8b-instruct",
-      "name": "Meta-Llama-3.1-8B-Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0.3,
-      "outputPrice": 0.61,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "meta-llama-3.1-70b-instruct",
-      "name": "Meta-Llama-3.1-70B-Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 2.68,
-      "outputPrice": 3.54,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "meta-llama-3.1-405b-instruct",
-      "name": "Meta-Llama-3.1-405B-Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 5.33,
-      "outputPrice": 16,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "gpt-4o-mini",
-      "name": "GPT-4o mini",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-07-18"
-    },
-    {
-      "id": "mistral-nemo",
-      "name": "Mistral Nemo",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0.15,
-      "outputPrice": 0.15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-07-18"
-    },
-    {
-      "id": "gpt-4o",
-      "name": "GPT-4o",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 2.5,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-05-13"
-    },
-    {
-      "id": "phi-3-medium-4k-instruct",
-      "name": "Phi-3-medium-instruct (4k)",
-      "contextWindow": 4096,
-      "maxOutput": 1024,
-      "inputPrice": 0.17,
-      "outputPrice": 0.68,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "phi-3-mini-128k-instruct",
-      "name": "Phi-3-mini-instruct (128k)",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.13,
-      "outputPrice": 0.52,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "phi-3-small-8k-instruct",
-      "name": "Phi-3-small-instruct (8k)",
-      "contextWindow": 8192,
-      "maxOutput": 2048,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "phi-3-small-128k-instruct",
-      "name": "Phi-3-small-instruct (128k)",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "phi-3-mini-4k-instruct",
-      "name": "Phi-3-mini-instruct (4k)",
-      "contextWindow": 4096,
-      "maxOutput": 1024,
-      "inputPrice": 0.13,
-      "outputPrice": 0.52,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "phi-3-medium-128k-instruct",
-      "name": "Phi-3-medium-instruct (128k)",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.17,
-      "outputPrice": 0.68,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "meta-llama-3-8b-instruct",
-      "name": "Meta-Llama-3-8B-Instruct",
-      "contextWindow": 8192,
-      "maxOutput": 2048,
-      "inputPrice": 0.3,
-      "outputPrice": 0.61,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-04-18"
-    },
-    {
-      "id": "meta-llama-3-70b-instruct",
-      "name": "Meta-Llama-3-70B-Instruct",
-      "contextWindow": 8192,
-      "maxOutput": 2048,
-      "inputPrice": 2.68,
-      "outputPrice": 3.54,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-04-18"
-    },
-    {
-      "id": "text-embedding-3-large",
-      "name": "text-embedding-3-large",
-      "contextWindow": 8191,
-      "maxOutput": 3072,
-      "inputPrice": 0.13,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-01-25"
-    },
-    {
-      "id": "text-embedding-3-small",
-      "name": "text-embedding-3-small",
-      "contextWindow": 8191,
-      "maxOutput": 1536,
-      "inputPrice": 0.02,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2024-01-25"
-    },
-    {
-      "id": "cohere-embed-v3-english",
-      "name": "Embed v3 English",
-      "contextWindow": 512,
-      "maxOutput": 1024,
-      "inputPrice": 0.1,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2023-11-07"
-    },
-    {
-      "id": "cohere-embed-v3-multilingual",
-      "name": "Embed v3 Multilingual",
-      "contextWindow": 512,
-      "maxOutput": 1024,
-      "inputPrice": 0.1,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2023-11-07"
-    },
-    {
-      "id": "gpt-4-turbo-vision",
-      "name": "GPT-4 Turbo Vision",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 10,
-      "outputPrice": 30,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2023-11-06"
-    },
-    {
-      "id": "gpt-4-turbo",
-      "name": "GPT-4 Turbo",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 10,
-      "outputPrice": 30,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2023-11-06"
-    },
-    {
-      "id": "gpt-3.5-turbo-instruct",
-      "name": "GPT-3.5 Turbo Instruct",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 1.5,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2023-09-21"
-    },
-    {
-      "id": "gpt-4-32k",
-      "name": "GPT-4 32K",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 60,
-      "outputPrice": 120,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2023-03-14"
-    },
-    {
-      "id": "gpt-4",
-      "name": "GPT-4",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 60,
-      "outputPrice": 120,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2023-03-14"
-    },
-    {
-      "id": "text-embedding-ada-002",
-      "name": "text-embedding-ada-002",
-      "contextWindow": 8192,
-      "maxOutput": 1536,
-      "inputPrice": 0.1,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "releaseDate": "2022-12-15"
-    },
-    {
-      "id": "deepseek-r1-0528",
-      "name": "DeepSeek-R1-0528",
-      "contextWindow": 163840,
-      "maxOutput": 163840,
-      "inputPrice": 1.35,
-      "outputPrice": 5.4,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "releaseDate": "2025-05-28"
-    },
-    {
-      "id": "mistral-medium-2505",
-      "name": "Mistral Medium 3",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0.4,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-05-07"
-    },
-    {
-      "id": "deepseek-v3-0324",
-      "name": "DeepSeek-V3-0324",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 1.14,
-      "outputPrice": 4.56,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-03-24"
-    },
-    {
-      "id": "mistral-small-2503",
-      "name": "Mistral Small 3.1",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0.1,
-      "outputPrice": 0.3,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2025-03-01"
-    },
-    {
-      "id": "codestral-2501",
-      "name": "Codestral 25.01",
-      "contextWindow": 256000,
-      "maxOutput": 256000,
-      "inputPrice": 0.3,
-      "outputPrice": 0.9,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming",
-        "code"
-      ],
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "mistral-large-2411",
-      "name": "Mistral Large 24.11",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 2,
-      "outputPrice": 6,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "releaseDate": "2024-11-01"
     },
     {
       "id": "o1-preview",
@@ -1267,6 +964,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-09-12"
     },
     {
@@ -1282,6 +980,7 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-30"
     },
     {
@@ -1297,7 +996,254 @@
         "reasoning",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-08-30"
+    },
+    {
+      "id": "phi-3.5-moe-instruct",
+      "name": "Phi-3.5-MoE-instruct",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.16,
+      "outputPrice": 0.64,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-20"
+    },
+    {
+      "id": "phi-3.5-mini-instruct",
+      "name": "Phi-3.5-mini-instruct",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.13,
+      "outputPrice": 0.52,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-20"
+    },
+    {
+      "id": "meta-llama-3.1-8b-instruct",
+      "name": "Meta-Llama-3.1-8B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.3,
+      "outputPrice": 0.61,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "meta-llama-3.1-70b-instruct",
+      "name": "Meta-Llama-3.1-70B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 2.68,
+      "outputPrice": 3.54,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "meta-llama-3.1-405b-instruct",
+      "name": "Meta-Llama-3.1-405B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 5.33,
+      "outputPrice": 16,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "gpt-4o-mini",
+      "name": "GPT-4o mini",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-18"
+    },
+    {
+      "id": "mistral-nemo",
+      "name": "Mistral Nemo",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.15,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-18"
+    },
+    {
+      "id": "gpt-4o",
+      "name": "GPT-4o",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-05-13"
+    },
+    {
+      "id": "phi-3-medium-4k-instruct",
+      "name": "Phi-3-medium-instruct (4k)",
+      "contextWindow": 4096,
+      "maxOutput": 1024,
+      "inputPrice": 0.17,
+      "outputPrice": 0.68,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
+      "id": "phi-3-mini-128k-instruct",
+      "name": "Phi-3-mini-instruct (128k)",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.13,
+      "outputPrice": 0.52,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
+      "id": "phi-3-small-8k-instruct",
+      "name": "Phi-3-small-instruct (8k)",
+      "contextWindow": 8192,
+      "maxOutput": 2048,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
+      "id": "phi-3-small-128k-instruct",
+      "name": "Phi-3-small-instruct (128k)",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
+      "id": "phi-3-mini-4k-instruct",
+      "name": "Phi-3-mini-instruct (4k)",
+      "contextWindow": 4096,
+      "maxOutput": 1024,
+      "inputPrice": 0.13,
+      "outputPrice": 0.52,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
+      "id": "phi-3-medium-128k-instruct",
+      "name": "Phi-3-medium-instruct (128k)",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.17,
+      "outputPrice": 0.68,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
+      "id": "meta-llama-3-8b-instruct",
+      "name": "Meta-Llama-3-8B-Instruct",
+      "contextWindow": 8192,
+      "maxOutput": 2048,
+      "inputPrice": 0.3,
+      "outputPrice": 0.61,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-18"
+    },
+    {
+      "id": "meta-llama-3-70b-instruct",
+      "name": "Meta-Llama-3-70B-Instruct",
+      "contextWindow": 8192,
+      "maxOutput": 2048,
+      "inputPrice": 2.68,
+      "outputPrice": 3.54,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-18"
+    },
+    {
+      "id": "text-embedding-3-large",
+      "name": "text-embedding-3-large",
+      "contextWindow": 8191,
+      "maxOutput": 3072,
+      "inputPrice": 0.13,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-25"
     },
     {
       "id": "gpt-3.5-turbo-0125",
@@ -1310,7 +1256,50 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2024-01-25"
+    },
+    {
+      "id": "text-embedding-3-small",
+      "name": "text-embedding-3-small",
+      "contextWindow": 8191,
+      "maxOutput": 1536,
+      "inputPrice": 0.02,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-25"
+    },
+    {
+      "id": "cohere-embed-v3-english",
+      "name": "Embed v3 English",
+      "contextWindow": 512,
+      "maxOutput": 1024,
+      "inputPrice": 0.1,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-11-07"
+    },
+    {
+      "id": "cohere-embed-v3-multilingual",
+      "name": "Embed v3 Multilingual",
+      "contextWindow": 512,
+      "maxOutput": 1024,
+      "inputPrice": 0.1,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-11-07"
     },
     {
       "id": "gpt-3.5-turbo-1106",
@@ -1323,7 +1312,54 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-11-06"
+    },
+    {
+      "id": "gpt-4-turbo-vision",
+      "name": "GPT-4 Turbo Vision",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 10,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-11-06"
+    },
+    {
+      "id": "gpt-4-turbo",
+      "name": "GPT-4 Turbo",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 10,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-11-06"
+    },
+    {
+      "id": "gpt-3.5-turbo-instruct",
+      "name": "GPT-3.5 Turbo Instruct",
+      "contextWindow": 4096,
+      "maxOutput": 4096,
+      "inputPrice": 1.5,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-09-21"
     },
     {
       "id": "gpt-3.5-turbo-0613",
@@ -1336,7 +1372,38 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-06-13"
+    },
+    {
+      "id": "gpt-4-32k",
+      "name": "GPT-4 32K",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 60,
+      "outputPrice": 120,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-03-14"
+    },
+    {
+      "id": "gpt-4",
+      "name": "GPT-4",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 60,
+      "outputPrice": 120,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-03-14"
     },
     {
       "id": "gpt-3.5-turbo-0301",
@@ -1349,9 +1416,24 @@
         "chat",
         "streaming"
       ],
+      "default": false,
       "releaseDate": "2023-03-01"
+    },
+    {
+      "id": "text-embedding-ada-002",
+      "name": "text-embedding-ada-002",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.1,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2022-12-15"
     }
   ],
-  "baseUrl": "https://{resource}.cognitiveservices.azure.com/openai/deployments/{deployment}",
+  "baseUrl": "https://api.azurecognitiveservices.com/v1",
   "docsUrl": "https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models"
 }

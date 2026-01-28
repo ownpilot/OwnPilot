@@ -28,14 +28,14 @@ function getRepo(userId = 'default'): TriggersRepository {
 /**
  * GET /triggers - List triggers
  */
-triggersRoutes.get('/', (c) => {
+triggersRoutes.get('/', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const type = c.req.query('type') as TriggerType | undefined;
   const enabled = c.req.query('enabled');
   const limit = parseInt(c.req.query('limit') ?? '20', 10);
 
   const repo = getRepo(userId);
-  const triggers = repo.list({
+  const triggers = await repo.list({
     type,
     enabled: enabled === 'true' ? true : enabled === 'false' ? false : undefined,
     limit,
@@ -73,7 +73,7 @@ triggersRoutes.post('/', async (c) => {
   }
 
   const repo = getRepo(userId);
-  const trigger = repo.create(body);
+  const trigger = await repo.create(body);
 
   const response: ApiResponse = {
     success: true,
@@ -89,10 +89,10 @@ triggersRoutes.post('/', async (c) => {
 /**
  * GET /triggers/stats - Get trigger statistics
  */
-triggersRoutes.get('/stats', (c) => {
+triggersRoutes.get('/stats', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const repo = getRepo(userId);
-  const stats = repo.getStats();
+  const stats = await repo.getStats();
 
   const response: ApiResponse = {
     success: true,
@@ -105,12 +105,12 @@ triggersRoutes.get('/stats', (c) => {
 /**
  * GET /triggers/history - Get recent trigger history
  */
-triggersRoutes.get('/history', (c) => {
+triggersRoutes.get('/history', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const limit = parseInt(c.req.query('limit') ?? '50', 10);
 
   const repo = getRepo(userId);
-  const history = repo.getRecentHistory(limit);
+  const history = await repo.getRecentHistory(limit);
 
   const response: ApiResponse = {
     success: true,
@@ -126,11 +126,11 @@ triggersRoutes.get('/history', (c) => {
 /**
  * GET /triggers/due - Get triggers that are due to fire
  */
-triggersRoutes.get('/due', (c) => {
+triggersRoutes.get('/due', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
 
   const repo = getRepo(userId);
-  const triggers = repo.getDueTriggers();
+  const triggers = await repo.getDueTriggers();
 
   const response: ApiResponse = {
     success: true,
@@ -146,12 +146,12 @@ triggersRoutes.get('/due', (c) => {
 /**
  * GET /triggers/:id - Get a specific trigger
  */
-triggersRoutes.get('/:id', (c) => {
+triggersRoutes.get('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const trigger = repo.get(id);
+  const trigger = await repo.get(id);
 
   if (!trigger) {
     return c.json(
@@ -167,7 +167,7 @@ triggersRoutes.get('/:id', (c) => {
   }
 
   // Get recent history for this trigger
-  const history = repo.getHistoryForTrigger(id, 10);
+  const history = await repo.getHistoryForTrigger(id, 10);
 
   const response: ApiResponse = {
     success: true,
@@ -189,7 +189,7 @@ triggersRoutes.patch('/:id', async (c) => {
   const body = await c.req.json<UpdateTriggerInput>();
 
   const repo = getRepo(userId);
-  const updated = repo.update(id, body);
+  const updated = await repo.update(id, body);
 
   if (!updated) {
     return c.json(
@@ -215,12 +215,12 @@ triggersRoutes.patch('/:id', async (c) => {
 /**
  * POST /triggers/:id/enable - Enable a trigger
  */
-triggersRoutes.post('/:id/enable', (c) => {
+triggersRoutes.post('/:id/enable', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const updated = repo.update(id, { enabled: true });
+  const updated = await repo.update(id, { enabled: true });
 
   if (!updated) {
     return c.json(
@@ -249,12 +249,12 @@ triggersRoutes.post('/:id/enable', (c) => {
 /**
  * POST /triggers/:id/disable - Disable a trigger
  */
-triggersRoutes.post('/:id/disable', (c) => {
+triggersRoutes.post('/:id/disable', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const updated = repo.update(id, { enabled: false });
+  const updated = await repo.update(id, { enabled: false });
 
   if (!updated) {
     return c.json(
@@ -288,7 +288,7 @@ triggersRoutes.post('/:id/fire', async (c) => {
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const trigger = repo.get(id);
+  const trigger = await repo.get(id);
 
   if (!trigger) {
     return c.json(
@@ -327,12 +327,12 @@ triggersRoutes.post('/:id/fire', async (c) => {
 /**
  * DELETE /triggers/:id - Delete a trigger
  */
-triggersRoutes.delete('/:id', (c) => {
+triggersRoutes.delete('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
   const repo = getRepo(userId);
-  const deleted = repo.delete(id);
+  const deleted = await repo.delete(id);
 
   if (!deleted) {
     return c.json(
@@ -360,13 +360,13 @@ triggersRoutes.delete('/:id', (c) => {
 /**
  * GET /triggers/:id/history - Get history for a specific trigger
  */
-triggersRoutes.get('/:id/history', (c) => {
+triggersRoutes.get('/:id/history', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
   const limit = parseInt(c.req.query('limit') ?? '20', 10);
 
   const repo = getRepo(userId);
-  const trigger = repo.get(id);
+  const trigger = await repo.get(id);
 
   if (!trigger) {
     return c.json(
@@ -381,7 +381,7 @@ triggersRoutes.get('/:id/history', (c) => {
     );
   }
 
-  const history = repo.getHistoryForTrigger(id, limit);
+  const history = await repo.getHistoryForTrigger(id, limit);
 
   const response: ApiResponse = {
     success: true,
@@ -404,7 +404,7 @@ triggersRoutes.post('/cleanup', async (c) => {
   const body = await c.req.json<{ maxAgeDays?: number }>().catch((): { maxAgeDays?: number } => ({}));
 
   const repo = getRepo(userId);
-  const deleted = repo.cleanupHistory(body.maxAgeDays ?? 30);
+  const deleted = await repo.cleanupHistory(body.maxAgeDays ?? 30);
 
   const response: ApiResponse = {
     success: true,

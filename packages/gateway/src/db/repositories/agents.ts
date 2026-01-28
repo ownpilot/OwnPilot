@@ -1,10 +1,10 @@
 /**
- * Agents Repository
+ * Agents Repository (PostgreSQL)
  *
  * Stores agent configurations
  */
 
-import { getDatabase } from '../connection.js';
+import { BaseRepository } from './base.js';
 
 export interface AgentRecord {
   id: string;
@@ -35,126 +35,129 @@ function rowToAgent(row: AgentRow): AgentRecord {
     systemPrompt: row.system_prompt ?? undefined,
     provider: row.provider,
     model: row.model,
-    config: JSON.parse(row.config || '{}'),
+    config: typeof row.config === 'string' ? JSON.parse(row.config || '{}') : (row.config || {}),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
 }
 
-export class AgentsRepository {
-  private db = getDatabase();
-
-  create(data: {
+export class AgentsRepository extends BaseRepository {
+  async create(data: {
     id: string;
     name: string;
     systemPrompt?: string;
     provider: string;
     model: string;
     config?: Record<string, unknown>;
-  }): AgentRecord {
-    const stmt = this.db.prepare(`
-      INSERT INTO agents (id, name, system_prompt, provider, model, config)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      data.id,
-      data.name,
-      data.systemPrompt ?? null,
-      data.provider,
-      data.model,
-      JSON.stringify(data.config ?? {})
+  }): Promise<AgentRecord> {
+    await this.execute(
+      `INSERT INTO agents (id, name, system_prompt, provider, model, config)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        data.id,
+        data.name,
+        data.systemPrompt ?? null,
+        data.provider,
+        data.model,
+        JSON.stringify(data.config ?? {}),
+      ]
     );
 
-    return this.getById(data.id)!;
+    const result = await this.getById(data.id);
+    if (!result) throw new Error('Failed to create agent');
+    return result;
   }
 
-  getById(id: string): AgentRecord | null {
-    const stmt = this.db.prepare<string, AgentRow>(`
-      SELECT * FROM agents WHERE id = ?
-    `);
-
-    const row = stmt.get(id);
+  async getById(id: string): Promise<AgentRecord | null> {
+    const row = await this.queryOne<AgentRow>(
+      `SELECT * FROM agents WHERE id = $1`,
+      [id]
+    );
     return row ? rowToAgent(row) : null;
   }
 
-  getByName(name: string): AgentRecord | null {
-    const stmt = this.db.prepare<string, AgentRow>(`
-      SELECT * FROM agents WHERE name = ?
-    `);
-
-    const row = stmt.get(name);
+  async getByName(name: string): Promise<AgentRecord | null> {
+    const row = await this.queryOne<AgentRow>(
+      `SELECT * FROM agents WHERE name = $1`,
+      [name]
+    );
     return row ? rowToAgent(row) : null;
   }
 
-  getAll(): AgentRecord[] {
-    const stmt = this.db.prepare<[], AgentRow>(`
-      SELECT * FROM agents ORDER BY name ASC
-    `);
-
-    return stmt.all().map(rowToAgent);
+  async getAll(): Promise<AgentRecord[]> {
+    const rows = await this.query<AgentRow>(
+      `SELECT * FROM agents ORDER BY name ASC`
+    );
+    return rows.map(rowToAgent);
   }
 
-  update(id: string, data: {
+  async update(id: string, data: {
     name?: string;
     systemPrompt?: string;
     provider?: string;
     model?: string;
     config?: Record<string, unknown>;
-  }): AgentRecord | null {
-    const existing = this.getById(id);
+  }): Promise<AgentRecord | null> {
+    const existing = await this.getById(id);
     if (!existing) return null;
 
     const updates: string[] = [];
     const values: unknown[] = [];
+    let paramIndex = 1;
 
     if (data.name !== undefined) {
-      updates.push('name = ?');
+      updates.push(`name = $${paramIndex++}`);
       values.push(data.name);
     }
     if (data.systemPrompt !== undefined) {
-      updates.push('system_prompt = ?');
+      updates.push(`system_prompt = $${paramIndex++}`);
       values.push(data.systemPrompt);
     }
     if (data.provider !== undefined) {
-      updates.push('provider = ?');
+      updates.push(`provider = $${paramIndex++}`);
       values.push(data.provider);
     }
     if (data.model !== undefined) {
-      updates.push('model = ?');
+      updates.push(`model = $${paramIndex++}`);
       values.push(data.model);
     }
     if (data.config !== undefined) {
-      updates.push('config = ?');
+      updates.push(`config = $${paramIndex++}`);
       values.push(JSON.stringify(data.config));
     }
 
     if (updates.length === 0) return existing;
 
-    updates.push("updated_at = datetime('now')");
+    updates.push('updated_at = NOW()');
     values.push(id);
 
-    const stmt = this.db.prepare(`
-      UPDATE agents SET ${updates.join(', ')} WHERE id = ?
-    `);
+    await this.execute(
+      `UPDATE agents SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      values
+    );
 
-    stmt.run(...values);
     return this.getById(id);
   }
 
-  delete(id: string): boolean {
-    const stmt = this.db.prepare(`DELETE FROM agents WHERE id = ?`);
-    const result = stmt.run(id);
+  async delete(id: string): Promise<boolean> {
+    const result = await this.execute(
+      `DELETE FROM agents WHERE id = $1`,
+      [id]
+    );
     return result.changes > 0;
   }
 
-  count(): number {
-    const stmt = this.db.prepare<[], { count: number }>(`
-      SELECT COUNT(*) as count FROM agents
-    `);
-
-    return stmt.get()?.count ?? 0;
+  async count(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM agents`
+    );
+    return parseInt(row?.count ?? '0', 10);
   }
 }
 
 export const agentsRepo = new AgentsRepository();
+
+// Factory function
+export function createAgentsRepository(): AgentsRepository {
+  return new AgentsRepository();
+}

@@ -545,6 +545,24 @@ export function DollarSign(props: IconProps) {
   );
 }
 
+export function Receipt(props: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
+      <path d="M12 17.5v-11"/>
+    </svg>
+  );
+}
+
+export function ChevronLeft(props: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="m15 18-6-6 6-6"/>
+    </svg>
+  );
+}
+
 export function Cpu(props: IconProps) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -1121,6 +1139,29 @@ export function Sparkles(props: IconProps) {
       <path d="M19 17v4"/>
       <path d="M3 5h4"/>
       <path d="M17 19h4"/>
+    </svg>
+  );
+}
+
+export function Container(props: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M22 7.7c0-.6-.4-1.2-.8-1.5l-6.3-3.9a1.72 1.72 0 0 0-1.7 0l-10.3 6c-.5.2-.9.8-.9 1.4v6.6c0 .5.4 1.2.8 1.5l6.3 3.9a1.72 1.72 0 0 0 1.7 0l10.3-6c.5-.3.9-1 .9-1.5V7.7Z"/>
+      <path d="M10 21.9V14L2.1 9.1"/>
+      <path d="m10 14 11.9-6.9"/>
+      <path d="M14 19.8v-8.1"/>
+      <path d="M18 17.5V9.4"/>
+    </svg>
+  );
+}
+
+export function MonitorCheck(props: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="m9 10 2 2 4-4"/>
+      <rect width="20" height="14" x="2" y="3" rx="2"/>
+      <path d="M12 17v4"/>
+      <path d="M8 21h8"/>
     </svg>
   );
 }
