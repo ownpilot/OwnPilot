@@ -69,7 +69,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 
 ```bash
 # Clone the repository
-git clone https://github.com/anthropics/ownpilot.git
+git clone https://github.com/ownpilot/ownpilot.git
 cd ownpilot
 
 # Install dependencies
