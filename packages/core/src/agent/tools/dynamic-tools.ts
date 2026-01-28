@@ -315,9 +315,8 @@ The tool will be saved and available for use. Write JavaScript code that:
         description: 'Clear description of what the tool does',
       },
       parameters: {
-        type: 'object',
-        description: 'JSON Schema for tool parameters',
-        additionalProperties: true,
+        type: 'string',
+        description: 'JSON Schema for tool parameters as a JSON string (e.g., {"type":"object","properties":{"query":{"type":"string","description":"Search query"}}})',
       },
       code: {
         type: 'string',

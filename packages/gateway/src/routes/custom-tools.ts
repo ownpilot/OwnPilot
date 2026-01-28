@@ -16,6 +16,7 @@ import {
 import {
   createDynamicToolRegistry,
   type DynamicToolDefinition,
+  type ToolDefinition,
 } from '@ownpilot/core';
 import type { ApiResponse } from '../types/index.js';
 
@@ -643,3 +644,319 @@ customToolsRoutes.get('/active/definitions', (c) => {
 
   return c.json(response);
 });
+
+// =============================================================================
+// META-TOOL EXECUTORS (For LLM to create/manage custom tools)
+// =============================================================================
+
+interface ToolExecutionResult {
+  success: boolean;
+  result?: unknown;
+  error?: string;
+  requiresApproval?: boolean;
+  pendingToolId?: string;
+}
+
+// Dangerous patterns that are not allowed in tool code
+const DANGEROUS_PATTERNS = [
+  /process\.exit/i,
+  /require\s*\(/i,
+  /import\s*\(/i,
+  /__dirname/i,
+  /__filename/i,
+  /global\./i,
+  /globalThis\./i,
+];
+
+/**
+ * Validate tool code for dangerous patterns
+ */
+function validateToolCode(code: string): { valid: boolean; error?: string } {
+  for (const pattern of DANGEROUS_PATTERNS) {
+    if (pattern.test(code)) {
+      return { valid: false, error: `Tool code contains forbidden pattern: ${pattern.source}` };
+    }
+  }
+  return { valid: true };
+}
+
+/**
+ * Execute custom tool management tools (meta-tools)
+ * Used by LLM to create, list, delete, and toggle custom tools
+ */
+export function executeCustomToolTool(
+  toolId: string,
+  params: Record<string, unknown>,
+  userId = 'default'
+): ToolExecutionResult {
+  const repo = createCustomToolsRepo(userId);
+
+  try {
+    switch (toolId) {
+      case 'create_tool': {
+        const { name, description, parameters: parametersInput, code, category, permissions } = params as {
+          name: string;
+          description: string;
+          parameters: string | { type: 'object'; properties: Record<string, unknown>; required?: string[] };
+          code: string;
+          category?: string;
+          permissions?: string[];
+        };
+
+        // Validate required fields
+        if (!name || !description || !parametersInput || !code) {
+          return { success: false, error: 'Missing required fields: name, description, parameters, code' };
+        }
+
+        // Parse parameters if it's a JSON string
+        let parameters: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
+        if (typeof parametersInput === 'string') {
+          try {
+            parameters = JSON.parse(parametersInput);
+          } catch {
+            return { success: false, error: 'Invalid JSON in parameters field. Must be a valid JSON Schema object.' };
+          }
+        } else {
+          parameters = parametersInput;
+        }
+
+        // Validate parameters structure
+        if (!parameters || typeof parameters !== 'object' || parameters.type !== 'object') {
+          return { success: false, error: 'Parameters must be a JSON Schema object with type: "object"' };
+        }
+
+        // Validate tool name format
+        if (!/^[a-z][a-z0-9_]*$/.test(name)) {
+          return {
+            success: false,
+            error: 'Tool name must start with lowercase letter and contain only lowercase letters, numbers, and underscores',
+          };
+        }
+
+        // Check if tool already exists
+        const existing = repo.getByName(name);
+        if (existing) {
+          return { success: false, error: `Tool with name '${name}' already exists` };
+        }
+
+        // Validate code
+        const codeValidation = validateToolCode(code);
+        if (!codeValidation.valid) {
+          return { success: false, error: codeValidation.error };
+        }
+
+        // Create the tool (LLM-created tools may need approval for dangerous permissions)
+        const tool = repo.create({
+          name,
+          description,
+          parameters,
+          code,
+          category,
+          permissions: (permissions ?? []) as ToolPermission[],
+          requiresApproval: true, // All LLM-created tools require approval before each execution
+          createdBy: 'llm',
+        });
+
+        // If pending approval, notify user
+        if (tool.status === 'pending_approval') {
+          return {
+            success: true,
+            requiresApproval: true,
+            pendingToolId: tool.id,
+            result: {
+              message: `Tool '${name}' created but requires user approval before it can be used. It has been flagged for review because it requests dangerous permissions (${permissions?.join(', ')}).`,
+              toolId: tool.id,
+              status: tool.status,
+            },
+          };
+        }
+
+        // Sync to registry if active
+        syncToolToRegistry(tool);
+
+        return {
+          success: true,
+          result: {
+            message: `Tool '${name}' created successfully and is ready to use.`,
+            toolId: tool.id,
+            status: tool.status,
+            description: tool.description,
+          },
+        };
+      }
+
+      case 'list_custom_tools': {
+        const { category, status } = params as {
+          category?: string;
+          status?: 'active' | 'disabled' | 'pending_approval';
+        };
+
+        const tools = repo.list({
+          category,
+          status: status as ToolStatus,
+        });
+
+        const stats = repo.getStats();
+
+        return {
+          success: true,
+          result: {
+            message: `Found ${tools.length} custom tool(s).`,
+            tools: tools.map((t) => ({
+              id: t.id,
+              name: t.name,
+              description: t.description,
+              status: t.status,
+              category: t.category,
+              createdBy: t.createdBy,
+              usageCount: t.usageCount,
+            })),
+            stats: {
+              total: stats.total,
+              active: stats.active,
+              pendingApproval: stats.pendingApproval,
+            },
+          },
+        };
+      }
+
+      case 'delete_custom_tool': {
+        const { name } = params as { name: string };
+
+        if (!name) {
+          return { success: false, error: 'Tool name is required' };
+        }
+
+        const tool = repo.getByName(name);
+        if (!tool) {
+          return { success: false, error: `Tool '${name}' not found` };
+        }
+
+        // Unregister from dynamic registry
+        dynamicRegistry.unregister(name);
+
+        // Delete from database
+        const deleted = repo.delete(tool.id);
+
+        return {
+          success: deleted,
+          result: deleted
+            ? { message: `Tool '${name}' deleted successfully.` }
+            : { message: `Failed to delete tool '${name}'.` },
+        };
+      }
+
+      case 'toggle_custom_tool': {
+        const { name, enabled } = params as { name: string; enabled: boolean };
+
+        if (!name || enabled === undefined) {
+          return { success: false, error: 'Tool name and enabled status are required' };
+        }
+
+        const tool = repo.getByName(name);
+        if (!tool) {
+          return { success: false, error: `Tool '${name}' not found` };
+        }
+
+        const updated = enabled ? repo.enable(tool.id) : repo.disable(tool.id);
+        if (updated) {
+          syncToolToRegistry(updated);
+        }
+
+        return {
+          success: true,
+          result: {
+            message: `Tool '${name}' ${enabled ? 'enabled' : 'disabled'} successfully.`,
+            status: updated?.status,
+          },
+        };
+      }
+
+      default:
+        return { success: false, error: `Unknown custom tool operation: ${toolId}` };
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Execute an active custom tool by name
+ * Used when LLM calls a dynamically created tool
+ */
+export async function executeActiveCustomTool(
+  toolName: string,
+  params: Record<string, unknown>,
+  userId = 'default',
+  context?: { callId?: string; conversationId?: string }
+): Promise<ToolExecutionResult> {
+  const repo = createCustomToolsRepo(userId);
+
+  // Find tool by name
+  const tool = repo.getByName(toolName);
+  if (!tool) {
+    return { success: false, error: `Custom tool '${toolName}' not found` };
+  }
+
+  // Check if tool is active
+  if (tool.status !== 'active') {
+    if (tool.status === 'pending_approval') {
+      return {
+        success: false,
+        requiresApproval: true,
+        pendingToolId: tool.id,
+        error: `Tool '${toolName}' is pending approval. Please approve it in the Custom Tools page before use.`,
+      };
+    }
+    return { success: false, error: `Tool '${toolName}' is ${tool.status}` };
+  }
+
+  // Ensure tool is registered
+  syncToolToRegistry(tool);
+
+  try {
+    // Execute the tool
+    const result = await dynamicRegistry.execute(toolName, params, {
+      callId: context?.callId ?? `exec_${Date.now()}`,
+      conversationId: context?.conversationId ?? 'agent-execution',
+      userId,
+    });
+
+    // Record usage
+    repo.recordUsage(tool.id);
+
+    return {
+      success: !result.isError,
+      result: result.content,
+      error: result.isError ? String(result.content) : undefined,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Get all active custom tool definitions for LLM
+ */
+export function getActiveCustomToolDefinitions(userId = 'default'): ToolDefinition[] {
+  const repo = createCustomToolsRepo(userId);
+  const tools = repo.getActiveTools();
+
+  return tools.map((t) => ({
+    name: t.name,
+    description: t.description,
+    parameters: t.parameters as ToolDefinition['parameters'],
+    category: t.category ?? 'Custom',
+    requiresConfirmation: t.requiresApproval,
+  }));
+}
+
+/**
+ * Check if a tool name is a custom tool
+ */
+export function isCustomTool(toolName: string, userId = 'default'): boolean {
+  const repo = createCustomToolsRepo(userId);
+  return repo.getByName(toolName) !== null;
+}

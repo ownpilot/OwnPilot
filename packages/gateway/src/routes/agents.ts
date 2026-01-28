@@ -22,6 +22,7 @@ import {
   GOAL_TOOLS,
   CUSTOM_DATA_TOOLS,
   PERSONAL_DATA_TOOLS,
+  DYNAMIC_TOOL_DEFINITIONS,
   getDefaultPluginRegistry,
   TOOL_GROUPS,
   type AgentConfig,
@@ -33,6 +34,12 @@ import { executeMemoryTool } from './memories.js';
 import { executeGoalTool } from './goals.js';
 import { executeCustomDataTool } from './custom-data.js';
 import { executePersonalDataTool } from './personal-data-tools.js';
+import {
+  executeCustomToolTool,
+  executeActiveCustomTool,
+  getActiveCustomToolDefinitions,
+  isCustomTool,
+} from './custom-tools.js';
 import { CHANNEL_TOOLS, setChannelManager } from '../tools/index.js';
 import { channelManager } from '../channels/manager.js';
 import {
@@ -439,6 +446,68 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     });
   }
 
+  // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
+  for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
+    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
+
+      const result = executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
+
+      // Trace database operations
+      if (toolDef.name === 'create_tool') {
+        traceDbWrite('custom_tools', 'insert');
+      } else if (toolDef.name === 'list_custom_tools') {
+        traceDbRead('custom_tools', 'select');
+      } else if (toolDef.name === 'delete_custom_tool') {
+        traceDbWrite('custom_tools', 'delete');
+      } else if (toolDef.name === 'toggle_custom_tool') {
+        traceDbWrite('custom_tools', 'update');
+      }
+
+      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
+
+      if (result.success) {
+        return {
+          content: typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2),
+        };
+      }
+      return {
+        content: result.error ?? 'Unknown error',
+        isError: true,
+      };
+    });
+  }
+
+  // Register active custom tools (user-created dynamic tools)
+  const activeCustomToolDefs = getActiveCustomToolDefinitions(userId);
+  for (const toolDef of activeCustomToolDefs) {
+    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
+
+      const result = await executeActiveCustomTool(toolDef.name, args as Record<string, unknown>, userId, {
+        callId: `call_${Date.now()}`,
+        conversationId: record.id,
+      });
+
+      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
+
+      if (result.success) {
+        return {
+          content: typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2),
+        };
+      }
+      return {
+        content: result.error ?? 'Unknown error',
+        isError: true,
+      };
+    });
+  }
+  console.log(`[Agents] Registered ${activeCustomToolDefs.length} active custom tools`);
+
   // Register channel tools
   setChannelManager(channelManager);
   for (const { definition, executor } of CHANNEL_TOOLS) {
@@ -469,7 +538,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   // Get tool definitions for prompt injection
   const channelToolDefs = CHANNEL_TOOLS.map(t => t.definition);
-  const allToolDefs = [...getToolDefinitions(), ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...channelToolDefs, ...pluginToolDefs];
+  const allToolDefs = [...getToolDefinitions(), ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...channelToolDefs, ...pluginToolDefs];
 
   // Filter tools based on agent's toolGroups configuration
   const configuredToolGroups = (record.config.toolGroups as string[] | undefined);
@@ -1077,6 +1146,40 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
     });
   }
 
+  // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
+  for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
+    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const result = executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
+      if (result.success) {
+        return {
+          content: typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2),
+        };
+      }
+      return { content: result.error ?? 'Unknown error', isError: true };
+    });
+  }
+
+  // Register active custom tools (user-created dynamic tools)
+  const activeCustomToolDefs = getActiveCustomToolDefinitions(userId);
+  for (const toolDef of activeCustomToolDefs) {
+    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const result = await executeActiveCustomTool(toolDef.name, args as Record<string, unknown>, userId, {
+        callId: `call_${Date.now()}`,
+        conversationId: `chat_${provider}_${model}`,
+      });
+      if (result.success) {
+        return {
+          content: typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2),
+        };
+      }
+      return { content: result.error ?? 'Unknown error', isError: true };
+    });
+  }
+
   // Register channel tools
   setChannelManager(channelManager);
   for (const { definition, executor } of CHANNEL_TOOLS) {
@@ -1103,7 +1206,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
 
   // Get tool definitions for prompt injection (including all registered tools)
   const channelToolDefs = CHANNEL_TOOLS.map(t => t.definition);
-  const toolDefs = [...getToolDefinitions(), ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...channelToolDefs, ...pluginToolDefs];
+  const toolDefs = [...getToolDefinitions(), ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...channelToolDefs, ...pluginToolDefs];
 
   // Inject personal memory into system prompt
   const basePrompt = 'You are a helpful personal AI assistant. You help the user with their daily tasks, remember their preferences, and proactively assist them.';

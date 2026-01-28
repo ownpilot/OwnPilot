@@ -30,4 +30,10 @@ export { integrationsRoutes } from './integrations.js';
 export { mediaSettingsRoutes } from './media-settings.js';
 export { modelConfigsRoutes } from './model-configs.js';
 export { dashboardRoutes } from './dashboard.js';
-export { customToolsRoutes } from './custom-tools.js';
+export {
+  customToolsRoutes,
+  executeCustomToolTool,
+  executeActiveCustomTool,
+  getActiveCustomToolDefinitions,
+  isCustomTool,
+} from './custom-tools.js';
