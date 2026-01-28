@@ -1,0 +1,273 @@
+{
+  "id": "fireworks-ai",
+  "name": "Fireworks AI",
+  "type": "openai-compatible",
+  "apiKeyEnv": "FIREWORKS_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "accounts/fireworks/models/kimi-k2p5",
+      "name": "Kimi K2.5",
+      "contextWindow": 256000,
+      "maxOutput": 32768,
+      "inputPrice": 0.6,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "video",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "accounts/fireworks/models/minimax-m2p1",
+      "name": "MiniMax-M2.1",
+      "contextWindow": 200000,
+      "maxOutput": 200000,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-23"
+    },
+    {
+      "id": "accounts/fireworks/models/glm-4p7",
+      "name": "GLM 4.7",
+      "contextWindow": 198000,
+      "maxOutput": 198000,
+      "inputPrice": 0.6,
+      "outputPrice": 2.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "accounts/fireworks/models/deepseek-v3p2",
+      "name": "DeepSeek V3.2",
+      "contextWindow": 160000,
+      "maxOutput": 160000,
+      "inputPrice": 0.56,
+      "outputPrice": 1.68,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "accounts/fireworks/models/kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.6,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-06"
+    },
+    {
+      "id": "accounts/fireworks/models/minimax-m2",
+      "name": "MiniMax-M2",
+      "contextWindow": 192000,
+      "maxOutput": 192000,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10-27"
+    },
+    {
+      "id": "accounts/fireworks/models/glm-4p6",
+      "name": "GLM 4.6",
+      "contextWindow": 198000,
+      "maxOutput": 198000,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10-01"
+    },
+    {
+      "id": "accounts/fireworks/models/deepseek-v3p1",
+      "name": "DeepSeek V3.1",
+      "contextWindow": 163840,
+      "maxOutput": 163840,
+      "inputPrice": 0.56,
+      "outputPrice": 1.68,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-21"
+    },
+    {
+      "id": "accounts/fireworks/models/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.05,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "accounts/fireworks/models/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "accounts/fireworks/models/glm-4p5-air",
+      "name": "GLM 4.5 Air",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.22,
+      "outputPrice": 0.88,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-01"
+    },
+    {
+      "id": "accounts/fireworks/models/glm-4p5",
+      "name": "GLM 4.5",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-29"
+    },
+    {
+      "id": "accounts/fireworks/models/qwen3-coder-480b-a35b-instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "contextWindow": 256000,
+      "maxOutput": 32768,
+      "inputPrice": 0.45,
+      "outputPrice": 1.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-07-22"
+    },
+    {
+      "id": "accounts/fireworks/models/kimi-k2-instruct",
+      "name": "Kimi K2 Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-11"
+    },
+    {
+      "id": "accounts/fireworks/models/qwen3-235b-a22b",
+      "name": "Qwen3 235B-A22B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.22,
+      "outputPrice": 0.88,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-29"
+    },
+    {
+      "id": "accounts/fireworks/models/deepseek-r1-0528",
+      "name": "Deepseek R1 05/28",
+      "contextWindow": 160000,
+      "maxOutput": 16384,
+      "inputPrice": 3,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-28"
+    },
+    {
+      "id": "accounts/fireworks/models/deepseek-v3-0324",
+      "name": "Deepseek V3 03-24",
+      "contextWindow": 160000,
+      "maxOutput": 16384,
+      "inputPrice": 0.9,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-24"
+    }
+  ],
+  "baseUrl": "https://api.fireworks.ai/inference/v1/",
+  "docsUrl": "https://fireworks.ai/docs/"
+}

@@ -1,0 +1,659 @@
+/**
+ * Custom Data Routes
+ *
+ * API for managing dynamic custom tables and data.
+ * Also provides tool executors for AI to manage user's custom data.
+ */
+
+import { Hono } from 'hono';
+import type { ApiResponse } from '../types/index.js';
+import {
+  getCustomDataRepository,
+  type ColumnDefinition,
+} from '../db/repositories/custom-data.js';
+
+export const customDataRoutes = new Hono();
+
+// ============================================================================
+// Table Management Routes
+// ============================================================================
+
+/**
+ * GET /custom-data/tables - List all custom tables
+ */
+customDataRoutes.get('/tables', (c) => {
+  const repo = getCustomDataRepository();
+  const tables = repo.listTables();
+
+  // Add stats for each table
+  const tablesWithStats = tables.map((table) => {
+    const stats = repo.getTableStats(table.id);
+    return {
+      ...table,
+      recordCount: stats?.recordCount ?? 0,
+    };
+  });
+
+  const response: ApiResponse = {
+    success: true,
+    data: tablesWithStats,
+  };
+
+  return c.json(response);
+});
+
+/**
+ * POST /custom-data/tables - Create a new custom table
+ */
+customDataRoutes.post('/tables', async (c) => {
+  const body = await c.req.json<{
+    name: string;
+    displayName: string;
+    description?: string;
+    columns: ColumnDefinition[];
+  }>();
+
+  if (!body.name || !body.displayName || !body.columns?.length) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'name, displayName, and columns are required',
+        },
+      },
+      400
+    );
+  }
+
+  try {
+    const repo = getCustomDataRepository();
+    const table = repo.createTable(body.name, body.displayName, body.columns, body.description);
+
+    const response: ApiResponse = {
+      success: true,
+      data: table,
+    };
+
+    return c.json(response, 201);
+  } catch (err) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'CREATE_FAILED',
+          message: err instanceof Error ? err.message : 'Failed to create table',
+        },
+      },
+      400
+    );
+  }
+});
+
+/**
+ * GET /custom-data/tables/:table - Get table details
+ */
+customDataRoutes.get('/tables/:table', (c) => {
+  const tableId = c.req.param('table');
+  const repo = getCustomDataRepository();
+
+  const table = repo.getTable(tableId);
+  if (!table) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Table not found: ${tableId}`,
+        },
+      },
+      404
+    );
+  }
+
+  const stats = repo.getTableStats(table.id);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      ...table,
+      stats,
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * PUT /custom-data/tables/:table - Update table schema
+ */
+customDataRoutes.put('/tables/:table', async (c) => {
+  const tableId = c.req.param('table');
+  const body = await c.req.json<{
+    displayName?: string;
+    description?: string;
+    columns?: ColumnDefinition[];
+  }>();
+
+  const repo = getCustomDataRepository();
+  const updated = repo.updateTable(tableId, body);
+
+  if (!updated) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Table not found: ${tableId}`,
+        },
+      },
+      404
+    );
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    data: updated,
+  };
+
+  return c.json(response);
+});
+
+/**
+ * DELETE /custom-data/tables/:table - Delete table and all data
+ */
+customDataRoutes.delete('/tables/:table', (c) => {
+  const tableId = c.req.param('table');
+  const repo = getCustomDataRepository();
+
+  const deleted = repo.deleteTable(tableId);
+  if (!deleted) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Table not found: ${tableId}`,
+        },
+      },
+      404
+    );
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    data: { deleted: true },
+  };
+
+  return c.json(response);
+});
+
+// ============================================================================
+// Record Management Routes
+// ============================================================================
+
+/**
+ * GET /custom-data/tables/:table/records - List records
+ */
+customDataRoutes.get('/tables/:table/records', (c) => {
+  const tableId = c.req.param('table');
+  const limit = parseInt(c.req.query('limit') ?? '50');
+  const offset = parseInt(c.req.query('offset') ?? '0');
+  const filterParam = c.req.query('filter');
+
+  let filter: Record<string, unknown> | undefined;
+  if (filterParam) {
+    try {
+      filter = JSON.parse(filterParam);
+    } catch {
+      // Ignore invalid filter
+    }
+  }
+
+  try {
+    const repo = getCustomDataRepository();
+    const { records, total } = repo.listRecords(tableId, { limit, offset, filter });
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        records,
+        total,
+        limit,
+        offset,
+        hasMore: offset + records.length < total,
+      },
+    };
+
+    return c.json(response);
+  } catch (err) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'LIST_FAILED',
+          message: err instanceof Error ? err.message : 'Failed to list records',
+        },
+      },
+      400
+    );
+  }
+});
+
+/**
+ * POST /custom-data/tables/:table/records - Add a record
+ */
+customDataRoutes.post('/tables/:table/records', async (c) => {
+  const tableId = c.req.param('table');
+  const body = await c.req.json<{ data: Record<string, unknown> }>();
+
+  if (!body.data) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'data is required',
+        },
+      },
+      400
+    );
+  }
+
+  try {
+    const repo = getCustomDataRepository();
+    const record = repo.addRecord(tableId, body.data);
+
+    const response: ApiResponse = {
+      success: true,
+      data: record,
+    };
+
+    return c.json(response, 201);
+  } catch (err) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'ADD_FAILED',
+          message: err instanceof Error ? err.message : 'Failed to add record',
+        },
+      },
+      400
+    );
+  }
+});
+
+/**
+ * GET /custom-data/tables/:table/search - Search records
+ */
+customDataRoutes.get('/tables/:table/search', (c) => {
+  const tableId = c.req.param('table');
+  const query = c.req.query('q') ?? '';
+  const limit = parseInt(c.req.query('limit') ?? '20');
+
+  if (!query) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'Search query (q) is required',
+        },
+      },
+      400
+    );
+  }
+
+  try {
+    const repo = getCustomDataRepository();
+    const records = repo.searchRecords(tableId, query, { limit });
+
+    const response: ApiResponse = {
+      success: true,
+      data: records,
+    };
+
+    return c.json(response);
+  } catch (err) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'SEARCH_FAILED',
+          message: err instanceof Error ? err.message : 'Failed to search records',
+        },
+      },
+      400
+    );
+  }
+});
+
+/**
+ * GET /custom-data/records/:id - Get a single record
+ */
+customDataRoutes.get('/records/:id', (c) => {
+  const recordId = c.req.param('id');
+  const repo = getCustomDataRepository();
+
+  const record = repo.getRecord(recordId);
+  if (!record) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Record not found: ${recordId}`,
+        },
+      },
+      404
+    );
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    data: record,
+  };
+
+  return c.json(response);
+});
+
+/**
+ * PUT /custom-data/records/:id - Update a record
+ */
+customDataRoutes.put('/records/:id', async (c) => {
+  const recordId = c.req.param('id');
+  const body = await c.req.json<{ data: Record<string, unknown> }>();
+
+  if (!body.data) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'data is required',
+        },
+      },
+      400
+    );
+  }
+
+  try {
+    const repo = getCustomDataRepository();
+    const updated = repo.updateRecord(recordId, body.data);
+
+    if (!updated) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: `Record not found: ${recordId}`,
+          },
+        },
+        404
+      );
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: updated,
+    };
+
+    return c.json(response);
+  } catch (err) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'UPDATE_FAILED',
+          message: err instanceof Error ? err.message : 'Failed to update record',
+        },
+      },
+      400
+    );
+  }
+});
+
+/**
+ * DELETE /custom-data/records/:id - Delete a record
+ */
+customDataRoutes.delete('/records/:id', (c) => {
+  const recordId = c.req.param('id');
+  const repo = getCustomDataRepository();
+
+  const deleted = repo.deleteRecord(recordId);
+  if (!deleted) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Record not found: ${recordId}`,
+        },
+      },
+      404
+    );
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    data: { deleted: true },
+  };
+
+  return c.json(response);
+});
+
+// ============================================================================
+// Tool Executors for AI
+// ============================================================================
+
+export interface ToolExecutionResult {
+  success: boolean;
+  result?: unknown;
+  error?: string;
+}
+
+/**
+ * Execute custom data tool
+ */
+export function executeCustomDataTool(
+  toolId: string,
+  params: Record<string, unknown>
+): ToolExecutionResult {
+  const repo = getCustomDataRepository();
+
+  try {
+    switch (toolId) {
+      case 'create_custom_table': {
+        const { name, displayName, description, columns } = params as {
+          name: string;
+          displayName: string;
+          description?: string;
+          columns: ColumnDefinition[];
+        };
+        const table = repo.createTable(name, displayName, columns, description);
+        return {
+          success: true,
+          result: {
+            message: `Created table "${table.displayName}" with ${columns.length} columns.`,
+            table,
+          },
+        };
+      }
+
+      case 'list_custom_tables': {
+        const tables = repo.listTables();
+        if (tables.length === 0) {
+          return {
+            success: true,
+            result: {
+              message: 'No custom tables have been created yet.',
+              tables: [],
+            },
+          };
+        }
+        const tablesWithStats = tables.map((t) => ({
+          name: t.name,
+          displayName: t.displayName,
+          description: t.description,
+          columnCount: t.columns.length,
+          recordCount: repo.getTableStats(t.id)?.recordCount ?? 0,
+        }));
+        return {
+          success: true,
+          result: {
+            message: `Found ${tables.length} custom table(s).`,
+            tables: tablesWithStats,
+          },
+        };
+      }
+
+      case 'describe_custom_table': {
+        const { table: tableId } = params as { table: string };
+        const table = repo.getTable(tableId);
+        if (!table) {
+          return { success: false, error: `Table not found: ${tableId}` };
+        }
+        const stats = repo.getTableStats(table.id);
+        return {
+          success: true,
+          result: {
+            message: `Table "${table.displayName}" has ${table.columns.length} columns and ${stats?.recordCount ?? 0} records.`,
+            table: {
+              ...table,
+              stats,
+            },
+          },
+        };
+      }
+
+      case 'delete_custom_table': {
+        const { table: tableId, confirm } = params as { table: string; confirm: boolean };
+        if (!confirm) {
+          return { success: false, error: 'Must set confirm: true to delete a table' };
+        }
+        const table = repo.getTable(tableId);
+        if (!table) {
+          return { success: false, error: `Table not found: ${tableId}` };
+        }
+        const displayName = table.displayName;
+        repo.deleteTable(tableId);
+        return {
+          success: true,
+          result: {
+            message: `Deleted table "${displayName}" and all its data.`,
+          },
+        };
+      }
+
+      case 'add_custom_record': {
+        const { table: tableId, data } = params as {
+          table: string;
+          data: Record<string, unknown>;
+        };
+        const record = repo.addRecord(tableId, data);
+        const table = repo.getTable(tableId);
+        return {
+          success: true,
+          result: {
+            message: `Added new record to "${table?.displayName ?? tableId}".`,
+            record,
+          },
+        };
+      }
+
+      case 'list_custom_records': {
+        const { table: tableId, limit = 20, offset = 0, filter } = params as {
+          table: string;
+          limit?: number;
+          offset?: number;
+          filter?: Record<string, unknown>;
+        };
+        const { records, total } = repo.listRecords(tableId, { limit, offset, filter });
+        const table = repo.getTable(tableId);
+        return {
+          success: true,
+          result: {
+            message: `Found ${total} record(s) in "${table?.displayName ?? tableId}". Showing ${records.length}.`,
+            records: records.map((r) => ({ id: r.id, ...r.data, _createdAt: r.createdAt })),
+            total,
+            hasMore: offset + records.length < total,
+          },
+        };
+      }
+
+      case 'search_custom_records': {
+        const { table: tableId, query, limit = 20 } = params as {
+          table: string;
+          query: string;
+          limit?: number;
+        };
+        const records = repo.searchRecords(tableId, query, { limit });
+        const table = repo.getTable(tableId);
+        return {
+          success: true,
+          result: {
+            message: `Found ${records.length} record(s) matching "${query}" in "${table?.displayName ?? tableId}".`,
+            records: records.map((r) => ({ id: r.id, ...r.data, _createdAt: r.createdAt })),
+          },
+        };
+      }
+
+      case 'get_custom_record': {
+        const { recordId } = params as { recordId: string };
+        const record = repo.getRecord(recordId);
+        if (!record) {
+          return { success: false, error: `Record not found: ${recordId}` };
+        }
+        return {
+          success: true,
+          result: {
+            message: 'Record found.',
+            record: { id: record.id, ...record.data, _createdAt: record.createdAt, _updatedAt: record.updatedAt },
+          },
+        };
+      }
+
+      case 'update_custom_record': {
+        const { recordId, data } = params as {
+          recordId: string;
+          data: Record<string, unknown>;
+        };
+        const updated = repo.updateRecord(recordId, data);
+        if (!updated) {
+          return { success: false, error: `Record not found: ${recordId}` };
+        }
+        return {
+          success: true,
+          result: {
+            message: 'Record updated.',
+            record: { id: updated.id, ...updated.data, _updatedAt: updated.updatedAt },
+          },
+        };
+      }
+
+      case 'delete_custom_record': {
+        const { recordId } = params as { recordId: string };
+        const deleted = repo.deleteRecord(recordId);
+        if (!deleted) {
+          return { success: false, error: `Record not found: ${recordId}` };
+        }
+        return {
+          success: true,
+          result: {
+            message: 'Record deleted.',
+          },
+        };
+      }
+
+      default:
+        return { success: false, error: `Unknown tool: ${toolId}` };
+    }
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Unknown error',
+    };
+  }
+}

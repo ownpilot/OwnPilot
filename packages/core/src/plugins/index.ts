@@ -1,0 +1,931 @@
+/**
+ * Plugin System
+ *
+ * Extensible plugin architecture for the AI Gateway:
+ * - Plugin manifest and lifecycle management
+ * - Dynamic tool registration
+ * - Plugin isolation and permissions
+ * - Inter-plugin communication
+ * - Hot reload support
+ */
+
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import type { ToolDefinition, ToolExecutor, ToolContext, ToolExecutionResult } from '../agent/types.js';
+import type { PluginId, ToolId } from '../types/branded.js';
+
+// =============================================================================
+// Types
+// =============================================================================
+
+/**
+ * Plugin capability types
+ */
+export type PluginCapability =
+  | 'tools' // Provides tools
+  | 'handlers' // Message handlers
+  | 'storage' // Has storage needs
+  | 'scheduled' // Has scheduled tasks
+  | 'notifications' // Can send notifications
+  | 'ui' // Has UI components
+  | 'integrations'; // External integrations
+
+/**
+ * Plugin permission requirements
+ */
+export type PluginPermission =
+  | 'file_read'
+  | 'file_write'
+  | 'network'
+  | 'code_execute'
+  | 'memory_access'
+  | 'notifications'
+  | 'calendar'
+  | 'email'
+  | 'storage';
+
+/**
+ * Plugin status
+ */
+export type PluginStatus = 'installed' | 'enabled' | 'disabled' | 'error' | 'updating';
+
+/**
+ * Plugin manifest
+ */
+export interface PluginManifest {
+  /** Unique plugin ID */
+  id: string;
+  /** Human-readable name */
+  name: string;
+  /** Version (semver) */
+  version: string;
+  /** Description */
+  description: string;
+  /** Author information */
+  author?: {
+    name: string;
+    email?: string;
+    url?: string;
+  };
+  /** Plugin capabilities */
+  capabilities: PluginCapability[];
+  /** Required permissions */
+  permissions: PluginPermission[];
+  /** Dependencies on other plugins */
+  dependencies?: Record<string, string>;
+  /** Entry point file */
+  main: string;
+  /** Icon URL or data URI */
+  icon?: string;
+  /** Documentation URL */
+  docs?: string;
+  /** Configuration schema (JSON Schema) */
+  configSchema?: Record<string, unknown>;
+  /** Default configuration */
+  defaultConfig?: Record<string, unknown>;
+}
+
+/**
+ * Plugin configuration
+ */
+export interface PluginConfig {
+  /** Whether plugin is enabled */
+  enabled: boolean;
+  /** User-specific settings */
+  settings: Record<string, unknown>;
+  /** Granted permissions */
+  grantedPermissions: PluginPermission[];
+  /** Installation date */
+  installedAt: string;
+  /** Last updated */
+  updatedAt: string;
+}
+
+/**
+ * Plugin context provided to plugin code
+ */
+export interface PluginContext {
+  /** Plugin ID */
+  pluginId: PluginId;
+  /** Plugin configuration */
+  config: PluginConfig;
+  /** Storage API */
+  storage: PluginStorage;
+  /** Logger */
+  log: PluginLogger;
+  /** Event emitter for inter-plugin communication */
+  events: PluginEvents;
+  /** Access to other plugins' public APIs */
+  getPlugin: (id: string) => PluginPublicAPI | undefined;
+}
+
+/**
+ * Plugin storage API
+ */
+export interface PluginStorage {
+  get<T>(key: string): Promise<T | undefined>;
+  set<T>(key: string, value: T): Promise<void>;
+  delete(key: string): Promise<boolean>;
+  list(): Promise<string[]>;
+  clear(): Promise<void>;
+}
+
+/**
+ * Plugin logger
+ */
+export interface PluginLogger {
+  debug(message: string, ...args: unknown[]): void;
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, ...args: unknown[]): void;
+}
+
+/**
+ * Plugin events for inter-plugin communication
+ */
+export interface PluginEvents {
+  emit(event: string, data: unknown): void;
+  on(event: string, handler: (data: unknown) => void): void;
+  off(event: string, handler: (data: unknown) => void): void;
+}
+
+/**
+ * Plugin public API (exposed to other plugins)
+ */
+export interface PluginPublicAPI {
+  [key: string]: unknown;
+}
+
+/**
+ * Plugin instance
+ */
+export interface Plugin {
+  /** Plugin manifest */
+  manifest: PluginManifest;
+  /** Plugin status */
+  status: PluginStatus;
+  /** Configuration */
+  config: PluginConfig;
+  /** Registered tools */
+  tools: Map<string, { definition: ToolDefinition; executor: ToolExecutor }>;
+  /** Message handlers */
+  handlers: MessageHandler[];
+  /** Public API */
+  api?: PluginPublicAPI;
+  /** Lifecycle hooks */
+  lifecycle: {
+    onLoad?: () => Promise<void>;
+    onUnload?: () => Promise<void>;
+    onEnable?: () => Promise<void>;
+    onDisable?: () => Promise<void>;
+    onConfigChange?: (newConfig: Record<string, unknown>) => Promise<void>;
+  };
+}
+
+/**
+ * Message handler for processing user requests
+ */
+export interface MessageHandler {
+  /** Handler name */
+  name: string;
+  /** Description of what this handler does */
+  description: string;
+  /** Priority (higher = checked first) */
+  priority: number;
+  /** Check if this handler can handle the message */
+  canHandle: (message: string, context: HandlerContext) => boolean | Promise<boolean>;
+  /** Handle the message */
+  handle: (message: string, context: HandlerContext) => Promise<HandlerResult>;
+}
+
+/**
+ * Handler context
+ */
+export interface HandlerContext {
+  userId: string;
+  conversationId: string;
+  channel: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Handler result
+ */
+export interface HandlerResult {
+  /** Whether the handler handled the message */
+  handled: boolean;
+  /** Response to send */
+  response?: string;
+  /** Tools to invoke */
+  toolCalls?: Array<{ tool: string; args: Record<string, unknown> }>;
+  /** Metadata */
+  metadata?: Record<string, unknown>;
+}
+
+// =============================================================================
+// Plugin Registry
+// =============================================================================
+
+/**
+ * Plugin Registry - manages all plugins
+ */
+export class PluginRegistry {
+  private plugins: Map<string, Plugin> = new Map();
+  private handlers: MessageHandler[] = [];
+  private eventHandlers: Map<string, Set<(data: unknown) => void>> = new Map();
+  private storageDir: string;
+
+  constructor(storageDir?: string) {
+    const homeDir = process.env.HOME ?? process.env.USERPROFILE ?? '.';
+    this.storageDir = storageDir ?? path.join(homeDir, '.ownpilot', 'plugins');
+  }
+
+  /**
+   * Initialize the registry
+   */
+  async initialize(): Promise<void> {
+    console.log(`[PluginRegistry] Creating storage directory: ${this.storageDir}`);
+    await fs.mkdir(this.storageDir, { recursive: true });
+    console.log('[PluginRegistry] Storage directory ready.');
+    await this.loadInstalledPlugins();
+    console.log('[PluginRegistry] Installed plugins loaded.');
+  }
+
+  /**
+   * Register a plugin
+   */
+  async register(manifest: PluginManifest, implementation: Partial<Plugin>): Promise<Plugin> {
+    // Check dependencies
+    for (const [depId, depVersion] of Object.entries(manifest.dependencies ?? {})) {
+      const dep = this.plugins.get(depId);
+      if (!dep) {
+        throw new Error(`Missing dependency: ${depId}`);
+      }
+      // Basic version check (in production, use semver)
+      if (dep.manifest.version !== depVersion && depVersion !== '*') {
+        console.warn(`Dependency version mismatch: ${depId} (want ${depVersion}, have ${dep.manifest.version})`);
+      }
+    }
+
+    // Load existing config or create default
+    const config = await this.loadPluginConfig(manifest.id) ?? {
+      enabled: true,
+      settings: manifest.defaultConfig ?? {},
+      grantedPermissions: [],
+      installedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Create plugin instance
+    const plugin: Plugin = {
+      manifest,
+      status: config.enabled ? 'enabled' : 'disabled',
+      config,
+      tools: new Map(implementation.tools ?? []),
+      handlers: implementation.handlers ?? [],
+      api: implementation.api,
+      lifecycle: implementation.lifecycle ?? {},
+    };
+
+    this.plugins.set(manifest.id, plugin);
+
+    // Register handlers
+    for (const handler of plugin.handlers) {
+      this.handlers.push(handler);
+    }
+    this.handlers.sort((a, b) => b.priority - a.priority);
+
+    // Call onLoad
+    if (plugin.lifecycle.onLoad) {
+      await plugin.lifecycle.onLoad();
+    }
+
+    // Call onEnable if enabled
+    if (config.enabled && plugin.lifecycle.onEnable) {
+      await plugin.lifecycle.onEnable();
+    }
+
+    console.log(`[PluginRegistry] Registered plugin: ${manifest.name} v${manifest.version}`);
+    return plugin;
+  }
+
+  /**
+   * Get a plugin by ID
+   */
+  get(id: string): Plugin | undefined {
+    return this.plugins.get(id);
+  }
+
+  /**
+   * Get all plugins
+   */
+  getAll(): Plugin[] {
+    return Array.from(this.plugins.values());
+  }
+
+  /**
+   * Get all enabled plugins
+   */
+  getEnabled(): Plugin[] {
+    return Array.from(this.plugins.values()).filter(p => p.status === 'enabled');
+  }
+
+  /**
+   * Enable a plugin
+   */
+  async enable(id: string): Promise<boolean> {
+    const plugin = this.plugins.get(id);
+    if (!plugin) return false;
+
+    plugin.status = 'enabled';
+    plugin.config.enabled = true;
+    plugin.config.updatedAt = new Date().toISOString();
+
+    await this.savePluginConfig(id, plugin.config);
+
+    if (plugin.lifecycle.onEnable) {
+      await plugin.lifecycle.onEnable();
+    }
+
+    return true;
+  }
+
+  /**
+   * Disable a plugin
+   */
+  async disable(id: string): Promise<boolean> {
+    const plugin = this.plugins.get(id);
+    if (!plugin) return false;
+
+    if (plugin.lifecycle.onDisable) {
+      await plugin.lifecycle.onDisable();
+    }
+
+    plugin.status = 'disabled';
+    plugin.config.enabled = false;
+    plugin.config.updatedAt = new Date().toISOString();
+
+    await this.savePluginConfig(id, plugin.config);
+    return true;
+  }
+
+  /**
+   * Unregister a plugin
+   */
+  async unregister(id: string): Promise<boolean> {
+    const plugin = this.plugins.get(id);
+    if (!plugin) return false;
+
+    // Call onUnload
+    if (plugin.lifecycle.onUnload) {
+      await plugin.lifecycle.onUnload();
+    }
+
+    // Remove handlers
+    this.handlers = this.handlers.filter(h => !plugin.handlers.includes(h));
+
+    this.plugins.delete(id);
+    return true;
+  }
+
+  /**
+   * Get all tools from enabled plugins
+   */
+  getAllTools(): Array<{ pluginId: string; definition: ToolDefinition; executor: ToolExecutor }> {
+    const tools: Array<{ pluginId: string; definition: ToolDefinition; executor: ToolExecutor }> = [];
+
+    for (const plugin of this.getEnabled()) {
+      for (const [, tool] of plugin.tools) {
+        tools.push({
+          pluginId: plugin.manifest.id,
+          ...tool,
+        });
+      }
+    }
+
+    return tools;
+  }
+
+  /**
+   * Get tool by name
+   */
+  getTool(name: string): { plugin: Plugin; definition: ToolDefinition; executor: ToolExecutor } | undefined {
+    for (const plugin of this.getEnabled()) {
+      const tool = plugin.tools.get(name);
+      if (tool) {
+        return { plugin, ...tool };
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Route a message through handlers
+   */
+  async routeMessage(message: string, context: HandlerContext): Promise<HandlerResult> {
+    for (const handler of this.handlers) {
+      const canHandle = await handler.canHandle(message, context);
+      if (canHandle) {
+        return handler.handle(message, context);
+      }
+    }
+
+    return { handled: false };
+  }
+
+  /**
+   * Emit event to all plugins
+   */
+  emitEvent(event: string, data: unknown): void {
+    const handlers = this.eventHandlers.get(event);
+    if (handlers) {
+      for (const handler of handlers) {
+        try {
+          handler(data);
+        } catch (error) {
+          console.error(`[PluginRegistry] Event handler error for ${event}:`, error);
+        }
+      }
+    }
+  }
+
+  /**
+   * Subscribe to events
+   */
+  onEvent(event: string, handler: (data: unknown) => void): void {
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, new Set());
+    }
+    this.eventHandlers.get(event)!.add(handler);
+  }
+
+  /**
+   * Create plugin context
+   */
+  createContext(pluginId: string): PluginContext {
+    const plugin = this.plugins.get(pluginId);
+    if (!plugin) {
+      throw new Error(`Plugin not found: ${pluginId}`);
+    }
+
+    return {
+      pluginId: pluginId as PluginId,
+      config: plugin.config,
+      storage: this.createStorage(pluginId),
+      log: this.createLogger(pluginId),
+      events: this.createEvents(pluginId),
+      getPlugin: (id: string) => this.plugins.get(id)?.api,
+    };
+  }
+
+  /**
+   * Create storage for a plugin
+   */
+  private createStorage(pluginId: string): PluginStorage {
+    const storageFile = path.join(this.storageDir, `${pluginId}.storage.json`);
+
+    return {
+      async get<T>(key: string): Promise<T | undefined> {
+        try {
+          const content = await fs.readFile(storageFile, 'utf-8');
+          const data = JSON.parse(content);
+          return data[key];
+        } catch {
+          return undefined;
+        }
+      },
+
+      async set<T>(key: string, value: T): Promise<void> {
+        let data: Record<string, unknown> = {};
+        try {
+          const content = await fs.readFile(storageFile, 'utf-8');
+          data = JSON.parse(content);
+        } catch {
+          // File doesn't exist
+        }
+        data[key] = value;
+        await fs.writeFile(storageFile, JSON.stringify(data, null, 2), 'utf-8');
+      },
+
+      async delete(key: string): Promise<boolean> {
+        try {
+          const content = await fs.readFile(storageFile, 'utf-8');
+          const data = JSON.parse(content);
+          if (key in data) {
+            delete data[key];
+            await fs.writeFile(storageFile, JSON.stringify(data, null, 2), 'utf-8');
+            return true;
+          }
+        } catch {
+          // Ignore
+        }
+        return false;
+      },
+
+      async list(): Promise<string[]> {
+        try {
+          const content = await fs.readFile(storageFile, 'utf-8');
+          const data = JSON.parse(content);
+          return Object.keys(data);
+        } catch {
+          return [];
+        }
+      },
+
+      async clear(): Promise<void> {
+        try {
+          await fs.unlink(storageFile);
+        } catch {
+          // Ignore
+        }
+      },
+    };
+  }
+
+  /**
+   * Create logger for a plugin
+   */
+  private createLogger(pluginId: string): PluginLogger {
+    const prefix = `[Plugin:${pluginId}]`;
+
+    return {
+      debug: (message, ...args) => console.debug(prefix, message, ...args),
+      info: (message, ...args) => console.info(prefix, message, ...args),
+      warn: (message, ...args) => console.warn(prefix, message, ...args),
+      error: (message, ...args) => console.error(prefix, message, ...args),
+    };
+  }
+
+  /**
+   * Create events API for a plugin
+   */
+  private createEvents(pluginId: string): PluginEvents {
+    return {
+      emit: (event, data) => this.emitEvent(`${pluginId}:${event}`, data),
+      on: (event, handler) => this.onEvent(event, handler),
+      off: (event, handler) => {
+        const handlers = this.eventHandlers.get(event);
+        if (handlers) {
+          handlers.delete(handler);
+        }
+      },
+    };
+  }
+
+  /**
+   * Load plugin config from disk
+   */
+  private async loadPluginConfig(pluginId: string): Promise<PluginConfig | null> {
+    const configFile = path.join(this.storageDir, `${pluginId}.config.json`);
+    try {
+      const content = await fs.readFile(configFile, 'utf-8');
+      return JSON.parse(content);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Save plugin config to disk
+   */
+  private async savePluginConfig(pluginId: string, config: PluginConfig): Promise<void> {
+    const configFile = path.join(this.storageDir, `${pluginId}.config.json`);
+    await fs.writeFile(configFile, JSON.stringify(config, null, 2), 'utf-8');
+  }
+
+  /**
+   * Load installed plugins from disk
+   */
+  private async loadInstalledPlugins(): Promise<void> {
+    // In production, this would scan plugin directories and load manifests
+    // For now, plugins are registered programmatically
+  }
+}
+
+// =============================================================================
+// Plugin Builder
+// =============================================================================
+
+/**
+ * Builder for creating plugins
+ */
+export class PluginBuilder {
+  private manifest: Partial<PluginManifest> = {};
+  private toolsMap: Map<string, { definition: ToolDefinition; executor: ToolExecutor }> = new Map();
+  private handlers: MessageHandler[] = [];
+  private api: PluginPublicAPI = {};
+  private lifecycle: Plugin['lifecycle'] = {};
+
+  /**
+   * Set plugin metadata
+   */
+  meta(manifest: Partial<PluginManifest>): this {
+    this.manifest = { ...this.manifest, ...manifest };
+    return this;
+  }
+
+  /**
+   * Set plugin ID
+   */
+  id(id: string): this {
+    this.manifest.id = id;
+    return this;
+  }
+
+  /**
+   * Set plugin name
+   */
+  name(name: string): this {
+    this.manifest.name = name;
+    return this;
+  }
+
+  /**
+   * Set plugin version
+   */
+  version(version: string): this {
+    this.manifest.version = version;
+    return this;
+  }
+
+  /**
+   * Set plugin description
+   */
+  description(description: string): this {
+    this.manifest.description = description;
+    return this;
+  }
+
+  /**
+   * Set plugin capabilities
+   */
+  capabilities(capabilities: PluginCapability[]): this {
+    this.manifest.capabilities = capabilities;
+    return this;
+  }
+
+  /**
+   * Set onLoad lifecycle hook
+   */
+  onLoad(hook: (context: PluginContext) => Promise<void>): this {
+    this.lifecycle.onLoad = hook as () => Promise<void>;
+    return this;
+  }
+
+  /**
+   * Set onUnload lifecycle hook
+   */
+  onUnload(hook: (context: PluginContext) => Promise<void>): this {
+    this.lifecycle.onUnload = hook as () => Promise<void>;
+    return this;
+  }
+
+  /**
+   * Set onEnable lifecycle hook
+   */
+  onEnable(hook: (context: PluginContext) => Promise<void>): this {
+    this.lifecycle.onEnable = hook as () => Promise<void>;
+    return this;
+  }
+
+  /**
+   * Set onDisable lifecycle hook
+   */
+  onDisable(hook: (context: PluginContext) => Promise<void>): this {
+    this.lifecycle.onDisable = hook as () => Promise<void>;
+    return this;
+  }
+
+  /**
+   * Add a tool
+   */
+  tool(definition: ToolDefinition, executor: ToolExecutor): this {
+    this.toolsMap.set(definition.name, { definition, executor });
+    return this;
+  }
+
+  /**
+   * Add multiple tools
+   */
+  tools(toolsList: Array<{ definition: ToolDefinition; executor: ToolExecutor }>): this {
+    for (const tool of toolsList) {
+      this.toolsMap.set(tool.definition.name, tool);
+    }
+    return this;
+  }
+
+  /**
+   * Add a message handler
+   */
+  handler(handler: MessageHandler): this {
+    this.handlers.push(handler);
+    return this;
+  }
+
+  /**
+   * Set public API
+   */
+  publicApi(api: PluginPublicAPI): this {
+    this.api = api;
+    return this;
+  }
+
+  /**
+   * Set lifecycle hooks
+   */
+  hooks(hooks: Plugin['lifecycle']): this {
+    this.lifecycle = hooks;
+    return this;
+  }
+
+  /**
+   * Build the plugin
+   */
+  build(): { manifest: PluginManifest; implementation: Partial<Plugin> } {
+    if (!this.manifest.id || !this.manifest.name || !this.manifest.version) {
+      throw new Error('Plugin must have id, name, and version');
+    }
+
+    const manifest: PluginManifest = {
+      id: this.manifest.id,
+      name: this.manifest.name,
+      version: this.manifest.version,
+      description: this.manifest.description ?? '',
+      capabilities: this.manifest.capabilities ?? [],
+      permissions: this.manifest.permissions ?? [],
+      main: this.manifest.main ?? 'index.js',
+      ...this.manifest,
+    };
+
+    return {
+      manifest,
+      implementation: {
+        tools: this.toolsMap,
+        handlers: this.handlers,
+        api: this.api,
+        lifecycle: this.lifecycle,
+      },
+    };
+  }
+}
+
+// =============================================================================
+// Factory Functions
+// =============================================================================
+
+/**
+ * Create a new plugin builder
+ */
+export function createPlugin(): PluginBuilder {
+  return new PluginBuilder();
+}
+
+/**
+ * Create a plugin registry
+ */
+export function createPluginRegistry(storageDir?: string): PluginRegistry {
+  return new PluginRegistry(storageDir);
+}
+
+/**
+ * Default plugin registry singleton
+ */
+let defaultRegistry: PluginRegistry | null = null;
+
+export async function getDefaultPluginRegistry(): Promise<PluginRegistry> {
+  if (!defaultRegistry) {
+    defaultRegistry = createPluginRegistry();
+    await defaultRegistry.initialize();
+  }
+  return defaultRegistry;
+}
+
+// =============================================================================
+// Re-exports from submodules
+// =============================================================================
+
+// Isolation system - secure plugin boundaries
+export {
+  // Types
+  type PluginCapability as IsolatedPluginCapability,
+  type ForbiddenResource,
+  type IsolationConfig,
+  type IsolatedPluginContext,
+  type IsolatedStorage,
+  type StorageError,
+  type IsolatedNetwork,
+  type IsolatedFetchOptions,
+  type IsolatedResponse,
+  type NetworkError,
+  type IsolatedEvents,
+  type AllowedPluginEvent,
+  type IsolatedLogger,
+  type IsolatedPluginAPI,
+  type PluginCommError,
+  type AccessViolation,
+  type PluginRegistryInterface,
+  // Classes
+  IsolationEnforcer,
+  PluginIsolatedStorage,
+  PluginIsolatedNetwork,
+  PluginIsolatedEvents,
+  PluginIsolatedLogger,
+  PluginIsolatedPluginAPI,
+  PluginIsolationManager,
+  // Factory functions
+  createIsolationManager,
+  // Constants
+  STORAGE_QUOTAS,
+  DEFAULT_ISOLATION_LIMITS,
+} from './isolation.js';
+
+// Marketplace system - plugin distribution
+export {
+  // Types
+  type TrustLevel,
+  type SecurityRisk,
+  type PluginCategory,
+  type MarketplaceManifest,
+  type PublisherInfo,
+  type SecurityDeclaration,
+  type PluginSignature,
+  type VerificationResult,
+  type RevocationEntry,
+  type ManifestValidationError,
+  type SearchCriteria,
+  // Functions
+  calculateSecurityRisk,
+  generatePublisherKeys,
+  signManifest,
+  verifySignature,
+  calculateContentHash,
+  validateManifest,
+  createMinimalSecurityDeclaration,
+  createSecurityDeclaration,
+  // Classes
+  PluginVerifier,
+  MarketplaceRegistry,
+  // Factory functions
+  createMarketplaceRegistry,
+  createPluginVerifier,
+} from './marketplace.js';
+
+// Runtime system - secure plugin execution
+export {
+  // Types
+  type PluginState,
+  type PluginInstance,
+  type LoadOptions,
+  type RuntimeConfig,
+  type RuntimeEvents,
+  // Classes
+  PluginSecurityBarrier,
+  SecurePluginRuntime,
+  // Factory functions
+  createPluginRuntime,
+  getDefaultRuntime,
+  resetDefaultRuntime,
+} from './runtime.js';
+
+// API Boundary - definitive access control specification
+export {
+  // Types
+  type PluginAllowedAPI,
+  type PluginForbiddenAPI,
+  type RuntimePluginAPI,
+  // Constants
+  CAPABILITY_API_MAP,
+  ALWAYS_AVAILABLE_API,
+  FORBIDDEN_PATTERNS,
+  API_DOCUMENTATION,
+  // Functions
+  canAccessAPI,
+  containsForbiddenPatterns,
+  createPluginAPIProxy,
+} from './api-boundary.js';
+
+// Example plugins - reference implementations
+// NOTE: Only Weather plugin is exported here. Other plugins cause circular dependencies
+// when exported from barrel files. Import them directly from ./examples/*.js if needed.
+export {
+  // Weather plugin example (Marketplace pattern - full exports)
+  WEATHER_PLUGIN_MANIFEST,
+  WeatherService,
+  createWeatherPluginTools,
+  createWeatherToolExecutors,
+  WEATHER_CURRENT_TOOL,
+  WEATHER_FORECAST_TOOL,
+  WEATHER_CONFIGURE_TOOL,
+  type WeatherCondition,
+  type CurrentWeather,
+  type ForecastEntry,
+  type WeatherAlert,
+  type WeatherResponse,
+  type WeatherPluginConfig,
+  type WeatherServiceAPI,
+  type WeatherPluginTools,
+  DEFAULT_WEATHER_CONFIG,
+  // Guidelines
+  EXAMPLE_PLUGIN_MANIFESTS,
+  PLUGIN_DEVELOPMENT_GUIDELINES,
+} from './examples/index.js';

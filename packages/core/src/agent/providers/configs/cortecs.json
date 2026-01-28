@@ -1,0 +1,255 @@
+{
+  "id": "cortecs",
+  "name": "Cortecs",
+  "type": "openai-compatible",
+  "apiKeyEnv": "CORTECS_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0.656,
+      "outputPrice": 2.731,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-08"
+    },
+    {
+      "id": "intellect-3",
+      "name": "INTELLECT 3",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.219,
+      "outputPrice": 1.202,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-26"
+    },
+    {
+      "id": "claude-4-5-sonnet",
+      "name": "Claude 4.5 Sonnet",
+      "contextWindow": 200000,
+      "maxOutput": 200000,
+      "inputPrice": 3.259,
+      "outputPrice": 16.296,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "qwen3-next-80b-a3b-thinking",
+      "name": "Qwen3 Next 80B A3B Thinking",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.164,
+      "outputPrice": 1.311,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-11"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "GPT Oss 120b",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen3-coder-480b-a35b-instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0.441,
+      "outputPrice": 1.984,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-07-25"
+    },
+    {
+      "id": "kimi-k2-instruct",
+      "name": "Kimi K2 Instruct",
+      "contextWindow": 131000,
+      "maxOutput": 131000,
+      "inputPrice": 0.551,
+      "outputPrice": 2.646,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-11"
+    },
+    {
+      "id": "claude-sonnet-4",
+      "name": "Claude Sonnet 4",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3.307,
+      "outputPrice": 16.536,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "qwen3-32b",
+      "name": "Qwen3 32B",
+      "contextWindow": 16384,
+      "maxOutput": 16384,
+      "inputPrice": 0.099,
+      "outputPrice": 0.33,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-29"
+    },
+    {
+      "id": "gpt-4.1",
+      "name": "GPT 4.1",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 2.354,
+      "outputPrice": 9.417,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 65535,
+      "inputPrice": 1.654,
+      "outputPrice": 11.024,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-20"
+    },
+    {
+      "id": "nova-pro-v1",
+      "name": "Nova Pro 1.0",
+      "contextWindow": 300000,
+      "maxOutput": 5000,
+      "inputPrice": 1.016,
+      "outputPrice": 4.061,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-03"
+    },
+    {
+      "id": "llama-3.1-405b-instruct",
+      "name": "Llama 3.1 405B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "devstral-2512",
+      "name": "Devstral 2 2512",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-09"
+    },
+    {
+      "id": "devstral-small-2512",
+      "name": "Devstral Small 2 2512",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-09"
+    },
+    {
+      "id": "deepseek-v3-0324",
+      "name": "DeepSeek V3 0324",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.551,
+      "outputPrice": 1.654,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-24"
+    }
+  ],
+  "baseUrl": "https://api.cortecs.ai/v1",
+  "docsUrl": "https://api.cortecs.ai/v1/models"
+}

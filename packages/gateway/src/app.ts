@@ -1,0 +1,265 @@
+/**
+ * Hono application setup
+ */
+
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { logger } from 'hono/logger';
+import { secureHeaders } from 'hono/secure-headers';
+
+import type { GatewayConfig } from './types/index.js';
+import {
+  requestId,
+  timing,
+  createAuthMiddleware,
+  createRateLimitMiddleware,
+  errorHandler,
+  notFoundHandler,
+} from './middleware/index.js';
+import {
+  healthRoutes,
+  agentRoutes,
+  chatRoutes,
+  toolsRoutes,
+  settingsRoutes,
+  channelRoutes,
+  costRoutes,
+  modelsRoutes,
+  providersRoutes,
+  profileRoutes,
+  personalDataRoutes,
+  customDataRoutes,
+  memoriesRoutes,
+  goalsRoutes,
+  triggersRoutes,
+  plansRoutes,
+  autonomyRoutes,
+  auditRoutes,
+  workspaceRoutes,
+  fileWorkspaceRoutes,
+  pluginsRoutes,
+  productivityRoutes,
+  authRoutes,
+  integrationsRoutes,
+  mediaSettingsRoutes,
+  modelConfigsRoutes,
+  dashboardRoutes,
+} from './routes/index.js';
+import { debugRoutes } from './routes/debug.js';
+
+/**
+ * Default configuration
+ */
+const DEFAULT_CONFIG: GatewayConfig = {
+  port: 8080,
+  host: '0.0.0.0',
+  corsOrigins: ['*'],
+  rateLimit: {
+    windowMs: 60000, // 1 minute
+    maxRequests: 500, // More relaxed default
+    burstLimit: 750, // Allow 50% burst
+    softLimit: true, // Don't block, just warn
+    excludePaths: ['/health', '/api/v1/health', '/api/v1/chat/stream'],
+  },
+  auth: {
+    type: 'none',
+  },
+};
+
+/**
+ * Create the Hono application
+ */
+export function createApp(config: Partial<GatewayConfig> = {}): Hono {
+  const fullConfig: GatewayConfig = { ...DEFAULT_CONFIG, ...config };
+
+  const app = new Hono();
+
+  // Security headers
+  app.use('*', secureHeaders());
+
+  // CORS
+  app.use(
+    '*',
+    cors({
+      origin: fullConfig.corsOrigins ?? ['*'],
+      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID'],
+      exposeHeaders: ['X-Request-ID', 'X-Response-Time', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
+      maxAge: 86400,
+    })
+  );
+
+  // Request ID
+  app.use('*', requestId);
+
+  // Timing
+  app.use('*', timing);
+
+  // Logger (skip in test environment)
+  if (process.env.NODE_ENV !== 'test') {
+    app.use('*', logger());
+  }
+
+  // Rate limiting
+  if (fullConfig.rateLimit) {
+    app.use('/api/*', createRateLimitMiddleware(fullConfig.rateLimit));
+  }
+
+  // Authentication (skip health routes)
+  if (fullConfig.auth && fullConfig.auth.type !== 'none') {
+    app.use('/api/v1/*', createAuthMiddleware(fullConfig.auth));
+  }
+
+  // Mount routes
+  app.route('/health', healthRoutes);
+  app.route('/api/v1/agents', agentRoutes);
+  app.route('/api/v1/chat', chatRoutes);
+  app.route('/api/v1/tools', toolsRoutes);
+  app.route('/api/v1/settings', settingsRoutes);
+  app.route('/api/v1/channels', channelRoutes);
+  app.route('/api/v1/costs', costRoutes);
+  app.route('/api/v1/models', modelsRoutes);
+  app.route('/api/v1/providers', providersRoutes);
+  app.route('/api/v1/profile', profileRoutes);
+
+  // Personal data routes (tasks, bookmarks, notes, calendar, contacts)
+  app.route('/api/v1', personalDataRoutes);
+
+  // Custom data routes (dynamic tables with AI-decided schemas)
+  app.route('/api/v1/custom-data', customDataRoutes);
+
+  // Memory routes (persistent AI memory)
+  app.route('/api/v1/memories', memoriesRoutes);
+
+  // Goals routes (long-term objectives tracking)
+  app.route('/api/v1/goals', goalsRoutes);
+
+  // Triggers routes (proactive automation)
+  app.route('/api/v1/triggers', triggersRoutes);
+
+  // Plans routes (autonomous plan execution)
+  app.route('/api/v1/plans', plansRoutes);
+
+  // Autonomy routes (risk assessment, approvals)
+  app.route('/api/v1/autonomy', autonomyRoutes);
+
+  // Audit logs (tool executions, agent activities, errors)
+  app.route('/api/v1/audit', auditRoutes);
+
+  // Debug info (AI request/response logs, tool calls)
+  app.route('/api/v1/debug', debugRoutes);
+
+  // Workspaces (isolated user sandboxes)
+  app.route('/api/v1/workspaces', workspaceRoutes);
+
+  // File Workspaces (session-based file storage)
+  app.route('/api/v1/file-workspaces', fileWorkspaceRoutes);
+
+  // Plugins (extensible plugin system)
+  app.route('/api/v1/plugins', pluginsRoutes);
+
+  // Productivity (Pomodoro, Habits, Captures)
+  app.route('/api/v1', productivityRoutes);
+
+  // OAuth Authentication (Google, Microsoft)
+  app.route('/api/v1/auth', authRoutes);
+
+  // Integrations (Gmail, Calendar, Drive)
+  app.route('/api/v1/integrations', integrationsRoutes);
+
+  // Media Settings (provider routing for image/audio)
+  app.route('/api/v1/media-settings', mediaSettingsRoutes);
+
+  // AI Model Configs (model management, custom providers)
+  app.route('/api/v1/model-configs', modelConfigsRoutes);
+
+  // Dashboard (AI-powered daily briefing)
+  app.route('/api/v1/dashboard', dashboardRoutes);
+
+  // Root route
+  app.get('/', (c) => {
+    return c.json({
+      name: 'OwnPilot',
+      version: '0.1.0',
+      documentation: '/api/v1',
+    });
+  });
+
+  // API info
+  app.get('/api/v1', (c) => {
+    return c.json({
+      version: 'v1',
+      endpoints: {
+        health: '/health',
+        agents: '/api/v1/agents',
+        chat: '/api/v1/chat',
+        tools: '/api/v1/tools',
+        settings: '/api/v1/settings',
+        channels: '/api/v1/channels',
+        costs: '/api/v1/costs',
+        models: '/api/v1/models',
+        providers: '/api/v1/providers',
+        profile: '/api/v1/profile',
+        // Personal data
+        tasks: '/api/v1/tasks',
+        bookmarks: '/api/v1/bookmarks',
+        notes: '/api/v1/notes',
+        calendar: '/api/v1/calendar',
+        contacts: '/api/v1/contacts',
+        summary: '/api/v1/summary',
+        // Custom data (dynamic schemas)
+        customData: '/api/v1/custom-data',
+        // Persistent AI memory
+        memories: '/api/v1/memories',
+        // Goals (long-term objectives)
+        goals: '/api/v1/goals',
+        // Triggers (proactive automation)
+        triggers: '/api/v1/triggers',
+        // Plans (autonomous execution)
+        plans: '/api/v1/plans',
+        // Autonomy (risk assessment, approvals)
+        autonomy: '/api/v1/autonomy',
+        // Debug info (AI request/response logs)
+        debug: '/api/v1/debug',
+        // Workspaces (isolated user sandboxes)
+        workspaces: '/api/v1/workspaces',
+        // File Workspaces (session-based file storage)
+        fileWorkspaces: '/api/v1/file-workspaces',
+        // Plugins (extensible plugin system)
+        plugins: '/api/v1/plugins',
+        // Productivity (Pomodoro, Habits, Captures)
+        pomodoro: '/api/v1/pomodoro',
+        habits: '/api/v1/habits',
+        captures: '/api/v1/captures',
+        // OAuth Authentication
+        auth: '/api/v1/auth',
+        // Integrations (Gmail, Calendar, Drive)
+        integrations: '/api/v1/integrations',
+        // Media Settings (provider routing)
+        mediaSettings: '/api/v1/media-settings',
+        // AI Model Configs (model management)
+        modelConfigs: '/api/v1/model-configs',
+        // Dashboard (AI-powered daily briefing)
+        dashboard: '/api/v1/dashboard',
+      },
+    });
+  });
+
+  // Error handling
+  app.onError(errorHandler);
+  app.notFound(notFoundHandler);
+
+  return app;
+}
+
+/**
+ * Export types for Hono context
+ */
+declare module 'hono' {
+  interface ContextVariableMap {
+    requestId: string;
+    startTime: number;
+    userId?: string;
+    jwtPayload?: Record<string, unknown>;
+  }
+}

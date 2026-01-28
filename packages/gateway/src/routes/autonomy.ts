@@ -1,0 +1,684 @@
+/**
+ * Autonomy Routes
+ *
+ * API for managing autonomy levels, risk assessment, and approvals.
+ */
+
+import { Hono } from 'hono';
+import type { ApiResponse } from '../types/index.js';
+import {
+  getApprovalManager,
+  assessRisk,
+  AutonomyLevel,
+  AUTONOMY_LEVEL_NAMES,
+  AUTONOMY_LEVEL_DESCRIPTIONS,
+  type ActionCategory,
+  type ApprovalDecision,
+} from '../autonomy/index.js';
+
+export const autonomyRoutes = new Hono();
+
+// ============================================================================
+// Configuration Routes
+// ============================================================================
+
+/**
+ * GET /autonomy/config - Get autonomy configuration
+ */
+autonomyRoutes.get('/config', (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const manager = getApprovalManager();
+  const config = manager.getUserConfig(userId);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      config,
+      levels: Object.entries(AUTONOMY_LEVEL_NAMES).map(([level, name]) => ({
+        level: parseInt(level, 10),
+        name,
+        description: AUTONOMY_LEVEL_DESCRIPTIONS[parseInt(level, 10) as AutonomyLevel],
+      })),
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * PATCH /autonomy/config - Update autonomy configuration
+ */
+autonomyRoutes.patch('/config', async (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const body = await c.req.json();
+
+  const manager = getApprovalManager();
+  manager.setUserConfig(userId, body);
+  const config = manager.getUserConfig(userId);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      config,
+      message: 'Autonomy configuration updated.',
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * POST /autonomy/config/reset - Reset to default configuration
+ */
+autonomyRoutes.post('/config/reset', (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const manager = getApprovalManager();
+
+  // Reset by setting empty config (will use defaults)
+  manager.setUserConfig(userId, {});
+  const config = manager.getUserConfig(userId);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      config,
+      message: 'Autonomy configuration reset to defaults.',
+    },
+  };
+
+  return c.json(response);
+});
+
+// ============================================================================
+// Autonomy Level Routes
+// ============================================================================
+
+/**
+ * GET /autonomy/levels - Get all autonomy levels
+ */
+autonomyRoutes.get('/levels', (c) => {
+  const levels = Object.entries(AUTONOMY_LEVEL_NAMES).map(([level, name]) => ({
+    level: parseInt(level, 10),
+    name,
+    description: AUTONOMY_LEVEL_DESCRIPTIONS[parseInt(level, 10) as AutonomyLevel],
+  }));
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      levels,
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * POST /autonomy/level - Set autonomy level
+ */
+autonomyRoutes.post('/level', async (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const body = await c.req.json<{ level: number }>();
+
+  if (body.level === undefined || body.level < 0 || body.level > 4) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_LEVEL',
+          message: 'Level must be between 0 and 4',
+        },
+      },
+      400
+    );
+  }
+
+  const manager = getApprovalManager();
+  manager.setUserConfig(userId, { level: body.level });
+  const config = manager.getUserConfig(userId);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      level: config.level,
+      levelName: AUTONOMY_LEVEL_NAMES[config.level],
+      message: `Autonomy level set to ${AUTONOMY_LEVEL_NAMES[config.level]}.`,
+    },
+  };
+
+  return c.json(response);
+});
+
+// ============================================================================
+// Risk Assessment Routes
+// ============================================================================
+
+/**
+ * POST /autonomy/assess - Assess risk for an action
+ */
+autonomyRoutes.post('/assess', async (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const body = await c.req.json<{
+    category: ActionCategory;
+    actionType: string;
+    params?: Record<string, unknown>;
+    context?: Record<string, unknown>;
+  }>();
+
+  if (!body.category || !body.actionType) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'category and actionType are required',
+        },
+      },
+      400
+    );
+  }
+
+  const manager = getApprovalManager();
+  const config = manager.getUserConfig(userId);
+  const risk = assessRisk(
+    body.category,
+    body.actionType,
+    body.params ?? {},
+    body.context ?? {},
+    config
+  );
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      risk,
+      autonomyLevel: config.level,
+      autonomyLevelName: AUTONOMY_LEVEL_NAMES[config.level],
+    },
+  };
+
+  return c.json(response);
+});
+
+// ============================================================================
+// Approval Routes
+// ============================================================================
+
+/**
+ * GET /autonomy/approvals - Get pending approvals
+ */
+autonomyRoutes.get('/approvals', (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const manager = getApprovalManager();
+  const pending = manager.getPendingActions(userId);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      pending,
+      count: pending.length,
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * POST /autonomy/approvals/request - Request approval for an action
+ */
+autonomyRoutes.post('/approvals/request', async (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const body = await c.req.json<{
+    category: ActionCategory;
+    actionType: string;
+    description: string;
+    params?: Record<string, unknown>;
+    context?: Record<string, unknown>;
+  }>();
+
+  if (!body.category || !body.actionType || !body.description) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'category, actionType, and description are required',
+        },
+      },
+      400
+    );
+  }
+
+  try {
+    const manager = getApprovalManager();
+    const request = await manager.requestApproval(
+      userId,
+      body.category,
+      body.actionType,
+      body.description,
+      body.params ?? {},
+      body.context ?? {}
+    );
+
+    if (!request) {
+      // Auto-approved
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          approved: true,
+          autoApproved: true,
+          message: 'Action automatically approved based on autonomy settings.',
+        },
+      };
+      return c.json(response);
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        approved: false,
+        request,
+        message: 'Action requires approval.',
+      },
+    };
+
+    return c.json(response);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'APPROVAL_ERROR',
+          message: errorMessage,
+        },
+      },
+      500
+    );
+  }
+});
+
+/**
+ * GET /autonomy/approvals/:id - Get a specific pending action
+ */
+autonomyRoutes.get('/approvals/:id', (c) => {
+  const id = c.req.param('id');
+  const manager = getApprovalManager();
+  const action = manager.getPendingAction(id);
+
+  if (!action) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Pending action not found: ${id}`,
+        },
+      },
+      404
+    );
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    data: action,
+  };
+
+  return c.json(response);
+});
+
+/**
+ * POST /autonomy/approvals/:id/decide - Make a decision on a pending action
+ */
+autonomyRoutes.post('/approvals/:id/decide', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json<Omit<ApprovalDecision, 'actionId'>>();
+
+  if (!body.decision || !['approve', 'reject', 'modify'].includes(body.decision)) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_DECISION',
+          message: 'decision must be "approve", "reject", or "modify"',
+        },
+      },
+      400
+    );
+  }
+
+  const manager = getApprovalManager();
+  const action = manager.processDecision({
+    actionId: id,
+    ...body,
+  });
+
+  if (!action) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Pending action not found: ${id}`,
+        },
+      },
+      404
+    );
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      action,
+      message: `Action ${body.decision}${body.decision === 'approve' ? 'd' : 'ed'}.`,
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * POST /autonomy/approvals/:id/approve - Approve a pending action (shorthand)
+ */
+autonomyRoutes.post('/approvals/:id/approve', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json<{ reason?: string; remember?: boolean }>().catch((): { reason?: string; remember?: boolean } => ({}));
+
+  const manager = getApprovalManager();
+  const action = manager.processDecision({
+    actionId: id,
+    decision: 'approve',
+    reason: body.reason,
+    remember: body.remember,
+  });
+
+  if (!action) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Pending action not found: ${id}`,
+        },
+      },
+      404
+    );
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      action,
+      message: 'Action approved.',
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * POST /autonomy/approvals/:id/reject - Reject a pending action (shorthand)
+ */
+autonomyRoutes.post('/approvals/:id/reject', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json<{ reason?: string; remember?: boolean }>().catch((): { reason?: string; remember?: boolean } => ({}));
+
+  const manager = getApprovalManager();
+  const action = manager.processDecision({
+    actionId: id,
+    decision: 'reject',
+    reason: body.reason,
+    remember: body.remember,
+  });
+
+  if (!action) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Pending action not found: ${id}`,
+        },
+      },
+      404
+    );
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      action,
+      message: 'Action rejected.',
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * DELETE /autonomy/approvals/:id - Cancel a pending action
+ */
+autonomyRoutes.delete('/approvals/:id', (c) => {
+  const id = c.req.param('id');
+  const manager = getApprovalManager();
+  const cancelled = manager.cancelPending(id);
+
+  if (!cancelled) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Pending action not found or already processed: ${id}`,
+        },
+      },
+      404
+    );
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      message: 'Pending action cancelled.',
+    },
+  };
+
+  return c.json(response);
+});
+
+// ============================================================================
+// Tool/Category Management Routes
+// ============================================================================
+
+/**
+ * POST /autonomy/tools/allow - Add tool to allowed list
+ */
+autonomyRoutes.post('/tools/allow', async (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const body = await c.req.json<{ tool: string }>();
+
+  if (!body.tool) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'tool is required',
+        },
+      },
+      400
+    );
+  }
+
+  const manager = getApprovalManager();
+  const config = manager.getUserConfig(userId);
+
+  if (!config.allowedTools.includes(body.tool)) {
+    config.allowedTools.push(body.tool);
+  }
+  // Remove from blocked if present
+  config.blockedTools = config.blockedTools.filter((t) => t !== body.tool);
+
+  manager.setUserConfig(userId, config);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      allowedTools: config.allowedTools,
+      message: `Tool "${body.tool}" added to allowed list.`,
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * POST /autonomy/tools/block - Add tool to blocked list
+ */
+autonomyRoutes.post('/tools/block', async (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const body = await c.req.json<{ tool: string }>();
+
+  if (!body.tool) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'tool is required',
+        },
+      },
+      400
+    );
+  }
+
+  const manager = getApprovalManager();
+  const config = manager.getUserConfig(userId);
+
+  if (!config.blockedTools.includes(body.tool)) {
+    config.blockedTools.push(body.tool);
+  }
+  // Remove from allowed if present
+  config.allowedTools = config.allowedTools.filter((t) => t !== body.tool);
+
+  manager.setUserConfig(userId, config);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      blockedTools: config.blockedTools,
+      message: `Tool "${body.tool}" added to blocked list.`,
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * DELETE /autonomy/tools/:tool - Remove tool from allowed/blocked lists
+ */
+autonomyRoutes.delete('/tools/:tool', (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const tool = c.req.param('tool');
+
+  const manager = getApprovalManager();
+  const config = manager.getUserConfig(userId);
+
+  config.allowedTools = config.allowedTools.filter((t) => t !== tool);
+  config.blockedTools = config.blockedTools.filter((t) => t !== tool);
+
+  manager.setUserConfig(userId, config);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      message: `Tool "${tool}" removed from allowed/blocked lists.`,
+    },
+  };
+
+  return c.json(response);
+});
+
+// ============================================================================
+// Remembered Decisions Routes
+// ============================================================================
+
+/**
+ * DELETE /autonomy/remembered - Clear remembered decisions
+ */
+autonomyRoutes.delete('/remembered', (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const manager = getApprovalManager();
+  const cleared = manager.clearRememberedDecisions(userId);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      cleared,
+      message: `Cleared ${cleared} remembered decisions.`,
+    },
+  };
+
+  return c.json(response);
+});
+
+// ============================================================================
+// Budget Routes
+// ============================================================================
+
+/**
+ * GET /autonomy/budget - Get budget status
+ */
+autonomyRoutes.get('/budget', (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const manager = getApprovalManager();
+  const config = manager.getUserConfig(userId);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      dailyBudget: config.dailyBudget,
+      dailySpend: config.dailySpend,
+      remaining: config.dailyBudget - config.dailySpend,
+      resetAt: config.budgetResetAt,
+      maxCostPerAction: config.maxCostPerAction,
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
+ * PATCH /autonomy/budget - Update budget settings
+ */
+autonomyRoutes.patch('/budget', async (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const body = await c.req.json<{
+    dailyBudget?: number;
+    maxCostPerAction?: number;
+  }>();
+
+  const manager = getApprovalManager();
+  const updates: Record<string, unknown> = {};
+
+  if (body.dailyBudget !== undefined) {
+    updates.dailyBudget = body.dailyBudget;
+  }
+  if (body.maxCostPerAction !== undefined) {
+    updates.maxCostPerAction = body.maxCostPerAction;
+  }
+
+  manager.setUserConfig(userId, updates);
+  const config = manager.getUserConfig(userId);
+
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      dailyBudget: config.dailyBudget,
+      maxCostPerAction: config.maxCostPerAction,
+      message: 'Budget settings updated.',
+    },
+  };
+
+  return c.json(response);
+});

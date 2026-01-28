@@ -1,0 +1,108 @@
+{
+  "id": "moonshotai-cn",
+  "name": "Moonshot AI (China)",
+  "type": "openai-compatible",
+  "apiKeyEnv": "MOONSHOT_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "kimi-k2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "video",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01"
+    },
+    {
+      "id": "kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.6,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-06"
+    },
+    {
+      "id": "kimi-k2-thinking-turbo",
+      "name": "Kimi K2 Thinking Turbo",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 1.15,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-06"
+    },
+    {
+      "id": "kimi-k2-0905-preview",
+      "name": "Kimi K2 0905",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.6,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "kimi-k2-turbo-preview",
+      "name": "Kimi K2 Turbo",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 2.4,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "kimi-k2-0711-preview",
+      "name": "Kimi K2 0711",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.6,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-14"
+    }
+  ],
+  "baseUrl": "https://api.moonshot.cn/v1",
+  "docsUrl": "https://platform.moonshot.cn/docs/api/chat"
+}

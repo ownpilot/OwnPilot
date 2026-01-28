@@ -1,0 +1,46 @@
+{
+  "id": "bailing",
+  "name": "Bailing",
+  "type": "openai-compatible",
+  "apiKeyEnv": "BAILING_API_TOKEN",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "Ling-1T",
+      "name": "Ling-1T",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 0.57,
+      "outputPrice": 2.29,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-10"
+    },
+    {
+      "id": "Ring-1T",
+      "name": "Ring-1T",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 0.57,
+      "outputPrice": 2.29,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10"
+    }
+  ],
+  "baseUrl": "https://api.tbox.cn/api/llm/v1/chat/completions",
+  "docsUrl": "https://alipaytbox.yuque.com/sxs0ba/ling/intro"
+}

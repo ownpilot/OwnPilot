@@ -1,0 +1,597 @@
+{
+  "id": "aihubmix",
+  "name": "AIHubMix",
+  "type": "openai-compatible",
+  "apiKeyEnv": "AIHUBMIX_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "kimi-k2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.6,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "video",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "coding-minimax-m2.1-free",
+      "name": "Coding MiniMax M2.1 Free",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-23"
+    },
+    {
+      "id": "minimax-m2.1",
+      "name": "MiniMax M2.1",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.29,
+      "outputPrice": 1.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-23"
+    },
+    {
+      "id": "glm-4.7",
+      "name": "GLM-4.7",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.27,
+      "outputPrice": 1.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "coding-glm-4.7",
+      "name": "Coding-GLM-4.7",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.27,
+      "outputPrice": 1.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "coding-glm-4.7-free",
+      "name": "Coding GLM 4.7 Free",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "gpt-5.2",
+      "name": "GPT-5.2",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-11"
+    },
+    {
+      "id": "glm-4.6v",
+      "name": "GLM-4.6V",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.14,
+      "outputPrice": 0.41,
+      "capabilities": [
+        "chat",
+        "vision",
+        "video",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-08"
+    },
+    {
+      "id": "deepseek-v3.2-fast",
+      "name": "DeepSeek-V3.2-Fast",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 1.1,
+      "outputPrice": 3.29,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "deepseek-v3.2-think",
+      "name": "DeepSeek-V3.2-Think",
+      "contextWindow": 131000,
+      "maxOutput": 64000,
+      "inputPrice": 0.3,
+      "outputPrice": 0.45,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "deepseek-v3.2",
+      "name": "DeepSeek-V3.2",
+      "contextWindow": 131000,
+      "maxOutput": 64000,
+      "inputPrice": 0.3,
+      "outputPrice": 0.45,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "claude-opus-4-5",
+      "name": "Claude Opus 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-25"
+    },
+    {
+      "id": "gpt-5.1-codex",
+      "name": "GPT-5.1 Codex",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-11-15"
+    },
+    {
+      "id": "gpt-5.1-codex-mini",
+      "name": "GPT-5.1 Codex Mini",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-11-15"
+    },
+    {
+      "id": "gpt-5.1",
+      "name": "GPT-5.1",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-15"
+    },
+    {
+      "id": "gpt-5.1-codex-max",
+      "name": "GPT-5.1-Codex-Max",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-11-13"
+    },
+    {
+      "id": "claude-haiku-4-5",
+      "name": "Claude Haiku 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 1.1,
+      "outputPrice": 5.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "claude-sonnet-4-5",
+      "name": "Claude Sonnet 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3.3,
+      "outputPrice": 16.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 65000,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-15"
+    },
+    {
+      "id": "gpt-5-nano",
+      "name": "GPT-5-Nano",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.5,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-15"
+    },
+    {
+      "id": "gpt-5-codex",
+      "name": "GPT-5-Codex",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-09-15"
+    },
+    {
+      "id": "o4-mini",
+      "name": "o4-mini",
+      "contextWindow": 200000,
+      "maxOutput": 65536,
+      "inputPrice": 1.5,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-15"
+    },
+    {
+      "id": "gpt-5-mini",
+      "name": "GPT-5-Mini",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 1.5,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-15"
+    },
+    {
+      "id": "gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "contextWindow": 2000000,
+      "maxOutput": 65000,
+      "inputPrice": 1.25,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-15"
+    },
+    {
+      "id": "gpt-5",
+      "name": "GPT-5",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 20,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-15"
+    },
+    {
+      "id": "gpt-5-pro",
+      "name": "GPT-5-Pro",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 7,
+      "outputPrice": 28,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-15"
+    },
+    {
+      "id": "claude-opus-4-1",
+      "name": "Claude Opus 4.1",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 16.5,
+      "outputPrice": 82.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen3-coder-480b-a35b-instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 131000,
+      "inputPrice": 0.82,
+      "outputPrice": 3.29,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-08-01"
+    },
+    {
+      "id": "gpt-4.1-nano",
+      "name": "GPT-4.1 nano",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "gpt-4.1-mini",
+      "name": "GPT-4.1 mini",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "gpt-4.1",
+      "name": "GPT-4.1",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "gpt-4o",
+      "name": "GPT-4o",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-05-13"
+    },
+    {
+      "id": "gemini-3-pro-preview",
+      "name": "Gemini 3 Pro Preview",
+      "contextWindow": 1000000,
+      "maxOutput": 65000,
+      "inputPrice": 2,
+      "outputPrice": 12,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-19"
+    },
+    {
+      "id": "qwen3-max-2026-01-23",
+      "name": "Qwen3 Max",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.34,
+      "outputPrice": 1.37,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-23"
+    },
+    {
+      "id": "Kimi-K2-0905",
+      "name": "Kimi K2 0905",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "qwen3-235b-a22b-instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.28,
+      "outputPrice": 1.12,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-30"
+    },
+    {
+      "id": "qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.28,
+      "outputPrice": 2.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-30"
+    }
+  ],
+  "baseUrl": "https://aihubmix.com/v1",
+  "docsUrl": "https://docs.aihubmix.com"
+}

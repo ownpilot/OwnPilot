@@ -1,0 +1,388 @@
+{
+  "id": "synthetic",
+  "name": "Synthetic",
+  "type": "openai-compatible",
+  "apiKeyEnv": "SYNTHETIC_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "hf:MiniMaxAI/MiniMax-M2.1",
+      "name": "MiniMax-M2.1",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-23"
+    },
+    {
+      "id": "hf:zai-org/GLM-4.7",
+      "name": "GLM 4.7",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "hf:deepseek-ai/DeepSeek-V3.2",
+      "name": "DeepSeek V3.2",
+      "contextWindow": 162816,
+      "maxOutput": 8000,
+      "inputPrice": 0.27,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "hf:moonshotai/Kimi-K2-Thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-07"
+    },
+    {
+      "id": "hf:MiniMaxAI/MiniMax-M2",
+      "name": "MiniMax-M2",
+      "contextWindow": 196608,
+      "maxOutput": 131000,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10-27"
+    },
+    {
+      "id": "hf:zai-org/GLM-4.6",
+      "name": "GLM 4.6",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-30"
+    },
+    {
+      "id": "hf:deepseek-ai/DeepSeek-V3.1-Terminus",
+      "name": "DeepSeek V3.1 Terminus",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 1.2,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-22"
+    },
+    {
+      "id": "hf:deepseek-ai/DeepSeek-V3.1",
+      "name": "DeepSeek V3.1",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.56,
+      "outputPrice": 1.68,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-21"
+    },
+    {
+      "id": "hf:openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "hf:zai-org/GLM-4.5",
+      "name": "GLM 4.5",
+      "contextWindow": 128000,
+      "maxOutput": 96000,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "name": "Qwen 3 Coder 480B",
+      "contextWindow": 256000,
+      "maxOutput": 32000,
+      "inputPrice": 2,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-23"
+    },
+    {
+      "id": "hf:meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "name": "Llama-4-Scout-17B-16E-Instruct",
+      "contextWindow": 328000,
+      "maxOutput": 4096,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "hf:meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "name": "Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "contextWindow": 524000,
+      "maxOutput": 4096,
+      "inputPrice": 0.22,
+      "outputPrice": 0.88,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "hf:deepseek-ai/DeepSeek-R1",
+      "name": "DeepSeek R1",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "hf:deepseek-ai/DeepSeek-V3",
+      "name": "DeepSeek V3",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 1.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "hf:meta-llama/Llama-3.3-70B-Instruct",
+      "name": "Llama-3.3-70B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.9,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-06"
+    },
+    {
+      "id": "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+      "name": "Qwen2.5-Coder-32B-Instruct",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.8,
+      "outputPrice": 0.8,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-11-11"
+    },
+    {
+      "id": "hf:meta-llama/Llama-3.1-70B-Instruct",
+      "name": "Llama-3.1-70B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.9,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "hf:meta-llama/Llama-3.1-8B-Instruct",
+      "name": "Llama-3.1-8B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "hf:meta-llama/Llama-3.1-405B-Instruct",
+      "name": "Llama-3.1-405B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 3,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "hf:moonshotai/Kimi-K2-Instruct-0905",
+      "name": "Kimi K2 0905",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 1.2,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "hf:deepseek-ai/DeepSeek-R1-0528",
+      "name": "DeepSeek R1 (0528)",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 3,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-01"
+    },
+    {
+      "id": "hf:deepseek-ai/DeepSeek-V3-0324",
+      "name": "DeepSeek V3 (0324)",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 1.2,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-01"
+    },
+    {
+      "id": "hf:Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "contextWindow": 256000,
+      "maxOutput": 32000,
+      "inputPrice": 0.65,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-25"
+    },
+    {
+      "id": "hf:Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "name": "Qwen 3 235B Instruct",
+      "contextWindow": 256000,
+      "maxOutput": 32000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-28"
+    }
+  ],
+  "baseUrl": "https://api.synthetic.new/v1",
+  "docsUrl": "https://synthetic.new/pricing"
+}

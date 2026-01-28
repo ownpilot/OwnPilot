@@ -1,0 +1,32 @@
+{
+  "name": "@ownpilot/cli",
+  "version": "0.1.0",
+  "description": "CLI for OwnPilot",
+  "type": "module",
+  "bin": {
+    "ownpilot": "./dist/index.js",
+    "oag": "./dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.1",
+    "@inquirer/prompts": "^7.0.0",
+    "@ownpilot/core": "workspace:*",
+    "@ownpilot/gateway": "workspace:*",
+    "@ownpilot/channels": "workspace:*",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.9"
+  },
+  "keywords": ["cli", "ai", "gateway", "openai", "anthropic"]
+}

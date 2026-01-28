@@ -1,0 +1,51 @@
+{
+  "id": "lucidquery",
+  "name": "LucidQuery AI",
+  "type": "openai-compatible",
+  "apiKeyEnv": "LUCIDQUERY_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "lucidquery-nexus-coder",
+      "name": "LucidQuery Nexus Coder",
+      "contextWindow": 250000,
+      "maxOutput": 60000,
+      "inputPrice": 2,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "default": true,
+      "releaseDate": "2025-09-01"
+    },
+    {
+      "id": "lucidnova-rf1-100b",
+      "name": "LucidNova RF1 100B",
+      "contextWindow": 120000,
+      "maxOutput": 8000,
+      "inputPrice": 2,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-28"
+    }
+  ],
+  "baseUrl": "https://lucidquery.com/api/v1",
+  "docsUrl": "https://lucidquery.com/api/docs"
+}

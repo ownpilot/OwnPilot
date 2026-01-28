@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/* Configure dark mode to use class-based selector instead of media query */
+@variant dark (&:where(.dark, .dark *));
+
+/* Custom CSS variables for theming */
+@theme {
+  --color-primary: #3b82f6;
+  --color-primary-dark: #2563eb;
+  --color-secondary: #64748b;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-tertiary: #f1f5f9;
+
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+
+  --color-border: #e2e8f0;
+  --color-border-focus: #3b82f6;
+
+  /* Dark mode colors */
+  --color-dark-bg-primary: #0f172a;
+  --color-dark-bg-secondary: #1e293b;
+  --color-dark-bg-tertiary: #334155;
+
+  --color-dark-text-primary: #f8fafc;
+  --color-dark-text-secondary: #cbd5e1;
+  --color-dark-text-muted: #64748b;
+
+  --color-dark-border: #334155;
+}
+
+/* Base styles */
+html {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+body {
+  @apply bg-bg-primary text-text-primary antialiased;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Dark mode body styles - when .dark class is on html */
+.dark body,
+html.dark body {
+  background-color: var(--color-dark-bg-primary);
+  color: var(--color-dark-text-primary);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-bg-secondary;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-secondary rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-text-secondary;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background-color: var(--color-dark-bg-secondary);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--color-dark-text-muted);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-dark-text-secondary);
+}
+
+/* Focus styles */
+*:focus-visible {
+  @apply outline-none ring-2 ring-primary ring-offset-2;
+}
+
+/* Selection */
+::selection {
+  @apply bg-primary/20;
+}

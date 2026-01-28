@@ -1,0 +1,2777 @@
+{
+  "id": "vercel",
+  "name": "Vercel AI Gateway",
+  "type": "openai-compatible",
+  "apiKeyEnv": "AI_GATEWAY_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "moonshotai/kimi-k2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.6,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "video",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-26"
+    },
+    {
+      "id": "zai/glm-4.7",
+      "name": "GLM 4.7",
+      "contextWindow": 202752,
+      "maxOutput": 120000,
+      "inputPrice": 0.43,
+      "outputPrice": 1.75,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "xiaomi/mimo-v2-flash",
+      "name": "MiMo V2 Flash",
+      "contextWindow": 262144,
+      "maxOutput": 32000,
+      "inputPrice": 0.1,
+      "outputPrice": 0.29,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-17"
+    },
+    {
+      "id": "google/gemini-3-flash",
+      "name": "Gemini 3 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 0.5,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-17"
+    },
+    {
+      "id": "mistral/devstral-2",
+      "name": "Devstral 2",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-12-09"
+    },
+    {
+      "id": "mistral/mistral-large-3",
+      "name": "Mistral Large 3",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.5,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-02"
+    },
+    {
+      "id": "mistral/ministral-14b",
+      "name": "Ministral 14B",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "deepseek/deepseek-v3.2-thinking",
+      "name": "DeepSeek V3.2 Thinking",
+      "contextWindow": 128000,
+      "maxOutput": 64000,
+      "inputPrice": 0.28,
+      "outputPrice": 0.42,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "deepseek/deepseek-v3.2",
+      "name": "DeepSeek V3.2",
+      "contextWindow": 163842,
+      "maxOutput": 8000,
+      "inputPrice": 0.27,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "arcee-ai/trinity-mini",
+      "name": "Trinity Mini",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.05,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-12"
+    },
+    {
+      "id": "openai/gpt-5.2-codex",
+      "name": "GPT-5.2-Codex",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-12"
+    },
+    {
+      "id": "prime-intellect/intellect-3",
+      "name": "INTELLECT 3",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.2,
+      "outputPrice": 1.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-26"
+    },
+    {
+      "id": "anthropic/claude-opus-4.5",
+      "name": "Claude Opus 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-24"
+    },
+    {
+      "id": "alibaba/qwen3-embedding-0.6b",
+      "name": "Qwen3 Embedding 0.6B",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.01,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-14"
+    },
+    {
+      "id": "moonshotai/kimi-k2-thinking-turbo",
+      "name": "Kimi K2 Thinking Turbo",
+      "contextWindow": 262114,
+      "maxOutput": 262114,
+      "inputPrice": 1.15,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-06"
+    },
+    {
+      "id": "moonshotai/kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 216144,
+      "maxOutput": 216144,
+      "inputPrice": 0.47,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-06"
+    },
+    {
+      "id": "minimax/minimax-m2",
+      "name": "MiniMax M2",
+      "contextWindow": 262114,
+      "maxOutput": 262114,
+      "inputPrice": 0.27,
+      "outputPrice": 1.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10-27"
+    },
+    {
+      "id": "minimax/minimax-m2.1-lightning",
+      "name": "MiniMax M2.1 Lightning",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.3,
+      "outputPrice": 2.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10-27"
+    },
+    {
+      "id": "minimax/minimax-m2.1",
+      "name": "MiniMax M2.1",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10-27"
+    },
+    {
+      "id": "kwaipilot/kat-coder-pro-v1",
+      "name": "KAT-Coder-Pro V1",
+      "contextWindow": 256000,
+      "maxOutput": 32000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-10-24"
+    },
+    {
+      "id": "anthropic/claude-haiku-4.5",
+      "name": "Claude Haiku 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 1,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10-15"
+    },
+    {
+      "id": "bytedance/seed-1.8",
+      "name": "Seed 1.8",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10"
+    },
+    {
+      "id": "zai/glm-4.6v-flash",
+      "name": "GLM-4.6V-Flash",
+      "contextWindow": 128000,
+      "maxOutput": 24000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-30"
+    },
+    {
+      "id": "zai/glm-4.6",
+      "name": "GLM 4.6",
+      "contextWindow": 200000,
+      "maxOutput": 96000,
+      "inputPrice": 0.45,
+      "outputPrice": 1.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-30"
+    },
+    {
+      "id": "zai/glm-4.6v",
+      "name": "GLM-4.6V",
+      "contextWindow": 128000,
+      "maxOutput": 24000,
+      "inputPrice": 0.3,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-30"
+    },
+    {
+      "id": "deepseek/deepseek-v3.2-exp",
+      "name": "DeepSeek V3.2 Exp",
+      "contextWindow": 163840,
+      "maxOutput": 163840,
+      "inputPrice": 0.27,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "anthropic/claude-sonnet-4.5",
+      "name": "Claude Sonnet 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "alibaba/qwen3-vl-instruct",
+      "name": "Qwen3 VL Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 129024,
+      "inputPrice": 0.7,
+      "outputPrice": 2.8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-24"
+    },
+    {
+      "id": "alibaba/qwen3-vl-thinking",
+      "name": "Qwen3 VL Thinking",
+      "contextWindow": 131072,
+      "maxOutput": 129024,
+      "inputPrice": 0.7,
+      "outputPrice": 8.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-24"
+    },
+    {
+      "id": "alibaba/qwen3-max",
+      "name": "Qwen3 Max",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 1.2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-23"
+    },
+    {
+      "id": "meituan/longcat-flash-thinking",
+      "name": "LongCat Flash Thinking",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-23"
+    },
+    {
+      "id": "deepseek/deepseek-v3.1-terminus",
+      "name": "DeepSeek V3.1 Terminus",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.27,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-22"
+    },
+    {
+      "id": "xai/grok-4-fast-non-reasoning",
+      "name": "Grok 4 Fast (Non-Reasoning)",
+      "contextWindow": 2000000,
+      "maxOutput": 30000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-19"
+    },
+    {
+      "id": "openai/gpt-5-codex",
+      "name": "GPT-5-Codex",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-09-15"
+    },
+    {
+      "id": "alibaba/qwen3-next-80b-a3b-instruct",
+      "name": "Qwen3 Next 80B A3B Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.09,
+      "outputPrice": 1.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-12"
+    },
+    {
+      "id": "alibaba/qwen3-next-80b-a3b-thinking",
+      "name": "Qwen3 Next 80B A3B Thinking",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.15,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-12"
+    },
+    {
+      "id": "moonshotai/kimi-k2-turbo",
+      "name": "Kimi K2 Turbo",
+      "contextWindow": 256000,
+      "maxOutput": 16384,
+      "inputPrice": 2.4,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "bytedance/seed-1.6",
+      "name": "Seed 1.6",
+      "contextWindow": 256000,
+      "maxOutput": 32000,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09"
+    },
+    {
+      "id": "google/gemini-3-pro-image",
+      "name": "Nano Banana Pro (Gemini 3 Pro Image)",
+      "contextWindow": 65536,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 120,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-09"
+    },
+    {
+      "id": "meituan/longcat-flash-chat",
+      "name": "LongCat Flash Chat",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-30"
+    },
+    {
+      "id": "xai/grok-code-fast-1",
+      "name": "Grok Code Fast 1",
+      "contextWindow": 256000,
+      "maxOutput": 10000,
+      "inputPrice": 0.2,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-08-28"
+    },
+    {
+      "id": "deepseek/deepseek-v3.1",
+      "name": "DeepSeek-V3.1",
+      "contextWindow": 163840,
+      "maxOutput": 128000,
+      "inputPrice": 0.3,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-21"
+    },
+    {
+      "id": "nvidia/nemotron-nano-9b-v2",
+      "name": "Nvidia Nemotron Nano 9B V2",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.04,
+      "outputPrice": 0.16,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-18"
+    },
+    {
+      "id": "zai/glm-4.5v",
+      "name": "GLM 4.5V",
+      "contextWindow": 66000,
+      "maxOutput": 66000,
+      "inputPrice": 0.6,
+      "outputPrice": 1.8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-11"
+    },
+    {
+      "id": "openai/gpt-5.2-chat",
+      "name": "GPT-5.2 Chat",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5.1-codex",
+      "name": "GPT-5.1-Codex",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5-chat",
+      "name": "GPT-5 Chat",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5.2-pro",
+      "name": "GPT 5.2 ",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 21,
+      "outputPrice": 168,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5.1-instant",
+      "name": "GPT-5.1 Instant",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5.1-thinking",
+      "name": "GPT 5.1 Thinking",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5.1-codex-max",
+      "name": "GPT 5.1 Codex Max",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5-pro",
+      "name": "GPT-5 pro",
+      "contextWindow": 400000,
+      "maxOutput": 272000,
+      "inputPrice": 15,
+      "outputPrice": 120,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5.2",
+      "name": "GPT-5.2",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5",
+      "name": "GPT-5",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5-mini",
+      "name": "GPT-5 Mini",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-5-nano",
+      "name": "GPT-5 Nano",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.07,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.1,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "zai/glm-4.5",
+      "name": "GLM 4.5",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.6,
+      "outputPrice": 2.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "zai/glm-4.5-air",
+      "name": "GLM 4.5 Air",
+      "contextWindow": 128000,
+      "maxOutput": 96000,
+      "inputPrice": 0.2,
+      "outputPrice": 1.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "alibaba/qwen3-coder-plus",
+      "name": "Qwen3 Coder Plus",
+      "contextWindow": 1000000,
+      "maxOutput": 1000000,
+      "inputPrice": 1,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-07-23"
+    },
+    {
+      "id": "moonshotai/kimi-k2",
+      "name": "Kimi K2 Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-14"
+    },
+    {
+      "id": "xai/grok-4-fast-reasoning",
+      "name": "Grok 4 Fast Reasoning",
+      "contextWindow": 2000000,
+      "maxOutput": 256000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-09"
+    },
+    {
+      "id": "xai/grok-4.1-fast-reasoning",
+      "name": "Grok 4.1 Fast Reasoning",
+      "contextWindow": 2000000,
+      "maxOutput": 30000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-09"
+    },
+    {
+      "id": "xai/grok-4.1-fast-non-reasoning",
+      "name": "Grok 4.1 Fast Non-Reasoning",
+      "contextWindow": 2000000,
+      "maxOutput": 30000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-09"
+    },
+    {
+      "id": "xai/grok-4",
+      "name": "Grok 4",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-09"
+    },
+    {
+      "id": "google/gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash Lite",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-06-17"
+    },
+    {
+      "id": "vercel/v0-1.5-md",
+      "name": "v0-1.5-md",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-06-09"
+    },
+    {
+      "id": "alibaba/qwen3-embedding-4b",
+      "name": "Qwen3 Embedding 4B",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.02,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-06-05"
+    },
+    {
+      "id": "alibaba/qwen3-embedding-8b",
+      "name": "Qwen3 Embedding 8B",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.05,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-06-05"
+    },
+    {
+      "id": "bfl/flux-kontext-pro",
+      "name": "FLUX.1 Kontext Pro",
+      "contextWindow": 512,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-06"
+    },
+    {
+      "id": "bfl/flux-kontext-max",
+      "name": "FLUX.1 Kontext Max",
+      "contextWindow": 512,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-06"
+    },
+    {
+      "id": "google/imagen-4.0-fast-generate-001",
+      "name": "Imagen 4 Fast",
+      "contextWindow": 480,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-06"
+    },
+    {
+      "id": "mistral/codestral-embed",
+      "name": "Codestral Embed",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.15,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-05-28"
+    },
+    {
+      "id": "google/imagen-4.0-ultra-generate-001",
+      "name": "Imagen 4 Ultra",
+      "contextWindow": 480,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-24"
+    },
+    {
+      "id": "vercel/v0-1.0-md",
+      "name": "v0-1.0-md",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "google/imagen-4.0-generate-001",
+      "name": "Imagen 4",
+      "contextWindow": 480,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "anthropic/claude-sonnet-4",
+      "name": "Claude Sonnet 4",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "anthropic/claude-opus-4.1",
+      "name": "Claude Opus 4",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "anthropic/claude-opus-4",
+      "name": "Claude Opus 4",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "voyage/voyage-3.5-lite",
+      "name": "voyage-3.5-lite",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.02,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-20"
+    },
+    {
+      "id": "voyage/voyage-3.5",
+      "name": "voyage-3.5",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.06,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-20"
+    },
+    {
+      "id": "google/gemini-embedding-001",
+      "name": "Gemini Embedding 001",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.15,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-20"
+    },
+    {
+      "id": "openai/gpt-5.1-codex-mini",
+      "name": "GPT-5.1 Codex mini",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-05-16"
+    },
+    {
+      "id": "openai/codex-mini",
+      "name": "Codex Mini",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 1.5,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-05-16"
+    },
+    {
+      "id": "mistral/mistral-medium",
+      "name": "Mistral Medium 3.1",
+      "contextWindow": 128000,
+      "maxOutput": 64000,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-07"
+    },
+    {
+      "id": "mistral/devstral-small",
+      "name": "Devstral Small 1.1",
+      "contextWindow": 128000,
+      "maxOutput": 64000,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-05-07"
+    },
+    {
+      "id": "mistral/devstral-small-2",
+      "name": "Devstral Small 2",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-05-07"
+    },
+    {
+      "id": "openai/o3-pro",
+      "name": "o3 Pro",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 20,
+      "outputPrice": 80,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-16"
+    },
+    {
+      "id": "openai/o3",
+      "name": "o3",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 2,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-16"
+    },
+    {
+      "id": "openai/o4-mini",
+      "name": "o4-mini",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 1.1,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-16"
+    },
+    {
+      "id": "cohere/embed-v4.0",
+      "name": "Embed v4.0",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.12,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-15"
+    },
+    {
+      "id": "openai/gpt-4.1",
+      "name": "GPT-4.1",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "openai/gpt-4.1-mini",
+      "name": "GPT-4.1 mini",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "openai/gpt-4.1-nano",
+      "name": "GPT-4.1 nano",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "meta/llama-4-scout",
+      "name": "Llama-4-Scout-17B-16E-Instruct-FP8",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "meta/llama-4-maverick",
+      "name": "Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "alibaba/qwen3-coder",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 66536,
+      "inputPrice": 0.38,
+      "outputPrice": 1.53,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-04"
+    },
+    {
+      "id": "alibaba/qwen-3-32b",
+      "name": "Qwen 3.32B",
+      "contextWindow": 40960,
+      "maxOutput": 16384,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04"
+    },
+    {
+      "id": "alibaba/qwen-3-235b",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "contextWindow": 40960,
+      "maxOutput": 16384,
+      "inputPrice": 0.13,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-04"
+    },
+    {
+      "id": "alibaba/qwen-3-14b",
+      "name": "Qwen3-14B",
+      "contextWindow": 40960,
+      "maxOutput": 16384,
+      "inputPrice": 0.06,
+      "outputPrice": 0.24,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04"
+    },
+    {
+      "id": "alibaba/qwen3-235b-a22b-thinking",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "contextWindow": 262114,
+      "maxOutput": 262114,
+      "inputPrice": 0.3,
+      "outputPrice": 2.9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04"
+    },
+    {
+      "id": "alibaba/qwen-3-30b",
+      "name": "Qwen3-30B-A3B",
+      "contextWindow": 40960,
+      "maxOutput": 16384,
+      "inputPrice": 0.08,
+      "outputPrice": 0.29,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04"
+    },
+    {
+      "id": "alibaba/qwen3-coder-30b-a3b",
+      "name": "Qwen 3 Coder 30B A3B Instruct",
+      "contextWindow": 160000,
+      "maxOutput": 32768,
+      "inputPrice": 0.07,
+      "outputPrice": 0.27,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-04"
+    },
+    {
+      "id": "google/gemini-2.5-flash-image",
+      "name": "Nano Banana (Gemini 2.5 Flash Image)",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-20"
+    },
+    {
+      "id": "google/gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-20"
+    },
+    {
+      "id": "google/gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-20"
+    },
+    {
+      "id": "mistral/magistral-medium",
+      "name": "Magistral Medium",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 2,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-17"
+    },
+    {
+      "id": "mistral/magistral-small",
+      "name": "Magistral Small",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.5,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-17"
+    },
+    {
+      "id": "cohere/command-a",
+      "name": "Command A",
+      "contextWindow": 256000,
+      "maxOutput": 8000,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-13"
+    },
+    {
+      "id": "inception/mercury-coder-small",
+      "name": "Mercury Coder Small Beta",
+      "contextWindow": 32000,
+      "maxOutput": 16384,
+      "inputPrice": 0.25,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-02-26"
+    },
+    {
+      "id": "perplexity/sonar-reasoning",
+      "name": "Sonar Reasoning",
+      "contextWindow": 127000,
+      "maxOutput": 8000,
+      "inputPrice": 1,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-19"
+    },
+    {
+      "id": "perplexity/sonar",
+      "name": "Sonar",
+      "contextWindow": 127000,
+      "maxOutput": 8000,
+      "inputPrice": 1,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-19"
+    },
+    {
+      "id": "perplexity/sonar-pro",
+      "name": "Sonar Pro",
+      "contextWindow": 200000,
+      "maxOutput": 8000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-19"
+    },
+    {
+      "id": "perplexity/sonar-reasoning-pro",
+      "name": "Sonar Reasoning Pro",
+      "contextWindow": 127000,
+      "maxOutput": 8000,
+      "inputPrice": 2,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-19"
+    },
+    {
+      "id": "anthropic/claude-3.7-sonnet",
+      "name": "Claude Sonnet 3.7",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-19"
+    },
+    {
+      "id": "xai/grok-3-mini-fast",
+      "name": "Grok 3 Mini Fast",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.6,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-17"
+    },
+    {
+      "id": "xai/grok-3-mini",
+      "name": "Grok 3 Mini",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.3,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-17"
+    },
+    {
+      "id": "xai/grok-3",
+      "name": "Grok 3",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-17"
+    },
+    {
+      "id": "xai/grok-3-fast",
+      "name": "Grok 3 Fast",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-17"
+    },
+    {
+      "id": "deepseek/deepseek-r1",
+      "name": "DeepSeek-R1",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 1.35,
+      "outputPrice": 5.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "deepseek/deepseek-v3",
+      "name": "DeepSeek V3 0324",
+      "contextWindow": 163840,
+      "maxOutput": 16384,
+      "inputPrice": 0.77,
+      "outputPrice": 0.77,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-26"
+    },
+    {
+      "id": "openai/o3-mini",
+      "name": "o3-mini",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 1.1,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-20"
+    },
+    {
+      "id": "google/gemini-2.0-flash",
+      "name": "Gemini 2.0 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 8192,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-11"
+    },
+    {
+      "id": "google/gemini-2.0-flash-lite",
+      "name": "Gemini 2.0 Flash Lite",
+      "contextWindow": 1048576,
+      "maxOutput": 8192,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-11"
+    },
+    {
+      "id": "meta/llama-3.3-70b",
+      "name": "Llama-3.3-70B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-06"
+    },
+    {
+      "id": "openai/o1",
+      "name": "o1",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 15,
+      "outputPrice": 60,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-05"
+    },
+    {
+      "id": "amazon/nova-micro",
+      "name": "Nova Micro",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.035,
+      "outputPrice": 0.14,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-03"
+    },
+    {
+      "id": "amazon/nova-pro",
+      "name": "Nova Pro",
+      "contextWindow": 300000,
+      "maxOutput": 8192,
+      "inputPrice": 0.8,
+      "outputPrice": 3.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "video",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-03"
+    },
+    {
+      "id": "amazon/nova-lite",
+      "name": "Nova Lite",
+      "contextWindow": 300000,
+      "maxOutput": 8192,
+      "inputPrice": 0.06,
+      "outputPrice": 0.24,
+      "capabilities": [
+        "chat",
+        "vision",
+        "video",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-03"
+    },
+    {
+      "id": "openai/gpt-oss-safeguard-20b",
+      "name": "gpt-oss-safeguard-20b",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.08,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "amazon/nova-2-lite",
+      "name": "Nova 2 Lite",
+      "contextWindow": 1000000,
+      "maxOutput": 1000000,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "nvidia/nemotron-nano-12b-v2-vl",
+      "name": "Nvidia Nemotron Nano 12B V2 VL",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-12"
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-30b-a3b",
+      "name": "Nemotron 3 Nano 30B A3B",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.06,
+      "outputPrice": 0.24,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-12"
+    },
+    {
+      "id": "mistral/pixtral-large",
+      "name": "Pixtral Large",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-11-01"
+    },
+    {
+      "id": "bfl/flux-pro-1.1-ultra",
+      "name": "FLUX1.1 [pro] Ultra",
+      "contextWindow": 512,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-11"
+    },
+    {
+      "id": "anthropic/claude-3.5-haiku",
+      "name": "Claude Haiku 3.5",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
+      "inputPrice": 0.8,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-10-22"
+    },
+    {
+      "id": "anthropic/claude-3.5-sonnet",
+      "name": "Claude Sonnet 3.5 v2",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-10-22"
+    },
+    {
+      "id": "mistral/ministral-8b",
+      "name": "Ministral 8B",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-10-01"
+    },
+    {
+      "id": "mistral/ministral-3b",
+      "name": "Ministral 3B",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.04,
+      "outputPrice": 0.04,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-10-01"
+    },
+    {
+      "id": "recraft/recraft-v3",
+      "name": "Recraft V3",
+      "contextWindow": 512,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-10"
+    },
+    {
+      "id": "bfl/flux-pro-1.1",
+      "name": "FLUX1.1 [pro]",
+      "contextWindow": 512,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-10"
+    },
+    {
+      "id": "bfl/flux-pro-1.0-fill",
+      "name": "FLUX.1 Fill [pro]",
+      "contextWindow": 512,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-10"
+    },
+    {
+      "id": "meta/llama-3.2-90b",
+      "name": "Llama 3.2 90B Vision Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.72,
+      "outputPrice": 0.72,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-09-25"
+    },
+    {
+      "id": "meta/llama-3.2-11b",
+      "name": "Llama 3.2 11B Vision Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.16,
+      "outputPrice": 0.16,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-09-25"
+    },
+    {
+      "id": "meta/llama-3.2-1b",
+      "name": "Llama 3.2 1B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-09-18"
+    },
+    {
+      "id": "meta/llama-3.2-3b",
+      "name": "Llama 3.2 3B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-09-18"
+    },
+    {
+      "id": "mistral/mistral-small",
+      "name": "Mistral Small",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-09-01"
+    },
+    {
+      "id": "mistral/pixtral-12b",
+      "name": "Pixtral 12B",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.15,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-09-01"
+    },
+    {
+      "id": "voyage/voyage-code-3",
+      "name": "voyage-code-3",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.18,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2024-09"
+    },
+    {
+      "id": "voyage/voyage-3-large",
+      "name": "voyage-3-large",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.18,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-09"
+    },
+    {
+      "id": "xai/grok-2-vision",
+      "name": "Grok 2 Vision",
+      "contextWindow": 8192,
+      "maxOutput": 4096,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-08-20"
+    },
+    {
+      "id": "morph/morph-v3-fast",
+      "name": "Morph v3 Fast",
+      "contextWindow": 16000,
+      "maxOutput": 16000,
+      "inputPrice": 0.8,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-08-15"
+    },
+    {
+      "id": "morph/morph-v3-large",
+      "name": "Morph v3 Large",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.9,
+      "outputPrice": 1.9,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-08-15"
+    },
+    {
+      "id": "google/text-embedding-005",
+      "name": "Text Embedding 005",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.03,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-08"
+    },
+    {
+      "id": "meta/llama-3.1-8b",
+      "name": "Llama 3.1 8B Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.03,
+      "outputPrice": 0.05,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "meta/llama-3.1-70b",
+      "name": "Llama 3.1 70B Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.4,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "name": "GPT-4o mini",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-18"
+    },
+    {
+      "id": "mistral/mistral-nemo",
+      "name": "Mistral Nemo",
+      "contextWindow": 60288,
+      "maxOutput": 16000,
+      "inputPrice": 0.04,
+      "outputPrice": 0.17,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-01"
+    },
+    {
+      "id": "openai/o3-deep-research",
+      "name": "o3-deep-research",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 10,
+      "outputPrice": 40,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-06-26"
+    },
+    {
+      "id": "mistral/codestral",
+      "name": "Codestral",
+      "contextWindow": 256000,
+      "maxOutput": 4096,
+      "inputPrice": 0.3,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2024-05-29"
+    },
+    {
+      "id": "openai/gpt-4o",
+      "name": "GPT-4o",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2024-05-13"
+    },
+    {
+      "id": "mistral/mixtral-8x22b-instruct",
+      "name": "Mixtral 8x22B",
+      "contextWindow": 64000,
+      "maxOutput": 64000,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-04-17"
+    },
+    {
+      "id": "amazon/titan-embed-text-v2",
+      "name": "Titan Text Embeddings V2",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.02,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-04"
+    },
+    {
+      "id": "anthropic/claude-3-haiku",
+      "name": "Claude Haiku 3",
+      "contextWindow": 200000,
+      "maxOutput": 4096,
+      "inputPrice": 0.25,
+      "outputPrice": 1.25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-03-13"
+    },
+    {
+      "id": "recraft/recraft-v2",
+      "name": "Recraft V2",
+      "contextWindow": 512,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-03"
+    },
+    {
+      "id": "voyage/voyage-finance-2",
+      "name": "voyage-finance-2",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.12,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-03"
+    },
+    {
+      "id": "voyage/voyage-law-2",
+      "name": "voyage-law-2",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.12,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-03"
+    },
+    {
+      "id": "google/text-multilingual-embedding-002",
+      "name": "Text Multilingual Embedding 002",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.03,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-03"
+    },
+    {
+      "id": "anthropic/claude-3-opus",
+      "name": "Claude Opus 3",
+      "contextWindow": 200000,
+      "maxOutput": 4096,
+      "inputPrice": 15,
+      "outputPrice": 75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-02-29"
+    },
+    {
+      "id": "openai/text-embedding-3-small",
+      "name": "text-embedding-3-small",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.02,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-01-25"
+    },
+    {
+      "id": "openai/text-embedding-3-large",
+      "name": "text-embedding-3-large",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.13,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-01-25"
+    },
+    {
+      "id": "voyage/voyage-code-2",
+      "name": "voyage-code-2",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.12,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2024-01"
+    },
+    {
+      "id": "mistral/mistral-embed",
+      "name": "Mistral Embed",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.1,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2023-12-11"
+    },
+    {
+      "id": "openai/gpt-4-turbo",
+      "name": "GPT-4 Turbo",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 10,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2023-11-06"
+    },
+    {
+      "id": "openai/gpt-3.5-turbo",
+      "name": "GPT-3.5 Turbo",
+      "contextWindow": 16385,
+      "maxOutput": 4096,
+      "inputPrice": 0.5,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2023-03-01"
+    },
+    {
+      "id": "openai/gpt-3.5-turbo-instruct",
+      "name": "GPT-3.5 Turbo Instruct",
+      "contextWindow": 8192,
+      "maxOutput": 4096,
+      "inputPrice": 1.5,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2023-03-01"
+    },
+    {
+      "id": "openai/text-embedding-ada-002",
+      "name": "text-embedding-ada-002",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.1,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2022-12-15"
+    },
+    {
+      "id": "google/gemini-3-pro-preview",
+      "name": "Gemini 3 Pro Preview",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 2,
+      "outputPrice": 12,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11-18"
+    },
+    {
+      "id": "google/gemini-2.5-flash-preview-09-2025",
+      "name": "Gemini 2.5 Flash Preview 09-25",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-25"
+    },
+    {
+      "id": "google/gemini-2.5-flash-lite-preview-09-2025",
+      "name": "Gemini 2.5 Flash Lite Preview 09-25",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-25"
+    },
+    {
+      "id": "alibaba/qwen3-max-preview",
+      "name": "Qwen3 Max Preview",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 1.2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-23"
+    },
+    {
+      "id": "moonshotai/kimi-k2-0905",
+      "name": "Kimi K2 0905",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.6,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "google/gemini-2.5-flash-image-preview",
+      "name": "Nano Banana Preview (Gemini 2.5 Flash Image Preview)",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-20"
+    },
+    {
+      "id": "anthropic/claude-3.5-sonnet-20240620",
+      "name": "Claude 3.5 Sonnet (2024-06-20)",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-06-20"
+    }
+  ],
+  "baseUrl": "https://api.vercel.ai/v1",
+  "docsUrl": "https://github.com/vercel/ai/tree/5eb85cc45a259553501f535b8ac79a77d0e79223/packages/gateway"
+}

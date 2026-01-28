@@ -1,0 +1,47 @@
+{
+  "id": "inception",
+  "name": "Inception",
+  "type": "openai-compatible",
+  "apiKeyEnv": "INCEPTION_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "mercury",
+      "name": "Mercury",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.25,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-06-26"
+    },
+    {
+      "id": "mercury-coder",
+      "name": "Mercury Coder",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.25,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-02-26"
+    }
+  ],
+  "baseUrl": "https://api.inceptionlabs.ai/v1/",
+  "docsUrl": "https://platform.inceptionlabs.ai/docs"
+}

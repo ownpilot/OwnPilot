@@ -1,0 +1,342 @@
+{
+  "id": "nano-gpt",
+  "name": "NanoGPT",
+  "type": "openai-compatible",
+  "apiKeyEnv": "NANO_GPT_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "minimax/minimax-m2.1",
+      "name": "Minimax M2.1",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-23"
+    },
+    {
+      "id": "zai-org/glm-4.7",
+      "name": "GLM 4.7",
+      "contextWindow": 204800,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "deepseek/deepseek-v3.2:thinking",
+      "name": "Deepseek V3.2 Thinking",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "nvidia/llama-3_3-nemotron-super-49b-v1_5",
+      "name": "Llama 3 3 Nemotron Super 49B V1 5",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-08"
+    },
+    {
+      "id": "zai-org/glm-4.5-air",
+      "name": "GLM 4.5 Air",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT Oss 120b",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-06-23"
+    },
+    {
+      "id": "z-ai/glm-4.6:thinking",
+      "name": "GLM 4.6 Thinking",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-07"
+    },
+    {
+      "id": "zai-org/glm-4.7:thinking",
+      "name": "GLM 4.7 Thinking",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-07"
+    },
+    {
+      "id": "zai-org/glm-4.5-air:thinking",
+      "name": "GLM 4.5 Air Thinking",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-07"
+    },
+    {
+      "id": "meta-llama/llama-4-maverick",
+      "name": "Llama 4 Maverick",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "deepseek/deepseek-r1",
+      "name": "Deepseek R1",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "qwen/qwen3-coder",
+      "name": "Qwen3 Coder",
+      "contextWindow": 106000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-01-15"
+    },
+    {
+      "id": "meta-llama/llama-3.3-70b-instruct",
+      "name": "Llama 3.3 70b Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-06"
+    },
+    {
+      "id": "z-ai/glm-4.6",
+      "name": "GLM 4.6",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2024-11-15"
+    },
+    {
+      "id": "moonshotai/kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 32768,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-11-01"
+    },
+    {
+      "id": "nousresearch/hermes-4-405b:thinking",
+      "name": "Hermes 4 405b Thinking",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-08-13"
+    },
+    {
+      "id": "moonshotai/kimi-k2-instruct",
+      "name": "Kimi K2 Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-18"
+    },
+    {
+      "id": "mistralai/devstral-2-123b-instruct-2512",
+      "name": "Devstral 2 123b Instruct 2512",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-11"
+    },
+    {
+      "id": "mistralai/mistral-large-3-675b-instruct-2512",
+      "name": "Mistral Large 3 675b Instruct 2512",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-02"
+    },
+    {
+      "id": "mistralai/ministral-14b-instruct-2512",
+      "name": "Ministral 14b Instruct 2512",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "qwen/qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "contextWindow": 262144,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-01"
+    }
+  ],
+  "baseUrl": "https://nano-gpt.com/api/v1",
+  "docsUrl": "https://docs.nano-gpt.com"
+}

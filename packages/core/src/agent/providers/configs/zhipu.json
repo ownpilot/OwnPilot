@@ -1,0 +1,121 @@
+{
+  "id": "zhipu",
+  "name": "Zhipu AI (GLM)",
+  "type": "openai-compatible",
+  "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+  "apiKeyEnv": "ZHIPU_API_KEY",
+  "docsUrl": "https://open.bigmodel.cn/dev/api",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "glm-4.7",
+      "name": "GLM-4.7",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.50,
+      "outputPrice": 0.50,
+      "capabilities": ["chat", "code", "function_calling", "streaming", "reasoning"],
+      "default": true,
+      "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "glm-4.7-flash",
+      "name": "GLM-4.7 Flash",
+      "contextWindow": 200000,
+      "maxOutput": 131072,
+      "inputPrice": 0.01,
+      "outputPrice": 0.01,
+      "capabilities": ["chat", "code", "function_calling", "streaming", "reasoning"],
+      "releaseDate": "2026-01-19"
+    },
+    {
+      "id": "glm-4.6",
+      "name": "GLM-4.6",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.50,
+      "outputPrice": 0.50,
+      "capabilities": ["chat", "code", "function_calling", "streaming", "reasoning"],
+      "releaseDate": "2025-09-30"
+    },
+    {
+      "id": "glm-4.6v",
+      "name": "GLM-4.6V",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.50,
+      "outputPrice": 0.50,
+      "capabilities": ["chat", "vision", "video", "function_calling", "streaming", "reasoning"],
+      "releaseDate": "2025-12-08"
+    },
+    {
+      "id": "glm-4.5",
+      "name": "GLM-4.5",
+      "contextWindow": 131072,
+      "maxOutput": 98304,
+      "inputPrice": 0.50,
+      "outputPrice": 0.50,
+      "capabilities": ["chat", "code", "function_calling", "streaming", "reasoning"],
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "glm-4.5-flash",
+      "name": "GLM-4.5 Flash",
+      "contextWindow": 131072,
+      "maxOutput": 98304,
+      "inputPrice": 0.01,
+      "outputPrice": 0.01,
+      "capabilities": ["chat", "code", "function_calling", "streaming", "reasoning"],
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "glm-4.5-air",
+      "name": "GLM-4.5 Air",
+      "contextWindow": 131072,
+      "maxOutput": 98304,
+      "inputPrice": 0.10,
+      "outputPrice": 0.10,
+      "capabilities": ["chat", "code", "function_calling", "streaming", "reasoning"],
+      "notes": "Cost-effective model",
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "glm-4.5v",
+      "name": "GLM-4.5V",
+      "contextWindow": 64000,
+      "maxOutput": 16384,
+      "inputPrice": 0.50,
+      "outputPrice": 0.50,
+      "capabilities": ["chat", "vision", "video", "function_calling", "streaming", "reasoning"],
+      "releaseDate": "2025-08-11"
+    },
+    {
+      "id": "glm-4-plus",
+      "name": "GLM-4 Plus",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.50,
+      "outputPrice": 0.50,
+      "capabilities": ["chat", "code", "function_calling", "streaming"],
+      "releaseDate": "2024-08-01"
+    },
+    {
+      "id": "glm-4-flash",
+      "name": "GLM-4 Flash",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.01,
+      "outputPrice": 0.01,
+      "capabilities": ["chat", "code", "function_calling", "streaming"],
+      "notes": "Fast and affordable",
+      "releaseDate": "2024-06-01"
+    }
+  ],
+  "notes": "Zhipu AI is a leading Chinese AI company. Latest GLM-4.7 released January 2026."
+}

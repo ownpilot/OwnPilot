@@ -1,0 +1,699 @@
+/**
+ * WebSocket Gateway Server
+ *
+ * Central control plane for real-time communication
+ */
+
+import { WebSocketServer, type WebSocket, type RawData } from 'ws';
+import type { IncomingMessage } from 'node:http';
+import type { Server as HttpServer } from 'node:http';
+import type { Server as HttpsServer } from 'node:https';
+import type { Http2SecureServer, Http2Server } from 'node:http2';
+import type { ClientEvents, WSMessage, Channel } from './types.js';
+import { sessionManager } from './session.js';
+import { gatewayEvents, ClientEventHandler } from './events.js';
+import { channelManager } from '../channels/index.js';
+import { getOrCreateDefaultAgent, getAgent, isDemoMode } from '../routes/agents.js';
+
+export interface WSGatewayConfig {
+  /** Port for standalone WebSocket server (if not using HTTP upgrade) */
+  port?: number;
+  /** Path for WebSocket endpoint when using HTTP upgrade */
+  path?: string;
+  /** Heartbeat interval in ms */
+  heartbeatInterval?: number;
+  /** Session timeout in ms */
+  sessionTimeout?: number;
+  /** Max message size in bytes */
+  maxPayloadSize?: number;
+}
+
+const DEFAULT_CONFIG: Required<WSGatewayConfig> = {
+  port: 18789,
+  path: '/ws',
+  heartbeatInterval: 30000,
+  sessionTimeout: 300000, // 5 minutes
+  maxPayloadSize: 1024 * 1024, // 1MB
+};
+
+/**
+ * WebSocket Gateway Server
+ */
+export class WSGateway {
+  private wss: WebSocketServer | null = null;
+  private config: Required<WSGatewayConfig>;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
+  private cleanupTimer: NodeJS.Timeout | null = null;
+  private clientHandler = new ClientEventHandler();
+
+  constructor(config: WSGatewayConfig = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.setupClientHandlers();
+  }
+
+  /**
+   * Start standalone WebSocket server
+   */
+  start(): void {
+    if (this.wss) {
+      throw new Error('WebSocket server already running');
+    }
+
+    this.wss = new WebSocketServer({
+      port: this.config.port,
+      maxPayload: this.config.maxPayloadSize,
+    });
+
+    this.setupServer();
+
+    console.log(`WebSocket Gateway listening on ws://0.0.0.0:${this.config.port}`);
+  }
+
+  /**
+   * Attach to existing HTTP server (upgrade handling)
+   */
+  attachToServer(server: HttpServer | HttpsServer | Http2Server | Http2SecureServer): void {
+    if (this.wss) {
+      throw new Error('WebSocket server already running');
+    }
+
+    this.wss = new WebSocketServer({
+      noServer: true,
+      maxPayload: this.config.maxPayloadSize,
+    });
+
+    this.setupServer();
+
+    // Handle HTTP upgrade requests
+    server.on('upgrade', (request, socket, head) => {
+      const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
+
+      if (url.pathname === this.config.path) {
+        this.wss!.handleUpgrade(request, socket, head, (ws) => {
+          this.wss!.emit('connection', ws, request);
+        });
+      } else {
+        socket.destroy();
+      }
+    });
+
+    console.log(`WebSocket Gateway attached at path: ${this.config.path}`);
+  }
+
+  /**
+   * Setup WebSocket server event handlers
+   */
+  private setupServer(): void {
+    if (!this.wss) return;
+
+    this.wss.on('connection', (socket: WebSocket, request: IncomingMessage) => {
+      this.handleConnection(socket, request);
+    });
+
+    this.wss.on('error', (error) => {
+      console.error('WebSocket server error:', error);
+    });
+
+    // Start heartbeat
+    this.heartbeatTimer = setInterval(() => {
+      this.heartbeat();
+    }, this.config.heartbeatInterval);
+
+    // Start cleanup timer
+    this.cleanupTimer = setInterval(() => {
+      const removed = sessionManager.cleanup(this.config.sessionTimeout);
+      if (removed > 0) {
+        console.log(`Cleaned up ${removed} stale sessions`);
+      }
+    }, this.config.sessionTimeout / 2);
+  }
+
+  /**
+   * Handle new WebSocket connection
+   */
+  private handleConnection(socket: WebSocket, request: IncomingMessage): void {
+    // Create session
+    const session = sessionManager.create(socket);
+
+    console.log(`New WebSocket connection: ${session.id} from ${request.socket.remoteAddress}`);
+
+    // Send ready event
+    sessionManager.send(session.id, 'connection:ready', { sessionId: session.id });
+
+    // Setup socket event handlers
+    socket.on('message', (data: RawData) => {
+      this.handleMessage(session.id, data);
+    });
+
+    socket.on('close', (code, reason) => {
+      console.log(`WebSocket closed: ${session.id} (code: ${code}, reason: ${reason.toString()})`);
+      sessionManager.removeBySocket(socket);
+    });
+
+    socket.on('error', (error) => {
+      console.error(`WebSocket error for session ${session.id}:`, error);
+    });
+
+    socket.on('pong', () => {
+      sessionManager.touch(session.id);
+    });
+  }
+
+  /**
+   * Handle incoming WebSocket message
+   */
+  private handleMessage(sessionId: string, data: RawData): void {
+    sessionManager.touch(sessionId);
+
+    try {
+      const message = JSON.parse(data.toString()) as WSMessage<unknown>;
+
+      if (!message.type || typeof message.type !== 'string') {
+        this.sendError(sessionId, 'INVALID_MESSAGE', 'Message must have a type');
+        return;
+      }
+
+      // Process client event
+      const eventType = message.type as keyof ClientEvents;
+
+      if (this.clientHandler.has(eventType)) {
+        this.clientHandler
+          .process(eventType, message.payload as ClientEvents[typeof eventType], sessionId)
+          .catch((error) => {
+            console.error(`Error processing ${eventType}:`, error);
+            this.sendError(
+              sessionId,
+              'HANDLER_ERROR',
+              error instanceof Error ? error.message : 'Unknown error'
+            );
+          });
+      } else {
+        console.warn(`Unknown client event: ${message.type}`);
+      }
+    } catch (error) {
+      console.error('Failed to parse WebSocket message:', error);
+      this.sendError(sessionId, 'PARSE_ERROR', 'Invalid JSON message');
+    }
+  }
+
+  /**
+   * Setup handlers for client events
+   */
+  private setupClientHandlers(): void {
+    // Chat send - Integrate with agent system
+    this.clientHandler.handle('chat:send', async (data, sessionId) => {
+      console.log('Chat message received:', data);
+
+      try {
+        // Get or create default agent
+        const agent = await getOrCreateDefaultAgent();
+
+        // Generate message ID
+        const messageId = crypto.randomUUID();
+
+        // Send stream start event
+        if (sessionId) {
+          sessionManager.send(sessionId, 'chat:stream:start', {
+            sessionId,
+            messageId,
+          });
+        }
+
+        // Check demo mode
+        if (isDemoMode()) {
+          // Demo mode: send simulated response
+          const demoResponse = `This is a demo response. In production, configure an API key (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.) to get real AI responses.\n\nYour message: "${data.content}"`;
+
+          if (sessionId) {
+            // Send chunks for demo
+            const chunks = demoResponse.split(' ');
+            for (const chunk of chunks) {
+              sessionManager.send(sessionId, 'chat:stream:chunk', {
+                sessionId,
+                messageId,
+                chunk: chunk + ' ',
+              });
+              await new Promise((r) => setTimeout(r, 50));
+            }
+
+            // Send stream end
+            sessionManager.send(sessionId, 'chat:stream:end', {
+              sessionId,
+              messageId,
+              fullContent: demoResponse,
+            });
+
+            // Send final message
+            sessionManager.send(sessionId, 'chat:message', {
+              sessionId,
+              message: {
+                id: messageId,
+                content: demoResponse,
+                timestamp: new Date(),
+                model: 'demo',
+                provider: 'demo',
+              },
+            });
+          }
+          return;
+        }
+
+        // Real mode: process with agent using streaming
+        let fullContent = '';
+
+        const result = await agent.chat(data.content, {
+          stream: true,
+          onChunk: (chunk) => {
+            if (chunk.content && sessionId) {
+              fullContent += chunk.content;
+              sessionManager.send(sessionId, 'chat:stream:chunk', {
+                sessionId,
+                messageId,
+                chunk: chunk.content,
+              });
+            }
+
+            // Handle tool calls in chunk
+            if (chunk.toolCalls && sessionId) {
+              for (const tc of chunk.toolCalls) {
+                if (tc.id) {
+                  sessionManager.send(sessionId, 'tool:start', {
+                    sessionId,
+                    tool: {
+                      id: tc.id,
+                      name: tc.name ?? 'unknown',
+                      arguments: {},
+                      status: 'running',
+                      startedAt: new Date(),
+                    },
+                  });
+                }
+              }
+            }
+          },
+        });
+
+        // Check result and use final content
+        if (result.ok) {
+          fullContent = result.value.content;
+        }
+
+        // Send stream end
+        if (sessionId) {
+          sessionManager.send(sessionId, 'chat:stream:end', {
+            sessionId,
+            messageId,
+            fullContent,
+          });
+
+          // Send final message
+          sessionManager.send(sessionId, 'chat:message', {
+            sessionId,
+            message: {
+              id: messageId,
+              content: fullContent,
+              timestamp: new Date(),
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Error processing chat message:', error);
+        if (sessionId) {
+          sessionManager.send(sessionId, 'chat:error', {
+            sessionId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+    });
+
+    // Chat stop
+    this.clientHandler.handle('chat:stop', async (data, sessionId) => {
+      console.log('Chat stop requested:', data);
+      // Agent stop would be implemented here
+      if (sessionId) {
+        sessionManager.send(sessionId, 'system:notification', {
+          type: 'info',
+          message: 'Chat stopped',
+        });
+      }
+    });
+
+    // Chat retry
+    this.clientHandler.handle('chat:retry', async (data, sessionId) => {
+      console.log('Chat retry requested:', data);
+      if (sessionId) {
+        sessionManager.send(sessionId, 'system:notification', {
+          type: 'info',
+          message: 'Retrying message...',
+        });
+      }
+    });
+
+    // Channel connect - Initialize channel adapter based on type
+    this.clientHandler.handle('channel:connect', async (data, sessionId) => {
+      console.log('Channel connect:', data);
+
+      try {
+        // Generate channel ID if not provided
+        const config = data.config as Record<string, unknown>;
+        const channelId = (config.id as string) || `${data.type}-${crypto.randomUUID().slice(0, 8)}`;
+        const channelName = (config.name as string) || `${data.type} Channel`;
+
+        // Build the full config based on channel type
+        const fullConfig = {
+          id: channelId,
+          type: data.type,
+          name: channelName,
+          ...config,
+        } as import('../channels/types.js').AnyChannelConfig;
+
+        // Connect the channel using the channel manager
+        const adapter = await channelManager.connect(fullConfig);
+
+        // Subscribe this session to the channel
+        if (sessionId) {
+          sessionManager.subscribeToChannel(sessionId, channelId);
+
+          // Send success response
+          sessionManager.send(sessionId, 'channel:connected', {
+            channel: {
+              id: adapter.id,
+              type: adapter.type,
+              name: adapter.name,
+              status: adapter.status,
+              connectedAt: new Date(),
+              config: {},
+            },
+          });
+        }
+
+        console.log(`Channel connected: ${data.type}:${channelId}`);
+      } catch (error) {
+        console.error('Failed to connect channel:', error);
+        if (sessionId) {
+          sessionManager.send(sessionId, 'channel:status', {
+            channelId: 'unknown',
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Failed to connect channel',
+          });
+        }
+      }
+    });
+
+    // Channel disconnect
+    this.clientHandler.handle('channel:disconnect', async (data, sessionId) => {
+      console.log('Channel disconnect:', data);
+
+      try {
+        await channelManager.disconnect(data.channelId);
+
+        if (sessionId) {
+          sessionManager.unsubscribeFromChannel(sessionId, data.channelId);
+          sessionManager.send(sessionId, 'channel:disconnected', {
+            channelId: data.channelId,
+            reason: 'User requested disconnect',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to disconnect channel:', error);
+        if (sessionId) {
+          sessionManager.send(sessionId, 'system:notification', {
+            type: 'error',
+            message: error instanceof Error ? error.message : 'Failed to disconnect channel',
+          });
+        }
+      }
+    });
+
+    // Channel subscribe
+    this.clientHandler.handle('channel:subscribe', async (data, sessionId) => {
+      console.log('Channel subscribe:', data);
+
+      if (sessionId) {
+        const success = sessionManager.subscribeToChannel(sessionId, data.channelId);
+        sessionManager.send(sessionId, 'system:notification', {
+          type: success ? 'success' : 'error',
+          message: success ? `Subscribed to channel ${data.channelId}` : 'Failed to subscribe',
+        });
+      }
+    });
+
+    // Channel unsubscribe
+    this.clientHandler.handle('channel:unsubscribe', async (data, sessionId) => {
+      console.log('Channel unsubscribe:', data);
+
+      if (sessionId) {
+        const success = sessionManager.unsubscribeFromChannel(sessionId, data.channelId);
+        sessionManager.send(sessionId, 'system:notification', {
+          type: success ? 'success' : 'error',
+          message: success ? `Unsubscribed from channel ${data.channelId}` : 'Failed to unsubscribe',
+        });
+      }
+    });
+
+    // Channel send - Send message to a channel
+    this.clientHandler.handle('channel:send', async (data, sessionId) => {
+      console.log('Channel send:', data);
+
+      try {
+        const messageId = await channelManager.send(data.message.channelId, data.message);
+
+        if (sessionId) {
+          sessionManager.send(sessionId, 'channel:message:sent', {
+            channelId: data.message.channelId,
+            messageId,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to send channel message:', error);
+        if (sessionId) {
+          sessionManager.send(sessionId, 'channel:message:error', {
+            channelId: data.message.channelId,
+            error: error instanceof Error ? error.message : 'Failed to send message',
+          });
+        }
+      }
+    });
+
+    // Channel list - Return list of connected channels
+    this.clientHandler.handle('channel:list', async (_data, sessionId) => {
+      console.log('Channel list requested');
+
+      const adapters = channelManager.getAll();
+      const channels: Channel[] = adapters.map((adapter) => ({
+        id: adapter.id,
+        type: adapter.type,
+        name: adapter.name,
+        status: adapter.status,
+        connectedAt: adapter.status === 'connected' ? new Date() : undefined,
+        config: {},
+      }));
+
+      // Send channel list to requester
+      if (sessionId) {
+        // Use system notification to send list (could add dedicated event type)
+        sessionManager.send(sessionId, 'system:notification', {
+          type: 'info',
+          message: JSON.stringify({
+            channels,
+            summary: channelManager.getStatus(),
+          }),
+        });
+
+        // Also emit each channel as connected event for UI to process
+        for (const channel of channels) {
+          sessionManager.send(sessionId, 'channel:connected', { channel });
+        }
+      }
+    });
+
+    // Workspace create
+    this.clientHandler.handle('workspace:create', async (data, sessionId) => {
+      console.log('Workspace create:', data);
+      if (sessionId) {
+        sessionManager.send(sessionId, 'workspace:created', {
+          workspace: {
+            id: crypto.randomUUID(),
+            name: data.name,
+            channels: data.channels ?? [],
+            createdAt: new Date(),
+          },
+        });
+      }
+    });
+
+    // Workspace switch
+    this.clientHandler.handle('workspace:switch', async (data, sessionId) => {
+      console.log('Workspace switch:', data);
+      if (sessionId) {
+        sessionManager.setMetadata(sessionId, 'currentWorkspace', data.workspaceId);
+        sessionManager.send(sessionId, 'system:notification', {
+          type: 'success',
+          message: `Switched to workspace ${data.workspaceId}`,
+        });
+      }
+    });
+
+    // Workspace delete
+    this.clientHandler.handle('workspace:delete', async (data, sessionId) => {
+      console.log('Workspace delete:', data);
+      if (sessionId) {
+        sessionManager.send(sessionId, 'workspace:deleted', {
+          workspaceId: data.workspaceId,
+        });
+      }
+    });
+
+    // Workspace list
+    this.clientHandler.handle('workspace:list', async (_data, sessionId) => {
+      console.log('Workspace list requested');
+      if (sessionId) {
+        sessionManager.send(sessionId, 'system:notification', {
+          type: 'info',
+          message: 'Workspaces: []', // Would return actual workspaces from storage
+        });
+      }
+    });
+
+    // Agent configure
+    this.clientHandler.handle('agent:configure', async (data, sessionId) => {
+      console.log('Agent configure:', data);
+      if (sessionId) {
+        sessionManager.setMetadata(sessionId, 'agentConfig', data);
+        sessionManager.send(sessionId, 'agent:state', {
+          agentId: 'default',
+          state: 'idle',
+        });
+      }
+    });
+
+    // Agent stop
+    this.clientHandler.handle('agent:stop', async (_data, sessionId) => {
+      console.log('Agent stop requested');
+      if (sessionId) {
+        sessionManager.send(sessionId, 'agent:state', {
+          agentId: 'default',
+          state: 'idle',
+        });
+      }
+    });
+
+    // Tool cancel
+    this.clientHandler.handle('tool:cancel', async (data, sessionId) => {
+      console.log('Tool cancel:', data);
+      if (sessionId) {
+        sessionManager.send(sessionId, 'tool:end', {
+          sessionId,
+          toolId: data.toolId,
+          result: null,
+          error: 'Cancelled by user',
+        });
+      }
+    });
+
+    // Session ping
+    this.clientHandler.handle('session:ping', async (_data, sessionId) => {
+      // Handled by touch() already, but send pong
+      if (sessionId) {
+        sessionManager.send(sessionId, 'connection:ping', {
+          timestamp: Date.now(),
+        });
+      }
+    });
+
+    // Session pong (response to server ping)
+    this.clientHandler.handle('session:pong', async (data) => {
+      console.log('Session pong:', data);
+    });
+  }
+
+  /**
+   * Send error to a session
+   */
+  private sendError(sessionId: string, code: string, message: string): void {
+    sessionManager.send(sessionId, 'connection:error', { code, message });
+  }
+
+  /**
+   * Send heartbeat pings to all connections
+   */
+  private heartbeat(): void {
+    if (!this.wss) return;
+
+    for (const socket of this.wss.clients) {
+      if (socket.readyState === 1) {
+        socket.ping();
+      }
+    }
+  }
+
+  /**
+   * Broadcast event to all connected clients
+   */
+  broadcast<K extends keyof import('./types.js').ServerEvents>(
+    event: K,
+    payload: import('./types.js').ServerEvents[K]
+  ): number {
+    return sessionManager.broadcast(event, payload);
+  }
+
+  /**
+   * Send event to a specific session
+   */
+  send<K extends keyof import('./types.js').ServerEvents>(
+    sessionId: string,
+    event: K,
+    payload: import('./types.js').ServerEvents[K]
+  ): boolean {
+    return sessionManager.send(sessionId, event, payload);
+  }
+
+  /**
+   * Get current connection count
+   */
+  get connectionCount(): number {
+    return sessionManager.count;
+  }
+
+  /**
+   * Stop the WebSocket server
+   */
+  stop(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.heartbeatTimer) {
+        clearInterval(this.heartbeatTimer);
+        this.heartbeatTimer = null;
+      }
+
+      if (this.cleanupTimer) {
+        clearInterval(this.cleanupTimer);
+        this.cleanupTimer = null;
+      }
+
+      if (!this.wss) {
+        resolve();
+        return;
+      }
+
+      // Close all connections
+      for (const socket of this.wss.clients) {
+        socket.close(1001, 'Server shutting down');
+      }
+
+      this.wss.close((error) => {
+        if (error) {
+          reject(error);
+        } else {
+          this.wss = null;
+          resolve();
+        }
+      });
+    });
+  }
+}
+
+/**
+ * Global WebSocket gateway instance
+ */
+export const wsGateway = new WSGateway();

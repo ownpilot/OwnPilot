@@ -1,0 +1,61 @@
+{
+  "id": "cerebras",
+  "name": "Cerebras",
+  "type": "openai-compatible",
+  "apiKeyEnv": "CEREBRAS_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "zai-glm-4.7",
+      "name": "Z.AI GLM-4.7",
+      "contextWindow": 131072,
+      "maxOutput": 40000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-10"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.25,
+      "outputPrice": 0.69,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen-3-235b-a22b-instruct-2507",
+      "name": "Qwen 3 235B Instruct",
+      "contextWindow": 131000,
+      "maxOutput": 32000,
+      "inputPrice": 0.6,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-22"
+    }
+  ],
+  "baseUrl": "https://api.cerebras.ai/v1",
+  "docsUrl": "https://inference-docs.cerebras.ai/models/overview"
+}

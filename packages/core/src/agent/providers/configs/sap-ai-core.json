@@ -1,0 +1,263 @@
+{
+  "id": "sap-ai-core",
+  "name": "SAP AI Core",
+  "type": "openai-compatible",
+  "apiKeyEnv": "AICORE_SERVICE_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "anthropic--claude-4.5-opus",
+      "name": "anthropic--claude-4.5-opus",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-11-24"
+    },
+    {
+      "id": "anthropic--claude-4.5-haiku",
+      "name": "anthropic--claude-4.5-haiku",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 1,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10-01"
+    },
+    {
+      "id": "anthropic--claude-4.5-sonnet",
+      "name": "anthropic--claude-4.5-sonnet",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "gpt-5-nano",
+      "name": "gpt-5-nano",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "gpt-5-mini",
+      "name": "gpt-5-mini",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "gpt-5",
+      "name": "gpt-5",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "anthropic--claude-4-opus",
+      "name": "anthropic--claude-4-opus",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "anthropic--claude-4-sonnet",
+      "name": "anthropic--claude-4-sonnet",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "gemini-2.5-flash",
+      "name": "gemini-2.5-flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-25"
+    },
+    {
+      "id": "gemini-2.5-pro",
+      "name": "gemini-2.5-pro",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "video",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-25"
+    },
+    {
+      "id": "anthropic--claude-3.7-sonnet",
+      "name": "anthropic--claude-3.7-sonnet",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-24"
+    },
+    {
+      "id": "anthropic--claude-3.5-sonnet",
+      "name": "anthropic--claude-3.5-sonnet",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-10-22"
+    },
+    {
+      "id": "anthropic--claude-3-haiku",
+      "name": "anthropic--claude-3-haiku",
+      "contextWindow": 200000,
+      "maxOutput": 4096,
+      "inputPrice": 0.25,
+      "outputPrice": 1.25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-03-13"
+    },
+    {
+      "id": "anthropic--claude-3-sonnet",
+      "name": "anthropic--claude-3-sonnet",
+      "contextWindow": 200000,
+      "maxOutput": 4096,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-03-04"
+    },
+    {
+      "id": "anthropic--claude-3-opus",
+      "name": "anthropic--claude-3-opus",
+      "contextWindow": 200000,
+      "maxOutput": 4096,
+      "inputPrice": 15,
+      "outputPrice": 75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-02-29"
+    }
+  ],
+  "baseUrl": "https://api.ai.{landscape}.hana.ondemand.com/v2",
+  "docsUrl": "https://help.sap.com/docs/sap-ai-core"
+}

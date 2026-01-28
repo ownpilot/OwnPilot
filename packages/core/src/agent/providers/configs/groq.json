@@ -1,0 +1,267 @@
+{
+  "id": "groq",
+  "name": "Groq",
+  "type": "openai-compatible",
+  "apiKeyEnv": "GROQ_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "moonshotai/kimi-k2-instruct",
+      "name": "Kimi K2 Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-14"
+    },
+    {
+      "id": "meta-llama/llama-4-scout-17b-16e-instruct",
+      "name": "Llama 4 Scout 17B",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.11,
+      "outputPrice": 0.34,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "meta-llama/llama-4-maverick-17b-128e-instruct",
+      "name": "Llama 4 Maverick 17B",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "meta-llama/llama-guard-4-12b",
+      "name": "Llama Guard 4 12B",
+      "contextWindow": 131072,
+      "maxOutput": 1024,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "mistral-saba-24b",
+      "name": "Mistral Saba 24B",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.79,
+      "outputPrice": 0.79,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-02-06"
+    },
+    {
+      "id": "deepseek-r1-distill-llama-70b",
+      "name": "DeepSeek R1 Distill Llama 70B",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.75,
+      "outputPrice": 0.99,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "qwen/qwen3-32b",
+      "name": "Qwen3 32B",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.29,
+      "outputPrice": 0.59,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-23"
+    },
+    {
+      "id": "llama-3.3-70b-versatile",
+      "name": "Llama 3.3 70B Versatile",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.59,
+      "outputPrice": 0.79,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-06"
+    },
+    {
+      "id": "qwen-qwq-32b",
+      "name": "Qwen QwQ 32B",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.29,
+      "outputPrice": 0.39,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-11-27"
+    },
+    {
+      "id": "llama-3.1-8b-instant",
+      "name": "Llama 3.1 8B Instant",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.05,
+      "outputPrice": 0.08,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "llama-guard-3-8b",
+      "name": "Llama Guard 3 8B",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "gemma2-9b-it",
+      "name": "Gemma 2 9B",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-06-27"
+    },
+    {
+      "id": "moonshotai/kimi-k2-instruct-0905",
+      "name": "Kimi K2 Instruct 0905",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "llama3-8b-8192",
+      "name": "Llama 3 8B",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0.05,
+      "outputPrice": 0.08,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-04-18"
+    },
+    {
+      "id": "llama3-70b-8192",
+      "name": "Llama 3 70B",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0.59,
+      "outputPrice": 0.79,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-04-18"
+    }
+  ],
+  "baseUrl": "https://api.groq.com/openai/v1",
+  "docsUrl": "https://console.groq.com/docs/models"
+}

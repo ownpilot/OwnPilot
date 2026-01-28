@@ -1,0 +1,94 @@
+{
+  "id": "privatemode-ai",
+  "name": "Privatemode AI",
+  "type": "openai-compatible",
+  "apiKeyEnv": "PRIVATEMODE_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "gpt-oss-120b",
+      "name": "gpt-oss-120b",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-08-04"
+    },
+    {
+      "id": "qwen3-embedding-4b",
+      "name": "Qwen3-Embedding 4B",
+      "contextWindow": 32000,
+      "maxOutput": 2560,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2025-06-06"
+    },
+    {
+      "id": "qwen3-coder-30b-a3b",
+      "name": "Qwen3-Coder 30B-A3B",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-04"
+    },
+    {
+      "id": "gemma-3-27b",
+      "name": "Gemma 3 27B",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-12"
+    },
+    {
+      "id": "whisper-large-v3",
+      "name": "Whisper large-v3",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "streaming"
+      ],
+      "releaseDate": "2023-09-01"
+    }
+  ],
+  "baseUrl": "http://localhost:8080/v1",
+  "docsUrl": "https://docs.privatemode.ai/api/overview"
+}

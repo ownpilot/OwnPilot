@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # OwnPilot API Server
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ownpilot
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - HOST=0.0.0.0
+      - DATA_DIR=/app/data
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS}
+      - TELEGRAM_ALLOWED_CHATS=${TELEGRAM_ALLOWED_CHATS}
+      - SYSTEM_PROMPT=${SYSTEM_PROMPT:-You are a helpful AI assistant.}
+      - AUTH_TYPE=${AUTH_TYPE:-none}
+      - API_KEYS=${API_KEYS}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - RATE_LIMIT_DISABLED=${RATE_LIMIT_DISABLED:-false}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
+      # Autonomy settings
+      - DEFAULT_AUTONOMY_LEVEL=${DEFAULT_AUTONOMY_LEVEL:-1}
+      - ENABLE_PROACTIVE_TRIGGERS=${ENABLE_PROACTIVE_TRIGGERS:-false}
+    volumes:
+      - gateway-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ownpilot-network
+
+  # Web UI (development)
+  ui:
+    build:
+      context: ./packages/ui
+      dockerfile: Dockerfile.dev
+    container_name: ownpilot-ui
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://gateway:8080
+    depends_on:
+      - gateway
+    networks:
+      - ownpilot-network
+    profiles:
+      - ui
+
+volumes:
+  gateway-data:
+    driver: local
+
+networks:
+  ownpilot-network:
+    driver: bridge

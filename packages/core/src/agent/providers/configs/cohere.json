@@ -1,0 +1,120 @@
+{
+  "id": "cohere",
+  "name": "Cohere",
+  "type": "cohere",
+  "apiKeyEnv": "COHERE_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "command-a-translate-08-2025",
+      "name": "Command A Translate",
+      "contextWindow": 8000,
+      "maxOutput": 8000,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-08-28"
+    },
+    {
+      "id": "command-a-reasoning-08-2025",
+      "name": "Command A Reasoning",
+      "contextWindow": 256000,
+      "maxOutput": 32000,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-08-21"
+    },
+    {
+      "id": "command-a-vision-07-2025",
+      "name": "Command A Vision",
+      "contextWindow": 128000,
+      "maxOutput": 8000,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-31"
+    },
+    {
+      "id": "command-a-03-2025",
+      "name": "Command A",
+      "contextWindow": 256000,
+      "maxOutput": 8000,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-03-13"
+    },
+    {
+      "id": "command-r-08-2024",
+      "name": "Command R",
+      "contextWindow": 128000,
+      "maxOutput": 4000,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-08-30"
+    },
+    {
+      "id": "command-r-plus-08-2024",
+      "name": "Command R+",
+      "contextWindow": 128000,
+      "maxOutput": 4000,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-08-30"
+    },
+    {
+      "id": "command-r7b-12-2024",
+      "name": "Command R7B",
+      "contextWindow": 128000,
+      "maxOutput": 4000,
+      "inputPrice": 0.0375,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-02-27"
+    }
+  ],
+  "baseUrl": "https://api.cohere.ai/v1",
+  "docsUrl": "https://docs.cohere.com/docs/models"
+}

@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+**/dist
+.turbo
+**/.turbo
+
+# Development files
+.git
+.github
+.vscode
+.idea
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+coverage
+**/.vitest
+
+# Documentation
+*.md
+docs
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# UI dev files (if building separately)
+packages/ui/node_modules
+packages/ui/dist

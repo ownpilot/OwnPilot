@@ -1,0 +1,66 @@
+{
+  "id": "v0",
+  "name": "v0",
+  "type": "openai-compatible",
+  "apiKeyEnv": "V0_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "v0-1.5-lg",
+      "name": "v0-1.5-lg",
+      "contextWindow": 512000,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-06-09"
+    },
+    {
+      "id": "v0-1.5-md",
+      "name": "v0-1.5-md",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-06-09"
+    },
+    {
+      "id": "v0-1.0-md",
+      "name": "v0-1.0-md",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-22"
+    }
+  ],
+  "baseUrl": "https://api.v0.dev/v1",
+  "docsUrl": "https://sdk.vercel.ai/providers/ai-sdk-providers/vercel"
+}

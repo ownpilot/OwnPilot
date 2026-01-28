@@ -1,0 +1,48 @@
+{
+  "id": "minimax",
+  "name": "MiniMax (minimax.io)",
+  "type": "openai-compatible",
+  "apiKeyEnv": "MINIMAX_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "MiniMax-M2.1",
+      "name": "MiniMax-M2.1",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-23"
+    },
+    {
+      "id": "MiniMax-M2",
+      "name": "MiniMax-M2",
+      "contextWindow": 196608,
+      "maxOutput": 128000,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-10-27"
+    }
+  ],
+  "baseUrl": "https://api.minimax.io/anthropic/v1",
+  "docsUrl": "https://platform.minimax.io/docs/guides/quickstart"
+}

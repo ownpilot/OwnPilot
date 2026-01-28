@@ -1,0 +1,226 @@
+{
+  "id": "scaleway",
+  "name": "Scaleway",
+  "type": "openai-compatible",
+  "apiKeyEnv": "SCALEWAY_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "qwen3-coder-30b-a3b-instruct",
+      "name": "Qwen3-Coder 30B-A3B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.2,
+      "outputPrice": 0.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "default": true,
+      "releaseDate": "2025-04"
+    },
+    {
+      "id": "deepseek-r1-distill-llama-70b",
+      "name": "DeepSeek R1 Distill Llama 70B",
+      "contextWindow": 32000,
+      "maxOutput": 4096,
+      "inputPrice": 0.9,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "llama-3.1-8b-instruct",
+      "name": "Llama 3.1 8B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "llama-3.3-70b-instruct",
+      "name": "Llama-3.3-70B-Instruct",
+      "contextWindow": 100000,
+      "maxOutput": 4096,
+      "inputPrice": 0.9,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-06"
+    },
+    {
+      "id": "gemma-3-27b-it",
+      "name": "Gemma-3-27B-IT",
+      "contextWindow": 40000,
+      "maxOutput": 8192,
+      "inputPrice": 0.25,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "bge-multilingual-gemma2",
+      "name": "BGE Multilingual Gemma2",
+      "contextWindow": 8191,
+      "maxOutput": 3072,
+      "inputPrice": 0.13,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-26"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "GPT-OSS 120B",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-01-01"
+    },
+    {
+      "id": "whisper-large-v3",
+      "name": "Whisper Large v3",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.003,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "releaseDate": "2023-09-01"
+    },
+    {
+      "id": "devstral-2-123b-instruct-2512",
+      "name": "Devstral 2 123B Instruct (2512)",
+      "contextWindow": 256000,
+      "maxOutput": 8192,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2026-01-07"
+    },
+    {
+      "id": "qwen3-235b-a22b-instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "contextWindow": 260000,
+      "maxOutput": 8192,
+      "inputPrice": 0.75,
+      "outputPrice": 2.25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-01"
+    },
+    {
+      "id": "voxtral-small-24b-2507",
+      "name": "Voxtral Small 24B 2507",
+      "contextWindow": 32000,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 0.35,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-01"
+    },
+    {
+      "id": "mistral-small-3.2-24b-instruct-2506",
+      "name": "Mistral Small 3.2 24B Instruct (2506)",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 0.35,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-06-20"
+    },
+    {
+      "id": "pixtral-12b-2409",
+      "name": "Pixtral 12B 2409",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-09-25"
+    },
+    {
+      "id": "mistral-nemo-instruct-2407",
+      "name": "Mistral Nemo Instruct 2407",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-07-25"
+    }
+  ],
+  "baseUrl": "https://api.scaleway.ai/v1",
+  "docsUrl": "https://www.scaleway.com/en/docs/generative-apis/"
+}

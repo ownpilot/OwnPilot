@@ -1,0 +1,62 @@
+{
+  "id": "upstage",
+  "name": "Upstage",
+  "type": "openai-compatible",
+  "apiKeyEnv": "UPSTAGE_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "solar-pro3",
+      "name": "solar-pro3",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.25,
+      "outputPrice": 0.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01"
+    },
+    {
+      "id": "solar-pro2",
+      "name": "solar-pro2",
+      "contextWindow": 65536,
+      "maxOutput": 8192,
+      "inputPrice": 0.25,
+      "outputPrice": 0.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-05-20"
+    },
+    {
+      "id": "solar-mini",
+      "name": "solar-mini",
+      "contextWindow": 32768,
+      "maxOutput": 4096,
+      "inputPrice": 0.15,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-06-12"
+    }
+  ],
+  "baseUrl": "https://api.upstage.ai/v1/solar",
+  "docsUrl": "https://developers.upstage.ai/docs/apis/chat"
+}

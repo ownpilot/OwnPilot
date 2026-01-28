@@ -1,0 +1,57 @@
+{
+  "id": "morph",
+  "name": "Morph",
+  "type": "openai-compatible",
+  "apiKeyEnv": "MORPH_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": false,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "morph-v3-large",
+      "name": "Morph v3 Large",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.9,
+      "outputPrice": 1.9,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2024-08-15"
+    },
+    {
+      "id": "morph-v3-fast",
+      "name": "Morph v3 Fast",
+      "contextWindow": 16000,
+      "maxOutput": 16000,
+      "inputPrice": 0.8,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-08-15"
+    },
+    {
+      "id": "auto",
+      "name": "Auto",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.85,
+      "outputPrice": 1.55,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "releaseDate": "2024-06-01"
+    }
+  ],
+  "baseUrl": "https://api.morphllm.com/v1",
+  "docsUrl": "https://docs.morphllm.com/api-reference/introduction"
+}

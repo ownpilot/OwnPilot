@@ -1,0 +1,49 @@
+{
+  "id": "deepseek",
+  "name": "DeepSeek",
+  "type": "openai-compatible",
+  "apiKeyEnv": "DEEPSEEK_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "deepseek-reasoner",
+      "name": "DeepSeek Reasoner",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.28,
+      "outputPrice": 0.42,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "deepseek-chat",
+      "name": "DeepSeek Chat",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.28,
+      "outputPrice": 0.42,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2024-12-26"
+    }
+  ],
+  "baseUrl": "https://api.deepseek.com",
+  "docsUrl": "https://platform.deepseek.com/api-docs/pricing"
+}

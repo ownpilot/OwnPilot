@@ -1,0 +1,62 @@
+{
+  "id": "lmstudio",
+  "name": "LMStudio",
+  "type": "openai-compatible",
+  "apiKeyEnv": "LMSTUDIO_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen/qwen3-coder-30b",
+      "name": "Qwen3 Coder 30B",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming",
+        "code"
+      ],
+      "releaseDate": "2025-07-23"
+    },
+    {
+      "id": "qwen/qwen3-30b-a3b-2507",
+      "name": "Qwen3 30B A3B 2507",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "releaseDate": "2025-07-30"
+    }
+  ],
+  "baseUrl": "http://127.0.0.1:1234/v1",
+  "docsUrl": "https://lmstudio.ai/models"
+}

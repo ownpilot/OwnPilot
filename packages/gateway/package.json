@@ -1,0 +1,45 @@
+{
+  "name": "@ownpilot/gateway",
+  "version": "0.1.0",
+  "description": "HTTP API gateway for OwnPilot",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "seed:triggers-plans": "tsx scripts/seed-triggers-plans.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.1",
+    "@ownpilot/core": "workspace:*",
+    "@slack/bolt": "^4.1.0",
+    "archiver": "^7.0.1",
+    "better-sqlite3": "^11.7.0",
+    "discord.js": "^14.16.3",
+    "hono": "^4.7.6",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/archiver": "^6.0.3",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.15.21",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^2.1.9"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "id": "kimi-for-coding",
+  "name": "Kimi For Coding",
+  "type": "openai-compatible",
+  "apiKeyEnv": "KIMI_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "k2p5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "video",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01"
+    },
+    {
+      "id": "kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "releaseDate": "2025-11"
+    }
+  ],
+  "baseUrl": "https://api.kimi.com/coding/v1",
+  "docsUrl": "https://www.kimi.com/coding/docs/en/third-party-agents.html"
+}
