@@ -117,6 +117,44 @@ export async function executePersonalDataTool(
         };
       }
 
+      case 'batch_add_tasks': {
+        const repo = new TasksRepository(userId);
+        const tasksInput = params.tasks as Array<{
+          title: string;
+          dueDate?: string;
+          priority?: string;
+          category?: string;
+          notes?: string;
+        }>;
+
+        if (!tasksInput || !Array.isArray(tasksInput)) {
+          return { success: false, error: 'tasks must be an array' };
+        }
+
+        const results = [];
+        for (const taskInput of tasksInput) {
+          let priority = taskInput.priority;
+          if (priority === 'medium') priority = 'normal';
+          const task = await repo.create({
+            title: taskInput.title,
+            dueDate: taskInput.dueDate,
+            priority: priority as 'low' | 'normal' | 'high' | 'urgent' | undefined,
+            category: taskInput.category,
+            description: taskInput.notes,
+          });
+          results.push(task);
+        }
+
+        return {
+          success: true,
+          result: {
+            message: `Created ${results.length} task(s).`,
+            tasks: results,
+            count: results.length,
+          },
+        };
+      }
+
       // =====================================================
       // BOOKMARK TOOLS
       // =====================================================
@@ -168,6 +206,44 @@ export async function executePersonalDataTool(
         return {
           success: true,
           result: { message: 'Bookmark deleted.' },
+        };
+      }
+
+      case 'batch_add_bookmarks': {
+        const repo = new BookmarksRepository(userId);
+        const bookmarksInput = params.bookmarks as Array<{
+          url: string;
+          title?: string;
+          description?: string;
+          category?: string;
+          tags?: string[];
+          isFavorite?: boolean;
+        }>;
+
+        if (!bookmarksInput || !Array.isArray(bookmarksInput)) {
+          return { success: false, error: 'bookmarks must be an array' };
+        }
+
+        const results = [];
+        for (const input of bookmarksInput) {
+          const bookmark = await repo.create({
+            url: input.url,
+            title: input.title || input.url,
+            description: input.description,
+            category: input.category,
+            tags: input.tags,
+            isFavorite: input.isFavorite,
+          });
+          results.push(bookmark);
+        }
+
+        return {
+          success: true,
+          result: {
+            message: `Saved ${results.length} bookmark(s).`,
+            bookmarks: results,
+            count: results.length,
+          },
         };
       }
 
@@ -237,6 +313,42 @@ export async function executePersonalDataTool(
         };
       }
 
+      case 'batch_add_notes': {
+        const repo = new NotesRepository(userId);
+        const notesInput = params.notes as Array<{
+          title: string;
+          content: string;
+          category?: string;
+          tags?: string[];
+          isPinned?: boolean;
+        }>;
+
+        if (!notesInput || !Array.isArray(notesInput)) {
+          return { success: false, error: 'notes must be an array' };
+        }
+
+        const results = [];
+        for (const input of notesInput) {
+          const note = await repo.create({
+            title: input.title,
+            content: input.content,
+            category: input.category,
+            tags: input.tags,
+            isPinned: input.isPinned,
+          });
+          results.push(note);
+        }
+
+        return {
+          success: true,
+          result: {
+            message: `Created ${results.length} note(s).`,
+            notes: results,
+            count: results.length,
+          },
+        };
+      }
+
       // =====================================================
       // CALENDAR EVENT TOOLS
       // =====================================================
@@ -288,6 +400,48 @@ export async function executePersonalDataTool(
         return {
           success: true,
           result: { message: 'Event deleted.' },
+        };
+      }
+
+      case 'batch_add_calendar_events': {
+        const repo = new CalendarRepository(userId);
+        const eventsInput = params.events as Array<{
+          title: string;
+          startTime: string;
+          endTime?: string;
+          isAllDay?: boolean;
+          location?: string;
+          description?: string;
+          category?: string;
+          reminder?: number;
+        }>;
+
+        if (!eventsInput || !Array.isArray(eventsInput)) {
+          return { success: false, error: 'events must be an array' };
+        }
+
+        const results = [];
+        for (const input of eventsInput) {
+          const event = await repo.create({
+            title: input.title,
+            startTime: input.startTime,
+            endTime: input.endTime,
+            allDay: input.isAllDay,
+            location: input.location,
+            description: input.description,
+            category: input.category,
+            reminderMinutes: input.reminder,
+          });
+          results.push(event);
+        }
+
+        return {
+          success: true,
+          result: {
+            message: `Created ${results.length} event(s).`,
+            events: results,
+            count: results.length,
+          },
         };
       }
 
@@ -360,6 +514,52 @@ export async function executePersonalDataTool(
         return {
           success: true,
           result: { message: 'Contact deleted.' },
+        };
+      }
+
+      case 'batch_add_contacts': {
+        const repo = new ContactsRepository(userId);
+        const contactsInput = params.contacts as Array<{
+          name: string;
+          email?: string;
+          phone?: string;
+          company?: string;
+          jobTitle?: string;
+          relationship?: string;
+          birthday?: string;
+          address?: string;
+          notes?: string;
+          isFavorite?: boolean;
+        }>;
+
+        if (!contactsInput || !Array.isArray(contactsInput)) {
+          return { success: false, error: 'contacts must be an array' };
+        }
+
+        const results = [];
+        for (const input of contactsInput) {
+          const contact = await repo.create({
+            name: input.name,
+            email: input.email,
+            phone: input.phone,
+            company: input.company,
+            jobTitle: input.jobTitle,
+            relationship: input.relationship,
+            birthday: input.birthday,
+            address: input.address,
+            notes: input.notes,
+            isFavorite: input.isFavorite,
+          });
+          results.push(contact);
+        }
+
+        return {
+          success: true,
+          result: {
+            message: `Added ${results.length} contact(s).`,
+            contacts: results,
+            count: results.length,
+          },
         };
       }
 

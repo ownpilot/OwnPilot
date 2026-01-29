@@ -567,6 +567,37 @@ export async function executeCustomDataTool(
         };
       }
 
+      case 'batch_add_custom_records': {
+        const { table: tableId, records: recordsInput } = params as {
+          table: string;
+          records: Array<Record<string, unknown>>;
+        };
+
+        if (!recordsInput || !Array.isArray(recordsInput)) {
+          return { success: false, error: 'records must be an array' };
+        }
+
+        const table = await repo.getTable(tableId);
+        if (!table) {
+          return { success: false, error: `Table not found: ${tableId}` };
+        }
+
+        const results = [];
+        for (const data of recordsInput) {
+          const record = await repo.addRecord(tableId, data);
+          results.push(record);
+        }
+
+        return {
+          success: true,
+          result: {
+            message: `Added ${results.length} record(s) to "${table.displayName}".`,
+            records: results,
+            count: results.length,
+          },
+        };
+      }
+
       case 'list_custom_records': {
         const { table: tableId, limit = 20, offset = 0, filter } = params as {
           table: string;

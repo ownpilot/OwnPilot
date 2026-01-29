@@ -152,6 +152,49 @@ export const deleteTaskTool: ToolDefinition = {
   },
 };
 
+export const batchAddTasksTool: ToolDefinition = {
+  name: 'batch_add_tasks',
+  description: `Add multiple tasks at once. Use this for bulk task creation instead of calling add_task multiple times.
+Efficient for importing task lists, creating recurring task patterns, or adding multiple related items.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      tasks: {
+        type: 'array',
+        description: 'Array of tasks to add',
+        items: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: 'Task title/description',
+            },
+            dueDate: {
+              type: 'string',
+              description: 'Due date in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss)',
+            },
+            priority: {
+              type: 'string',
+              enum: ['low', 'normal', 'high', 'urgent'],
+              description: 'Task priority level',
+            },
+            category: {
+              type: 'string',
+              description: 'Task category',
+            },
+            notes: {
+              type: 'string',
+              description: 'Additional notes or details',
+            },
+          },
+          required: ['title'],
+        },
+      },
+    },
+    required: ['tasks'],
+  },
+};
+
 // ============================================================================
 // BOOKMARK TOOLS
 // ============================================================================
@@ -232,6 +275,53 @@ export const deleteBookmarkTool: ToolDefinition = {
       },
     },
     required: ['bookmarkId'],
+  },
+};
+
+export const batchAddBookmarksTool: ToolDefinition = {
+  name: 'batch_add_bookmarks',
+  description: `Add multiple bookmarks at once. Use this for bulk bookmark import or saving multiple related links.
+Efficient for importing browser bookmarks or saving research links.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      bookmarks: {
+        type: 'array',
+        description: 'Array of bookmarks to add',
+        items: {
+          type: 'object',
+          properties: {
+            url: {
+              type: 'string',
+              description: 'The URL to bookmark',
+            },
+            title: {
+              type: 'string',
+              description: 'Bookmark title',
+            },
+            description: {
+              type: 'string',
+              description: 'Brief description of the bookmark',
+            },
+            category: {
+              type: 'string',
+              description: 'Category',
+            },
+            tags: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Tags for the bookmark',
+            },
+            isFavorite: {
+              type: 'boolean',
+              description: 'Whether to mark as favorite',
+            },
+          },
+          required: ['url'],
+        },
+      },
+    },
+    required: ['bookmarks'],
   },
 };
 
@@ -341,6 +431,49 @@ export const deleteNoteTool: ToolDefinition = {
   },
 };
 
+export const batchAddNotesTool: ToolDefinition = {
+  name: 'batch_add_notes',
+  description: `Add multiple notes at once. Use this for bulk note creation or importing notes.
+Efficient for creating a series of related notes or importing from external sources.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      notes: {
+        type: 'array',
+        description: 'Array of notes to add',
+        items: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: 'Note title',
+            },
+            content: {
+              type: 'string',
+              description: 'Note content (supports markdown)',
+            },
+            category: {
+              type: 'string',
+              description: 'Category',
+            },
+            tags: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Tags for the note',
+            },
+            isPinned: {
+              type: 'boolean',
+              description: 'Whether to pin the note',
+            },
+          },
+          required: ['title', 'content'],
+        },
+      },
+    },
+    required: ['notes'],
+  },
+};
+
 // ============================================================================
 // CALENDAR/EVENT TOOLS
 // ============================================================================
@@ -432,6 +565,60 @@ export const deleteEventTool: ToolDefinition = {
       },
     },
     required: ['eventId'],
+  },
+};
+
+export const batchAddEventsTool: ToolDefinition = {
+  name: 'batch_add_calendar_events',
+  description: `Add multiple calendar events at once. Use this for bulk event creation.
+Efficient for importing events, creating recurring patterns, or scheduling multiple meetings.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      events: {
+        type: 'array',
+        description: 'Array of calendar events to add',
+        items: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: 'Event title',
+            },
+            startTime: {
+              type: 'string',
+              description: 'Start time in ISO format (YYYY-MM-DDTHH:mm:ss)',
+            },
+            endTime: {
+              type: 'string',
+              description: 'End time in ISO format',
+            },
+            isAllDay: {
+              type: 'boolean',
+              description: 'Whether this is an all-day event',
+            },
+            location: {
+              type: 'string',
+              description: 'Event location',
+            },
+            description: {
+              type: 'string',
+              description: 'Event description',
+            },
+            category: {
+              type: 'string',
+              description: 'Category',
+            },
+            reminder: {
+              type: 'number',
+              description: 'Reminder in minutes before event',
+            },
+          },
+          required: ['title', 'startTime'],
+        },
+      },
+    },
+    required: ['events'],
   },
 };
 
@@ -572,6 +759,68 @@ export const deleteContactTool: ToolDefinition = {
   },
 };
 
+export const batchAddContactsTool: ToolDefinition = {
+  name: 'batch_add_contacts',
+  description: `Add multiple contacts at once. Use this for bulk contact import.
+Efficient for importing contacts from external sources or adding multiple people at once.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      contacts: {
+        type: 'array',
+        description: 'Array of contacts to add',
+        items: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Contact name',
+            },
+            email: {
+              type: 'string',
+              description: 'Email address',
+            },
+            phone: {
+              type: 'string',
+              description: 'Phone number',
+            },
+            company: {
+              type: 'string',
+              description: 'Company/organization',
+            },
+            jobTitle: {
+              type: 'string',
+              description: 'Job title/role',
+            },
+            relationship: {
+              type: 'string',
+              description: 'Relationship type',
+            },
+            birthday: {
+              type: 'string',
+              description: 'Birthday in YYYY-MM-DD format',
+            },
+            address: {
+              type: 'string',
+              description: 'Physical address',
+            },
+            notes: {
+              type: 'string',
+              description: 'Additional notes',
+            },
+            isFavorite: {
+              type: 'boolean',
+              description: 'Whether to mark as favorite',
+            },
+          },
+          required: ['name'],
+        },
+      },
+    },
+    required: ['contacts'],
+  },
+};
+
 // ============================================================================
 // EXPORT ALL PERSONAL DATA TOOLS
 // ============================================================================
@@ -583,24 +832,29 @@ export const PERSONAL_DATA_TOOLS: ToolDefinition[] = [
   completeTaskTool,
   updateTaskTool,
   deleteTaskTool,
+  batchAddTasksTool,
   // Bookmarks
   addBookmarkTool,
   listBookmarksTool,
   deleteBookmarkTool,
+  batchAddBookmarksTool,
   // Notes
   addNoteTool,
   listNotesTool,
   updateNoteTool,
   deleteNoteTool,
+  batchAddNotesTool,
   // Calendar Events
   addEventTool,
   listEventsTool,
   deleteEventTool,
+  batchAddEventsTool,
   // Contacts
   addContactTool,
   listContactsTool,
   updateContactTool,
   deleteContactTool,
+  batchAddContactsTool,
 ];
 
 /**

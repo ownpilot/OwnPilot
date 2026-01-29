@@ -52,6 +52,50 @@ Memory persists across conversations. Be selective - only remember truly importa
 };
 
 /**
+ * Batch remember multiple facts, preferences, or events
+ */
+export const batchRememberTool: ToolDefinition = {
+  name: 'batch_remember',
+  description: `Store multiple pieces of information in persistent memory at once.
+Use this for bulk memory creation - more efficient than calling remember multiple times.
+Useful for onboarding, importing user data, or storing multiple related facts.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      memories: {
+        type: 'array',
+        description: 'Array of memories to store',
+        items: {
+          type: 'object',
+          properties: {
+            content: {
+              type: 'string',
+              description: 'The information to remember',
+            },
+            type: {
+              type: 'string',
+              enum: ['fact', 'preference', 'event', 'skill'],
+              description: 'Type of memory',
+            },
+            importance: {
+              type: 'number',
+              description: 'Importance score from 0 to 1. Default: 0.5',
+            },
+            tags: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Tags for categorization',
+            },
+          },
+          required: ['content', 'type'],
+        },
+      },
+    },
+    required: ['memories'],
+  },
+};
+
+/**
  * Recall information from memory
  */
 export const recallTool: ToolDefinition = {
@@ -187,6 +231,7 @@ Useful for understanding the memory system state.`,
 
 export const MEMORY_TOOLS: ToolDefinition[] = [
   rememberTool,
+  batchRememberTool,
   recallTool,
   forgetTool,
   listMemoriesTool,

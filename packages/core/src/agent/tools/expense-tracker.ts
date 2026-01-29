@@ -260,6 +260,121 @@ export const addExpenseExecutor: ToolExecutor = async (args, context): Promise<T
 };
 
 /**
+ * Batch add expenses tool
+ */
+export const batchAddExpensesTool: ToolDefinition = {
+  name: 'batch_add_expenses',
+  description: 'Add multiple expenses at once. Use this for bulk import or adding several transactions efficiently.',
+  parameters: {
+    type: 'object',
+    properties: {
+      expenses: {
+        type: 'array',
+        description: 'Array of expenses to add',
+        items: {
+          type: 'object',
+          properties: {
+            date: {
+              type: 'string',
+              description: 'Expense date in YYYY-MM-DD format. Defaults to today if not provided.',
+            },
+            amount: {
+              type: 'number',
+              description: 'Expense amount (positive number)',
+            },
+            currency: {
+              type: 'string',
+              description: 'Currency code (TRY, USD, EUR). Defaults to TRY.',
+              enum: ['TRY', 'USD', 'EUR', 'GBP'],
+            },
+            category: {
+              type: 'string',
+              description: 'Expense category',
+              enum: ['food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'education', 'travel', 'subscription', 'housing', 'other'],
+            },
+            description: {
+              type: 'string',
+              description: 'Description or merchant name',
+            },
+            paymentMethod: {
+              type: 'string',
+              description: 'Payment method (cash, credit_card, debit_card, bank_transfer)',
+            },
+            tags: {
+              type: 'array',
+              description: 'Optional tags for filtering',
+              items: { type: 'string' },
+            },
+            notes: {
+              type: 'string',
+              description: 'Additional notes',
+            },
+          },
+          required: ['amount', 'category', 'description'],
+        },
+      },
+    },
+    required: ['expenses'],
+  },
+};
+
+export const batchAddExpensesExecutor: ToolExecutor = async (args, _context): Promise<ToolExecutionResult> => {
+  try {
+    const db = await loadExpenseDb();
+    const expensesInput = args.expenses as Array<{
+      date?: string;
+      amount: number;
+      currency?: string;
+      category: ExpenseCategory;
+      description: string;
+      paymentMethod?: string;
+      tags?: string[];
+      notes?: string;
+    }>;
+
+    const addedExpenses: ExpenseEntry[] = [];
+
+    for (const input of expensesInput) {
+      const expense: ExpenseEntry = {
+        id: generateExpenseId(),
+        date: input.date ?? new Date().toISOString().split('T')[0]!,
+        amount: input.amount,
+        currency: input.currency ?? 'TRY',
+        category: input.category,
+        description: input.description,
+        paymentMethod: input.paymentMethod,
+        tags: input.tags,
+        source: 'manual',
+        createdAt: new Date().toISOString(),
+        notes: input.notes,
+      };
+      db.expenses.push(expense);
+      addedExpenses.push(expense);
+    }
+
+    await saveExpenseDb(db);
+
+    const totalAmount = addedExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+    return {
+      content: JSON.stringify({
+        success: true,
+        addedCount: addedExpenses.length,
+        totalAmount,
+        expenses: addedExpenses,
+        message: `Added ${addedExpenses.length} expenses (total: ${totalAmount} ${addedExpenses[0]?.currency ?? 'TRY'})`,
+        totalExpenses: db.expenses.length,
+      }),
+    };
+  } catch (error) {
+    return {
+      content: `Error adding expenses: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+/**
  * Parse receipt image tool
  * This tool extracts expense data from receipt images using vision models
  */
@@ -793,6 +908,7 @@ export const deleteExpenseExecutor: ToolExecutor = async (args, _context): Promi
 
 export const EXPENSE_TRACKER_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecutor }> = [
   { definition: addExpenseTool, executor: addExpenseExecutor },
+  { definition: batchAddExpensesTool, executor: batchAddExpensesExecutor },
   { definition: parseReceiptTool, executor: parseReceiptExecutor },
   { definition: queryExpensesTool, executor: queryExpensesExecutor },
   { definition: exportExpensesTool, executor: exportExpensesExecutor },
