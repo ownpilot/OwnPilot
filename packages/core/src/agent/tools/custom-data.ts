@@ -171,6 +171,34 @@ The data object should match the table's column schema.`,
 };
 
 /**
+ * Batch add records to a custom table
+ */
+export const batchAddCustomRecordsTool: ToolDefinition = {
+  name: 'batch_add_custom_records',
+  description: `Add multiple records to a custom data table at once.
+Use this for bulk imports or adding multiple items efficiently.
+All records must be for the same table.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      table: {
+        type: 'string',
+        description: 'The table name to add records to',
+      },
+      records: {
+        type: 'array',
+        description: 'Array of records to add, each matching the table schema',
+        items: {
+          type: 'object',
+          description: 'Record data as key-value pairs matching table columns',
+        },
+      },
+    },
+    required: ['table', 'records'],
+  },
+};
+
+/**
  * List records from a custom table
  */
 export const listCustomRecordsTool: ToolDefinition = {
@@ -301,6 +329,7 @@ export const CUSTOM_DATA_TOOLS: ToolDefinition[] = [
   deleteCustomTableTool,
   // Record management
   addCustomRecordTool,
+  batchAddCustomRecordsTool,
   listCustomRecordsTool,
   searchCustomRecordsTool,
   getCustomRecordTool,

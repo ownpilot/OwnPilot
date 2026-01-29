@@ -410,6 +410,69 @@ export async function executeMemoryTool(
         };
       }
 
+      case 'batch_remember': {
+        const { memories: memoriesInput } = params as {
+          memories: Array<{
+            content: string;
+            type: MemoryType;
+            importance?: number;
+            tags?: string[];
+          }>;
+        };
+
+        if (!memoriesInput || !Array.isArray(memoriesInput)) {
+          return { success: false, error: 'memories must be an array' };
+        }
+
+        const results = {
+          created: 0,
+          deduplicated: 0,
+          memories: [] as Array<{ id: string; type: MemoryType; importance: number }>,
+        };
+
+        for (const input of memoriesInput) {
+          if (!input.content || !input.type) {
+            continue; // Skip invalid entries
+          }
+
+          // Check for duplicates
+          const existing = await repo.findSimilar(input.content, input.type);
+          if (existing) {
+            await repo.boost(existing.id, 0.1);
+            results.deduplicated++;
+            const boosted = await repo.get(existing.id);
+            if (boosted) {
+              results.memories.push({
+                id: boosted.id,
+                type: boosted.type,
+                importance: boosted.importance,
+              });
+            }
+          } else {
+            const memory = await repo.create({
+              content: input.content,
+              type: input.type,
+              importance: input.importance ?? 0.5,
+              tags: input.tags,
+            });
+            results.created++;
+            results.memories.push({
+              id: memory.id,
+              type: memory.type,
+              importance: memory.importance,
+            });
+          }
+        }
+
+        return {
+          success: true,
+          result: {
+            message: `Processed ${memoriesInput.length} memories: ${results.created} created, ${results.deduplicated} deduplicated.`,
+            ...results,
+          },
+        };
+      }
+
       case 'recall': {
         const { query, type, tags, limit = 10 } = params as {
           query: string;

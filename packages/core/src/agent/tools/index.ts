@@ -284,6 +284,7 @@ export const TOOL_CATEGORIES = {
   // Personal Data
   'Tasks': [
     'add_task',
+    'batch_add_tasks',
     'list_tasks',
     'complete_task',
     'update_task',
@@ -291,22 +292,26 @@ export const TOOL_CATEGORIES = {
   ],
   'Bookmarks': [
     'add_bookmark',
+    'batch_add_bookmarks',
     'list_bookmarks',
     'delete_bookmark',
   ],
   'Notes': [
     'add_note',
+    'batch_add_notes',
     'list_notes',
     'update_note',
     'delete_note',
   ],
   'Calendar': [
     'add_calendar_event',
+    'batch_add_calendar_events',
     'list_calendar_events',
     'delete_calendar_event',
   ],
   'Contacts': [
     'add_contact',
+    'batch_add_contacts',
     'list_contacts',
     'update_contact',
     'delete_contact',
@@ -317,6 +322,7 @@ export const TOOL_CATEGORIES = {
     'create_custom_table',
     'delete_custom_table',
     'add_custom_record',
+    'batch_add_custom_records',
     'list_custom_records',
     'search_custom_records',
     'get_custom_record',
@@ -419,6 +425,7 @@ export const TOOL_CATEGORIES = {
   // Finance
   'Finance': [
     'add_expense',
+    'batch_add_expenses',
     'parse_receipt',
     'query_expenses',
     'export_expenses',
@@ -445,6 +452,7 @@ export const TOOL_CATEGORIES = {
   // Memory & Goals
   'Memory': [
     'remember',
+    'batch_remember',
     'recall',
     'forget',
     'list_memories',
