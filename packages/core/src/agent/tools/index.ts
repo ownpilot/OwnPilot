@@ -31,6 +31,9 @@ export * from './weather-tools.js';
 // Dynamic tools - LLM-created tools
 export * from './dynamic-tools.js';
 
+// Utility tools - date/time, calculations, conversions, text utilities
+export * from './utility-tools.js';
+
 // =============================================================================
 // IMPORTS - Tool sets
 // =============================================================================
@@ -66,6 +69,9 @@ import {
   type DynamicToolPermission,
 } from './dynamic-tools.js';
 
+// Utility tools (date/time, calculations, conversions, text utilities)
+import { UTILITY_TOOLS, UTILITY_TOOL_NAMES } from './utility-tools.js';
+
 import type { ToolDefinition, ToolExecutor, ToolRegistry as IToolRegistry } from '../tools.js';
 
 // =============================================================================
@@ -93,6 +99,7 @@ export const TOOL_SETS = {
   audio: AUDIO_TOOLS,
   dataExtraction: DATA_EXTRACTION_TOOLS,
   weather: WEATHER_TOOLS,
+  utility: UTILITY_TOOLS,
 } as const;
 
 // =============================================================================
@@ -190,6 +197,12 @@ export {
   type DynamicToolPermission,
 };
 
+/**
+ * Utility tools
+ * Date/time, calculations, unit conversions, text utilities, validation
+ */
+export { UTILITY_TOOLS, UTILITY_TOOL_NAMES };
+
 // =============================================================================
 // ALL TOOLS COMBINED
 // =============================================================================
@@ -215,6 +228,9 @@ export const ALL_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecut
   ...AUDIO_TOOLS,
   ...DATA_EXTRACTION_TOOLS,
   ...WEATHER_TOOLS,
+
+  // Utility tools
+  ...UTILITY_TOOLS,
 ];
 
 /**
@@ -476,6 +492,21 @@ export const TOOL_CATEGORIES = {
     'list_custom_tools',
     'delete_custom_tool',
     'toggle_custom_tool',
+  ],
+
+  // Utility Tools
+  'Utilities': [
+    'get_current_datetime',
+    'calculate',
+    'convert_units',
+    'generate_uuid',
+    'generate_password',
+    'random_number',
+    'hash_text',
+    'encode_decode',
+    'count_text',
+    'extract_from_text',
+    'validate',
   ],
 } as const;
 
