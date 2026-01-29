@@ -200,8 +200,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                     // Progress event
                     const progressEvent: ProgressEvent = data;
                     setProgressEvents(prev => [...prev, progressEvent]);
-                  } else if (data.delta !== undefined) {
-                    // Content chunk
+                  } else if (data.delta !== undefined || data.done) {
+                    // Content chunk or done event
                     if (data.delta) {
                       accumulatedContent += data.delta;
                       setStreamingContent(accumulatedContent);
@@ -216,6 +216,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                         toolCalls: data.toolCalls,
                         usage: data.usage,
                         finishReason: data.finishReason,
+                        trace: data.trace,
                       };
                     }
                   } else if (data.error) {
@@ -244,6 +245,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             toolCalls: finalResponse?.toolCalls,
             provider,
             model: finalResponse?.model ?? model,
+            trace: finalResponse?.trace,
           };
           setMessages((prev) => [...prev, assistantMessage]);
 

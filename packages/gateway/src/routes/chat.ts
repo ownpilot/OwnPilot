@@ -196,6 +196,16 @@ chatRoutes.post('/', async (c) => {
       const streamUserId = 'default'; // TODO: Get from auth context
       let lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
 
+      // Collect tool execution info for trace
+      const traceToolCalls: Array<{
+        name: string;
+        arguments?: Record<string, unknown>;
+        result?: string;
+        success: boolean;
+        duration?: number;
+        startTime?: number;
+      }> = [];
+
       const result = await agent.chat(body.message, {
         stream: true,
         onBeforeToolCall: async (toolCall) => {
@@ -224,7 +234,7 @@ chatRoutes.post('/', async (c) => {
           };
         },
         onChunk: async (chunk) => {
-          const data: StreamChunkResponse = {
+          const data: StreamChunkResponse & { trace?: Record<string, unknown> } = {
             id: chunk.id,
             conversationId,
             delta: chunk.content,
@@ -244,6 +254,50 @@ chatRoutes.post('/', async (c) => {
               : undefined,
           };
 
+          // Add trace info when stream is done
+          if (chunk.done) {
+            const streamDuration = Math.round(performance.now() - streamStartTime);
+            data.trace = {
+              duration: streamDuration,
+              toolCalls: traceToolCalls.map(tc => ({
+                name: tc.name,
+                arguments: tc.arguments,
+                result: tc.result,
+                success: tc.success,
+                duration: tc.duration,
+              })),
+              modelCalls: lastUsage ? [{
+                provider,
+                model,
+                inputTokens: lastUsage.promptTokens,
+                outputTokens: lastUsage.completionTokens,
+                tokens: lastUsage.totalTokens,
+                duration: streamDuration,
+              }] : [],
+              autonomyChecks: [],
+              dbOperations: { reads: 0, writes: 0 },
+              memoryOps: { adds: 0, recalls: 0 },
+              triggersFired: [],
+              errors: [],
+              events: traceToolCalls.map(tc => ({
+                type: 'tool_call',
+                name: tc.name,
+                duration: tc.duration,
+                success: tc.success,
+              })),
+              request: {
+                provider,
+                model,
+                endpoint: `/api/v1/chat`,
+                messageCount: (body.history?.length ?? 0) + 1,
+              },
+              response: {
+                status: 'success' as const,
+                finishReason: chunk.finishReason,
+              },
+            };
+          }
+
           // Store last usage for cost tracking
           if (chunk.usage) {
             lastUsage = {
@@ -259,6 +313,14 @@ chatRoutes.post('/', async (c) => {
           });
         },
         onToolStart: async (toolCall) => {
+          // Add to trace collection
+          traceToolCalls.push({
+            name: toolCall.name,
+            arguments: toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined,
+            success: true, // Will be updated in onToolEnd
+            startTime: performance.now(),
+          });
+
           await stream.writeSSE({
             data: JSON.stringify({
               type: 'tool_start',
@@ -273,6 +335,15 @@ chatRoutes.post('/', async (c) => {
           });
         },
         onToolEnd: async (toolCall, result) => {
+          // Update trace with result
+          const traceEntry = traceToolCalls.find(tc => tc.name === toolCall.name && !tc.result);
+          if (traceEntry) {
+            traceEntry.result = result.content.substring(0, 1000);
+            traceEntry.success = !(result.isError ?? false);
+            traceEntry.duration = result.durationMs ?? (traceEntry.startTime ? Math.round(performance.now() - traceEntry.startTime) : undefined);
+            delete traceEntry.startTime;
+          }
+
           await stream.writeSSE({
             data: JSON.stringify({
               type: 'tool_end',
@@ -281,7 +352,7 @@ chatRoutes.post('/', async (c) => {
                 name: toolCall.name,
               },
               result: {
-                success: !result.isError,
+                success: !(result.isError ?? false),
                 preview: result.content.substring(0, 500),
                 durationMs: result.durationMs,
               },
