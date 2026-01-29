@@ -245,6 +245,7 @@ function resolveToolGroups(toolGroups: string[] | undefined, explicitTools: stri
 // Runtime agent cache (runtime instances, not serializable)
 const agentCache = new Map<string, Agent>();
 const agentConfigCache = new Map<string, AgentConfig>();
+const chatAgentCache = new Map<string, Agent>(); // Chat agents keyed by provider:model
 
 /**
  * Clear all agent caches
@@ -253,6 +254,7 @@ const agentConfigCache = new Map<string, AgentConfig>();
 export function invalidateAgentCache(): void {
   agentCache.clear();
   agentConfigCache.clear();
+  chatAgentCache.clear();
   console.log('[Agents] Agent cache invalidated due to tool/plugin changes');
 }
 
@@ -1068,9 +1070,6 @@ export async function getOrCreateDefaultAgent(): Promise<Agent> {
   defaultAgent = await createAgentFromRecord(record);
   return defaultAgent;
 }
-
-// Chat agent cache (keyed by provider:model)
-const chatAgentCache = new Map<string, Agent>();
 
 /**
  * Get or create an agent for chat with specific provider and model
