@@ -127,6 +127,16 @@ interface TelegramCallbackQuery {
 }
 
 /**
+ * Bot info returned from Telegram getMe API
+ */
+export interface TelegramBotInfo {
+  id: number;
+  username: string;
+  firstName: string;
+  isBot: boolean;
+}
+
+/**
  * Telegram Channel Adapter
  */
 export class TelegramAdapter extends BaseChannelAdapter {
@@ -138,6 +148,7 @@ export class TelegramAdapter extends BaseChannelAdapter {
   private pollingTimer: NodeJS.Timeout | null = null;
   private lastUpdateId = 0;
   private isPolling = false;
+  private _botInfo: TelegramBotInfo | null = null;
 
   constructor(config: TelegramConfig) {
     super(config);
@@ -155,9 +166,18 @@ export class TelegramAdapter extends BaseChannelAdapter {
     this.setStatus('connecting');
 
     try {
-      // Verify bot token
+      // Verify bot token and get bot info
       const me = await this.callApi<TelegramUser>('getMe');
-      console.log(`[telegram:${this.id}] Connected as @${me.username}`);
+
+      // Store bot info for later use
+      this._botInfo = {
+        id: me.id,
+        username: me.username ?? 'unknown',
+        firstName: me.first_name,
+        isBot: me.is_bot,
+      };
+
+      console.log(`[telegram:${this.id}] Connected as @${this._botInfo.username} (ID: ${this._botInfo.id})`);
 
       this.setStatus('connected');
       this.startPolling();
@@ -165,6 +185,13 @@ export class TelegramAdapter extends BaseChannelAdapter {
       this.setStatus('error', error instanceof Error ? error.message : 'Connection failed');
       throw error;
     }
+  }
+
+  /**
+   * Get bot info (username, id, etc.)
+   */
+  get botInfo(): TelegramBotInfo | null {
+    return this._botInfo;
   }
 
   /**
@@ -339,6 +366,12 @@ export class TelegramAdapter extends BaseChannelAdapter {
         return;
       }
 
+      // Handle /start command with a welcome message
+      if (message.text?.startsWith('/start')) {
+        await this.handleStartCommand(message);
+        return;
+      }
+
       const incomingMessage = this.convertMessage(message);
       this.emit('message', incomingMessage);
     }
@@ -346,6 +379,30 @@ export class TelegramAdapter extends BaseChannelAdapter {
     if (update.callback_query) {
       // Handle callback queries (button clicks)
       console.log(`[telegram:${this.id}] Callback query:`, update.callback_query.data);
+    }
+  }
+
+  /**
+   * Handle /start command
+   */
+  private async handleStartCommand(message: TelegramMessage): Promise<void> {
+    const senderName = this.formatSenderName(message.from);
+    const welcomeMessage = `Merhaba ${senderName}! 👋
+
+OwnPilot AI asistanına hoş geldiniz.
+
+Bana herhangi bir soru sorabilir veya yardım isteyebilirsiniz. Mesajlarınız AI tarafından işlenecek ve size cevap verilecektir.
+
+Nasıl yardımcı olabilirim?`;
+
+    try {
+      await this.callApi('sendMessage', {
+        chat_id: message.chat.id,
+        text: welcomeMessage,
+      });
+      console.log(`[telegram:${this.id}] Sent welcome message to ${senderName} (chat: ${message.chat.id})`);
+    } catch (error) {
+      console.error(`[telegram:${this.id}] Failed to send welcome message:`, error);
     }
   }
 

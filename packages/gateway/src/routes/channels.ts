@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 import type { ApiResponse } from '../types/index.js';
 import { channelManager } from '../channels/index.js';
 import type { ChannelType } from '../ws/types.js';
+import type { TelegramAdapter } from '../channels/adapters/telegram.js';
 
 export const channelRoutes = new Hono();
 
@@ -133,12 +134,27 @@ channelRoutes.get('/status', (c) => {
  * GET /channels - List all channels
  */
 channelRoutes.get('/', (c) => {
-  const channels = channelManager.getAll().map((adapter) => ({
-    id: adapter.id,
-    type: adapter.type,
-    name: adapter.name,
-    status: adapter.status,
-  }));
+  const channels = channelManager.getAll().map((adapter) => {
+    const channelInfo: Record<string, unknown> = {
+      id: adapter.id,
+      type: adapter.type,
+      name: adapter.name,
+      status: adapter.status,
+    };
+
+    // Add bot info for Telegram channels
+    if (adapter.type === 'telegram') {
+      const telegramAdapter = adapter as unknown as TelegramAdapter;
+      if (telegramAdapter.botInfo) {
+        channelInfo.botInfo = {
+          username: telegramAdapter.botInfo.username,
+          firstName: telegramAdapter.botInfo.firstName,
+        };
+      }
+    }
+
+    return channelInfo;
+  });
 
   const status = channelManager.getStatus();
 
@@ -286,14 +302,28 @@ channelRoutes.get('/:id', (c) => {
     );
   }
 
+  const channelData: Record<string, unknown> = {
+    id: adapter.id,
+    type: adapter.type,
+    name: adapter.name,
+    status: adapter.status,
+  };
+
+  // Add bot info for Telegram channels
+  if (adapter.type === 'telegram') {
+    const telegramAdapter = adapter as unknown as TelegramAdapter;
+    if (telegramAdapter.botInfo) {
+      channelData.botInfo = {
+        username: telegramAdapter.botInfo.username,
+        firstName: telegramAdapter.botInfo.firstName,
+        id: telegramAdapter.botInfo.id,
+      };
+    }
+  }
+
   const response: ApiResponse = {
     success: true,
-    data: {
-      id: adapter.id,
-      type: adapter.type,
-      name: adapter.name,
-      status: adapter.status,
-    },
+    data: channelData,
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),

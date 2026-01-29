@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Inbox, Telegram, Discord, Slack, Globe, RefreshCw, Send, Check, X, Plus, Loader, ChevronRight, AlertCircle } from '../components/icons';
+import { Inbox, Telegram, Discord, Slack, Globe, RefreshCw, Send, Check, X, Plus, Loader, ChevronRight, AlertCircle, Zap } from '../components/icons';
 
 const API_BASE = '/api/v1';
 
@@ -32,6 +32,10 @@ interface Channel {
   type: string;
   name: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'error';
+  botInfo?: {
+    username: string;
+    firstName: string;
+  };
 }
 
 // API response types
@@ -556,6 +560,58 @@ export function InboxPage() {
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [testingChannelId, setTestingChannelId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ channelId: string; success: boolean; message: string } | null>(null);
+
+  // Send test message to a channel
+  const handleTestChannel = useCallback(async (channel: Channel, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent selecting the channel
+
+    if (channel.status !== 'connected') {
+      setTestResult({
+        channelId: channel.id,
+        success: false,
+        message: 'Channel is not connected',
+      });
+      setTimeout(() => setTestResult(null), 3000);
+      return;
+    }
+
+    setTestingChannelId(channel.id);
+    setTestResult(null);
+
+    try {
+      const response = await fetch(`${API_BASE}/channels/${channel.id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: `Test message from OwnPilot at ${new Date().toLocaleTimeString()}`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message ?? 'Failed to send test message');
+      }
+
+      setTestResult({
+        channelId: channel.id,
+        success: true,
+        message: 'Test message sent!',
+      });
+    } catch (err) {
+      setTestResult({
+        channelId: channel.id,
+        success: false,
+        message: err instanceof Error ? err.message : 'Failed to send test',
+      });
+    } finally {
+      setTestingChannelId(null);
+      // Clear result after 3 seconds
+      setTimeout(() => setTestResult(null), 3000);
+    }
+  }, []);
 
   // Fetch channels from API
   const fetchChannels = useCallback(async () => {
@@ -773,36 +829,71 @@ export function InboxPage() {
               ) : (
                 channels.map((channel) => {
                   const channelUnread = getChannelUnread(channel.id);
+                  const isTesting = testingChannelId === channel.id;
+                  const channelTestResult = testResult?.channelId === channel.id ? testResult : null;
                   return (
-                    <button
-                      key={channel.id}
-                      onClick={() => {
-                        setSelectedChannel(channel.id);
-                        // Filter will be done locally, no need to refetch
-                      }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                        selectedChannel === channel.id
-                          ? 'bg-primary text-white'
-                          : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                      }`}
-                    >
-                      <div className="relative">
-                        <ChannelIcon type={channel.type} className="w-5 h-5" />
-                        <span
-                          className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-bg-secondary dark:border-dark-bg-secondary ${getStatusColor(channel.status)}`}
-                        />
-                      </div>
-                      <span className="flex-1 text-left truncate">{channel.name}</span>
-                      {channelUnread > 0 && (
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs ${
-                            selectedChannel === channel.id ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                          }`}
-                        >
-                          {channelUnread}
-                        </span>
-                      )}
-                    </button>
+                    <div key={channel.id} className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setSelectedChannel(channel.id);
+                          // Filter will be done locally, no need to refetch
+                        }}
+                        className={`flex-1 flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                          selectedChannel === channel.id
+                            ? 'bg-primary text-white'
+                            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                        }`}
+                      >
+                        <div className="relative flex-shrink-0">
+                          <ChannelIcon type={channel.type} className="w-5 h-5" />
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-bg-secondary dark:border-dark-bg-secondary ${getStatusColor(channel.status)}`}
+                          />
+                        </div>
+                        <div className="flex-1 text-left min-w-0">
+                          <span className="block truncate">{channel.name}</span>
+                          {channel.botInfo?.username && (
+                            <span className={`text-xs truncate block ${
+                              selectedChannel === channel.id ? 'text-white/70' : 'text-text-muted dark:text-dark-text-muted'
+                            }`}>
+                              @{channel.botInfo.username}
+                            </span>
+                          )}
+                        </div>
+                        {channelUnread > 0 && (
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs ${
+                              selectedChannel === channel.id ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                            }`}
+                          >
+                            {channelUnread}
+                          </span>
+                        )}
+                      </button>
+                      {/* Test Button */}
+                      <button
+                        onClick={(e) => handleTestChannel(channel, e)}
+                        disabled={isTesting}
+                        title={channel.status === 'connected' ? 'Send test message' : 'Channel not connected'}
+                        className={`p-1.5 rounded transition-colors flex-shrink-0 ${
+                          channelTestResult?.success
+                            ? 'text-success bg-success/10'
+                            : channelTestResult && !channelTestResult.success
+                            ? 'text-error bg-error/10'
+                            : channel.status === 'connected'
+                            ? 'text-text-muted hover:text-primary hover:bg-primary/10'
+                            : 'text-text-muted/50 cursor-not-allowed'
+                        }`}
+                      >
+                        {isTesting ? (
+                          <Loader className="w-4 h-4 animate-spin" />
+                        ) : channelTestResult?.success ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Zap className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   );
                 })
               )}
