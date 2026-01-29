@@ -6,6 +6,25 @@ interface UseChatOptions {
   model?: string;
   agentId?: string;
   workspaceId?: string;
+  onProgress?: (event: ProgressEvent) => void;
+}
+
+// Progress event types from the stream
+export interface ProgressEvent {
+  type: 'status' | 'tool_start' | 'tool_end';
+  message?: string;
+  tool?: {
+    id: string;
+    name: string;
+    arguments?: Record<string, unknown>;
+  };
+  result?: {
+    success: boolean;
+    preview: string;
+    durationMs: number;
+  };
+  data?: Record<string, unknown>;
+  timestamp: string;
 }
 
 interface UseChatReturn {
@@ -17,6 +36,8 @@ interface UseChatReturn {
   model: string;
   agentId: string | null;
   workspaceId: string | null;
+  streamingContent: string;
+  progressEvents: ProgressEvent[];
   setProvider: (provider: string) => void;
   setModel: (model: string) => void;
   setAgentId: (agentId: string | null) => void;
@@ -40,6 +61,8 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
   const [model, setModel] = useState(options?.model || DEFAULT_MODEL);
   const [agentId, setAgentId] = useState<string | null>(options?.agentId || null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(options?.workspaceId || null);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
 
   // AbortController for canceling ongoing requests
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -59,6 +82,8 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
       setIsLoading(false);
+      setStreamingContent('');
+      setProgressEvents([]);
     }
   }, []);
 
@@ -74,6 +99,8 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
 
     setError(null);
     setIsLoading(true);
+    setStreamingContent('');
+    setProgressEvents([]);
 
     // If this is a retry, remove the last error message (keep the user message)
     if (isRetry) {
@@ -103,11 +130,9 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
           message: content,
           provider,
           model,
-          // Include agentId if chatting with an agent
+          stream: true, // Enable streaming!
           ...(agentId && { agentId }),
-          // Include workspaceId for file operations
           ...(workspaceId && { workspaceId }),
-          // Include conversation history for context (exclude error messages)
           history: messages.filter(m => !m.isError).slice(-10).map((m) => ({
             role: m.role,
             content: m.content,
@@ -116,50 +141,134 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         signal: controller.signal,
       });
 
-      // Check if request was aborted
       if (controller.signal.aborted) {
         return;
       }
 
-      const data: ApiResponse<ChatResponse> = await response.json();
-
-      // Check again after parsing (in case abort happened during parse)
-      if (controller.signal.aborted) {
-        return;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `HTTP error ${response.status}`);
       }
 
-      if (!data.success || !data.data) {
-        throw new Error(data.error?.message ?? 'Failed to get response');
+      // Check if streaming response
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('text/event-stream')) {
+        // Handle SSE stream
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response body');
+
+        const decoder = new TextDecoder();
+        let accumulatedContent = '';
+        let buffer = '';
+        let finalResponse: ChatResponse | null = null;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (controller.signal.aborted) {
+            reader.cancel();
+            return;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+          for (const line of lines) {
+            if (line.startsWith('event:')) {
+              // Event type line, data follows
+              continue;
+            }
+
+            if (line.startsWith('data:')) {
+              const dataStr = line.slice(5).trim();
+              if (!dataStr) continue;
+
+              try {
+                const data = JSON.parse(dataStr);
+
+                // Handle different event types based on the data structure
+                if (data.type === 'status' || data.type === 'tool_start' || data.type === 'tool_end') {
+                  // Progress event
+                  const progressEvent: ProgressEvent = data;
+                  setProgressEvents(prev => [...prev, progressEvent]);
+                  options?.onProgress?.(progressEvent);
+                } else if (data.delta !== undefined) {
+                  // Content chunk
+                  if (data.delta) {
+                    accumulatedContent += data.delta;
+                    setStreamingContent(accumulatedContent);
+                  }
+                  if (data.done) {
+                    finalResponse = {
+                      id: data.id,
+                      conversationId: data.conversationId,
+                      message: accumulatedContent,
+                      response: accumulatedContent,
+                      model: model,
+                      toolCalls: data.toolCalls,
+                      usage: data.usage,
+                      finishReason: data.finishReason,
+                    };
+                  }
+                } else if (data.error) {
+                  throw new Error(data.error);
+                }
+              } catch (parseErr) {
+                // Ignore parse errors for incomplete JSON
+                console.warn('Failed to parse SSE data:', parseErr);
+              }
+            }
+          }
+        }
+
+        // Stream complete - add final message
+        setLastFailedMessage(null);
+        setStreamingContent('');
+
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: accumulatedContent || finalResponse?.response || '',
+          timestamp: new Date().toISOString(),
+          toolCalls: finalResponse?.toolCalls,
+          provider,
+          model: finalResponse?.model ?? model,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+
+      } else {
+        // Non-streaming fallback (shouldn't happen with stream: true)
+        const data: ApiResponse<ChatResponse> = await response.json();
+
+        if (!data.success || !data.data) {
+          throw new Error(data.error?.message ?? 'Failed to get response');
+        }
+
+        setLastFailedMessage(null);
+
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: data.data.response,
+          timestamp: new Date().toISOString(),
+          toolCalls: data.data.toolCalls,
+          provider,
+          model: data.data.model ?? model,
+          trace: data.data.trace,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
       }
-
-      // Success! Clear the failed message
-      setLastFailedMessage(null);
-
-      // Add assistant message with trace info
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: data.data.response,
-        timestamp: new Date().toISOString(),
-        toolCalls: data.data.toolCalls,
-        provider,
-        model: data.data.model ?? model,
-        trace: data.data.trace,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
-      // Ignore abort errors - they're intentional
       if (err instanceof Error && err.name === 'AbortError') {
         return;
       }
 
       const errorText = err instanceof Error ? err.message : 'An error occurred';
       setError(errorText);
-
-      // Store the failed message for retry
       setLastFailedMessage(content);
+      setStreamingContent('');
 
-      // Add error message from assistant (marked as error for styling/retry)
       const errorMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -169,13 +278,13 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      // Only clear loading state if this controller is still the current one
       if (abortControllerRef.current === controller) {
         setIsLoading(false);
+        setProgressEvents([]);
         abortControllerRef.current = null;
       }
     }
-  }, [provider, model, agentId, workspaceId, messages]);
+  }, [provider, model, agentId, workspaceId, messages, options]);
 
   const retryLastMessage = useCallback(async () => {
     if (!lastFailedMessage) return;
@@ -183,11 +292,12 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
   }, [lastFailedMessage, sendMessage]);
 
   const clearMessages = useCallback(() => {
-    // Cancel any ongoing request when clearing messages (new chat)
     cancelRequest();
     setMessages([]);
     setError(null);
     setLastFailedMessage(null);
+    setStreamingContent('');
+    setProgressEvents([]);
   }, [cancelRequest]);
 
   return {
@@ -199,6 +309,8 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     model,
     agentId,
     workspaceId,
+    streamingContent,
+    progressEvents,
     setProvider,
     setModel,
     setAgentId,
