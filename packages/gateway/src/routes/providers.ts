@@ -240,43 +240,46 @@ app.get('/', async (c) => {
   const userOverrides = await modelConfigsRepo.listUserProviderConfigs(userId);
   const overrideMap = new Map(userOverrides.map((o) => [o.providerId, o]));
 
-  const providers = providerIds
-    .map(id => {
-      const config = loadProviderConfig(id);
-      if (!config) return null;
+  // Build provider list with async API key checks
+  const providerPromises = providerIds.map(async (id) => {
+    const config = loadProviderConfig(id);
+    if (!config) return null;
 
-      // Get UI metadata
-      const uiMeta = PROVIDER_UI_METADATA[config.id] ?? DEFAULT_UI_METADATA;
+    // Get UI metadata
+    const uiMeta = PROVIDER_UI_METADATA[config.id] ?? DEFAULT_UI_METADATA;
 
-      const configSource = getApiKeySource(config.id);
+    // Await the async function properly
+    const configSource = await getApiKeySource(config.id);
 
-      // Get user override if exists
-      const override = overrideMap.get(id);
+    // Get user override if exists
+    const override = overrideMap.get(id);
 
-      return {
-        id: config.id,
-        name: config.name,
-        // Effective type (user override > base config)
-        type: override?.providerType || config.type,
-        // Effective baseUrl (user override > base config)
-        baseUrl: override?.baseUrl || config.baseUrl,
-        apiKeyEnv: override?.apiKeyEnv || config.apiKeyEnv,
-        docsUrl: config.docsUrl,
-        features: config.features,
-        modelCount: config.models.length,
-        isConfigured: configSource !== null,
-        // Is provider enabled (default: true, can be disabled by user)
-        isEnabled: override?.isEnabled !== false,
-        // Has user override
-        hasOverride: !!override,
-        // Configuration source: 'database' = set via UI, 'environment' = set via env var
-        configSource,
-        // UI metadata
-        color: uiMeta.color,
-        apiKeyPlaceholder: uiMeta.apiKeyPlaceholder,
-      };
-    })
-    .filter((p): p is NonNullable<typeof p> => p !== null);
+    return {
+      id: config.id,
+      name: config.name,
+      // Effective type (user override > base config)
+      type: override?.providerType || config.type,
+      // Effective baseUrl (user override > base config)
+      baseUrl: override?.baseUrl || config.baseUrl,
+      apiKeyEnv: override?.apiKeyEnv || config.apiKeyEnv,
+      docsUrl: config.docsUrl,
+      features: config.features,
+      modelCount: config.models.length,
+      isConfigured: configSource !== null,
+      // Is provider enabled (default: true, can be disabled by user)
+      isEnabled: override?.isEnabled !== false,
+      // Has user override
+      hasOverride: !!override,
+      // Configuration source: 'database' = set via UI, 'environment' = set via env var
+      configSource,
+      // UI metadata
+      color: uiMeta.color,
+      apiKeyPlaceholder: uiMeta.apiKeyPlaceholder,
+    };
+  });
+
+  const providersWithNulls = await Promise.all(providerPromises);
+  const providers = providersWithNulls.filter((p): p is NonNullable<typeof p> => p !== null);
 
   const response: ApiResponse = {
     success: true,
