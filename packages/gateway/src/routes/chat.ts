@@ -38,6 +38,7 @@ import {
 } from '../tracing/index.js';
 import { debugLog } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace, getSessionWorkspace } from '../workspace/file-workspace.js';
+import { parseLimit, parseOffset } from '../utils/index.js';
 
 export const chatRoutes = new Hono();
 
@@ -357,7 +358,7 @@ chatRoutes.post('/', async (c) => {
       provider,
       model,
       requestId,
-    }).catch(() => {});
+    }).catch((e) => console.warn('[Chat] Event logging failed:', e));
 
     // Track model call timing
     const modelCallStart = Date.now();
@@ -444,7 +445,7 @@ chatRoutes.post('/', async (c) => {
       durationMs: Math.round(processingTime),
       error: result.error.message,
       requestId,
-    }).catch(() => {});
+    }).catch((e) => console.warn('[Chat] Event logging failed:', e));
 
     // Log error to database
     try {
@@ -506,7 +507,7 @@ chatRoutes.post('/', async (c) => {
     durationMs: Math.round(processingTime),
     toolCallCount: result.value.toolCalls?.length ?? 0,
     requestId,
-  }).catch(() => {});
+  }).catch((e) => console.warn('[Chat] Event logging failed:', e));
 
   // Post-chat processing: Extract memories, update goals, evaluate triggers
   // This runs asynchronously to not block the response
@@ -854,8 +855,8 @@ chatRoutes.delete('/conversations/:id', async (c) => {
  */
 chatRoutes.get('/history', async (c) => {
   const userId = 'default'; // TODO: Get from auth context
-  const limit = parseInt(c.req.query('limit') ?? '50');
-  const offset = parseInt(c.req.query('offset') ?? '0');
+  const limit = parseLimit(c.req.query('limit'), 50);
+  const offset = parseOffset(c.req.query('offset'));
   const search = c.req.query('search');
   const agentId = c.req.query('agentId');
   const archived = c.req.query('archived') === 'true';
@@ -1015,8 +1016,8 @@ chatRoutes.patch('/history/:id/archive', async (c) => {
  */
 chatRoutes.get('/logs', async (c) => {
   const userId = 'default'; // TODO: Get from auth context
-  const limit = parseInt(c.req.query('limit') ?? '100');
-  const offset = parseInt(c.req.query('offset') ?? '0');
+  const limit = parseLimit(c.req.query('limit'), 100);
+  const offset = parseOffset(c.req.query('offset'));
   const type = c.req.query('type') as 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other' | undefined;
   const hasError = c.req.query('errors') === 'true' ? true : c.req.query('errors') === 'false' ? false : undefined;
   const conversationId = c.req.query('conversationId');

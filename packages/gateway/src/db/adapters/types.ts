@@ -124,8 +124,26 @@ export interface DatabaseConfig {
 /**
  * Get database configuration from environment
  * Always returns PostgreSQL configuration (SQLite is deprecated)
+ *
+ * In production (NODE_ENV=production), DATABASE_URL or explicit PostgreSQL env vars are required.
+ * In development, defaults are used for local Docker Compose setup.
  */
 export function getDatabaseConfig(): DatabaseConfig {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const hasExplicitConfig = !!(
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_HOST ||
+    process.env.POSTGRES_PASSWORD
+  );
+
+  // Warn in production if using default credentials
+  if (isProduction && !hasExplicitConfig) {
+    console.warn(
+      '[Database] WARNING: Running in production without explicit database credentials. ' +
+      'Set DATABASE_URL or POSTGRES_* environment variables.'
+    );
+  }
+
   // Build PostgreSQL URL if not provided directly
   const postgresUrl =
     process.env.DATABASE_URL ||
