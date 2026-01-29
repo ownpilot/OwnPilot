@@ -9,6 +9,7 @@ import type { ApiResponse } from '../types/index.js';
 import { channelManager } from '../channels/index.js';
 import type { ChannelType } from '../ws/types.js';
 import type { TelegramAdapter } from '../channels/adapters/telegram.js';
+import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 
 export const channelRoutes = new Hono();
 
@@ -414,6 +415,7 @@ channelRoutes.post('/:id/send', async (c) => {
   try {
     const body = await c.req.json<{
       content: string;
+      chatId?: string | number;
       attachments?: Array<{ type: string; url: string; name?: string }>;
       replyToId?: string;
       metadata?: Record<string, unknown>;
@@ -432,6 +434,27 @@ channelRoutes.post('/:id/send', async (c) => {
       );
     }
 
+    // Resolve the outgoing channelId:
+    // If chatId is provided, compose "adapterId:chatId" format for adapters that need it (e.g. Telegram)
+    // Otherwise fall back to metadata.chatId, then try database lookup for the most recent chat
+    let chatId = body.chatId ?? body.metadata?.chatId;
+
+    // Auto-resolve chatId for Telegram channels when not provided
+    const adapter = channelManager.get(channelId);
+    if (!chatId && adapter?.type === 'telegram') {
+      try {
+        const messagesRepo = new ChannelMessagesRepository();
+        const recentMessages = await messagesRepo.getByChannel(channelId, 1);
+        if (recentMessages.length > 0 && recentMessages[0]!.metadata?.chatId) {
+          chatId = recentMessages[0]!.metadata.chatId as string | number;
+        }
+      } catch {
+        // Database lookup failed, continue without chatId (adapter will throw clear error)
+      }
+    }
+
+    const outgoingChannelId = chatId ? `${channelId}:${chatId}` : channelId;
+
     // Map attachments to proper format
     type AttachmentType = 'image' | 'file' | 'audio' | 'video';
     const mappedAttachments = body.attachments?.map((a) => {
@@ -448,7 +471,7 @@ channelRoutes.post('/:id/send', async (c) => {
     });
 
     const messageId = await channelManager.send(channelId, {
-      channelId,
+      channelId: outgoingChannelId,
       content: body.content,
       attachments: mappedAttachments,
       replyToId: body.replyToId,

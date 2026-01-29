@@ -24,6 +24,7 @@ interface ChannelMessage {
   timestamp: string;
   read: boolean;
   replied: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 // Channel info from API
@@ -706,12 +707,18 @@ export function InboxPage() {
     setIsLoading(true);
 
     try {
+      // For Telegram, use chatId from metadata or sender ID (for private chats, sender ID == chat ID)
+      const chatId = selectedMessage.metadata?.chatId ?? (
+        selectedMessage.channelType === 'telegram' ? selectedMessage.sender.id : undefined
+      );
+
       const response = await fetch(`${API_BASE}/channels/${selectedMessage.channelId}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: replyContent,
           replyToId: selectedMessage.id,
+          ...(chatId && { chatId }),
         }),
       });
 

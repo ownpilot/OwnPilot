@@ -19,6 +19,9 @@ import type {
   ToolResult,
 } from './types.js';
 import { logToolCall, logToolResult } from './debug.js';
+import type { ConfigCenter } from '../services/config-center.js';
+// Backward compat alias
+type ApiKeyCenter = ConfigCenter;
 
 // Re-export types for consumers
 export type { ToolDefinition, ToolExecutor, RegisteredTool, ToolContext, ToolExecutionResult, ToolCall, ToolResult };
@@ -29,6 +32,7 @@ export type { ToolDefinition, ToolExecutor, RegisteredTool, ToolContext, ToolExe
 export class ToolRegistry {
   private readonly tools = new Map<string, RegisteredTool>();
   private readonly pluginTools = new Map<string, Set<string>>();
+  private _apiKeyCenter?: ApiKeyCenter;
 
   /**
    * Register a tool
@@ -197,6 +201,22 @@ export class ToolRegistry {
       callId: randomUUID(),
       pluginId: tool.pluginId,
       workspaceDir: context.workspaceDir ?? this._workspaceDir,
+      // Config Center accessors (if configured)
+      getApiKey: this._apiKeyCenter
+        ? (serviceName: string) => this._apiKeyCenter!.getApiKey(serviceName)
+        : undefined,
+      getServiceConfig: this._apiKeyCenter
+        ? (serviceName: string) => this._apiKeyCenter!.getServiceConfig(serviceName)
+        : undefined,
+      getConfigEntry: this._apiKeyCenter
+        ? (serviceName: string, entryLabel?: string) => this._apiKeyCenter!.getConfigEntry(serviceName, entryLabel)
+        : undefined,
+      getConfigEntries: this._apiKeyCenter
+        ? (serviceName: string) => this._apiKeyCenter!.getConfigEntries(serviceName)
+        : undefined,
+      getFieldValue: this._apiKeyCenter
+        ? (serviceName: string, fieldName: string, entryLabel?: string) => this._apiKeyCenter!.getFieldValue(serviceName, fieldName, entryLabel)
+        : undefined,
     };
 
     try {
@@ -220,6 +240,21 @@ export class ToolRegistry {
    */
   getWorkspaceDir(): string | undefined {
     return this._workspaceDir;
+  }
+
+  /**
+   * Set the Config Center for centralized service configuration.
+   * Tools can then access configs via context.getApiKey(), context.getConfigEntry(), etc.
+   */
+  setApiKeyCenter(center: ApiKeyCenter): void {
+    this._apiKeyCenter = center;
+  }
+
+  /**
+   * Get the current Config Center (if set).
+   */
+  getApiKeyCenter(): ApiKeyCenter | undefined {
+    return this._apiKeyCenter;
   }
 
   private _workspaceDir: string | undefined;

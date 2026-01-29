@@ -882,6 +882,119 @@ DO $$ BEGIN
     ALTER TABLE request_logs ADD COLUMN error_stack TEXT;
   END IF;
 END $$;
+
+-- =====================================================
+-- API CENTER: DEMAND-DRIVEN DEPENDENCIES
+-- =====================================================
+
+-- Custom tools: Add 'required_api_keys' column
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'custom_tools' AND column_name = 'required_api_keys') THEN
+    ALTER TABLE custom_tools ADD COLUMN required_api_keys JSONB DEFAULT '[]';
+  END IF;
+END $$;
+
+-- API services: Add 'required_by' column (only if api_services still exists before migration)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'api_services') THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'api_services' AND column_name = 'required_by') THEN
+      ALTER TABLE api_services ADD COLUMN required_by JSONB DEFAULT '[]';
+    END IF;
+  END IF;
+END $$;
+
+-- =============================================================================
+-- Config Center tables (replaces api_services)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS config_services (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'general',
+  description TEXT,
+  docs_url TEXT,
+  config_schema JSONB NOT NULL DEFAULT '[]',
+  multi_entry BOOLEAN NOT NULL DEFAULT FALSE,
+  required_by JSONB DEFAULT '[]',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_config_services_name ON config_services(name);
+CREATE INDEX IF NOT EXISTS idx_config_services_category ON config_services(category);
+CREATE INDEX IF NOT EXISTS idx_config_services_active ON config_services(is_active);
+
+CREATE TABLE IF NOT EXISTS config_entries (
+  id TEXT PRIMARY KEY,
+  service_name TEXT NOT NULL,
+  label TEXT NOT NULL DEFAULT 'Default',
+  data JSONB NOT NULL DEFAULT '{}',
+  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_config_entries_service ON config_entries(service_name);
+CREATE INDEX IF NOT EXISTS idx_config_entries_active ON config_entries(is_active);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_config_entries_default
+  ON config_entries(service_name) WHERE is_default = TRUE;
+
+-- Migrate data from api_services to config_services (if api_services exists)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'api_services') THEN
+    -- Migrate service definitions
+    INSERT INTO config_services (id, name, display_name, category, description, docs_url, config_schema, multi_entry, required_by, is_active, created_at, updated_at)
+    SELECT
+      id, name, display_name, category, description, docs_url,
+      jsonb_build_array(
+        jsonb_build_object('name', 'api_key', 'label', 'API Key', 'type', 'secret', 'required', false, 'envVar', COALESCE(env_var_name, ''), 'order', 0),
+        jsonb_build_object('name', 'base_url', 'label', 'Base URL', 'type', 'url', 'required', false, 'order', 1)
+      ),
+      false,
+      COALESCE(required_by, '[]'::jsonb),
+      is_active,
+      created_at,
+      updated_at
+    FROM api_services
+    ON CONFLICT(name) DO NOTHING;
+
+    -- Migrate entries (api_key + base_url + extra_config values)
+    INSERT INTO config_entries (id, service_name, label, data, is_default, is_active, created_at, updated_at)
+    SELECT
+      gen_random_uuid()::text,
+      name,
+      'Default',
+      jsonb_strip_nulls(jsonb_build_object('api_key', api_key, 'base_url', base_url) || COALESCE(extra_config, '{}'::jsonb)),
+      true,
+      is_active,
+      created_at,
+      updated_at
+    FROM api_services
+    WHERE api_key IS NOT NULL OR base_url IS NOT NULL OR (extra_config IS NOT NULL AND extra_config != '{}'::jsonb)
+    ON CONFLICT DO NOTHING;
+
+    -- Drop old table
+    DROP TABLE api_services;
+  END IF;
+END $$;
+
+-- =====================================================
+-- PLUGIN STATE PERSISTENCE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS plugins (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  version TEXT NOT NULL DEFAULT '1.0.0',
+  status TEXT NOT NULL DEFAULT 'enabled'
+    CHECK(status IN ('enabled', 'disabled', 'error')),
+  settings JSONB NOT NULL DEFAULT '{}',
+  granted_permissions JSONB NOT NULL DEFAULT '[]',
+  error_message TEXT,
+  installed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
 `;
 
 export const INDEXES_SQL = `

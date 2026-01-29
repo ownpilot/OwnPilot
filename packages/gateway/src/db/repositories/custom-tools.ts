@@ -54,6 +54,14 @@ export interface CustomToolRecord {
   updatedAt: Date;
   /** Optional metadata (tags, notes, etc.) */
   metadata?: Record<string, unknown>;
+  /** API keys this tool requires (auto-registered in API Center) */
+  requiredApiKeys?: Array<{
+    name: string;
+    displayName?: string;
+    description?: string;
+    category?: string;
+    docsUrl?: string;
+  }>;
 }
 
 interface CustomToolRow {
@@ -75,6 +83,7 @@ interface CustomToolRow {
   created_at: string;
   updated_at: string;
   metadata: string | null;
+  required_api_keys: string | null;
 }
 
 // =============================================================================
@@ -100,6 +109,9 @@ function rowToRecord(row: CustomToolRow): CustomToolRecord {
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
     metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined,
+    requiredApiKeys: row.required_api_keys
+      ? (typeof row.required_api_keys === 'string' ? JSON.parse(row.required_api_keys) : row.required_api_keys)
+      : undefined,
   };
 }
 
@@ -132,6 +144,7 @@ export class CustomToolsRepository extends BaseRepository {
     requiresApproval?: boolean;
     createdBy?: 'user' | 'llm';
     metadata?: Record<string, unknown>;
+    requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
   }): Promise<CustomToolRecord> {
     const id = `tool_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
     const now = new Date().toISOString();
@@ -145,8 +158,8 @@ export class CustomToolsRepository extends BaseRepository {
     await this.execute(
       `INSERT INTO custom_tools (
         id, user_id, name, description, parameters, code, category,
-        status, permissions, requires_approval, created_by, metadata, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        status, permissions, requires_approval, created_by, metadata, required_api_keys, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
       [
         id,
         this.userId,
@@ -160,6 +173,7 @@ export class CustomToolsRepository extends BaseRepository {
         input.requiresApproval || false,
         input.createdBy ?? 'user',
         input.metadata ? JSON.stringify(input.metadata) : null,
+        input.requiredApiKeys ? JSON.stringify(input.requiredApiKeys) : null,
         now,
         now,
       ]
@@ -253,6 +267,7 @@ export class CustomToolsRepository extends BaseRepository {
       permissions: ToolPermission[];
       requiresApproval: boolean;
       metadata: Record<string, unknown>;
+      requiredApiKeys: CustomToolRecord['requiredApiKeys'];
     }>
   ): Promise<CustomToolRecord | null> {
     const existing = await this.get(id);
@@ -293,6 +308,10 @@ export class CustomToolsRepository extends BaseRepository {
     if (input.metadata !== undefined) {
       updates.push(`metadata = $${paramIndex++}`);
       values.push(JSON.stringify(input.metadata));
+    }
+    if (input.requiredApiKeys !== undefined) {
+      updates.push(`required_api_keys = $${paramIndex++}`);
+      values.push(input.requiredApiKeys ? JSON.stringify(input.requiredApiKeys) : null);
     }
 
     if (updates.length === 0) return existing;

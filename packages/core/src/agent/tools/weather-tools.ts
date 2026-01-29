@@ -34,7 +34,19 @@ export function setWeatherConfig(
 /**
  * Get weather service instance
  */
-function getWeatherService(): WeatherDataService | null {
+function getWeatherService(context?: { getApiKey?: (name: string) => string | undefined }): WeatherDataService | null {
+  // Try API Center first
+  if (context?.getApiKey) {
+    const owmKey = context.getApiKey('openweathermap');
+    if (owmKey) {
+      return createWeatherDataService({ provider: 'openweathermap', apiKey: owmKey });
+    }
+    const waKey = context.getApiKey('weatherapi');
+    if (waKey) {
+      return createWeatherDataService({ provider: 'weatherapi', apiKey: waKey });
+    }
+  }
+  // Fall back to legacy config
   const config = getWeatherConfig();
   if (!config) return null;
   return createWeatherDataService(config);
@@ -70,13 +82,13 @@ export const getWeatherExecutor: ToolExecutor = async (params, context): Promise
     };
   }
 
-  const service = getWeatherService();
+  const service = getWeatherService(context);
 
   if (!service) {
     return {
       content: {
         error: 'Weather service not configured',
-        suggestion: 'Add a weather API key in Settings → API Keys (OpenWeatherMap or WeatherAPI)',
+        suggestion: 'Add a weather API key in Settings → API Center or Settings → API Keys (OpenWeatherMap or WeatherAPI)',
       },
       isError: true,
     };
@@ -154,13 +166,13 @@ export const getWeatherForecastExecutor: ToolExecutor = async (
     };
   }
 
-  const service = getWeatherService();
+  const service = getWeatherService(context);
 
   if (!service) {
     return {
       content: {
         error: 'Weather service not configured',
-        suggestion: 'Add a weather API key in Settings → API Keys',
+        suggestion: 'Add a weather API key in Settings → API Center or Settings → API Keys',
       },
       isError: true,
     };

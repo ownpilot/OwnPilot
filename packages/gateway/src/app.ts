@@ -47,6 +47,7 @@ import {
   customToolsRoutes,
   databaseRoutes,
   expensesRoutes,
+  configServicesRoutes,
 } from './routes/index.js';
 import { debugRoutes } from './routes/debug.js';
 
@@ -197,6 +198,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Expenses
   app.route('/api/v1/expenses', expensesRoutes);
 
+  // Config Center (centralized config management)
+  app.route('/api/v1/config-services', configServicesRoutes);
+
   // Root route
   app.get('/', (c) => {
     return c.json({
@@ -264,6 +268,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         dashboard: '/api/v1/dashboard',
         // Custom Tools (LLM-created and user-defined tools)
         customTools: '/api/v1/custom-tools',
+        // Config Center (centralized config management)
+        configServices: '/api/v1/config-services',
       },
     });
   });

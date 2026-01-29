@@ -20,9 +20,8 @@ import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types
 
 export const getCurrentDateTimeTool: ToolDefinition = {
   name: 'get_current_datetime',
-  description: `Get the current date and time. Use this when you need to know the current time,
-calculate relative dates, or provide time-sensitive information.
-Returns date in multiple formats and includes timezone info.`,
+  description: `Get the current date and time. Call this whenever the user asks "what time is it", "what day is today", or when you need to know the current time for scheduling, deadlines, or time-sensitive responses. Returns ISO, formatted, and unix timestamp.`,
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -124,9 +123,8 @@ function getWeekNumber(date: Date): number {
 
 export const calculateTool: ToolDefinition = {
   name: 'calculate',
-  description: `Perform mathematical calculations. Supports basic arithmetic, percentages,
-and common math functions. Use this for any numerical computation.
-Examples: "15% of 250", "sqrt(144)", "2^10", "(45 + 55) * 2"`,
+  description: `Perform mathematical calculations. Call this whenever the user asks to compute, calculate, or do math. Supports arithmetic (+,-,*,/), percentages ("15% of 250"), powers (2^10), and functions (sqrt, sin, cos, log, abs, floor, ceil, round). Returns the numeric result.`,
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -226,9 +224,8 @@ export const calculateExecutor: ToolExecutor = async (args): Promise<ToolExecuti
 
 export const convertUnitsTool: ToolDefinition = {
   name: 'convert_units',
-  description: `Convert between different units of measurement.
-Supports: length, weight, temperature, volume, area, speed, time, data.
-Examples: "5 kg to lb", "100 km to miles", "30 celsius to fahrenheit"`,
+  description: `Convert between units of measurement. Call this when the user asks to convert kg to lb, km to miles, celsius to fahrenheit, liters to gallons, GB to MB, etc. Supports: length, weight, temperature, volume, area, speed, time, and data storage units.`,
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -428,7 +425,8 @@ export const convertUnitsExecutor: ToolExecutor = async (args): Promise<ToolExec
 
 export const generateUuidTool: ToolDefinition = {
   name: 'generate_uuid',
-  description: 'Generate a universally unique identifier (UUID v4).',
+  description: 'Generate a unique ID (UUID v4). Call this when the user needs a unique identifier, reference code, or tracking ID. Can generate multiple UUIDs at once.',
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -475,7 +473,8 @@ export const generateUuidExecutor: ToolExecutor = async (args): Promise<ToolExec
 
 export const generatePasswordTool: ToolDefinition = {
   name: 'generate_password',
-  description: 'Generate a secure random password.',
+  description: 'Generate a secure random password. Call this when the user asks for a password, passphrase, or secure random string. Configurable length, character types, and strength indicator.',
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -570,7 +569,8 @@ export const generatePasswordExecutor: ToolExecutor = async (args): Promise<Tool
 
 export const generateRandomNumberTool: ToolDefinition = {
   name: 'random_number',
-  description: 'Generate a random number within a specified range.',
+  description: 'Generate random numbers. Call this when the user wants a random number, dice roll, coin flip, lottery numbers, or random selection from a range. Supports integer and decimal output.',
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -636,7 +636,8 @@ export const generateRandomNumberExecutor: ToolExecutor = async (args): Promise<
 
 export const hashTextTool: ToolDefinition = {
   name: 'hash_text',
-  description: 'Generate a hash of the given text using various algorithms.',
+  description: 'Generate a cryptographic hash of text. Call this when the user wants to hash a string, verify integrity, or create a checksum. Supports MD5, SHA-1, SHA-256, SHA-512.',
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -679,7 +680,8 @@ export const hashTextExecutor: ToolExecutor = async (args): Promise<ToolExecutio
 
 export const encodeDecodeTool: ToolDefinition = {
   name: 'encode_decode',
-  description: 'Encode or decode text using various encoding methods.',
+  description: 'Encode or decode text. Call this when the user wants to convert text to/from Base64, URL-encode, HTML-encode, or Hex. Useful for encoding data for APIs, URLs, or debugging encoded strings.',
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -772,7 +774,8 @@ export const encodeDecodeExecutor: ToolExecutor = async (args): Promise<ToolExec
 
 export const countTextTool: ToolDefinition = {
   name: 'count_text',
-  description: 'Count characters, words, sentences, and paragraphs in text.',
+  description: 'Count characters, words, sentences, lines, and paragraphs in text. Call this when the user asks "how many words", "character count", word count, or needs text length stats. Also estimates reading time.',
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -820,7 +823,8 @@ export const countTextExecutor: ToolExecutor = async (args): Promise<ToolExecuti
 
 export const extractFromTextTool: ToolDefinition = {
   name: 'extract_from_text',
-  description: 'Extract specific patterns from text (URLs, emails, phone numbers, dates, etc.).',
+  description: 'Extract structured data from text: URLs, email addresses, phone numbers, dates, numbers, hashtags, or @mentions. Call this when the user pastes text and wants to pull out specific data points.',
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -886,7 +890,8 @@ export const extractFromTextExecutor: ToolExecutor = async (args): Promise<ToolE
 
 export const validateTool: ToolDefinition = {
   name: 'validate',
-  description: 'Validate various data formats (email, URL, JSON, credit card, IBAN, phone, etc.).',
+  description: 'Validate data format correctness. Call this when the user wants to check if an email, URL, phone number, credit card, IBAN, TC Kimlik, JSON, UUID, or IP address is valid. Returns valid/invalid with details.',
+  category: 'Utilities',
   parameters: {
     type: 'object',
     properties: {
@@ -1082,14 +1087,1216 @@ export const validateExecutor: ToolExecutor = async (args): Promise<ToolExecutio
 };
 
 // =============================================================================
+// STRING MANIPULATION TOOLS
+// =============================================================================
+
+export const transformTextTool: ToolDefinition = {
+  name: 'transform_text',
+  description: `Transform text format. Call this when the user wants to convert text case (uppercase, lowercase, title case), create URL slugs, convert naming conventions (camelCase, snake_case, kebab-case, PascalCase), trim whitespace, reverse text, remove accents/diacritics, or truncate text.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      text: {
+        type: 'string',
+        description: 'The text to transform',
+      },
+      operation: {
+        type: 'string',
+        enum: [
+          'uppercase', 'lowercase', 'capitalize', 'title_case',
+          'trim', 'trim_start', 'trim_end',
+          'slugify', 'camel_case', 'snake_case', 'kebab_case', 'pascal_case',
+          'reverse', 'remove_whitespace', 'normalize_whitespace',
+          'remove_diacritics', 'truncate'
+        ],
+        description: 'The transformation to apply',
+      },
+      options: {
+        type: 'object',
+        properties: {
+          maxLength: { type: 'number', description: 'Max length for truncate operation' },
+          suffix: { type: 'string', description: 'Suffix for truncate (default: "...")' },
+        },
+        description: 'Additional options for certain operations',
+      },
+    },
+    required: ['text', 'operation'],
+  },
+};
+
+export const transformTextExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const text = args.text as string;
+    const operation = args.operation as string;
+    const options = (args.options as Record<string, unknown>) || {};
+
+    let result: string;
+
+    switch (operation) {
+      case 'uppercase':
+        result = text.toUpperCase();
+        break;
+      case 'lowercase':
+        result = text.toLowerCase();
+        break;
+      case 'capitalize':
+        result = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+        break;
+      case 'title_case':
+        result = text.replace(/\w\S*/g, (txt) =>
+          txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
+        );
+        break;
+      case 'trim':
+        result = text.trim();
+        break;
+      case 'trim_start':
+        result = text.trimStart();
+        break;
+      case 'trim_end':
+        result = text.trimEnd();
+        break;
+      case 'slugify':
+        result = text
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '');
+        break;
+      case 'camel_case':
+        result = text
+          .toLowerCase()
+          .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase());
+        break;
+      case 'snake_case':
+        result = text
+          .replace(/([a-z])([A-Z])/g, '$1_$2')
+          .replace(/[\s-]+/g, '_')
+          .toLowerCase();
+        break;
+      case 'kebab_case':
+        result = text
+          .replace(/([a-z])([A-Z])/g, '$1-$2')
+          .replace(/[\s_]+/g, '-')
+          .toLowerCase();
+        break;
+      case 'pascal_case':
+        result = text
+          .toLowerCase()
+          .replace(/(^|[^a-zA-Z0-9])([a-z])/g, (_, __, chr) => chr.toUpperCase());
+        break;
+      case 'reverse':
+        result = [...text].reverse().join('');
+        break;
+      case 'remove_whitespace':
+        result = text.replace(/\s+/g, '');
+        break;
+      case 'normalize_whitespace':
+        result = text.replace(/\s+/g, ' ').trim();
+        break;
+      case 'remove_diacritics':
+        result = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        break;
+      case 'truncate':
+        const maxLength = (options.maxLength as number) || 100;
+        const suffix = (options.suffix as string) ?? '...';
+        result = text.length > maxLength
+          ? text.slice(0, maxLength - suffix.length) + suffix
+          : text;
+        break;
+      default:
+        return {
+          content: JSON.stringify({ error: `Unknown operation: ${operation}` }),
+          isError: true,
+        };
+    }
+
+    return {
+      content: JSON.stringify({
+        operation,
+        input: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+        output: result,
+        inputLength: text.length,
+        outputLength: result.length,
+      }),
+    };
+  } catch (error) {
+    return {
+      content: `Transform error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+// =============================================================================
+// DATE MANIPULATION TOOLS
+// =============================================================================
+
+export const dateDiffTool: ToolDefinition = {
+  name: 'date_diff',
+  description: `Calculate the difference between two dates. Call this when the user asks "how many days between", "how long until", "how old is", or any date comparison. Returns difference in days, hours, weeks, months, years.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      date1: {
+        type: 'string',
+        description: 'First date (ISO format, or natural like "2024-01-15")',
+      },
+      date2: {
+        type: 'string',
+        description: 'Second date (ISO format, or natural like "2024-03-20")',
+      },
+      unit: {
+        type: 'string',
+        enum: ['days', 'hours', 'minutes', 'seconds', 'weeks', 'months', 'years', 'all'],
+        description: 'Unit for the result (default: all)',
+      },
+    },
+    required: ['date1', 'date2'],
+  },
+};
+
+export const dateDiffExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const d1 = new Date(args.date1 as string);
+    const d2 = new Date(args.date2 as string);
+    const unit = (args.unit as string) || 'all';
+
+    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) {
+      return {
+        content: JSON.stringify({ error: 'Invalid date format' }),
+        isError: true,
+      };
+    }
+
+    const diffMs = d2.getTime() - d1.getTime();
+    const diffSecs = diffMs / 1000;
+    const diffMins = diffSecs / 60;
+    const diffHours = diffMins / 60;
+    const diffDays = diffHours / 24;
+    const diffWeeks = diffDays / 7;
+    const diffMonths = diffDays / 30.44; // Average days per month
+    const diffYears = diffDays / 365.25;
+
+    const formatNum = (n: number) => Number(n.toFixed(2));
+
+    if (unit === 'all') {
+      return {
+        content: JSON.stringify({
+          from: d1.toISOString(),
+          to: d2.toISOString(),
+          difference: {
+            years: formatNum(diffYears),
+            months: formatNum(diffMonths),
+            weeks: formatNum(diffWeeks),
+            days: formatNum(diffDays),
+            hours: formatNum(diffHours),
+            minutes: formatNum(diffMins),
+            seconds: formatNum(diffSecs),
+          },
+          isPositive: diffMs >= 0,
+        }),
+      };
+    }
+
+    const unitMap: Record<string, number> = {
+      seconds: diffSecs,
+      minutes: diffMins,
+      hours: diffHours,
+      days: diffDays,
+      weeks: diffWeeks,
+      months: diffMonths,
+      years: diffYears,
+    };
+
+    return {
+      content: JSON.stringify({
+        from: d1.toISOString(),
+        to: d2.toISOString(),
+        difference: formatNum(unitMap[unit] || diffDays),
+        unit,
+      }),
+    };
+  } catch (error) {
+    return {
+      content: `Date diff error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+export const dateAddTool: ToolDefinition = {
+  name: 'date_add',
+  description: `Add or subtract time from a date. Call this when the user asks "what date is 30 days from now", "3 weeks ago", "next month", or needs to calculate future/past dates. Use "now" as date for current time.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      date: {
+        type: 'string',
+        description: 'Starting date (ISO format or natural). Use "now" for current time.',
+      },
+      amount: {
+        type: 'number',
+        description: 'Amount to add (negative to subtract)',
+      },
+      unit: {
+        type: 'string',
+        enum: ['seconds', 'minutes', 'hours', 'days', 'weeks', 'months', 'years'],
+        description: 'Time unit',
+      },
+    },
+    required: ['date', 'amount', 'unit'],
+  },
+};
+
+export const dateAddExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const dateStr = args.date as string;
+    const amount = args.amount as number;
+    const unit = args.unit as string;
+
+    const date = dateStr.toLowerCase() === 'now' ? new Date() : new Date(dateStr);
+
+    if (isNaN(date.getTime())) {
+      return {
+        content: JSON.stringify({ error: 'Invalid date format' }),
+        isError: true,
+      };
+    }
+
+    const result = new Date(date);
+
+    switch (unit) {
+      case 'seconds':
+        result.setSeconds(result.getSeconds() + amount);
+        break;
+      case 'minutes':
+        result.setMinutes(result.getMinutes() + amount);
+        break;
+      case 'hours':
+        result.setHours(result.getHours() + amount);
+        break;
+      case 'days':
+        result.setDate(result.getDate() + amount);
+        break;
+      case 'weeks':
+        result.setDate(result.getDate() + (amount * 7));
+        break;
+      case 'months':
+        result.setMonth(result.getMonth() + amount);
+        break;
+      case 'years':
+        result.setFullYear(result.getFullYear() + amount);
+        break;
+    }
+
+    return {
+      content: JSON.stringify({
+        original: date.toISOString(),
+        result: result.toISOString(),
+        resultFormatted: result.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        added: { amount, unit },
+      }),
+    };
+  } catch (error) {
+    return {
+      content: `Date add error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+// =============================================================================
+// JSON/DATA TOOLS
+// =============================================================================
+
+export const formatJsonTool: ToolDefinition = {
+  name: 'format_json',
+  description: `Format, minify, or query JSON data. Call this when the user wants to prettify JSON, minify it, extract a value by path (e.g. "user.name"), list keys, flatten nested objects, or sort keys alphabetically.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      json: {
+        type: 'string',
+        description: 'JSON string to process',
+      },
+      operation: {
+        type: 'string',
+        enum: ['prettify', 'minify', 'get_path', 'get_keys', 'get_values', 'flatten', 'sort_keys'],
+        description: 'Operation to perform',
+      },
+      path: {
+        type: 'string',
+        description: 'JSON path for get_path operation (e.g., "user.name" or "items[0].id")',
+      },
+      indent: {
+        type: 'number',
+        description: 'Indentation for prettify (default: 2)',
+      },
+    },
+    required: ['json', 'operation'],
+  },
+};
+
+export const formatJsonExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const jsonStr = args.json as string;
+    const operation = args.operation as string;
+    const path = args.path as string;
+    const indent = (args.indent as number) || 2;
+
+    let data: unknown;
+    try {
+      data = JSON.parse(jsonStr);
+    } catch {
+      return {
+        content: JSON.stringify({ error: 'Invalid JSON input' }),
+        isError: true,
+      };
+    }
+
+    let result: unknown;
+
+    switch (operation) {
+      case 'prettify':
+        result = JSON.stringify(data, null, indent);
+        break;
+      case 'minify':
+        result = JSON.stringify(data);
+        break;
+      case 'get_path':
+        if (!path) {
+          return { content: JSON.stringify({ error: 'Path is required for get_path operation' }), isError: true };
+        }
+        result = getJsonPath(data, path);
+        break;
+      case 'get_keys':
+        if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+          result = Object.keys(data);
+        } else if (Array.isArray(data)) {
+          result = data.map((_, i) => i);
+        } else {
+          result = [];
+        }
+        break;
+      case 'get_values':
+        if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+          result = Object.values(data);
+        } else if (Array.isArray(data)) {
+          result = data;
+        } else {
+          result = [data];
+        }
+        break;
+      case 'flatten':
+        result = flattenObject(data as Record<string, unknown>);
+        break;
+      case 'sort_keys':
+        result = sortObjectKeys(data);
+        break;
+      default:
+        return { content: JSON.stringify({ error: `Unknown operation: ${operation}` }), isError: true };
+    }
+
+    return {
+      content: JSON.stringify({
+        operation,
+        result: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+      }),
+    };
+  } catch (error) {
+    return {
+      content: `JSON error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+function getJsonPath(obj: unknown, path: string): unknown {
+  const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+  let current: unknown = obj;
+  for (const part of parts) {
+    if (current === null || current === undefined) return undefined;
+    if (typeof current === 'object') {
+      current = (current as Record<string, unknown>)[part];
+    } else {
+      return undefined;
+    }
+  }
+  return current;
+}
+
+function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const newKey = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      Object.assign(result, flattenObject(value as Record<string, unknown>, newKey));
+    } else {
+      result[newKey] = value;
+    }
+  }
+  return result;
+}
+
+function sortObjectKeys(obj: unknown): unknown {
+  if (Array.isArray(obj)) {
+    return obj.map(sortObjectKeys);
+  }
+  if (obj && typeof obj === 'object') {
+    const sorted: Record<string, unknown> = {};
+    for (const key of Object.keys(obj).sort()) {
+      sorted[key] = sortObjectKeys((obj as Record<string, unknown>)[key]);
+    }
+    return sorted;
+  }
+  return obj;
+}
+
+export const parseCsvTool: ToolDefinition = {
+  name: 'parse_csv',
+  description: `Parse CSV/TSV text into structured JSON data. Call this when the user pastes CSV data or wants to convert tabular text into objects. Handles quoted fields, custom delimiters (comma, tab, semicolon), and header rows.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      csv: {
+        type: 'string',
+        description: 'CSV text to parse',
+      },
+      delimiter: {
+        type: 'string',
+        description: 'Column delimiter (default: ",")',
+      },
+      hasHeader: {
+        type: 'boolean',
+        description: 'First row is header (default: true)',
+      },
+      trimValues: {
+        type: 'boolean',
+        description: 'Trim whitespace from values (default: true)',
+      },
+    },
+    required: ['csv'],
+  },
+};
+
+export const parseCsvExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const csv = args.csv as string;
+    const delimiter = (args.delimiter as string) || ',';
+    const hasHeader = args.hasHeader !== false;
+    const trimValues = args.trimValues !== false;
+
+    const lines = csv.split('\n').filter(line => line.trim());
+    if (lines.length === 0) {
+      return { content: JSON.stringify({ error: 'Empty CSV' }), isError: true };
+    }
+
+    const parseRow = (row: string): string[] => {
+      const values: string[] = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < row.length; i++) {
+        const char = row[i];
+        if (char === '"') {
+          if (inQuotes && row[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === delimiter && !inQuotes) {
+          values.push(trimValues ? current.trim() : current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(trimValues ? current.trim() : current);
+      return values;
+    };
+
+    const rows = lines.map(parseRow);
+
+    if (hasHeader && rows.length > 0) {
+      const headers = rows[0]!;
+      const data = rows.slice(1).map(row => {
+        const obj: Record<string, string> = {};
+        headers.forEach((header, i) => {
+          obj[header] = row[i] || '';
+        });
+        return obj;
+      });
+
+      return {
+        content: JSON.stringify({
+          headers,
+          data,
+          rowCount: data.length,
+          columnCount: headers.length,
+        }),
+      };
+    }
+
+    return {
+      content: JSON.stringify({
+        data: rows,
+        rowCount: rows.length,
+        columnCount: rows[0]?.length || 0,
+      }),
+    };
+  } catch (error) {
+    return {
+      content: `CSV parse error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+export const generateCsvTool: ToolDefinition = {
+  name: 'generate_csv',
+  description: `Generate CSV text from JSON data. Call this when the user wants to convert a JSON array into CSV format for export or sharing. Handles object arrays (with headers) and nested data.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      data: {
+        type: 'string',
+        description: 'JSON array of objects or arrays to convert to CSV',
+      },
+      delimiter: {
+        type: 'string',
+        description: 'Column delimiter (default: ",")',
+      },
+      includeHeader: {
+        type: 'boolean',
+        description: 'Include header row (default: true, only for object arrays)',
+      },
+    },
+    required: ['data'],
+  },
+};
+
+export const generateCsvExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const dataStr = args.data as string;
+    const delimiter = (args.delimiter as string) || ',';
+    const includeHeader = args.includeHeader !== false;
+
+    let data: unknown[];
+    try {
+      data = JSON.parse(dataStr);
+    } catch {
+      return { content: JSON.stringify({ error: 'Invalid JSON input' }), isError: true };
+    }
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return { content: JSON.stringify({ error: 'Data must be a non-empty array' }), isError: true };
+    }
+
+    const escapeValue = (val: unknown): string => {
+      const str = String(val ?? '');
+      if (str.includes(delimiter) || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const lines: string[] = [];
+
+    // Check if array of objects
+    if (typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0])) {
+      const headers = Object.keys(data[0] as Record<string, unknown>);
+      if (includeHeader) {
+        lines.push(headers.map(escapeValue).join(delimiter));
+      }
+      for (const row of data) {
+        const obj = row as Record<string, unknown>;
+        lines.push(headers.map(h => escapeValue(obj[h])).join(delimiter));
+      }
+    } else if (Array.isArray(data[0])) {
+      // Array of arrays
+      for (const row of data) {
+        lines.push((row as unknown[]).map(escapeValue).join(delimiter));
+      }
+    } else {
+      // Array of primitives
+      lines.push(data.map(escapeValue).join(delimiter));
+    }
+
+    return {
+      content: JSON.stringify({
+        csv: lines.join('\n'),
+        rowCount: lines.length,
+      }),
+    };
+  } catch (error) {
+    return {
+      content: `CSV generate error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+// =============================================================================
+// ARRAY/COLLECTION TOOLS
+// =============================================================================
+
+export const arrayOperationsTool: ToolDefinition = {
+  name: 'array_operations',
+  description: `Perform operations on a list/array of items. Call this when the user wants to sort a list, remove duplicates, shuffle, split into chunks, pick random samples, or calculate sum/average/min/max of numbers. Input is a JSON array string.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      array: {
+        type: 'string',
+        description: 'JSON array to operate on',
+      },
+      operation: {
+        type: 'string',
+        enum: ['sort', 'reverse', 'unique', 'shuffle', 'chunk', 'flatten', 'sample', 'first', 'last', 'sum', 'avg', 'min', 'max', 'count'],
+        description: 'Operation to perform',
+      },
+      options: {
+        type: 'object',
+        properties: {
+          sortKey: { type: 'string', description: 'Key to sort by (for object arrays)' },
+          sortOrder: { type: 'string', enum: ['asc', 'desc'], description: 'Sort order (default: asc)' },
+          chunkSize: { type: 'number', description: 'Size of chunks for chunk operation' },
+          sampleSize: { type: 'number', description: 'Number of items for sample operation' },
+          count: { type: 'number', description: 'Number of items for first/last operations' },
+        },
+      },
+    },
+    required: ['array', 'operation'],
+  },
+};
+
+export const arrayOperationsExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const arrayStr = args.array as string;
+    const operation = args.operation as string;
+    const options = (args.options as Record<string, unknown>) || {};
+
+    let array: unknown[];
+    try {
+      array = JSON.parse(arrayStr);
+    } catch {
+      return { content: JSON.stringify({ error: 'Invalid JSON array' }), isError: true };
+    }
+
+    if (!Array.isArray(array)) {
+      return { content: JSON.stringify({ error: 'Input must be an array' }), isError: true };
+    }
+
+    let result: unknown;
+
+    switch (operation) {
+      case 'sort': {
+        const key = options.sortKey as string;
+        const order = (options.sortOrder as string) || 'asc';
+        const sorted = [...array].sort((a, b) => {
+          const valA = String(key ? (a as Record<string, unknown>)[key] : a);
+          const valB = String(key ? (b as Record<string, unknown>)[key] : b);
+          const numA = Number(valA);
+          const numB = Number(valB);
+          const cmp = (!isNaN(numA) && !isNaN(numB))
+            ? numA - numB
+            : valA < valB ? -1 : valA > valB ? 1 : 0;
+          return order === 'desc' ? -cmp : cmp;
+        });
+        result = sorted;
+        break;
+      }
+      case 'reverse':
+        result = [...array].reverse();
+        break;
+      case 'unique':
+        result = [...new Set(array.map(x => JSON.stringify(x)))].map(x => JSON.parse(x));
+        break;
+      case 'shuffle': {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        result = shuffled;
+        break;
+      }
+      case 'chunk': {
+        const size = (options.chunkSize as number) || 2;
+        const chunks: unknown[][] = [];
+        for (let i = 0; i < array.length; i += size) {
+          chunks.push(array.slice(i, i + size));
+        }
+        result = chunks;
+        break;
+      }
+      case 'flatten':
+        result = array.flat(Infinity);
+        break;
+      case 'sample': {
+        const sampleSize = Math.min((options.sampleSize as number) || 1, array.length);
+        const shuffledForSample = [...array].sort(() => Math.random() - 0.5);
+        result = shuffledForSample.slice(0, sampleSize);
+        break;
+      }
+      case 'first': {
+        const firstCount = (options.count as number) || 1;
+        result = array.slice(0, firstCount);
+        break;
+      }
+      case 'last': {
+        const lastCount = (options.count as number) || 1;
+        result = array.slice(-lastCount);
+        break;
+      }
+      case 'sum': {
+        const nums = array.filter((x): x is number => typeof x === 'number');
+        result = nums.reduce((a, b) => a + b, 0);
+        break;
+      }
+      case 'avg': {
+        const numsAvg = array.filter((x): x is number => typeof x === 'number');
+        result = numsAvg.length > 0 ? numsAvg.reduce((a, b) => a + b, 0) / numsAvg.length : 0;
+        break;
+      }
+      case 'min': {
+        const numsMin = array.filter((x): x is number => typeof x === 'number');
+        result = numsMin.length > 0 ? Math.min(...numsMin) : null;
+        break;
+      }
+      case 'max': {
+        const numsMax = array.filter((x): x is number => typeof x === 'number');
+        result = numsMax.length > 0 ? Math.max(...numsMax) : null;
+        break;
+      }
+      case 'count':
+        result = array.length;
+        break;
+      default:
+        return { content: JSON.stringify({ error: `Unknown operation: ${operation}` }), isError: true };
+    }
+
+    return {
+      content: JSON.stringify({
+        operation,
+        inputLength: array.length,
+        result,
+      }),
+    };
+  } catch (error) {
+    return {
+      content: `Array operation error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+// =============================================================================
+// STATISTICS TOOLS
+// =============================================================================
+
+export const statisticsTool: ToolDefinition = {
+  name: 'statistics',
+  description: `Calculate statistics for a set of numbers. Call this when the user wants mean, median, mode, standard deviation, variance, percentiles, quartiles, or a statistical summary. Accepts JSON array or comma-separated numbers.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      numbers: {
+        type: 'string',
+        description: 'JSON array of numbers, or comma-separated numbers',
+      },
+      percentile: {
+        type: 'number',
+        description: 'Calculate specific percentile (0-100)',
+      },
+    },
+    required: ['numbers'],
+  },
+};
+
+export const statisticsExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const numbersInput = args.numbers as string;
+    const percentile = args.percentile as number | undefined;
+
+    let numbers: number[];
+    try {
+      // Try JSON array first
+      const parsed = JSON.parse(numbersInput);
+      if (Array.isArray(parsed)) {
+        numbers = parsed.filter((x): x is number => typeof x === 'number');
+      } else {
+        throw new Error('Not an array');
+      }
+    } catch {
+      // Try comma-separated
+      numbers = numbersInput.split(',')
+        .map(s => parseFloat(s.trim()))
+        .filter(n => !isNaN(n));
+    }
+
+    if (numbers.length === 0) {
+      return { content: JSON.stringify({ error: 'No valid numbers provided' }), isError: true };
+    }
+
+    const sorted = [...numbers].sort((a, b) => a - b);
+    const n = numbers.length;
+    const sum = numbers.reduce((a, b) => a + b, 0);
+    const mean = sum / n;
+
+    // Median
+    const median = n % 2 === 0
+      ? (sorted[n / 2 - 1]! + sorted[n / 2]!) / 2
+      : sorted[Math.floor(n / 2)]!;
+
+    // Mode
+    const freq = new Map<number, number>();
+    for (const num of numbers) {
+      freq.set(num, (freq.get(num) || 0) + 1);
+    }
+    const maxFreq = Math.max(...freq.values());
+    const modes = [...freq.entries()].filter(([_, f]) => f === maxFreq).map(([v]) => v);
+
+    // Variance and Std Dev
+    const variance = numbers.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / n;
+    const stdDev = Math.sqrt(variance);
+
+    // Range
+    const min = sorted[0]!;
+    const max = sorted[n - 1]!;
+    const range = max - min;
+
+    // Percentile calculation
+    const calcPercentile = (p: number): number => {
+      const idx = (p / 100) * (n - 1);
+      const lower = Math.floor(idx);
+      const upper = Math.ceil(idx);
+      if (lower === upper) return sorted[lower]!;
+      return sorted[lower]! + (sorted[upper]! - sorted[lower]!) * (idx - lower);
+    };
+
+    const result: Record<string, unknown> = {
+      count: n,
+      sum: Number(sum.toFixed(4)),
+      mean: Number(mean.toFixed(4)),
+      median: Number(median.toFixed(4)),
+      mode: modes.length === n ? 'no mode' : modes,
+      variance: Number(variance.toFixed(4)),
+      standardDeviation: Number(stdDev.toFixed(4)),
+      min,
+      max,
+      range,
+      quartiles: {
+        q1: Number(calcPercentile(25).toFixed(4)),
+        q2: Number(calcPercentile(50).toFixed(4)),
+        q3: Number(calcPercentile(75).toFixed(4)),
+      },
+    };
+
+    if (percentile !== undefined && percentile >= 0 && percentile <= 100) {
+      result.requestedPercentile = {
+        percentile,
+        value: Number(calcPercentile(percentile).toFixed(4)),
+      };
+    }
+
+    return { content: JSON.stringify(result) };
+  } catch (error) {
+    return {
+      content: `Statistics error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+// =============================================================================
+// COMPARISON TOOLS
+// =============================================================================
+
+export const compareTextTool: ToolDefinition = {
+  name: 'compare_text',
+  description: `Compare two texts and show differences. Call this when the user wants to diff two versions, check similarity, or find what changed between texts. Compares by lines, words, or characters and shows added/removed/common parts.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      text1: {
+        type: 'string',
+        description: 'First text',
+      },
+      text2: {
+        type: 'string',
+        description: 'Second text',
+      },
+      mode: {
+        type: 'string',
+        enum: ['lines', 'words', 'chars'],
+        description: 'Comparison mode (default: lines)',
+      },
+    },
+    required: ['text1', 'text2'],
+  },
+};
+
+export const compareTextExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const text1 = args.text1 as string;
+    const text2 = args.text2 as string;
+    const mode = (args.mode as string) || 'lines';
+
+    const split = (text: string): string[] => {
+      switch (mode) {
+        case 'lines': return text.split('\n');
+        case 'words': return text.split(/\s+/);
+        case 'chars': return text.split('');
+        default: return text.split('\n');
+      }
+    };
+
+    const units1 = split(text1);
+    const units2 = split(text2);
+
+    // Simple LCS-based diff
+    const set1 = new Set(units1);
+    const set2 = new Set(units2);
+
+    const added = units2.filter(u => !set1.has(u));
+    const removed = units1.filter(u => !set2.has(u));
+    const common = units1.filter(u => set2.has(u));
+
+    const identical = text1 === text2;
+    const similarity = identical ? 100 :
+      (common.length / Math.max(units1.length, units2.length)) * 100;
+
+    return {
+      content: JSON.stringify({
+        identical,
+        similarity: Number(similarity.toFixed(2)),
+        mode,
+        text1Stats: { count: units1.length },
+        text2Stats: { count: units2.length },
+        added: added.slice(0, 20),
+        removed: removed.slice(0, 20),
+        addedCount: added.length,
+        removedCount: removed.length,
+        commonCount: common.length,
+      }),
+    };
+  } catch (error) {
+    return {
+      content: `Compare error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+// =============================================================================
+// REGEX TOOLS
+// =============================================================================
+
+export const regexTool: ToolDefinition = {
+  name: 'regex',
+  description: `Test, match, or replace text using regular expressions. Call this when you need pattern matching, find-and-replace, text splitting by pattern, or when the user asks to extract data matching a specific pattern. Supports test, match, match_all, replace, and split operations.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      text: {
+        type: 'string',
+        description: 'Text to search in',
+      },
+      pattern: {
+        type: 'string',
+        description: 'Regular expression pattern',
+      },
+      operation: {
+        type: 'string',
+        enum: ['test', 'match', 'match_all', 'replace', 'split'],
+        description: 'Operation to perform',
+      },
+      replacement: {
+        type: 'string',
+        description: 'Replacement string (for replace operation)',
+      },
+      flags: {
+        type: 'string',
+        description: 'Regex flags (e.g., "gi" for global, case-insensitive)',
+      },
+    },
+    required: ['text', 'pattern', 'operation'],
+  },
+};
+
+export const regexExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const text = args.text as string;
+    const pattern = args.pattern as string;
+    const operation = args.operation as string;
+    const replacement = args.replacement as string;
+    const flags = (args.flags as string) || '';
+
+    let regex: RegExp;
+    try {
+      regex = new RegExp(pattern, flags);
+    } catch (e) {
+      return {
+        content: JSON.stringify({ error: `Invalid regex: ${e instanceof Error ? e.message : String(e)}` }),
+        isError: true,
+      };
+    }
+
+    let result: unknown;
+
+    switch (operation) {
+      case 'test':
+        result = regex.test(text);
+        break;
+      case 'match': {
+        const match = text.match(regex);
+        result = match ? { match: match[0], groups: match.slice(1), index: match.index } : null;
+        break;
+      }
+      case 'match_all': {
+        const globalRegex = new RegExp(pattern, flags.includes('g') ? flags : flags + 'g');
+        const matches = [...text.matchAll(globalRegex)];
+        result = matches.map(m => ({ match: m[0], groups: m.slice(1), index: m.index }));
+        break;
+      }
+      case 'replace':
+        result = text.replace(regex, replacement || '');
+        break;
+      case 'split':
+        result = text.split(regex);
+        break;
+      default:
+        return { content: JSON.stringify({ error: `Unknown operation: ${operation}` }), isError: true };
+    }
+
+    return {
+      content: JSON.stringify({
+        operation,
+        pattern,
+        flags,
+        result,
+      }),
+    };
+  } catch (error) {
+    return {
+      content: `Regex error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+// =============================================================================
+// SYSTEM INFO TOOL
+// =============================================================================
+
+export const systemInfoTool: ToolDefinition = {
+  name: 'system_info',
+  description: `Get system information: OS platform, architecture, Node.js version, memory usage, and CPU stats. Call this when the user asks about the system, server status, or when you need platform-specific context for recommendations. Read-only and safe.`,
+  category: 'Utilities',
+  parameters: {
+    type: 'object',
+    properties: {
+      include: {
+        type: 'array',
+        items: {
+          type: 'string',
+          enum: ['platform', 'memory', 'cpu', 'env', 'all'],
+        },
+        description: 'What info to include (default: platform)',
+      },
+    },
+    required: [],
+  },
+};
+
+export const systemInfoExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+  try {
+    const include = (args.include as string[]) || ['platform'];
+    const includeAll = include.includes('all');
+
+    const result: Record<string, unknown> = {};
+
+    if (includeAll || include.includes('platform')) {
+      result.platform = {
+        os: process.platform,
+        arch: process.arch,
+        nodeVersion: process.version,
+        pid: process.pid,
+      };
+    }
+
+    if (includeAll || include.includes('memory')) {
+      const mem = process.memoryUsage();
+      result.memory = {
+        heapUsed: Math.round(mem.heapUsed / 1024 / 1024) + ' MB',
+        heapTotal: Math.round(mem.heapTotal / 1024 / 1024) + ' MB',
+        rss: Math.round(mem.rss / 1024 / 1024) + ' MB',
+      };
+    }
+
+    if (includeAll || include.includes('cpu')) {
+      const cpuUsage = process.cpuUsage();
+      result.cpu = {
+        user: Math.round(cpuUsage.user / 1000) + ' ms',
+        system: Math.round(cpuUsage.system / 1000) + ' ms',
+      };
+    }
+
+    if (includeAll || include.includes('env')) {
+      // Only include safe env vars
+      result.env = {
+        nodeEnv: process.env.NODE_ENV || 'development',
+        tz: process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        lang: process.env.LANG || 'unknown',
+      };
+    }
+
+    result.timestamp = new Date().toISOString();
+
+    return { content: JSON.stringify(result) };
+  } catch (error) {
+    return {
+      content: `System info error: ${error instanceof Error ? error.message : String(error)}`,
+      isError: true,
+    };
+  }
+};
+
+// =============================================================================
 // EXPORT ALL UTILITY TOOLS
 // =============================================================================
 
 export const UTILITY_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecutor }> = [
   // Date/Time
   { definition: getCurrentDateTimeTool, executor: getCurrentDateTimeExecutor },
-  // Calculation
+  { definition: dateDiffTool, executor: dateDiffExecutor },
+  { definition: dateAddTool, executor: dateAddExecutor },
+  // Calculation & Statistics
   { definition: calculateTool, executor: calculateExecutor },
+  { definition: statisticsTool, executor: statisticsExecutor },
   // Unit Conversion
   { definition: convertUnitsTool, executor: convertUnitsExecutor },
   // Random Generation
@@ -1102,8 +2309,18 @@ export const UTILITY_TOOLS: Array<{ definition: ToolDefinition; executor: ToolEx
   // Text Utilities
   { definition: countTextTool, executor: countTextExecutor },
   { definition: extractFromTextTool, executor: extractFromTextExecutor },
+  { definition: transformTextTool, executor: transformTextExecutor },
+  { definition: compareTextTool, executor: compareTextExecutor },
+  { definition: regexTool, executor: regexExecutor },
+  // Data Processing
+  { definition: formatJsonTool, executor: formatJsonExecutor },
+  { definition: parseCsvTool, executor: parseCsvExecutor },
+  { definition: generateCsvTool, executor: generateCsvExecutor },
+  { definition: arrayOperationsTool, executor: arrayOperationsExecutor },
   // Validation
   { definition: validateTool, executor: validateExecutor },
+  // System
+  { definition: systemInfoTool, executor: systemInfoExecutor },
 ];
 
 /**
