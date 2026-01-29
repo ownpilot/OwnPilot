@@ -3,6 +3,7 @@
  */
 
 import type { PluginId, ToolId } from '../types/branded.js';
+import type { ApiServiceConfig, ConfigEntry } from '../services/config-center.js';
 
 /**
  * Supported AI providers (Updated January 2026)
@@ -191,6 +192,16 @@ export interface ToolContext {
   readonly signal?: AbortSignal;
   /** Workspace directory for file operations (overrides WORKSPACE_DIR) */
   readonly workspaceDir?: string;
+  /** Get API key for a named service from Config Center (returns undefined if not configured) */
+  readonly getApiKey?: (serviceName: string) => string | undefined;
+  /** Get full service config from Config Center (returns null if service not found) */
+  readonly getServiceConfig?: (serviceName: string) => ApiServiceConfig | null;
+  /** Get a config entry's data by service name and optional entry label */
+  readonly getConfigEntry?: (serviceName: string, entryLabel?: string) => ConfigEntry | null;
+  /** Get all config entries for a service (for multi-entry services) */
+  readonly getConfigEntries?: (serviceName: string) => ConfigEntry[];
+  /** Get a resolved field value from a service config entry */
+  readonly getFieldValue?: (serviceName: string, fieldName: string, entryLabel?: string) => unknown;
 }
 
 /**

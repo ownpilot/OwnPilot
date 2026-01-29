@@ -15,16 +15,21 @@ import {
 } from '../db/repositories/custom-tools.js';
 import {
   createDynamicToolRegistry,
+  ALL_TOOLS,
   type DynamicToolDefinition,
   type ToolDefinition,
 } from '@ownpilot/core';
 import type { ApiResponse } from '../types/index.js';
 import { invalidateAgentCache } from './agents.js';
+import {
+  registerToolApiDependencies,
+  unregisterDependencies,
+} from '../services/api-service-registrar.js';
 
 export const customToolsRoutes = new Hono();
 
-// Create dynamic tool registry for execution
-const dynamicRegistry = createDynamicToolRegistry();
+// Create dynamic tool registry for execution, with all built-in tools available via callTool
+const dynamicRegistry = createDynamicToolRegistry(ALL_TOOLS);
 
 /**
  * Helper to get userId from context
@@ -167,6 +172,7 @@ customToolsRoutes.post('/', async (c) => {
     requiresApproval?: boolean;
     createdBy?: 'user' | 'llm';
     metadata?: Record<string, unknown>;
+    requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
   }>();
 
   // Validate required fields
@@ -222,7 +228,13 @@ customToolsRoutes.post('/', async (c) => {
     requiresApproval: body.requiresApproval,
     createdBy: body.createdBy ?? 'user',
     metadata: body.metadata,
+    requiredApiKeys: body.requiredApiKeys,
   });
+
+  // Register API dependencies in API Center
+  if (body.requiredApiKeys?.length) {
+    await registerToolApiDependencies(tool.id, tool.name, body.requiredApiKeys);
+  }
 
   // Sync to dynamic registry if active
   syncToolToRegistry(tool);
@@ -256,6 +268,7 @@ customToolsRoutes.patch('/:id', async (c) => {
     permissions?: ToolPermission[];
     requiresApproval?: boolean;
     metadata?: Record<string, unknown>;
+    requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
   }>();
 
   const repo = createCustomToolsRepo(getUserId(c));
@@ -295,6 +308,14 @@ customToolsRoutes.patch('/:id', async (c) => {
     });
   }
 
+  // Re-register API dependencies if changed
+  if (body.requiredApiKeys !== undefined) {
+    await unregisterDependencies(id);
+    if (body.requiredApiKeys?.length) {
+      await registerToolApiDependencies(id, tool.name, body.requiredApiKeys);
+    }
+  }
+
   // Re-sync to dynamic registry
   syncToolToRegistry(tool);
 
@@ -325,6 +346,9 @@ customToolsRoutes.delete('/:id', async (c) => {
   if (tool) {
     dynamicRegistry.unregister(tool.name);
   }
+
+  // Unregister API dependencies
+  await unregisterDependencies(id);
 
   const deleted = await repo.delete(id);
   if (!deleted) {
@@ -588,8 +612,8 @@ customToolsRoutes.post('/test', async (c) => {
     }
   }
 
-  // Create temporary registry for testing
-  const testRegistry = createDynamicToolRegistry();
+  // Create temporary registry for testing, with all built-in tools available via callTool
+  const testRegistry = createDynamicToolRegistry(ALL_TOOLS);
 
   const testTool: DynamicToolDefinition = {
     name: body.name,
@@ -713,13 +737,14 @@ export async function executeCustomToolTool(
   try {
     switch (toolId) {
       case 'create_tool': {
-        const { name, description, parameters: parametersInput, code, category, permissions } = params as {
+        const { name, description, parameters: parametersInput, code, category, permissions, required_api_keys } = params as {
           name: string;
           description: string;
           parameters: string | { type: 'object'; properties: Record<string, unknown>; required?: string[] };
           code: string;
           category?: string;
           permissions?: string[];
+          required_api_keys?: Array<{ name: string; displayName?: string; description?: string; category?: string; docsUrl?: string }>;
         };
 
         // Validate required fields
@@ -764,6 +789,9 @@ export async function executeCustomToolTool(
           return { success: false, error: codeValidation.error };
         }
 
+        // Parse required_api_keys
+        const requiredApiKeys = required_api_keys?.length ? required_api_keys : undefined;
+
         // Create the tool (LLM-created tools may need approval for dangerous permissions)
         const tool = await repo.create({
           name,
@@ -774,7 +802,13 @@ export async function executeCustomToolTool(
           permissions: (permissions ?? []) as ToolPermission[],
           requiresApproval: true, // All LLM-created tools require approval before each execution
           createdBy: 'llm',
+          requiredApiKeys,
         });
+
+        // Register config dependencies in Config Center
+        if (requiredApiKeys?.length) {
+          await registerToolApiDependencies(tool.id, tool.name, requiredApiKeys);
+        }
 
         // If pending approval, notify user
         if (tool.status === 'pending_approval') {
@@ -874,6 +908,9 @@ export async function executeCustomToolTool(
 
         // Unregister from dynamic registry
         dynamicRegistry.unregister(name);
+
+        // Unregister API dependencies
+        await unregisterDependencies(tool.id);
 
         // Delete from database
         const deleted = await repo.delete(tool.id);

@@ -277,6 +277,15 @@ export {
   type ToolStatus,
 } from './custom-tools.js';
 
+// Plugins repository
+export {
+  PluginsRepository,
+  pluginsRepo,
+  initializePluginsRepo,
+  type PluginRecord,
+  type UpsertPluginInput,
+} from './plugins.js';
+
 // Workspaces repository
 export {
   WorkspacesRepository,

@@ -497,7 +497,10 @@ export const TOOL_CATEGORIES = {
   // Utility Tools
   'Utilities': [
     'get_current_datetime',
+    'date_diff',
+    'date_add',
     'calculate',
+    'statistics',
     'convert_units',
     'generate_uuid',
     'generate_password',
@@ -506,7 +509,15 @@ export const TOOL_CATEGORIES = {
     'encode_decode',
     'count_text',
     'extract_from_text',
+    'transform_text',
+    'compare_text',
+    'regex',
+    'format_json',
+    'parse_csv',
+    'generate_csv',
+    'array_operations',
     'validate',
+    'system_info',
   ],
 } as const;
 

@@ -207,7 +207,25 @@ export class TelegramAdapter extends BaseChannelAdapter {
    * Send a message
    */
   async sendMessage(message: OutgoingMessage): Promise<string> {
-    const chatId = this.parseChatId(message.channelId);
+    // Try to get chatId from channelId format "adapterId:chatId", or from metadata.chatId
+    let chatId: number;
+    try {
+      chatId = this.parseChatId(message.channelId);
+    } catch {
+      // Fallback: check metadata.chatId
+      const metaChatId = message.metadata?.chatId;
+      if (metaChatId) {
+        chatId = typeof metaChatId === 'number' ? metaChatId : parseInt(String(metaChatId), 10);
+      } else {
+        throw new Error(
+          `No Telegram chat ID found. Provide chatId in the request body or metadata. ` +
+          `channelId was: "${message.channelId}"`
+        );
+      }
+      if (isNaN(chatId)) {
+        throw new Error(`Invalid chatId value: "${metaChatId}"`);
+      }
+    }
 
     const params: Record<string, unknown> = {
       chat_id: chatId,
@@ -527,13 +545,23 @@ Nasıl yardımcı olabilirim?`;
 
   /**
    * Parse chat ID from channel ID
+   * Handles formats: "adapterId:chatId", "chatId", or numeric chatId
    */
   private parseChatId(channelId: string): number {
     // Channel ID format: "adapterId:chatId" or just "chatId"
     // Always take the last part as chat ID
     const parts = channelId.split(':');
     const chatIdStr = parts[parts.length - 1];
-    return parseInt(chatIdStr ?? '0', 10);
+    const chatId = parseInt(chatIdStr ?? '0', 10);
+
+    if (isNaN(chatId) || chatId === 0) {
+      throw new Error(
+        `Invalid Telegram chat ID from channelId "${channelId}". ` +
+        `Please provide a chatId in the request body (e.g., { "chatId": 123456789 }).`
+      );
+    }
+
+    return chatId;
   }
 
   /**

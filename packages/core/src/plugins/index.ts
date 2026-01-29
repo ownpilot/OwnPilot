@@ -13,6 +13,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor, ToolContext, ToolExecutionResult } from '../agent/types.js';
 import type { PluginId, ToolId } from '../types/branded.js';
+import type { ConfigFieldDefinition } from '../services/config-center.js';
 
 // =============================================================================
 // Types
@@ -50,6 +51,40 @@ export type PluginPermission =
 export type PluginStatus = 'installed' | 'enabled' | 'disabled' | 'error' | 'updating';
 
 /**
+ * Plugin category for UI grouping
+ */
+export type PluginCategoryType =
+  | 'productivity'
+  | 'communication'
+  | 'utilities'
+  | 'data'
+  | 'integrations'
+  | 'media'
+  | 'developer'
+  | 'lifestyle'
+  | 'other';
+
+/**
+ * External Config Center service required by a plugin
+ */
+export interface PluginRequiredService {
+  /** Config Center service name (e.g. 'openweathermap', 'smtp') */
+  name: string;
+  /** Human display name (used if service doesn't exist yet) */
+  displayName?: string;
+  /** Description (used if service doesn't exist yet) */
+  description?: string;
+  /** Config Center category */
+  category?: string;
+  /** Documentation URL */
+  docsUrl?: string;
+  /** Whether the service supports multiple entries */
+  multiEntry?: boolean;
+  /** Schema to auto-register if the service doesn't exist */
+  configSchema?: ConfigFieldDefinition[];
+}
+
+/**
  * Plugin manifest
  */
 export interface PluginManifest {
@@ -79,10 +114,25 @@ export interface PluginManifest {
   icon?: string;
   /** Documentation URL */
   docs?: string;
-  /** Configuration schema (JSON Schema) */
-  configSchema?: Record<string, unknown>;
-  /** Default configuration */
+  /** Plugin category for UI grouping */
+  category?: PluginCategoryType;
+  /** Plugin's own settings schema (rendered via DynamicConfigForm) */
+  pluginConfigSchema?: ConfigFieldDefinition[];
+  /** Default values for plugin's own settings */
   defaultConfig?: Record<string, unknown>;
+  /** External Config Center services this plugin needs */
+  requiredServices?: PluginRequiredService[];
+  /** @deprecated Use pluginConfigSchema */
+  configSchema?: Record<string, unknown>;
+  /** @deprecated Use requiredServices */
+  requiredApiServices?: Array<{
+    name: string;
+    displayName?: string;
+    description?: string;
+    category?: string;
+    docsUrl?: string;
+    envVarName?: string;
+  }>;
 }
 
 /**

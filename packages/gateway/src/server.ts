@@ -43,6 +43,10 @@ import { settingsRepo, initializeSettingsRepo } from './db/repositories/settings
 import { initializeDataDirectories, getDataDirectoryInfo } from './paths/index.js';
 import { autoMigrateIfNeeded } from './paths/migration.js';
 import { initializePlugins } from './plugins/index.js';
+import { initializeConfigServicesRepo } from './db/repositories/config-services.js';
+import { initializePluginsRepo } from './db/repositories/plugins.js';
+import { seedConfigServices } from './db/seeds/config-services-seed.js';
+import { gatewayConfigCenter } from './services/config-center-impl.js';
 
 // Database settings keys for gateway config
 const GATEWAY_API_KEYS_KEY = 'gateway_api_keys';
@@ -129,6 +133,15 @@ async function main() {
 
   // Load saved API keys from database into environment
   loadApiKeysToEnvironment();
+
+  // Initialize Config Center (centralized config management)
+  console.log('[Startup] Initializing Config Center...');
+  await initializeConfigServicesRepo();
+  await seedConfigServices();
+
+  // Initialize Plugins repository
+  console.log('[Startup] Initializing Plugins repository...');
+  await initializePluginsRepo();
 
   // Initialize file workspace directories (for AI-generated code isolation)
   const workspace = initializeFileWorkspace();

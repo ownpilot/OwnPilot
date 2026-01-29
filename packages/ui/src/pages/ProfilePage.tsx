@@ -353,7 +353,7 @@ export function ProfilePage() {
       <div className="flex-1 overflow-y-auto p-6">
         {/* Overview Tab */}
         {activeTab === 'overview' && profile && (
-          <div className="max-w-2xl space-y-6">
+          <div className="space-y-6">
             {/* Profile Card */}
             <div className="p-6 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-border dark:border-dark-border">
               <div className="flex items-center gap-4 mb-4">
@@ -449,7 +449,7 @@ export function ProfilePage() {
 
         {/* Quick Setup Tab */}
         {activeTab === 'quick' && (
-          <div className="max-w-xl space-y-6">
+          <div className="space-y-6">
             <p className="text-sm text-text-muted dark:text-dark-text-muted">
               Set up the essentials quickly. These settings help the AI understand you better.
             </p>
@@ -597,7 +597,7 @@ export function ProfilePage() {
 
         {/* AI Instructions Tab */}
         {activeTab === 'instructions' && profile && (
-          <div className="max-w-2xl space-y-6">
+          <div className="space-y-6">
             {/* Custom Instructions */}
             <div>
               <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary mb-2">
@@ -695,7 +695,7 @@ export function ProfilePage() {
 
         {/* Advanced Tab */}
         {activeTab === 'advanced' && profile && (
-          <div className="max-w-2xl space-y-6">
+          <div className="space-y-6">
             <p className="text-sm text-text-muted dark:text-dark-text-muted">
               Advanced profile data. You can add custom data entries here.
             </p>

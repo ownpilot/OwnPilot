@@ -59,6 +59,7 @@ import type {
 } from '../types/index.js';
 import { agentsRepo, type AgentRecord, MemoriesRepository, GoalsRepository } from '../db/repositories/index.js';
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
+import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-center-impl.js';
 
 /**
  * Build memory context string from important memories
@@ -299,6 +300,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Create tool registry with ALL tools (not just core)
   const tools = new ToolRegistry();
   registerAllTools(tools);
+  tools.setApiKeyCenter(gatewayApiKeyCenter);
 
   // Register memory tools with gateway executors (with tracing)
   const userId = 'default';
@@ -1101,6 +1103,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   // Create tools registry with ALL tools
   const tools = new ToolRegistry();
   registerAllTools(tools);
+  tools.setApiKeyCenter(gatewayApiKeyCenter);
 
   // Register memory tools with gateway executors
   const userId = 'default';

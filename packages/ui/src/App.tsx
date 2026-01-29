@@ -26,6 +26,13 @@ import { WorkspacesPage } from './pages/WorkspacesPage';
 import { LogsPage } from './pages/LogsPage';
 import { CustomToolsPage } from './pages/CustomToolsPage';
 import { ExpensesPage } from './pages/ExpensesPage';
+import { ConfigCenterPage } from './pages/ConfigCenterPage';
+import { ApiKeysPage } from './pages/ApiKeysPage';
+import { ProvidersPage } from './pages/ProvidersPage';
+import { AIModelsPage } from './pages/AIModelsPage';
+import { IntegrationsPage } from './pages/IntegrationsPage';
+import { MediaSettingsPage } from './pages/MediaSettingsPage';
+import { SystemPage } from './pages/SystemPage';
 
 export function App() {
   return (
@@ -56,6 +63,13 @@ export function App() {
         <Route path="costs" element={<CostsPage />} />
         <Route path="logs" element={<LogsPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings/config-center" element={<ConfigCenterPage />} />
+        <Route path="settings/api-keys" element={<ApiKeysPage />} />
+        <Route path="settings/providers" element={<ProvidersPage />} />
+        <Route path="settings/ai-models" element={<AIModelsPage />} />
+        <Route path="settings/integrations" element={<IntegrationsPage />} />
+        <Route path="settings/media" element={<MediaSettingsPage />} />
+        <Route path="settings/system" element={<SystemPage />} />
         <Route path="profile" element={<ProfilePage />} />
         {/* Catch-all route - redirect unknown paths to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -29,6 +29,12 @@ import {
   Activity,
   Code,
   Receipt,
+  Key,
+  Globe,
+  Server,
+  Image,
+  Link,
+  Container,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 
@@ -97,11 +103,24 @@ const navGroups: NavGroup[] = [
       { to: '/logs', icon: Activity, label: 'Logs' },
     ],
   },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: Settings,
+    items: [
+      { to: '/settings/config-center', icon: Globe, label: 'Config Center' },
+      { to: '/settings/api-keys', icon: Key, label: 'API Keys' },
+      { to: '/settings/providers', icon: Server, label: 'Providers' },
+      { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
+      { to: '/settings/integrations', icon: Link, label: 'Integrations' },
+      { to: '/settings/media', icon: Image, label: 'Media' },
+      { to: '/settings/system', icon: Container, label: 'System' },
+    ],
+  },
 ];
 
 // Bottom navigation items
 const bottomItems: NavItem[] = [
-  { to: '/settings', icon: Settings, label: 'Settings' },
   { to: '/profile', icon: UserCircle, label: 'Profile' },
 ];
 
@@ -128,7 +147,7 @@ function NavItemLink({ item, compact = false }: { item: NavItem; compact?: boole
 function CollapsibleGroup({ group, isOpen, onToggle }: { group: NavGroup; isOpen: boolean; onToggle: () => void }) {
   const location = useLocation();
   const Icon = group.icon;
-  const isActive = group.items.some(item => location.pathname === item.to);
+  const isActive = group.items.some(item => location.pathname === item.to || location.pathname.startsWith(item.to + '/'));
 
   return (
     <div className="space-y-0.5">
@@ -167,7 +186,7 @@ export function Layout() {
   const getInitialOpenGroups = () => {
     const openGroups: Record<string, boolean> = {};
     navGroups.forEach(group => {
-      const isActive = group.items.some(item => location.pathname === item.to);
+      const isActive = group.items.some(item => location.pathname === item.to || location.pathname.startsWith(item.to + '/'));
       openGroups[group.id] = isActive || group.defaultOpen || false;
     });
     return openGroups;

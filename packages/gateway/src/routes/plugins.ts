@@ -13,7 +13,10 @@ import {
   type PluginPermission,
   type PluginStatus,
 } from '@ownpilot/core';
+import type { ConfigFieldDefinition } from '@ownpilot/core';
 import type { ApiResponse } from '../types/index.js';
+import { pluginsRepo } from '../db/repositories/plugins.js';
+import { configServicesRepo } from '../db/repositories/config-services.js';
 
 export const pluginsRoutes = new Hono();
 
@@ -51,6 +54,16 @@ interface PluginInfo {
   docs?: string;
   installedAt: string;
   updatedAt: string;
+  category: string;
+  pluginConfigSchema: ConfigFieldDefinition[];
+  settings: Record<string, unknown>;
+  hasSettings: boolean;
+  requiredServices: {
+    name: string;
+    displayName: string;
+    isConfigured: boolean;
+  }[];
+  hasUnconfiguredServices: boolean;
 }
 
 /**
@@ -74,6 +87,18 @@ function toPluginInfo(plugin: Plugin): PluginInfo {
     docs: plugin.manifest.docs,
     installedAt: plugin.config.installedAt,
     updatedAt: plugin.config.updatedAt,
+    category: plugin.manifest.category ?? 'other',
+    pluginConfigSchema: plugin.manifest.pluginConfigSchema ?? [],
+    settings: plugin.config.settings ?? {},
+    hasSettings: (plugin.manifest.pluginConfigSchema ?? []).length > 0,
+    requiredServices: (plugin.manifest.requiredServices ?? []).map(svc => ({
+      name: svc.name,
+      displayName: svc.displayName ?? svc.name,
+      isConfigured: configServicesRepo.getEntries(svc.name).length > 0,
+    })),
+    hasUnconfiguredServices: (plugin.manifest.requiredServices ?? []).some(
+      svc => configServicesRepo.getEntries(svc.name).length === 0
+    ),
   };
 }
 
@@ -236,6 +261,8 @@ pluginsRoutes.post('/:id/enable', async (c) => {
     });
   }
 
+  await pluginsRepo.updateStatus(id, 'enabled');
+
   const plugin = registry.get(id)!;
 
   const response: ApiResponse = {
@@ -267,6 +294,8 @@ pluginsRoutes.post('/:id/disable', async (c) => {
       message: `Plugin not found: ${id}`,
     });
   }
+
+  await pluginsRepo.updateStatus(id, 'disabled');
 
   const plugin = registry.get(id)!;
 
@@ -353,6 +382,8 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
   plugin.config.grantedPermissions = body.permissions;
   plugin.config.updatedAt = new Date().toISOString();
 
+  await pluginsRepo.updatePermissions(id, body.permissions);
+
   const response: ApiResponse = {
     success: true,
     data: {
@@ -366,6 +397,109 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
   };
 
   return c.json(response);
+});
+
+/**
+ * Get plugin settings schema and current values
+ */
+pluginsRoutes.get('/:id/settings', async (c) => {
+  const id = c.req.param('id');
+  const registry = await getRegistry();
+  const plugin = registry.get(id);
+
+  if (!plugin) {
+    return c.json({ success: false, error: { message: `Plugin not found: ${id}`, code: 'NOT_FOUND' } }, 404);
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      pluginId: id,
+      pluginConfigSchema: plugin.manifest.pluginConfigSchema ?? [],
+      settings: plugin.config.settings ?? {},
+      defaultConfig: plugin.manifest.defaultConfig ?? {},
+    },
+  });
+});
+
+/**
+ * Update plugin settings
+ */
+pluginsRoutes.put('/:id/settings', async (c) => {
+  const id = c.req.param('id');
+  const registry = await getRegistry();
+  const plugin = registry.get(id);
+
+  if (!plugin) {
+    return c.json({ success: false, error: { message: `Plugin not found: ${id}`, code: 'NOT_FOUND' } }, 404);
+  }
+
+  const body = await c.req.json<{ settings: Record<string, unknown> }>();
+  if (!body.settings || typeof body.settings !== 'object') {
+    return c.json({ success: false, error: { message: 'settings object required', code: 'INVALID_INPUT' } }, 400);
+  }
+
+  // Merge with existing settings
+  const mergedSettings = { ...plugin.config.settings, ...body.settings };
+
+  // Persist to DB
+  await pluginsRepo.updateSettings(id, mergedSettings);
+
+  // Update in-memory
+  plugin.config.settings = mergedSettings;
+  plugin.config.updatedAt = new Date().toISOString();
+
+  // Notify plugin via lifecycle hook
+  if (plugin.lifecycle.onConfigChange) {
+    try {
+      await plugin.lifecycle.onConfigChange(mergedSettings);
+    } catch (err) {
+      console.error(`[Plugins] onConfigChange hook failed for ${id}:`, err);
+    }
+  }
+
+  return c.json({
+    success: true,
+    data: { settings: mergedSettings },
+  });
+});
+
+/**
+ * Get plugin required services with Config Center status
+ */
+pluginsRoutes.get('/:id/required-services', async (c) => {
+  const id = c.req.param('id');
+  const registry = await getRegistry();
+  const plugin = registry.get(id);
+
+  if (!plugin) {
+    return c.json({ success: false, error: { message: `Plugin not found: ${id}`, code: 'NOT_FOUND' } }, 404);
+  }
+
+  const requiredServices = (plugin.manifest.requiredServices ?? []).map(svc => {
+    const serviceDef = configServicesRepo.getByName(svc.name);
+    const entries = serviceDef ? configServicesRepo.getEntries(svc.name) : [];
+    return {
+      name: svc.name,
+      displayName: svc.displayName ?? svc.name,
+      category: svc.category,
+      docsUrl: svc.docsUrl,
+      multiEntry: svc.multiEntry ?? false,
+      isRegistered: serviceDef !== null,
+      isConfigured: entries.length > 0,
+      entryCount: entries.length,
+    };
+  });
+
+  return c.json({
+    success: true,
+    data: {
+      pluginId: id,
+      pluginName: plugin.manifest.name,
+      services: requiredServices,
+      allConfigured: requiredServices.every(s => s.isConfigured),
+    },
+  });
 });
 
 /**

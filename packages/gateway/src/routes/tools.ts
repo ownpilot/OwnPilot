@@ -21,6 +21,7 @@ import {
 import type { ApiResponse, ToolInfo } from '../types/index.js';
 import { getAgent } from './agents.js';
 import { initializeToolOverrides } from '../services/tool-overrides.js';
+import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-center-impl.js';
 
 export const toolsRoutes = new Hono();
 
@@ -32,6 +33,7 @@ function getToolRegistry(): ToolRegistry {
   if (!toolRegistry) {
     toolRegistry = new ToolRegistry();
     registerCoreTools(toolRegistry);
+    toolRegistry.setApiKeyCenter(gatewayApiKeyCenter);
 
     // Initialize tool overrides (Gmail, Media, etc.)
     if (!toolOverridesInitialized) {
