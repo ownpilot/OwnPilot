@@ -116,11 +116,19 @@ export interface ApiResponse<T = unknown> {
 }
 
 export interface ChatResponse {
+  id?: string;
+  message?: string;
   response: string;
   conversationId: string;
   toolCalls?: ToolCall[];
   model?: string;
   trace?: TraceInfo;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+  finishReason?: string;
 }
 
 export interface StreamChunk {

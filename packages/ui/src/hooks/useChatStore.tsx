@@ -3,6 +3,7 @@
  *
  * Provides persistent chat state across page navigation.
  * Chat continues in background when navigating away.
+ * Supports SSE streaming with progress events.
  */
 
 import {
@@ -15,6 +16,24 @@ import {
 } from 'react';
 import type { Message, ChatResponse, ApiResponse } from '../types';
 
+// Progress event types from the stream
+export interface ProgressEvent {
+  type: 'status' | 'tool_start' | 'tool_end';
+  message?: string;
+  tool?: {
+    id: string;
+    name: string;
+    arguments?: Record<string, unknown>;
+  };
+  result?: {
+    success: boolean;
+    preview: string;
+    durationMs: number;
+  };
+  data?: Record<string, unknown>;
+  timestamp: string;
+}
+
 interface ChatState {
   messages: Message[];
   isLoading: boolean;
@@ -24,6 +43,8 @@ interface ChatState {
   model: string;
   agentId: string | null;
   workspaceId: string | null;
+  streamingContent: string;
+  progressEvents: ProgressEvent[];
 }
 
 interface ChatStore extends ChatState {
@@ -48,6 +69,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [model, setModel] = useState('');
   const [agentId, setAgentId] = useState<string | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
 
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -58,6 +81,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
       setIsLoading(false);
+      setStreamingContent('');
+      setProgressEvents([]);
     }
   }, []);
 
@@ -74,6 +99,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       setError(null);
       setIsLoading(true);
+      setStreamingContent('');
+      setProgressEvents([]);
 
       // Get current messages for history (need fresh reference)
       let currentMessages: Message[] = [];
@@ -107,9 +134,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             message: content,
             provider,
             model,
+            stream: true, // Enable streaming!
             ...(agentId && { agentId }),
             ...(workspaceId && { workspaceId }),
-            // Use current messages for history
             history: currentMessages
               .filter((m) => !m.isError)
               .slice(-10)
@@ -126,32 +153,126 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const data: ApiResponse<ChatResponse> = await response.json();
-
-        // Check again after parsing
-        if (controller.signal.aborted) {
-          return;
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || `HTTP error ${response.status}`);
         }
 
-        if (!data.success || !data.data) {
-          throw new Error(data.error?.message ?? 'Failed to get response');
+        // Check if streaming response
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('text/event-stream')) {
+          // Handle SSE stream
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error('No response body');
+
+          const decoder = new TextDecoder();
+          let accumulatedContent = '';
+          let buffer = '';
+          let finalResponse: ChatResponse | null = null;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (controller.signal.aborted) {
+              reader.cancel();
+              return;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                // Event type - we'll get data next
+                continue;
+              }
+
+              if (line.startsWith('data:')) {
+                const dataStr = line.slice(5).trim();
+                if (!dataStr) continue;
+
+                try {
+                  const data = JSON.parse(dataStr);
+
+                  // Handle different event types
+                  if (data.type === 'status' || data.type === 'tool_start' || data.type === 'tool_end') {
+                    // Progress event
+                    const progressEvent: ProgressEvent = data;
+                    setProgressEvents(prev => [...prev, progressEvent]);
+                  } else if (data.delta !== undefined) {
+                    // Content chunk
+                    if (data.delta) {
+                      accumulatedContent += data.delta;
+                      setStreamingContent(accumulatedContent);
+                    }
+                    if (data.done) {
+                      finalResponse = {
+                        id: data.id,
+                        conversationId: data.conversationId,
+                        message: accumulatedContent,
+                        response: accumulatedContent,
+                        model: model,
+                        toolCalls: data.toolCalls,
+                        usage: data.usage,
+                        finishReason: data.finishReason,
+                      };
+                    }
+                  } else if (data.error) {
+                    throw new Error(data.error);
+                  }
+                } catch (parseErr) {
+                  // Ignore parse errors for incomplete JSON
+                  if (!(parseErr instanceof SyntaxError)) {
+                    console.warn('Failed to parse SSE data:', parseErr);
+                  }
+                }
+              }
+            }
+          }
+
+          // Stream complete - add final message
+          setLastFailedMessage(null);
+          setStreamingContent('');
+          setProgressEvents([]);
+
+          const assistantMessage: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: accumulatedContent || finalResponse?.response || '',
+            timestamp: new Date().toISOString(),
+            toolCalls: finalResponse?.toolCalls,
+            provider,
+            model: finalResponse?.model ?? model,
+          };
+          setMessages((prev) => [...prev, assistantMessage]);
+
+        } else {
+          // Non-streaming fallback
+          const data: ApiResponse<ChatResponse> = await response.json();
+
+          if (controller.signal.aborted) {
+            return;
+          }
+
+          if (!data.success || !data.data) {
+            throw new Error(data.error?.message ?? 'Failed to get response');
+          }
+
+          setLastFailedMessage(null);
+
+          const assistantMessage: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: data.data.response,
+            timestamp: new Date().toISOString(),
+            toolCalls: data.data.toolCalls,
+            provider,
+            model: data.data.model ?? model,
+            trace: data.data.trace,
+          };
+          setMessages((prev) => [...prev, assistantMessage]);
         }
-
-        // Success! Clear the failed message
-        setLastFailedMessage(null);
-
-        // Add assistant message with trace info
-        const assistantMessage: Message = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: data.data.response,
-          timestamp: new Date().toISOString(),
-          toolCalls: data.data.toolCalls,
-          provider,
-          model: data.data.model ?? model,
-          trace: data.data.trace,
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
       } catch (err) {
         // Ignore abort errors
         if (err instanceof Error && err.name === 'AbortError') {
@@ -163,6 +284,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
         // Store the failed message for retry
         setLastFailedMessage(content);
+        setStreamingContent('');
+        setProgressEvents([]);
 
         // Add error message
         const errorMessage: Message = {
@@ -177,6 +300,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         // Only clear loading state if this controller is still the current one
         if (abortControllerRef.current === controller) {
           setIsLoading(false);
+          setStreamingContent('');
+          setProgressEvents([]);
           abortControllerRef.current = null;
         }
       }
@@ -194,6 +319,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setMessages([]);
     setError(null);
     setLastFailedMessage(null);
+    setStreamingContent('');
+    setProgressEvents([]);
   }, [cancelRequest]);
 
   const value: ChatStore = {
@@ -205,6 +332,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     model,
     agentId,
     workspaceId,
+    streamingContent,
+    progressEvents,
     setProvider,
     setModel,
     setAgentId,

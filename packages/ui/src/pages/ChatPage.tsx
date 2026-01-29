@@ -66,6 +66,8 @@ export function ChatPage() {
     provider,
     model,
     workspaceId,
+    streamingContent,
+    progressEvents,
     setProvider,
     setModel,
     setAgentId,
@@ -241,10 +243,10 @@ export function ChatPage() {
     }
   };
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages or streaming content arrives
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingContent, progressEvents]);
 
   // Group models by provider (only configured providers)
   const modelsByProvider = models.reduce<Record<string, ModelInfo[]>>((acc, m) => {
@@ -545,6 +547,63 @@ export function ChatPage() {
               onRetry={retryLastMessage}
               canRetry={!!lastFailedMessage && !isLoading}
             />
+
+            {/* Streaming content and progress */}
+            {isLoading && (streamingContent || progressEvents.length > 0) && (
+              <div className="mt-4 p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
+                {/* Progress events */}
+                {progressEvents.length > 0 && (
+                  <div className="mb-3 space-y-1">
+                    {progressEvents.slice(-5).map((event, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted">
+                        {event.type === 'status' && (
+                          <>
+                            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                            <span>{event.message}</span>
+                          </>
+                        )}
+                        {event.type === 'tool_start' && (
+                          <>
+                            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                            <span>🔧 Running <strong>{event.tool?.name}</strong>...</span>
+                          </>
+                        )}
+                        {event.type === 'tool_end' && (
+                          <>
+                            <span className={`w-2 h-2 ${event.result?.success ? 'bg-green-500' : 'bg-red-500'} rounded-full`} />
+                            <span>
+                              {event.result?.success ? '✓' : '✗'} {event.tool?.name}
+                              <span className="opacity-60 ml-1">({event.result?.durationMs}ms)</span>
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Streaming text */}
+                {streamingContent && (
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <div className="whitespace-pre-wrap">{streamingContent}</div>
+                    <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
+                  </div>
+                )}
+
+                {/* Loading indicator when no content yet */}
+                {!streamingContent && progressEvents.length === 0 && (
+                  <div className="flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    <span>Thinking...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </>
         )}

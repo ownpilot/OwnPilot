@@ -3,6 +3,7 @@
   "name": "Google",
   "type": "google",
   "apiKeyEnv": "GOOGLE_GENERATIVE_AI_API_KEY",
+  "timeout": 60000,
   "features": {
     "streaming": true,
     "toolUse": true,
@@ -27,7 +28,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-17"
     },
     {
@@ -363,7 +364,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": false,
+      "default": true,
       "releaseDate": "2025-03-20"
     },
     {
