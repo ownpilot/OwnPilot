@@ -110,6 +110,12 @@ export class Agent {
       onChunk?: (chunk: StreamChunk) => void;
       /** Callback to approve/reject tool calls before execution */
       onBeforeToolCall?: (toolCall: ToolCall) => Promise<{ approved: boolean; reason?: string }>;
+      /** Callback when a tool execution starts */
+      onToolStart?: (toolCall: ToolCall) => void;
+      /** Callback when a tool execution completes */
+      onToolEnd?: (toolCall: ToolCall, result: { content: string; isError: boolean; durationMs: number }) => void;
+      /** Callback for progress updates */
+      onProgress?: (message: string, data?: Record<string, unknown>) => void;
     }
   ): Promise<Result<CompletionResponse, InternalError | ValidationError | TimeoutError>> {
     if (this.state.isProcessing) {
@@ -131,6 +137,9 @@ export class Agent {
         stream: options?.stream,
         onChunk: options?.onChunk,
         onBeforeToolCall: options?.onBeforeToolCall,
+        onToolStart: options?.onToolStart,
+        onToolEnd: options?.onToolEnd,
+        onProgress: options?.onProgress,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -148,6 +157,9 @@ export class Agent {
     stream?: boolean;
     onChunk?: (chunk: StreamChunk) => void;
     onBeforeToolCall?: (toolCall: ToolCall) => Promise<{ approved: boolean; reason?: string }>;
+    onToolStart?: (toolCall: ToolCall) => void;
+    onToolEnd?: (toolCall: ToolCall, result: { content: string; isError: boolean; durationMs: number }) => void;
+    onProgress?: (message: string, data?: Record<string, unknown>) => void;
   }): Promise<Result<CompletionResponse, InternalError | ValidationError | TimeoutError>> {
     let turnCount = 0;
     const maxTurns = this.config.maxTurns ?? 10;
@@ -168,6 +180,13 @@ export class Agent {
         toolChoice: 'auto' as const,
         stream: options?.stream ?? false,
       };
+
+      // Notify that we're about to call the model
+      options?.onProgress?.(`Calling ${this.config.model.model || 'AI model'}...`, {
+        model: this.config.model.model,
+        turn: turnCount,
+        messageCount: messages.length,
+      });
 
       // Get completion
       let response: CompletionResponse;
@@ -225,13 +244,44 @@ export class Agent {
           approvedToolCalls.push(toolCall);
         }
 
-        // Execute approved tool calls
-        const executionResults = approvedToolCalls.length > 0
-          ? await this.tools.executeToolCalls(
-              approvedToolCalls,
+        // Notify progress if we're about to execute tools
+        if (approvedToolCalls.length > 0) {
+          options?.onProgress?.(`Executing ${approvedToolCalls.length} tool(s)`, {
+            tools: approvedToolCalls.map((tc) => tc.name),
+          });
+        }
+
+        // Execute approved tool calls with callbacks
+        const executionResults: { toolCallId: string; content: string; isError: boolean }[] = [];
+        if (approvedToolCalls.length > 0) {
+          // Execute in parallel but with callbacks
+          const execPromises = approvedToolCalls.map(async (toolCall) => {
+            const startTime = Date.now();
+            options?.onToolStart?.(toolCall);
+
+            const result = await this.tools.executeToolCall(
+              toolCall,
               this.state.conversation.id
-            )
-          : [];
+            );
+
+            const durationMs = Date.now() - startTime;
+            options?.onToolEnd?.(toolCall, {
+              content: result.content,
+              isError: result.isError ?? false,
+              durationMs,
+            });
+
+            // Normalize isError to boolean for the local array
+            return {
+              toolCallId: result.toolCallId,
+              content: result.content,
+              isError: result.isError ?? false,
+            };
+          });
+
+          const resolvedResults = await Promise.all(execPromises);
+          executionResults.push(...resolvedResults);
+        }
 
         // Combine results
         const results = [...rejectedResults, ...executionResults];

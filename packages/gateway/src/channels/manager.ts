@@ -8,6 +8,7 @@ import type { ChannelType, ChannelStatus, Channel, IncomingMessage, OutgoingMess
 import type { ChannelAdapter, AnyChannelConfig, ChannelAdapterFactory } from './types.js';
 import { gatewayEvents } from '../ws/events.js';
 import { sessionManager } from '../ws/session.js';
+import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 
 /**
  * Channel Manager
@@ -216,12 +217,31 @@ export class ChannelManager {
       }
 
       // Send response back to channel
-      await adapter.sendMessage({
+      const sentMessageId = await adapter.sendMessage({
         channelId: message.channelId,
         content: response,
         replyToId: message.id,
         metadata: message.metadata,
       });
+
+      // Save outgoing message to database
+      try {
+        const messagesRepo = new ChannelMessagesRepository();
+        await messagesRepo.create({
+          id: `${adapter.id}:${sentMessageId}`,
+          channelId: adapter.id,
+          externalId: sentMessageId,
+          direction: 'outbound',
+          senderId: 'assistant',
+          senderName: 'Assistant',
+          content: response,
+          contentType: 'text',
+          replyToId: message.id,
+          metadata: message.metadata,
+        });
+      } catch (error) {
+        console.warn(`[${adapter.type}:${adapter.id}] Failed to save outgoing message:`, error);
+      }
 
       console.log(`[${adapter.type}:${adapter.id}] Responded to ${message.senderName}`);
     } catch (error) {
@@ -264,6 +284,28 @@ export class ChannelManager {
     // Forward incoming messages and process with AI
     adapter.on('message', async (message: IncomingMessage) => {
       console.log(`[${adapter.type}:${adapter.id}] Message from ${message.senderName}: ${message.content.substring(0, 100)}...`);
+
+      // Save incoming message to database
+      try {
+        const messagesRepo = new ChannelMessagesRepository();
+        await messagesRepo.create({
+          id: message.id,
+          channelId: adapter.id,
+          externalId: message.metadata?.messageId?.toString(),
+          direction: 'inbound',
+          senderId: message.senderId,
+          senderName: message.senderName,
+          content: message.content,
+          contentType: 'text',
+          attachments: message.attachments
+            ?.filter((a) => a.url)
+            .map((a) => ({ type: a.type, url: a.url!, name: a.filename })),
+          replyToId: message.replyToId,
+          metadata: message.metadata,
+        });
+      } catch (error) {
+        console.warn(`[${adapter.type}:${adapter.id}] Failed to save incoming message:`, error);
+      }
 
       await gatewayEvents.emit('channel:message', { message });
 

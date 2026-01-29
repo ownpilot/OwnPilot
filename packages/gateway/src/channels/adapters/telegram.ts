@@ -134,6 +134,7 @@ export class TelegramAdapter extends BaseChannelAdapter {
   private readonly apiBase: string;
   private readonly allowedUsers: Set<number>;
   private readonly allowedChats: Set<number>;
+  private readonly parseMode: 'Markdown' | 'MarkdownV2' | 'HTML' | undefined;
   private pollingTimer: NodeJS.Timeout | null = null;
   private lastUpdateId = 0;
   private isPolling = false;
@@ -144,6 +145,7 @@ export class TelegramAdapter extends BaseChannelAdapter {
     this.apiBase = `https://api.telegram.org/bot${this.botToken}`;
     this.allowedUsers = new Set(config.allowedUsers ?? []);
     this.allowedChats = new Set(config.allowedChats ?? []);
+    this.parseMode = config.parseMode ?? 'Markdown'; // Default to Markdown
   }
 
   /**
@@ -183,15 +185,49 @@ export class TelegramAdapter extends BaseChannelAdapter {
     const params: Record<string, unknown> = {
       chat_id: chatId,
       text: message.content,
-      parse_mode: 'Markdown',
+      ...(this.parseMode && { parse_mode: this.parseMode }),
     };
 
+    // Parse replyToId - can be "chatId:messageId" format or just "messageId"
+    // Also check metadata for messageId as fallback
     if (message.replyToId) {
-      params.reply_to_message_id = parseInt(message.replyToId, 10);
+      const messageId = this.parseMessageId(message.replyToId);
+      if (messageId > 0) {
+        params.reply_to_message_id = messageId;
+      }
+    } else if (message.metadata?.messageId) {
+      // Use messageId from metadata as fallback
+      const messageId = typeof message.metadata.messageId === 'number'
+        ? message.metadata.messageId
+        : parseInt(String(message.metadata.messageId), 10);
+      if (messageId > 0) {
+        params.reply_to_message_id = messageId;
+      }
     }
 
-    const result = await this.callApi<TelegramMessage>('sendMessage', params);
-    return result.message_id.toString();
+    try {
+      const result = await this.callApi<TelegramMessage>('sendMessage', params);
+      console.log(`[telegram:${this.id}] Sent message ${result.message_id} to chat ${chatId}`);
+      return result.message_id.toString();
+    } catch (error) {
+      console.error(`[telegram:${this.id}] Failed to send message to chat ${chatId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Parse message ID from various formats
+   * Handles: "chatId:messageId", "messageId", or metadata
+   */
+  private parseMessageId(idString: string): number {
+    // If it contains ":", take the last part (messageId)
+    if (idString.includes(':')) {
+      const parts = idString.split(':');
+      const messageIdStr = parts[parts.length - 1];
+      return parseInt(messageIdStr ?? '0', 10);
+    }
+    // Otherwise parse directly
+    return parseInt(idString, 10);
   }
 
   /**

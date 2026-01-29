@@ -258,6 +258,49 @@ chatRoutes.post('/', async (c) => {
             event: chunk.done ? 'done' : 'chunk',
           });
         },
+        onToolStart: async (toolCall) => {
+          await stream.writeSSE({
+            data: JSON.stringify({
+              type: 'tool_start',
+              tool: {
+                id: toolCall.id,
+                name: toolCall.name,
+                arguments: toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined,
+              },
+              timestamp: new Date().toISOString(),
+            }),
+            event: 'progress',
+          });
+        },
+        onToolEnd: async (toolCall, result) => {
+          await stream.writeSSE({
+            data: JSON.stringify({
+              type: 'tool_end',
+              tool: {
+                id: toolCall.id,
+                name: toolCall.name,
+              },
+              result: {
+                success: !result.isError,
+                preview: result.content.substring(0, 500),
+                durationMs: result.durationMs,
+              },
+              timestamp: new Date().toISOString(),
+            }),
+            event: 'progress',
+          });
+        },
+        onProgress: async (message, data) => {
+          await stream.writeSSE({
+            data: JSON.stringify({
+              type: 'status',
+              message,
+              data,
+              timestamp: new Date().toISOString(),
+            }),
+            event: 'progress',
+          });
+        },
       });
 
       const streamLatency = Math.round(performance.now() - streamStartTime);

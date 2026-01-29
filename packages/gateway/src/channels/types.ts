@@ -45,6 +45,8 @@ export interface TelegramConfig extends ChannelConfig {
   webhookUrl?: string;
   /** Polling interval in ms */
   pollingInterval?: number;
+  /** Parse mode for messages: 'Markdown', 'MarkdownV2', 'HTML', or undefined for plain text */
+  parseMode?: 'Markdown' | 'MarkdownV2' | 'HTML';
 }
 
 /**
