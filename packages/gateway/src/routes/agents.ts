@@ -658,52 +658,55 @@ agentRoutes.get('/', async (c) => {
 
 /**
  * Create a new agent
+ *
+ * Provider and model default to 'default' which resolves to user's configured defaults at runtime.
+ * Tools can be specified explicitly via 'tools' array or via 'toolGroups' array.
  */
 agentRoutes.post('/', async (c) => {
   const body = await c.req.json<CreateAgentRequest>();
 
-  // Validate request
-  if (!body.name || !body.systemPrompt || !body.provider) {
+  // Validate request - only name and systemPrompt are required
+  // Provider/model default to 'default' which resolves at runtime
+  if (!body.name || !body.systemPrompt) {
     throw new HTTPException(400, {
-      message: 'Missing required fields: name, systemPrompt, provider',
+      message: 'Missing required fields: name, systemPrompt',
     });
   }
+
+  // Default to 'default' for provider and model
+  // These will be resolved to actual values at runtime when the agent is used
+  const provider = body.provider ?? 'default';
+  const model = body.model ?? 'default';
 
   // Note: API key validation is skipped during agent creation
   // The key is only required when actually using the agent
 
   // Generate agent ID
   const id = generateAgentId();
-  const requestedModel = body.model ?? await getDefaultModel(body.provider);
 
-  // Validate model
-  if (!requestedModel) {
-    throw new HTTPException(400, {
-      message: `No default model configured for provider: ${body.provider}. Specify a model or configure a default in Settings.`,
-    });
-  }
-  const model = requestedModel;
-
-  // Store in database
+  // Store in database with both tools and toolGroups
   const record = await agentsRepo.create({
     id,
     name: body.name,
     systemPrompt: body.systemPrompt,
-    provider: body.provider,
+    provider,
     model,
     config: {
       maxTokens: body.maxTokens ?? 4096,
       temperature: body.temperature ?? 0.7,
-      maxTurns: body.maxTurns ?? 200,
+      maxTurns: body.maxTurns ?? 25,
       maxToolCalls: body.maxToolCalls ?? 200,
-      tools: body.tools ?? [],
+      tools: body.tools,
+      toolGroups: body.toolGroups,
     },
   });
 
   // Return the stored record without creating runtime agent
   // Runtime agent will be created on-demand when the agent is used
   const config = record.config as Record<string, unknown>;
-  const tools = (config.tools as string[]) ?? [];
+  const configuredTools = (config.tools as string[] | undefined);
+  const configuredToolGroups = (config.toolGroups as string[] | undefined);
+  const tools = resolveToolGroups(configuredToolGroups, configuredTools);
 
   const response: ApiResponse<AgentInfo> = {
     success: true,
@@ -773,6 +776,8 @@ agentRoutes.get('/:id', async (c) => {
         temperature: (record.config.temperature as number) ?? 0.7,
         maxTurns: (record.config.maxTurns as number) ?? 25,
         maxToolCalls: (record.config.maxToolCalls as number) ?? 200,
+        tools: configuredTools,
+        toolGroups: configuredToolGroups,
       },
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
@@ -788,6 +793,9 @@ agentRoutes.get('/:id', async (c) => {
 
 /**
  * Update agent
+ *
+ * Provider/model can be set to 'default' to use user's configured defaults.
+ * Tools can be updated via 'tools' array or 'toolGroups' array.
  */
 agentRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
@@ -800,8 +808,8 @@ agentRoutes.patch('/:id', async (c) => {
     });
   }
 
-  // If provider is being changed, validate API key
-  if (body.provider && body.provider !== existing.provider) {
+  // If provider is being changed to a specific provider (not 'default'), validate API key
+  if (body.provider && body.provider !== 'default' && body.provider !== existing.provider) {
     const apiKey = await getProviderApiKey(body.provider);
     if (!apiKey) {
       throw new HTTPException(400, {
@@ -819,6 +827,7 @@ agentRoutes.patch('/:id', async (c) => {
   if (body.maxTurns !== undefined) newConfig.maxTurns = body.maxTurns;
   if (body.maxToolCalls !== undefined) newConfig.maxToolCalls = body.maxToolCalls;
   if (body.tools !== undefined) newConfig.tools = body.tools;
+  if (body.toolGroups !== undefined) newConfig.toolGroups = body.toolGroups;
 
   // Update database
   const updated = await agentsRepo.update(id, {
@@ -839,8 +848,10 @@ agentRoutes.patch('/:id', async (c) => {
   agentCache.delete(id);
   agentConfigCache.delete(id);
 
-  // Get tools from updated config
-  const tools = (newConfig.tools as string[]) ?? ['get_current_time', 'calculate'];
+  // Resolve tools from both explicit tools and toolGroups
+  const configuredTools = (newConfig.tools as string[] | undefined);
+  const configuredToolGroups = (newConfig.toolGroups as string[] | undefined);
+  const tools = resolveToolGroups(configuredToolGroups, configuredTools);
 
   const response: ApiResponse<AgentDetail> = {
     success: true,
@@ -856,6 +867,8 @@ agentRoutes.patch('/:id', async (c) => {
         temperature: (newConfig.temperature as number) ?? 0.7,
         maxTurns: (newConfig.maxTurns as number) ?? 25,
         maxToolCalls: (newConfig.maxToolCalls as number) ?? 200,
+        tools: configuredTools,
+        toolGroups: configuredToolGroups,
       },
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),

@@ -144,13 +144,21 @@ export interface StreamChunkResponse {
 
 /**
  * Agent creation request
+ *
+ * Provider and model default to 'default' which resolves to user's configured defaults.
+ * Tools can be specified explicitly or via toolGroups.
  */
 export interface CreateAgentRequest {
   name: string;
   systemPrompt: string;
-  provider: string;
+  /** Provider ID or 'default' to use user's configured default. Defaults to 'default'. */
+  provider?: string;
+  /** Model ID or 'default' to use user's configured default. Defaults to 'default'. */
   model?: string;
+  /** Explicit tool names to include */
   tools?: string[];
+  /** Tool group IDs to include (e.g., 'core', 'memory', 'filesystem') */
+  toolGroups?: string[];
   maxTurns?: number;
   maxToolCalls?: number;
   maxTokens?: number;
@@ -163,9 +171,14 @@ export interface CreateAgentRequest {
 export interface UpdateAgentRequest {
   name?: string;
   systemPrompt?: string;
+  /** Provider ID or 'default' to use user's configured default */
   provider?: string;
+  /** Model ID or 'default' to use user's configured default */
   model?: string;
+  /** Explicit tool names to include */
   tools?: string[];
+  /** Tool group IDs to include (e.g., 'core', 'memory', 'filesystem') */
+  toolGroups?: string[];
   maxTurns?: number;
   maxToolCalls?: number;
   maxTokens?: number;
@@ -178,8 +191,11 @@ export interface UpdateAgentRequest {
 export interface AgentInfo {
   id: string;
   name: string;
+  /** Provider ID or 'default' */
   provider: string;
+  /** Model ID or 'default' */
   model: string;
+  /** Resolved tool names (from both explicit tools and toolGroups) */
   tools: string[];
   createdAt: string;
   updatedAt?: string;
@@ -195,6 +211,10 @@ export interface AgentDetail extends AgentInfo {
     temperature: number;
     maxTurns: number;
     maxToolCalls: number;
+    /** Explicit tool names (optional) */
+    tools?: string[];
+    /** Tool group IDs (optional) */
+    toolGroups?: string[];
   };
 }
 

@@ -88,6 +88,7 @@ export class GoogleProvider {
   private readonly providerId = 'google';
   private readonly config: ResolvedProviderConfig;
   private abortController: AbortController | null = null;
+  private abortTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: ResolvedProviderConfig) {
     this.config = config;
@@ -248,6 +249,9 @@ export class GoogleProvider {
 
       const durationMs = Date.now() - startTime;
 
+      // Clear the timeout since the request completed (success or error response)
+      this.clearAbortTimeout();
+
       if (!response.ok) {
         const errorText = await response.text();
         logResponse(buildResponseDebugInfo('google', model, durationMs, {
@@ -326,12 +330,17 @@ export class GoogleProvider {
       const elapsed = Date.now() - startTime;
 
       if (error instanceof Error && error.name === 'AbortError') {
-        const timeout = this.config.timeout ?? 60000;
+        // Clear the timeout since we're handling the abort
+        this.clearAbortTimeout();
+        const timeout = this.config.timeout ?? 30000;
         logResponse(buildResponseDebugInfo('google', model, elapsed, {
-          error: `TIMEOUT: Request aborted after ${timeout}ms (attempt ${attempt})`,
+          error: `TIMEOUT: Request aborted after ${elapsed}ms (timeout: ${timeout}ms, attempt ${attempt})`,
         }));
         return err(new TimeoutError('Google request', timeout));
       }
+
+      // Clear the timeout for other errors too
+      this.clearAbortTimeout();
 
       const errorMessage = error instanceof Error ? error.message : String(error);
       logResponse(buildResponseDebugInfo('google', model, elapsed, {
@@ -368,6 +377,9 @@ export class GoogleProvider {
         body: JSON.stringify(body),
         signal: this.createAbortSignal(),
       });
+
+      // Clear the timeout once we have a response
+      this.clearAbortTimeout();
 
       if (!response.ok || !response.body) {
         yield err(new InternalError(`Google stream error: ${response.status}`));
@@ -442,6 +454,7 @@ export class GoogleProvider {
         }
       }
     } catch (error) {
+      this.clearAbortTimeout();
       yield err(
         new InternalError(`Google stream failed: ${error instanceof Error ? error.message : String(error)}`)
       );
@@ -486,15 +499,29 @@ export class GoogleProvider {
   }
 
   private createAbortSignal(): AbortSignal {
+    // Clear any pending timeout from previous request to prevent it from
+    // aborting this new request (fixes race condition bug)
+    this.clearAbortTimeout();
+
     this.abortController = new AbortController();
     // 30 second timeout per attempt - with 3 retries this gives ~90s total
     const timeout = this.config.timeout ?? 30000;
 
-    setTimeout(() => {
+    this.abortTimeoutId = setTimeout(() => {
       this.abortController?.abort();
     }, timeout);
 
     return this.abortController.signal;
+  }
+
+  /**
+   * Clear the abort timeout to prevent race conditions between requests
+   */
+  private clearAbortTimeout(): void {
+    if (this.abortTimeoutId !== null) {
+      clearTimeout(this.abortTimeoutId);
+      this.abortTimeoutId = null;
+    }
   }
 
   private buildGeminiRequest(request: CompletionRequest) {
