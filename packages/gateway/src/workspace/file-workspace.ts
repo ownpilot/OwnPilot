@@ -306,6 +306,17 @@ export interface WorkspaceFileInfo {
 const SESSION_SUBDIRS: WorkspaceSubdir[] = ['scripts', 'output', 'temp', 'downloads'];
 
 /**
+ * Validate workspace ID to prevent path traversal via the ID parameter itself.
+ * IDs should be UUIDs or short alphanumeric strings — never contain path separators or dots.
+ */
+function validateWorkspaceId(id: string): string {
+  if (!id || /[/\\]|\.\./.test(id)) {
+    throw new Error('Invalid workspace ID');
+  }
+  return id;
+}
+
+/**
  * Create a new session workspace
  */
 export function createSessionWorkspace(options: {
@@ -358,6 +369,7 @@ export function createSessionWorkspace(options: {
  * Get session workspace by ID
  */
 export function getSessionWorkspace(id: string): SessionWorkspaceInfo | null {
+  validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
   const workspacePath = join(workspaceRoot, id);
 
@@ -453,9 +465,15 @@ export function listSessionWorkspaces(): SessionWorkspaceInfo[] {
  * Get file tree for a session workspace
  */
 export function getSessionWorkspaceFiles(id: string, subPath: string = ''): WorkspaceFileInfo[] {
+  validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
-  const workspacePath = join(workspaceRoot, id);
-  const targetPath = subPath ? join(workspacePath, subPath) : workspacePath;
+  const workspacePath = resolve(workspaceRoot, id);
+  const targetPath = subPath ? resolve(workspacePath, subPath) : workspacePath;
+
+  // Security: ensure subPath doesn't escape workspace
+  if (!targetPath.startsWith(workspacePath + sep) && targetPath !== workspacePath) {
+    throw new Error('Path traversal attempt detected');
+  }
 
   if (!existsSync(targetPath)) {
     return [];
@@ -507,11 +525,13 @@ function buildFileTree(dirPath: string, rootPath: string): WorkspaceFileInfo[] {
  * Read a file from session workspace
  */
 export function readSessionWorkspaceFile(id: string, filePath: string): Buffer | null {
+  validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
-  const fullPath = join(workspaceRoot, id, filePath);
+  const fullPath = resolve(workspaceRoot, id, filePath);
+  const allowedPrefix = resolve(workspaceRoot, id) + sep;
 
-  // Security: ensure path is within workspace
-  if (!fullPath.startsWith(join(workspaceRoot, id))) {
+  // Security: ensure path is within workspace (trailing sep prevents prefix collision)
+  if (!fullPath.startsWith(allowedPrefix)) {
     throw new Error('Path traversal attempt detected');
   }
 
@@ -526,11 +546,13 @@ export function readSessionWorkspaceFile(id: string, filePath: string): Buffer |
  * Write a file to session workspace
  */
 export function writeSessionWorkspaceFile(id: string, filePath: string, content: Buffer | string): void {
+  validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
-  const fullPath = join(workspaceRoot, id, filePath);
+  const fullPath = resolve(workspaceRoot, id, filePath);
+  const allowedPrefix = resolve(workspaceRoot, id) + sep;
 
-  // Security: ensure path is within workspace
-  if (!fullPath.startsWith(join(workspaceRoot, id))) {
+  // Security: ensure path is within workspace (trailing sep prevents prefix collision)
+  if (!fullPath.startsWith(allowedPrefix)) {
     throw new Error('Path traversal attempt detected');
   }
 
@@ -548,11 +570,13 @@ export function writeSessionWorkspaceFile(id: string, filePath: string, content:
  * Delete a file from session workspace
  */
 export function deleteSessionWorkspaceFile(id: string, filePath: string): boolean {
+  validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
-  const fullPath = join(workspaceRoot, id, filePath);
+  const fullPath = resolve(workspaceRoot, id, filePath);
+  const allowedPrefix = resolve(workspaceRoot, id) + sep;
 
-  // Security: ensure path is within workspace
-  if (!fullPath.startsWith(join(workspaceRoot, id))) {
+  // Security: ensure path is within workspace (trailing sep prevents prefix collision)
+  if (!fullPath.startsWith(allowedPrefix)) {
     throw new Error('Path traversal attempt detected');
   }
 
@@ -569,6 +593,7 @@ export function deleteSessionWorkspaceFile(id: string, filePath: string): boolea
  * Delete a session workspace
  */
 export function deleteSessionWorkspace(id: string): boolean {
+  validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
   const workspacePath = join(workspaceRoot, id);
 
@@ -593,6 +618,7 @@ export function deleteSessionWorkspace(id: string): boolean {
  * Returns the zip file path
  */
 export async function zipSessionWorkspace(id: string): Promise<string> {
+  validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
   const workspacePath = join(workspaceRoot, id);
 
@@ -654,6 +680,7 @@ export function cleanupSessionWorkspaces(maxAgeDays: number = 7): { deleted: str
  * Get path for session workspace
  */
 export function getSessionWorkspacePath(sessionId: string, subdir?: WorkspaceSubdir): string {
+  validateWorkspaceId(sessionId);
   const workspaceRoot = getDataPaths().workspace;
   const basePath = join(workspaceRoot, sessionId);
 

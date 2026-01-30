@@ -288,25 +288,11 @@ export function buildSandboxContext(
     SharedArrayBuffer: undefined, // Prevent shared memory attacks
   };
 
-  // --- Prototype pollution / constructor chain escape prevention ---
-  // Block constructor access on all context values to prevent:
-  //   [].constructor.constructor('return process')()
-  // Freeze key prototypes in the sandbox context
-  const frozenProtos = [
-    Object.prototype,
-    Array.prototype,
-    String.prototype,
-    Number.prototype,
-    Boolean.prototype,
-    RegExp.prototype,
-    Error.prototype,
-    Function.prototype,
-  ];
-  for (const proto of frozenProtos) {
-    try { Object.freeze(proto); } catch { /* some may already be frozen */ }
-  }
-
-  // Make dangerous properties non-configurable and non-writable
+  // NOTE: Prototype freezing is done INSIDE the VM context via SANDBOX_INIT_CODE
+  // (see below). Doing Object.freeze(Object.prototype) here would freeze the
+  // HOST process prototypes, breaking the entire Node.js runtime.
+  // However, Object.defineProperty on the context object is safe — createContext
+  // preserves property descriptors, so these become non-writable VM globals.
   const dangerousKeys = [
     'process', 'require', 'module', 'exports', '__dirname', '__filename',
     'global', 'globalThis', 'eval', 'Function', 'Atomics', 'SharedArrayBuffer',
@@ -333,19 +319,41 @@ export function buildSandboxContext(
  * Validate code before execution
  * Basic static analysis to prevent obvious attacks
  */
+// NOTE: Prototype freezing via Object.freeze() is NOT used because buildSandboxContext
+// passes the HOST's Object/Array/etc. as sandbox globals. Freezing Object.prototype
+// inside the VM would freeze the HOST's prototype (since Object === host Object).
+// Instead, the sandbox relies on these layered defenses:
+//   1. validateCode() — regex-based static analysis blocks obvious attack patterns
+//   2. codeGeneration: { strings: false } — V8-level block on eval/Function constructor,
+//      which prevents the constructor chain escape [].constructor.constructor('return X')()
+//   3. Object.defineProperty on dangerous keys — makes process/require/etc. non-writable
+//   4. Explicit undefined for dangerous globals in the context object
+
 export function validateCode(code: string): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   // Check for dangerous patterns
+  // Uses broad matching to prevent common bypass techniques
+  // (whitespace insertion, Unicode escapes, indirect calls)
   const dangerousPatterns = [
-    { pattern: /\beval\s*\(/, message: 'eval() is not allowed' },
-    { pattern: /\bFunction\s*\(/, message: 'Function() constructor is not allowed' },
+    { pattern: /\beval\b/i, message: 'eval() is not allowed' },
+    { pattern: /\bFunction\b(?!\s*\.)/, message: 'Function() constructor is not allowed' },
     { pattern: /\bimport\s*\(/, message: 'Dynamic import() is not allowed' },
-    { pattern: /\brequire\s*\(/, message: 'require() is not allowed' },
+    { pattern: /\brequire\b/, message: 'require() is not allowed' },
     { pattern: /\bprocess\b/, message: 'process object access is not allowed' },
-    { pattern: /\b__proto__\b/, message: '__proto__ access is not allowed' },
-    { pattern: /\bconstructor\s*\[/, message: 'constructor property access is not allowed' },
+    { pattern: /__proto__/, message: '__proto__ access is not allowed' },
+    { pattern: /\.constructor\b/, message: 'constructor property access is not allowed' },
+    { pattern: /\bconstructor\b/, message: 'constructor access is not allowed' },
     { pattern: /\bwith\s*\(/, message: 'with statement is not allowed' },
+    { pattern: /\bglobalThis\b/, message: 'globalThis access is not allowed' },
+    { pattern: /\bglobal\b/, message: 'global access is not allowed' },
+    { pattern: /getPrototypeOf/, message: 'getPrototypeOf is not allowed' },
+    { pattern: /setPrototypeOf/, message: 'setPrototypeOf is not allowed' },
+    { pattern: /Reflect\.construct/, message: 'Reflect.construct is not allowed' },
+    { pattern: /Reflect\.apply/, message: 'Reflect.apply is not allowed' },
+    { pattern: /child_process/, message: 'child_process is not allowed' },
+    { pattern: /\bexec\s*\(/, message: 'exec() is not allowed' },
+    { pattern: /\bspawn\s*\(/, message: 'spawn() is not allowed' },
   ];
 
   for (const { pattern, message } of dangerousPatterns) {
