@@ -75,6 +75,10 @@ import { UTILITY_TOOLS, UTILITY_TOOL_NAMES } from './utility-tools.js';
 // Tool search tags for discovery
 import { TOOL_SEARCH_TAGS } from './tool-tags.js';
 
+// Tool max limits for list-returning tools
+import { TOOL_MAX_LIMITS, applyToolLimits } from './tool-limits.js';
+import type { ToolLimit } from './tool-limits.js';
+
 import type { ToolDefinition, ToolExecutor, ToolRegistry as IToolRegistry } from '../tools.js';
 
 // =============================================================================
@@ -210,6 +214,12 @@ export { UTILITY_TOOLS, UTILITY_TOOL_NAMES };
  * Tool search tags for discovery via search_tools
  */
 export { TOOL_SEARCH_TAGS };
+
+/**
+ * Tool max limits for list-returning tools
+ * Enforced in use_tool proxy to prevent unbounded queries
+ */
+export { TOOL_MAX_LIMITS, applyToolLimits, type ToolLimit };
 
 // =============================================================================
 // ALL TOOLS COMBINED

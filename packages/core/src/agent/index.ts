@@ -126,6 +126,10 @@ export {
   type DynamicToolPermission,
   // Tool search tags
   TOOL_SEARCH_TAGS,
+  // Tool max limits
+  TOOL_MAX_LIMITS,
+  applyToolLimits,
+  type ToolLimit,
 } from './tools/index.js';
 
 // Memory
