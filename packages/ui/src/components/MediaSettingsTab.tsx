@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useDialog } from './ConfirmDialog';
 import { Check, AlertCircle, Image, Volume2, Mic, Eye } from './icons';
 
 interface ProviderWithStatus {
@@ -29,6 +30,7 @@ const CAPABILITY_ICONS: Record<MediaCapability, React.ReactNode> = {
 };
 
 export function MediaSettingsTab() {
+  const { confirm } = useDialog();
   const [settings, setSettings] = useState<CapabilitySettings[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,7 +125,7 @@ export function MediaSettingsTab() {
   };
 
   const handleReset = async (capability: string) => {
-    if (!confirm(`Reset ${capability} to default?`)) return;
+    if (!await confirm({ message: `Reset ${capability} to default?` })) return;
 
     setSavingCapability(capability);
 

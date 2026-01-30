@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Container, RefreshCw, ShieldCheck, Shield, XCircle, CheckCircle2, Database, Upload, Download, Trash2, Wrench, Server, AlertCircle, Settings } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 import { useTheme } from '../hooks/useTheme';
 
 interface SandboxStatus {
@@ -64,6 +65,7 @@ function formatSize(bytes: number): string {
 }
 
 export function SystemPage() {
+  const { confirm, alert: showAlert } = useDialog();
   // Theme
   const { theme, setTheme } = useTheme();
 
@@ -183,7 +185,7 @@ export function SystemPage() {
   const restoreBackup = (filename: string) => runDbOperation('restore', 'Restore', { filename });
 
   const deleteBackup = async (filename: string) => {
-    if (!confirm(`Delete backup "${filename}"?`)) return;
+    if (!await confirm({ message: `Delete backup "${filename}"?`, variant: 'danger' })) return;
 
     try {
       const res = await fetch(`/api/v1/database/backup/${encodeURIComponent(filename)}`, {
@@ -193,11 +195,11 @@ export function SystemPage() {
       if (data.success) {
         loadSystemStatus();
       } else {
-        alert(data.error?.message || 'Failed to delete backup');
+        await showAlert(data.error?.message || 'Failed to delete backup');
       }
     } catch (err) {
       console.error('Delete backup error:', err);
-      alert('Failed to delete backup');
+      await showAlert('Failed to delete backup');
     }
   };
 

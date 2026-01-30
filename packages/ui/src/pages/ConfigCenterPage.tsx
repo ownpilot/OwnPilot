@@ -16,6 +16,7 @@ import {
   Star,
 } from '../components/icons';
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
+import { useDialog } from '../components/ConfirmDialog';
 import type { ApiResponse } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -113,6 +114,8 @@ function getCategoryColor(category: string): string {
 // ---------------------------------------------------------------------------
 
 export function ConfigCenterPage() {
+  const { confirm } = useDialog();
+
   // Data state
   const [services, setServices] = useState<ConfigServiceView[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -441,9 +444,10 @@ export function ConfigCenterPage() {
     const activeEntry = editingService.entries.find(
       (e) => e.id === activeEntryId,
     );
-    const confirmed = window.confirm(
-      `Delete entry "${activeEntry?.label ?? 'this entry'}"? This action cannot be undone.`,
-    );
+    const confirmed = await confirm({
+      message: `Delete entry "${activeEntry?.label ?? 'this entry'}"? This action cannot be undone.`,
+      variant: 'danger',
+    });
     if (!confirmed) return;
 
     setIsSaving(true);

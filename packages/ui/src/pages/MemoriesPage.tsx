@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Brain, Plus, Trash2, Search, Star, Filter } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface Memory {
   id: string;
@@ -34,6 +35,7 @@ const typeLabels = {
 };
 
 export function MemoriesPage() {
+  const { confirm } = useDialog();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,7 +70,7 @@ export function MemoriesPage() {
   }, [fetchMemories]);
 
   const handleDelete = async (memoryId: string) => {
-    if (!confirm('Are you sure you want to delete this memory?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this memory?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`/api/v1/memories/${memoryId}`, {

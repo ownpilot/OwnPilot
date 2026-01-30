@@ -12,6 +12,7 @@ import {
   Plus,
   Trash2,
 } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface AutonomyLevel {
   level: number;
@@ -72,6 +73,7 @@ const riskColors = {
 };
 
 export function AutonomyPage() {
+  const { confirm } = useDialog();
   const [config, setConfig] = useState<AutonomyConfig | null>(null);
   const [levels, setLevels] = useState<AutonomyLevel[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
@@ -194,7 +196,7 @@ export function AutonomyPage() {
   };
 
   const handleResetConfig = async () => {
-    if (!confirm('Are you sure you want to reset autonomy settings to defaults?')) return;
+    if (!await confirm({ message: 'Are you sure you want to reset autonomy settings to defaults?', variant: 'danger' })) return;
     try {
       const response = await fetch('/api/v1/autonomy/config/reset', {
         method: 'POST',

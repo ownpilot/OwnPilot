@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useDialog } from './ConfirmDialog';
 import {
   Check,
   AlertCircle,
@@ -282,6 +283,7 @@ function ModelCard({
 // ============================================================================
 
 export function AIModelsTab() {
+  const { confirm } = useDialog();
   const [models, setModels] = useState<MergedModel[]>([]);
   const [availableProviders, setAvailableProviders] = useState<AvailableProvider[]>([]);
   const [capabilities, setCapabilities] = useState<CapabilityDef[]>([]);
@@ -521,7 +523,7 @@ export function AIModelsTab() {
 
   // Handle reset and resync (delete all + fresh sync)
   const handleResetSync = async () => {
-    if (!confirm('This will delete all synced provider configs and resync fresh from models.dev. Protected providers (OpenAI, Anthropic, Google, etc.) will be preserved. Continue?')) {
+    if (!await confirm({ message: 'This will delete all synced provider configs and resync fresh from models.dev. Protected providers (OpenAI, Anthropic, Google, etc.) will be preserved. Continue?', variant: 'danger' })) {
       return;
     }
 
@@ -632,7 +634,7 @@ export function AIModelsTab() {
 
   // Handle delete local provider
   const handleDeleteLocalProvider = async (providerId: string, name: string) => {
-    if (!confirm(`Delete local provider "${name}" and all its models?`)) return;
+    if (!await confirm({ message: `Delete local provider "${name}" and all its models?`, variant: 'danger' })) return;
     try {
       const res = await fetch(`/api/v1/local-providers/${providerId}`, { method: 'DELETE' });
       const data = await res.json();

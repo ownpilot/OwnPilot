@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileText, Plus, Trash2, Pin, Search } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface Note {
   id: string;
@@ -22,6 +23,7 @@ interface ApiResponse<T> {
 }
 
 export function NotesPage() {
+  const { confirm } = useDialog();
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,7 +54,7 @@ export function NotesPage() {
   }, [fetchNotes]);
 
   const handleDelete = async (noteId: string) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this note?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`/api/v1/notes/${noteId}`, {

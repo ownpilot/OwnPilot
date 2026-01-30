@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useDialog } from './ConfirmDialog';
 import { Check, AlertCircle, Server, Edit2, Save, X, ExternalLink, Search } from './icons';
 
 interface ProviderInfo {
@@ -54,6 +55,7 @@ const PROVIDER_TYPES = [
 ];
 
 export function ProvidersTab() {
+  const { confirm } = useDialog();
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -158,7 +160,7 @@ export function ProvidersTab() {
   };
 
   const handleResetOverride = async (providerId: string) => {
-    if (!confirm('Reset this provider to default settings?')) return;
+    if (!await confirm({ message: 'Reset this provider to default settings?' })) return;
     try {
       await fetch(`/api/v1/providers/${providerId}/config`, {
         method: 'DELETE',

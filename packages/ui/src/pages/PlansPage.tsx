@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Clock,
 } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface PlanStep {
   id: string;
@@ -82,6 +83,7 @@ const stepStatusIcons = {
 };
 
 export function PlansPage() {
+  const { confirm } = useDialog();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<Plan['status'] | 'all'>('all');
@@ -120,7 +122,7 @@ export function PlansPage() {
   }, [fetchPlans, plans]);
 
   const handleDelete = async (planId: string) => {
-    if (!confirm('Are you sure you want to delete this plan?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this plan?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`/api/v1/plans/${planId}`, {
@@ -150,7 +152,7 @@ export function PlansPage() {
   };
 
   const handleRollback = async (planId: string) => {
-    if (!confirm('Are you sure you want to rollback to the last checkpoint?')) return;
+    if (!await confirm({ message: 'Are you sure you want to rollback to the last checkpoint?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`/api/v1/plans/${planId}/rollback`, {

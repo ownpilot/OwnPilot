@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Users, Plus, Trash2, Phone, Mail, Building, Star, Search } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface Contact {
   id: string;
@@ -30,6 +31,7 @@ interface ApiResponse<T> {
 }
 
 export function ContactsPage() {
+  const { confirm } = useDialog();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,7 +62,7 @@ export function ContactsPage() {
   }, [fetchContacts]);
 
   const handleDelete = async (contactId: string) => {
-    if (!confirm('Are you sure you want to delete this contact?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this contact?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`/api/v1/contacts/${contactId}`, {

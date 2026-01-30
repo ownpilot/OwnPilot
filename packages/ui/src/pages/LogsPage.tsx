@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface RequestLog {
   id: string;
@@ -65,6 +66,7 @@ type TabType = 'requests' | 'debug';
 type DebugFilterType = 'all' | 'tool_call' | 'tool_result' | 'request' | 'response' | 'error';
 
 export function LogsPage() {
+  const { confirm, alert: showAlert } = useDialog();
   const [activeTab, setActiveTab] = useState<TabType>('requests');
 
   // Request logs state
@@ -148,7 +150,7 @@ export function LogsPage() {
   };
 
   const clearOldLogs = async (olderThanDays: number) => {
-    if (!confirm(`Delete logs older than ${olderThanDays} days?`)) return;
+    if (!await confirm({ message: `Delete logs older than ${olderThanDays} days?`, variant: 'danger' })) return;
 
     try {
       const res = await fetch(`/api/v1/chat/logs?olderThanDays=${olderThanDays}`, {
@@ -156,7 +158,7 @@ export function LogsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Deleted ${data.data.deleted} logs`);
+        await showAlert(`Deleted ${data.data.deleted} logs`);
         fetchLogs();
         fetchStats();
       }
@@ -166,7 +168,7 @@ export function LogsPage() {
   };
 
   const clearAllLogs = async () => {
-    if (!confirm('Delete ALL request logs? This cannot be undone.')) return;
+    if (!await confirm({ message: 'Delete ALL request logs? This cannot be undone.', variant: 'danger' })) return;
 
     try {
       const res = await fetch('/api/v1/chat/logs?all=true', {
@@ -174,7 +176,7 @@ export function LogsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Deleted ${data.data.deleted} logs`);
+        await showAlert(`Deleted ${data.data.deleted} logs`);
         fetchLogs();
         fetchStats();
       }
@@ -184,7 +186,7 @@ export function LogsPage() {
   };
 
   const clearDebugLogs = async () => {
-    if (!confirm('Clear all debug logs?')) return;
+    if (!await confirm({ message: 'Clear all debug logs?', variant: 'danger' })) return;
     try {
       await fetch('/api/v1/debug', { method: 'DELETE' });
       fetchDebugLogs();

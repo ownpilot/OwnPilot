@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Plus, Trash2, Clock, MapPin } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface CalendarEvent {
   id: string;
@@ -32,6 +33,7 @@ const colorOptions = [
 ];
 
 export function CalendarPage() {
+  const { confirm } = useDialog();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]!);
@@ -66,7 +68,7 @@ export function CalendarPage() {
   }, [fetchEvents]);
 
   const handleDelete = async (eventId: string) => {
-    if (!confirm('Are you sure you want to delete this event?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this event?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`/api/v1/calendar/${eventId}`, {

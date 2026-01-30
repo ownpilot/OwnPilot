@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Zap, Plus, Trash2, Play, Pause, Clock, History } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface TriggerConfig {
   cron?: string;
@@ -62,6 +63,7 @@ const actionTypeLabels = {
 };
 
 export function TriggersPage() {
+  const { confirm } = useDialog();
   const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<Trigger['type'] | 'all'>('all');
@@ -107,7 +109,7 @@ export function TriggersPage() {
   };
 
   const handleDelete = async (triggerId: string) => {
-    if (!confirm('Are you sure you want to delete this trigger?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this trigger?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`/api/v1/triggers/${triggerId}`, {

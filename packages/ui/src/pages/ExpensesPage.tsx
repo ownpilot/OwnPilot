@@ -10,6 +10,7 @@ import {
   Filter,
   RefreshCw,
 } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface ExpenseEntry {
   id: string;
@@ -83,6 +84,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function ExpensesPage() {
+  const { confirm } = useDialog();
   const [year, setYear] = useState(new Date().getFullYear());
   const [monthlyData, setMonthlyData] = useState<MonthlyResponse | null>(null);
   const [summaryData, setSummaryData] = useState<SummaryResponse | null>(null);
@@ -170,7 +172,7 @@ export function ExpensesPage() {
   };
 
   const handleDeleteExpense = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this expense?', variant: 'danger' })) return;
     try {
       const res = await fetch(`/api/v1/expenses/${id}`, { method: 'DELETE' });
       if (res.ok) {

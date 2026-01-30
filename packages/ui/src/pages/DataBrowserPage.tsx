@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Table,
 } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 // Data types
 type DataType = 'tasks' | 'bookmarks' | 'notes' | 'calendar' | 'contacts';
@@ -99,6 +100,7 @@ interface ApiResponse<T> {
 }
 
 export function DataBrowserPage() {
+  const { confirm } = useDialog();
   const [selectedType, setSelectedType] = useState<DataType>('tasks');
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -141,7 +143,7 @@ export function DataBrowserPage() {
   }, [selectedType]);
 
   const handleDelete = async (recordId: string) => {
-    if (!confirm('Are you sure you want to delete this record?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this record?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`${config.endpoint}/${recordId}`, {

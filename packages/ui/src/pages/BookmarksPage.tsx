@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Bookmark, Plus, Trash2, Star, ExternalLink, Search, Folder } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface BookmarkItem {
   id: string;
@@ -21,6 +22,7 @@ interface ApiResponse<T> {
 }
 
 export function BookmarksPage() {
+  const { confirm } = useDialog();
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,7 +55,7 @@ export function BookmarksPage() {
   }, [fetchBookmarks]);
 
   const handleDelete = async (bookmarkId: string) => {
-    if (!confirm('Are you sure you want to delete this bookmark?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this bookmark?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`/api/v1/bookmarks/${bookmarkId}`, {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings, Check, AlertCircle, ChevronDown, ChevronRight, Key } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface ProviderConfig {
   id: string;
@@ -70,6 +71,7 @@ interface ModelsResponse {
 const FALLBACK_PROVIDERS: ProviderConfig[] = [];
 
 export function ApiKeysPage() {
+  const { confirm } = useDialog();
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
@@ -267,7 +269,7 @@ export function ApiKeysPage() {
   };
 
   const handleDeleteKey = async (providerId: string) => {
-    if (!confirm(`Are you sure you want to remove the ${providerId} API key?`)) {
+    if (!await confirm({ message: `Are you sure you want to remove the ${providerId} API key?`, variant: 'danger' })) {
       return;
     }
 

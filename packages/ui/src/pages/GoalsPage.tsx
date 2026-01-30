@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Target, Plus, Trash2, ChevronRight, CheckCircle2, Circle, AlertTriangle, Pause } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface GoalStep {
   id: string;
@@ -56,6 +57,7 @@ const priorityLabels: Record<number, string> = {
 };
 
 export function GoalsPage() {
+  const { confirm } = useDialog();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<Goal['status'] | 'all'>('all');
@@ -87,7 +89,7 @@ export function GoalsPage() {
   }, [fetchGoals]);
 
   const handleDelete = async (goalId: string) => {
-    if (!confirm('Are you sure you want to delete this goal?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this goal?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`/api/v1/goals/${goalId}`, {

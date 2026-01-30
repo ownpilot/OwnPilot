@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useDialog } from './ConfirmDialog';
 import { Check, AlertCircle, ExternalLink, Trash2, RefreshCw, Link, Unlink } from './icons';
 
 interface Integration {
@@ -31,6 +32,7 @@ interface OAuthConfig {
 }
 
 export function IntegrationsTab() {
+  const { confirm } = useDialog();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [available, setAvailable] = useState<AvailableIntegration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,7 +98,7 @@ export function IntegrationsTab() {
   };
 
   const handleDisconnect = async (integrationId: string) => {
-    if (!confirm('Are you sure you want to disconnect this integration?')) {
+    if (!await confirm({ message: 'Are you sure you want to disconnect this integration?', variant: 'danger' })) {
       return;
     }
 
@@ -167,7 +169,7 @@ export function IntegrationsTab() {
   };
 
   const handleDeleteOAuthConfig = async () => {
-    if (!confirm('Are you sure you want to remove the Google OAuth configuration?')) {
+    if (!await confirm({ message: 'Are you sure you want to remove the Google OAuth configuration?', variant: 'danger' })) {
       return;
     }
 

@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash, Bot, Settings, MessageSquare, Play } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 import type { Agent, ApiResponse, Tool } from '../types';
 
 interface ModelInfo {
@@ -47,6 +48,7 @@ interface AgentDetail extends Agent {
 
 export function AgentsPage() {
   const navigate = useNavigate();
+  const { confirm } = useDialog();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -78,7 +80,7 @@ export function AgentsPage() {
   };
 
   const deleteAgent = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this agent?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this agent?', variant: 'danger' })) return;
 
     try {
       await fetch(`/api/v1/agents/${id}`, { method: 'DELETE' });

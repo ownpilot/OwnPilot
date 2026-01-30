@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, Circle, AlertTriangle, Plus, Trash2, Calendar } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface Task {
   id: string;
@@ -36,6 +37,7 @@ const priorityBg = {
 };
 
 export function TasksPage() {
+  const { confirm } = useDialog();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
@@ -83,7 +85,7 @@ export function TasksPage() {
   };
 
   const handleDelete = async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+    if (!await confirm({ message: 'Are you sure you want to delete this task?', variant: 'danger' })) return;
 
     try {
       const response = await fetch(`/api/v1/tasks/${taskId}`, {

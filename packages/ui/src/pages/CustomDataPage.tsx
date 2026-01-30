@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Database, Plus, Trash2, Search, Table, ChevronRight, Edit3 } from '../components/icons';
+import { useDialog } from '../components/ConfirmDialog';
 
 interface ColumnDefinition {
   name: string;
@@ -34,6 +35,7 @@ interface ApiResponse<T> {
 }
 
 export function CustomDataPage() {
+  const { confirm } = useDialog();
   const [tables, setTables] = useState<CustomTable[]>([]);
   const [selectedTable, setSelectedTable] = useState<CustomTable | null>(null);
   const [records, setRecords] = useState<CustomRecord[]>([]);
@@ -101,7 +103,7 @@ export function CustomDataPage() {
   };
 
   const handleDeleteTable = async (tableId: string) => {
-    if (!confirm('Are you sure you want to delete this table and ALL its data? This cannot be undone.')) {
+    if (!await confirm({ message: 'Are you sure you want to delete this table and ALL its data? This cannot be undone.', variant: 'danger' })) {
       return;
     }
 
@@ -123,7 +125,7 @@ export function CustomDataPage() {
   };
 
   const handleDeleteRecord = async (recordId: string) => {
-    if (!confirm('Are you sure you want to delete this record?')) {
+    if (!await confirm({ message: 'Are you sure you want to delete this record?', variant: 'danger' })) {
       return;
     }
 
