@@ -24,6 +24,8 @@ import {
   PERSONAL_DATA_TOOLS,
   DYNAMIC_TOOL_DEFINITIONS,
   TOOL_SEARCH_TAGS,
+  TOOL_MAX_LIMITS,
+  applyToolLimits,
   getDefaultPluginRegistry,
   TOOL_GROUPS,
   getProviderConfig as coreGetProviderConfig,
@@ -597,13 +599,18 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
       if (!def) {
         return { content: `Tool '${tool_name}' not found. Use search_tools(query) to discover available tools.`, isError: true };
       }
+      const toolLimit = TOOL_MAX_LIMITS[tool_name];
       const params = Object.entries(def.parameters.properties).map(([name, schema]) => {
         const s = schema as unknown as Record<string, unknown>;
         const required = def.parameters.required?.includes(name) ? ' (required)' : ' (optional)';
         const type = (s.type as string) ?? 'any';
         const desc = (s.description as string) ?? '';
         const enumVals = Array.isArray(s.enum) ? ` [${(s.enum as string[]).join(', ')}]` : '';
-        return `  - ${name}: ${type}${required} — ${desc}${enumVals}`;
+        // Show max limit info for limit-like parameters
+        const limitInfo = toolLimit && name === toolLimit.paramName
+          ? ` [default: ${toolLimit.defaultValue}, max: ${toolLimit.maxValue}]`
+          : '';
+        return `  - ${name}: ${type}${required} — ${desc}${enumVals}${limitInfo}`;
       });
       return { content: [`## ${def.name}`, def.description, '', '### Parameters', ...params].join('\n') };
     });
@@ -618,7 +625,9 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
         return { content: `Tool '${tool_name}' not found. Use get_tool_help to discover available tools.`, isError: true };
       }
       try {
-        const result = await tools.execute(tool_name, toolArgs, {} as import('@ownpilot/core').ToolContext);
+        // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
+        const cappedArgs = applyToolLimits(tool_name, toolArgs);
+        const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
         if (result.ok) {
           return result.value;
         }
@@ -1410,13 +1419,18 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
       if (!def) {
         return { content: `Tool '${tool_name}' not found. Use search_tools(query) to discover available tools.`, isError: true };
       }
+      const toolLimit = TOOL_MAX_LIMITS[tool_name];
       const params = Object.entries(def.parameters.properties).map(([name, schema]) => {
         const s = schema as unknown as Record<string, unknown>;
         const required = def.parameters.required?.includes(name) ? ' (required)' : ' (optional)';
         const type = (s.type as string) ?? 'any';
         const desc = (s.description as string) ?? '';
         const enumVals = Array.isArray(s.enum) ? ` [${(s.enum as string[]).join(', ')}]` : '';
-        return `  - ${name}: ${type}${required} — ${desc}${enumVals}`;
+        // Show max limit info for limit-like parameters
+        const limitInfo = toolLimit && name === toolLimit.paramName
+          ? ` [default: ${toolLimit.defaultValue}, max: ${toolLimit.maxValue}]`
+          : '';
+        return `  - ${name}: ${type}${required} — ${desc}${enumVals}${limitInfo}`;
       });
       return { content: [`## ${def.name}`, def.description, '', '### Parameters', ...params].join('\n') };
     });
@@ -1431,7 +1445,9 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
         return { content: `Tool '${tool_name}' not found. Use get_tool_help to discover available tools.`, isError: true };
       }
       try {
-        const result = await tools.execute(tool_name, toolArgs, {} as import('@ownpilot/core').ToolContext);
+        // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
+        const cappedArgs = applyToolLimits(tool_name, toolArgs);
+        const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
         if (result.ok) {
           return result.value;
         }
