@@ -566,13 +566,42 @@ Format your response as JSON:
    */
   private parseAIResponse(content: string, model: string): AIBriefing {
     try {
-      // Try to extract JSON from the response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
+      // Strategy 1: Extract JSON from markdown code fences (```json ... ``` or ``` ... ```)
+      const fenceMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+      let jsonStr: string | undefined;
+
+      if (fenceMatch) {
+        jsonStr = fenceMatch[1];
+      } else {
+        // Strategy 2: Find the first complete top-level JSON object by brace balancing
+        const startIdx = content.indexOf('{');
+        if (startIdx !== -1) {
+          let depth = 0;
+          let inString = false;
+          let escape = false;
+          for (let i = startIdx; i < content.length; i++) {
+            const ch = content[i];
+            if (escape) { escape = false; continue; }
+            if (ch === '\\' && inString) { escape = true; continue; }
+            if (ch === '"' && !escape) { inString = !inString; continue; }
+            if (inString) continue;
+            if (ch === '{') depth++;
+            else if (ch === '}') {
+              depth--;
+              if (depth === 0) {
+                jsonStr = content.slice(startIdx, i + 1);
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (!jsonStr) {
         throw new Error('No JSON found in response');
       }
 
-      const parsed = JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonStr);
       const now = new Date();
       const expiresAt = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
 
