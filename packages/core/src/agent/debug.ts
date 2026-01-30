@@ -52,6 +52,16 @@ export interface RequestDebugInfo {
   maxTokens?: number;
   temperature?: number;
   stream: boolean;
+  /** Full payload size breakdown (chars) — added post-body-build */
+  payload?: {
+    totalChars: number;
+    estimatedTokens: number;
+    systemPromptChars: number;
+    messagesChars: number;
+    toolsChars: number;
+    toolCount: number;
+    perToolAvgChars: number;
+  };
 }
 
 /**
@@ -201,6 +211,14 @@ export function logRequest(info: RequestDebugInfo): void {
     if (info.tools?.length) {
       console.log('─'.repeat(40));
       console.log(`Tools (${info.tools.length}): ${info.tools.slice(0, 10).join(', ')}${info.tools.length > 10 ? '...' : ''}`);
+    }
+    if (info.payload) {
+      console.log('─'.repeat(40));
+      console.log(`📊 PAYLOAD BREAKDOWN:`);
+      console.log(`  Total: ${info.payload.totalChars.toLocaleString()} chars (~${info.payload.estimatedTokens.toLocaleString()} tokens)`);
+      console.log(`  System Prompt: ${info.payload.systemPromptChars.toLocaleString()} chars`);
+      console.log(`  Messages: ${info.payload.messagesChars.toLocaleString()} chars`);
+      console.log(`  Tools: ${info.payload.toolsChars.toLocaleString()} chars (${info.payload.toolCount} tools, avg ${info.payload.perToolAvgChars} chars/tool)`);
     }
     console.log('═'.repeat(80));
   }
@@ -376,6 +394,31 @@ export function buildRequestDebugInfo(
     maxTokens,
     temperature,
     stream,
+  };
+}
+
+/**
+ * Calculate payload size breakdown from the actual API request body.
+ * Call this after body is constructed and attach to RequestDebugInfo.
+ */
+export function calculatePayloadBreakdown(body: Record<string, unknown>): RequestDebugInfo['payload'] {
+  const messagesJson = JSON.stringify(body.messages ?? []);
+  const toolsJson = JSON.stringify(body.tools ?? []);
+  const systemMsg = Array.isArray(body.messages)
+    ? (body.messages as Array<{ role?: string; content?: string }>).find(m => m.role === 'system')
+    : undefined;
+  const systemPromptChars = systemMsg?.content?.length ?? 0;
+  const toolCount = Array.isArray(body.tools) ? body.tools.length : 0;
+  const totalChars = JSON.stringify(body).length;
+
+  return {
+    totalChars,
+    estimatedTokens: Math.ceil(totalChars / 4), // rough estimate: ~4 chars/token
+    systemPromptChars,
+    messagesChars: messagesJson.length,
+    toolsChars: toolsJson.length,
+    toolCount,
+    perToolAvgChars: toolCount > 0 ? Math.round(toolsJson.length / toolCount) : 0,
   };
 }
 

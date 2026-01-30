@@ -23,6 +23,7 @@ import {
   CUSTOM_DATA_TOOLS,
   PERSONAL_DATA_TOOLS,
   DYNAMIC_TOOL_DEFINITIONS,
+  TOOL_SEARCH_TAGS,
   getDefaultPluginRegistry,
   TOOL_GROUPS,
   getProviderConfig as coreGetProviderConfig,
@@ -522,8 +523,8 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
-    // get_tool_help and use_tool have special executors (registered below)
-    if (toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool') continue;
+    // search_tools, get_tool_help and use_tool have special executors (registered below)
+    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool') continue;
 
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
@@ -557,24 +558,54 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     });
   }
 
+  // Register search_tools — keyword/intent search across all registered tools
+  const searchToolsDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'search_tools');
+  if (searchToolsDef) {
+    tools.register(searchToolsDef, async (args): Promise<CoreToolResult> => {
+      const { query, category: filterCategory } = args as { query: string; category?: string };
+      const allDefs = tools.getDefinitions();
+      const q = query.toLowerCase();
+
+      const matches = allDefs.filter(d => {
+        // Skip meta-tools from results
+        if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool') return false;
+        // Category filter
+        if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
+        // Keyword match on name, description, category, or hidden tags
+        const tags = TOOL_SEARCH_TAGS[d.name] ?? d.tags ?? [];
+        return d.name.toLowerCase().includes(q)
+          || d.description.toLowerCase().includes(q)
+          || (d.category?.toLowerCase().includes(q) ?? false)
+          || tags.some(tag => tag.toLowerCase().includes(q));
+      });
+
+      if (matches.length === 0) {
+        return { content: `No tools found for "${query}". Try a broader keyword like "task", "file", "web", "memory", "note", "calendar", "expense".` };
+      }
+
+      const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
+      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines, '', 'Use get_tool_help(tool_name) for full parameter details.'].join('\n') };
+    });
+  }
+
   // Register get_tool_help with a closure over the tools registry
   const getToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
   if (getToolHelpDef) {
     tools.register(getToolHelpDef, async (args): Promise<CoreToolResult> => {
       const { tool_name } = args as { tool_name: string };
-      const toolDef = tools.getDefinition(tool_name);
-      if (!toolDef) {
-        return { content: `Tool '${tool_name}' not found. Check the tool names listed in the system prompt.`, isError: true };
+      const def = tools.getDefinition(tool_name);
+      if (!def) {
+        return { content: `Tool '${tool_name}' not found. Use search_tools(query) to discover available tools.`, isError: true };
       }
-      const params = Object.entries(toolDef.parameters.properties).map(([name, schema]) => {
+      const params = Object.entries(def.parameters.properties).map(([name, schema]) => {
         const s = schema as unknown as Record<string, unknown>;
-        const required = toolDef.parameters.required?.includes(name) ? ' (required)' : ' (optional)';
+        const required = def.parameters.required?.includes(name) ? ' (required)' : ' (optional)';
         const type = (s.type as string) ?? 'any';
         const desc = (s.description as string) ?? '';
         const enumVals = Array.isArray(s.enum) ? ` [${(s.enum as string[]).join(', ')}]` : '';
         return `  - ${name}: ${type}${required} — ${desc}${enumVals}`;
       });
-      return { content: [`## ${toolDef.name}`, toolDef.description, '', '### Parameters', ...params].join('\n') };
+      return { content: [`## ${def.name}`, def.description, '', '### Parameters', ...params].join('\n') };
     });
   }
 
@@ -721,11 +752,12 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     includeToolDescriptions: true,
   });
 
-  // For local providers (openai-compatible), only expose meta-tools to keep token usage minimal
-  const isLocalProvider = providerConfig?.type === 'openai-compatible';
-  const toolFilter = isLocalProvider
-    ? ['get_tool_help', 'use_tool'].map(n => n as unknown as import('@ownpilot/core').ToolId)
-    : undefined;
+  // Only expose meta-tools (search_tools, get_tool_help, use_tool) to the API.
+  // This prevents 100+ tool schemas from consuming ~20K+ tokens per request.
+  // All tools remain registered in the ToolRegistry and can be executed via use_tool proxy.
+  const metaToolFilter = ['search_tools', 'get_tool_help', 'use_tool'].map(
+    n => n as unknown as import('@ownpilot/core').ToolId
+  );
 
   const config: AgentConfig = {
     name: record.name,
@@ -742,7 +774,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     },
     maxTurns: (record.config.maxTurns as number) ?? 25,
     maxToolCalls: (record.config.maxToolCalls as number) ?? 200,
-    ...(toolFilter ? { tools: toolFilter } : {}),
+    tools: metaToolFilter,
   };
 
   const agent = createAgent(config, { tools });
@@ -1325,8 +1357,8 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
 
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
-    // get_tool_help and use_tool have special executors (registered below)
-    if (toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool') continue;
+    // search_tools, get_tool_help and use_tool have special executors (registered below)
+    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool') continue;
 
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
@@ -1341,24 +1373,52 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
     });
   }
 
+  // Register search_tools — keyword/intent search across all registered tools
+  const chatSearchToolsDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'search_tools');
+  if (chatSearchToolsDef) {
+    tools.register(chatSearchToolsDef, async (args): Promise<CoreToolResult> => {
+      const { query, category: filterCategory } = args as { query: string; category?: string };
+      const allDefs = tools.getDefinitions();
+      const q = query.toLowerCase();
+
+      const matches = allDefs.filter(d => {
+        if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool') return false;
+        if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
+        // Keyword match on name, description, category, or hidden tags
+        const tags = TOOL_SEARCH_TAGS[d.name] ?? d.tags ?? [];
+        return d.name.toLowerCase().includes(q)
+          || d.description.toLowerCase().includes(q)
+          || (d.category?.toLowerCase().includes(q) ?? false)
+          || tags.some(tag => tag.toLowerCase().includes(q));
+      });
+
+      if (matches.length === 0) {
+        return { content: `No tools found for "${query}". Try a broader keyword like "task", "file", "web", "memory", "note", "calendar", "expense".` };
+      }
+
+      const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
+      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines, '', 'Use get_tool_help(tool_name) for full parameter details.'].join('\n') };
+    });
+  }
+
   // Register get_tool_help with a closure over the tools registry
   const chatGetToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
   if (chatGetToolHelpDef) {
     tools.register(chatGetToolHelpDef, async (args): Promise<CoreToolResult> => {
       const { tool_name } = args as { tool_name: string };
-      const toolDef = tools.getDefinition(tool_name);
-      if (!toolDef) {
-        return { content: `Tool '${tool_name}' not found. Check the tool names listed in the system prompt.`, isError: true };
+      const def = tools.getDefinition(tool_name);
+      if (!def) {
+        return { content: `Tool '${tool_name}' not found. Use search_tools(query) to discover available tools.`, isError: true };
       }
-      const params = Object.entries(toolDef.parameters.properties).map(([name, schema]) => {
+      const params = Object.entries(def.parameters.properties).map(([name, schema]) => {
         const s = schema as unknown as Record<string, unknown>;
-        const required = toolDef.parameters.required?.includes(name) ? ' (required)' : ' (optional)';
+        const required = def.parameters.required?.includes(name) ? ' (required)' : ' (optional)';
         const type = (s.type as string) ?? 'any';
         const desc = (s.description as string) ?? '';
         const enumVals = Array.isArray(s.enum) ? ` [${(s.enum as string[]).join(', ')}]` : '';
         return `  - ${name}: ${type}${required} — ${desc}${enumVals}`;
       });
-      return { content: [`## ${toolDef.name}`, toolDef.description, '', '### Parameters', ...params].join('\n') };
+      return { content: [`## ${def.name}`, def.description, '', '### Parameters', ...params].join('\n') };
     });
   }
 
@@ -1453,11 +1513,10 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
     includeToolDescriptions: true,
   });
 
-  // For local providers (openai-compatible), only expose meta-tools to keep token usage minimal
-  const isLocalProvider = providerConfig?.type === 'openai-compatible';
-  const toolFilter = isLocalProvider
-    ? ['get_tool_help', 'use_tool'].map(n => n as unknown as import('@ownpilot/core').ToolId)
-    : undefined;
+  // Only expose meta-tools to the API to prevent token bloat from 100+ tool schemas.
+  const chatMetaToolFilter = ['search_tools', 'get_tool_help', 'use_tool'].map(
+    n => n as unknown as import('@ownpilot/core').ToolId
+  );
 
   // Create agent config
   const config: AgentConfig = {
@@ -1475,7 +1534,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
     },
     maxTurns: 25,
     maxToolCalls: 200,
-    ...(toolFilter ? { tools: toolFilter } : {}),
+    tools: chatMetaToolFilter,
   };
 
   // Create and cache the agent

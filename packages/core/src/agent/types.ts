@@ -152,6 +152,8 @@ export interface ToolDefinition {
   readonly requiresConfirmation?: boolean;
   /** Tool category for grouping */
   readonly category?: string;
+  /** Hidden search tags for tool discovery via search_tools. Not sent to LLM API. */
+  readonly tags?: readonly string[];
 }
 
 /**
