@@ -207,7 +207,19 @@ async function executeSetConfigEntry(
   try {
     if (existingEntry) {
       // Merge new data with existing data (don't wipe fields not provided)
-      const mergedData = { ...existingEntry.data, ...data };
+      // Protect against masked secret values being merged in
+      const secretFieldNames = svc.configSchema
+        .filter(f => f.type === 'secret')
+        .map(f => f.name);
+      const cleanData = { ...data };
+      for (const field of secretFieldNames) {
+        const val = cleanData[field];
+        if (typeof val === 'string' && (val === '****' || /^.{4}\.\.\..{4}$/.test(val))) {
+          // This looks like a masked value — drop it so the original is preserved
+          delete cleanData[field];
+        }
+      }
+      const mergedData = { ...existingEntry.data, ...cleanData };
       await configServicesRepo.updateEntry(existingEntry.id, {
         data: mergedData,
         ...(label ? { label } : {}),

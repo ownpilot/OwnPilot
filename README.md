@@ -664,10 +664,12 @@ pnpm --filter @ownpilot/gateway migrate:postgres:dry
 
 ## Security & Privacy
 
-### Encrypted Credentials
-- **AES-256-GCM** encryption for stored credentials
-- **PBKDF2** key derivation with 600,000 iterations
-- Master password protected vault at `~/.ownpilot/credentials.enc`
+### Credential Management
+
+Two approaches for storing API keys:
+
+1. **Encrypted Vault (CLI)** — `ownpilot config set <key>` stores credentials in `~/.ownpilot/credentials.enc` with AES-256-GCM encryption and PBKDF2 key derivation (600K iterations). Recommended for CLI usage.
+2. **Database Settings (Gateway API)** — `POST /api/v1/settings/api-keys` stores keys in PostgreSQL via the config services system. Keys are loaded into `process.env` at startup for provider SDK compatibility. Used by the Web UI.
 
 ### PII Detection
 - Automatic detection of emails, phone numbers, SSNs, credit cards, and more
@@ -681,9 +683,10 @@ pnpm --filter @ownpilot/gateway migrate:postgres:dry
 - All executions are audit-logged
 
 ### Authentication
-- **None** - No authentication (development)
+- **None** - No authentication (development only — **not for production**)
 - **API Key** - Static API keys in `API_KEYS` env var
 - **JWT** - JSON Web Token with configurable secret
+- **Database Admin** - Mutating database operations (`/api/v1/database/*`) require `ADMIN_API_KEY` env var and `X-Admin-Key` header, regardless of global auth config
 
 ### Rate Limiting
 - Window-based rate limiting (default: 500 requests/minute)
@@ -779,6 +782,7 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 AUTH_TYPE=none                   # none | api-key | jwt
 API_KEYS=key1,key2              # For api-key auth
 JWT_SECRET=your-secret          # For jwt auth (min 32 chars)
+ADMIN_API_KEY=your-admin-key    # Required for database admin operations
 
 # ─── Rate Limiting ─────────────────────────────────
 RATE_LIMIT_DISABLED=false

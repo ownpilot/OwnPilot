@@ -17,26 +17,18 @@ const BLOCKED_DOMAINS = [
   '127.0.0.1',
   '0.0.0.0',
   '::1',
-  '169.254.',
-  '10.',
-  '172.16.',
-  '172.17.',
-  '172.18.',
-  '172.19.',
-  '172.20.',
-  '172.21.',
-  '172.22.',
-  '172.23.',
-  '172.24.',
-  '172.25.',
-  '172.26.',
-  '172.27.',
-  '172.28.',
-  '172.29.',
-  '172.30.',
-  '172.31.',
-  '192.168.',
-];
+  '169.254.',  // Link-local IPv4
+  '10.',       // Private Class A
+  '172.16.', '172.17.', '172.18.', '172.19.',
+  '172.20.', '172.21.', '172.22.', '172.23.',
+  '172.24.', '172.25.', '172.26.', '172.27.',
+  '172.28.', '172.29.', '172.30.', '172.31.', // Private Class B
+  '192.168.', // Private Class C
+  '[::1]',    // IPv6 loopback (bracketed in URLs)
+  '[fc',      // IPv6 unique local (fc00::/7)
+  '[fd',      // IPv6 unique local (fd00::/8)
+  '[fe80',    // IPv6 link-local (fe80::/10)
+];;
 
 /**
  * Check if URL is blocked
@@ -46,8 +38,29 @@ function isBlockedUrl(url: string): boolean {
     const parsed = new URL(url);
     const hostname = parsed.hostname.toLowerCase();
 
+    // Block non-http(s) schemes (file://, ftp://, data://, etc.)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return true;
+    }
+
+    // Block URLs with credentials (user:pass@host)
+    if (parsed.username || parsed.password) {
+      return true;
+    }
+
+    // Block numeric IP tricks (decimal, octal, hex representations of private IPs)
+    // e.g. 2130706433 = 127.0.0.1, 0x7f000001 = 127.0.0.1
+    if (/^(0x[0-9a-f]+|0[0-7]+|\d+)$/i.test(hostname)) {
+      return true; // Block all numeric-only hostnames
+    }
+
+    // Standard domain/IP checks
     return BLOCKED_DOMAINS.some((blocked) => {
       if (blocked.endsWith('.')) {
+        return hostname.startsWith(blocked);
+      }
+      if (blocked.startsWith('[')) {
+        // IPv6 prefix match (bracketed form in URLs)
         return hostname.startsWith(blocked);
       }
       return hostname === blocked || hostname.endsWith('.' + blocked);
@@ -55,6 +68,17 @@ function isBlockedUrl(url: string): boolean {
   } catch {
     return true; // Block invalid URLs
   }
+}
+
+/**
+ * Validate the final URL after redirects to prevent SSRF via open redirects.
+ * Returns an error message if blocked, or null if safe.
+ */
+function checkRedirectTarget(finalUrl: string, originalUrl: string): string | null {
+  if (isBlockedUrl(finalUrl)) {
+    return `Request was redirected to a blocked internal address (${finalUrl}). Original URL: ${originalUrl}`;
+  }
+  return null;
 }
 
 /**
@@ -212,6 +236,12 @@ export const httpRequestExecutor: ToolExecutor = async (params, _context): Promi
 
     clearTimeout(timeoutId);
 
+    // Check if redirect landed on a blocked internal address
+    const redirectError = checkRedirectTarget(response.url, url);
+    if (redirectError) {
+      return { content: { error: redirectError }, isError: true };
+    }
+
     // Get response headers
     const responseHeaders: Record<string, string> = {};
     response.headers.forEach((value, key) => {
@@ -333,6 +363,12 @@ export const fetchWebPageExecutor: ToolExecutor = async (params, _context): Prom
     });
 
     clearTimeout(timeoutId);
+
+    // Check if redirect landed on a blocked internal address
+    const redirectError = checkRedirectTarget(response.url, url);
+    if (redirectError) {
+      return { content: { error: redirectError }, isError: true };
+    }
 
     if (!response.ok) {
       return {
@@ -565,6 +601,12 @@ export const jsonApiExecutor: ToolExecutor = async (params, _context): Promise<T
     });
 
     clearTimeout(timeoutId);
+
+    // Check if redirect landed on a blocked internal address
+    const redirectError = checkRedirectTarget(response.url, url);
+    if (redirectError) {
+      return { content: { error: redirectError }, isError: true };
+    }
 
     let responseData: unknown;
     const contentType = response.headers.get('content-type') || '';

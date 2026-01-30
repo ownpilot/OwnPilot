@@ -5,6 +5,8 @@
  */
 
 import { Hono } from 'hono';
+import { createMiddleware } from 'hono/factory';
+import { HTTPException } from 'hono/http-exception';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
@@ -13,7 +15,114 @@ import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
 
+
+// Tables to export (in dependency order) — also serves as whitelist for SQL operations
+const EXPORT_TABLES = [
+  'settings',
+  'agents',
+  'conversations',
+  'messages',
+  'request_logs',
+  'channels',
+  'channel_messages',
+  'costs',
+  'bookmarks',
+  'notes',
+  'projects',
+  'tasks',
+  'calendar_events',
+  'contacts',
+  'reminders',
+  'captures',
+  'pomodoro_settings',
+  'pomodoro_sessions',
+  'pomodoro_daily_stats',
+  'habits',
+  'habit_logs',
+  'memories',
+  'goals',
+  'goal_steps',
+  'triggers',
+  'trigger_history',
+  'plans',
+  'plan_steps',
+  'plan_history',
+  'oauth_integrations',
+  'media_provider_settings',
+  'user_workspaces',
+  'user_containers',
+  'code_executions',
+  'workspace_audit',
+  'user_model_configs',
+  'custom_providers',
+  'user_provider_configs',
+  'custom_data',
+  'custom_tools',
+  'custom_table_schemas',
+  'custom_data_records',
+];
+
+// --- SQL Injection Protection ---
+const SAFE_IDENTIFIER_REGEX = /^[a-z_][a-z0-9_]*$/;
+
+function validateTableName(name: string): string {
+  const trimmed = name.trim().toLowerCase();
+  if (!SAFE_IDENTIFIER_REGEX.test(trimmed)) {
+    throw new Error(`Invalid table name: ${trimmed}`);
+  }
+  if (!EXPORT_TABLES.includes(trimmed)) {
+    throw new Error(`Table not in whitelist: ${trimmed}`);
+  }
+  return trimmed;
+}
+
+function validateColumnName(name: string): string {
+  const trimmed = name.trim().toLowerCase();
+  if (!SAFE_IDENTIFIER_REGEX.test(trimmed)) {
+    throw new Error(`Invalid column name: ${trimmed}`);
+  }
+  return trimmed;
+}
+
+function quoteIdentifier(name: string): string {
+  // Double-quote PostgreSQL identifier (escape any embedded quotes)
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
 export const databaseRoutes = new Hono();
+
+// --- Database Admin Guard ---
+// Requires ADMIN_API_KEY env var to be set. All database admin operations
+// require this key via X-Admin-Key header, regardless of global auth config.
+// GET /status and /stats are exempt (read-only info).
+const ADMIN_EXEMPT_PATHS = ['/status', '/stats', '/operation/status'];
+
+const requireDatabaseAdmin = createMiddleware(async (c, next) => {
+  const path = new URL(c.req.url).pathname.replace(/.*\/database/, '');
+  if (ADMIN_EXEMPT_PATHS.some(p => path === p || path.startsWith(p))) {
+    await next();
+    return;
+  }
+
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey) {
+    // If ADMIN_API_KEY is not configured, block all admin operations
+    throw new HTTPException(503, {
+      message: 'Database admin operations require ADMIN_API_KEY to be configured',
+    });
+  }
+
+  const providedKey = c.req.header('X-Admin-Key');
+  if (!providedKey || providedKey !== adminKey) {
+    throw new HTTPException(403, {
+      message: 'Valid X-Admin-Key header required for database admin operations',
+    });
+  }
+
+  await next();
+});
+
+databaseRoutes.use('*', requireDatabaseAdmin);
 
 // Backup directory
 const getBackupDir = () => {
@@ -193,7 +302,7 @@ databaseRoutes.post('/backup', async (c) => {
     PGPASSWORD: config.postgresPassword || '',
   };
 
-  const backup = spawn('pg_dump', args, { env, shell: true });
+  const backup = spawn('pg_dump', args, { env });
 
   backup.stdout.on('data', (data) => {
     const line = data.toString().trim();
@@ -327,7 +436,7 @@ databaseRoutes.post('/restore', async (c) => {
     PGPASSWORD: config.postgresPassword || '',
   };
 
-  const restore = spawn(command, args, { env, shell: true });
+  const restore = spawn(command, args, { env });
 
   restore.stdout.on('data', (data) => {
     const line = data.toString().trim();
@@ -627,51 +736,7 @@ databaseRoutes.get('/operation/status', (c) => {
 // JSON Export/Import (No pg_dump required)
 // ============================================================================
 
-// Tables to export (in dependency order)
-const EXPORT_TABLES = [
-  'settings',
-  'agents',
-  'conversations',
-  'messages',
-  'request_logs',
-  'channels',
-  'channel_messages',
-  'costs',
-  'bookmarks',
-  'notes',
-  'projects',
-  'tasks',
-  'calendar_events',
-  'contacts',
-  'reminders',
-  'captures',
-  'pomodoro_settings',
-  'pomodoro_sessions',
-  'pomodoro_daily_stats',
-  'habits',
-  'habit_logs',
-  'memories',
-  'goals',
-  'goal_steps',
-  'triggers',
-  'trigger_history',
-  'plans',
-  'plan_steps',
-  'plan_history',
-  'oauth_integrations',
-  'media_provider_settings',
-  'user_workspaces',
-  'user_containers',
-  'code_executions',
-  'workspace_audit',
-  'user_model_configs',
-  'custom_providers',
-  'user_provider_configs',
-  'custom_data',
-  'custom_tools',
-  'custom_table_schemas',
-  'custom_data_records',
-];
+// EXPORT_TABLES moved above databaseRoutes for use in validation functions
 
 /**
  * Export all data as JSON (no pg_dump required)
@@ -684,13 +749,40 @@ databaseRoutes.get('/export', async (c) => {
       throw new Error('Not connected');
     }
 
-    const tables = c.req.query('tables')?.split(',') || EXPORT_TABLES;
+    const requestedTables = c.req.query('tables')?.split(',') || EXPORT_TABLES;
+    // Validate all table names against whitelist
+    const tables: string[] = [];
+    const skippedTables: string[] = [];
+    for (const t of requestedTables) {
+      try {
+        tables.push(validateTableName(t));
+      } catch {
+        skippedTables.push(t.trim());
+      }
+    }
+    if (tables.length === 0) {
+      return c.json({
+        success: false,
+        error: {
+          code: 'INVALID_TABLES',
+          message: `No valid tables specified. Skipped: ${skippedTables.join(', ')}`,
+        },
+        meta: {
+          requestId: c.get('requestId') ?? 'unknown',
+          timestamp: new Date().toISOString(),
+        },
+      }, 400);
+    }
+
     const exportData: Record<string, unknown[]> = {};
     const errors: string[] = [];
+    if (skippedTables.length > 0) {
+      errors.push(`Skipped invalid tables: ${skippedTables.join(', ')}`);
+    }
 
     for (const table of tables) {
       try {
-        // Check if table exists
+        // Check if table exists (table already validated above)
         const exists = await adapter.queryOne<{ exists: boolean }>(
           `SELECT EXISTS (
             SELECT FROM information_schema.tables
@@ -700,7 +792,7 @@ databaseRoutes.get('/export', async (c) => {
         );
 
         if (exists?.exists) {
-          const rows = await adapter.query(`SELECT * FROM ${table}`);
+          const rows = await adapter.query(`SELECT * FROM ${quoteIdentifier(table)}`);
           exportData[table] = rows;
         }
       } catch (err) {
@@ -791,7 +883,28 @@ databaseRoutes.post('/import', async (c) => {
     }
 
     const options = body.options || {};
-    const tablesToImport = options.tables || Object.keys(body.data.tables);
+    const requestedTables = options.tables || Object.keys(body.data.tables);
+
+    // Validate all table names against whitelist
+    const tablesToImport: string[] = [];
+    const skippedImportTables: string[] = [];
+    for (const t of requestedTables) {
+      try {
+        tablesToImport.push(validateTableName(t));
+      } catch {
+        skippedImportTables.push(typeof t === 'string' ? t.trim() : String(t));
+      }
+    }
+
+    if (tablesToImport.length === 0) {
+      return c.json({
+        success: false,
+        error: {
+          code: 'INVALID_TABLES',
+          message: `No valid tables to import. Skipped: ${skippedImportTables.join(', ')}`,
+        },
+      }, 400);
+    }
 
     operationStatus = {
       isRunning: true,
@@ -799,6 +912,10 @@ databaseRoutes.post('/import', async (c) => {
       lastRun: new Date().toISOString(),
       output: [],
     };
+
+    if (skippedImportTables.length > 0) {
+      operationStatus.output?.push(`Skipped invalid tables: ${skippedImportTables.join(', ')}`);
+    }
 
     // Run import in background
     (async () => {
@@ -816,7 +933,7 @@ databaseRoutes.post('/import', async (c) => {
           operationStatus.output?.push(`Importing ${table}...`);
           results[table] = { imported: 0, errors: 0 };
 
-          // Check if table exists
+          // Check if table exists (table already validated against whitelist)
           const exists = await adapter.queryOne<{ exists: boolean }>(
             `SELECT EXISTS (
               SELECT FROM information_schema.tables
@@ -832,22 +949,50 @@ databaseRoutes.post('/import', async (c) => {
 
           // Truncate if requested
           if (options.truncate) {
-            await adapter.exec(`TRUNCATE TABLE ${table} CASCADE`);
+            await adapter.exec(`TRUNCATE TABLE ${quoteIdentifier(table)} CASCADE`);
             operationStatus.output?.push(`  Truncated ${table}`);
           }
 
           // Import rows
           for (const row of rows) {
             try {
-              const columns = Object.keys(row);
-              const values = Object.values(row);
-              const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+              // Validate and quote all column names
+              const rawColumns = Object.keys(row);
+              const validColumns: string[] = [];
+              const validValues: unknown[] = [];
+              const rawValues = Object.values(row);
+              for (let i = 0; i < rawColumns.length; i++) {
+                const col = rawColumns[i];
+                if (!col) continue;
+                try {
+                  validColumns.push(validateColumnName(col));
+                  validValues.push(rawValues[i]);
+                } catch {
+                  // Skip invalid column names silently
+                }
+              }
+              if (validColumns.length === 0) continue;
 
-              const sql = options.skipExisting
-                ? `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`
-                : `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT DO UPDATE SET ${columns.map((col, i) => `${col} = $${i + 1}`).join(', ')}`;
+              const quotedColumns = validColumns.map(quoteIdentifier);
+              const placeholders = validColumns.map((_, i) => `$${i + 1}`).join(', ');
+              const quotedTable = quoteIdentifier(table);
 
-              await adapter.execute(sql, values);
+              let sql: string;
+              if (options.skipExisting) {
+                sql = `INSERT INTO ${quotedTable} (${quotedColumns.join(', ')}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`;
+              } else {
+                // Use EXCLUDED to reference the proposed row values
+                const updateSet = validColumns
+                  .filter(col => col !== 'id')
+                  .map(col => `${quoteIdentifier(col)} = EXCLUDED.${quoteIdentifier(col)}`)
+                  .join(', ');
+                // If all columns are 'id', just do nothing
+                sql = updateSet
+                  ? `INSERT INTO ${quotedTable} (${quotedColumns.join(', ')}) VALUES (${placeholders}) ON CONFLICT ("id") DO UPDATE SET ${updateSet}`
+                  : `INSERT INTO ${quotedTable} (${quotedColumns.join(', ')}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`;
+              }
+
+              await adapter.execute(sql, validValues);
               results[table].imported++;
               totalImported++;
             } catch (err) {
@@ -928,7 +1073,7 @@ databaseRoutes.post('/export/save', async (c) => {
         );
 
         if (exists?.exists) {
-          const rows = await adapter.query(`SELECT * FROM ${table}`);
+          const rows = await adapter.query(`SELECT * FROM ${quoteIdentifier(table)}`);
           exportData[table] = rows;
         }
       } catch {
@@ -1141,9 +1286,10 @@ databaseRoutes.post('/migrate', async (c) => {
 
   // Run migration script in background
   const cwd = join(process.cwd(), 'packages', 'gateway');
+  // shell: true needed on Windows for npx.cmd resolution
   const migration = spawn('npx', args, {
     cwd,
-    shell: true,
+    shell: process.platform === 'win32',
     env: {
       ...process.env,
       SQLITE_PATH: sqlitePath,

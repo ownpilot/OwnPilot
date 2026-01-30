@@ -32,6 +32,17 @@ function maskSecret(value: unknown): string {
 }
 
 /**
+ * Detect if a value looks like it was masked by maskSecret().
+ * Matches patterns like "abcd...wxyz" or "****".
+ */
+function isMaskedValue(value: string): boolean {
+  if (value === '****') return true;
+  // Matches: 4 chars + "..." + 4 chars (total 11 chars)
+  if (/^.{4}\.\.\..{4}$/.test(value)) return true;
+  return false;
+}
+
+/**
  * Sanitize an entry's data by masking fields with type='secret' in the schema.
  * Returns a new object with masked values and metadata about secret fields.
  */
@@ -346,6 +357,28 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
   }
 
   const body = await c.req.json<UpdateConfigEntryInput>();
+
+  // Protect against masked secret values being written back to DB.
+  // If a secret field's value looks like a masked string, preserve the original.
+  if (body.data) {
+    const secretFields = service.configSchema
+      .filter(f => f.type === 'secret')
+      .map(f => f.name);
+
+    if (secretFields.length > 0) {
+      const existingEntry = configServicesRepo.getEntries(name).find(e => e.id === entryId);
+      if (existingEntry) {
+        for (const field of secretFields) {
+          const incoming = body.data[field];
+          if (typeof incoming === 'string' && isMaskedValue(incoming)) {
+            // Restore original value — the client sent back a masked string
+            body.data[field] = existingEntry.data[field];
+          }
+        }
+      }
+    }
+  }
+
   const updated = await configServicesRepo.updateEntry(entryId, body);
   if (!updated) {
     throw new HTTPException(404, { message: `Config entry not found: ${entryId}` });

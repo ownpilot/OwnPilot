@@ -2,7 +2,7 @@
  * Settings routes
  *
  * Provides API for managing application settings including API keys
- * Settings are persisted to SQLite database
+ * Settings are persisted to the database (PostgreSQL)
  */
 
 import { Hono } from 'hono';
@@ -200,8 +200,11 @@ settingsRoutes.post('/api-keys', async (c) => {
 
   // Also set as environment variable for the current process
   // This allows providers to work immediately without restart
-  const envVarName = `${body.provider.toUpperCase()}_API_KEY`;
-  process.env[envVarName] = body.apiKey;
+  const sanitizedProvider = body.provider.replace(/[^a-zA-Z0-9_]/g, '').toUpperCase();
+  if (sanitizedProvider) {
+    const envVarName = `${sanitizedProvider}_API_KEY`;
+    process.env[envVarName] = body.apiKey;
+  }
 
   const response: ApiResponse = {
     success: true,
@@ -229,8 +232,11 @@ settingsRoutes.delete('/api-keys/:provider', async (c) => {
   await settingsRepo.delete(key);
 
   // Remove from environment
-  const envVarName = `${provider.toUpperCase()}_API_KEY`;
-  delete process.env[envVarName];
+  const sanitizedProvider = provider.replace(/[^a-zA-Z0-9_]/g, '').toUpperCase();
+  if (sanitizedProvider) {
+    const envVarName = `${sanitizedProvider}_API_KEY`;
+    delete process.env[envVarName];
+  }
 
   const response: ApiResponse = {
     success: true,
@@ -272,9 +278,11 @@ export async function loadApiKeysToEnvironment(): Promise<void> {
 
   for (const setting of apiKeySettings) {
     const provider = setting.key.replace(API_KEY_PREFIX, '');
-    const envVarName = `${provider.toUpperCase()}_API_KEY`;
-    process.env[envVarName] = setting.value as string;
-    console.log(`Loaded API key for ${provider} from database`);
+    const sanitizedProvider = provider.replace(/[^a-zA-Z0-9_]/g, '').toUpperCase();
+    if (sanitizedProvider) {
+      const envVarName = `${sanitizedProvider}_API_KEY`;
+      process.env[envVarName] = setting.value as string;
+    }
   }
 }
 
