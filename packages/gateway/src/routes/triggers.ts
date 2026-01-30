@@ -58,20 +58,9 @@ triggersRoutes.get('/', async (c) => {
  */
 triggersRoutes.post('/', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
-  const body = await c.req.json<CreateTriggerInput>();
-
-  if (!body.name || !body.type || !body.config || !body.action) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'name, type, config, and action are required',
-        },
-      },
-      400
-    );
-  }
+  const rawBody = await c.req.json();
+  const { validateBody, createTriggerSchema } = await import('../middleware/validation.js');
+  const body = validateBody(createTriggerSchema, rawBody) as unknown as CreateTriggerInput;
 
   // Validate cron expression for schedule triggers before saving
   if (body.type === 'schedule') {

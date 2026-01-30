@@ -1176,15 +1176,9 @@ agentRoutes.get('/', async (c) => {
  * Tools can be specified explicitly via 'tools' array or via 'toolGroups' array.
  */
 agentRoutes.post('/', async (c) => {
-  const body = await c.req.json<CreateAgentRequest>();
-
-  // Validate request - only name and systemPrompt are required
-  // Provider/model default to 'default' which resolves at runtime
-  if (!body.name || !body.systemPrompt) {
-    throw new HTTPException(400, {
-      message: 'Missing required fields: name, systemPrompt',
-    });
-  }
+  const rawBody = await c.req.json();
+  const { validateBody, createAgentSchema } = await import('../middleware/validation.js');
+  const body = validateBody(createAgentSchema, rawBody) as CreateAgentRequest;
 
   // Default to 'default' for provider and model
   // These will be resolved to actual values at runtime when the agent is used
@@ -1312,7 +1306,9 @@ agentRoutes.get('/:id', async (c) => {
  */
 agentRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
-  const body = await c.req.json<UpdateAgentRequest>();
+  const rawBody = await c.req.json();
+  const { validateBody, updateAgentSchema } = await import('../middleware/validation.js');
+  const body = validateBody(updateAgentSchema, rawBody) as UpdateAgentRequest;
 
   const existing = await agentsRepo.getById(id);
   if (!existing) {

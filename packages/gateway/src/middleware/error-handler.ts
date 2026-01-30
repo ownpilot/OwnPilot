@@ -67,6 +67,38 @@ export function errorHandler(err: Error, c: Context): Response {
     return c.json(response, err.status);
   }
 
+  // Handle JSON parse errors (malformed request body)
+  if (err instanceof SyntaxError && err.message.includes('JSON')) {
+    const response: ApiResponse = {
+      success: false,
+      error: {
+        code: ErrorCodes.BAD_REQUEST,
+        message: 'Invalid JSON in request body',
+      },
+      meta: {
+        requestId,
+        timestamp: new Date().toISOString(),
+      },
+    };
+    return c.json(response, 400);
+  }
+
+  // Handle validation errors thrown as plain Errors (legacy path)
+  if (err.message?.startsWith('Validation failed:')) {
+    const response: ApiResponse = {
+      success: false,
+      error: {
+        code: ErrorCodes.VALIDATION_ERROR,
+        message: err.message,
+      },
+      meta: {
+        requestId,
+        timestamp: new Date().toISOString(),
+      },
+    };
+    return c.json(response, 400);
+  }
+
   // Log unexpected errors
   console.error(`[${requestId}] Unexpected error:`, err);
 

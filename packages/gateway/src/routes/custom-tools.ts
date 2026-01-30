@@ -162,7 +162,9 @@ customToolsRoutes.get('/:id', async (c) => {
  * Create a new custom tool
  */
 customToolsRoutes.post('/', async (c) => {
-  const body = await c.req.json<{
+  const rawBody = await c.req.json();
+  const { validateBody, createCustomToolSchema } = await import('../middleware/validation.js');
+  const body = validateBody(createCustomToolSchema, rawBody) as {
     name: string;
     description: string;
     parameters: CustomToolRecord['parameters'];
@@ -173,21 +175,7 @@ customToolsRoutes.post('/', async (c) => {
     createdBy?: 'user' | 'llm';
     metadata?: Record<string, unknown>;
     requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
-  }>();
-
-  // Validate required fields
-  if (!body.name || !body.description || !body.parameters || !body.code) {
-    throw new HTTPException(400, {
-      message: 'Missing required fields: name, description, parameters, code',
-    });
-  }
-
-  // Validate tool name format
-  if (!/^[a-z][a-z0-9_]*$/.test(body.name)) {
-    throw new HTTPException(400, {
-      message: 'Invalid tool name. Must start with lowercase letter and contain only lowercase letters, numbers, and underscores.',
-    });
-  }
+  };
 
   // Validate code for dangerous patterns
   const dangerousPatterns = [

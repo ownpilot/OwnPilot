@@ -9,6 +9,7 @@ import { Hono } from 'hono';
 import type { ApiResponse } from '../types/index.js';
 import {
   getPersonalMemoryStore,
+  getMemoryInjector,
   type PersonalDataCategory,
   type ComprehensiveProfile,
 } from '@ownpilot/core';
@@ -149,6 +150,9 @@ app.post('/data', async (c) => {
       sensitive,
     });
 
+    // Invalidate prompt cache so next AI call sees updated profile
+    getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
+
     const response: ApiResponse = {
       success: true,
       data: entry,
@@ -196,6 +200,8 @@ app.delete('/data', async (c) => {
 
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
     const deleted = await store.delete(category, key);
+
+    getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
 
     const response: ApiResponse = {
       success: true,
@@ -299,6 +305,8 @@ app.post('/import', async (c) => {
 
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
     const imported = await store.importData(entries);
+
+    getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
 
     const response: ApiResponse = {
       success: true,
@@ -416,6 +424,8 @@ app.post('/quick', async (c) => {
       await store.set('ai_preferences', 'autonomy', autonomyLevel);
       count++;
     }
+
+    getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
 
     // Get updated profile
     const profile = await store.getProfile();

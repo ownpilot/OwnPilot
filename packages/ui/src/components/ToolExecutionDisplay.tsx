@@ -331,11 +331,21 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
     );
   }
 
-  // Default JSON display
+  // Default display - detect JSON strings
+  const isObject = typeof result === 'object';
+  const resultStr = isObject ? JSON.stringify(result, null, 2) : String(result);
+  const isJsonString = !isObject && typeof result === 'string' && (() => {
+    const trimmed = result.trim();
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try { return JSON.stringify(JSON.parse(trimmed), null, 2); } catch { return null; }
+    }
+    return null;
+  })();
+
   return (
     <CodeBlock
-      code={typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result)}
-      language={typeof result === 'object' ? 'json' : 'plaintext'}
+      code={isJsonString || resultStr}
+      language={isObject || isJsonString ? 'json' : 'plaintext'}
       showLineNumbers={false}
       maxHeight="300px"
     />

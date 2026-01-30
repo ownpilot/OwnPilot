@@ -6,8 +6,24 @@
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import { jwtVerify } from 'jose';
-import { createSecretKey } from 'node:crypto';
+import { createSecretKey, timingSafeEqual } from 'node:crypto';
 import type { AuthConfig } from '../types/index.js';
+
+/**
+ * Timing-safe API key check.
+ * Returns true if `candidate` matches any key in `validKeys`.
+ */
+function apiKeyMatches(candidate: string, validKeys: string[]): boolean {
+  const candidateBuf = Buffer.from(candidate);
+  for (const key of validKeys) {
+    const keyBuf = Buffer.from(key);
+    // timingSafeEqual requires equal-length buffers
+    if (candidateBuf.length === keyBuf.length && timingSafeEqual(candidateBuf, keyBuf)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /**
  * Create authentication middleware
@@ -34,7 +50,7 @@ export function createAuthMiddleware(config: AuthConfig) {
         });
       }
 
-      if (!config.apiKeys?.includes(apiKey)) {
+      if (!config.apiKeys?.length || !apiKeyMatches(apiKey, config.apiKeys)) {
         throw new HTTPException(403, {
           message: 'Invalid API key',
         });
@@ -107,7 +123,7 @@ export function createOptionalAuthMiddleware(config: AuthConfig) {
         ? authHeader.slice(7)
         : c.req.header('X-API-Key');
 
-      if (apiKey && config.apiKeys?.includes(apiKey)) {
+      if (apiKey && config.apiKeys?.length && apiKeyMatches(apiKey, config.apiKeys)) {
         c.set('userId', `apikey:${apiKey.slice(0, 8)}...`);
       }
     } else if (config.type === 'jwt' && authHeader?.startsWith('Bearer ')) {

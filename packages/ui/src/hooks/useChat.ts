@@ -102,6 +102,9 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     setStreamingContent('');
     setProgressEvents([]);
 
+    // Track accumulated content across streaming scope for partial error recovery
+    let accumulatedStreamContent = '';
+
     // If this is a retry, remove the last error message (keep the user message)
     if (isRetry) {
       setMessages((prev) => {
@@ -160,6 +163,8 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         const decoder = new TextDecoder();
         let accumulatedContent = '';
         let buffer = '';
+        // Keep outer scope in sync for partial error recovery
+        const syncAccumulated = (c: string) => { accumulatedContent = c; accumulatedStreamContent = c; };
         let finalResponse: ChatResponse | null = null;
 
         while (true) {
@@ -196,7 +201,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
                 } else if (data.delta !== undefined) {
                   // Content chunk
                   if (data.delta) {
-                    accumulatedContent += data.delta;
+                    syncAccumulated(accumulatedContent + data.delta);
                     setStreamingContent(accumulatedContent);
                   }
                   if (data.done) {
@@ -269,14 +274,26 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       setLastFailedMessage(content);
       setStreamingContent('');
 
-      const errorMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: `Sorry, I encountered an error: ${errorText}`,
-        timestamp: new Date().toISOString(),
-        isError: true,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      if (accumulatedStreamContent) {
+        // Partial response was already streamed — preserve it with error note
+        const partialMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: accumulatedStreamContent + '\n\n---\n*Response interrupted. You can retry your message.*',
+          timestamp: new Date().toISOString(),
+          isError: true,
+        };
+        setMessages((prev) => [...prev, partialMessage]);
+      } else {
+        const errorMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `Sorry, I encountered an error: ${errorText}`,
+          timestamp: new Date().toISOString(),
+          isError: true,
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
     } finally {
       if (abortControllerRef.current === controller) {
         setIsLoading(false);

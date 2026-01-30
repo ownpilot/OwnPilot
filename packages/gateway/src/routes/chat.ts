@@ -139,14 +139,9 @@ function generateDemoResponse(message: string, provider: string, model: string):
  * Send a chat message
  */
 chatRoutes.post('/', async (c) => {
-  const body = await c.req.json<ChatRequest & { provider?: string; model?: string; workspaceId?: string }>();
-
-  // Validate request
-  if (!body.message) {
-    throw new HTTPException(400, {
-      message: 'Message is required',
-    });
-  }
+  const rawBody = await c.req.json();
+  const { validateBody, chatMessageSchema } = await import('../middleware/validation.js');
+  const body = validateBody(chatMessageSchema, rawBody) as ChatRequest & { provider?: string; model?: string; workspaceId?: string };
 
   // Get provider and model from request
   const provider = body.provider ?? 'openai';

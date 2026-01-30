@@ -11,7 +11,8 @@ import { injectMemoryIntoPrompt, type MemoryInjectionOptions } from './memory-in
 
 /**
  * LLM Provider interface for orchestrator
- * Compatible with various provider implementations
+ * Compatible with various provider implementations.
+ * Tool calls should use the normalized ToolCall format (flat {id, name, arguments}).
  */
 export interface LLMProvider {
   complete(request: {
@@ -22,7 +23,7 @@ export interface LLMProvider {
     temperature?: number;
   }): Promise<{
     content?: string;
-    toolCalls?: OpenAIToolCall[];
+    toolCalls?: ToolCall[];
   }>;
 
   stream?(request: {
@@ -33,19 +34,8 @@ export interface LLMProvider {
     temperature?: number;
   }): AsyncGenerator<{
     content?: string;
-    toolCalls?: OpenAIToolCall[];
+    toolCalls?: ToolCall[];
   }>;
-}
-
-/**
- * OpenAI-style tool call format
- */
-interface OpenAIToolCall {
-  id: string;
-  function: {
-    name: string;
-    arguments: string;
-  };
 }
 
 // ============================================================================
@@ -370,18 +360,11 @@ export class AgentOrchestrator extends EventEmitter {
 
       // Check for tool calls
       if (response.toolCalls && response.toolCalls.length > 0) {
-        // Convert OpenAI tool calls to our ToolCall format
-        const convertedToolCalls = response.toolCalls.map(tc => ({
-          id: tc.id,
-          name: tc.function.name,
-          arguments: tc.function.arguments,
-        }));
-
         // Add assistant message with tool calls
         context.messages.push({
           role: 'assistant',
           content: response.content || '',
-          toolCalls: convertedToolCalls,
+          toolCalls: response.toolCalls,
         });
 
         // Execute each tool call
@@ -442,7 +425,7 @@ export class AgentOrchestrator extends EventEmitter {
 
       // Call LLM with streaming
       let fullContent = '';
-      let toolCalls: OpenAIToolCall[] = [];
+      let toolCalls: ToolCall[] = [];
 
       if (this.config.provider.stream) {
         const stream = this.config.provider.stream({
@@ -487,24 +470,17 @@ export class AgentOrchestrator extends EventEmitter {
 
       // Check for tool calls
       if (toolCalls.length > 0) {
-        // Convert OpenAI tool calls to our ToolCall format
-        const convertedToolCalls = toolCalls.map(tc => ({
-          id: tc.id,
-          name: tc.function.name,
-          arguments: tc.function.arguments,
-        }));
-
         context.messages.push({
           role: 'assistant',
           content: fullContent,
-          toolCalls: convertedToolCalls,
+          toolCalls,
         });
 
         // Execute each tool call
         for (const toolCall of toolCalls) {
           yield {
             type: 'tool_call',
-            content: { name: toolCall.function.name, arguments: toolCall.function.arguments },
+            content: { name: toolCall.name, arguments: toolCall.arguments },
             timestamp: new Date(),
           };
 
@@ -539,25 +515,25 @@ export class AgentOrchestrator extends EventEmitter {
   }
 
   private async executeToolCall(
-    toolCall: OpenAIToolCall,
+    toolCall: ToolCall,
     context: OrchestratorContext
   ): Promise<ToolCallRecord> {
     const startTime = new Date();
-    const toolName = toolCall.function.name;
+    const toolName = toolCall.name;
     let args: Record<string, unknown>;
 
     try {
-      args = typeof toolCall.function.arguments === 'string'
-        ? JSON.parse(toolCall.function.arguments)
-        : toolCall.function.arguments;
+      args = typeof toolCall.arguments === 'string'
+        ? JSON.parse(toolCall.arguments)
+        : toolCall.arguments as Record<string, unknown>;
     } catch (parseError) {
-      console.warn(`[Orchestrator] Failed to parse tool arguments for "${toolName}":`, toolCall.function.arguments);
+      console.warn(`[Orchestrator] Failed to parse tool arguments for "${toolName}":`, toolCall.arguments);
       args = {};
       // Return early with error so the AI can see what went wrong
       return {
         name: toolName,
         arguments: {},
-        result: `Error: Invalid JSON in tool arguments. Raw input: ${String(toolCall.function.arguments).slice(0, 200)}`,
+        result: `Error: Invalid JSON in tool arguments. Raw input: ${String(toolCall.arguments).slice(0, 200)}`,
         startTime,
         endTime: new Date(),
         duration: Date.now() - startTime.getTime(),

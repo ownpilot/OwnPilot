@@ -20,6 +20,22 @@ import { type IProvider, createProvider } from '../provider.js';
 import { logError, logRetry } from '../debug.js';
 
 /**
+ * Circuit breaker states
+ */
+type CircuitState = 'closed' | 'open' | 'half-open';
+
+interface CircuitBreakerEntry {
+  state: CircuitState;
+  failureCount: number;
+  lastFailureTime: number;
+  lastSuccessTime: number;
+}
+
+/** Circuit breaker defaults */
+const CIRCUIT_FAILURE_THRESHOLD = 5;
+const CIRCUIT_COOLDOWN_MS = 60_000; // 1 minute
+
+/**
  * Fallback provider configuration
  */
 export interface FallbackProviderConfig {
@@ -29,6 +45,10 @@ export interface FallbackProviderConfig {
   fallbacks: ProviderConfig[];
   /** Whether to enable fallback (default: true) */
   enableFallback?: boolean;
+  /** Consecutive failures before opening circuit (default: 5) */
+  circuitBreakerThreshold?: number;
+  /** Cooldown in ms before retesting an open circuit (default: 60000) */
+  circuitBreakerCooldown?: number;
   /** Callback when fallback is triggered */
   onFallback?: (
     failedProvider: AIProvider,
@@ -46,6 +66,9 @@ export class FallbackProvider implements IProvider {
   private readonly fallbacks: IProvider[];
   private readonly config: FallbackProviderConfig;
   private currentProviderIndex: number = 0;
+  private readonly circuits = new Map<string, CircuitBreakerEntry>();
+  private readonly failureThreshold: number;
+  private readonly cooldownMs: number;
 
   constructor(config: FallbackProviderConfig) {
     this.config = {
@@ -56,7 +79,64 @@ export class FallbackProvider implements IProvider {
     this.primary = createProvider(config.primary);
     this.type = config.primary.provider;
     this.fallbacks = config.fallbacks.map((fc) => createProvider(fc));
+    this.failureThreshold = config.circuitBreakerThreshold ?? CIRCUIT_FAILURE_THRESHOLD;
+    this.cooldownMs = config.circuitBreakerCooldown ?? CIRCUIT_COOLDOWN_MS;
   }
+
+  // ── Circuit Breaker ─────────────────────────────────────────────
+
+  private getCircuit(providerType: string): CircuitBreakerEntry {
+    let entry = this.circuits.get(providerType);
+    if (!entry) {
+      entry = { state: 'closed', failureCount: 0, lastFailureTime: 0, lastSuccessTime: 0 };
+      this.circuits.set(providerType, entry);
+    }
+    return entry;
+  }
+
+  /** Returns true if the provider should be skipped */
+  private isCircuitOpen(provider: IProvider): boolean {
+    const circuit = this.getCircuit(provider.type);
+    if (circuit.state === 'closed') return false;
+    if (circuit.state === 'open') {
+      // Check if cooldown has elapsed → transition to half-open
+      if (Date.now() - circuit.lastFailureTime >= this.cooldownMs) {
+        circuit.state = 'half-open';
+        console.log(`🔁 [CircuitBreaker] ${provider.type}: open → half-open (cooldown elapsed)`);
+        return false; // allow one test request
+      }
+      return true; // still open, skip
+    }
+    // half-open: allow request through
+    return false;
+  }
+
+  private recordSuccess(provider: IProvider): void {
+    const circuit = this.getCircuit(provider.type);
+    if (circuit.state !== 'closed') {
+      console.log(`✅ [CircuitBreaker] ${provider.type}: ${circuit.state} → closed`);
+    }
+    circuit.state = 'closed';
+    circuit.failureCount = 0;
+    circuit.lastSuccessTime = Date.now();
+  }
+
+  private recordFailure(provider: IProvider): void {
+    const circuit = this.getCircuit(provider.type);
+    circuit.failureCount++;
+    circuit.lastFailureTime = Date.now();
+
+    if (circuit.state === 'half-open') {
+      // Failed during test → re-open
+      circuit.state = 'open';
+      console.log(`🔒 [CircuitBreaker] ${provider.type}: half-open → open (test failed)`);
+    } else if (circuit.failureCount >= this.failureThreshold) {
+      circuit.state = 'open';
+      console.log(`🔒 [CircuitBreaker] ${provider.type}: closed → open (${circuit.failureCount} consecutive failures)`);
+    }
+  }
+
+  // ── Provider Access ───────────────────────────────────────────
 
   /**
    * Get all providers in order (primary + fallbacks)
@@ -95,6 +175,12 @@ export class FallbackProvider implements IProvider {
       const provider = providers[i];
       if (!provider) continue;
 
+      // Circuit breaker: skip providers whose circuit is open
+      if (this.isCircuitOpen(provider)) {
+        console.log(`⏭️  [Fallback] Skipping ${provider.type} (circuit open)`);
+        continue;
+      }
+
       this.currentProviderIndex = i;
 
       try {
@@ -103,8 +189,8 @@ export class FallbackProvider implements IProvider {
         const result = await provider.complete(request);
 
         if (result.ok) {
+          this.recordSuccess(provider);
           if (i > 0) {
-            // We used a fallback provider successfully
             console.log(`✅ [Fallback] Success with fallback provider: ${provider.type}`);
           }
           return result;
@@ -116,6 +202,7 @@ export class FallbackProvider implements IProvider {
 
         console.log(`❌ [Fallback] Provider ${provider.type} failed: ${errorMessage}`);
         logError(provider.type, result.error, 'Fallback triggered');
+        this.recordFailure(provider);
 
         // Check if we should try next provider
         if (i < providers.length - 1 && this.shouldFallback(result.error)) {
@@ -123,7 +210,6 @@ export class FallbackProvider implements IProvider {
           if (nextProvider) {
             console.log(`🔀 [Fallback] Switching to next provider: ${nextProvider.type}`);
 
-            // Trigger callback
             if (this.config.onFallback) {
               this.config.onFallback(
                 provider.type,
@@ -132,16 +218,15 @@ export class FallbackProvider implements IProvider {
               );
             }
 
-            // Log retry/fallback
             logRetry(i + 1, providers.length, result.error, 0);
           }
         }
       } catch (error) {
-        // Unexpected error during provider call
         const errorObj = error instanceof Error ? error : new Error(String(error));
         lastError = new InternalError(errorObj.message);
         console.log(`💥 [Fallback] Provider ${provider.type} threw exception: ${errorObj.message}`);
         logError(provider.type, errorObj, 'Exception during fallback');
+        this.recordFailure(provider);
       }
     }
 
@@ -173,6 +258,12 @@ export class FallbackProvider implements IProvider {
       const provider = providers[i];
       if (!provider) continue;
 
+      // Circuit breaker: skip providers whose circuit is open
+      if (this.isCircuitOpen(provider)) {
+        console.log(`⏭️  [Fallback Stream] Skipping ${provider.type} (circuit open)`);
+        continue;
+      }
+
       this.currentProviderIndex = i;
 
       try {
@@ -194,20 +285,31 @@ export class FallbackProvider implements IProvider {
           hasYielded = true;
           yield result;
 
-          // If we got a done chunk, we're finished
           if (result.value.done) {
+            this.recordSuccess(provider);
             return;
           }
         }
 
         // If we yielded data and finished without error, we're done
         if (hasYielded && !hasError) {
+          this.recordSuccess(provider);
           return;
         }
 
         // If error occurred, try next provider
         if (hasError && lastError) {
           console.log(`❌ [Fallback Stream] Provider ${provider.type} failed: ${lastError.message}`);
+          this.recordFailure(provider);
+
+          // If we already sent chunks to the client, do NOT retry with another
+          // provider — the client would see duplicate/overlapping content.
+          // Instead, signal the error and stop.
+          if (hasYielded) {
+            console.log(`⚠️  [Fallback Stream] Partial data already sent — cannot retry. Yielding error.`);
+            yield err(new InternalError(`Stream interrupted after partial data: ${lastError.message}`));
+            return;
+          }
 
           if (i < providers.length - 1 && this.shouldFallback(lastError)) {
             const nextProvider = providers[i + 1];
@@ -221,13 +323,13 @@ export class FallbackProvider implements IProvider {
             continue;
           }
 
-          // No more fallbacks, yield the error
           yield err(lastError);
           return;
         }
       } catch (error) {
         const errorObj = error instanceof Error ? error : new Error(String(error));
         console.log(`💥 [Fallback Stream] Provider ${provider.type} threw exception: ${errorObj.message}`);
+        this.recordFailure(provider);
 
         if (i < providers.length - 1) {
           continue;

@@ -75,7 +75,9 @@ describe('Tools Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.tool).toBe('calculate');
-      expect(json.data.result).toBe('4');
+      // Tool returns structured JSON; verify result contains the answer
+      const parsed = JSON.parse(json.data.result);
+      expect(parsed.result).toBe(4);
     });
 
     it('executes generate_uuid tool', async () => {
@@ -90,8 +92,9 @@ describe('Tools Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.tool).toBe('generate_uuid');
-      // UUID format check
-      expect(json.data.result).toMatch(
+      // Tool returns structured JSON; extract uuid and check format
+      const parsed = JSON.parse(json.data.result);
+      expect(parsed.uuid).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
       );
     });
