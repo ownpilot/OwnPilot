@@ -347,30 +347,36 @@ function formatTools(tools: readonly ToolDefinition[], lang: 'en' | 'tr'): strin
     return lang === 'en' ? 'No tools available.' : 'Mevcut araç yok.';
   }
 
-  // Group tools by category (compact: names only)
-  const toolsByCategory = new Map<string, string[]>();
-
+  // Count tools per category (don't list individual names — too verbose for system prompt)
+  const categoryCounts = new Map<string, number>();
   for (const tool of tools) {
     const category = tool.category ?? 'General';
-    if (!toolsByCategory.has(category)) {
-      toolsByCategory.set(category, []);
-    }
-    toolsByCategory.get(category)!.push(tool.name);
+    categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
   }
 
-  const lines: string[] = [];
+  const categories = Array.from(categoryCounts.entries())
+    .map(([cat, count]) => `${cat} (${count})`)
+    .join(', ');
 
-  const helpNote = lang === 'en'
-    ? 'Use get_tool_help(tool_name) for detailed parameter info before using an unfamiliar tool.'
-    : 'Tanımadığın bir aracı kullanmadan önce get_tool_help(tool_name) ile detaylı bilgi al.';
-  lines.push(helpNote);
-  lines.push('');
-
-  for (const [category, toolNames] of toolsByCategory) {
-    lines.push(`**${category}**: ${toolNames.join(', ')}`);
+  if (lang === 'tr') {
+    return [
+      `${tools.length} araç kullanılabilir: ${categories}`,
+      '',
+      'Araç kullanımı:',
+      '1. search_tools(query) — İhtiyacın olan aracı bul',
+      '2. get_tool_help(tool_name) — Parametreleri öğren',
+      '3. use_tool(tool_name, arguments) — Aracı çalıştır',
+    ].join('\n');
   }
 
-  return lines.join('\n');
+  return [
+    `${tools.length} tools available across: ${categories}`,
+    '',
+    'Tool workflow:',
+    '1. search_tools(query) — Find tools for your task',
+    '2. get_tool_help(tool_name) — Learn parameters',
+    '3. use_tool(tool_name, arguments) — Execute the tool',
+  ].join('\n');
 }
 
 /**

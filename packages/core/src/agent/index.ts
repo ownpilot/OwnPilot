@@ -124,6 +124,8 @@ export {
   type DynamicToolRegistry,
   type DynamicToolDefinition,
   type DynamicToolPermission,
+  // Tool search tags
+  TOOL_SEARCH_TAGS,
 } from './tools/index.js';
 
 // Memory

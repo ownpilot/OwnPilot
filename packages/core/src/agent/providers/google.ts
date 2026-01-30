@@ -23,7 +23,7 @@ import {
   type ProviderConfig,
   type ResolvedProviderConfig,
 } from './configs/index.js';
-import { logRequest, logResponse, logRetry, buildRequestDebugInfo, buildResponseDebugInfo } from '../debug.js';
+import { logRequest, logResponse, logRetry, buildRequestDebugInfo, buildResponseDebugInfo, calculatePayloadBreakdown } from '../debug.js';
 
 /**
  * Retry configuration
@@ -224,7 +224,7 @@ export class GoogleProvider {
 
     // Log request with debug system (only on first attempt to avoid spam)
     if (attempt === 1) {
-      logRequest(buildRequestDebugInfo(
+      const googleDebugInfo = buildRequestDebugInfo(
         'google',
         model,
         endpoint,
@@ -233,7 +233,9 @@ export class GoogleProvider {
         request.model.maxTokens,
         request.model.temperature,
         request.stream ?? false
-      ));
+      );
+      googleDebugInfo.payload = calculatePayloadBreakdown(body as Record<string, unknown>);
+      logRequest(googleDebugInfo);
     }
 
     try {
@@ -367,6 +369,20 @@ export class GoogleProvider {
 
     const url = `${this.config.baseUrl}/models/${model}:streamGenerateContent?key=${this.config.apiKey}&alt=sse`;
     const body = this.buildGeminiRequest(request);
+
+    // Log streaming request with payload breakdown
+    const googleStreamDebugInfo = buildRequestDebugInfo(
+      'google',
+      model,
+      url.replace(/key=[^&]+/, 'key=***'),
+      request.messages,
+      request.tools,
+      request.model.maxTokens,
+      request.model.temperature,
+      true
+    );
+    googleStreamDebugInfo.payload = calculatePayloadBreakdown(body as Record<string, unknown>);
+    logRequest(googleStreamDebugInfo);
 
     try {
       const response = await fetch(url, {

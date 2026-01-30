@@ -418,6 +418,108 @@ chatRoutes.post('/', async (c) => {
           // Ignore tracking errors
         }
       }
+
+      // Save streaming chat to database (same as non-streaming)
+      if (result.ok) {
+        try {
+          const chatRepo = new ChatRepository(streamUserId);
+          const logsRepo = new LogsRepository(streamUserId);
+
+          // Build trace info from collected data
+          const streamTraceInfo = {
+            duration: streamLatency,
+            toolCalls: traceToolCalls.map(tc => ({
+              name: tc.name,
+              arguments: tc.arguments,
+              result: tc.result,
+              success: tc.success,
+              duration: tc.duration,
+            })),
+            modelCalls: lastUsage ? [{
+              provider,
+              model,
+              inputTokens: lastUsage.promptTokens,
+              outputTokens: lastUsage.completionTokens,
+              tokens: lastUsage.totalTokens,
+              duration: streamLatency,
+            }] : [],
+            request: {
+              provider,
+              model,
+              endpoint: '/api/v1/chat',
+              messageCount: (body.history?.length ?? 0) + 1,
+              streaming: true,
+            },
+            response: {
+              status: 'success' as const,
+              finishReason: result.value.finishReason,
+            },
+          };
+
+          // Get or create conversation
+          const dbConversation = await chatRepo.getOrCreateConversation(body.conversationId || conversationId, {
+            title: body.message.slice(0, 50) + (body.message.length > 50 ? '...' : ''),
+            agentId: body.agentId,
+            agentName: body.agentId ? undefined : 'Chat',
+            provider,
+            model,
+          });
+
+          // Save user message
+          await chatRepo.addMessage({
+            conversationId: dbConversation.id,
+            role: 'user',
+            content: body.message,
+            provider,
+            model,
+          });
+
+          // Save assistant message with trace
+          await chatRepo.addMessage({
+            conversationId: dbConversation.id,
+            role: 'assistant',
+            content: result.value.content,
+            provider,
+            model,
+            toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
+            trace: streamTraceInfo as Record<string, unknown>,
+            inputTokens: lastUsage?.promptTokens,
+            outputTokens: lastUsage?.completionTokens,
+          });
+
+          // Extract payload breakdown from debug log
+          const streamPayloadEntry = debugLog.getRecent(5).find(e => e.type === 'request');
+          const streamPayloadInfo = streamPayloadEntry?.data as { payload?: Record<string, unknown> } | undefined;
+
+          // Log the request with payload breakdown
+          logsRepo.log({
+            conversationId: dbConversation.id,
+            type: 'chat',
+            provider,
+            model,
+            endpoint: 'chat/completions',
+            method: 'POST',
+            requestBody: {
+              message: body.message,
+              history: body.history?.length ?? 0,
+              streaming: true,
+              payload: streamPayloadInfo?.payload ?? null,
+            },
+            responseBody: { contentLength: result.value.content.length, toolCalls: result.value.toolCalls?.length ?? 0 },
+            statusCode: 200,
+            inputTokens: lastUsage?.promptTokens,
+            outputTokens: lastUsage?.completionTokens,
+            totalTokens: lastUsage?.totalTokens,
+            durationMs: streamLatency,
+            ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
+            userAgent: c.req.header('user-agent'),
+          });
+
+          console.log(`[Chat] Saved streaming to history: conversation=${dbConversation.id}, messages=+2`);
+        } catch (err) {
+          console.warn('[Chat] Failed to save streaming chat history:', err);
+        }
+      }
     });
   }
 
@@ -815,7 +917,11 @@ chatRoutes.post('/', async (c) => {
       outputTokens: result.value.usage?.completionTokens,
     });
 
-    // Log the request
+    // Extract payload breakdown from debug log
+    const payloadEntry = recentDebugEntries.find(e => e.type === 'request');
+    const payloadInfo = payloadEntry?.data as { payload?: Record<string, unknown> } | undefined;
+
+    // Log the request with payload breakdown
     logsRepo.log({
       conversationId: dbConversation.id,
       type: 'chat',
@@ -823,7 +929,11 @@ chatRoutes.post('/', async (c) => {
       model,
       endpoint: 'chat/completions',
       method: 'POST',
-      requestBody: { message: body.message, history: body.history?.length ?? 0 },
+      requestBody: {
+        message: body.message,
+        history: body.history?.length ?? 0,
+        payload: payloadInfo?.payload ?? null,
+      },
       responseBody: { contentLength: result.value.content.length, toolCalls: result.value.toolCalls?.length ?? 0 },
       statusCode: 200,
       inputTokens: result.value.usage?.promptTokens,

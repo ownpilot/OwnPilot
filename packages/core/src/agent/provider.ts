@@ -24,6 +24,7 @@ import {
   logRetry,
   buildRequestDebugInfo,
   buildResponseDebugInfo,
+  calculatePayloadBreakdown,
 } from './debug.js';
 
 /**
@@ -364,8 +365,8 @@ export class OpenAIProvider extends BaseProvider {
 
     const endpoint = `${this.config.baseUrl}/chat/completions`;
 
-    // Log request
-    logRequest(buildRequestDebugInfo(
+    // Log request with payload breakdown
+    const debugInfo = buildRequestDebugInfo(
       'openai',
       request.model.model,
       endpoint,
@@ -374,7 +375,9 @@ export class OpenAIProvider extends BaseProvider {
       request.model.maxTokens,
       request.model.temperature,
       false
-    ));
+    );
+    debugInfo.payload = calculatePayloadBreakdown(body as Record<string, unknown>);
+    logRequest(debugInfo);
 
     const startTime = Date.now();
 
@@ -459,6 +462,20 @@ export class OpenAIProvider extends BaseProvider {
       stream: true,
       stream_options: { include_usage: true },
     };
+
+    // Log streaming request with payload breakdown
+    const streamDebugInfo = buildRequestDebugInfo(
+      'openai',
+      request.model.model,
+      `${this.config.baseUrl}/chat/completions`,
+      request.messages,
+      request.tools,
+      request.model.maxTokens,
+      request.model.temperature,
+      true
+    );
+    streamDebugInfo.payload = calculatePayloadBreakdown(body as Record<string, unknown>);
+    logRequest(streamDebugInfo);
 
     try {
       const response = await fetch(
@@ -626,8 +643,8 @@ export class AnthropicProvider extends BaseProvider {
 
     const endpoint = `${this.config.baseUrl}/messages`;
 
-    // Log request
-    logRequest(buildRequestDebugInfo(
+    // Log request with payload breakdown
+    const anthropicDebugInfo = buildRequestDebugInfo(
       'anthropic',
       request.model.model,
       endpoint,
@@ -636,7 +653,9 @@ export class AnthropicProvider extends BaseProvider {
       request.model.maxTokens ?? 4096,
       request.model.temperature,
       false
-    ));
+    );
+    anthropicDebugInfo.payload = calculatePayloadBreakdown(body as Record<string, unknown>);
+    logRequest(anthropicDebugInfo);
 
     const startTime = Date.now();
 
@@ -746,6 +765,20 @@ export class AnthropicProvider extends BaseProvider {
       temperature: request.model.temperature,
       stream: true,
     };
+
+    // Log streaming request with payload breakdown
+    const anthropicStreamDebugInfo = buildRequestDebugInfo(
+      'anthropic',
+      request.model.model,
+      `${this.config.baseUrl}/messages`,
+      request.messages,
+      request.tools,
+      request.model.maxTokens ?? 4096,
+      request.model.temperature,
+      true
+    );
+    anthropicStreamDebugInfo.payload = calculatePayloadBreakdown(body as Record<string, unknown>);
+    logRequest(anthropicStreamDebugInfo);
 
     try {
       const response = await fetch(`${this.config.baseUrl}/messages`, {
