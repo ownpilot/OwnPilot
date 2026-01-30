@@ -48,6 +48,7 @@ import {
   databaseRoutes,
   expensesRoutes,
   configServicesRoutes,
+  localProvidersRoutes,
 } from './routes/index.js';
 import { debugRoutes } from './routes/debug.js';
 
@@ -201,6 +202,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Config Center (centralized config management)
   app.route('/api/v1/config-services', configServicesRoutes);
 
+  // Local AI Providers (LM Studio, Ollama, etc.)
+  app.route('/api/v1/local-providers', localProvidersRoutes);
+
   // Root route
   app.get('/', (c) => {
     return c.json({
@@ -270,6 +274,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         customTools: '/api/v1/custom-tools',
         // Config Center (centralized config management)
         configServices: '/api/v1/config-services',
+        // Local AI Providers (LM Studio, Ollama)
+        localProviders: '/api/v1/local-providers',
       },
     });
   });

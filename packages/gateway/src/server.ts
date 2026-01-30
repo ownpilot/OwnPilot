@@ -45,6 +45,7 @@ import { autoMigrateIfNeeded } from './paths/migration.js';
 import { initializePlugins } from './plugins/index.js';
 import { initializeConfigServicesRepo } from './db/repositories/config-services.js';
 import { initializePluginsRepo } from './db/repositories/plugins.js';
+import { initializeLocalProvidersRepo } from './db/repositories/local-providers.js';
 import { seedConfigServices } from './db/seeds/config-services-seed.js';
 import { gatewayConfigCenter } from './services/config-center-impl.js';
 
@@ -142,6 +143,10 @@ async function main() {
   // Initialize Plugins repository
   console.log('[Startup] Initializing Plugins repository...');
   await initializePluginsRepo();
+
+  // Initialize Local Providers repository
+  console.log('[Startup] Initializing Local Providers...');
+  await initializeLocalProvidersRepo();
 
   // Initialize file workspace directories (for AI-generated code isolation)
   const workspace = initializeFileWorkspace();

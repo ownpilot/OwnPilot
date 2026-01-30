@@ -347,29 +347,30 @@ function formatTools(tools: readonly ToolDefinition[], lang: 'en' | 'tr'): strin
     return lang === 'en' ? 'No tools available.' : 'Mevcut araç yok.';
   }
 
-  // Group tools by category
-  const toolsByCategory = new Map<string, ToolDefinition[]>();
+  // Group tools by category (compact: names only)
+  const toolsByCategory = new Map<string, string[]>();
 
   for (const tool of tools) {
     const category = tool.category ?? 'General';
     if (!toolsByCategory.has(category)) {
       toolsByCategory.set(category, []);
     }
-    toolsByCategory.get(category)!.push(tool);
+    toolsByCategory.get(category)!.push(tool.name);
   }
 
-  const sections: string[] = [];
+  const lines: string[] = [];
 
-  for (const [category, categoryTools] of toolsByCategory) {
-    const toolLines = categoryTools.map(tool => {
-      const params = Object.keys(tool.parameters.properties).join(', ');
-      return `  - **${tool.name}**: ${tool.description}${params ? ` (params: ${params})` : ''}`;
-    });
+  const helpNote = lang === 'en'
+    ? 'Use get_tool_help(tool_name) for detailed parameter info before using an unfamiliar tool.'
+    : 'Tanımadığın bir aracı kullanmadan önce get_tool_help(tool_name) ile detaylı bilgi al.';
+  lines.push(helpNote);
+  lines.push('');
 
-    sections.push(`### ${category}\n${toolLines.join('\n')}`);
+  for (const [category, toolNames] of toolsByCategory) {
+    lines.push(`**${category}**: ${toolNames.join(', ')}`);
   }
 
-  return sections.join('\n\n');
+  return lines.join('\n');
 }
 
 /**

@@ -359,6 +359,10 @@ export class ConfigServicesRepository extends BaseRepository {
     const id = randomUUID();
     const now = new Date().toISOString();
 
+    // Determine if config_schema and multi_entry were explicitly provided
+    const hasExplicitSchema = input.configSchema !== undefined && input.configSchema.length > 0;
+    const hasExplicitMultiEntry = input.multiEntry !== undefined;
+
     await this.execute(
       `INSERT INTO config_services
         (id, name, display_name, category, description, docs_url, config_schema, multi_entry, required_by, is_active, created_at, updated_at)
@@ -366,10 +370,10 @@ export class ConfigServicesRepository extends BaseRepository {
        ON CONFLICT(name) DO UPDATE SET
          display_name = EXCLUDED.display_name,
          category = EXCLUDED.category,
-         description = EXCLUDED.description,
-         docs_url = EXCLUDED.docs_url,
-         config_schema = EXCLUDED.config_schema,
-         multi_entry = EXCLUDED.multi_entry,
+         description = COALESCE(NULLIF(EXCLUDED.description, ''), config_services.description),
+         docs_url = COALESCE(NULLIF(EXCLUDED.docs_url, ''), config_services.docs_url),
+         config_schema = CASE WHEN $13::boolean THEN EXCLUDED.config_schema ELSE config_services.config_schema END,
+         multi_entry = CASE WHEN $14::boolean THEN EXCLUDED.multi_entry ELSE config_services.multi_entry END,
          updated_at = EXCLUDED.updated_at`,
       [
         id,
@@ -384,6 +388,8 @@ export class ConfigServicesRepository extends BaseRepository {
         input.isActive !== false,
         now,
         now,
+        hasExplicitSchema,
+        hasExplicitMultiEntry,
       ],
     );
 

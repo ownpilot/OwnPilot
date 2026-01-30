@@ -156,6 +156,13 @@ export class ToolRegistry {
   }
 
   /**
+   * Get a single tool definition by name
+   */
+  getDefinition(name: string): ToolDefinition | undefined {
+    return this.tools.get(name)?.definition;
+  }
+
+  /**
    * Get tool definitions by names
    */
   getDefinitionsByNames(names: readonly string[]): readonly ToolDefinition[] {

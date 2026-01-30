@@ -260,5 +260,24 @@ export async function seedConfigServices(): Promise<number> {
     }
   }
   console.log(`[Seed] Seeded ${seeded} config services`);
+
+  // Clean up stale services that are no longer in the seed and have no dependents
+  const knownNames = new Set(KNOWN_CONFIG_SERVICES.map(s => s.name));
+  const allServices = configServicesRepo.list();
+  let removed = 0;
+  for (const service of allServices) {
+    if (!knownNames.has(service.name) && (!service.requiredBy || service.requiredBy.length === 0)) {
+      try {
+        await configServicesRepo.delete(service.name);
+        removed++;
+      } catch (error) {
+        console.error(`[Seed] Failed to remove stale service '${service.name}':`, error);
+      }
+    }
+  }
+  if (removed > 0) {
+    console.log(`[Seed] Removed ${removed} stale config services`);
+  }
+
   return seeded;
 }

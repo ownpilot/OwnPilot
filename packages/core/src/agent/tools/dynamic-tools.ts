@@ -819,11 +819,58 @@ export const toggleToolDefinition: ToolDefinition = {
 // EXPORTS
 // =============================================================================
 
+/**
+ * get_tool_help — Meta-tool for on-demand tool documentation
+ * LLM calls this to get detailed usage info for a specific tool
+ */
+export const getToolHelpDefinition: ToolDefinition = {
+  name: 'get_tool_help',
+  description: 'Get detailed usage information and parameters for a specific tool. Call this before using an unfamiliar tool to learn its parameters and usage.',
+  parameters: {
+    type: 'object',
+    properties: {
+      tool_name: {
+        type: 'string',
+        description: 'Name of the tool to get help for (e.g. "add_task", "remember", "search_web")',
+      },
+    },
+    required: ['tool_name'],
+  },
+  category: 'System',
+};
+
+/**
+ * use_tool — Proxy tool that executes any registered tool by name.
+ * This allows LLMs with small context windows to access all tools
+ * without having all tool schemas in the API request.
+ */
+export const useToolDefinition: ToolDefinition = {
+  name: 'use_tool',
+  description: 'Execute any available tool by name with the given arguments. First call get_tool_help to learn the parameters, then call this to execute.',
+  parameters: {
+    type: 'object',
+    properties: {
+      tool_name: {
+        type: 'string',
+        description: 'Name of the tool to execute (e.g. "add_task", "remember", "search_web")',
+      },
+      arguments: {
+        type: 'object',
+        description: 'Arguments to pass to the tool as a JSON object. Use get_tool_help first to learn required parameters.',
+      },
+    },
+    required: ['tool_name', 'arguments'],
+  },
+  category: 'System',
+};
+
 export const DYNAMIC_TOOL_DEFINITIONS: ToolDefinition[] = [
+  getToolHelpDefinition,
+  useToolDefinition,
   createToolDefinition,
   listToolsDefinition,
   deleteToolDefinition,
   toggleToolDefinition,
-];
+];;;
 
 export const DYNAMIC_TOOL_NAMES = DYNAMIC_TOOL_DEFINITIONS.map((t) => t.name);

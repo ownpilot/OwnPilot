@@ -43,6 +43,7 @@ import {
 } from './custom-tools.js';
 import { CHANNEL_TOOLS, setChannelManager } from '../tools/index.js';
 import { channelManager } from '../channels/manager.js';
+import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import {
   traceToolCallStart,
   traceToolCallEnd,
@@ -57,9 +58,42 @@ import type {
   AgentInfo,
   AgentDetail,
 } from '../types/index.js';
-import { agentsRepo, type AgentRecord, MemoriesRepository, GoalsRepository } from '../db/repositories/index.js';
+import { agentsRepo, localProvidersRepo, type AgentRecord, MemoriesRepository, GoalsRepository } from '../db/repositories/index.js';
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
 import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-center-impl.js';
+
+/**
+ * Maps plugin tool names to the core stub tool names they supersede.
+ * When a plugin provides a real implementation, the corresponding core stubs
+ * are unregistered to prevent the LLM from seeing duplicate tools.
+ */
+const PLUGIN_SUPERSEDES_CORE: Record<string, string[]> = {
+  email_send: ['send_email'],
+  email_read: ['list_emails', 'read_email'],
+  email_search: ['search_emails'],
+  email_delete: ['delete_email', 'reply_email'],
+  weather_current: ['get_weather'],
+  weather_forecast: ['get_weather_forecast'],
+  web_search: ['search_web'],
+};
+
+/**
+ * Removes core stub tools that are superseded by plugin tools.
+ * Returns the number of stubs removed.
+ */
+function removeSupersededCoreStubs(tools: ToolRegistry, pluginToolNames: Set<string>): number {
+  let removed = 0;
+  for (const [pluginTool, coreStubs] of Object.entries(PLUGIN_SUPERSEDES_CORE)) {
+    if (pluginToolNames.has(pluginTool)) {
+      for (const stub of coreStubs) {
+        if (tools.unregister(stub)) {
+          removed++;
+        }
+      }
+    }
+  }
+  return removed;
+}
 
 /**
  * Build memory context string from important memories
@@ -204,15 +238,31 @@ export function getWorkspaceContext(sessionWorkspaceDir?: string): WorkspaceCont
  * Uses the core's getProviderConfig which properly resolves JSON paths
  */
 function loadProviderConfig(providerId: string): { baseUrl?: string; apiKeyEnv?: string; type?: string } | null {
+  // 1. Check builtin provider configs
   const config = coreGetProviderConfig(providerId);
-  if (!config) {
-    return null;
+  if (config) {
+    return {
+      baseUrl: config.baseUrl,
+      apiKeyEnv: config.apiKeyEnv,
+      type: config.type,
+    };
   }
-  return {
-    baseUrl: config.baseUrl,
-    apiKeyEnv: config.apiKeyEnv,
-    type: config.type,
-  };
+
+  // 2. Check local providers (sync access via cache)
+  const localProv = localProvidersRepo.getProviderSync(providerId);
+  if (localProv) {
+    // Ensure baseUrl ends with /v1 for OpenAI-compatible chat/completions endpoint
+    // Discovery uses its own endpoint paths, but the provider SDK appends /chat/completions
+    const base = localProv.baseUrl.replace(/\/+$/, '');
+    const baseUrl = base.endsWith('/v1') ? base : `${base}/v1`;
+    return {
+      baseUrl,
+      apiKeyEnv: undefined,
+      type: 'openai-compatible',
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -447,8 +497,34 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     });
   }
 
+  // Register config center management tools (with tracing)
+  for (const toolDef of CONFIG_TOOLS) {
+    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
+
+      const result = await executeConfigTool(toolDef.name, args as Record<string, unknown>);
+
+      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
+
+      if (result.success) {
+        return {
+          content: typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2),
+        };
+      }
+      return {
+        content: result.error ?? 'Unknown error',
+        isError: true,
+      };
+    });
+  }
+
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
+    // get_tool_help and use_tool have special executors (registered below)
+    if (toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool') continue;
+
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
 
@@ -478,6 +554,47 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
         content: result.error ?? 'Unknown error',
         isError: true,
       };
+    });
+  }
+
+  // Register get_tool_help with a closure over the tools registry
+  const getToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
+  if (getToolHelpDef) {
+    tools.register(getToolHelpDef, async (args): Promise<CoreToolResult> => {
+      const { tool_name } = args as { tool_name: string };
+      const toolDef = tools.getDefinition(tool_name);
+      if (!toolDef) {
+        return { content: `Tool '${tool_name}' not found. Check the tool names listed in the system prompt.`, isError: true };
+      }
+      const params = Object.entries(toolDef.parameters.properties).map(([name, schema]) => {
+        const s = schema as unknown as Record<string, unknown>;
+        const required = toolDef.parameters.required?.includes(name) ? ' (required)' : ' (optional)';
+        const type = (s.type as string) ?? 'any';
+        const desc = (s.description as string) ?? '';
+        const enumVals = Array.isArray(s.enum) ? ` [${(s.enum as string[]).join(', ')}]` : '';
+        return `  - ${name}: ${type}${required} — ${desc}${enumVals}`;
+      });
+      return { content: [`## ${toolDef.name}`, toolDef.description, '', '### Parameters', ...params].join('\n') };
+    });
+  }
+
+  // Register use_tool proxy (executes any registered tool by name)
+  const useToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
+  if (useToolDef) {
+    tools.register(useToolDef, async (args): Promise<CoreToolResult> => {
+      const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
+      if (!tools.has(tool_name)) {
+        return { content: `Tool '${tool_name}' not found. Use get_tool_help to discover available tools.`, isError: true };
+      }
+      try {
+        const result = await tools.execute(tool_name, toolArgs, {} as import('@ownpilot/core').ToolContext);
+        if (result.ok) {
+          return result.value;
+        }
+        return { content: result.error.message, isError: true };
+      } catch (error) {
+        return { content: error instanceof Error ? error.message : 'Tool execution failed', isError: true };
+      }
     });
   }
 
@@ -520,8 +637,9 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   const pluginTools = pluginRegistry.getAllTools();
   const pluginToolDefs: typeof MEMORY_TOOLS = [];
 
+  let pluginOverrides = 0;
   for (const { definition, executor } of pluginTools) {
-    tools.register(definition, async (args): Promise<CoreToolResult> => {
+    const wrappedExecutor = async (args: unknown): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(definition.name, args as Record<string, unknown>);
       try {
         const result = await executor(args as Record<string, unknown>, {} as import('@ownpilot/core').ToolContext);
@@ -532,16 +650,33 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
         traceToolCallEnd(definition.name, startTime, false, undefined, errorMsg);
         return { content: errorMsg, isError: true };
       }
-    });
+    };
+
+    if (tools.has(definition.name)) {
+      // Plugin tool overrides a core stub — replace the executor
+      tools.updateExecutor(definition.name, wrappedExecutor);
+      pluginOverrides++;
+    } else {
+      tools.register(definition, wrappedExecutor);
+    }
     pluginToolDefs.push(definition);
   }
-  console.log(`[Agents] Registered ${pluginTools.length} plugin tools`);
+  console.log(`[Agents] Registered ${pluginTools.length} plugin tools (${pluginOverrides} overrides)`);
+
+  // Remove core stub tools that overlap with plugin tools to prevent LLM confusion
+  const pluginToolNames = new Set(pluginToolDefs.map(t => t.name));
+  const removedStubs = removeSupersededCoreStubs(tools, pluginToolNames);
+  if (removedStubs > 0) {
+    console.log(`[Agents] Removed ${removedStubs} superseded core stubs`);
+  }
 
   // Get tool definitions for prompt injection
   const channelToolDefs = CHANNEL_TOOLS.map(t => t.definition);
 
   // Separate standard tools (from TOOL_GROUPS) and special tools that bypass filtering
-  const standardToolDefs = [...getToolDefinitions(), ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...channelToolDefs];
+  // Filter getToolDefinitions() to exclude stubs that were unregistered above
+  const coreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
+  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...channelToolDefs];
 
   // These tools ALWAYS bypass toolGroup filtering:
   // - DYNAMIC_TOOL_DEFINITIONS: Meta-tools for managing custom tools (create_tool, etc.)
@@ -586,6 +721,12 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     includeToolDescriptions: true,
   });
 
+  // For local providers (openai-compatible), only expose meta-tools to keep token usage minimal
+  const isLocalProvider = providerConfig?.type === 'openai-compatible';
+  const toolFilter = isLocalProvider
+    ? ['get_tool_help', 'use_tool'].map(n => n as unknown as import('@ownpilot/core').ToolId)
+    : undefined;
+
   const config: AgentConfig = {
     name: record.name,
     systemPrompt: enhancedPrompt,
@@ -601,6 +742,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     },
     maxTurns: (record.config.maxTurns as number) ?? 25,
     maxToolCalls: (record.config.maxToolCalls as number) ?? 200,
+    ...(toolFilter ? { tools: toolFilter } : {}),
   };
 
   const agent = createAgent(config, { tools });
@@ -1166,8 +1308,26 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
     });
   }
 
+  // Register config center management tools
+  for (const toolDef of CONFIG_TOOLS) {
+    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const result = await executeConfigTool(toolDef.name, args as Record<string, unknown>);
+      if (result.success) {
+        return {
+          content: typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2),
+        };
+      }
+      return { content: result.error ?? 'Unknown error', isError: true };
+    });
+  }
+
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
+    // get_tool_help and use_tool have special executors (registered below)
+    if (toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool') continue;
+
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
       if (result.success) {
@@ -1178,6 +1338,47 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
         };
       }
       return { content: result.error ?? 'Unknown error', isError: true };
+    });
+  }
+
+  // Register get_tool_help with a closure over the tools registry
+  const chatGetToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
+  if (chatGetToolHelpDef) {
+    tools.register(chatGetToolHelpDef, async (args): Promise<CoreToolResult> => {
+      const { tool_name } = args as { tool_name: string };
+      const toolDef = tools.getDefinition(tool_name);
+      if (!toolDef) {
+        return { content: `Tool '${tool_name}' not found. Check the tool names listed in the system prompt.`, isError: true };
+      }
+      const params = Object.entries(toolDef.parameters.properties).map(([name, schema]) => {
+        const s = schema as unknown as Record<string, unknown>;
+        const required = toolDef.parameters.required?.includes(name) ? ' (required)' : ' (optional)';
+        const type = (s.type as string) ?? 'any';
+        const desc = (s.description as string) ?? '';
+        const enumVals = Array.isArray(s.enum) ? ` [${(s.enum as string[]).join(', ')}]` : '';
+        return `  - ${name}: ${type}${required} — ${desc}${enumVals}`;
+      });
+      return { content: [`## ${toolDef.name}`, toolDef.description, '', '### Parameters', ...params].join('\n') };
+    });
+  }
+
+  // Register use_tool proxy (executes any registered tool by name)
+  const chatUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
+  if (chatUseToolDef) {
+    tools.register(chatUseToolDef, async (args): Promise<CoreToolResult> => {
+      const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
+      if (!tools.has(tool_name)) {
+        return { content: `Tool '${tool_name}' not found. Use get_tool_help to discover available tools.`, isError: true };
+      }
+      try {
+        const result = await tools.execute(tool_name, toolArgs, {} as import('@ownpilot/core').ToolContext);
+        if (result.ok) {
+          return result.value;
+        }
+        return { content: result.error.message, isError: true };
+      } catch (error) {
+        return { content: error instanceof Error ? error.message : 'Tool execution failed', isError: true };
+      }
     });
   }
 
@@ -1212,7 +1413,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   const pluginToolDefs: typeof MEMORY_TOOLS = [];
 
   for (const { definition, executor } of pluginTools) {
-    tools.register(definition, async (args): Promise<CoreToolResult> => {
+    const wrappedExecutor = async (args: unknown): Promise<CoreToolResult> => {
       try {
         const result = await executor(args as Record<string, unknown>, {} as import('@ownpilot/core').ToolContext);
         return result;
@@ -1220,13 +1421,25 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
         return { content: errorMsg, isError: true };
       }
-    });
+    };
+
+    if (tools.has(definition.name)) {
+      tools.updateExecutor(definition.name, wrappedExecutor);
+    } else {
+      tools.register(definition, wrappedExecutor);
+    }
     pluginToolDefs.push(definition);
   }
 
+  // Remove core stub tools that overlap with plugin tools
+  const chatPluginToolNames = new Set(pluginToolDefs.map(t => t.name));
+  removeSupersededCoreStubs(tools, chatPluginToolNames);
+
   // Get tool definitions for prompt injection (including all registered tools)
+  // Filter getToolDefinitions() to exclude stubs removed above
   const channelToolDefs = CHANNEL_TOOLS.map(t => t.definition);
-  const toolDefs = [...getToolDefinitions(), ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...channelToolDefs, ...pluginToolDefs];
+  const chatCoreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
+  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...channelToolDefs, ...pluginToolDefs];
 
   // Inject personal memory into system prompt
   const basePrompt = 'You are a helpful personal AI assistant. You help the user with their daily tasks, remember their preferences, and proactively assist them.';
@@ -1239,6 +1452,12 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
     includeTimeContext: true,
     includeToolDescriptions: true,
   });
+
+  // For local providers (openai-compatible), only expose meta-tools to keep token usage minimal
+  const isLocalProvider = providerConfig?.type === 'openai-compatible';
+  const toolFilter = isLocalProvider
+    ? ['get_tool_help', 'use_tool'].map(n => n as unknown as import('@ownpilot/core').ToolId)
+    : undefined;
 
   // Create agent config
   const config: AgentConfig = {
@@ -1256,6 +1475,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
     },
     maxTurns: 25,
     maxToolCalls: 200,
+    ...(toolFilter ? { tools: toolFilter } : {}),
   };
 
   // Create and cache the agent
@@ -1307,6 +1527,13 @@ export function clearAllChatAgentCaches(): number {
  * Uses getApiKey from settings which checks both env vars and database
  */
 export async function getProviderApiKey(provider: string): Promise<string | undefined> {
+  // Check local provider first (may have its own API key, or none required)
+  const localProv = await localProvidersRepo.getProvider(provider);
+  if (localProv) {
+    // Local providers may not require API key; return key or a dummy placeholder
+    return localProv.apiKey || 'local-no-key';
+  }
+  // Fallback to remote provider API key
   return await getApiKey(provider);
 }
 

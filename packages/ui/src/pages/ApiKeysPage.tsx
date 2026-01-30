@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Settings, Check, AlertCircle, ChevronDown, ChevronRight, Key } from '../components/icons';
-import { useTheme } from '../hooks/useTheme';
 
 interface ProviderConfig {
   id: string;
@@ -18,10 +17,17 @@ interface ProviderCategory {
   providers: ProviderConfig[];
 }
 
+interface LocalProviderInfo {
+  id: string;
+  name: string;
+  type: 'local';
+}
+
 interface SettingsResponse {
   success: boolean;
   data: {
     configuredProviders: string[];
+    localProviders?: LocalProviderInfo[];
     demoMode: boolean;
     availableProviders: string[];
     defaultProvider: string | null;
@@ -80,9 +86,7 @@ export function ApiKeysPage() {
   const [defaultProvider, setDefaultProvider] = useState<string>('');
   const [defaultModel, setDefaultModel] = useState<string>('');
   const [models, setModels] = useState<ModelInfo[]>([]);
-
-  // Theme hook
-  const { theme, setTheme } = useTheme();
+  const [localProviderInfos, setLocalProviderInfos] = useState<LocalProviderInfo[]>([]);
 
   // Load settings on mount
   useEffect(() => {
@@ -102,6 +106,7 @@ export function ApiKeysPage() {
       const settingsData: SettingsResponse = await settingsRes.json();
       if (settingsData.success) {
         setConfiguredProviders(settingsData.data.configuredProviders);
+        setLocalProviderInfos(settingsData.data.localProviders ?? []);
         // Set default provider from settings or first configured
         if (settingsData.data.defaultProvider) {
           setDefaultProvider(settingsData.data.defaultProvider);
@@ -127,16 +132,36 @@ export function ApiKeysPage() {
       }
 
       const modelsData: ModelsResponse = await modelsRes.json();
-      if (modelsData.success) {
-        setModels(modelsData.data.models);
-        // Set default model from first model of default provider if not set
-        if (!settingsData.data?.defaultModel && modelsData.data.models.length > 0) {
-          const providerToUse = settingsData.data?.defaultProvider || settingsData.data?.configuredProviders?.[0];
-          if (providerToUse) {
-            const firstModel = modelsData.data.models.find((m) => m.provider === providerToUse);
-            if (firstModel) {
-              setDefaultModel(firstModel.id);
+      const allModels: ModelInfo[] = modelsData.success ? modelsData.data.models : [];
+
+      // Also load local provider models
+      const localProvs = settingsData.data?.localProviders ?? [];
+      for (const lp of localProvs) {
+        try {
+          const lpModelsRes = await fetch(`/api/v1/local-providers/${lp.id}/models`);
+          const lpModelsData = await lpModelsRes.json();
+          if (lpModelsData.success && Array.isArray(lpModelsData.data)) {
+            for (const lm of lpModelsData.data) {
+              allModels.push({
+                id: lm.modelId,
+                name: lm.displayName || lm.modelId,
+                provider: lp.id,
+              });
             }
+          }
+        } catch {
+          // Skip if local provider is unreachable
+        }
+      }
+
+      setModels(allModels);
+      // Set default model from first model of default provider if not set
+      if (!settingsData.data?.defaultModel && allModels.length > 0) {
+        const providerToUse = settingsData.data?.defaultProvider || settingsData.data?.configuredProviders?.[0];
+        if (providerToUse) {
+          const firstModel = allModels.find((m) => m.provider === providerToUse);
+          if (firstModel) {
+            setDefaultModel(firstModel.id);
           }
         }
       }
@@ -294,7 +319,12 @@ export function ApiKeysPage() {
   };
 
   const getProviderById = (id: string): ProviderConfig | undefined => {
-    return providers.find((p) => p.id === id);
+    const remote = providers.find((p) => p.id === id);
+    if (remote) return remote;
+    // Check local providers
+    const local = localProviderInfos.find((lp) => lp.id === id);
+    if (local) return { id: local.id, name: `${local.name} (Local)`, apiKeyEnv: '' };
+    return undefined;
   };
 
   const getProviderPlaceholder = (provider: ProviderConfig): string => {
@@ -596,33 +626,6 @@ export function ApiKeysPage() {
                     )}
                   </div>
                 ))}
-              </div>
-            </section>
-
-            {/* Appearance */}
-            <section>
-              <h3 className="text-base font-medium text-text-primary dark:text-dark-text-primary mb-4">
-                Appearance
-              </h3>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
-                  Theme
-                </label>
-                <div className="flex gap-2">
-                  {(['system', 'light', 'dark'] as const).map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => setTheme(option)}
-                      className={`px-4 py-2 rounded-lg capitalize transition-colors ${
-                        theme === option
-                          ? 'bg-primary text-white'
-                          : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
               </div>
             </section>
 

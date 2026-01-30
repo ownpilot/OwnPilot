@@ -286,6 +286,18 @@ export {
   type UpsertPluginInput,
 } from './plugins.js';
 
+// Local AI Providers repository
+export {
+  LocalProvidersRepository,
+  localProvidersRepo,
+  initializeLocalProvidersRepo,
+  type LocalProvider,
+  type LocalModel,
+  type LocalProviderType,
+  type CreateLocalProviderInput,
+  type CreateLocalModelInput,
+} from './local-providers.js';
+
 // Workspaces repository
 export {
   WorkspacesRepository,

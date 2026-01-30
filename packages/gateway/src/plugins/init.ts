@@ -18,6 +18,7 @@ import {
 } from '@ownpilot/core';
 import type { Plugin } from '@ownpilot/core';
 import { pluginsRepo } from '../db/repositories/plugins.js';
+import { configServicesRepo } from '../db/repositories/config-services.js';
 import { registerPluginApiDependencies } from '../services/api-service-registrar.js';
 
 // =============================================================================
@@ -106,18 +107,44 @@ function buildWeatherPlugin(): BuiltinPluginEntry {
           required: ['city'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          city: params.city,
-          temperature: 22,
-          feelsLike: 20,
-          humidity: 65,
-          description: 'Partly cloudy',
-          units: params.units || 'metric',
-          timestamp: new Date().toISOString(),
-        },
-      }),
+      async (params) => {
+        const apiKey = configServicesRepo.getApiKey('openweathermap');
+        if (!apiKey) {
+          return { content: { error: 'OpenWeatherMap API key not configured. Add it in Config Center.' }, isError: true };
+        }
+        const city = params.city as string;
+        const units = (params.units as string) || 'metric';
+        try {
+          const res = await fetch(
+            `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=${units}&appid=${apiKey}`,
+          );
+          if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            return { content: { error: `OpenWeatherMap API error ${res.status}: ${errText}` }, isError: true };
+          }
+          const data = await res.json() as Record<string, unknown>;
+          const main = data.main as Record<string, number>;
+          const weather = (data.weather as Array<Record<string, string>>)?.[0];
+          const wind = data.wind as Record<string, number>;
+          return {
+            content: {
+              city: data.name,
+              country: (data.sys as Record<string, string>)?.country,
+              temperature: main?.temp,
+              feelsLike: main?.feels_like,
+              humidity: main?.humidity,
+              pressure: main?.pressure,
+              description: weather?.description,
+              icon: weather?.icon,
+              windSpeed: wind?.speed,
+              units,
+              timestamp: new Date().toISOString(),
+            },
+          };
+        } catch (error) {
+          return { content: { error: `Weather fetch failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
     )
     .tool(
       {
@@ -132,15 +159,46 @@ function buildWeatherPlugin(): BuiltinPluginEntry {
           required: ['city'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          city: params.city,
-          days: params.days || 3,
-          forecast: [],
-          message: 'Forecast data not available (API key not configured)',
-        },
-      }),
+      async (params) => {
+        const apiKey = configServicesRepo.getApiKey('openweathermap');
+        if (!apiKey) {
+          return { content: { error: 'OpenWeatherMap API key not configured. Add it in Config Center.' }, isError: true };
+        }
+        const city = params.city as string;
+        const days = Math.min(Math.max((params.days as number) || 3, 1), 7);
+        const units = 'metric';
+        try {
+          const res = await fetch(
+            `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&units=${units}&cnt=${days * 8}&appid=${apiKey}`,
+          );
+          if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            return { content: { error: `OpenWeatherMap API error ${res.status}: ${errText}` }, isError: true };
+          }
+          const data = await res.json() as Record<string, unknown>;
+          const list = (data.list as Array<Record<string, unknown>>) || [];
+          const forecast = list.map((item) => {
+            const main = item.main as Record<string, number>;
+            const weather = (item.weather as Array<Record<string, string>>)?.[0];
+            return {
+              dateTime: item.dt_txt,
+              temperature: main?.temp,
+              feelsLike: main?.feels_like,
+              humidity: main?.humidity,
+              description: weather?.description,
+            };
+          });
+          return {
+            content: {
+              city: (data.city as Record<string, unknown>)?.name,
+              days,
+              forecast,
+            },
+          };
+        } catch (error) {
+          return { content: { error: `Forecast fetch failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
     )
     .build();
 }
@@ -962,69 +1020,442 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
     .tool(
       {
         name: 'email_send',
-        description: 'Send an email',
+        description: 'Send an email via SMTP',
         parameters: {
           type: 'object',
           properties: {
             to: { type: 'string', description: 'Recipient email address' },
             subject: { type: 'string', description: 'Email subject' },
-            body: { type: 'string', description: 'Email body' },
+            body: { type: 'string', description: 'Email body (plain text or HTML)' },
             cc: { type: 'string', description: 'CC recipients (comma-separated)' },
             bcc: { type: 'string', description: 'BCC recipients (comma-separated)' },
+            html: { type: 'boolean', description: 'Whether body is HTML (default: false)' },
           },
           required: ['to', 'subject', 'body'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          message: `Email to ${params.to} queued successfully`,
-          messageId: `msg_${Date.now()}`,
-        },
-      }),
+      async (params) => {
+        const entry = configServicesRepo.getDefaultEntry('smtp');
+        if (!entry?.data) {
+          return { content: { error: 'SMTP not configured. Add SMTP settings in Config Center.' }, isError: true };
+        }
+        const { host, port, secure, user, password, from_name } = entry.data as Record<string, string | number | boolean>;
+        if (!host || !user || !password) {
+          return { content: { error: 'SMTP configuration incomplete (host, user, password required).' }, isError: true };
+        }
+        try {
+          const nodemailer = await import('nodemailer');
+          const createTransport = nodemailer.default?.createTransport ?? nodemailer.createTransport;
+          const transporter = createTransport({
+            host: String(host),
+            port: Number(port) || 587,
+            secure: secure === true || secure === 'true',
+            auth: { user: String(user), pass: String(password) },
+          });
+          const from = from_name ? `"${from_name}" <${user}>` : String(user);
+          const isHtml = params.html === true;
+          const mailOptions = {
+            from,
+            to: params.to as string,
+            subject: params.subject as string,
+            ...(isHtml ? { html: params.body as string } : { text: params.body as string }),
+            ...(params.cc ? { cc: params.cc as string } : {}),
+            ...(params.bcc ? { bcc: params.bcc as string } : {}),
+          };
+          const info = await transporter.sendMail(mailOptions);
+          return {
+            content: {
+              success: true,
+              messageId: info.messageId,
+              to: params.to,
+              subject: params.subject,
+            },
+          };
+        } catch (error) {
+          return { content: { error: `Failed to send email: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
     )
     .tool(
       {
         name: 'email_read',
-        description: 'Read emails from inbox',
+        description: 'Read recent emails from mailbox via IMAP',
         parameters: {
           type: 'object',
           properties: {
             folder: { type: 'string', description: 'Folder to read from (default: INBOX)' },
-            limit: { type: 'number', description: 'Maximum emails to return' },
+            limit: { type: 'number', description: 'Maximum emails to return (default: 10)' },
           },
         },
       },
-      async () => ({
-        content: {
-          success: true,
-          emails: [],
-          total: 0,
-          message: 'Inbox is empty (IMAP not configured)',
+      async (params) => {
+        const entry = configServicesRepo.getDefaultEntry('imap');
+        if (!entry?.data) {
+          return { content: { error: 'IMAP not configured. Add IMAP settings in Config Center.' }, isError: true };
+        }
+        const { host, port, secure, user, password, mailbox } = entry.data as Record<string, string | number | boolean>;
+        if (!host || !user || !password) {
+          return { content: { error: 'IMAP configuration incomplete (host, user, password required).' }, isError: true };
+        }
+        const folder = (params.folder as string) || (mailbox as string) || 'INBOX';
+        const limit = Math.min(Math.max((params.limit as number) || 10, 1), 50);
+        try {
+          const { ImapFlow } = await import('imapflow');
+          const client = new ImapFlow({
+            host: String(host),
+            port: Number(port) || 993,
+            secure: secure !== false && secure !== 'false',
+            auth: { user: String(user), pass: String(password) },
+            logger: false,
+          });
+          await client.connect();
+          const lock = await client.getMailboxLock(folder);
+          try {
+            const messages: Array<Record<string, unknown>> = [];
+            const status = client.mailbox;
+            const totalMessages = (status && typeof status === 'object' && 'exists' in status)
+              ? (status as { exists: number }).exists : 0;
+            if (totalMessages === 0) {
+              return { content: { emails: [], total: 0, folder } };
+            }
+            const startSeq = Math.max(1, totalMessages - limit + 1);
+            for await (const msg of client.fetch(`${startSeq}:*`, {
+              envelope: true,
+              bodyStructure: true,
+              flags: true,
+            })) {
+              const env = msg.envelope;
+              messages.push({
+                seq: msg.seq,
+                uid: msg.uid,
+                date: env?.date?.toISOString(),
+                subject: env?.subject,
+                from: env?.from?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
+                to: env?.to?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
+                flags: Array.from(msg.flags || []),
+                read: msg.flags?.has('\\Seen') ?? false,
+              });
+            }
+            messages.reverse(); // newest first
+            return {
+              content: {
+                emails: messages,
+                total: totalMessages,
+                folder,
+                returned: messages.length,
+              },
+            };
+          } finally {
+            lock.release();
+            await client.logout();
+          }
+        } catch (error) {
+          return { content: { error: `IMAP read failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
+    )
+    .tool(
+      {
+        name: 'email_get_content',
+        description: 'Read the full content/body of a specific email by UID. Use email_read first to list emails and get UIDs, then use this tool to read the content of a specific email.',
+        parameters: {
+          type: 'object',
+          properties: {
+            uid: { type: 'number', description: 'UID of the email to read (from email_read or email_search results)' },
+            folder: { type: 'string', description: 'Folder the email is in (default: INBOX)' },
+          },
+          required: ['uid'],
         },
-      }),
+      },
+      async (params) => {
+        const entry = configServicesRepo.getDefaultEntry('imap');
+        if (!entry?.data) {
+          return { content: { error: 'IMAP not configured. Add IMAP settings in Config Center.' }, isError: true };
+        }
+        const { host, port, secure, user, password, mailbox } = entry.data as Record<string, string | number | boolean>;
+        if (!host || !user || !password) {
+          return { content: { error: 'IMAP configuration incomplete.' }, isError: true };
+        }
+        const uid = params.uid as number;
+        const folder = (params.folder as string) || (mailbox as string) || 'INBOX';
+        try {
+          const { ImapFlow } = await import('imapflow');
+          const client = new ImapFlow({
+            host: String(host),
+            port: Number(port) || 993,
+            secure: secure !== false && secure !== 'false',
+            auth: { user: String(user), pass: String(password) },
+            logger: false,
+          });
+          await client.connect();
+          const lock = await client.getMailboxLock(folder);
+          try {
+            // 1. Fetch envelope + flags (lightweight)
+            interface EnvelopeAddr { name?: string; address?: string }
+            let envelope: { date?: Date; subject?: string; from?: EnvelopeAddr[]; to?: EnvelopeAddr[]; cc?: EnvelopeAddr[] } | undefined;
+            let flags: Set<string> | undefined;
+            let foundUid: number | undefined;
+            for await (const msg of client.fetch(String(uid), {
+              envelope: true,
+              flags: true,
+              uid: true,
+            })) {
+              envelope = msg.envelope;
+              flags = msg.flags;
+              foundUid = msg.uid;
+            }
+
+            if (!foundUid) {
+              return { content: { error: `Email with UID ${uid} not found in ${folder}` }, isError: true };
+            }
+
+            // 2. Download message body via client.download() — more reliable than source:true
+            let body = '';
+            try {
+              const download = await client.download(String(uid), undefined, { uid: true });
+              const chunks: Buffer[] = [];
+              for await (const chunk of download.content) {
+                chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk as Buffer);
+                // Limit total download to ~512KB to avoid memory issues
+                const totalSize = chunks.reduce((s, c) => s + c.length, 0);
+                if (totalSize > 512 * 1024) break;
+              }
+              const raw = Buffer.concat(chunks).toString('utf-8');
+              // Extract body: everything after the first blank line (header/body separator)
+              const headerEnd = raw.indexOf('\r\n\r\n');
+              if (headerEnd !== -1) {
+                body = raw.substring(headerEnd + 4);
+              } else {
+                body = raw;
+              }
+            } catch {
+              // Fallback: if download fails, try fetching with bodyParts
+              try {
+                for await (const msg of client.fetch(String(uid), {
+                  uid: true,
+                  bodyParts: ['text'],
+                } as Record<string, unknown>)) {
+                  const parts = msg.bodyParts as Map<string, Buffer> | undefined;
+                  if (parts) {
+                    for (const [, value] of parts) {
+                      body = value.toString('utf-8');
+                      break;
+                    }
+                  }
+                }
+              } catch {
+                body = '(Could not retrieve email body)';
+              }
+            }
+
+            // 3. Decode quoted-printable soft line breaks
+            body = body.replace(/=\r?\n/g, '');
+            body = body.replace(/=([0-9A-Fa-f]{2})/g, (_, hex: string) =>
+              String.fromCharCode(parseInt(hex, 16)));
+
+            // 4. Strip HTML to plain text if needed
+            if (body.includes('<html') || body.includes('<HTML') || body.includes('<div') || body.includes('<p>') || body.includes('<table')) {
+              body = body
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/p>/gi, '\n')
+                .replace(/<\/div>/gi, '\n')
+                .replace(/<\/tr>/gi, '\n')
+                .replace(/<\/li>/gi, '\n')
+                .replace(/<[^>]+>/g, '')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+            }
+
+            // 5. Trim oversized content
+            if (body.length > 10000) {
+              body = body.substring(0, 10000) + '\n... [truncated]';
+            }
+
+            const formatAddr = (a: EnvelopeAddr) => a.name ? `${a.name} <${a.address}>` : (a.address ?? '');
+
+            return {
+              content: {
+                uid: foundUid,
+                date: envelope?.date?.toISOString(),
+                subject: envelope?.subject,
+                from: envelope?.from?.map(formatAddr).join(', '),
+                to: envelope?.to?.map(formatAddr).join(', '),
+                cc: envelope?.cc?.map(formatAddr).join(', ') || undefined,
+                read: flags?.has('\\Seen') ?? false,
+                flagged: flags?.has('\\Flagged') ?? false,
+                body,
+                folder,
+              },
+            };
+          } finally {
+            lock.release();
+            await client.logout();
+          }
+        } catch (error) {
+          return { content: { error: `IMAP read failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
     )
     .tool(
       {
         name: 'email_search',
-        description: 'Search emails',
+        description: 'Search emails via IMAP',
         parameters: {
           type: 'object',
           properties: {
-            query: { type: 'string', description: 'Search query' },
-            folder: { type: 'string', description: 'Folder to search in' },
+            query: { type: 'string', description: 'Search text (searches subject and body)' },
+            folder: { type: 'string', description: 'Folder to search in (default: INBOX)' },
+            from: { type: 'string', description: 'Filter by sender address' },
+            since: { type: 'string', description: 'Emails since date (YYYY-MM-DD)' },
+            limit: { type: 'number', description: 'Maximum results (default: 20)' },
           },
           required: ['query'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          query: params.query,
-          results: [],
-          message: 'No results found',
+      async (params) => {
+        const entry = configServicesRepo.getDefaultEntry('imap');
+        if (!entry?.data) {
+          return { content: { error: 'IMAP not configured. Add IMAP settings in Config Center.' }, isError: true };
+        }
+        const { host, port, secure, user, password, mailbox } = entry.data as Record<string, string | number | boolean>;
+        if (!host || !user || !password) {
+          return { content: { error: 'IMAP configuration incomplete.' }, isError: true };
+        }
+        const folder = (params.folder as string) || (mailbox as string) || 'INBOX';
+        const limit = Math.min(Math.max((params.limit as number) || 20, 1), 50);
+        const query = params.query as string;
+        try {
+          const { ImapFlow } = await import('imapflow');
+          const client = new ImapFlow({
+            host: String(host),
+            port: Number(port) || 993,
+            secure: secure !== false && secure !== 'false',
+            auth: { user: String(user), pass: String(password) },
+            logger: false,
+          });
+          await client.connect();
+          const lock = await client.getMailboxLock(folder);
+          try {
+            const searchCriteria: Record<string, unknown> = {};
+            if (query) searchCriteria.or = [{ subject: query }, { body: query }];
+            if (params.from) searchCriteria.from = params.from as string;
+            if (params.since) searchCriteria.since = params.since as string;
+            const searchResult = await client.search(searchCriteria, { uid: true });
+            const uids = Array.isArray(searchResult) ? searchResult : [];
+            const resultUids = uids.slice(-limit);
+            if (resultUids.length === 0) {
+              return { content: { query, results: [], total: 0, folder } };
+            }
+            const messages: Array<Record<string, unknown>> = [];
+            for await (const msg of client.fetch(resultUids, {
+              envelope: true,
+              flags: true,
+              uid: true,
+            })) {
+              const env = msg.envelope;
+              messages.push({
+                uid: msg.uid,
+                date: env?.date?.toISOString(),
+                subject: env?.subject,
+                from: env?.from?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
+                to: env?.to?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
+                read: msg.flags?.has('\\Seen') ?? false,
+              });
+            }
+            messages.reverse();
+            return {
+              content: {
+                query,
+                results: messages,
+                total: uids.length,
+                returned: messages.length,
+                folder,
+              },
+            };
+          } finally {
+            lock.release();
+            await client.logout();
+          }
+        } catch (error) {
+          return { content: { error: `IMAP search failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
+    )
+    .tool(
+      {
+        name: 'email_delete',
+        description: 'Delete an email by UID via IMAP. Moves it to Trash or marks it as \\Deleted depending on server support.',
+        parameters: {
+          type: 'object',
+          properties: {
+            uid: { type: 'number', description: 'UID of the email to delete' },
+            folder: { type: 'string', description: 'Folder where the email resides (default: INBOX)' },
+          },
+          required: ['uid'],
         },
-      }),
+      },
+      async (params) => {
+        const entry = configServicesRepo.getDefaultEntry('imap');
+        if (!entry?.data) {
+          return { content: { error: 'IMAP not configured. Add IMAP settings in Config Center.' }, isError: true };
+        }
+        const { host, port, secure, user, password, mailbox } = entry.data as Record<string, string | number | boolean>;
+        if (!host || !user || !password) {
+          return { content: { error: 'IMAP configuration incomplete.' }, isError: true };
+        }
+        const uid = params.uid as number;
+        const folder = (params.folder as string) || (mailbox as string) || 'INBOX';
+        try {
+          const { ImapFlow } = await import('imapflow');
+          const client = new ImapFlow({
+            host: String(host),
+            port: Number(port) || 993,
+            secure: secure !== false && secure !== 'false',
+            auth: { user: String(user), pass: String(password) },
+            logger: false,
+          });
+          await client.connect();
+          const lock = await client.getMailboxLock(folder);
+          try {
+            // Try moving to Trash first, fall back to flag-based delete
+            try {
+              await client.messageMove(String(uid), 'Trash', { uid: true });
+              return {
+                content: {
+                  success: true,
+                  uid,
+                  action: 'moved_to_trash',
+                  folder,
+                },
+              };
+            } catch {
+              // Trash folder may not exist or move not supported; flag as deleted
+              await client.messageDelete(String(uid), { uid: true });
+              return {
+                content: {
+                  success: true,
+                  uid,
+                  action: 'deleted',
+                  folder,
+                },
+              };
+            }
+          } finally {
+            lock.release();
+            await client.logout();
+          }
+        } catch (error) {
+          return { content: { error: `IMAP delete failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
     )
     .build();
 }
@@ -1089,32 +1520,59 @@ function buildTranslationPlugin(): BuiltinPluginEntry {
     .tool(
       {
         name: 'translate_text',
-        description: 'Translate text to another language',
+        description: 'Translate text to another language using DeepL',
         parameters: {
           type: 'object',
           properties: {
             text: { type: 'string', description: 'Text to translate' },
-            target_lang: { type: 'string', description: 'Target language code (e.g. "en", "de", "fr")' },
-            source_lang: { type: 'string', description: 'Source language code (or "auto" for detection)' },
+            target_lang: { type: 'string', description: 'Target language code (e.g. "EN", "DE", "FR", "TR")' },
+            source_lang: { type: 'string', description: 'Source language code (or omit for auto-detection)' },
           },
-          required: ['text'],
+          required: ['text', 'target_lang'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          original: params.text,
-          translated: params.text,
-          source_lang: params.source_lang || 'auto',
-          target_lang: params.target_lang || 'en',
-          message: 'Translation API not configured - returning original text',
-        },
-      }),
+      async (params) => {
+        const apiKey = configServicesRepo.getApiKey('deepl');
+        if (!apiKey) {
+          return { content: { error: 'DeepL API key not configured. Add it in Config Center.' }, isError: true };
+        }
+        const baseUrl = (configServicesRepo.getFieldValue('deepl', 'base_url') as string) || 'https://api-free.deepl.com/v2';
+        const text = params.text as string;
+        const targetLang = (params.target_lang as string).toUpperCase();
+        const body: Record<string, unknown> = { text: [text], target_lang: targetLang };
+        const sourceLang = params.source_lang as string | undefined;
+        if (sourceLang && sourceLang !== 'auto') {
+          body.source_lang = sourceLang.toUpperCase();
+        }
+        try {
+          const res = await fetch(`${baseUrl}/translate`, {
+            method: 'POST',
+            headers: { 'Authorization': `DeepL-Auth-Key ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            return { content: { error: `DeepL API error ${res.status}: ${errText}` }, isError: true };
+          }
+          const data = await res.json() as { translations: Array<{ detected_source_language: string; text: string }> };
+          const t = data.translations[0];
+          return {
+            content: {
+              original: text,
+              translated: t?.text ?? text,
+              source_lang: t?.detected_source_language?.toLowerCase() ?? 'unknown',
+              target_lang: targetLang.toLowerCase(),
+            },
+          };
+        } catch (error) {
+          return { content: { error: `Translation failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
     )
     .tool(
       {
         name: 'detect_language',
-        description: 'Detect the language of a text',
+        description: 'Detect the language of a text (translates a small snippet to detect source language)',
         parameters: {
           type: 'object',
           properties: {
@@ -1123,14 +1581,34 @@ function buildTranslationPlugin(): BuiltinPluginEntry {
           required: ['text'],
         },
       },
-      async () => ({
-        content: {
-          success: true,
-          detected_language: 'unknown',
-          confidence: 0,
-          message: 'Language detection API not configured',
-        },
-      }),
+      async (params) => {
+        const apiKey = configServicesRepo.getApiKey('deepl');
+        if (!apiKey) {
+          return { content: { error: 'DeepL API key not configured. Add it in Config Center.' }, isError: true };
+        }
+        const baseUrl = (configServicesRepo.getFieldValue('deepl', 'base_url') as string) || 'https://api-free.deepl.com/v2';
+        const text = (params.text as string).slice(0, 200);
+        try {
+          const res = await fetch(`${baseUrl}/translate`, {
+            method: 'POST',
+            headers: { 'Authorization': `DeepL-Auth-Key ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: [text], target_lang: 'EN' }),
+          });
+          if (!res.ok) {
+            return { content: { error: `DeepL API error ${res.status}` }, isError: true };
+          }
+          const data = await res.json() as { translations: Array<{ detected_source_language: string; text: string }> };
+          const detected = data.translations[0]?.detected_source_language?.toLowerCase() ?? 'unknown';
+          return {
+            content: {
+              text: text.length > 100 ? text.slice(0, 100) + '...' : text,
+              detected_language: detected,
+            },
+          };
+        } catch (error) {
+          return { content: { error: `Detection failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
     )
     .build();
 }
@@ -1197,30 +1675,65 @@ function buildWebSearchPlugin(): BuiltinPluginEntry {
     .tool(
       {
         name: 'web_search',
-        description: 'Search the web for information',
+        description: 'Search the web for information using Tavily',
         parameters: {
           type: 'object',
           properties: {
             query: { type: 'string', description: 'Search query' },
             depth: { type: 'string', enum: ['basic', 'advanced'], description: 'Search depth' },
-            max_results: { type: 'number', description: 'Maximum number of results' },
+            max_results: { type: 'number', description: 'Maximum number of results (1-20)' },
           },
           required: ['query'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          query: params.query,
-          results: [],
-          message: 'Search API not configured - no results',
-        },
-      }),
+      async (params) => {
+        const apiKey = configServicesRepo.getApiKey('tavily');
+        if (!apiKey) {
+          return { content: { error: 'Tavily API key not configured. Add it in Config Center.' }, isError: true };
+        }
+        const query = params.query as string;
+        const depth = (params.depth as string) || 'basic';
+        const maxResults = Math.min(Math.max((params.max_results as number) || 5, 1), 20);
+        try {
+          const res = await fetch('https://api.tavily.com/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              api_key: apiKey,
+              query,
+              search_depth: depth,
+              max_results: maxResults,
+              include_answer: true,
+            }),
+          });
+          if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            return { content: { error: `Tavily API error ${res.status}: ${errText}` }, isError: true };
+          }
+          const data = await res.json() as Record<string, unknown>;
+          const results = (data.results as Array<Record<string, unknown>> || []).map((r) => ({
+            title: r.title,
+            url: r.url,
+            content: r.content,
+            score: r.score,
+          }));
+          return {
+            content: {
+              query,
+              answer: data.answer,
+              results,
+              resultCount: results.length,
+            },
+          };
+        } catch (error) {
+          return { content: { error: `Search failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
     )
     .tool(
       {
         name: 'web_extract',
-        description: 'Extract content from a URL',
+        description: 'Extract content from a URL using Tavily',
         parameters: {
           type: 'object',
           properties: {
@@ -1229,15 +1742,35 @@ function buildWebSearchPlugin(): BuiltinPluginEntry {
           required: ['url'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          url: params.url,
-          title: 'Extracted Page',
-          content: '',
-          message: 'Content extraction not available (API not configured)',
-        },
-      }),
+      async (params) => {
+        const apiKey = configServicesRepo.getApiKey('tavily');
+        if (!apiKey) {
+          return { content: { error: 'Tavily API key not configured. Add it in Config Center.' }, isError: true };
+        }
+        const url = params.url as string;
+        try {
+          const res = await fetch('https://api.tavily.com/extract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ api_key: apiKey, urls: [url] }),
+          });
+          if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            return { content: { error: `Tavily extract error ${res.status}: ${errText}` }, isError: true };
+          }
+          const data = await res.json() as { results: Array<Record<string, unknown>> };
+          const result = data.results?.[0];
+          return {
+            content: {
+              url,
+              rawContent: result?.raw_content ?? '',
+              extractedContent: result?.content ?? '',
+            },
+          };
+        } catch (error) {
+          return { content: { error: `Extraction failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        }
+      },
     )
     .build();
 }

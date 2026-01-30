@@ -995,6 +995,42 @@ CREATE TABLE IF NOT EXISTS plugins (
   installed_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- =====================================================
+-- LOCAL AI PROVIDERS
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS local_providers (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  name TEXT NOT NULL,
+  provider_type TEXT NOT NULL CHECK(provider_type IN ('lmstudio', 'ollama', 'localai', 'vllm', 'custom')),
+  base_url TEXT NOT NULL,
+  api_key TEXT,
+  is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+  discovery_endpoint TEXT,
+  last_discovered_at TIMESTAMP,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS local_models (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  local_provider_id TEXT NOT NULL REFERENCES local_providers(id) ON DELETE CASCADE,
+  model_id TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  capabilities JSONB NOT NULL DEFAULT '["chat", "streaming"]',
+  context_window INTEGER DEFAULT 32768,
+  max_output INTEGER DEFAULT 4096,
+  is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, local_provider_id, model_id)
+);
 `;
 
 export const INDEXES_SQL = `
@@ -1133,6 +1169,13 @@ CREATE INDEX IF NOT EXISTS idx_custom_tools_category ON custom_tools(category);
 -- Custom table schemas indexes
 CREATE INDEX IF NOT EXISTS idx_custom_table_schemas_name ON custom_table_schemas(name);
 CREATE INDEX IF NOT EXISTS idx_custom_data_records_table ON custom_data_records(table_id);
+
+-- Local AI Providers indexes
+CREATE INDEX IF NOT EXISTS idx_local_providers_user ON local_providers(user_id);
+CREATE INDEX IF NOT EXISTS idx_local_providers_enabled ON local_providers(is_enabled);
+CREATE INDEX IF NOT EXISTS idx_local_providers_default ON local_providers(is_default);
+CREATE INDEX IF NOT EXISTS idx_local_models_provider ON local_models(local_provider_id);
+CREATE INDEX IF NOT EXISTS idx_local_models_enabled ON local_models(is_enabled);
 `;
 
 /**

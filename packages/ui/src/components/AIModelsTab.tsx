@@ -18,6 +18,10 @@ import {
   Volume2,
   RefreshCw,
   Brain,
+  Server,
+  Trash,
+  Star,
+  X,
 } from './icons';
 
 // ============================================================================
@@ -51,7 +55,7 @@ interface MergedModel {
   isCustom: boolean;
   hasOverride: boolean;
   isConfigured: boolean; // API key is set for this provider
-  source: 'builtin' | 'aggregator' | 'custom';
+  source: 'builtin' | 'aggregator' | 'custom' | 'local';
 }
 
 interface AvailableProvider {
@@ -65,6 +69,26 @@ interface AvailableProvider {
   modelCount: number;
   isEnabled: boolean;
   isConfigured: boolean; // API key is set
+}
+
+interface LocalProvider {
+  id: string;
+  name: string;
+  providerType: string;
+  baseUrl: string;
+  isEnabled: boolean;
+  isDefault: boolean;
+  modelCount: number;
+  lastDiscoveredAt?: string;
+}
+
+interface LocalProviderTemplate {
+  id: string;
+  name: string;
+  providerType: string;
+  baseUrl: string;
+  discoveryEndpoint: string;
+  description: string;
 }
 
 interface CapabilityDef {
@@ -103,10 +127,11 @@ const CAPABILITY_LABELS: Record<ModelCapability, string> = {
   reasoning: 'Think',
 };
 
-const SOURCE_COLORS = {
+const SOURCE_COLORS: Record<string, string> = {
   builtin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   aggregator: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   custom: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  local: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
 };
 
 // ============================================================================
@@ -261,6 +286,13 @@ export function AIModelsTab() {
   const [availableProviders, setAvailableProviders] = useState<AvailableProvider[]>([]);
   const [capabilities, setCapabilities] = useState<CapabilityDef[]>([]);
 
+  // Local providers
+  const [localProviders, setLocalProviders] = useState<LocalProvider[]>([]);
+  const [localTemplates, setLocalTemplates] = useState<LocalProviderTemplate[]>([]);
+  const [showLocalSection, setShowLocalSection] = useState(true);
+  const [showAddLocalDialog, setShowAddLocalDialog] = useState(false);
+  const [discoveringLocal, setDiscoveringLocal] = useState<string | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -277,6 +309,8 @@ export function AIModelsTab() {
   const [editingModel, setEditingModel] = useState<MergedModel | null>(null);
   const [togglingModel, setTogglingModel] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [discoverProvider, setDiscoverProvider] = useState<string>('');
 
   // Load data
   useEffect(() => {
@@ -286,21 +320,27 @@ export function AIModelsTab() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [modelsRes, providersRes, capsRes] = await Promise.all([
+      const [modelsRes, providersRes, capsRes, localRes, templatesRes] = await Promise.all([
         fetch('/api/v1/model-configs'),
         fetch('/api/v1/model-configs/providers/available'),
         fetch('/api/v1/model-configs/capabilities/list'),
+        fetch('/api/v1/local-providers'),
+        fetch('/api/v1/local-providers/templates'),
       ]);
 
-      const [modelsData, providersData, capsData] = await Promise.all([
+      const [modelsData, providersData, capsData, localData, templatesData] = await Promise.all([
         modelsRes.json(),
         providersRes.json(),
         capsRes.json(),
+        localRes.json(),
+        templatesRes.json(),
       ]);
 
       if (modelsData.success) setModels(modelsData.data);
       if (providersData.success) setAvailableProviders(providersData.data);
       if (capsData.success) setCapabilities(capsData.data);
+      if (localData.success) setLocalProviders(localData.data);
+      if (templatesData.success) setLocalTemplates(templatesData.data);
     } catch (err) {
       console.error('Failed to load model configs:', err);
       setError('Failed to load model configurations');
@@ -509,6 +549,131 @@ export function AIModelsTab() {
     }
   };
 
+  // Handle discover models from provider's /v1/models endpoint
+  const handleDiscoverModels = async (providerId: string) => {
+    if (!providerId) return;
+    setIsDiscovering(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/model-configs/providers/${providerId}/discover-models`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        const newCount = data.data?.newModels || 0;
+        const total = data.data?.models?.length || 0;
+        setSuccess(`Discovered ${total} models from ${data.data?.providerName || providerId}${newCount > 0 ? ` (${newCount} new)` : ''}`);
+        await loadData();
+      } else {
+        setError(data.error || 'Discovery failed');
+      }
+    } catch {
+      setError('Failed to discover models. Is the provider running?');
+    } finally {
+      setIsDiscovering(false);
+    }
+  };
+
+  // Handle add local provider from template
+  const handleAddLocalProvider = async (template: LocalProviderTemplate, customUrl?: string, customApiKey?: string) => {
+    setError(null);
+    try {
+      const res = await fetch('/api/v1/local-providers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: template.name,
+          providerType: template.providerType,
+          baseUrl: customUrl || template.baseUrl,
+          apiKey: customApiKey || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccess(`Added ${template.name} provider. Discovering models...`);
+        setShowAddLocalDialog(false);
+        await loadData();
+        // Auto-discover models after adding provider
+        if (data.data?.id) {
+          await handleLocalDiscover(data.data.id);
+        }
+      } else {
+        setError(data.error?.message || 'Failed to add provider');
+      }
+    } catch {
+      setError('Failed to add local provider');
+    }
+  };;
+
+  // Handle discover models for a local provider
+  const handleLocalDiscover = async (providerId: string) => {
+    setDiscoveringLocal(providerId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/local-providers/${providerId}/discover`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        const total = data.data?.totalModels || 0;
+        const newCount = data.data?.newModels || 0;
+        setSuccess(`Discovered ${total} models${newCount > 0 ? ` (${newCount} new)` : ''}`);
+        setTimeout(() => setSuccess(null), 3000);
+        await loadData();
+      } else {
+        setError(data.error?.message || 'Discovery failed');
+      }
+    } catch {
+      setError('Failed to discover models. Is the provider running?');
+    } finally {
+      setDiscoveringLocal(null);
+    }
+  };
+
+  // Handle delete local provider
+  const handleDeleteLocalProvider = async (providerId: string, name: string) => {
+    if (!confirm(`Delete local provider "${name}" and all its models?`)) return;
+    try {
+      const res = await fetch(`/api/v1/local-providers/${providerId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setSuccess(`Deleted ${name}`);
+        setTimeout(() => setSuccess(null), 2000);
+        await loadData();
+      } else {
+        setError(data.error?.message || 'Failed to delete provider');
+      }
+    } catch {
+      setError('Failed to delete provider');
+    }
+  };
+
+  // Handle toggle local provider
+  const handleToggleLocalProvider = async (providerId: string) => {
+    try {
+      const res = await fetch(`/api/v1/local-providers/${providerId}/toggle`, { method: 'PATCH' });
+      const data = await res.json();
+      if (data.success) await loadData();
+    } catch {
+      setError('Failed to toggle provider');
+    }
+  };
+
+  // Handle set default local provider
+  const handleSetDefaultLocal = async (providerId: string) => {
+    try {
+      const res = await fetch(`/api/v1/local-providers/${providerId}/set-default`, { method: 'PATCH' });
+      const data = await res.json();
+      if (data.success) {
+        setSuccess('Default provider updated');
+        setTimeout(() => setSuccess(null), 2000);
+        await loadData();
+      }
+    } catch {
+      setError('Failed to set default provider');
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -536,6 +701,138 @@ export function AIModelsTab() {
           <Check className="w-5 h-5 flex-shrink-0" />
           <span className="text-sm">{success}</span>
         </div>
+      )}
+
+      {/* Local AI Providers Section */}
+      <div className="border border-emerald-200 dark:border-emerald-800/50 rounded-xl overflow-hidden">
+        <button
+          onClick={() => setShowLocalSection(!showLocalSection)}
+          className="w-full flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Server className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">Local AI Providers</h3>
+            <span className="text-xs text-text-muted dark:text-dark-text-muted">
+              {localProviders.length} provider{localProviders.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowAddLocalDialog(true); }}
+              className="px-2.5 py-1 text-xs rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add
+            </button>
+            <ChevronDown className={`w-4 h-4 text-text-muted transition-transform ${showLocalSection ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+
+        {showLocalSection && (
+          <div className="p-4 bg-bg-primary dark:bg-dark-bg-primary">
+            {localProviders.length === 0 ? (
+              <div className="text-center py-6">
+                <Server className="w-8 h-8 text-text-muted dark:text-dark-text-muted mx-auto mb-2 opacity-50" />
+                <p className="text-sm text-text-muted dark:text-dark-text-muted mb-2">
+                  No local providers configured
+                </p>
+                <button
+                  onClick={() => setShowAddLocalDialog(true)}
+                  className="text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                >
+                  Add LM Studio, Ollama, or other local AI
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {localProviders.map((lp) => (
+                  <div
+                    key={lp.id}
+                    className={`p-3 rounded-lg border transition-all ${
+                      lp.isEnabled
+                        ? 'border-emerald-200 dark:border-emerald-800/50 bg-bg-primary dark:bg-dark-bg-primary'
+                        : 'border-border/50 dark:border-dark-border/50 bg-bg-secondary/50 dark:bg-dark-bg-secondary/50 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h5 className="font-medium text-text-primary dark:text-dark-text-primary truncate">{lp.name}</h5>
+                          <span className="px-1.5 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 flex-shrink-0">
+                            {lp.providerType}
+                          </span>
+                          {lp.isDefault && (
+                            <span className="flex-shrink-0" title="Default provider">
+                              <Star className="w-3.5 h-3.5 text-amber-500" />
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5 truncate" title={lp.baseUrl}>
+                          {lp.baseUrl}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                        {lp.modelCount} model{lp.modelCount !== 1 ? 's' : ''}
+                        {lp.lastDiscoveredAt && (
+                          <> &bull; {new Date(lp.lastDiscoveredAt).toLocaleDateString()}</>
+                        )}
+                      </span>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleLocalDiscover(lp.id)}
+                          disabled={discoveringLocal === lp.id}
+                          className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted hover:text-emerald-600 transition-colors disabled:opacity-50"
+                          title="Discover models"
+                        >
+                          <Search className={`w-3.5 h-3.5 ${discoveringLocal === lp.id ? 'animate-pulse' : ''}`} />
+                        </button>
+                        {!lp.isDefault && (
+                          <button
+                            onClick={() => handleSetDefaultLocal(lp.id)}
+                            className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted hover:text-amber-500 transition-colors"
+                            title="Set as default"
+                          >
+                            <Star className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleToggleLocalProvider(lp.id)}
+                          className={`p-1 rounded transition-colors ${
+                            lp.isEnabled
+                              ? 'hover:bg-error/10 text-success hover:text-error'
+                              : 'hover:bg-success/10 text-text-muted hover:text-success'
+                          }`}
+                          title={lp.isEnabled ? 'Disable' : 'Enable'}
+                        >
+                          <Power className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteLocalProvider(lp.id, lp.name)}
+                          className="p-1 rounded hover:bg-error/10 text-text-muted hover:text-error transition-colors"
+                          title="Delete"
+                        >
+                          <Trash className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Add Local Provider Dialog */}
+      {showAddLocalDialog && (
+        <AddLocalProviderDialog
+          templates={localTemplates}
+          onAdd={handleAddLocalProvider}
+          onClose={() => setShowAddLocalDialog(false)}
+        />
       )}
 
       {/* Header with filters */}
@@ -652,6 +949,29 @@ export function AIModelsTab() {
             <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
             Reset
           </button>
+
+          {/* Discover models from local provider */}
+          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-border dark:border-dark-border">
+            <select
+              value={discoverProvider}
+              onChange={(e) => setDiscoverProvider(e.target.value)}
+              className="px-2 py-2 text-sm rounded-lg border bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary"
+            >
+              <option value="">Select provider...</option>
+              {uniqueProviders.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => handleDiscoverModels(discoverProvider)}
+              disabled={isDiscovering || !discoverProvider}
+              className="px-3 py-2 text-sm rounded-lg border transition-colors flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 whitespace-nowrap"
+              title="Fetch models from provider's /v1/models endpoint (LM Studio, Ollama, etc.)"
+            >
+              <Search className={`w-4 h-4 ${isDiscovering ? 'animate-pulse' : ''}`} />
+              Discover Models
+            </button>
+          </div>
         </div>
       </div>
 
@@ -965,6 +1285,134 @@ function EditModelModal({
             {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Add Local Provider Dialog
+// ============================================================================
+
+function AddLocalProviderDialog({
+  templates,
+  onAdd,
+  onClose,
+}: {
+  templates: LocalProviderTemplate[];
+  onAdd: (template: LocalProviderTemplate, customUrl?: string, customApiKey?: string) => void;
+  onClose: () => void;
+}) {
+  const [selectedTemplate, setSelectedTemplate] = useState<LocalProviderTemplate | null>(null);
+  const [customUrl, setCustomUrl] = useState('');
+  const [customApiKey, setCustomApiKey] = useState('');
+
+  const handleSelect = (template: LocalProviderTemplate) => {
+    setSelectedTemplate(template);
+    setCustomUrl(template.baseUrl);
+    setCustomApiKey('');
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-bg-primary dark:bg-dark-bg-primary rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-border dark:border-dark-border flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+              Add Local AI Provider
+            </h3>
+            <p className="text-sm text-text-muted dark:text-dark-text-muted">
+              Select a provider template or add a custom one
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Template selection */}
+          {!selectedTemplate ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {templates.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleSelect(t)}
+                  className="p-4 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary hover:border-emerald-400 dark:hover:border-emerald-600 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Server className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <h5 className="font-medium text-text-primary dark:text-dark-text-primary">{t.name}</h5>
+                  </div>
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2">{t.description}</p>
+                  <code className="text-xs px-1.5 py-0.5 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted font-mono">
+                    {t.baseUrl}
+                  </code>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Selected template config */}
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50">
+                <Server className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-medium text-text-primary dark:text-dark-text-primary">{selectedTemplate.name}</span>
+                <button
+                  onClick={() => setSelectedTemplate(null)}
+                  className="ml-auto text-xs text-text-muted hover:text-text-primary"
+                >
+                  Change
+                </button>
+              </div>
+
+              {/* Base URL */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Base URL
+                </label>
+                <input
+                  type="text"
+                  value={customUrl}
+                  onChange={(e) => setCustomUrl(e.target.value)}
+                  placeholder={selectedTemplate.baseUrl}
+                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                />
+              </div>
+
+              {/* API Key (optional) */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  API Key <span className="text-text-muted font-normal">(optional)</span>
+                </label>
+                <input
+                  type="password"
+                  value={customApiKey}
+                  onChange={(e) => setCustomApiKey(e.target.value)}
+                  placeholder="Leave empty if not required"
+                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {selectedTemplate && (
+          <div className="p-6 border-t border-border dark:border-dark-border flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onAdd(selectedTemplate, customUrl, customApiKey)}
+              className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              Add & Discover
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

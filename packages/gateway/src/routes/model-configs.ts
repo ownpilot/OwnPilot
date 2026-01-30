@@ -11,6 +11,7 @@
 import { Hono } from 'hono';
 import {
   modelConfigsRepo,
+  localProvidersRepo,
   type CreateModelConfigInput,
   type UpdateModelConfigInput,
   type CreateProviderInput,
@@ -25,7 +26,7 @@ import {
   type ModelCapability,
   type AggregatorProvider,
 } from '@ownpilot/core';
-import { hasApiKey } from './settings.js';
+import { hasApiKey, getApiKey } from './settings.js';
 
 export const modelConfigsRoutes = new Hono();
 
@@ -48,13 +49,13 @@ interface MergedModel {
   isCustom: boolean;
   hasOverride: boolean;
   isConfigured: boolean; // API key is set for this provider
-  source: 'builtin' | 'aggregator' | 'custom';
+  source: 'builtin' | 'aggregator' | 'custom' | 'local';
 }
 
 interface MergedProvider {
   id: string;
   name: string;
-  type: 'builtin' | 'aggregator' | 'custom';
+  type: 'builtin' | 'aggregator' | 'custom' | 'local';
   apiBase?: string;
   apiKeyEnv?: string;
   apiKeySetting?: string;
@@ -158,16 +159,31 @@ async function getMergedModels(userId: string): Promise<MergedModel[]> {
     }
   }
 
-  // 3. Custom models (user-added)
+  // 3. Custom models (user-added, including discovered models)
   const customModels = await modelConfigsRepo.getCustomModels(userId);
   for (const custom of customModels) {
     // Avoid duplicates - skip if already in list
     const key = `${custom.providerId}/${custom.modelId}`;
     if (models.some((m) => `${m.providerId}/${m.modelId}` === key)) continue;
 
+    // Resolve provider display name from built-in, aggregator, or user provider
+    let resolvedProviderName = custom.providerId;
+    const builtinProv = getProviderConfig(custom.providerId);
+    if (builtinProv) {
+      resolvedProviderName = builtinProv.name;
+    } else {
+      const aggProv = isAggregatorProvider(custom.providerId) ? getAggregatorProvider(custom.providerId) : null;
+      if (aggProv) {
+        resolvedProviderName = aggProv.name;
+      } else {
+        const userProv = await modelConfigsRepo.getProvider(userId, custom.providerId);
+        if (userProv?.displayName) resolvedProviderName = userProv.displayName;
+      }
+    }
+
     models.push({
       providerId: custom.providerId,
-      providerName: custom.providerId, // Will be resolved by UI
+      providerName: resolvedProviderName,
       modelId: custom.modelId,
       displayName: custom.displayName || custom.modelId,
       capabilities: custom.capabilities,
@@ -181,6 +197,36 @@ async function getMergedModels(userId: string): Promise<MergedModel[]> {
       isConfigured: true, // Custom models are always "configured" by user
       source: 'custom',
     });
+  }
+
+  // 4. Local providers (LM Studio, Ollama, etc.)
+  const localProviders = await localProvidersRepo.listProviders(userId);
+  for (const lp of localProviders) {
+    if (!lp.isEnabled) continue;
+    const localModels = await localProvidersRepo.listModels(userId, lp.id);
+    for (const lm of localModels) {
+      if (!lm.isEnabled) continue;
+      // Skip duplicates (local provider ID + model ID)
+      const key = `${lp.id}/${lm.modelId}`;
+      if (models.some((m) => `${m.providerId}/${m.modelId}` === key)) continue;
+
+      models.push({
+        providerId: lp.id,
+        providerName: lp.name,
+        modelId: lm.modelId,
+        displayName: lm.displayName,
+        capabilities: lm.capabilities as ModelCapability[],
+        pricingInput: 0,
+        pricingOutput: 0,
+        contextWindow: lm.contextWindow,
+        maxOutput: lm.maxOutput,
+        isEnabled: true,
+        isCustom: false,
+        hasOverride: false,
+        isConfigured: true, // local = always configured
+        source: 'local',
+      });
+    }
   }
 
   // Sort: configured first, then by provider name
@@ -258,6 +304,21 @@ async function getMergedProviders(userId: string): Promise<MergedProvider[]> {
     });
   }
 
+  // 4. Local providers (LM Studio, Ollama, etc.)
+  const localProviders = await localProvidersRepo.listProviders(userId);
+  for (const lp of localProviders) {
+    const localModels = await localProvidersRepo.listModels(userId, lp.id);
+    providers.push({
+      id: lp.id,
+      name: lp.name,
+      type: 'local',
+      apiBase: lp.baseUrl,
+      isEnabled: lp.isEnabled,
+      isConfigured: true, // local = always configured
+      modelCount: localModels.filter((m) => m.isEnabled).length,
+    });
+  }
+
   // Sort: configured first, then by name
   providers.sort((a, b) => {
     if (a.isConfigured !== b.isConfigured) return a.isConfigured ? -1 : 1;
@@ -305,44 +366,6 @@ modelConfigsRoutes.get('/', async (c) => {
 });
 
 /**
- * GET /api/v1/models/:provider - List models for a provider
- */
-modelConfigsRoutes.get('/:provider', async (c) => {
-  const userId = getUserId(c);
-  const providerId = c.req.param('provider');
-
-  const models = (await getMergedModels(userId)).filter((m) => m.providerId === providerId);
-
-  return c.json({
-    success: true,
-    data: models,
-    count: models.length,
-  });
-});
-
-/**
- * GET /api/v1/models/:provider/:model - Get single model
- */
-modelConfigsRoutes.get('/:provider/:model', async (c) => {
-  const userId = getUserId(c);
-  const providerId = c.req.param('provider');
-  const modelId = decodeURIComponent(c.req.param('model'));
-
-  const model = (await getMergedModels(userId)).find(
-    (m) => m.providerId === providerId && m.modelId === modelId
-  );
-
-  if (!model) {
-    return c.json({ success: false, error: 'Model not found' }, 404);
-  }
-
-  return c.json({
-    success: true,
-    data: model,
-  });
-});
-
-/**
  * POST /api/v1/models - Create custom model
  */
 modelConfigsRoutes.post('/', async (c) => {
@@ -369,119 +392,6 @@ modelConfigsRoutes.post('/', async (c) => {
   } catch (error) {
     console.error('Failed to create model:', error);
     return c.json({ success: false, error: 'Failed to create model' }, 500);
-  }
-});
-
-/**
- * PUT /api/v1/models/:provider/:model - Update model config
- */
-modelConfigsRoutes.put('/:provider/:model', async (c) => {
-  const userId = getUserId(c);
-  const providerId = c.req.param('provider');
-  const modelId = decodeURIComponent(c.req.param('model'));
-
-  try {
-    const body = await c.req.json<UpdateModelConfigInput>();
-
-    // Check if model exists in any source
-    const existingModel = (await getMergedModels(userId)).find(
-      (m) => m.providerId === providerId && m.modelId === modelId
-    );
-
-    if (!existingModel) {
-      return c.json({ success: false, error: 'Model not found' }, 404);
-    }
-
-    // Create or update override
-    const config = await modelConfigsRepo.upsertModel({
-      userId,
-      providerId,
-      modelId,
-      ...body,
-      isCustom: existingModel.isCustom,
-    });
-
-    return c.json({
-      success: true,
-      message: 'Model updated',
-      data: config,
-    });
-  } catch (error) {
-    console.error('Failed to update model:', error);
-    return c.json({ success: false, error: 'Failed to update model' }, 500);
-  }
-});
-
-/**
- * DELETE /api/v1/models/:provider/:model - Delete custom model or remove override
- */
-modelConfigsRoutes.delete('/:provider/:model', async (c) => {
-  const userId = getUserId(c);
-  const providerId = c.req.param('provider');
-  const modelId = decodeURIComponent(c.req.param('model'));
-
-  const existingModel = (await getMergedModels(userId)).find(
-    (m) => m.providerId === providerId && m.modelId === modelId
-  );
-
-  if (!existingModel) {
-    return c.json({ success: false, error: 'Model not found' }, 404);
-  }
-
-  if (!existingModel.isCustom && !existingModel.hasOverride) {
-    return c.json({ success: false, error: 'Cannot delete built-in model without override' }, 400);
-  }
-
-  const deleted = await modelConfigsRepo.deleteModel(userId, providerId, modelId);
-
-  return c.json({
-    success: true,
-    message: existingModel.isCustom ? 'Custom model deleted' : 'Override removed',
-    deleted,
-  });
-});
-
-/**
- * PATCH /api/v1/models/:provider/:model/toggle - Toggle model enabled
- */
-modelConfigsRoutes.patch('/:provider/:model/toggle', async (c) => {
-  const userId = getUserId(c);
-  const providerId = c.req.param('provider');
-  const modelId = decodeURIComponent(c.req.param('model'));
-
-  try {
-    const body = await c.req.json<{ enabled: boolean }>();
-
-    if (typeof body.enabled !== 'boolean') {
-      return c.json({ success: false, error: 'enabled field required (boolean)' }, 400);
-    }
-
-    // Check if model exists
-    const existingModel = (await getMergedModels(userId)).find(
-      (m) => m.providerId === providerId && m.modelId === modelId
-    );
-
-    if (!existingModel) {
-      return c.json({ success: false, error: 'Model not found' }, 404);
-    }
-
-    // Create config entry if it doesn't exist, then toggle
-    await modelConfigsRepo.upsertModel({
-      userId,
-      providerId,
-      modelId,
-      isEnabled: body.enabled,
-      isCustom: existingModel.isCustom,
-    });
-
-    return c.json({
-      success: true,
-      message: `Model ${body.enabled ? 'enabled' : 'disabled'}`,
-      enabled: body.enabled,
-    });
-  } catch (error) {
-    console.error('Failed to toggle model:', error);
-    return c.json({ success: false, error: 'Failed to toggle model' }, 500);
   }
 });
 
@@ -784,6 +694,194 @@ modelConfigsRoutes.patch('/providers/:id/toggle', async (c) => {
 });
 
 // =============================================================================
+// Provider Model Discovery (fetch /v1/models from local or remote provider)
+// =============================================================================
+
+/**
+ * POST /api/v1/providers/:id/discover-models
+ * Fetches models from the provider's OpenAI-compatible /v1/models endpoint
+ * and saves them as custom models in the database.
+ */
+modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
+  const userId = getUserId(c);
+  const providerId = c.req.param('id');
+
+  // Resolve provider base URL (user override > built-in config > aggregator)
+  let baseUrl: string | undefined;
+  let providerName = providerId;
+
+  // Check user provider override first
+  const userProvider = await modelConfigsRepo.getProvider(userId, providerId);
+  if (userProvider?.apiBaseUrl) {
+    baseUrl = userProvider.apiBaseUrl;
+    providerName = userProvider.displayName || providerId;
+  }
+
+  // Fall back to built-in provider config
+  if (!baseUrl) {
+    const builtinConfig = getProviderConfig(providerId);
+    if (builtinConfig) {
+      baseUrl = builtinConfig.baseUrl;
+      providerName = builtinConfig.name;
+    }
+  }
+
+  // Fall back to aggregator config
+  if (!baseUrl && isAggregatorProvider(providerId)) {
+    const agg = getAggregatorProvider(providerId);
+    if (agg) {
+      baseUrl = agg.apiBase;
+      providerName = agg.name;
+    }
+  }
+
+  if (!baseUrl) {
+    return c.json({
+      success: false,
+      error: `Provider "${providerId}" has no base URL configured. Set a base URL first.`,
+    }, 400);
+  }
+
+  // Resolve API key for authentication (some local providers require it)
+  const apiKey = await getApiKey(providerId);
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+
+  // Build candidate URLs — different providers use different path patterns
+  const origin = baseUrl.replace(/\/v\d+\/?$/, '').replace(/\/+$/, '');
+  const candidateUrls = [
+    `${origin}/v1/models`,
+    `${origin}/api/v1/models`,
+    `${origin}/models`,
+  ];
+
+  // Try each URL pattern until we get a valid model list
+  type ModelEntry = { id: string; object?: string; owned_by?: string };
+  let modelList: ModelEntry[] | null = null;
+  let usedUrl = '';
+  let lastError = '';
+
+  for (const url of candidateUrls) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(url, {
+        headers,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        lastError = `HTTP ${response.status} from ${url}`;
+        continue;
+      }
+
+      // Read as text first to handle non-JSON responses gracefully
+      const text = await response.text();
+      if (!text.trim()) {
+        lastError = `Empty response from ${url}`;
+        continue;
+      }
+
+      let json: unknown;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        lastError = `Non-JSON response from ${url}: ${text.slice(0, 200)}`;
+        continue;
+      }
+
+      // OpenAI format: { data: [...] } — some providers return a flat array
+      const asObj = json as Record<string, unknown>;
+      let candidates: ModelEntry[] = [];
+      if (Array.isArray(asObj.data)) {
+        candidates = asObj.data as ModelEntry[];
+      } else if (Array.isArray(json)) {
+        candidates = json as ModelEntry[];
+      }
+
+      if (candidates.length > 0) {
+        modelList = candidates;
+        usedUrl = url;
+        break;
+      }
+
+      lastError = `No models in response from ${url}`;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      lastError = msg.includes('abort')
+        ? `Timeout connecting to ${url}`
+        : `Fetch error for ${url}: ${msg}`;
+    }
+  }
+
+  if (!modelList || modelList.length === 0) {
+    return c.json({
+      success: false,
+      error: `Could not discover models from ${providerName}. ${lastError}`,
+      triedUrls: candidateUrls,
+    }, 502);
+  }
+
+  // Save each discovered model as a custom model
+  try {
+    const discovered: Array<{ modelId: string; displayName: string; isNew: boolean }> = [];
+    const existingModels = await modelConfigsRepo.listModels(userId);
+    const existingSet = new Set(existingModels.map((m) => `${m.providerId}/${m.modelId}`));
+
+    for (const model of modelList) {
+      if (!model.id) continue;
+
+      const key = `${providerId}/${model.id}`;
+      const isNew = !existingSet.has(key);
+
+      // Create a readable display name from model ID
+      const displayName = model.id
+        .replace(/^.*\//, '') // strip org prefix
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, (ch: string) => ch.toUpperCase());
+
+      await modelConfigsRepo.upsertModel({
+        userId,
+        providerId,
+        modelId: model.id,
+        displayName,
+        capabilities: ['chat', 'streaming'],
+        contextWindow: 32768,
+        maxOutput: 4096,
+        pricingInput: 0,
+        pricingOutput: 0,
+        isEnabled: true,
+        isCustom: true,
+      });
+
+      discovered.push({ modelId: model.id, displayName, isNew });
+    }
+
+    return c.json({
+      success: true,
+      message: `Discovered ${discovered.length} models from ${providerName}`,
+      data: {
+        provider: providerId,
+        providerName,
+        sourceUrl: usedUrl,
+        models: discovered,
+        newModels: discovered.filter((m) => m.isNew).length,
+        existingModels: discovered.filter((m) => !m.isNew).length,
+      },
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: `Models fetched but failed to save: ${error instanceof Error ? error.message : String(error)}`,
+    }, 500);
+  }
+});
+
+// =============================================================================
 // Sync Route
 // =============================================================================
 
@@ -1068,4 +1166,159 @@ modelConfigsRoutes.get('/capabilities/list', async (c) => {
     success: true,
     data: capabilities,
   });
+});
+
+// =============================================================================
+// Parameterized Model Routes (MUST be after all specific routes like /providers/*, /capabilities/*)
+// =============================================================================
+
+/**
+ * GET /api/v1/models/:provider - List models for a provider
+ */
+modelConfigsRoutes.get('/:provider', async (c) => {
+  const userId = getUserId(c);
+  const providerId = c.req.param('provider');
+
+  const models = (await getMergedModels(userId)).filter((m) => m.providerId === providerId);
+
+  return c.json({
+    success: true,
+    data: models,
+    count: models.length,
+  });
+});
+
+/**
+ * GET /api/v1/models/:provider/:model - Get single model
+ */
+modelConfigsRoutes.get('/:provider/:model', async (c) => {
+  const userId = getUserId(c);
+  const providerId = c.req.param('provider');
+  const modelId = decodeURIComponent(c.req.param('model'));
+
+  const model = (await getMergedModels(userId)).find(
+    (m) => m.providerId === providerId && m.modelId === modelId
+  );
+
+  if (!model) {
+    return c.json({ success: false, error: 'Model not found' }, 404);
+  }
+
+  return c.json({
+    success: true,
+    data: model,
+  });
+});
+
+/**
+ * PUT /api/v1/models/:provider/:model - Update model config
+ */
+modelConfigsRoutes.put('/:provider/:model', async (c) => {
+  const userId = getUserId(c);
+  const providerId = c.req.param('provider');
+  const modelId = decodeURIComponent(c.req.param('model'));
+
+  try {
+    const body = await c.req.json<UpdateModelConfigInput>();
+
+    // Check if model exists in any source
+    const existingModel = (await getMergedModels(userId)).find(
+      (m) => m.providerId === providerId && m.modelId === modelId
+    );
+
+    if (!existingModel) {
+      return c.json({ success: false, error: 'Model not found' }, 404);
+    }
+
+    // Create or update override
+    const config = await modelConfigsRepo.upsertModel({
+      userId,
+      providerId,
+      modelId,
+      ...body,
+      isCustom: existingModel.isCustom,
+    });
+
+    return c.json({
+      success: true,
+      message: 'Model updated',
+      data: config,
+    });
+  } catch (error) {
+    console.error('Failed to update model:', error);
+    return c.json({ success: false, error: 'Failed to update model' }, 500);
+  }
+});
+
+/**
+ * DELETE /api/v1/models/:provider/:model - Delete custom model or remove override
+ */
+modelConfigsRoutes.delete('/:provider/:model', async (c) => {
+  const userId = getUserId(c);
+  const providerId = c.req.param('provider');
+  const modelId = decodeURIComponent(c.req.param('model'));
+
+  const existingModel = (await getMergedModels(userId)).find(
+    (m) => m.providerId === providerId && m.modelId === modelId
+  );
+
+  if (!existingModel) {
+    return c.json({ success: false, error: 'Model not found' }, 404);
+  }
+
+  if (!existingModel.isCustom && !existingModel.hasOverride) {
+    return c.json({ success: false, error: 'Cannot delete built-in model without override' }, 400);
+  }
+
+  const deleted = await modelConfigsRepo.deleteModel(userId, providerId, modelId);
+
+  return c.json({
+    success: true,
+    message: existingModel.isCustom ? 'Custom model deleted' : 'Override removed',
+    deleted,
+  });
+});
+
+/**
+ * PATCH /api/v1/models/:provider/:model/toggle - Toggle model enabled
+ */
+modelConfigsRoutes.patch('/:provider/:model/toggle', async (c) => {
+  const userId = getUserId(c);
+  const providerId = c.req.param('provider');
+  const modelId = decodeURIComponent(c.req.param('model'));
+
+  try {
+    const body = await c.req.json<{ enabled: boolean }>();
+
+    if (typeof body.enabled !== 'boolean') {
+      return c.json({ success: false, error: 'enabled field required (boolean)' }, 400);
+    }
+
+    // Check if model exists
+    const existingModel = (await getMergedModels(userId)).find(
+      (m) => m.providerId === providerId && m.modelId === modelId
+    );
+
+    if (!existingModel) {
+      return c.json({ success: false, error: 'Model not found' }, 404);
+    }
+
+    // Create config entry if it doesn't exist, then toggle
+    await modelConfigsRepo.upsertModel({
+      userId,
+      providerId,
+      modelId,
+      isEnabled: body.enabled,
+      isCustom: existingModel.isCustom,
+    });
+
+    return c.json({
+      success: true,
+      message: `Model ${body.enabled ? 'enabled' : 'disabled'}`,
+      enabled: body.enabled,
+    });
+  } catch (error) {
+    console.error('Failed to toggle model:', error);
+    return c.json({ success: false, error: 'Failed to toggle model' }, 500);
+  }
 });

@@ -7,7 +7,7 @@
 
 import { Hono } from 'hono';
 import type { ApiResponse } from '../types/index.js';
-import { settingsRepo } from '../db/repositories/index.js';
+import { settingsRepo, localProvidersRepo } from '../db/repositories/index.js';
 import {
   getAvailableProviders,
   getDefaultModelForProvider,
@@ -38,6 +38,16 @@ settingsRoutes.get('/', async (c) => {
     s.key.replace(API_KEY_PREFIX, '')
   );
 
+  // Include enabled local providers as configured (they don't need API keys)
+  const localProviders = await localProvidersRepo.listProviders();
+  const enabledLocalProviders = localProviders
+    .filter((lp) => lp.isEnabled)
+    .map((lp) => ({ id: lp.id, name: lp.name, type: 'local' as const }));
+  const localProviderIds = enabledLocalProviders.map((lp) => lp.id);
+
+  // Merge: remote configured + local enabled
+  const allConfiguredProviders = [...configuredProviders, ...localProviderIds];
+
   // Get default provider/model settings
   const defaultProvider = await settingsRepo.get<string>(DEFAULT_PROVIDER_KEY);
   const defaultModel = await settingsRepo.get<string>(DEFAULT_MODEL_KEY);
@@ -48,8 +58,9 @@ settingsRoutes.get('/', async (c) => {
   const response: ApiResponse = {
     success: true,
     data: {
-      configuredProviders,
-      demoMode: configuredProviders.length === 0,
+      configuredProviders: allConfiguredProviders,
+      localProviders: enabledLocalProviders,
+      demoMode: allConfiguredProviders.length === 0,
       defaultProvider: defaultProvider ?? null,
       defaultModel: defaultModel ?? null,
       availableProviders,
@@ -274,11 +285,19 @@ export async function loadApiKeysToEnvironment(): Promise<void> {
 export async function getDefaultProvider(): Promise<string | null> {
   // Check database setting
   const savedProvider = await settingsRepo.get<string>(DEFAULT_PROVIDER_KEY);
-  if (savedProvider && (await hasApiKey(savedProvider))) {
-    return savedProvider;
+  if (savedProvider) {
+    // Check if it's a local provider
+    const localProv = await localProvidersRepo.getProvider(savedProvider);
+    if (localProv?.isEnabled) return savedProvider;
+    // Check remote provider
+    if (await hasApiKey(savedProvider)) return savedProvider;
   }
 
-  // Fall back to first configured provider
+  // Check if a local provider is marked as default
+  const localDefault = await localProvidersRepo.getDefault('default');
+  if (localDefault?.isEnabled) return localDefault.id;
+
+  // Fall back to first configured remote provider
   const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
   const firstSetting = apiKeySettings[0];
   if (firstSetting) {

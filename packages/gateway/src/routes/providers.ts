@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import type { ApiResponse } from '../types/index.js';
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
+import { localProvidersRepo } from '../db/repositories/index.js';
 
 const app = new Hono();
 
@@ -280,6 +281,36 @@ app.get('/', async (c) => {
 
   const providersWithNulls = await Promise.all(providerPromises);
   const providers = providersWithNulls.filter((p): p is NonNullable<typeof p> => p !== null);
+
+  // Include local providers (LM Studio, Ollama, etc.)
+  const localProviderColors: Record<string, string> = {
+    lmstudio: '#10a37f',
+    ollama: '#ffffff',
+    localai: '#6366f1',
+    vllm: '#f97316',
+    custom: '#666666',
+  };
+  const dbLocalProviders = await localProvidersRepo.listProviders();
+  for (const lp of dbLocalProviders) {
+    if (!lp.isEnabled) continue;
+    const localModels = await localProvidersRepo.listModels(undefined, lp.id);
+    providers.push({
+      id: lp.id,
+      name: lp.name,
+      type: 'local',
+      baseUrl: lp.baseUrl,
+      apiKeyEnv: '',
+      docsUrl: undefined,
+      features: { streaming: true, toolUse: true, vision: false, jsonMode: true, systemMessage: true },
+      modelCount: localModels.length,
+      isConfigured: true,
+      isEnabled: true,
+      hasOverride: false,
+      configSource: 'database' as const,
+      color: localProviderColors[lp.providerType] ?? '#10b981',
+      apiKeyPlaceholder: undefined,
+    });
+  }
 
   const response: ApiResponse = {
     success: true,

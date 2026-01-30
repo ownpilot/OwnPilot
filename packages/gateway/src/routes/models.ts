@@ -17,6 +17,7 @@ import {
   clearConfigCache,
 } from '@ownpilot/core';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
+import { localProvidersRepo } from '../db/repositories/index.js';
 
 const app = new Hono();
 
@@ -87,6 +88,28 @@ app.get('/', async (c) => {
       }
 
       allModels.push(...models);
+    }
+  }
+
+  // Include models from local providers (LM Studio, Ollama, etc.)
+  const localProviders = await localProvidersRepo.listProviders();
+  for (const lp of localProviders) {
+    if (!lp.isEnabled) continue;
+    configuredProviders.push(lp.id);
+    const localModels = await localProvidersRepo.listModels(undefined, lp.id);
+    for (const lm of localModels) {
+      if (!lm.isEnabled) continue;
+      allModels.push({
+        id: lm.modelId,
+        name: lm.displayName || lm.modelId,
+        provider: lp.id,
+        contextWindow: lm.contextWindow ?? 32768,
+        maxOutputTokens: lm.maxOutput ?? 4096,
+        inputPrice: 0,
+        outputPrice: 0,
+        capabilities: lm.capabilities ?? ['chat', 'streaming'],
+        recommended: false,
+      });
     }
   }
 

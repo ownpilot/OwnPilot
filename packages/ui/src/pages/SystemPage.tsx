@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Container, RefreshCw, ShieldCheck, Shield, XCircle, CheckCircle2, Database, Upload, Download, Trash2, Wrench, Server, AlertCircle } from '../components/icons';
+import { Container, RefreshCw, ShieldCheck, Shield, XCircle, CheckCircle2, Database, Upload, Download, Trash2, Wrench, Server, AlertCircle, Settings } from '../components/icons';
+import { useTheme } from '../hooks/useTheme';
 
 interface SandboxStatus {
   dockerAvailable: boolean;
@@ -63,6 +64,9 @@ function formatSize(bytes: number): string {
 }
 
 export function SystemPage() {
+  // Theme
+  const { theme, setTheme } = useTheme();
+
   // System status
   const [sandboxStatus, setSandboxStatus] = useState<SandboxStatus | null>(null);
   const [databaseStatus, setDatabaseStatus] = useState<DatabaseStatus | null>(null);
@@ -201,10 +205,38 @@ export function SystemPage() {
     <div className="flex flex-col h-full">
       <header className="px-6 pt-4 pb-4 border-b border-border dark:border-dark-border">
         <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">System</h2>
-        <p className="text-sm text-text-muted dark:text-dark-text-muted">Docker sandbox, database management, and system info</p>
+        <p className="text-sm text-text-muted dark:text-dark-text-muted">Appearance, Docker sandbox, database management, and system info</p>
       </header>
       <div className="flex-1 overflow-y-auto p-6">
         <div className="space-y-6">
+          {/* Appearance */}
+          <section className="p-6 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
+            <h3 className="text-base font-medium text-text-primary dark:text-dark-text-primary mb-4 flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Appearance
+            </h3>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
+                Theme
+              </label>
+              <div className="flex gap-2">
+                {(['system', 'light', 'dark'] as const).map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => setTheme(option)}
+                    className={`px-4 py-2 rounded-lg capitalize transition-colors ${
+                      theme === option
+                        ? 'bg-primary text-white'
+                        : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
           {/* Docker Sandbox Status */}
           <section className="p-6 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
             <div className="flex items-center justify-between mb-4">
