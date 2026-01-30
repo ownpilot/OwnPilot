@@ -787,7 +787,11 @@ plansRoutes.get('/:id/steps/:stepId', async (c) => {
 plansRoutes.patch('/:id/steps/:stepId', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const stepId = c.req.param('stepId');
-  const body = await c.req.json();
+  const rawBody = await c.req.json();
+
+  // Validate step update body
+  const { validateBody, updatePlanStepSchema } = await import('../middleware/validation.js');
+  const body = validateBody(updatePlanStepSchema, rawBody);
 
   const repo = getRepo(userId);
   const updated = await repo.updateStep(stepId, body);

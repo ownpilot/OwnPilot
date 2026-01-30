@@ -164,47 +164,10 @@ Your autonomy level is set to: {{level}}
 
 {{guidelines}}`,
 
-  automation: `## Automation System
-You have two automation systems. Use them proactively when users need recurring tasks or multi-step workflows.
-
-### Triggers (Tools: create_trigger, list_triggers, enable_trigger, fire_trigger, delete_trigger, trigger_stats)
-
-Triggers fire automatically. Types:
-- **schedule**: Cron-based. MUST provide valid 5-field cron: "minute hour day month weekday"
-  - "0 8 * * *" = daily 8AM, "0 9 * * 1-5" = weekdays 9AM, "*/15 * * * *" = every 15min, "0 20 * * 0" = Sunday 8PM
-  - Invalid cron will be REJECTED. Always use standard cron format.
-- **event**: Fires on system event. Events: goal_completed, memory_added, message_received
-- **condition**: Checks periodically. Conditions: stale_goals, upcoming_deadline, memory_threshold, low_progress, no_activity
-- **webhook**: Fires on external HTTP call
-
-Actions (what happens when trigger fires):
-- **chat**: Sends AI prompt → {"prompt": "your instruction"}
-- **tool**: Runs a tool → {"tool": "tool_name", ...args}
-- **notification**: Logs message → {"message": "text"}
-- **goal_check**: Checks stale goals → {"staleDays": 3}
-- **memory_summary**: Summarizes memories → {}
-
-### Plans (Tools: create_plan, add_plan_step, list_plans, get_plan_details, execute_plan, pause_plan, delete_plan)
-
-Plans are multi-step autonomous workflows. Create plan → add steps → execute.
-
-Step types:
-- **tool_call**: Runs a tool (requires tool_name)
-- **llm_decision**: AI analyzes and decides (requires prompt)
-- **user_input**: Asks user a question (requires question)
-- **condition**: Branches based on condition
-- **parallel**: Runs multiple tools concurrently (respects maxConcurrent limit)
-- **loop**: Repeats until condition met
-
-Step features:
-- **Dependencies**: Steps can depend on other steps (by ID). Circular deps are detected and rejected.
-- **Retry**: Failed steps retry with exponential backoff (1s, 2s, 4s... up to 30s, max 3 retries).
-- **Deadlock detection**: If all steps are blocked, plan fails with clear error.
-
-### Usage Workflow
-1. **Trigger**: create_trigger(name, type, cron/condition, action_type, action_payload)
-2. **Plan**: create_plan(name, goal) → add_plan_step(plan_id, order, type, name, ...) → execute_plan(plan_id)
-3. **Monitor**: list_triggers(), list_plans(), get_plan_details(plan_id)`,
+  automation: `## Automation
+You can create **triggers** (recurring automated actions) and **plans** (multi-step workflows).
+Use search_tools("trigger") or search_tools("plan") to discover automation tools.
+Use get_tool_help on each tool for detailed parameter documentation.`,
 };
 
 const AUTONOMY_GUIDELINES: Record<string, string> = {
@@ -317,44 +280,19 @@ function formatTools(tools: readonly ToolDefinition[]): string {
   return [
     `${tools.length} tools available across: ${categories}`,
     '',
-    '### MANDATORY Tool Workflow',
-    'You MUST follow this exact workflow when using tools. Skipping steps causes errors.',
+    '### Tool Workflow',
+    '1. **search_tools("keyword")** → find tool name',
+    '2. **get_tool_help("tool_name")** → see parameters (if unsure)',
+    '3. **use_tool("tool_name", { params })** → execute',
     '',
-    '**Step 1 — DISCOVER:** `search_tools("keyword")` to find the correct tool name.',
-    '**Step 2 — LEARN:** `get_tool_help("exact_tool_name")` to see required parameters and examples.',
-    '**Step 3 — EXECUTE:** `use_tool("exact_tool_name", { ...correct_parameters })` with the exact parameters from Step 2.',
+    'Rules:',
+    '- Never guess tool names — always search first.',
+    '- On error, read the error message (it shows correct parameters) and retry.',
+    '- Search uses AND matching: "send email" finds tools with both words.',
+    '- Use "all" to list every tool.',
     '',
-    '### STRICT RULES — NEVER BREAK THESE',
-    '- **NEVER guess or invent tool names.** Only use tool names that appear in search_tools results or the TOOL CATALOG.',
-    '- **NEVER guess parameters.** Always call get_tool_help first if you are unsure about parameter names or types.',
-    '- **If use_tool returns an error, READ the error carefully.** It contains the correct parameter schema. Fix your parameters and retry immediately.',
-    '- **NEVER give up after one error.** Errors include help text showing the correct usage — use it to retry.',
-    '- **If a tool is not found, search again** with different/broader keywords.',
-    '',
-    '### search_tools Search Tips',
-    'The search engine uses word-by-word AND matching. Each word is matched independently.',
-    '',
-    '**Examples:**',
-    '- `search_tools("email")` → finds all email-related tools (send_email, list_emails, etc.)',
-    '- `search_tools("send email")` → finds tools matching BOTH "send" AND "email" → send_email',
-    '- `search_tools("task add")` → finds tools matching "task" AND "add" → add_task',
-    '- `search_tools("file read")` → finds file reading tools → read_file',
-    '- `search_tools("all")` → lists ALL available tools',
-    '- `search_tools("web")` → finds web-related tools',
-    '- `search_tools("note")` → finds note-related tools',
-    '',
-    '**Important:** Underscored names (send_email) are split into words for searching, so "email send" or "send email" both work.',
-    'If no results found, try a broader keyword or use "all" to see the full list.',
-    '',
-    '### Attached Context',
-    'User messages may contain an `[ATTACHED CONTEXT]` block at the end.',
-    'This block provides exact tool names and call examples for the referenced data.',
-    '**When you see this block, DO NOT use search_tools — directly call the use_tool instructions provided.**',
-    '',
-    '### Response After Tool Use',
-    'After completing tool calls, you MUST always provide a final text response summarizing the results for the user.',
-    'Never end your turn with just a tool call — always follow up with a clear, human-readable closing message.',
-    'For example: after running send_email, say "Your email has been sent to X." After reading a file, summarize or present the relevant content.',
+    'If a user message has an `[ATTACHED CONTEXT]` block, follow its tool instructions directly.',
+    'After tool calls, always provide a text summary of results.',
   ].join('\n');
 }
 
@@ -405,7 +343,7 @@ export class PromptComposer {
       includeUserProfile: options.includeUserProfile ?? true,
       includeTimeContext: options.includeTimeContext ?? true,
       includeCapabilities: options.includeCapabilities ?? true,
-      maxPromptLength: options.maxPromptLength ?? 16000,
+      maxPromptLength: options.maxPromptLength ?? 6000,
     };
   }
 

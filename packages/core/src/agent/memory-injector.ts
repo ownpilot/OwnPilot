@@ -76,15 +76,74 @@ export interface InjectedPromptResult {
 // =============================================================================
 
 /**
+ * Cached profile entry with TTL
+ */
+interface CachedProfile {
+  profile: ComprehensiveProfile;
+  userProfile: UserProfile;
+  customInstructions: string[];
+  cachedAt: number;
+}
+
+/** Profile cache TTL: 5 minutes */
+const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
  * Memory Injector
  *
  * Service that injects memory and context into agent system prompts.
+ * Caches user profiles per userId to avoid repeated DB calls within a conversation.
  */
 export class MemoryInjector {
   private readonly composer: PromptComposer;
+  private readonly profileCache = new Map<string, CachedProfile>();
 
   constructor() {
     this.composer = new PromptComposer();
+  }
+
+  /**
+   * Get cached profile or load from DB
+   */
+  private async getCachedProfile(userId: string): Promise<CachedProfile | null> {
+    const cached = this.profileCache.get(userId);
+    if (cached && (Date.now() - cached.cachedAt) < PROFILE_CACHE_TTL_MS) {
+      return cached;
+    }
+
+    try {
+      const memoryStore = await getPersonalMemoryStore(userId);
+      const profile = await memoryStore.getProfile();
+      const userProfile = this.comprehensiveToUserProfile(profile);
+      const customInstructions = profile.aiPreferences.customInstructions ?? [];
+
+      const entry: CachedProfile = {
+        profile,
+        userProfile,
+        customInstructions,
+        cachedAt: Date.now(),
+      };
+
+      this.profileCache.set(userId, entry);
+
+      // Limit cache size to 20 users
+      if (this.profileCache.size > 20) {
+        const oldest = this.profileCache.keys().next().value;
+        if (oldest) this.profileCache.delete(oldest);
+      }
+
+      return entry;
+    } catch (error) {
+      console.warn('Failed to load user memory:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Invalidate cached profile for a user (call after profile updates)
+   */
+  invalidateCache(userId: string): void {
+    this.profileCache.delete(userId);
   }
 
   /**
@@ -108,35 +167,29 @@ export class MemoryInjector {
       context.timeContext = getTimeContext();
     }
 
-    // Load user memory if available
+    // Load user memory if available (with caching)
     let userProfile: UserProfile | undefined;
     let customInstructions: string[] = [];
 
     if (options.userId && options.includeProfile !== false) {
-      try {
-        const memoryStore = await getPersonalMemoryStore(options.userId);
-        const profile = await memoryStore.getProfile();
-
-        // Convert comprehensive profile to UserProfile format
-        userProfile = this.comprehensiveToUserProfile(profile);
+      const cached = await this.getCachedProfile(options.userId);
+      if (cached) {
+        userProfile = cached.userProfile;
         context.userProfile = userProfile;
 
         // Get custom instructions
         if (options.includeInstructions !== false) {
-          customInstructions = profile.aiPreferences.customInstructions ?? [];
+          customInstructions = cached.customInstructions;
           context.customInstructions = customInstructions;
         }
 
         // Update capabilities with user preferences
-        if (profile.aiPreferences.autonomyLevel && context.capabilities) {
+        if (cached.profile.aiPreferences.autonomyLevel && context.capabilities) {
           context.capabilities = {
             ...context.capabilities,
-            autonomyLevel: profile.aiPreferences.autonomyLevel,
+            autonomyLevel: cached.profile.aiPreferences.autonomyLevel,
           };
         }
-      } catch (error) {
-        // Memory not available, continue without it
-        console.warn('Failed to load user memory:', error);
       }
     }
 

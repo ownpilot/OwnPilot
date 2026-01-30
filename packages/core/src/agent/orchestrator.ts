@@ -550,8 +550,19 @@ export class AgentOrchestrator extends EventEmitter {
       args = typeof toolCall.function.arguments === 'string'
         ? JSON.parse(toolCall.function.arguments)
         : toolCall.function.arguments;
-    } catch {
+    } catch (parseError) {
+      console.warn(`[Orchestrator] Failed to parse tool arguments for "${toolName}":`, toolCall.function.arguments);
       args = {};
+      // Return early with error so the AI can see what went wrong
+      return {
+        name: toolName,
+        arguments: {},
+        result: `Error: Invalid JSON in tool arguments. Raw input: ${String(toolCall.function.arguments).slice(0, 200)}`,
+        startTime,
+        endTime: new Date(),
+        duration: Date.now() - startTime.getTime(),
+        success: false,
+      };
     }
 
     const record: ToolCallRecord = {

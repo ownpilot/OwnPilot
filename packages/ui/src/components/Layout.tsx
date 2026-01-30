@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import {
   MessageSquare,
@@ -50,6 +50,8 @@ interface NavGroup {
   icon: React.ComponentType<{ className?: string }>;
   items: NavItem[];
   defaultOpen?: boolean;
+  /** If true, hidden in simple mode */
+  advancedOnly?: boolean;
 }
 
 // Main navigation items (always visible)
@@ -80,6 +82,7 @@ const navGroups: NavGroup[] = [
     id: 'ai',
     label: 'AI',
     icon: Brain,
+    advancedOnly: true,
     items: [
       { to: '/memories', icon: Brain, label: 'Memories' },
       { to: '/goals', icon: Target, label: 'Goals' },
@@ -92,6 +95,7 @@ const navGroups: NavGroup[] = [
     id: 'system',
     label: 'System',
     icon: Cpu,
+    advancedOnly: true,
     items: [
       { to: '/agents', icon: Bot, label: 'Agents' },
       { to: '/tools', icon: Wrench, label: 'Tools' },
@@ -117,6 +121,12 @@ const navGroups: NavGroup[] = [
       { to: '/settings/system', icon: Container, label: 'System' },
     ],
   },
+];
+
+// Simple mode shows fewer settings
+const simpleSettingsItems: NavItem[] = [
+  { to: '/settings/api-keys', icon: Key, label: 'API Keys' },
+  { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
 ];
 
 // Bottom navigation items
@@ -178,9 +188,56 @@ function CollapsibleGroup({ group, isOpen, onToggle }: { group: NavGroup; isOpen
   );
 }
 
+function ModeToggle({ isAdvanced, onToggle }: { isAdvanced: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+      title={isAdvanced ? 'Switch to Simple Mode' : 'Switch to Advanced Mode'}
+    >
+      <Settings className="w-3.5 h-3.5 shrink-0" />
+      <span className="flex-1 text-left">
+        {isAdvanced ? 'Advanced Mode' : 'Simple Mode'}
+      </span>
+      <div
+        className={`w-7 h-4 rounded-full transition-colors relative ${
+          isAdvanced ? 'bg-primary' : 'bg-border dark:bg-dark-border'
+        }`}
+      >
+        <div
+          className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+            isAdvanced ? 'translate-x-3.5' : 'translate-x-0.5'
+          }`}
+        />
+      </div>
+    </button>
+  );
+}
+
 export function Layout() {
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(false);
+  const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
+    return localStorage.getItem('ownpilot-advanced-mode') === 'true';
+  });
   const location = useLocation();
+
+  // Persist mode preference
+  useEffect(() => {
+    localStorage.setItem('ownpilot-advanced-mode', String(isAdvancedMode));
+  }, [isAdvancedMode]);
+
+  // Filter nav groups based on mode
+  const visibleGroups = isAdvancedMode
+    ? navGroups
+    : navGroups
+        .filter(g => !g.advancedOnly)
+        .map(g => {
+          // In simple mode, show fewer settings items
+          if (g.id === 'settings') {
+            return { ...g, items: simpleSettingsItems };
+          }
+          return g;
+        });
 
   // Initialize open groups based on current path
   const getInitialOpenGroups = () => {
@@ -226,7 +283,7 @@ export function Layout() {
 
           {/* Grouped Items */}
           <div className="space-y-1">
-            {navGroups.map((group) => (
+            {visibleGroups.map((group) => (
               <CollapsibleGroup
                 key={group.id}
                 group={group}
@@ -247,9 +304,13 @@ export function Layout() {
           </div>
         </nav>
 
-        {/* Status */}
-        <div className="p-3 border-t border-border dark:border-dark-border">
-          <div className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted">
+        {/* Mode Toggle + Status */}
+        <div className="p-2 border-t border-border dark:border-dark-border space-y-1">
+          <ModeToggle
+            isAdvanced={isAdvancedMode}
+            onToggle={() => setIsAdvancedMode(!isAdvancedMode)}
+          />
+          <div className="flex items-center gap-2 px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">
             <span className="w-1.5 h-1.5 rounded-full bg-success" />
             <span>Connected</span>
           </div>

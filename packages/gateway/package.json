@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",
+    "@hono/zod-validator": "^0.7.6",
     "@ownpilot/core": "workspace:*",
     "@slack/bolt": "^4.1.0",
     "archiver": "^7.0.1",
@@ -35,7 +36,8 @@
     "jose": "^6.0.10",
     "nodemailer": "^7.0.13",
     "pg": "^8.13.1",
-    "ws": "^8.19.0"
+    "ws": "^8.19.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/archiver": "^6.0.3",

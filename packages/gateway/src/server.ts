@@ -84,7 +84,7 @@ function loadConfig(): Partial<GatewayConfig> {
   return {
     port: parseInt(process.env.PORT ?? '8080', 10),
     host: process.env.HOST ?? '0.0.0.0',
-    corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? ['*'],
+    corsOrigins: process.env.CORS_ORIGINS?.split(',').filter(Boolean),
     rateLimit: process.env.RATE_LIMIT_DISABLED !== 'true'
       ? {
           windowMs: rateLimitWindowMs,
@@ -211,6 +211,18 @@ async function main() {
     }
   } catch (error) {
     console.warn('[Startup] Failed to seed example plans:', error);
+  }
+
+  // Security warnings at startup
+  if (config.auth?.type === 'none' || !config.auth?.type) {
+    console.warn('\n⚠️  WARNING: Authentication is DISABLED (AUTH_TYPE=none)');
+    console.warn('   Anyone with network access can use this API.');
+    console.warn('   Set AUTH_TYPE=api-key and API_KEYS=your-secret-key for security.');
+    console.warn('   Or configure authentication in Settings > System.\n');
+  }
+  if (config.corsOrigins?.includes('*')) {
+    console.warn('⚠️  WARNING: CORS is set to wildcard (*). Any website can make API requests.');
+    console.warn('   Set CORS_ORIGINS=http://localhost:3000 to restrict access.\n');
   }
 
   console.log(`Starting OwnPilot...`);
