@@ -3,8 +3,8 @@
  *
  * These tags enable the search_tools meta-tool to find relevant tools
  * even when the user's query doesn't match the tool name or description.
- * Tags include synonyms, related concepts, Turkish translations, and
- * common intents that should surface each tool.
+ * Tags include synonyms, related concepts, and common intents that
+ * should surface each tool.
  *
  * Format: tool_name → array of search keywords
  */
@@ -13,273 +13,273 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   // ─────────────────────────────────────────────
   // EMAIL
   // ─────────────────────────────────────────────
-  send_email: ['mail', 'e-posta', 'gönder', 'mesaj', 'smtp', 'iletişim', 'contact', 'notify', 'bildirim', 'mektup'],
-  list_emails: ['mail', 'e-posta', 'inbox', 'gelen kutusu', 'posta', 'read mail', 'check mail'],
-  read_email: ['mail', 'e-posta', 'oku', 'open mail', 'message content', 'mesaj oku'],
-  delete_email: ['mail', 'e-posta', 'sil', 'remove mail', 'trash', 'çöp'],
-  search_emails: ['mail', 'e-posta', 'ara', 'find mail', 'bul', 'filter', 'filtre'],
-  reply_email: ['mail', 'e-posta', 'yanıtla', 'cevap', 'respond', 'answer'],
+  send_email: ['mail', 'email', 'send', 'message', 'smtp', 'contact', 'notify', 'notification', 'letter'],
+  list_emails: ['mail', 'email', 'inbox', 'read mail', 'check mail'],
+  read_email: ['mail', 'email', 'open mail', 'message content', 'read message'],
+  delete_email: ['mail', 'email', 'remove mail', 'trash', 'delete mail'],
+  search_emails: ['mail', 'email', 'find mail', 'filter', 'search mail'],
+  reply_email: ['mail', 'email', 'respond', 'answer', 'reply'],
 
   // ─────────────────────────────────────────────
   // GIT / VERSION CONTROL
   // ─────────────────────────────────────────────
-  git_status: ['git', 'version', 'versiyon', 'repo', 'değişiklik', 'changes', 'modified', 'durum'],
-  git_diff: ['git', 'fark', 'compare', 'karşılaştır', 'changes', 'diff', 'değişiklik'],
-  git_log: ['git', 'geçmiş', 'history', 'commit list', 'log', 'kayıt'],
-  git_commit: ['git', 'kaydet', 'save', 'commit', 'version', 'versiyon'],
-  git_add: ['git', 'stage', 'ekle', 'add files', 'hazırla'],
-  git_branch: ['git', 'dal', 'branch', 'şube', 'branching'],
-  git_checkout: ['git', 'geçiş', 'switch', 'checkout', 'dal değiştir'],
+  git_status: ['git', 'version', 'repo', 'changes', 'modified', 'status'],
+  git_diff: ['git', 'compare', 'changes', 'diff', 'difference'],
+  git_log: ['git', 'history', 'commit list', 'log', 'record'],
+  git_commit: ['git', 'save', 'commit', 'version'],
+  git_add: ['git', 'stage', 'add files', 'prepare'],
+  git_branch: ['git', 'branch', 'branching'],
+  git_checkout: ['git', 'switch', 'checkout', 'change branch'],
 
   // ─────────────────────────────────────────────
   // MEMORY
   // ─────────────────────────────────────────────
-  remember: ['hatırla', 'kaydet', 'save', 'store', 'note', 'memorize', 'not', 'sakla', 'bilgi kaydet'],
-  batch_remember: ['hatırla', 'toplu', 'batch', 'bulk save', 'çoklu kaydet'],
-  recall: ['hatırla', 'getir', 'retrieve', 'search memory', 'anımsa', 'bul', 'ara', 'sorgula'],
-  forget: ['unut', 'sil', 'delete memory', 'remove', 'kaldır', 'temizle'],
-  list_memories: ['hatıralar', 'anılar', 'memories', 'kayıtlar', 'listele', 'göster'],
-  boost_memory: ['önem', 'priority', 'boost', 'öne çıkar', 'vurgula', 'important'],
-  memory_stats: ['istatistik', 'stats', 'memory info', 'hafıza bilgisi', 'durum'],
+  remember: ['save', 'store', 'note', 'memorize', 'remember', 'keep'],
+  batch_remember: ['batch', 'bulk save', 'multiple save', 'remember batch'],
+  recall: ['retrieve', 'search memory', 'remember', 'find', 'query'],
+  forget: ['delete memory', 'remove', 'clear', 'forget'],
+  list_memories: ['memories', 'records', 'list', 'show'],
+  boost_memory: ['priority', 'boost', 'highlight', 'important'],
+  memory_stats: ['stats', 'memory info', 'status', 'statistics'],
 
   // ─────────────────────────────────────────────
   // TASKS / TODO
   // ─────────────────────────────────────────────
-  add_task: ['görev', 'yapılacak', 'todo', 'to-do', 'iş', 'plan', 'ekle', 'oluştur', 'create', 'yeni görev', 'hatırlatma', 'reminder'],
-  list_tasks: ['görevler', 'yapılacaklar', 'todos', 'listele', 'göster', 'pending', 'bekleyen'],
-  complete_task: ['tamamla', 'bitir', 'done', 'finish', 'complete', 'kapat', 'işaretle', 'check'],
-  update_task: ['güncelle', 'değiştir', 'edit task', 'modify', 'düzenle', 'task update'],
-  delete_task: ['sil', 'kaldır', 'remove task', 'delete', 'iptal'],
-  batch_add_tasks: ['toplu görev', 'bulk tasks', 'çoklu', 'batch', 'birden fazla görev'],
+  add_task: ['task', 'todo', 'to-do', 'job', 'plan', 'add', 'create', 'new task', 'reminder'],
+  list_tasks: ['tasks', 'todos', 'list', 'show', 'pending'],
+  complete_task: ['done', 'finish', 'complete', 'close', 'mark', 'check'],
+  update_task: ['edit task', 'modify', 'task update', 'change task'],
+  delete_task: ['remove task', 'delete', 'cancel'],
+  batch_add_tasks: ['bulk tasks', 'batch', 'multiple tasks'],
 
   // ─────────────────────────────────────────────
   // NOTES
   // ─────────────────────────────────────────────
-  add_note: ['not', 'yaz', 'write', 'kaydet', 'note', 'metin', 'text', 'belge', 'document', 'oluştur'],
-  list_notes: ['notlar', 'notes', 'listele', 'göster', 'yazılar', 'belgeler'],
-  update_note: ['not güncelle', 'düzenle', 'edit note', 'değiştir', 'modify note'],
-  delete_note: ['not sil', 'kaldır', 'remove note', 'delete note'],
-  batch_add_notes: ['toplu not', 'bulk notes', 'çoklu not', 'batch notes'],
+  add_note: ['write', 'note', 'text', 'document', 'create note'],
+  list_notes: ['notes', 'list', 'show', 'writings', 'documents'],
+  update_note: ['edit note', 'modify note', 'change note'],
+  delete_note: ['remove note', 'delete note'],
+  batch_add_notes: ['bulk notes', 'batch notes', 'multiple notes'],
 
   // ─────────────────────────────────────────────
   // CALENDAR / EVENTS
   // ─────────────────────────────────────────────
-  add_calendar_event: ['takvim', 'etkinlik', 'event', 'randevu', 'appointment', 'toplantı', 'meeting', 'plan', 'schedule', 'ekle', 'oluştur', 'buluşma', 'tarih', 'date'],
-  list_calendar_events: ['takvim', 'etkinlikler', 'events', 'randevular', 'program', 'schedule', 'bugün', 'today', 'yarın', 'tomorrow', 'hafta', 'week'],
-  delete_calendar_event: ['takvim sil', 'etkinlik sil', 'iptal', 'cancel event', 'remove event'],
-  batch_add_calendar_events: ['toplu etkinlik', 'bulk events', 'çoklu randevu', 'batch calendar'],
+  add_calendar_event: ['calendar', 'event', 'appointment', 'meeting', 'plan', 'schedule', 'create', 'date'],
+  list_calendar_events: ['calendar', 'events', 'appointments', 'schedule', 'today', 'tomorrow', 'week'],
+  delete_calendar_event: ['cancel event', 'remove event', 'delete event'],
+  batch_add_calendar_events: ['bulk events', 'batch calendar', 'multiple events'],
 
   // ─────────────────────────────────────────────
   // CONTACTS
   // ─────────────────────────────────────────────
-  add_contact: ['kişi', 'rehber', 'contact', 'telefon', 'phone', 'numara', 'number', 'ekle', 'kaydet', 'tanıdık'],
-  list_contacts: ['kişiler', 'rehber', 'contacts', 'telefon rehberi', 'listele', 'göster'],
-  update_contact: ['kişi güncelle', 'contact update', 'düzenle', 'değiştir'],
-  delete_contact: ['kişi sil', 'remove contact', 'kaldır'],
-  batch_add_contacts: ['toplu kişi', 'bulk contacts', 'çoklu kişi'],
+  add_contact: ['contact', 'phone', 'number', 'add', 'save contact', 'person'],
+  list_contacts: ['contacts', 'phonebook', 'list', 'show contacts'],
+  update_contact: ['contact update', 'edit contact', 'change contact'],
+  delete_contact: ['remove contact', 'delete contact'],
+  batch_add_contacts: ['bulk contacts', 'multiple contacts'],
 
   // ─────────────────────────────────────────────
   // BOOKMARKS
   // ─────────────────────────────────────────────
-  add_bookmark: ['yer imi', 'bookmark', 'favori', 'favorite', 'kaydet', 'link', 'url', 'site', 'web'],
-  list_bookmarks: ['yer imleri', 'bookmarks', 'favoriler', 'favorites', 'linkler', 'listele'],
-  delete_bookmark: ['yer imi sil', 'remove bookmark', 'favori sil', 'kaldır'],
-  batch_add_bookmarks: ['toplu yer imi', 'bulk bookmarks', 'çoklu bookmark'],
+  add_bookmark: ['bookmark', 'favorite', 'save', 'link', 'url', 'site', 'web'],
+  list_bookmarks: ['bookmarks', 'favorites', 'links', 'list'],
+  delete_bookmark: ['remove bookmark', 'delete bookmark'],
+  batch_add_bookmarks: ['bulk bookmarks', 'multiple bookmarks'],
 
   // ─────────────────────────────────────────────
   // EXPENSES / FINANCE
   // ─────────────────────────────────────────────
-  add_expense: ['harcama', 'masraf', 'expense', 'para', 'money', 'ödeme', 'payment', 'fatura', 'bill', 'gider', 'cost', 'fiyat', 'price', 'alışveriş', 'shopping'],
-  batch_add_expenses: ['toplu harcama', 'bulk expenses', 'çoklu masraf'],
-  parse_receipt: ['fiş', 'receipt', 'makbuz', 'fatura', 'invoice', 'oku', 'tara', 'scan'],
-  query_expenses: ['harcama sorgula', 'masraf ara', 'expense search', 'filtre', 'filter', 'bütçe', 'budget'],
-  export_expenses: ['harcama dışa aktar', 'export', 'rapor', 'report', 'csv', 'excel', 'indır', 'download'],
-  expense_summary: ['harcama özeti', 'summary', 'toplam', 'total', 'istatistik', 'analiz', 'analysis', 'bütçe'],
-  delete_expense: ['harcama sil', 'remove expense', 'masraf sil'],
+  add_expense: ['expense', 'money', 'payment', 'bill', 'cost', 'price', 'shopping', 'spend'],
+  batch_add_expenses: ['bulk expenses', 'multiple expenses'],
+  parse_receipt: ['receipt', 'invoice', 'scan', 'read receipt'],
+  query_expenses: ['expense search', 'filter', 'budget', 'query expenses'],
+  export_expenses: ['export', 'report', 'csv', 'excel', 'download expenses'],
+  expense_summary: ['summary', 'total', 'statistics', 'analysis', 'budget'],
+  delete_expense: ['remove expense', 'delete expense'],
 
   // ─────────────────────────────────────────────
   // FILE SYSTEM
   // ─────────────────────────────────────────────
-  read_file: ['dosya oku', 'file read', 'aç', 'open', 'içerik', 'content', 'görüntüle', 'view'],
-  write_file: ['dosya yaz', 'file write', 'kaydet', 'save', 'oluştur', 'create file', 'yeni dosya'],
-  list_directory: ['klasör', 'dizin', 'folder', 'directory', 'ls', 'listele', 'dosyalar', 'files'],
-  search_files: ['dosya ara', 'file search', 'bul', 'find', 'grep', 'arama'],
-  download_file: ['indir', 'download', 'fetch', 'getir', 'dosya indir'],
-  file_info: ['dosya bilgisi', 'file info', 'boyut', 'size', 'detay', 'detail', 'metadata'],
-  delete_file: ['dosya sil', 'file delete', 'kaldır', 'remove file'],
-  copy_file: ['dosya kopyala', 'file copy', 'duplicate', 'çoğalt', 'taşı', 'move'],
+  read_file: ['file read', 'open', 'content', 'view'],
+  write_file: ['file write', 'save', 'create file', 'new file'],
+  list_directory: ['folder', 'directory', 'ls', 'list', 'files'],
+  search_files: ['file search', 'find', 'grep', 'search'],
+  download_file: ['download', 'fetch', 'get file'],
+  file_info: ['file info', 'size', 'detail', 'metadata'],
+  delete_file: ['file delete', 'remove file'],
+  copy_file: ['file copy', 'duplicate', 'move'],
 
   // ─────────────────────────────────────────────
   // WEB / API
   // ─────────────────────────────────────────────
-  http_request: ['api', 'http', 'rest', 'request', 'istek', 'endpoint', 'fetch', 'call', 'çağır'],
-  fetch_web_page: ['web', 'sayfa', 'page', 'site', 'url', 'scrape', 'kazı', 'oku', 'read', 'html'],
-  search_web: ['ara', 'search', 'google', 'internet', 'web ara', 'bul', 'find', 'sorgula', 'query', 'bilgi', 'information'],
-  json_api: ['json', 'api', 'rest', 'data', 'veri', 'endpoint', 'servis', 'service'],
+  http_request: ['api', 'http', 'rest', 'request', 'endpoint', 'fetch', 'call'],
+  fetch_web_page: ['web', 'page', 'site', 'url', 'scrape', 'read', 'html'],
+  search_web: ['search', 'google', 'internet', 'web search', 'find', 'query', 'information'],
+  json_api: ['json', 'api', 'rest', 'data', 'endpoint', 'service'],
 
   // ─────────────────────────────────────────────
   // CODE EXECUTION
   // ─────────────────────────────────────────────
-  execute_javascript: ['kod', 'code', 'javascript', 'js', 'çalıştır', 'run', 'script', 'hesapla', 'calculate', 'program'],
-  execute_python: ['kod', 'code', 'python', 'py', 'çalıştır', 'run', 'script', 'program', 'hesapla'],
-  execute_shell: ['terminal', 'shell', 'bash', 'komut', 'command', 'cmd', 'çalıştır', 'run', 'cli'],
-  compile_code: ['derle', 'compile', 'build', 'kod', 'code', 'program'],
-  package_manager: ['paket', 'package', 'npm', 'pip', 'install', 'kur', 'yükle', 'dependency', 'bağımlılık'],
+  execute_javascript: ['code', 'javascript', 'js', 'run', 'script', 'calculate', 'program'],
+  execute_python: ['code', 'python', 'py', 'run', 'script', 'program'],
+  execute_shell: ['terminal', 'shell', 'bash', 'command', 'cmd', 'run', 'cli'],
+  compile_code: ['compile', 'build', 'code', 'program'],
+  package_manager: ['package', 'npm', 'pip', 'install', 'dependency'],
 
   // ─────────────────────────────────────────────
   // IMAGE
   // ─────────────────────────────────────────────
-  analyze_image: ['görsel', 'resim', 'image', 'fotoğraf', 'photo', 'analiz', 'analyze', 'tanı', 'describe', 'oku', 'ocr'],
-  generate_image: ['görsel oluştur', 'resim üret', 'generate image', 'dall-e', 'ai art', 'çiz', 'draw', 'create image'],
-  edit_image: ['görsel düzenle', 'resim edit', 'image edit', 'modify image', 'değiştir'],
-  image_variation: ['görsel varyasyon', 'image variation', 'benzer resim', 'similar image'],
-  resize_image: ['boyutlandır', 'resize', 'küçült', 'büyüt', 'scale', 'crop', 'kes'],
+  analyze_image: ['image', 'photo', 'analyze', 'describe', 'ocr', 'vision'],
+  generate_image: ['generate image', 'dall-e', 'ai art', 'draw', 'create image'],
+  edit_image: ['image edit', 'modify image'],
+  image_variation: ['image variation', 'similar image'],
+  resize_image: ['resize', 'scale', 'crop'],
 
   // ─────────────────────────────────────────────
   // AUDIO
   // ─────────────────────────────────────────────
-  text_to_speech: ['ses', 'audio', 'konuş', 'speak', 'tts', 'oku', 'seslendirme', 'voice', 'ses sentezi'],
-  speech_to_text: ['ses tanıma', 'transcribe', 'yazıya dök', 'stt', 'dinle', 'listen', 'audio to text', 'transkript'],
-  translate_audio: ['ses çeviri', 'audio translate', 'tercüme', 'dil', 'language'],
-  audio_info: ['ses bilgisi', 'audio info', 'süre', 'duration', 'format', 'detay'],
-  split_audio: ['ses böl', 'audio split', 'kes', 'cut', 'parçala'],
+  text_to_speech: ['audio', 'speak', 'tts', 'voice', 'speech synthesis'],
+  speech_to_text: ['transcribe', 'stt', 'listen', 'audio to text', 'transcript'],
+  translate_audio: ['audio translate', 'language'],
+  audio_info: ['audio info', 'duration', 'format', 'detail'],
+  split_audio: ['audio split', 'cut', 'segment'],
 
   // ─────────────────────────────────────────────
   // PDF
   // ─────────────────────────────────────────────
-  read_pdf: ['pdf', 'belge', 'document', 'oku', 'read', 'dosya', 'metin çıkar', 'extract text'],
-  create_pdf: ['pdf oluştur', 'document create', 'belge oluştur', 'rapor', 'report'],
-  pdf_info: ['pdf bilgisi', 'document info', 'sayfa sayısı', 'page count', 'boyut'],
+  read_pdf: ['pdf', 'document', 'read', 'file', 'extract text'],
+  create_pdf: ['create pdf', 'document create', 'report'],
+  pdf_info: ['pdf info', 'document info', 'page count', 'size'],
 
   // ─────────────────────────────────────────────
   // TRANSLATION
   // ─────────────────────────────────────────────
-  translate_text: ['çevir', 'translate', 'tercüme', 'dil', 'language', 'İngilizce', 'Türkçe', 'english', 'turkish'],
-  detect_language: ['dil algıla', 'detect', 'hangi dil', 'which language', 'tanı'],
-  list_languages: ['diller', 'languages', 'desteklenen', 'supported', 'kullanılabilir'],
-  batch_translate: ['toplu çeviri', 'bulk translate', 'çoklu', 'batch'],
+  translate_text: ['translate', 'language', 'english', 'spanish', 'french', 'german'],
+  detect_language: ['detect', 'which language', 'identify language'],
+  list_languages: ['languages', 'supported', 'available'],
+  batch_translate: ['bulk translate', 'batch', 'multiple translate'],
 
   // ─────────────────────────────────────────────
   // GOALS
   // ─────────────────────────────────────────────
-  create_goal: ['hedef', 'goal', 'amaç', 'objective', 'target', 'plan', 'vizyon', 'oluştur'],
-  list_goals: ['hedefler', 'goals', 'amaçlar', 'objectives', 'listele', 'göster'],
-  update_goal: ['hedef güncelle', 'goal update', 'düzenle', 'ilerleme', 'progress'],
-  decompose_goal: ['hedef böl', 'decompose', 'parçala', 'alt hedefler', 'sub-goals', 'adımlar', 'steps'],
-  get_next_actions: ['sonraki adım', 'next action', 'ne yapmalıyım', 'what to do', 'öneri', 'suggestion'],
-  complete_step: ['adım tamamla', 'step complete', 'bitir', 'ilerleme kaydet'],
-  get_goal_details: ['hedef detay', 'goal detail', 'bilgi', 'info', 'durum', 'status'],
-  goal_stats: ['hedef istatistik', 'goal stats', 'ilerleme', 'progress', 'rapor', 'report'],
+  create_goal: ['goal', 'objective', 'target', 'plan', 'vision', 'create'],
+  list_goals: ['goals', 'objectives', 'list', 'show'],
+  update_goal: ['goal update', 'edit', 'progress'],
+  decompose_goal: ['decompose', 'sub-goals', 'steps', 'break down'],
+  get_next_actions: ['next action', 'what to do', 'suggestion'],
+  complete_step: ['step complete', 'finish', 'mark progress'],
+  get_goal_details: ['goal detail', 'info', 'status'],
+  goal_stats: ['goal stats', 'progress', 'report'],
 
   // ─────────────────────────────────────────────
   // SCHEDULER
   // ─────────────────────────────────────────────
-  create_scheduled_task: ['zamanlı görev', 'schedule', 'cron', 'otomasyon', 'automation', 'timer', 'otomatik', 'automatic', 'tekrar', 'recurring', 'hatırlatma', 'reminder'],
-  list_scheduled_tasks: ['zamanlı görevler', 'schedules', 'cron list', 'otomasyonlar', 'listele'],
-  update_scheduled_task: ['zamanlı güncelle', 'schedule update', 'düzenle'],
-  delete_scheduled_task: ['zamanlı sil', 'schedule delete', 'iptal', 'cancel'],
-  get_task_history: ['görev geçmişi', 'task history', 'çalışma kaydı', 'execution log'],
-  trigger_task: ['tetikle', 'trigger', 'çalıştır', 'run now', 'hemen çalıştır', 'manual run'],
+  create_scheduled_task: ['schedule', 'cron', 'automation', 'timer', 'automatic', 'recurring', 'reminder'],
+  list_scheduled_tasks: ['schedules', 'cron list', 'automations', 'list'],
+  update_scheduled_task: ['schedule update', 'edit schedule'],
+  delete_scheduled_task: ['schedule delete', 'cancel'],
+  get_task_history: ['task history', 'execution log'],
+  trigger_task: ['trigger', 'run now', 'manual run'],
 
   // ─────────────────────────────────────────────
   // DATA EXTRACTION
   // ─────────────────────────────────────────────
-  extract_structured_data: ['yapılandırılmış veri', 'structured data', 'parse', 'ayrıştır', 'extract', 'çıkar', 'json', 'tablo'],
-  extract_entities: ['varlık çıkarma', 'entity extraction', 'ner', 'isim', 'name', 'tarih', 'date', 'yer', 'place'],
-  extract_table_data: ['tablo', 'table', 'csv', 'excel', 'veri çıkar', 'parse table'],
-  summarize_text: ['özetle', 'summarize', 'kısalt', 'özet', 'summary', 'brief', 'tldr'],
+  extract_structured_data: ['structured data', 'parse', 'extract', 'json', 'table'],
+  extract_entities: ['entity extraction', 'ner', 'name', 'date', 'place'],
+  extract_table_data: ['table', 'csv', 'excel', 'parse table'],
+  summarize_text: ['summarize', 'summary', 'brief', 'tldr'],
 
   // ─────────────────────────────────────────────
   // CUSTOM DATA
   // ─────────────────────────────────────────────
-  list_custom_tables: ['veritabanı', 'database', 'tablo', 'table', 'listele', 'göster', 'schema'],
-  describe_custom_table: ['tablo bilgisi', 'table info', 'yapı', 'structure', 'sütunlar', 'columns'],
-  create_custom_table: ['tablo oluştur', 'create table', 'veritabanı', 'database', 'yeni tablo'],
-  delete_custom_table: ['tablo sil', 'drop table', 'kaldır'],
-  add_custom_record: ['kayıt ekle', 'add record', 'insert', 'veri ekle', 'satır ekle', 'row'],
-  batch_add_custom_records: ['toplu kayıt', 'bulk insert', 'çoklu veri'],
-  list_custom_records: ['kayıtlar', 'records', 'listele', 'veriler', 'data', 'satırlar', 'rows'],
-  search_custom_records: ['kayıt ara', 'search records', 'bul', 'filtre', 'sorgula', 'query'],
-  get_custom_record: ['kayıt getir', 'get record', 'detay', 'tek kayıt'],
-  update_custom_record: ['kayıt güncelle', 'update record', 'düzenle', 'değiştir'],
-  delete_custom_record: ['kayıt sil', 'delete record', 'kaldır'],
+  list_custom_tables: ['database', 'table', 'list', 'show', 'schema'],
+  describe_custom_table: ['table info', 'structure', 'columns'],
+  create_custom_table: ['create table', 'database', 'new table'],
+  delete_custom_table: ['drop table', 'remove table'],
+  add_custom_record: ['add record', 'insert', 'add data', 'row'],
+  batch_add_custom_records: ['bulk insert', 'multiple data'],
+  list_custom_records: ['records', 'list', 'data', 'rows'],
+  search_custom_records: ['search records', 'find', 'filter', 'query'],
+  get_custom_record: ['get record', 'detail', 'single record'],
+  update_custom_record: ['update record', 'edit', 'change'],
+  delete_custom_record: ['delete record', 'remove'],
 
   // ─────────────────────────────────────────────
   // VECTOR SEARCH
   // ─────────────────────────────────────────────
-  create_embedding: ['embedding', 'vektör', 'vector', 'gömme', 'encode', 'semantik', 'semantic'],
-  semantic_search: ['semantik arama', 'semantic search', 'benzerlik', 'similarity', 'anlam', 'meaning', 'akıllı arama'],
-  upsert_vectors: ['vektör ekle', 'upsert', 'vector add', 'güncelle'],
-  delete_vectors: ['vektör sil', 'vector delete', 'kaldır'],
-  list_vector_collections: ['koleksiyonlar', 'collections', 'vektör listele', 'vector list'],
-  create_vector_collection: ['koleksiyon oluştur', 'create collection', 'yeni koleksiyon'],
-  similarity_score: ['benzerlik skoru', 'similarity score', 'karşılaştır', 'compare', 'yakınlık'],
+  create_embedding: ['embedding', 'vector', 'encode', 'semantic'],
+  semantic_search: ['semantic search', 'similarity', 'meaning', 'smart search'],
+  upsert_vectors: ['upsert', 'vector add', 'update vectors'],
+  delete_vectors: ['vector delete', 'remove vectors'],
+  list_vector_collections: ['collections', 'vector list'],
+  create_vector_collection: ['create collection', 'new collection'],
+  similarity_score: ['similarity score', 'compare', 'proximity'],
 
   // ─────────────────────────────────────────────
   // WEATHER
   // ─────────────────────────────────────────────
-  get_weather: ['hava', 'weather', 'sıcaklık', 'temperature', 'derece', 'yağmur', 'rain', 'güneş', 'sun', 'hava durumu', 'bugün'],
-  get_weather_forecast: ['hava tahmini', 'forecast', 'yarın', 'tomorrow', 'haftalık', 'weekly', 'tahmin', 'prediction'],
+  get_weather: ['weather', 'temperature', 'rain', 'sun', 'forecast', 'today'],
+  get_weather_forecast: ['forecast', 'tomorrow', 'weekly', 'prediction'],
 
   // ─────────────────────────────────────────────
   // UTILITY / MATH / TEXT
   // ─────────────────────────────────────────────
-  get_current_datetime: ['saat', 'time', 'tarih', 'date', 'zaman', 'şimdi', 'now', 'bugün', 'today', 'saat kaç'],
-  calculate: ['hesapla', 'calculate', 'matematik', 'math', 'toplama', 'çarpma', 'formül', 'formula', 'işlem', 'operation'],
-  convert_units: ['dönüştür', 'convert', 'birim', 'unit', 'metre', 'kilo', 'fahrenheit', 'celsius', 'cm', 'inch', 'dolar', 'euro', 'tl'],
-  generate_uuid: ['uuid', 'id', 'benzersiz', 'unique', 'tanımlayıcı', 'identifier'],
-  generate_password: ['şifre', 'password', 'parola', 'güvenli', 'secure', 'random', 'rastgele'],
-  random_number: ['rastgele sayı', 'random number', 'şans', 'luck', 'dice', 'zar'],
-  hash_text: ['hash', 'md5', 'sha', 'şifrele', 'encrypt', 'digest', 'özet'],
-  encode_decode: ['encode', 'decode', 'base64', 'url encode', 'şifrele', 'çöz', 'kodla'],
-  count_text: ['say', 'count', 'kelime sayısı', 'word count', 'karakter', 'character', 'satır', 'line'],
-  extract_from_text: ['metin çıkar', 'extract', 'regex', 'pattern', 'desen', 'bul', 'parse'],
-  validate: ['doğrula', 'validate', 'kontrol', 'check', 'geçerli mi', 'email', 'url', 'telefon', 'phone'],
-  transform_text: ['metin dönüştür', 'transform', 'büyük harf', 'uppercase', 'küçük harf', 'lowercase', 'trim', 'replace', 'değiştir'],
-  date_diff: ['tarih farkı', 'date diff', 'kaç gün', 'how many days', 'süre', 'duration', 'aradaki fark'],
-  date_add: ['tarih ekle', 'date add', 'gün ekle', 'add days', 'sonraki', 'next', 'önceki', 'previous'],
-  format_json: ['json format', 'prettify', 'düzenle', 'güzelleştir', 'indent'],
-  parse_csv: ['csv oku', 'csv parse', 'tablo', 'excel', 'veri oku'],
-  generate_csv: ['csv oluştur', 'csv generate', 'tablo oluştur', 'export', 'dışa aktar'],
-  array_operations: ['dizi', 'array', 'liste', 'list', 'sırala', 'sort', 'filtre', 'filter', 'unique', 'benzersiz'],
-  statistics: ['istatistik', 'statistics', 'ortalama', 'average', 'mean', 'median', 'standart sapma', 'std', 'toplam', 'sum'],
-  compare_text: ['metin karşılaştır', 'compare', 'fark', 'diff', 'benzerlik', 'similarity'],
-  regex: ['regex', 'düzenli ifade', 'regular expression', 'pattern', 'desen', 'eşleşme', 'match'],
-  system_info: ['sistem', 'system', 'bilgi', 'info', 'platform', 'os', 'bellek', 'memory', 'cpu'],
+  get_current_datetime: ['time', 'date', 'now', 'today', 'what time'],
+  calculate: ['calculate', 'math', 'formula', 'operation', 'compute'],
+  convert_units: ['convert', 'unit', 'metre', 'kilo', 'fahrenheit', 'celsius', 'cm', 'inch', 'dollar', 'euro'],
+  generate_uuid: ['uuid', 'id', 'unique', 'identifier'],
+  generate_password: ['password', 'secure', 'random'],
+  random_number: ['random number', 'luck', 'dice'],
+  hash_text: ['hash', 'md5', 'sha', 'encrypt', 'digest'],
+  encode_decode: ['encode', 'decode', 'base64', 'url encode'],
+  count_text: ['count', 'word count', 'character', 'line'],
+  extract_from_text: ['extract', 'regex', 'pattern', 'find', 'parse'],
+  validate: ['validate', 'check', 'valid', 'email', 'url', 'phone'],
+  transform_text: ['transform', 'uppercase', 'lowercase', 'trim', 'replace'],
+  date_diff: ['date diff', 'how many days', 'duration', 'difference'],
+  date_add: ['date add', 'add days', 'next', 'previous'],
+  format_json: ['json format', 'prettify', 'indent'],
+  parse_csv: ['csv parse', 'table', 'excel', 'read data'],
+  generate_csv: ['csv generate', 'create table', 'export'],
+  array_operations: ['array', 'list', 'sort', 'filter', 'unique'],
+  statistics: ['statistics', 'average', 'mean', 'median', 'std', 'sum'],
+  compare_text: ['compare', 'diff', 'similarity'],
+  regex: ['regex', 'regular expression', 'pattern', 'match'],
+  system_info: ['system', 'info', 'platform', 'os', 'memory', 'cpu'],
 
   // ─────────────────────────────────────────────
   // DYNAMIC TOOLS (meta)
   // ─────────────────────────────────────────────
-  create_tool: ['araç oluştur', 'tool create', 'yeni araç', 'custom tool', 'özel araç'],
-  list_custom_tools: ['araçlar', 'tools', 'listele', 'custom tools', 'özel araçlar'],
-  delete_custom_tool: ['araç sil', 'tool delete', 'kaldır'],
-  toggle_custom_tool: ['araç aç/kapat', 'tool toggle', 'etkinleştir', 'enable', 'devre dışı', 'disable'],
+  create_tool: ['tool create', 'custom tool', 'new tool'],
+  list_custom_tools: ['tools', 'list', 'custom tools'],
+  delete_custom_tool: ['tool delete', 'remove tool'],
+  toggle_custom_tool: ['tool toggle', 'enable', 'disable'],
 
   // ─────────────────────────────────────────────
   // CONFIG CENTER
   // ─────────────────────────────────────────────
-  config_list_services: ['ayarlar', 'settings', 'servisler', 'services', 'config', 'yapılandırma', 'api key', 'listele'],
-  config_get_service: ['ayar', 'setting', 'config', 'servis bilgisi', 'api key', 'detay'],
-  config_set_entry: ['ayar değiştir', 'config set', 'api key ekle', 'yapılandır', 'configure'],
+  config_list_services: ['settings', 'services', 'config', 'api key', 'list'],
+  config_get_service: ['setting', 'config', 'service info', 'api key', 'detail'],
+  config_set_entry: ['config set', 'api key add', 'configure'],
 
   // ─────────────────────────────────────────────
   // TRIGGERS (Automation)
   // ─────────────────────────────────────────────
-  create_trigger: ['trigger', 'tetikleyici', 'otomasyon', 'automation', 'schedule', 'zamanlama', 'cron', 'event', 'proactive', 'proaktif'],
-  list_triggers: ['trigger', 'tetikleyici', 'otomasyon', 'automation', 'listele', 'schedule list'],
-  enable_trigger: ['trigger', 'tetikleyici', 'etkinleştir', 'enable', 'disable', 'devre dışı', 'toggle'],
-  fire_trigger: ['trigger', 'tetikleyici', 'çalıştır', 'run', 'execute', 'fire', 'manual'],
-  delete_trigger: ['trigger', 'tetikleyici', 'sil', 'delete', 'kaldır', 'remove'],
-  trigger_stats: ['trigger', 'tetikleyici', 'istatistik', 'stats', 'statistics', 'durum'],
+  create_trigger: ['trigger', 'automation', 'schedule', 'cron', 'event', 'proactive'],
+  list_triggers: ['trigger', 'automation', 'list', 'schedule list'],
+  enable_trigger: ['trigger', 'enable', 'disable', 'toggle'],
+  fire_trigger: ['trigger', 'run', 'execute', 'fire', 'manual'],
+  delete_trigger: ['trigger', 'delete', 'remove'],
+  trigger_stats: ['trigger', 'stats', 'statistics', 'status'],
 
   // ─────────────────────────────────────────────
   // PLANS (Automation)
   // ─────────────────────────────────────────────
-  create_plan: ['plan', 'workflow', 'iş akışı', 'otomasyon', 'automation', 'adım', 'step', 'süreç'],
-  add_plan_step: ['plan', 'step', 'adım ekle', 'workflow step', 'iş akışı adımı'],
-  list_plans: ['plan', 'workflow', 'iş akışı', 'listele', 'otomasyon listesi'],
-  get_plan_details: ['plan', 'detay', 'detail', 'workflow detail', 'adımlar', 'steps'],
-  execute_plan: ['plan', 'çalıştır', 'execute', 'run', 'başlat', 'start'],
-  pause_plan: ['plan', 'duraklat', 'pause', 'beklet'],
-  delete_plan: ['plan', 'sil', 'delete', 'kaldır', 'remove'],
+  create_plan: ['plan', 'workflow', 'automation', 'step', 'process'],
+  add_plan_step: ['plan', 'step', 'add step', 'workflow step'],
+  list_plans: ['plan', 'workflow', 'list', 'automation list'],
+  get_plan_details: ['plan', 'detail', 'workflow detail', 'steps'],
+  execute_plan: ['plan', 'execute', 'run', 'start'],
+  pause_plan: ['plan', 'pause', 'hold'],
+  delete_plan: ['plan', 'delete', 'remove'],
 };

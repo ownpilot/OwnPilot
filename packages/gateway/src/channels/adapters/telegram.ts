@@ -405,13 +405,13 @@ export class TelegramAdapter extends BaseChannelAdapter {
    */
   private async handleStartCommand(message: TelegramMessage): Promise<void> {
     const senderName = this.formatSenderName(message.from);
-    const welcomeMessage = `Merhaba ${senderName}! 👋
+    const welcomeMessage = `Hello ${senderName}! 👋
 
-OwnPilot AI asistanına hoş geldiniz.
+Welcome to OwnPilot AI assistant.
 
-Bana herhangi bir soru sorabilir veya yardım isteyebilirsiniz. Mesajlarınız AI tarafından işlenecek ve size cevap verilecektir.
+You can ask me any question or request help. Your messages will be processed by AI and you will receive a response.
 
-Nasıl yardımcı olabilirim?`;
+How can I help you?`;
 
     try {
       await this.callApi('sendMessage', {
