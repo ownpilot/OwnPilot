@@ -288,6 +288,38 @@ export function buildSandboxContext(
     SharedArrayBuffer: undefined, // Prevent shared memory attacks
   };
 
+  // --- Prototype pollution / constructor chain escape prevention ---
+  // Block constructor access on all context values to prevent:
+  //   [].constructor.constructor('return process')()
+  // Freeze key prototypes in the sandbox context
+  const frozenProtos = [
+    Object.prototype,
+    Array.prototype,
+    String.prototype,
+    Number.prototype,
+    Boolean.prototype,
+    RegExp.prototype,
+    Error.prototype,
+    Function.prototype,
+  ];
+  for (const proto of frozenProtos) {
+    try { Object.freeze(proto); } catch { /* some may already be frozen */ }
+  }
+
+  // Make dangerous properties non-configurable and non-writable
+  const dangerousKeys = [
+    'process', 'require', 'module', 'exports', '__dirname', '__filename',
+    'global', 'globalThis', 'eval', 'Function', 'Atomics', 'SharedArrayBuffer',
+  ];
+  for (const key of dangerousKeys) {
+    Object.defineProperty(context, key, {
+      value: undefined,
+      writable: false,
+      configurable: false,
+      enumerable: false,
+    });
+  }
+
   // Cleanup function
   const cleanup = () => {
     timers._cleanup();

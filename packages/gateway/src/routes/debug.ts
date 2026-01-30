@@ -3,10 +3,30 @@
  */
 
 import { Hono } from 'hono';
+import { createMiddleware } from 'hono/factory';
+import { HTTPException } from 'hono/http-exception';
 import { getDebugInfo, debugLog } from '@ownpilot/core';
 import type { ApiResponse } from '../types/index.js';
 
 export const debugRoutes = new Hono();
+
+// Debug endpoints are sensitive — require ADMIN_API_KEY or restrict to development
+const requireDebugAccess = createMiddleware(async (c, next) => {
+  // In production, require admin key
+  if (process.env.NODE_ENV === 'production') {
+    const adminKey = process.env.ADMIN_API_KEY;
+    if (!adminKey) {
+      throw new HTTPException(503, { message: 'Debug endpoints require ADMIN_API_KEY in production' });
+    }
+    const providedKey = c.req.header('X-Admin-Key');
+    if (!providedKey || providedKey !== adminKey) {
+      throw new HTTPException(403, { message: 'Valid X-Admin-Key header required for debug endpoints' });
+    }
+  }
+  await next();
+});
+
+debugRoutes.use('*', requireDebugAccess);
 
 /**
  * Get debug log entries

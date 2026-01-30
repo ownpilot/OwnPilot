@@ -4,7 +4,7 @@
  * Uses Node.js built-in child_process
  */
 
-import { exec } from 'node:child_process';
+import { exec, execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { platform } from 'node:os';
 import { type Result, ok, err } from '../types/result.js';
@@ -12,6 +12,29 @@ import { CryptoError, InternalError } from '../types/errors.js';
 import { toBase64, fromBase64 } from './derive.js';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+/** Run a command with arguments as array — no shell interpolation */
+function spawnAsync(cmd: string, args: string[], options?: { input?: string }): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(cmd, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+    let stdout = '';
+    let stderr = '';
+    proc.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
+    proc.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+    proc.on('error', reject);
+    proc.on('close', (code) => {
+      if (code === 0) resolve({ stdout, stderr });
+      else reject(new Error(`Command exited with code ${code}: ${stderr}`));
+    });
+    if (options?.input) {
+      proc.stdin.write(options.input);
+      proc.stdin.end();
+    } else {
+      proc.stdin.end();
+    }
+  });
+}
 
 /**
  * Keychain configuration
@@ -86,46 +109,39 @@ export async function storeSecret(
   try {
     switch (os) {
       case 'darwin': {
-        // macOS: Use security CLI
-        // First, try to delete existing (ignore errors)
+        // macOS: Use security CLI with array args (no shell interpolation)
         try {
-          await execAsync(
-            `security delete-generic-password -s "${cfg.service}" -a "${cfg.account}" 2>/dev/null`
-          );
+          await execFileAsync('security', [
+            'delete-generic-password', '-s', cfg.service, '-a', cfg.account,
+          ]);
         } catch {
           // Ignore - may not exist
         }
 
-        // Add new secret
-        await execAsync(
-          `security add-generic-password -s "${cfg.service}" -a "${cfg.account}" -w "${base64Secret}"`
-        );
+        await execFileAsync('security', [
+          'add-generic-password', '-s', cfg.service, '-a', cfg.account, '-w', base64Secret,
+        ]);
         return ok(undefined);
       }
 
       case 'linux': {
-        // Linux: Use secret-tool (libsecret)
-        // Store with stdin to avoid command line exposure
-        await execAsync(
-          `echo -n "${base64Secret}" | secret-tool store --label="${cfg.service}" service "${cfg.service}" account "${cfg.account}"`
-        );
+        // Linux: Use secret-tool with stdin for the secret value
+        await spawnAsync('secret-tool', [
+          'store', '--label', cfg.service, 'service', cfg.service, 'account', cfg.account,
+        ], { input: base64Secret });
         return ok(undefined);
       }
 
       case 'win32': {
-        // Windows: Use PowerShell SecretManagement or credential manager
-        const psCommand = `
-          $secureString = ConvertTo-SecureString -String '${base64Secret}' -AsPlainText -Force
-          $credential = New-Object System.Management.Automation.PSCredential -ArgumentList '${cfg.account}', $secureString
-
-          # Use Windows Credential Manager via cmdkey
-          $null = cmdkey /delete:${cfg.service} 2>$null
-          $null = cmdkey /generic:${cfg.service} /user:${cfg.account} /pass:${base64Secret}
-        `;
-
-        await execAsync(`powershell -Command "${psCommand.replace(/\n/g, ' ')}"`, {
-          shell: 'powershell.exe',
-        });
+        // Windows: Use cmdkey with array args via execFile
+        try {
+          await execFileAsync('cmdkey', ['/delete', cfg.service]);
+        } catch {
+          // Ignore - may not exist
+        }
+        await execFileAsync('cmdkey', [
+          `/generic:${cfg.service}`, `/user:${cfg.account}`, `/pass:${base64Secret}`,
+        ]);
         return ok(undefined);
       }
 
@@ -156,10 +172,10 @@ export async function retrieveSecret(
   try {
     switch (os) {
       case 'darwin': {
-        // macOS: Use security CLI
-        const { stdout } = await execAsync(
-          `security find-generic-password -s "${cfg.service}" -a "${cfg.account}" -w 2>/dev/null`
-        );
+        // macOS: Use security CLI with array args (no shell interpolation)
+        const { stdout } = await execFileAsync('security', [
+          'find-generic-password', '-s', cfg.service, '-a', cfg.account, '-w',
+        ]);
         const base64Secret = stdout.trim();
         if (!base64Secret) {
           return ok(null);
@@ -168,10 +184,10 @@ export async function retrieveSecret(
       }
 
       case 'linux': {
-        // Linux: Use secret-tool
-        const { stdout } = await execAsync(
-          `secret-tool lookup service "${cfg.service}" account "${cfg.account}" 2>/dev/null`
-        );
+        // Linux: Use secret-tool with array args
+        const { stdout } = await execFileAsync('secret-tool', [
+          'lookup', 'service', cfg.service, 'account', cfg.account,
+        ]);
         const base64Secret = stdout.trim();
         if (!base64Secret) {
           return ok(null);
@@ -180,44 +196,13 @@ export async function retrieveSecret(
       }
 
       case 'win32': {
-        // Windows: Use cmdkey to retrieve
-        const psCommand = `
-          $cred = cmdkey /list:${cfg.service} 2>$null
-          if ($LASTEXITCODE -eq 0) {
-            # Use .NET to retrieve the actual password
-            Add-Type -AssemblyName System.Security
-            $target = '${cfg.service}'
-
-            # Alternative: Use Windows Credential Manager API
-            $sig = @'
-            [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-            public static extern bool CredRead(string target, int type, int reservedFlag, out IntPtr credentialPtr);
-
-            [DllImport("advapi32.dll", SetLastError = true)]
-            public static extern bool CredFree(IntPtr cred);
-'@
-
-            try {
-              Add-Type -MemberDefinition $sig -Namespace Win32 -Name Credential -ErrorAction SilentlyContinue
-            } catch {}
-
-            # For simplicity, we'll use a file-based fallback
-            $credPath = Join-Path $env:LOCALAPPDATA "OwnPilot\\cred.dat"
-            if (Test-Path $credPath) {
-              Get-Content $credPath -Raw
-            }
-          }
-        `;
-
+        // Windows: Read from file-based credential storage
+        const credPath = `${process.env.LOCALAPPDATA || ''}\\OwnPilot\\cred.dat`;
         try {
-          const { stdout } = await execAsync(`powershell -Command "${psCommand.replace(/\n/g, ' ')}"`, {
-            shell: 'powershell.exe',
-          });
-          const base64Secret = stdout.trim();
-          if (!base64Secret) {
-            return ok(null);
-          }
-          return ok(fromBase64(base64Secret));
+          const { readFileSync } = await import('node:fs');
+          const content = readFileSync(credPath, 'utf-8').trim();
+          if (!content) return ok(null);
+          return ok(fromBase64(content));
         } catch {
           return ok(null);
         }
@@ -253,23 +238,21 @@ export async function deleteSecret(
   try {
     switch (os) {
       case 'darwin': {
-        await execAsync(
-          `security delete-generic-password -s "${cfg.service}" -a "${cfg.account}" 2>/dev/null`
-        );
+        await execFileAsync('security', [
+          'delete-generic-password', '-s', cfg.service, '-a', cfg.account,
+        ]);
         return ok(undefined);
       }
 
       case 'linux': {
-        await execAsync(
-          `secret-tool clear service "${cfg.service}" account "${cfg.account}" 2>/dev/null`
-        );
+        await execFileAsync('secret-tool', [
+          'clear', 'service', cfg.service, 'account', cfg.account,
+        ]);
         return ok(undefined);
       }
 
       case 'win32': {
-        await execAsync(`cmdkey /delete:${cfg.service}`, {
-          shell: 'powershell.exe',
-        });
+        await execFileAsync('cmdkey', [`/delete:${cfg.service}`]);
         return ok(undefined);
       }
 

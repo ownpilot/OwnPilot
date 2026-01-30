@@ -191,16 +191,25 @@ export function fromHex(hex: string): Uint8Array {
  * Prevents timing attacks
  */
 export function secureCompare(a: Uint8Array, b: Uint8Array): boolean {
-  if (a.length !== b.length) {
-    return false;
+  // Use Node.js built-in timing-safe comparison when possible
+  try {
+    const { timingSafeEqual } = require('node:crypto');
+    if (a.length !== b.length) {
+      // Compare against dummy to avoid timing leak on length
+      const dummy = new Uint8Array(a.length);
+      timingSafeEqual(Buffer.from(a), Buffer.from(dummy));
+      return false;
+    }
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    // Fallback: constant-time comparison with length padding
+    const maxLen = Math.max(a.length, b.length);
+    let result = a.length ^ b.length; // Non-zero if lengths differ
+    for (let i = 0; i < maxLen; i++) {
+      result |= (a[i % a.length] ?? 0) ^ (b[i % b.length] ?? 0);
+    }
+    return result === 0;
   }
-
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= (a[i] ?? 0) ^ (b[i] ?? 0);
-  }
-
-  return result === 0;
 }
 
 /**
