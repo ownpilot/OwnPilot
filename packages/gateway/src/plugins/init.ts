@@ -1099,59 +1099,103 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
         }
         const folder = (params.folder as string) || (mailbox as string) || 'INBOX';
         const limit = Math.min(Math.max((params.limit as number) || 10, 1), 50);
-        try {
-          const { ImapFlow } = await import('imapflow');
-          const client = new ImapFlow({
-            host: String(host),
-            port: Number(port) || 993,
-            secure: secure !== false && secure !== 'false',
-            auth: { user: String(user), pass: String(password) },
-            logger: false,
-          });
-          await client.connect();
-          const lock = await client.getMailboxLock(folder);
+
+        const maxRetries = 2;
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
-            const messages: Array<Record<string, unknown>> = [];
-            const status = client.mailbox;
-            const totalMessages = (status && typeof status === 'object' && 'exists' in status)
-              ? (status as { exists: number }).exists : 0;
-            if (totalMessages === 0) {
-              return { content: { emails: [], total: 0, folder } };
+            const { ImapFlow } = await import('imapflow');
+            const client = new ImapFlow({
+              host: String(host),
+              port: Number(port) || 993,
+              secure: secure !== false && secure !== 'false',
+              auth: { user: String(user), pass: String(password) },
+              logger: false,
+              emitLogs: false,
+              connectionTimeout: 15000,
+            });
+
+            // Stage 1: Connect
+            try {
+              await client.connect();
+            } catch (connErr) {
+              const msg = connErr instanceof Error ? connErr.message : String(connErr);
+              if (attempt < maxRetries) { lastError = connErr; continue; }
+              return { content: { error: `IMAP connection failed (${String(host)}:${Number(port) || 993}): ${msg}` }, isError: true };
             }
-            const startSeq = Math.max(1, totalMessages - limit + 1);
-            for await (const msg of client.fetch(`${startSeq}:*`, {
-              envelope: true,
-              bodyStructure: true,
-              flags: true,
-            })) {
-              const env = msg.envelope;
-              messages.push({
-                seq: msg.seq,
-                uid: msg.uid,
-                date: env?.date?.toISOString(),
-                subject: env?.subject,
-                from: env?.from?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
-                to: env?.to?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
-                flags: Array.from(msg.flags || []),
-                read: msg.flags?.has('\\Seen') ?? false,
-              });
+
+            // Stage 2: Open mailbox
+            let lock: { release: () => void };
+            try {
+              lock = await client.getMailboxLock(folder);
+            } catch (lockErr) {
+              await client.logout().catch(() => {});
+              const msg = lockErr instanceof Error ? lockErr.message : String(lockErr);
+              return { content: { error: `Failed to open folder "${folder}": ${msg}` }, isError: true };
             }
-            messages.reverse(); // newest first
-            return {
-              content: {
-                emails: messages,
-                total: totalMessages,
-                folder,
-                returned: messages.length,
-              },
-            };
-          } finally {
-            lock.release();
-            await client.logout();
+
+            try {
+              const messages: Array<Record<string, unknown>> = [];
+              const status = client.mailbox;
+              const totalMessages = (status && typeof status === 'object' && 'exists' in status)
+                ? (status as { exists: number }).exists : 0;
+              if (totalMessages === 0) {
+                return { content: { emails: [], total: 0, folder } };
+              }
+              const startSeq = Math.max(1, totalMessages - limit + 1);
+
+              // Stage 3: Fetch messages
+              try {
+                for await (const msg of client.fetch(`${startSeq}:*`, {
+                  envelope: true,
+                  bodyStructure: true,
+                  flags: true,
+                })) {
+                  const env = msg.envelope;
+                  messages.push({
+                    seq: msg.seq,
+                    uid: msg.uid,
+                    date: env?.date?.toISOString(),
+                    subject: env?.subject,
+                    from: env?.from?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
+                    to: env?.to?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
+                    flags: Array.from(msg.flags || []),
+                    read: msg.flags?.has('\\Seen') ?? false,
+                  });
+                }
+              } catch (fetchErr) {
+                const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+                if (attempt < maxRetries && /timeout|reset|closed|ECONNRESET/i.test(msg)) {
+                  lastError = fetchErr;
+                  lock.release();
+                  await client.logout().catch(() => {});
+                  continue;
+                }
+                return { content: { error: `IMAP FETCH failed for "${folder}": ${msg}` }, isError: true };
+              }
+
+              messages.reverse(); // newest first
+              return {
+                content: {
+                  emails: messages,
+                  total: totalMessages,
+                  folder,
+                  returned: messages.length,
+                },
+              };
+            } finally {
+              lock.release();
+              await client.logout().catch(() => {});
+            }
+          } catch (error) {
+            lastError = error;
+            if (attempt < maxRetries) continue;
           }
-        } catch (error) {
-          return { content: { error: `IMAP read failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
         }
+
+        const errMsg = lastError instanceof Error ? lastError.message : String(lastError);
+        return { content: { error: `IMAP read failed after ${maxRetries} attempts: ${errMsg}` }, isError: true };
       },
     )
     .tool(
@@ -1177,131 +1221,176 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
           return { content: { error: 'IMAP configuration incomplete.' }, isError: true };
         }
         const uid = params.uid as number;
+        if (!uid || uid <= 0 || !Number.isInteger(uid)) {
+          return { content: { error: `Invalid UID: ${uid}. UID must be a positive integer.` }, isError: true };
+        }
         const folder = (params.folder as string) || (mailbox as string) || 'INBOX';
-        try {
-          const { ImapFlow } = await import('imapflow');
-          const client = new ImapFlow({
-            host: String(host),
-            port: Number(port) || 993,
-            secure: secure !== false && secure !== 'false',
-            auth: { user: String(user), pass: String(password) },
-            logger: false,
-          });
-          await client.connect();
-          const lock = await client.getMailboxLock(folder);
+
+        const maxRetries = 2;
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
-            // 1. Fetch envelope + flags (lightweight)
-            interface EnvelopeAddr { name?: string; address?: string }
-            let envelope: { date?: Date; subject?: string; from?: EnvelopeAddr[]; to?: EnvelopeAddr[]; cc?: EnvelopeAddr[] } | undefined;
-            let flags: Set<string> | undefined;
-            let foundUid: number | undefined;
-            for await (const msg of client.fetch(String(uid), {
-              envelope: true,
-              flags: true,
-              uid: true,
-            })) {
-              envelope = msg.envelope;
-              flags = msg.flags;
-              foundUid = msg.uid;
-            }
+            const { ImapFlow } = await import('imapflow');
+            const client = new ImapFlow({
+              host: String(host),
+              port: Number(port) || 993,
+              secure: secure !== false && secure !== 'false',
+              auth: { user: String(user), pass: String(password) },
+              logger: false,
+              emitLogs: false,
+              connectionTimeout: 15000,
+            });
 
-            if (!foundUid) {
-              return { content: { error: `Email with UID ${uid} not found in ${folder}` }, isError: true };
-            }
-
-            // 2. Download message body via client.download() — more reliable than source:true
-            let body = '';
+            // Stage 1: Connect to IMAP server
             try {
-              const download = await client.download(String(uid), undefined, { uid: true });
-              const chunks: Buffer[] = [];
-              for await (const chunk of download.content) {
-                chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk as Buffer);
-                // Limit total download to ~512KB to avoid memory issues
-                const totalSize = chunks.reduce((s, c) => s + c.length, 0);
-                if (totalSize > 512 * 1024) break;
-              }
-              const raw = Buffer.concat(chunks).toString('utf-8');
-              // Extract body: everything after the first blank line (header/body separator)
-              const headerEnd = raw.indexOf('\r\n\r\n');
-              if (headerEnd !== -1) {
-                body = raw.substring(headerEnd + 4);
-              } else {
-                body = raw;
-              }
-            } catch {
-              // Fallback: if download fails, try fetching with bodyParts
+              await client.connect();
+            } catch (connErr) {
+              const msg = connErr instanceof Error ? connErr.message : String(connErr);
+              if (attempt < maxRetries) { lastError = connErr; continue; }
+              return { content: { error: `IMAP connection failed (${String(host)}:${Number(port) || 993}): ${msg}` }, isError: true };
+            }
+
+            // Stage 2: Open mailbox folder
+            let lock: { release: () => void };
+            try {
+              lock = await client.getMailboxLock(folder);
+            } catch (lockErr) {
+              await client.logout().catch(() => {});
+              const msg = lockErr instanceof Error ? lockErr.message : String(lockErr);
+              return { content: { error: `Failed to open folder "${folder}": ${msg}` }, isError: true };
+            }
+
+            try {
+              // Stage 3: Fetch envelope + flags
+              interface EnvelopeAddr { name?: string; address?: string }
+              let envelope: { date?: Date; subject?: string; from?: EnvelopeAddr[]; to?: EnvelopeAddr[]; cc?: EnvelopeAddr[] } | undefined;
+              let flags: Set<string> | undefined;
+              let foundUid: number | undefined;
+
               try {
                 for await (const msg of client.fetch(String(uid), {
+                  envelope: true,
+                  flags: true,
                   uid: true,
-                  bodyParts: ['text'],
-                } as Record<string, unknown>)) {
-                  const parts = msg.bodyParts as Map<string, Buffer> | undefined;
-                  if (parts) {
-                    for (const [, value] of parts) {
-                      body = value.toString('utf-8');
-                      break;
-                    }
-                  }
+                })) {
+                  envelope = msg.envelope;
+                  flags = msg.flags;
+                  foundUid = msg.uid;
+                }
+              } catch (fetchErr) {
+                const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+                // Retry on transient failures (connection reset, timeout)
+                if (attempt < maxRetries && /timeout|reset|closed|ECONNRESET/i.test(msg)) {
+                  lastError = fetchErr;
+                  lock.release();
+                  await client.logout().catch(() => {});
+                  continue;
+                }
+                return { content: { error: `IMAP FETCH failed for UID ${uid} in "${folder}": ${msg}. The email may have been deleted or moved.` }, isError: true };
+              }
+
+              if (!foundUid) {
+                return { content: { error: `Email with UID ${uid} not found in "${folder}". It may have been deleted or moved to another folder.` }, isError: true };
+              }
+
+              // Stage 4: Download message body via client.download()
+              let body = '';
+              try {
+                const download = await client.download(String(uid), undefined, { uid: true });
+                const chunks: Buffer[] = [];
+                for await (const chunk of download.content) {
+                  chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk as Buffer);
+                  const totalSize = chunks.reduce((s, c) => s + c.length, 0);
+                  if (totalSize > 512 * 1024) break;
+                }
+                const raw = Buffer.concat(chunks).toString('utf-8');
+                const headerEnd = raw.indexOf('\r\n\r\n');
+                if (headerEnd !== -1) {
+                  body = raw.substring(headerEnd + 4);
+                } else {
+                  body = raw;
                 }
               } catch {
-                body = '(Could not retrieve email body)';
+                // Fallback: fetch with bodyParts
+                try {
+                  for await (const msg of client.fetch(String(uid), {
+                    uid: true,
+                    bodyParts: ['text'],
+                  } as Record<string, unknown>)) {
+                    const parts = msg.bodyParts as Map<string, Buffer> | undefined;
+                    if (parts) {
+                      for (const [, value] of parts) {
+                        body = value.toString('utf-8');
+                        break;
+                      }
+                    }
+                  }
+                } catch {
+                  body = '(Could not retrieve email body)';
+                }
               }
+
+              // Decode quoted-printable soft line breaks
+              body = body.replace(/=\r?\n/g, '');
+              body = body.replace(/=([0-9A-Fa-f]{2})/g, (_, hex: string) =>
+                String.fromCharCode(parseInt(hex, 16)));
+
+              // Strip HTML to plain text if needed
+              if (body.includes('<html') || body.includes('<HTML') || body.includes('<div') || body.includes('<p>') || body.includes('<table')) {
+                body = body
+                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                  .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                  .replace(/<br\s*\/?>/gi, '\n')
+                  .replace(/<\/p>/gi, '\n')
+                  .replace(/<\/div>/gi, '\n')
+                  .replace(/<\/tr>/gi, '\n')
+                  .replace(/<\/li>/gi, '\n')
+                  .replace(/<[^>]+>/g, '')
+                  .replace(/&nbsp;/g, ' ')
+                  .replace(/&amp;/g, '&')
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/&quot;/g, '"')
+                  .replace(/&#39;/g, "'")
+                  .replace(/\n{3,}/g, '\n\n')
+                  .trim();
+              }
+
+              // Trim oversized content
+              if (body.length > 10000) {
+                body = body.substring(0, 10000) + '\n... [truncated]';
+              }
+
+              const formatAddr = (a: EnvelopeAddr) => a.name ? `${a.name} <${a.address}>` : (a.address ?? '');
+
+              return {
+                content: {
+                  uid: foundUid,
+                  date: envelope?.date?.toISOString(),
+                  subject: envelope?.subject,
+                  from: envelope?.from?.map(formatAddr).join(', '),
+                  to: envelope?.to?.map(formatAddr).join(', '),
+                  cc: envelope?.cc?.map(formatAddr).join(', ') || undefined,
+                  read: flags?.has('\\Seen') ?? false,
+                  flagged: flags?.has('\\Flagged') ?? false,
+                  body,
+                  folder,
+                },
+              };
+            } finally {
+              lock.release();
+              await client.logout().catch(() => {});
             }
-
-            // 3. Decode quoted-printable soft line breaks
-            body = body.replace(/=\r?\n/g, '');
-            body = body.replace(/=([0-9A-Fa-f]{2})/g, (_, hex: string) =>
-              String.fromCharCode(parseInt(hex, 16)));
-
-            // 4. Strip HTML to plain text if needed
-            if (body.includes('<html') || body.includes('<HTML') || body.includes('<div') || body.includes('<p>') || body.includes('<table')) {
-              body = body
-                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                .replace(/<br\s*\/?>/gi, '\n')
-                .replace(/<\/p>/gi, '\n')
-                .replace(/<\/div>/gi, '\n')
-                .replace(/<\/tr>/gi, '\n')
-                .replace(/<\/li>/gi, '\n')
-                .replace(/<[^>]+>/g, '')
-                .replace(/&nbsp;/g, ' ')
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/\n{3,}/g, '\n\n')
-                .trim();
-            }
-
-            // 5. Trim oversized content
-            if (body.length > 10000) {
-              body = body.substring(0, 10000) + '\n... [truncated]';
-            }
-
-            const formatAddr = (a: EnvelopeAddr) => a.name ? `${a.name} <${a.address}>` : (a.address ?? '');
-
-            return {
-              content: {
-                uid: foundUid,
-                date: envelope?.date?.toISOString(),
-                subject: envelope?.subject,
-                from: envelope?.from?.map(formatAddr).join(', '),
-                to: envelope?.to?.map(formatAddr).join(', '),
-                cc: envelope?.cc?.map(formatAddr).join(', ') || undefined,
-                read: flags?.has('\\Seen') ?? false,
-                flagged: flags?.has('\\Flagged') ?? false,
-                body,
-                folder,
-              },
-            };
-          } finally {
-            lock.release();
-            await client.logout();
+          } catch (error) {
+            lastError = error;
+            if (attempt < maxRetries) continue;
           }
-        } catch (error) {
-          return { content: { error: `IMAP read failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
         }
+
+        // All retries exhausted
+        const errMsg = lastError instanceof Error ? lastError.message : String(lastError);
+        return { content: { error: `IMAP read failed after ${maxRetries} attempts: ${errMsg}` }, isError: true };
       },
     )
     .tool(
@@ -1332,61 +1421,103 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
         const folder = (params.folder as string) || (mailbox as string) || 'INBOX';
         const limit = Math.min(Math.max((params.limit as number) || 20, 1), 50);
         const query = params.query as string;
-        try {
-          const { ImapFlow } = await import('imapflow');
-          const client = new ImapFlow({
-            host: String(host),
-            port: Number(port) || 993,
-            secure: secure !== false && secure !== 'false',
-            auth: { user: String(user), pass: String(password) },
-            logger: false,
-          });
-          await client.connect();
-          const lock = await client.getMailboxLock(folder);
+
+        const maxRetries = 2;
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
-            const searchCriteria: Record<string, unknown> = {};
-            if (query) searchCriteria.or = [{ subject: query }, { body: query }];
-            if (params.from) searchCriteria.from = params.from as string;
-            if (params.since) searchCriteria.since = params.since as string;
-            const searchResult = await client.search(searchCriteria, { uid: true });
-            const uids = Array.isArray(searchResult) ? searchResult : [];
-            const resultUids = uids.slice(-limit);
-            if (resultUids.length === 0) {
-              return { content: { query, results: [], total: 0, folder } };
+            const { ImapFlow } = await import('imapflow');
+            const client = new ImapFlow({
+              host: String(host),
+              port: Number(port) || 993,
+              secure: secure !== false && secure !== 'false',
+              auth: { user: String(user), pass: String(password) },
+              logger: false,
+              emitLogs: false,
+              connectionTimeout: 15000,
+            });
+
+            try {
+              await client.connect();
+            } catch (connErr) {
+              const msg = connErr instanceof Error ? connErr.message : String(connErr);
+              if (attempt < maxRetries) { lastError = connErr; continue; }
+              return { content: { error: `IMAP connection failed (${String(host)}:${Number(port) || 993}): ${msg}` }, isError: true };
             }
-            const messages: Array<Record<string, unknown>> = [];
-            for await (const msg of client.fetch(resultUids, {
-              envelope: true,
-              flags: true,
-              uid: true,
-            })) {
-              const env = msg.envelope;
-              messages.push({
-                uid: msg.uid,
-                date: env?.date?.toISOString(),
-                subject: env?.subject,
-                from: env?.from?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
-                to: env?.to?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
-                read: msg.flags?.has('\\Seen') ?? false,
-              });
+
+            let lock: { release: () => void };
+            try {
+              lock = await client.getMailboxLock(folder);
+            } catch (lockErr) {
+              await client.logout().catch(() => {});
+              const msg = lockErr instanceof Error ? lockErr.message : String(lockErr);
+              return { content: { error: `Failed to open folder "${folder}": ${msg}` }, isError: true };
             }
-            messages.reverse();
-            return {
-              content: {
-                query,
-                results: messages,
-                total: uids.length,
-                returned: messages.length,
-                folder,
-              },
-            };
-          } finally {
-            lock.release();
-            await client.logout();
+
+            try {
+              const searchCriteria: Record<string, unknown> = {};
+              if (query) searchCriteria.or = [{ subject: query }, { body: query }];
+              if (params.from) searchCriteria.from = params.from as string;
+              if (params.since) searchCriteria.since = params.since as string;
+
+              let searchResult: number[];
+              try {
+                searchResult = await client.search(searchCriteria, { uid: true }) as number[];
+              } catch (searchErr) {
+                const msg = searchErr instanceof Error ? searchErr.message : String(searchErr);
+                if (attempt < maxRetries && /timeout|reset|closed|ECONNRESET/i.test(msg)) {
+                  lastError = searchErr;
+                  lock.release();
+                  await client.logout().catch(() => {});
+                  continue;
+                }
+                return { content: { error: `IMAP SEARCH failed in "${folder}": ${msg}` }, isError: true };
+              }
+
+              const uids = Array.isArray(searchResult) ? searchResult : [];
+              const resultUids = uids.slice(-limit);
+              if (resultUids.length === 0) {
+                return { content: { query, results: [], total: 0, folder } };
+              }
+              const messages: Array<Record<string, unknown>> = [];
+              for await (const msg of client.fetch(resultUids, {
+                envelope: true,
+                flags: true,
+                uid: true,
+              })) {
+                const env = msg.envelope;
+                messages.push({
+                  uid: msg.uid,
+                  date: env?.date?.toISOString(),
+                  subject: env?.subject,
+                  from: env?.from?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
+                  to: env?.to?.map((a: { name?: string; address?: string }) => a.address || a.name).join(', '),
+                  read: msg.flags?.has('\\Seen') ?? false,
+                });
+              }
+              messages.reverse();
+              return {
+                content: {
+                  query,
+                  results: messages,
+                  total: uids.length,
+                  returned: messages.length,
+                  folder,
+                },
+              };
+            } finally {
+              lock.release();
+              await client.logout().catch(() => {});
+            }
+          } catch (error) {
+            lastError = error;
+            if (attempt < maxRetries) continue;
           }
-        } catch (error) {
-          return { content: { error: `IMAP search failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
         }
+
+        const errMsg = lastError instanceof Error ? lastError.message : String(lastError);
+        return { content: { error: `IMAP search failed after ${maxRetries} attempts: ${errMsg}` }, isError: true };
       },
     )
     .tool(
@@ -1412,49 +1543,80 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
           return { content: { error: 'IMAP configuration incomplete.' }, isError: true };
         }
         const uid = params.uid as number;
-        const folder = (params.folder as string) || (mailbox as string) || 'INBOX';
-        try {
-          const { ImapFlow } = await import('imapflow');
-          const client = new ImapFlow({
-            host: String(host),
-            port: Number(port) || 993,
-            secure: secure !== false && secure !== 'false',
-            auth: { user: String(user), pass: String(password) },
-            logger: false,
-          });
-          await client.connect();
-          const lock = await client.getMailboxLock(folder);
-          try {
-            // Try moving to Trash first, fall back to flag-based delete
-            try {
-              await client.messageMove(String(uid), 'Trash', { uid: true });
-              return {
-                content: {
-                  success: true,
-                  uid,
-                  action: 'moved_to_trash',
-                  folder,
-                },
-              };
-            } catch {
-              // Trash folder may not exist or move not supported; flag as deleted
-              await client.messageDelete(String(uid), { uid: true });
-              return {
-                content: {
-                  success: true,
-                  uid,
-                  action: 'deleted',
-                  folder,
-                },
-              };
-            }
-          } finally {
-            lock.release();
-            await client.logout();
-          }
-        } catch (error) {
-          return { content: { error: `IMAP delete failed: ${error instanceof Error ? error.message : String(error)}` }, isError: true };
+        if (!uid || uid <= 0 || !Number.isInteger(uid)) {
+          return { content: { error: `Invalid UID: ${uid}. UID must be a positive integer.` }, isError: true };
         }
+        const folder = (params.folder as string) || (mailbox as string) || 'INBOX';
+
+        const maxRetries = 2;
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const { ImapFlow } = await import('imapflow');
+            const client = new ImapFlow({
+              host: String(host),
+              port: Number(port) || 993,
+              secure: secure !== false && secure !== 'false',
+              auth: { user: String(user), pass: String(password) },
+              logger: false,
+              emitLogs: false,
+              connectionTimeout: 15000,
+            });
+
+            try {
+              await client.connect();
+            } catch (connErr) {
+              const msg = connErr instanceof Error ? connErr.message : String(connErr);
+              if (attempt < maxRetries) { lastError = connErr; continue; }
+              return { content: { error: `IMAP connection failed (${String(host)}:${Number(port) || 993}): ${msg}` }, isError: true };
+            }
+
+            let lock: { release: () => void };
+            try {
+              lock = await client.getMailboxLock(folder);
+            } catch (lockErr) {
+              await client.logout().catch(() => {});
+              const msg = lockErr instanceof Error ? lockErr.message : String(lockErr);
+              return { content: { error: `Failed to open folder "${folder}": ${msg}` }, isError: true };
+            }
+
+            try {
+              // Try moving to Trash first, fall back to flag-based delete
+              try {
+                await client.messageMove(String(uid), 'Trash', { uid: true });
+                return {
+                  content: {
+                    success: true,
+                    uid,
+                    action: 'moved_to_trash',
+                    folder,
+                  },
+                };
+              } catch {
+                // Trash folder may not exist or move not supported; flag as deleted
+                await client.messageDelete(String(uid), { uid: true });
+                return {
+                  content: {
+                    success: true,
+                    uid,
+                    action: 'deleted',
+                    folder,
+                  },
+                };
+              }
+            } finally {
+              lock.release();
+              await client.logout().catch(() => {});
+            }
+          } catch (error) {
+            lastError = error;
+            if (attempt < maxRetries) continue;
+          }
+        }
+
+        const errMsg = lastError instanceof Error ? lastError.message : String(lastError);
+        return { content: { error: `IMAP delete failed after ${maxRetries} attempts: ${errMsg}` }, isError: true };
       },
     )
     .build();

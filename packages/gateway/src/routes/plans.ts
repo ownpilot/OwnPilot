@@ -496,6 +496,155 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
   return c.json(response);
 });
 
+/**
+ * POST /plans/:id/start - Start a plan (alias for /execute)
+ */
+plansRoutes.post('/:id/start', async (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const id = c.req.param('id');
+
+  const repo = getRepo(userId);
+  const plan = await repo.get(id);
+
+  if (!plan) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Plan not found: ${id}`,
+        },
+      },
+      404
+    );
+  }
+
+  if (plan.status === 'running') {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'ALREADY_RUNNING',
+          message: 'Plan is already running',
+        },
+      },
+      400
+    );
+  }
+
+  try {
+    const executor = getPlanExecutor({ userId });
+    const result = await executor.execute(id);
+
+    const response: ApiResponse = {
+      success: result.status === 'completed',
+      data: {
+        result,
+        message: result.status === 'completed'
+          ? 'Plan executed successfully.'
+          : `Plan execution ended with status: ${result.status}`,
+      },
+      error: result.error
+        ? {
+            code: 'EXECUTION_ERROR',
+            message: result.error,
+          }
+        : undefined,
+    };
+
+    return c.json(response, result.status === 'completed' ? 200 : 500);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'EXECUTION_ERROR',
+          message: errorMessage,
+        },
+      },
+      500
+    );
+  }
+});
+
+/**
+ * POST /plans/:id/rollback - Rollback plan to last checkpoint
+ */
+plansRoutes.post('/:id/rollback', async (c) => {
+  const userId = c.req.query('userId') ?? 'default';
+  const id = c.req.param('id');
+
+  const repo = getRepo(userId);
+  const plan = await repo.get(id);
+
+  if (!plan) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Plan not found: ${id}`,
+        },
+      },
+      404
+    );
+  }
+
+  if (!plan.checkpoint) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'NO_CHECKPOINT',
+          message: 'No checkpoint available for rollback',
+        },
+      },
+      400
+    );
+  }
+
+  try {
+    const executor = getPlanExecutor({ userId });
+    const checkpointData = await executor.restoreFromCheckpoint(id);
+
+    // Reset failed/completed steps back to pending
+    const steps = await repo.getSteps(id);
+    for (const step of steps) {
+      if (step.status === 'failed' || step.status === 'completed') {
+        await repo.updateStep(step.id, { status: 'pending', error: undefined, result: undefined });
+      }
+    }
+
+    // Reset plan status to pending so it can be re-executed
+    await repo.update(id, { status: 'pending' });
+    await repo.recalculateProgress(id);
+    await repo.logEvent(id, 'rollback', undefined, { checkpoint: checkpointData });
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        message: 'Plan rolled back to last checkpoint.',
+        checkpoint: checkpointData,
+      },
+    };
+
+    return c.json(response);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'ROLLBACK_ERROR',
+          message: errorMessage,
+        },
+      },
+      500
+    );
+  }
+});
+
 // ============================================================================
 // Step Routes
 // ============================================================================

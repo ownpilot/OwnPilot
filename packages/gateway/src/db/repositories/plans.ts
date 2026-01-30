@@ -13,7 +13,7 @@ import { BaseRepository } from './base.js';
 export type PlanStatus = 'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
 export type StepType = 'tool_call' | 'llm_decision' | 'user_input' | 'condition' | 'parallel' | 'loop' | 'sub_plan';
 export type StepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'blocked' | 'waiting';
-export type PlanEventType = 'started' | 'step_started' | 'step_completed' | 'step_failed' | 'paused' | 'resumed' | 'completed' | 'failed' | 'cancelled' | 'checkpoint';
+export type PlanEventType = 'started' | 'step_started' | 'step_completed' | 'step_failed' | 'paused' | 'resumed' | 'completed' | 'failed' | 'cancelled' | 'checkpoint' | 'rollback';
 
 export interface Plan {
   id: string;
@@ -441,11 +441,20 @@ export class PlansRepository extends BaseRepository {
   // ============================================================================
 
   /**
-   * Add a step to a plan
+   * Add a step to a plan (validates dependency cycles before adding)
    */
   async addStep(planId: string, input: CreateStepInput): Promise<PlanStep> {
     const plan = await this.get(planId);
     if (!plan) throw new Error(`Plan not found: ${planId}`);
+
+    // Check for circular dependencies if this step has dependencies
+    if (input.dependencies && input.dependencies.length > 0) {
+      const existingSteps = await this.getSteps(planId);
+      const cycle = detectDependencyCycle(existingSteps, input.dependencies);
+      if (cycle) {
+        throw new Error(`Circular dependency detected: ${cycle}`);
+      }
+    }
 
     const id = `step_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -776,6 +785,64 @@ export class PlansRepository extends BaseRepository {
       createdAt: new Date(row.created_at),
     };
   }
+}
+
+// ============================================================================
+// Dependency Cycle Detection
+// ============================================================================
+
+/**
+ * Detect circular dependencies using DFS.
+ * Returns a cycle path string if found, null if no cycle.
+ */
+export function detectDependencyCycle(
+  existingSteps: PlanStep[],
+  newDependencies: string[],
+  newStepId = '__new__'
+): string | null {
+  // Build adjacency list: stepId -> dependsOn[]
+  const adjList = new Map<string, string[]>();
+  for (const step of existingSteps) {
+    adjList.set(step.id, step.dependencies);
+  }
+  // Add the new step's dependencies
+  adjList.set(newStepId, newDependencies);
+
+  // DFS cycle detection
+  const visited = new Set<string>();
+  const recStack = new Set<string>();
+  const path: string[] = [];
+
+  function dfs(nodeId: string): string | null {
+    visited.add(nodeId);
+    recStack.add(nodeId);
+    path.push(nodeId);
+
+    const deps = adjList.get(nodeId) ?? [];
+    for (const dep of deps) {
+      if (!visited.has(dep)) {
+        const result = dfs(dep);
+        if (result) return result;
+      } else if (recStack.has(dep)) {
+        // Cycle found — extract cycle path
+        const cycleStart = path.indexOf(dep);
+        const cyclePath = path.slice(cycleStart);
+        cyclePath.push(dep);
+
+        // Map IDs to step names for readability
+        const stepNames = new Map(existingSteps.map((s) => [s.id, s.name]));
+        stepNames.set(newStepId, '(new step)');
+        return cyclePath.map((id) => stepNames.get(id) ?? id).join(' -> ');
+      }
+    }
+
+    path.pop();
+    recStack.delete(nodeId);
+    return null;
+  }
+
+  // Start DFS from the new step
+  return dfs(newStepId);
 }
 
 // Factory function for creating repository instances

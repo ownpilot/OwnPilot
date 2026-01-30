@@ -21,11 +21,11 @@ export const extractStructuredDataTool: ToolDefinition = {
       },
       schema: {
         type: 'object',
-        description: 'JSON schema defining the expected output structure',
+        description: 'Custom JSON schema defining the expected output structure. REQUIRED when template is "custom", optional otherwise (predefined templates have built-in schemas).',
       },
       template: {
         type: 'string',
-        description: 'Predefined template type',
+        description: 'Predefined extraction template with built-in schema (default: "custom"). Using a template auto-selects the appropriate schema unless "schema" is also provided.',
         enum: [
           'receipt',
           'invoice',
@@ -651,7 +651,7 @@ export const summarizeTextTool: ToolDefinition = {
       },
       focus: {
         type: 'string',
-        description: 'Specific aspect to focus on in summary',
+        description: 'Specific aspect to focus on in summary, e.g. "key decisions", "action items", "financial data", "technical details"',
       },
     },
     required: ['text'],

@@ -38,6 +38,8 @@ export class Agent {
   private readonly tools: ToolRegistry;
   private readonly memory: ConversationMemory;
   private state: AgentState;
+  /** Additional tool names exposed to the LLM (for direct tool calls from picker) */
+  private additionalToolNames: string[] = [];
 
   constructor(
     config: AgentConfig,
@@ -93,11 +95,43 @@ export class Agent {
    */
   getTools(): readonly ToolDefinition[] {
     if (this.config.tools?.length) {
-      return this.tools.getDefinitionsByNames(
-        this.config.tools.map((t) => String(t))
-      );
+      const names = this.config.tools.map((t) => String(t));
+      // Merge additional tool names (from direct tool registration)
+      if (this.additionalToolNames.length > 0) {
+        const nameSet = new Set(names);
+        for (const name of this.additionalToolNames) {
+          if (!nameSet.has(name)) {
+            names.push(name);
+          }
+        }
+      }
+      return this.tools.getDefinitionsByNames(names);
     }
     return this.tools.getDefinitions();
+  }
+
+  /**
+   * Get ALL registered tool definitions (ignoring the filter).
+   * Used to build a tool catalog for the first message.
+   */
+  getAllToolDefinitions(): readonly ToolDefinition[] {
+    return this.tools.getDefinitions();
+  }
+
+  /**
+   * Temporarily expose additional tools to the LLM by name.
+   * Used when user selects tools from the picker for direct calling.
+   * Call clearAdditionalTools() after the chat call to reset.
+   */
+  setAdditionalTools(toolNames: string[]): void {
+    this.additionalToolNames = [...toolNames];
+  }
+
+  /**
+   * Clear any temporarily added tools.
+   */
+  clearAdditionalTools(): void {
+    this.additionalToolNames = [];
   }
 
   /**

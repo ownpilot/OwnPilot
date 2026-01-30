@@ -38,9 +38,21 @@ function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const isError = message.isError;
 
+  // Strip hidden context blocks from display (attached context + tool catalog)
+  const hasAttachedContext = isUser && (
+    message.content.includes('\n---\n[ATTACHED CONTEXT') ||
+    message.content.includes('\n---\n[TOOL CATALOG')
+  );
+  const displayContent = hasAttachedContext
+    ? message.content
+        .replace(/\n---\n\[ATTACHED CONTEXT[\s\S]*$/, '')
+        .replace(/\n---\n\[TOOL CATALOG[\s\S]*$/, '')
+        .trim()
+    : message.content;
+
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(message.content);
+      await navigator.clipboard.writeText(displayContent);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -187,7 +199,7 @@ function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
       <div className={`group flex-1 max-w-[85%] ${isUser ? 'text-right' : 'text-left'}`}>
         {/* Message Bubble */}
         {(() => {
-          const hasCodeBlock = /```[\s\S]*?```/.test(message.content);
+          const hasCodeBlock = /```[\s\S]*?```/.test(displayContent);
           return (
             <div
               className={`${hasCodeBlock ? 'block w-full' : 'inline-block'} px-4 py-3 rounded-2xl ${
@@ -198,10 +210,17 @@ function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
                   : 'bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary rounded-tl-md border border-border dark:border-dark-border'
               }`}
             >
-              {renderContent(message.content)}
+              {renderContent(displayContent)}
             </div>
           );
         })()}
+
+        {/* Attached context indicator */}
+        {hasAttachedContext && (
+          <div className={`mt-1 text-[11px] text-text-muted/60 dark:text-dark-text-muted/60 ${isUser ? 'text-right' : ''}`}>
+            + context attached
+          </div>
+        )}
 
         {/* Retry Button - only for error messages */}
         {showRetry && onRetry && (

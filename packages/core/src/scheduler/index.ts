@@ -289,6 +289,102 @@ export function getNextRunTime(cron: string, from: Date = new Date()): Date | nu
 }
 
 /**
+ * Validate a cron expression and return diagnostic info
+ */
+export function validateCronExpression(cron: string): {
+  valid: boolean;
+  error?: string;
+  nextFire?: Date;
+} {
+  if (!cron || typeof cron !== 'string') {
+    return { valid: false, error: 'Cron expression is required and must be a string' };
+  }
+
+  const trimmed = cron.trim();
+  if (!trimmed) {
+    return { valid: false, error: 'Cron expression cannot be empty' };
+  }
+
+  const parts = parseCronExpression(trimmed);
+  if (!parts) {
+    return {
+      valid: false,
+      error: `Invalid cron format: expected 5 fields (minute hour day month weekday), got ${trimmed.split(/\s+/).length}`,
+    };
+  }
+
+  // Validate each field's range
+  const fieldValidations: Array<{ name: string; value: string; min: number; max: number }> = [
+    { name: 'minute', value: parts.minute, min: 0, max: 59 },
+    { name: 'hour', value: parts.hour, min: 0, max: 23 },
+    { name: 'day of month', value: parts.dayOfMonth, min: 1, max: 31 },
+    { name: 'month', value: parts.month, min: 1, max: 12 },
+    { name: 'day of week', value: parts.dayOfWeek, min: 0, max: 6 },
+  ];
+
+  for (const field of fieldValidations) {
+    const err = validateCronField(field.value, field.min, field.max);
+    if (err) {
+      return { valid: false, error: `Invalid ${field.name} field "${field.value}": ${err}` };
+    }
+  }
+
+  // Try to calculate next fire time
+  const nextFire = getNextRunTime(trimmed);
+  if (!nextFire) {
+    return {
+      valid: false,
+      error: 'Cron expression is syntactically valid but no matching time found within 365 days',
+    };
+  }
+
+  return { valid: true, nextFire };
+}
+
+/**
+ * Validate a single cron field value
+ */
+function validateCronField(value: string, min: number, max: number): string | null {
+  if (value === '*') return null;
+
+  // Step: */n
+  if (value.startsWith('*/')) {
+    const step = parseInt(value.slice(2), 10);
+    if (isNaN(step) || step <= 0) return `step value must be a positive integer`;
+    return null;
+  }
+
+  // Range: n-m
+  if (value.includes('-') && !value.includes(',')) {
+    const [startStr, endStr] = value.split('-');
+    const start = parseInt(startStr!, 10);
+    const end = parseInt(endStr!, 10);
+    if (isNaN(start) || isNaN(end)) return `range values must be integers`;
+    if (start < min || start > max) return `${start} is out of range ${min}-${max}`;
+    if (end < min || end > max) return `${end} is out of range ${min}-${max}`;
+    if (start > end) return `range start (${start}) must be <= end (${end})`;
+    return null;
+  }
+
+  // List: n,m,...
+  if (value.includes(',')) {
+    const parts = value.split(',');
+    for (const part of parts) {
+      const num = parseInt(part.trim(), 10);
+      if (isNaN(num)) return `"${part}" is not a valid integer`;
+      if (num < min || num > max) return `${num} is out of range ${min}-${max}`;
+    }
+    return null;
+  }
+
+  // Exact value
+  const num = parseInt(value, 10);
+  if (isNaN(num)) return `"${value}" is not a valid integer`;
+  if (num < min || num > max) return `${num} is out of range ${min}-${max}`;
+  return null;
+}
+
+/**
  * Common cron presets
  */
 export const CRON_PRESETS = {

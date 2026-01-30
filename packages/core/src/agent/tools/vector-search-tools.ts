@@ -11,29 +11,30 @@ import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools
 
 export const createEmbeddingTool: ToolDefinition = {
   name: 'create_embedding',
-  description: 'Generate vector embeddings for text using AI models. Useful for semantic search and similarity comparisons.',
+  description: 'Generate vector embeddings for text using AI models. Useful for semantic search and similarity comparisons. Provide either "text" (single string) or "texts" (array for batch) — at least one is required.',
   parameters: {
     type: 'object',
     properties: {
       text: {
         type: 'string',
-        description: 'Text to create embedding for',
+        description: 'Single text to create embedding for. Provide this OR "texts", not both.',
       },
       texts: {
         type: 'array',
-        description: 'Multiple texts to embed (batch)',
+        description: 'Multiple texts to embed in batch (max 100). Provide this OR "text", not both.',
         items: { type: 'string' },
       },
       model: {
         type: 'string',
-        description: 'Embedding model to use',
+        description: 'Embedding model to use (default: text-embedding-3-small)',
         enum: ['text-embedding-3-small', 'text-embedding-3-large', 'text-embedding-ada-002'],
       },
       dimensions: {
         type: 'number',
-        description: 'Output dimensions (for models that support it)',
+        description: 'Output dimensions (for models that support it, e.g. 256, 512, 1536)',
       },
     },
+    required: [],
   },
 };
 
@@ -170,7 +171,7 @@ export const semanticSearchExecutor: ToolExecutor = async (params, context): Pro
 
 export const upsertVectorsTool: ToolDefinition = {
   name: 'upsert_vectors',
-  description: 'Insert or update vectors in a collection',
+  description: 'Insert or update vectors in a collection. Provide either "vectors" (pre-computed embeddings) or "texts" (will be auto-embedded) — at least one is required alongside "collection".',
   parameters: {
     type: 'object',
     properties: {
@@ -180,7 +181,7 @@ export const upsertVectorsTool: ToolDefinition = {
       },
       vectors: {
         type: 'array',
-        description: 'Array of vectors with id, values, and metadata',
+        description: 'Array of pre-computed vectors with id, values, and optional metadata. Provide this OR "texts".',
         items: {
           type: 'object',
           properties: {
@@ -192,7 +193,7 @@ export const upsertVectorsTool: ToolDefinition = {
       },
       texts: {
         type: 'array',
-        description: 'Array of texts to embed and store (alternative to vectors)',
+        description: 'Array of texts to auto-embed and store. Provide this OR "vectors".',
         items: {
           type: 'object',
           properties: {
@@ -337,15 +338,16 @@ export const deleteVectorsExecutor: ToolExecutor = async (params, context): Prom
 
 export const listCollectionsTool: ToolDefinition = {
   name: 'list_vector_collections',
-  description: 'List all vector collections/indexes',
+  description: 'List all vector collections/indexes. Optionally include statistics like vector count.',
   parameters: {
     type: 'object',
     properties: {
       includeStats: {
         type: 'boolean',
-        description: 'Include vector count and other statistics',
+        description: 'Include vector count and other statistics (default: false)',
       },
     },
+    required: [],
   },
 };
 
@@ -436,34 +438,35 @@ export const createCollectionExecutor: ToolExecutor = async (params, context): P
 
 export const similarityScoreTool: ToolDefinition = {
   name: 'similarity_score',
-  description: 'Calculate similarity between two texts or vectors',
+  description: 'Calculate similarity between two texts or two vectors. Provide either (text1 + text2) for text comparison or (vector1 + vector2) for direct vector comparison.',
   parameters: {
     type: 'object',
     properties: {
       text1: {
         type: 'string',
-        description: 'First text to compare',
+        description: 'First text to compare (requires embedding API). Use with text2.',
       },
       text2: {
         type: 'string',
-        description: 'Second text to compare',
+        description: 'Second text to compare (requires embedding API). Use with text1.',
       },
       vector1: {
         type: 'array',
-        description: 'First vector (if not using text)',
+        description: 'First vector for direct comparison (array of numbers). Use with vector2.',
         items: { type: 'number' },
       },
       vector2: {
         type: 'array',
-        description: 'Second vector (if not using text)',
+        description: 'Second vector for direct comparison (array of numbers). Use with vector1.',
         items: { type: 'number' },
       },
       metric: {
         type: 'string',
-        description: 'Similarity metric',
+        description: 'Similarity metric (default: cosine)',
         enum: ['cosine', 'euclidean', 'dotproduct'],
       },
     },
+    required: [],
   },
 };
 

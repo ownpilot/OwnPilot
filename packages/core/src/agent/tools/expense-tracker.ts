@@ -380,21 +380,21 @@ export const batchAddExpensesExecutor: ToolExecutor = async (args, _context): Pr
  */
 export const parseReceiptTool: ToolDefinition = {
   name: 'parse_receipt',
-  description: 'Parse expense information from a receipt image. Returns extracted data that can be used with add_expense. Requires a vision-capable model.',
+  description: 'Parse expense information from a receipt image. Returns extracted data that can be used with add_expense. Requires a vision-capable model. Provide either "imagePath" (file path) or "imageBase64" (base64 data) — at least one is required.',
   parameters: {
     type: 'object',
     properties: {
       imagePath: {
         type: 'string',
-        description: 'Path to the receipt image file',
+        description: 'Path to the receipt image file. Provide this OR "imageBase64", not both.',
       },
       imageBase64: {
         type: 'string',
-        description: 'Base64-encoded image data (alternative to imagePath)',
+        description: 'Base64-encoded image data. Provide this OR "imagePath", not both.',
       },
       saveReceipt: {
         type: 'boolean',
-        description: 'Whether to save the receipt image for records. Defaults to true.',
+        description: 'Whether to save the receipt image for records (default: true)',
       },
     },
     required: [],

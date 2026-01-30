@@ -114,8 +114,6 @@ export interface PromptComposerOptions {
   includeCapabilities?: boolean;
   /** Maximum prompt length (characters) */
   maxPromptLength?: number;
-  /** Language for prompts */
-  language?: 'en' | 'tr' | 'auto';
 }
 
 // =============================================================================
@@ -123,15 +121,10 @@ export interface PromptComposerOptions {
 // =============================================================================
 
 const PROMPT_SECTIONS = {
-  userProfile: {
-    en: `## About the User
+  userProfile: `## About the User
 {{userInfo}}`,
-    tr: `## Kullanıcı Hakkında
-{{userInfo}}`,
-  },
 
-  workspace: {
-    en: `## File System Access
+  workspace: `## File System Access
 You have access to file system tools (read_file, write_file, list_directory, etc.).
 
 **Allowed directories for file operations:**
@@ -142,103 +135,84 @@ You have access to file system tools (read_file, write_file, list_directory, etc
 - Temporary files: \`{{tempDir}}/temp-file.txt\`
 
 Do NOT attempt to write files outside these directories - access will be denied.`,
-    tr: `## Dosya Sistemi Erişimi
-Dosya sistemi araçlarına erişiminiz var (read_file, write_file, list_directory, vb.).
 
-**Dosya işlemleri için izin verilen dizinler:**
-{{allowedDirs}}
-
-**Önemli**: Dosya kaydederken her zaman workspace dizinini kullanın. Örnek yollar:
-- Workspace'e kaydet: \`{{workspaceDir}}/dosya.txt\`
-- Geçici dosyalar: \`{{tempDir}}/gecici-dosya.txt\`
-
-Bu dizinlerin dışına dosya yazmaya çalışmayın - erişim reddedilecektir.`,
-  },
-
-  tools: {
-    en: `## Available Tools
+  tools: `## Available Tools
 You have access to the following tools. Use them proactively to help the user:
 
 {{toolList}}
 
 **Important**: When a task can be accomplished using a tool, use it immediately. Don't ask for permission unless the action is destructive or irreversible.`,
-    tr: `## Mevcut Araçlar
-Aşağıdaki araçlara erişiminiz var. Kullanıcıya yardımcı olmak için bunları proaktif olarak kullanın:
 
-{{toolList}}
-
-**Önemli**: Bir görev araç kullanılarak yapılabiliyorsa, hemen kullanın. Eylem yıkıcı veya geri alınamaz olmadıkça izin istemeyin.`,
-  },
-
-  capabilities: {
-    en: `## Your Capabilities
+  capabilities: `## Your Capabilities
 {{capabilitiesList}}`,
-    tr: `## Yetenekleriniz
-{{capabilitiesList}}`,
-  },
 
-  timeContext: {
-    en: `## Current Context
+  timeContext: `## Current Context
 - Current time: {{time}}
 - Day: {{dayOfWeek}}
 - User's timezone: {{timezone}}`,
-    tr: `## Mevcut Bağlam
-- Şu anki zaman: {{time}}
-- Gün: {{dayOfWeek}}
-- Kullanıcının saat dilimi: {{timezone}}`,
-  },
 
-  customInstructions: {
-    en: `## Custom Instructions
+  customInstructions: `## Custom Instructions
 The user has provided the following instructions. Always follow them:
 
 {{instructions}}`,
-    tr: `## Özel Talimatlar
-Kullanıcı aşağıdaki talimatları verdi. Her zaman bunlara uyun:
 
-{{instructions}}`,
-  },
-
-  conversationContext: {
-    en: `## Conversation Context
+  conversationContext: `## Conversation Context
 {{contextInfo}}`,
-    tr: `## Konuşma Bağlamı
-{{contextInfo}}`,
-  },
 
-  autonomyGuidelines: {
-    en: `## Autonomy Guidelines
+  autonomyGuidelines: `## Autonomy Guidelines
 Your autonomy level is set to: {{level}}
 
 {{guidelines}}`,
-    tr: `## Otonomi Yönergeleri
-Otonomi seviyeniz: {{level}}
 
-{{guidelines}}`,
-  },
+  automation: `## Automation System
+You have two automation systems. Use them proactively when users need recurring tasks or multi-step workflows.
+
+### Triggers (Tools: create_trigger, list_triggers, enable_trigger, fire_trigger, delete_trigger, trigger_stats)
+
+Triggers fire automatically. Types:
+- **schedule**: Cron-based. MUST provide valid 5-field cron: "minute hour day month weekday"
+  - "0 8 * * *" = daily 8AM, "0 9 * * 1-5" = weekdays 9AM, "*/15 * * * *" = every 15min, "0 20 * * 0" = Sunday 8PM
+  - Invalid cron will be REJECTED. Always use standard cron format.
+- **event**: Fires on system event. Events: goal_completed, memory_added, message_received
+- **condition**: Checks periodically. Conditions: stale_goals, upcoming_deadline, memory_threshold, low_progress, no_activity
+- **webhook**: Fires on external HTTP call
+
+Actions (what happens when trigger fires):
+- **chat**: Sends AI prompt → {"prompt": "your instruction"}
+- **tool**: Runs a tool → {"tool": "tool_name", ...args}
+- **notification**: Logs message → {"message": "text"}
+- **goal_check**: Checks stale goals → {"staleDays": 3}
+- **memory_summary**: Summarizes memories → {}
+
+### Plans (Tools: create_plan, add_plan_step, list_plans, get_plan_details, execute_plan, pause_plan, delete_plan)
+
+Plans are multi-step autonomous workflows. Create plan → add steps → execute.
+
+Step types:
+- **tool_call**: Runs a tool (requires tool_name)
+- **llm_decision**: AI analyzes and decides (requires prompt)
+- **user_input**: Asks user a question (requires question)
+- **condition**: Branches based on condition
+- **parallel**: Runs multiple tools concurrently (respects maxConcurrent limit)
+- **loop**: Repeats until condition met
+
+Step features:
+- **Dependencies**: Steps can depend on other steps (by ID). Circular deps are detected and rejected.
+- **Retry**: Failed steps retry with exponential backoff (1s, 2s, 4s... up to 30s, max 3 retries).
+- **Deadlock detection**: If all steps are blocked, plan fails with clear error.
+
+### Usage Workflow
+1. **Trigger**: create_trigger(name, type, cron/condition, action_type, action_payload)
+2. **Plan**: create_plan(name, goal) → add_plan_step(plan_id, order, type, name, ...) → execute_plan(plan_id)
+3. **Monitor**: list_triggers(), list_plans(), get_plan_details(plan_id)`,
 };
 
-const AUTONOMY_GUIDELINES: Record<string, { en: string; tr: string }> = {
-  none: {
-    en: 'Ask for explicit permission before taking any action.',
-    tr: 'Herhangi bir işlem yapmadan önce açık izin isteyin.',
-  },
-  low: {
-    en: 'You can perform read-only operations freely. Ask permission for any modifications.',
-    tr: 'Salt okunur işlemleri serbestçe yapabilirsiniz. Herhangi bir değişiklik için izin isteyin.',
-  },
-  medium: {
-    en: 'You can perform most operations freely. Ask permission for destructive or irreversible actions.',
-    tr: 'Çoğu işlemi serbestçe yapabilirsiniz. Yıkıcı veya geri alınamaz eylemler için izin isteyin.',
-  },
-  high: {
-    en: 'You can perform almost all operations autonomously. Only ask for truly destructive actions.',
-    tr: 'Neredeyse tüm işlemleri otonom olarak yapabilirsiniz. Sadece gerçekten yıkıcı eylemler için sorun.',
-  },
-  full: {
-    en: 'You have full autonomy. Take action immediately to accomplish tasks. The user trusts your judgment.',
-    tr: 'Tam otonomiye sahipsiniz. Görevleri yerine getirmek için hemen harekete geçin. Kullanıcı kararlarınıza güveniyor.',
-  },
+const AUTONOMY_GUIDELINES: Record<string, string> = {
+  none: 'Ask for explicit permission before taking any action.',
+  low: 'You can perform read-only operations freely. Ask permission for any modifications.',
+  medium: 'You can perform most operations freely. Ask permission for destructive or irreversible actions.',
+  high: 'You can perform almost all operations autonomously. Only ask for truly destructive actions.',
+  full: 'You have full autonomy. Take action immediately to accomplish tasks. The user trusts your judgment.',
 };
 
 // =============================================================================
@@ -271,11 +245,11 @@ export function getTimeContext(timezone?: string): TimeContext {
 /**
  * Format user profile for prompt
  */
-function formatUserProfile(profile: UserProfile, lang: 'en' | 'tr'): string {
+function formatUserProfile(profile: UserProfile): string {
   const lines: string[] = [];
 
   if (profile.name) {
-    lines.push(lang === 'en' ? `- Name: ${profile.name}` : `- İsim: ${profile.name}`);
+    lines.push(`- Name: ${profile.name}`);
   }
 
   // Add facts
@@ -293,47 +267,29 @@ function formatUserProfile(profile: UserProfile, lang: 'en' | 'tr'): string {
   if (profile.communicationStyle) {
     const style = profile.communicationStyle;
     if (style.formality !== 'mixed') {
-      lines.push(lang === 'en'
-        ? `- Prefers ${style.formality} communication`
-        : `- ${style.formality === 'formal' ? 'Resmi' : 'Samimi'} iletişimi tercih eder`
-      );
+      lines.push(`- Prefers ${style.formality} communication`);
     }
     if (style.verbosity !== 'mixed') {
-      lines.push(lang === 'en'
-        ? `- Prefers ${style.verbosity} responses`
-        : `- ${style.verbosity === 'concise' ? 'Kısa' : 'Detaylı'} yanıtları tercih eder`
-      );
+      lines.push(`- Prefers ${style.verbosity} responses`);
     }
     if (style.language) {
-      lines.push(lang === 'en'
-        ? `- Primary language: ${style.language}`
-        : `- Ana dil: ${style.language}`
-      );
+      lines.push(`- Primary language: ${style.language}`);
     }
     if (style.timezone) {
-      lines.push(lang === 'en'
-        ? `- Timezone: ${style.timezone}`
-        : `- Saat dilimi: ${style.timezone}`
-      );
+      lines.push(`- Timezone: ${style.timezone}`);
     }
   }
 
   // Add interests
   if (profile.interests.length > 0) {
     const topInterests = profile.interests.slice(0, 5).join(', ');
-    lines.push(lang === 'en'
-      ? `- Interests: ${topInterests}`
-      : `- İlgi alanları: ${topInterests}`
-    );
+    lines.push(`- Interests: ${topInterests}`);
   }
 
   // Add goals
   if (profile.goals.length > 0) {
     const topGoals = profile.goals.slice(0, 3).join('; ');
-    lines.push(lang === 'en'
-      ? `- Current goals: ${topGoals}`
-      : `- Mevcut hedefler: ${topGoals}`
-    );
+    lines.push(`- Current goals: ${topGoals}`);
   }
 
   return lines.join('\n');
@@ -342,9 +298,9 @@ function formatUserProfile(profile: UserProfile, lang: 'en' | 'tr'): string {
 /**
  * Format tools for prompt
  */
-function formatTools(tools: readonly ToolDefinition[], lang: 'en' | 'tr'): string {
+function formatTools(tools: readonly ToolDefinition[]): string {
   if (tools.length === 0) {
-    return lang === 'en' ? 'No tools available.' : 'Mevcut araç yok.';
+    return 'No tools available.';
   }
 
   // Count tools per category (don't list individual names — too verbose for system prompt)
@@ -358,55 +314,74 @@ function formatTools(tools: readonly ToolDefinition[], lang: 'en' | 'tr'): strin
     .map(([cat, count]) => `${cat} (${count})`)
     .join(', ');
 
-  if (lang === 'tr') {
-    return [
-      `${tools.length} araç kullanılabilir: ${categories}`,
-      '',
-      'Araç kullanımı:',
-      '1. search_tools(query) — İhtiyacın olan aracı bul',
-      '2. get_tool_help(tool_name) — Parametreleri öğren',
-      '3. use_tool(tool_name, arguments) — Aracı çalıştır',
-    ].join('\n');
-  }
-
   return [
     `${tools.length} tools available across: ${categories}`,
     '',
-    'Tool workflow:',
-    '1. search_tools(query) — Find tools for your task',
-    '2. get_tool_help(tool_name) — Learn parameters',
-    '3. use_tool(tool_name, arguments) — Execute the tool',
+    '### MANDATORY Tool Workflow',
+    'You MUST follow this exact workflow when using tools. Skipping steps causes errors.',
+    '',
+    '**Step 1 — DISCOVER:** `search_tools("keyword")` to find the correct tool name.',
+    '**Step 2 — LEARN:** `get_tool_help("exact_tool_name")` to see required parameters and examples.',
+    '**Step 3 — EXECUTE:** `use_tool("exact_tool_name", { ...correct_parameters })` with the exact parameters from Step 2.',
+    '',
+    '### STRICT RULES — NEVER BREAK THESE',
+    '- **NEVER guess or invent tool names.** Only use tool names that appear in search_tools results or the TOOL CATALOG.',
+    '- **NEVER guess parameters.** Always call get_tool_help first if you are unsure about parameter names or types.',
+    '- **If use_tool returns an error, READ the error carefully.** It contains the correct parameter schema. Fix your parameters and retry immediately.',
+    '- **NEVER give up after one error.** Errors include help text showing the correct usage — use it to retry.',
+    '- **If a tool is not found, search again** with different/broader keywords.',
+    '',
+    '### search_tools Search Tips',
+    'The search engine uses word-by-word AND matching. Each word is matched independently.',
+    '',
+    '**Examples:**',
+    '- `search_tools("email")` → finds all email-related tools (send_email, list_emails, etc.)',
+    '- `search_tools("send email")` → finds tools matching BOTH "send" AND "email" → send_email',
+    '- `search_tools("task add")` → finds tools matching "task" AND "add" → add_task',
+    '- `search_tools("file read")` → finds file reading tools → read_file',
+    '- `search_tools("all")` → lists ALL available tools',
+    '- `search_tools("web")` → finds web-related tools',
+    '- `search_tools("note")` → finds note-related tools',
+    '',
+    '**Important:** Underscored names (send_email) are split into words for searching, so "email send" or "send email" both work.',
+    'If no results found, try a broader keyword or use "all" to see the full list.',
+    '',
+    '### Attached Context',
+    'User messages may contain an `[ATTACHED CONTEXT]` block at the end.',
+    'This block provides exact tool names and call examples for the referenced data.',
+    '**When you see this block, DO NOT use search_tools — directly call the use_tool instructions provided.**',
+    '',
+    '### Response After Tool Use',
+    'After completing tool calls, you MUST always provide a final text response summarizing the results for the user.',
+    'Never end your turn with just a tool call — always follow up with a clear, human-readable closing message.',
+    'For example: after running send_email, say "Your email has been sent to X." After reading a file, summarize or present the relevant content.',
   ].join('\n');
 }
 
 /**
  * Format capabilities for prompt
  */
-function formatCapabilities(caps: AgentCapabilities, lang: 'en' | 'tr'): string {
+function formatCapabilities(caps: AgentCapabilities): string {
   const lines: string[] = [];
 
-  const capLabels = {
-    codeExecution: { en: 'Execute code and scripts', tr: 'Kod ve script çalıştırma' },
-    fileAccess: { en: 'Read and write files', tr: 'Dosya okuma ve yazma' },
-    webBrowsing: { en: 'Browse the web and fetch content', tr: 'Web tarama ve içerik çekme' },
-    memory: { en: 'Remember information across conversations', tr: 'Konuşmalar arasında bilgi hatırlama' },
-    scheduling: { en: 'Schedule tasks and reminders', tr: 'Görev ve hatırlatıcı zamanlama' },
+  const capLabels: Record<string, string> = {
+    codeExecution: 'Execute code and scripts',
+    fileAccess: 'Read and write files',
+    webBrowsing: 'Browse the web and fetch content',
+    memory: 'Remember information across conversations',
+    scheduling: 'Schedule tasks and reminders',
   };
 
   for (const [key, enabled] of Object.entries(caps)) {
     if (key === 'externalServices' || key === 'autonomyLevel') continue;
-    if (enabled && capLabels[key as keyof typeof capLabels]) {
-      const label = capLabels[key as keyof typeof capLabels][lang];
-      lines.push(`- ✓ ${label}`);
+    if (enabled && capLabels[key]) {
+      lines.push(`- ✓ ${capLabels[key]}`);
     }
   }
 
   if (caps.externalServices && caps.externalServices.length > 0) {
     const services = caps.externalServices.join(', ');
-    lines.push(lang === 'en'
-      ? `- ✓ Access to external services: ${services}`
-      : `- ✓ Harici servislere erişim: ${services}`
-    );
+    lines.push(`- ✓ Access to external services: ${services}`);
   }
 
   return lines.join('\n');
@@ -431,7 +406,6 @@ export class PromptComposer {
       includeTimeContext: options.includeTimeContext ?? true,
       includeCapabilities: options.includeCapabilities ?? true,
       maxPromptLength: options.maxPromptLength ?? 16000,
-      language: options.language ?? 'auto',
     };
   }
 
@@ -439,7 +413,6 @@ export class PromptComposer {
    * Compose a complete system prompt
    */
   compose(context: PromptContext): string {
-    const lang = this.detectLanguage(context);
     const sections: string[] = [];
 
     // 1. Base prompt
@@ -447,25 +420,30 @@ export class PromptComposer {
 
     // 2. User profile
     if (this.options.includeUserProfile && context.userProfile) {
-      const userInfo = formatUserProfile(context.userProfile, lang);
+      const userInfo = formatUserProfile(context.userProfile);
       if (userInfo) {
-        const template = PROMPT_SECTIONS.userProfile[lang];
-        sections.push(template.replace('{{userInfo}}', userInfo));
+        sections.push(PROMPT_SECTIONS.userProfile.replace('{{userInfo}}', userInfo));
       }
     }
 
     // 3. Custom instructions
     if (context.customInstructions && context.customInstructions.length > 0) {
       const instructions = context.customInstructions.map(i => `- ${i}`).join('\n');
-      const template = PROMPT_SECTIONS.customInstructions[lang];
-      sections.push(template.replace('{{instructions}}', instructions));
+      sections.push(PROMPT_SECTIONS.customInstructions.replace('{{instructions}}', instructions));
     }
 
     // 4. Available tools
     if (this.options.includeToolDescriptions && context.tools && context.tools.length > 0) {
-      const toolList = formatTools(context.tools, lang);
-      const template = PROMPT_SECTIONS.tools[lang];
-      sections.push(template.replace('{{toolList}}', toolList));
+      const toolList = formatTools(context.tools);
+      sections.push(PROMPT_SECTIONS.tools.replace('{{toolList}}', toolList));
+
+      // 4a. Automation context (only if automation tools are registered)
+      const hasAutomationTools = context.tools.some(
+        (t) => t.category === 'Automation' || t.name.startsWith('create_trigger') || t.name.startsWith('create_plan')
+      );
+      if (hasAutomationTools) {
+        sections.push(PROMPT_SECTIONS.automation);
+      }
     }
 
     // 4b. Workspace context (for file operations)
@@ -476,9 +454,8 @@ export class PromptComposer {
       if (ws.homeDir) allowedDirs.push(`- Home: \`${ws.homeDir}\``);
       if (ws.tempDir) allowedDirs.push(`- Temp: \`${ws.tempDir}\``);
 
-      const template = PROMPT_SECTIONS.workspace[lang];
       sections.push(
-        template
+        PROMPT_SECTIONS.workspace
           .replace('{{allowedDirs}}', allowedDirs.join('\n'))
           .replace(/\{\{workspaceDir\}\}/g, ws.workspaceDir)
           .replace(/\{\{tempDir\}\}/g, ws.tempDir ?? '/tmp')
@@ -487,21 +464,18 @@ export class PromptComposer {
 
     // 5. Capabilities
     if (this.options.includeCapabilities && context.capabilities) {
-      const capsList = formatCapabilities(context.capabilities, lang);
+      const capsList = formatCapabilities(context.capabilities);
       if (capsList) {
-        const template = PROMPT_SECTIONS.capabilities[lang];
-        sections.push(template.replace('{{capabilitiesList}}', capsList));
+        sections.push(PROMPT_SECTIONS.capabilities.replace('{{capabilitiesList}}', capsList));
       }
 
       // 5b. Autonomy guidelines
       if (context.capabilities.autonomyLevel) {
         const level = context.capabilities.autonomyLevel;
-        const guidelineEntry = AUTONOMY_GUIDELINES[level];
-        if (guidelineEntry) {
-          const guidelines = guidelineEntry[lang];
-          const template = PROMPT_SECTIONS.autonomyGuidelines[lang];
+        const guidelines = AUTONOMY_GUIDELINES[level];
+        if (guidelines) {
           sections.push(
-            template
+            PROMPT_SECTIONS.autonomyGuidelines
               .replace('{{level}}', level.toUpperCase())
               .replace('{{guidelines}}', guidelines)
           );
@@ -512,9 +486,8 @@ export class PromptComposer {
     // 6. Time context
     if (this.options.includeTimeContext && context.timeContext) {
       const tc = context.timeContext;
-      const template = PROMPT_SECTIONS.timeContext[lang];
       sections.push(
-        template
+        PROMPT_SECTIONS.timeContext
           .replace('{{time}}', tc.currentTime.toLocaleString())
           .replace('{{dayOfWeek}}', tc.dayOfWeek)
           .replace('{{timezone}}', tc.timezone ?? 'Unknown')
@@ -527,33 +500,20 @@ export class PromptComposer {
       const contextLines: string[] = [];
 
       if (cc.messageCount > 0) {
-        contextLines.push(lang === 'en'
-          ? `- Messages in this conversation: ${cc.messageCount}`
-          : `- Bu konuşmadaki mesaj sayısı: ${cc.messageCount}`
-        );
+        contextLines.push(`- Messages in this conversation: ${cc.messageCount}`);
       }
       if (cc.topics && cc.topics.length > 0) {
-        contextLines.push(lang === 'en'
-          ? `- Topics discussed: ${cc.topics.join(', ')}`
-          : `- Tartışılan konular: ${cc.topics.join(', ')}`
-        );
+        contextLines.push(`- Topics discussed: ${cc.topics.join(', ')}`);
       }
       if (cc.currentTask) {
-        contextLines.push(lang === 'en'
-          ? `- Current task: ${cc.currentTask}`
-          : `- Mevcut görev: ${cc.currentTask}`
-        );
+        contextLines.push(`- Current task: ${cc.currentTask}`);
       }
       if (cc.previousSummary) {
-        contextLines.push(lang === 'en'
-          ? `- Previous conversation summary: ${cc.previousSummary}`
-          : `- Önceki konuşma özeti: ${cc.previousSummary}`
-        );
+        contextLines.push(`- Previous conversation summary: ${cc.previousSummary}`);
       }
 
       if (contextLines.length > 0) {
-        const template = PROMPT_SECTIONS.conversationContext[lang];
-        sections.push(template.replace('{{contextInfo}}', contextLines.join('\n')));
+        sections.push(PROMPT_SECTIONS.conversationContext.replace('{{contextInfo}}', contextLines.join('\n')));
       }
     }
 
@@ -566,32 +526,6 @@ export class PromptComposer {
     }
 
     return prompt;
-  }
-
-  /**
-   * Detect language from context
-   */
-  private detectLanguage(context: PromptContext): 'en' | 'tr' {
-    if (this.options.language !== 'auto') {
-      return this.options.language;
-    }
-
-    // Check user profile language
-    if (context.userProfile?.communicationStyle?.language) {
-      const lang = context.userProfile.communicationStyle.language.toLowerCase();
-      if (lang.includes('tr') || lang.includes('turkish') || lang.includes('türkçe')) {
-        return 'tr';
-      }
-    }
-
-    // Check base prompt language (simple heuristic)
-    const turkishWords = ['merhaba', 'lütfen', 'teşekkür', 'yardım', 'yapabilir'];
-    const basePromptLower = context.basePrompt.toLowerCase();
-    if (turkishWords.some(word => basePromptLower.includes(word))) {
-      return 'tr';
-    }
-
-    return 'en';
   }
 
   /**

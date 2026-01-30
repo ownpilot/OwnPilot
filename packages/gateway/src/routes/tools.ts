@@ -22,8 +22,21 @@ import type { ApiResponse, ToolInfo } from '../types/index.js';
 import { getAgent } from './agents.js';
 import { initializeToolOverrides } from '../services/tool-overrides.js';
 import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-center-impl.js';
+import { getSharedToolRegistry } from '../services/tool-executor.js';
+import { initToolSourceMappings, getToolSource } from '../services/tool-source.js';
+import { TRIGGER_TOOLS, PLAN_TOOLS } from '../tools/index.js';
 
 export const toolsRoutes = new Hono();
+
+// Initialize tool source mappings at module load
+initToolSourceMappings({
+  memoryNames: MEMORY_TOOLS.map(t => t.name),
+  goalNames: GOAL_TOOLS.map(t => t.name),
+  customDataNames: CUSTOM_DATA_TOOLS.map(t => t.name),
+  personalDataNames: PERSONAL_DATA_TOOLS.map(t => t.name),
+  triggerNames: TRIGGER_TOOLS.map(t => t.name),
+  planNames: PLAN_TOOLS.map(t => t.name),
+});
 
 // Standalone tool registry for direct execution (no agent required)
 let toolRegistry: ToolRegistry | undefined;
@@ -73,6 +86,7 @@ const CATEGORY_INFO: Record<string, { icon: string; description: string }> = {
   image: { icon: '🖼️', description: 'Image generation & analysis' },
   audio: { icon: '🔊', description: 'Audio & speech' },
   weather: { icon: '🌤️', description: 'Weather information' },
+  automation: { icon: '🤖', description: 'Triggers & plans' },
 };
 
 function getCategoryForTool(toolName: string): string {
@@ -131,6 +145,22 @@ async function getAllTools(): Promise<Array<ToolDefinition & { category: string;
         : tool.name.includes('contact') ? 'contacts'
         : 'other';
       allTools.push({ ...tool, category, source: 'personalData' });
+      seen.add(tool.name);
+    }
+  }
+
+  // Trigger tools
+  for (const tool of TRIGGER_TOOLS) {
+    if (!seen.has(tool.name)) {
+      allTools.push({ ...tool, category: 'automation', source: 'triggers' });
+      seen.add(tool.name);
+    }
+  }
+
+  // Plan tools
+  for (const tool of PLAN_TOOLS) {
+    if (!seen.has(tool.name)) {
+      allTools.push({ ...tool, category: 'automation', source: 'plans' });
       seen.add(tool.name);
     }
   }
@@ -301,6 +331,45 @@ toolsRoutes.get('/', async (c) => {
 });
 
 /**
+ * Get tool executor source code
+ */
+toolsRoutes.get('/:name/source', async (c) => {
+  const name = c.req.param('name');
+  const registry = getSharedToolRegistry();
+  const registered = registry.get(name);
+
+  // Build fallback: shared registry first, then plugin registry
+  let fallbackToString: (() => string) | undefined;
+  if (registered) {
+    fallbackToString = () => registered.executor.toString();
+  } else {
+    // Check plugin registry for plugin-provided tools
+    const pluginRegistry = await getDefaultPluginRegistry();
+    const pluginTool = pluginRegistry.getTool(name);
+    if (pluginTool) {
+      fallbackToString = () => pluginTool.executor.toString();
+    }
+  }
+
+  // Try TypeScript source first, fall back to executor.toString()
+  const source = getToolSource(name, fallbackToString);
+  if (!source) {
+    throw new HTTPException(404, { message: `Tool not found: ${name}` });
+  }
+
+  const response: ApiResponse<{ name: string; source: string }> = {
+    success: true,
+    data: { name, source },
+    meta: {
+      requestId: c.get('requestId') ?? 'unknown',
+      timestamp: new Date().toISOString(),
+    },
+  };
+
+  return c.json(response);
+});
+
+/**
  * Get tool details
  */
 toolsRoutes.get('/:name', async (c) => {
@@ -351,8 +420,8 @@ toolsRoutes.post('/:name/execute', async (c) => {
   const name = c.req.param('name');
   const body = await c.req.json<{ arguments: Record<string, unknown> }>();
 
-  // Use standalone tool registry (no agent required)
-  const registry = getToolRegistry();
+  // Use shared tool registry (has ALL tools including gateway-wrapped ones)
+  const registry = getSharedToolRegistry();
 
   if (!registry.has(name)) {
     throw new HTTPException(404, {
@@ -396,7 +465,7 @@ toolsRoutes.post('/:name/stream', async (c) => {
   const name = c.req.param('name');
   const body = await c.req.json<{ arguments: Record<string, unknown> }>();
 
-  const registry = getToolRegistry();
+  const registry = getSharedToolRegistry();
 
   if (!registry.has(name)) {
     throw new HTTPException(404, {
@@ -485,7 +554,7 @@ toolsRoutes.post('/batch', async (c) => {
     });
   }
 
-  const registry = getToolRegistry();
+  const registry = getSharedToolRegistry();
   const startTime = Date.now();
 
   const executeOne = async (exec: { tool: string; arguments: Record<string, unknown> }) => {

@@ -13,6 +13,7 @@ import {
   type UpdateTriggerInput,
 } from '../db/repositories/triggers.js';
 import { getTriggerEngine } from '../triggers/index.js';
+import { validateCronExpression } from '@ownpilot/core';
 
 export const triggersRoutes = new Hono();
 
@@ -72,8 +73,54 @@ triggersRoutes.post('/', async (c) => {
     );
   }
 
+  // Validate cron expression for schedule triggers before saving
+  if (body.type === 'schedule') {
+    const config = body.config as { cron?: string };
+    if (!config.cron) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_CRON',
+            message: 'Schedule triggers require a cron expression in config.cron',
+          },
+        },
+        400
+      );
+    }
+    const validation = validateCronExpression(config.cron);
+    if (!validation.valid) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_CRON',
+            message: validation.error!,
+          },
+        },
+        400
+      );
+    }
+  }
+
   const repo = getRepo(userId);
-  const trigger = await repo.create(body);
+
+  let trigger;
+  try {
+    trigger = await repo.create(body);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to create trigger';
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'CREATE_FAILED',
+          message,
+        },
+      },
+      400
+    );
+  }
 
   const response: ApiResponse = {
     success: true,
@@ -187,6 +234,30 @@ triggersRoutes.patch('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
   const body = await c.req.json<UpdateTriggerInput>();
+
+  // Validate cron expression if config is being updated on a schedule trigger
+  if (body.config) {
+    const repo = getRepo(userId);
+    const existing = await repo.get(id);
+    if (existing?.type === 'schedule') {
+      const config = body.config as { cron?: string };
+      if (config.cron) {
+        const validation = validateCronExpression(config.cron);
+        if (!validation.valid) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                code: 'INVALID_CRON',
+                message: validation.error!,
+              },
+            },
+            400
+          );
+        }
+      }
+    }
+  }
 
   const repo = getRepo(userId);
   const updated = await repo.update(id, body);

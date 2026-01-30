@@ -261,4 +261,25 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   config_list_services: ['ayarlar', 'settings', 'servisler', 'services', 'config', 'yapılandırma', 'api key', 'listele'],
   config_get_service: ['ayar', 'setting', 'config', 'servis bilgisi', 'api key', 'detay'],
   config_set_entry: ['ayar değiştir', 'config set', 'api key ekle', 'yapılandır', 'configure'],
+
+  // ─────────────────────────────────────────────
+  // TRIGGERS (Automation)
+  // ─────────────────────────────────────────────
+  create_trigger: ['trigger', 'tetikleyici', 'otomasyon', 'automation', 'schedule', 'zamanlama', 'cron', 'event', 'proactive', 'proaktif'],
+  list_triggers: ['trigger', 'tetikleyici', 'otomasyon', 'automation', 'listele', 'schedule list'],
+  enable_trigger: ['trigger', 'tetikleyici', 'etkinleştir', 'enable', 'disable', 'devre dışı', 'toggle'],
+  fire_trigger: ['trigger', 'tetikleyici', 'çalıştır', 'run', 'execute', 'fire', 'manual'],
+  delete_trigger: ['trigger', 'tetikleyici', 'sil', 'delete', 'kaldır', 'remove'],
+  trigger_stats: ['trigger', 'tetikleyici', 'istatistik', 'stats', 'statistics', 'durum'],
+
+  // ─────────────────────────────────────────────
+  // PLANS (Automation)
+  // ─────────────────────────────────────────────
+  create_plan: ['plan', 'workflow', 'iş akışı', 'otomasyon', 'automation', 'adım', 'step', 'süreç'],
+  add_plan_step: ['plan', 'step', 'adım ekle', 'workflow step', 'iş akışı adımı'],
+  list_plans: ['plan', 'workflow', 'iş akışı', 'listele', 'otomasyon listesi'],
+  get_plan_details: ['plan', 'detay', 'detail', 'workflow detail', 'adımlar', 'steps'],
+  execute_plan: ['plan', 'çalıştır', 'execute', 'run', 'başlat', 'start'],
+  pause_plan: ['plan', 'duraklat', 'pause', 'beklet'],
+  delete_plan: ['plan', 'sil', 'delete', 'kaldır', 'remove'],
 };

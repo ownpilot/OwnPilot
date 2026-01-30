@@ -44,7 +44,7 @@ import {
   getActiveCustomToolDefinitions,
   isCustomTool,
 } from './custom-tools.js';
-import { CHANNEL_TOOLS, setChannelManager } from '../tools/index.js';
+import { CHANNEL_TOOLS, setChannelManager, TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool } from '../tools/index.js';
 import { channelManager } from '../channels/manager.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import {
@@ -96,6 +96,271 @@ function removeSupersededCoreStubs(tools: ToolRegistry, pluginToolNames: Set<str
     }
   }
   return removed;
+}
+
+// =============================================================================
+// Shared meta-tool helpers (used by both named-agent and chat-agent executors)
+// =============================================================================
+
+/**
+ * Find similar tool names via substring/fuzzy matching.
+ * Returns up to 5 suggestions sorted by relevance.
+ */
+function findSimilarTools(tools: ToolRegistry, query: string): string[] {
+  const allDefs = tools.getDefinitions();
+  const q = query.toLowerCase().replace(/[_\-]/g, ' ');
+  const qWords = q.split(/\s+/).filter(Boolean);
+
+  const scored = allDefs
+    .filter(d => d.name !== 'search_tools' && d.name !== 'get_tool_help' && d.name !== 'use_tool')
+    .map(d => {
+      const name = d.name.toLowerCase();
+      const nameWords = name.replace(/[_\-]/g, ' ');
+      let score = 0;
+
+      // Exact substring match in name
+      if (name.includes(q.replace(/ /g, '_'))) score += 10;
+      if (nameWords.includes(q)) score += 8;
+
+      // Word-level matches
+      for (const w of qWords) {
+        if (name.includes(w)) score += 3;
+        if (d.description.toLowerCase().includes(w)) score += 1;
+      }
+
+      // Levenshtein-like: shared prefix
+      const minLen = Math.min(q.length, name.length);
+      let prefix = 0;
+      for (let i = 0; i < minLen; i++) {
+        if (q[i] === name[i]) prefix++;
+        else break;
+      }
+      if (prefix >= 3) score += prefix;
+
+      return { name: d.name, score };
+    })
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+
+  return scored.map(s => s.name);
+}
+
+/**
+ * Recursively format a JSON Schema parameter for human-readable help output.
+ * Handles nested objects, arrays with item schemas, enums, defaults.
+ */
+function formatParamSchema(
+  name: string,
+  schema: Record<string, unknown>,
+  requiredSet: Set<string>,
+  indent: string = '  ',
+): string[] {
+  const lines: string[] = [];
+  const req = requiredSet.has(name) ? ' (REQUIRED)' : ' (optional)';
+  const type = schema.type as string || 'any';
+  const desc = schema.description ? ` — ${schema.description}` : '';
+  const dflt = schema.default !== undefined ? ` [default: ${JSON.stringify(schema.default)}]` : '';
+
+  if (Array.isArray(schema.enum)) {
+    const enumVals = (schema.enum as string[]).map(v => JSON.stringify(v)).join(' | ');
+    lines.push(`${indent}• ${name}: ${enumVals}${req}${desc}${dflt}`);
+  } else if (type === 'array') {
+    const items = schema.items as Record<string, unknown> | undefined;
+    if (items?.type === 'object' && items.properties) {
+      // Array of objects — show nested structure
+      lines.push(`${indent}• ${name}: array of objects${req}${desc}`);
+      const itemProps = items.properties as Record<string, Record<string, unknown>>;
+      const itemRequired = new Set<string>((items.required as string[]) || []);
+      for (const [propName, propSchema] of Object.entries(itemProps)) {
+        lines.push(...formatParamSchema(propName, propSchema, itemRequired, indent + '    '));
+      }
+    } else {
+      const itemType = items ? (items.type as string || 'any') : 'any';
+      lines.push(`${indent}• ${name}: array of ${itemType}${req}${desc}${dflt}`);
+    }
+  } else if (type === 'object' && schema.properties) {
+    // Nested object with defined properties
+    lines.push(`${indent}• ${name}: object${req}${desc}`);
+    const nestedProps = schema.properties as Record<string, Record<string, unknown>>;
+    const nestedRequired = new Set<string>((schema.required as string[]) || []);
+    for (const [propName, propSchema] of Object.entries(nestedProps)) {
+      lines.push(...formatParamSchema(propName, propSchema, nestedRequired, indent + '    '));
+    }
+  } else {
+    lines.push(`${indent}• ${name}: ${type}${req}${desc}${dflt}`);
+  }
+
+  return lines;
+}
+
+/**
+ * Build a realistic example value for a parameter based on its JSON Schema.
+ */
+function buildExampleValue(schema: Record<string, unknown>, name: string): unknown {
+  if (Array.isArray(schema.enum) && schema.enum.length > 0) {
+    return schema.enum[0];
+  }
+  const type = schema.type as string;
+  if (type === 'array') {
+    const items = schema.items as Record<string, unknown> | undefined;
+    if (items?.type === 'object' && items.properties) {
+      // Build one example item with its required fields
+      const itemProps = items.properties as Record<string, Record<string, unknown>>;
+      const itemRequired = new Set<string>((items.required as string[]) || []);
+      const example: Record<string, unknown> = {};
+      for (const [propName, propSchema] of Object.entries(itemProps)) {
+        if (itemRequired.has(propName) || Object.keys(itemProps).length <= 3) {
+          example[propName] = buildExampleValue(propSchema, propName);
+        }
+      }
+      return [example];
+    }
+    return ['...'];
+  }
+  if (type === 'object') {
+    if (schema.properties) {
+      const nestedProps = schema.properties as Record<string, Record<string, unknown>>;
+      const nestedRequired = new Set<string>((schema.required as string[]) || []);
+      const example: Record<string, unknown> = {};
+      for (const [propName, propSchema] of Object.entries(nestedProps)) {
+        if (nestedRequired.has(propName)) {
+          example[propName] = buildExampleValue(propSchema, propName);
+        }
+      }
+      return example;
+    }
+    return {};
+  }
+  if (type === 'number' || type === 'integer') return 0;
+  if (type === 'boolean') return true;
+  // String — try to generate a meaningful placeholder
+  if (name.includes('email') || name === 'to' || name === 'replyTo') return 'user@example.com';
+  if (name.includes('path') || name.includes('file')) return '/path/to/file';
+  if (name.includes('url') || name.includes('link')) return 'https://example.com';
+  if (name.includes('date')) return '2025-01-01';
+  if (name.includes('id')) return 'some-id';
+  return '...';
+}
+
+/**
+ * Build full tool help text for error recovery.
+ * Includes description, parameters with nested schemas, and a ready-to-use example.
+ */
+function buildToolHelpText(tools: ToolRegistry, toolName: string): string {
+  const def = tools.getDefinition(toolName);
+  if (!def?.parameters) return '';
+  const params = def.parameters as unknown as {
+    properties?: Record<string, Record<string, unknown>>;
+    required?: string[];
+  };
+  if (!params.properties) return '';
+
+  const requiredSet = new Set(params.required || []);
+  const lines = [
+    `\n\n--- TOOL HELP (${toolName}) ---`,
+    def.description,
+    '',
+    'Parameters:',
+  ];
+
+  const exampleArgs: Record<string, unknown> = {};
+
+  for (const [name, schema] of Object.entries(params.properties)) {
+    lines.push(...formatParamSchema(name, schema, requiredSet));
+    if (requiredSet.has(name)) {
+      exampleArgs[name] = buildExampleValue(schema, name);
+    }
+  }
+
+  lines.push('');
+  lines.push(`Example: use_tool("${toolName}", ${JSON.stringify(exampleArgs)})`);
+  lines.push('Fix your parameters and retry immediately.');
+  return lines.join('\n');
+}
+
+/**
+ * Build comprehensive help output for get_tool_help.
+ * Richer than buildToolHelpText — includes ALL parameters (not just required) in example.
+ */
+function formatFullToolHelp(tools: ToolRegistry, toolName: string): string {
+  const def = tools.getDefinition(toolName);
+  if (!def) return `Tool '${toolName}' not found.`;
+
+  const params = def.parameters as unknown as {
+    properties?: Record<string, Record<string, unknown>>;
+    required?: string[];
+  };
+
+  const lines = [
+    `## ${def.name}`,
+    def.description,
+    '',
+  ];
+
+  if (!params?.properties || Object.keys(params.properties).length === 0) {
+    lines.push('No parameters required.');
+    lines.push('');
+    lines.push('### Example');
+    lines.push(`use_tool("${def.name}", {})`);
+    return lines.join('\n');
+  }
+
+  const requiredSet = new Set(params.required || []);
+  const requiredNames = Object.keys(params.properties).filter(n => requiredSet.has(n));
+  const optionalNames = Object.keys(params.properties).filter(n => !requiredSet.has(n));
+
+  // Required parameters first
+  if (requiredNames.length > 0) {
+    lines.push('### Required Parameters');
+    for (const name of requiredNames) {
+      lines.push(...formatParamSchema(name, params.properties[name]!, requiredSet));
+    }
+    lines.push('');
+  }
+
+  // Optional parameters
+  if (optionalNames.length > 0) {
+    lines.push('### Optional Parameters');
+    for (const name of optionalNames) {
+      lines.push(...formatParamSchema(name, params.properties[name]!, requiredSet));
+    }
+    lines.push('');
+  }
+
+  // Build example with required params
+  const exampleArgs: Record<string, unknown> = {};
+  for (const name of requiredNames) {
+    exampleArgs[name] = buildExampleValue(params.properties[name]!, name);
+  }
+
+  lines.push('### Example Call');
+  lines.push(`use_tool("${def.name}", ${JSON.stringify(exampleArgs, null, 2)})`);
+
+  // Add tool-specific max limit info if available
+  const toolLimit = TOOL_MAX_LIMITS[toolName];
+  if (toolLimit) {
+    lines.push('');
+    lines.push(`Note: "${toolLimit.paramName}" parameter is capped at max ${toolLimit.maxValue} (default: ${toolLimit.defaultValue}).`);
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Validate required parameters are present before tool execution.
+ * Returns null if valid, or an error message string if invalid.
+ */
+function validateRequiredParams(tools: ToolRegistry, toolName: string, args: Record<string, unknown>): string | null {
+  const def = tools.getDefinition(toolName);
+  if (!def?.parameters) return null;
+  const required = def.parameters.required as string[] | undefined;
+  if (!required || required.length === 0) return null;
+
+  const missing = required.filter(p => args[p] === undefined || args[p] === null);
+  if (missing.length === 0) return null;
+
+  return `Missing required parameter(s): ${missing.join(', ')}`;
 }
 
 /**
@@ -523,6 +788,46 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     });
   }
 
+  // Register trigger management tools (with tracing)
+  for (const toolDef of TRIGGER_TOOLS) {
+    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
+
+      const result = await executeTriggerTool(toolDef.name, args as Record<string, unknown>, userId);
+
+      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
+
+      if (result.success) {
+        return {
+          content: typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2),
+        };
+      }
+      return { content: result.error ?? 'Unknown error', isError: true };
+    });
+  }
+
+  // Register plan management tools (with tracing)
+  for (const toolDef of PLAN_TOOLS) {
+    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
+
+      const result = await executePlanTool(toolDef.name, args as Record<string, unknown>, userId);
+
+      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
+
+      if (result.success) {
+        return {
+          content: typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2),
+        };
+      }
+      return { content: result.error ?? 'Unknown error', isError: true };
+    });
+  }
+
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
     // search_tools, get_tool_help and use_tool have special executors (registered below)
@@ -566,23 +871,38 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     tools.register(searchToolsDef, async (args): Promise<CoreToolResult> => {
       const { query, category: filterCategory } = args as { query: string; category?: string };
       const allDefs = tools.getDefinitions();
-      const q = query.toLowerCase();
+      const q = query.trim().toLowerCase();
+
+      // "all" or "*" returns everything
+      const showAll = q === 'all' || q === '*';
+
+      // Split query into individual words for AND matching
+      const queryWords = q.split(/\s+/).filter(Boolean);
 
       const matches = allDefs.filter(d => {
         // Skip meta-tools from results
         if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool') return false;
         // Category filter
         if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
-        // Keyword match on name, description, category, or hidden tags
+
+        if (showAll) return true;
+
+        // Build searchable text: split underscored names into words
         const tags = TOOL_SEARCH_TAGS[d.name] ?? d.tags ?? [];
-        return d.name.toLowerCase().includes(q)
-          || d.description.toLowerCase().includes(q)
-          || (d.category?.toLowerCase().includes(q) ?? false)
-          || tags.some(tag => tag.toLowerCase().includes(q));
+        const searchBlob = [
+          d.name.toLowerCase().replace(/[_\-]/g, ' '),
+          d.name.toLowerCase(),
+          d.description.toLowerCase(),
+          (d.category ?? '').toLowerCase(),
+          ...tags.map(tag => tag.toLowerCase()),
+        ].join(' ');
+
+        // Every query word must appear somewhere in the search blob
+        return queryWords.every(word => searchBlob.includes(word));
       });
 
       if (matches.length === 0) {
-        return { content: `No tools found for "${query}". Try a broader keyword like "task", "file", "web", "memory", "note", "calendar", "expense".` };
+        return { content: `No tools found for "${query}". Tips:\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"` };
       }
 
       const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
@@ -595,35 +915,39 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   if (getToolHelpDef) {
     tools.register(getToolHelpDef, async (args): Promise<CoreToolResult> => {
       const { tool_name } = args as { tool_name: string };
-      const def = tools.getDefinition(tool_name);
-      if (!def) {
-        return { content: `Tool '${tool_name}' not found. Use search_tools(query) to discover available tools.`, isError: true };
+      if (!tools.getDefinition(tool_name)) {
+        const similar = findSimilarTools(tools, tool_name);
+        const hint = similar.length > 0
+          ? `\n\nDid you mean one of these?\n${similar.map(s => `  • ${s}`).join('\n')}\n\nUse search_tools("keyword") to find the correct tool name.`
+          : '\n\nUse search_tools("keyword") to discover available tools.';
+        return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
       }
-      const toolLimit = TOOL_MAX_LIMITS[tool_name];
-      const params = Object.entries(def.parameters.properties).map(([name, schema]) => {
-        const s = schema as unknown as Record<string, unknown>;
-        const required = def.parameters.required?.includes(name) ? ' (required)' : ' (optional)';
-        const type = (s.type as string) ?? 'any';
-        const desc = (s.description as string) ?? '';
-        const enumVals = Array.isArray(s.enum) ? ` [${(s.enum as string[]).join(', ')}]` : '';
-        // Show max limit info for limit-like parameters
-        const limitInfo = toolLimit && name === toolLimit.paramName
-          ? ` [default: ${toolLimit.defaultValue}, max: ${toolLimit.maxValue}]`
-          : '';
-        return `  - ${name}: ${type}${required} — ${desc}${enumVals}${limitInfo}`;
-      });
-      return { content: [`## ${def.name}`, def.description, '', '### Parameters', ...params].join('\n') };
+      return { content: formatFullToolHelp(tools, tool_name) };
     });
   }
 
   // Register use_tool proxy (executes any registered tool by name)
+  // On failure, auto-includes tool parameter help so LLM can self-correct
   const useToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
   if (useToolDef) {
     tools.register(useToolDef, async (args): Promise<CoreToolResult> => {
       const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
+
+      // Check if tool exists — suggest similar names if not
       if (!tools.has(tool_name)) {
-        return { content: `Tool '${tool_name}' not found. Use get_tool_help to discover available tools.`, isError: true };
+        const similar = findSimilarTools(tools, tool_name);
+        const hint = similar.length > 0
+          ? `\n\nDid you mean one of these?\n${similar.map(s => `  • ${s}`).join('\n')}\n\nCall get_tool_help("tool_name") to see parameters, then retry with the correct name.`
+          : '\n\nUse search_tools("keyword") to find the correct tool name.';
+        return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
       }
+
+      // Pre-validate required parameters before execution
+      const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
+      if (missingError) {
+        return { content: `${missingError}${buildToolHelpText(tools, tool_name)}`, isError: true };
+      }
+
       try {
         // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
         const cappedArgs = applyToolLimits(tool_name, toolArgs);
@@ -631,9 +955,11 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
         if (result.ok) {
           return result.value;
         }
-        return { content: result.error.message, isError: true };
+        // Include parameter help on execution error so LLM can retry correctly
+        return { content: result.error.message + buildToolHelpText(tools, tool_name), isError: true };
       } catch (error) {
-        return { content: error instanceof Error ? error.message : 'Tool execution failed', isError: true };
+        const msg = error instanceof Error ? error.message : 'Tool execution failed';
+        return { content: msg + buildToolHelpText(tools, tool_name), isError: true };
       }
     });
   }
@@ -716,7 +1042,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Separate standard tools (from TOOL_GROUPS) and special tools that bypass filtering
   // Filter getToolDefinitions() to exclude stubs that were unregistered above
   const coreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...channelToolDefs];
+  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...channelToolDefs];
 
   // These tools ALWAYS bypass toolGroup filtering:
   // - DYNAMIC_TOOL_DEFINITIONS: Meta-tools for managing custom tools (create_tool, etc.)
@@ -1364,6 +1690,36 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
     });
   }
 
+  // Register trigger management tools
+  for (const toolDef of TRIGGER_TOOLS) {
+    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const result = await executeTriggerTool(toolDef.name, args as Record<string, unknown>, userId);
+      if (result.success) {
+        return {
+          content: typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2),
+        };
+      }
+      return { content: result.error ?? 'Unknown error', isError: true };
+    });
+  }
+
+  // Register plan management tools
+  for (const toolDef of PLAN_TOOLS) {
+    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const result = await executePlanTool(toolDef.name, args as Record<string, unknown>, userId);
+      if (result.success) {
+        return {
+          content: typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2),
+        };
+      }
+      return { content: result.error ?? 'Unknown error', isError: true };
+    });
+  }
+
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
     // search_tools, get_tool_help and use_tool have special executors (registered below)
@@ -1388,21 +1744,36 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
     tools.register(chatSearchToolsDef, async (args): Promise<CoreToolResult> => {
       const { query, category: filterCategory } = args as { query: string; category?: string };
       const allDefs = tools.getDefinitions();
-      const q = query.toLowerCase();
+      const q = query.trim().toLowerCase();
+
+      // "all" or "*" returns everything
+      const showAll = q === 'all' || q === '*';
+
+      // Split query into individual words for AND matching
+      const queryWords = q.split(/\s+/).filter(Boolean);
 
       const matches = allDefs.filter(d => {
         if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool') return false;
         if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
-        // Keyword match on name, description, category, or hidden tags
+
+        if (showAll) return true;
+
+        // Build searchable text: split underscored names into words
         const tags = TOOL_SEARCH_TAGS[d.name] ?? d.tags ?? [];
-        return d.name.toLowerCase().includes(q)
-          || d.description.toLowerCase().includes(q)
-          || (d.category?.toLowerCase().includes(q) ?? false)
-          || tags.some(tag => tag.toLowerCase().includes(q));
+        const searchBlob = [
+          d.name.toLowerCase().replace(/[_\-]/g, ' '),
+          d.name.toLowerCase(),
+          d.description.toLowerCase(),
+          (d.category ?? '').toLowerCase(),
+          ...tags.map(tag => tag.toLowerCase()),
+        ].join(' ');
+
+        // Every query word must appear somewhere in the search blob
+        return queryWords.every(word => searchBlob.includes(word));
       });
 
       if (matches.length === 0) {
-        return { content: `No tools found for "${query}". Try a broader keyword like "task", "file", "web", "memory", "note", "calendar", "expense".` };
+        return { content: `No tools found for "${query}". Tips:\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"` };
       }
 
       const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
@@ -1415,35 +1786,39 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   if (chatGetToolHelpDef) {
     tools.register(chatGetToolHelpDef, async (args): Promise<CoreToolResult> => {
       const { tool_name } = args as { tool_name: string };
-      const def = tools.getDefinition(tool_name);
-      if (!def) {
-        return { content: `Tool '${tool_name}' not found. Use search_tools(query) to discover available tools.`, isError: true };
+      if (!tools.getDefinition(tool_name)) {
+        const similar = findSimilarTools(tools, tool_name);
+        const hint = similar.length > 0
+          ? `\n\nDid you mean one of these?\n${similar.map(s => `  • ${s}`).join('\n')}\n\nUse search_tools("keyword") to find the correct tool name.`
+          : '\n\nUse search_tools("keyword") to discover available tools.';
+        return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
       }
-      const toolLimit = TOOL_MAX_LIMITS[tool_name];
-      const params = Object.entries(def.parameters.properties).map(([name, schema]) => {
-        const s = schema as unknown as Record<string, unknown>;
-        const required = def.parameters.required?.includes(name) ? ' (required)' : ' (optional)';
-        const type = (s.type as string) ?? 'any';
-        const desc = (s.description as string) ?? '';
-        const enumVals = Array.isArray(s.enum) ? ` [${(s.enum as string[]).join(', ')}]` : '';
-        // Show max limit info for limit-like parameters
-        const limitInfo = toolLimit && name === toolLimit.paramName
-          ? ` [default: ${toolLimit.defaultValue}, max: ${toolLimit.maxValue}]`
-          : '';
-        return `  - ${name}: ${type}${required} — ${desc}${enumVals}${limitInfo}`;
-      });
-      return { content: [`## ${def.name}`, def.description, '', '### Parameters', ...params].join('\n') };
+      return { content: formatFullToolHelp(tools, tool_name) };
     });
   }
 
   // Register use_tool proxy (executes any registered tool by name)
+  // On failure, auto-includes tool parameter help so LLM can self-correct
   const chatUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
   if (chatUseToolDef) {
     tools.register(chatUseToolDef, async (args): Promise<CoreToolResult> => {
       const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
+
+      // Check if tool exists — suggest similar names if not
       if (!tools.has(tool_name)) {
-        return { content: `Tool '${tool_name}' not found. Use get_tool_help to discover available tools.`, isError: true };
+        const similar = findSimilarTools(tools, tool_name);
+        const hint = similar.length > 0
+          ? `\n\nDid you mean one of these?\n${similar.map(s => `  • ${s}`).join('\n')}\n\nCall get_tool_help("tool_name") to see parameters, then retry with the correct name.`
+          : '\n\nUse search_tools("keyword") to find the correct tool name.';
+        return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
       }
+
+      // Pre-validate required parameters before execution
+      const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
+      if (missingError) {
+        return { content: `${missingError}${buildToolHelpText(tools, tool_name)}`, isError: true };
+      }
+
       try {
         // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
         const cappedArgs = applyToolLimits(tool_name, toolArgs);
@@ -1451,9 +1826,11 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
         if (result.ok) {
           return result.value;
         }
-        return { content: result.error.message, isError: true };
+        // Include parameter help on execution error so LLM can retry correctly
+        return { content: result.error.message + buildToolHelpText(tools, tool_name), isError: true };
       } catch (error) {
-        return { content: error instanceof Error ? error.message : 'Tool execution failed', isError: true };
+        const msg = error instanceof Error ? error.message : 'Tool execution failed';
+        return { content: msg + buildToolHelpText(tools, tool_name), isError: true };
       }
     });
   }
@@ -1515,7 +1892,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   // Filter getToolDefinitions() to exclude stubs removed above
   const channelToolDefs = CHANNEL_TOOLS.map(t => t.definition);
   const chatCoreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...channelToolDefs, ...pluginToolDefs];
+  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...channelToolDefs, ...pluginToolDefs];
 
   // Inject personal memory into system prompt
   const basePrompt = 'You are a helpful personal AI assistant. You help the user with their daily tasks, remember their preferences, and proactively assist them.';

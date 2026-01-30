@@ -41,6 +41,10 @@ export interface ChatRequest {
   agentId?: string;
   stream?: boolean;
   history?: Array<{ role: string; content: string }>;
+  /** Tool names to expose directly to the LLM (bypasses use_tool proxy) */
+  directTools?: string[];
+  /** Include full tool catalog in the message (first message only) */
+  includeToolList?: boolean;
 }
 
 /**

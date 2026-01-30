@@ -4,35 +4,46 @@ import { useDialog } from '../components/ConfirmDialog';
 
 interface TriggerConfig {
   cron?: string;
-  event?: string;
+  eventType?: string;
   condition?: string;
   webhookPath?: string;
+  timezone?: string;
+  threshold?: number;
+  filters?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
 interface TriggerAction {
-  type: 'chat' | 'tool' | 'notification' | 'goal_check';
-  payload: unknown;
+  type: 'chat' | 'tool' | 'notification' | 'goal_check' | 'memory_summary';
+  payload: Record<string, unknown>;
 }
 
 interface Trigger {
   id: string;
   type: 'schedule' | 'event' | 'condition' | 'webhook';
   name: string;
+  description: string | null;
   config: TriggerConfig;
   action: TriggerAction;
   enabled: boolean;
-  lastFired?: string;
-  nextFire?: string;
+  priority: number;
+  lastFired: string | null;
+  nextFire: string | null;
+  fireCount: number;
   createdAt: string;
   updatedAt: string;
 }
+
+type TriggerHistoryStatus = 'success' | 'failure' | 'skipped';
 
 interface TriggerHistoryEntry {
   id: string;
   triggerId: string;
   firedAt: string;
-  result?: Record<string, unknown>;
+  status: TriggerHistoryStatus;
+  result?: unknown;
+  error: string | null;
+  durationMs: number | null;
 }
 
 interface ApiResponse<T> {
@@ -55,11 +66,12 @@ const typeIcons = {
   webhook: Zap,
 };
 
-const actionTypeLabels = {
+const actionTypeLabels: Record<TriggerAction['type'], string> = {
   chat: 'Start Chat',
   tool: 'Run Tool',
   notification: 'Send Notification',
   goal_check: 'Check Goals',
+  memory_summary: 'Memory Summary',
 };
 
 export function TriggersPage() {
@@ -293,14 +305,25 @@ function TriggerItem({ trigger, onEdit, onDelete, onToggle, onFireNow, onViewHis
           <span className="px-2 py-0.5 text-xs rounded-full bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted">
             {actionTypeLabels[trigger.action.type]}
           </span>
+          {trigger.fireCount > 0 && (
+            <span className="text-xs text-text-muted dark:text-dark-text-muted">
+              {trigger.fireCount}x fired
+            </span>
+          )}
         </div>
+
+        {trigger.description && (
+          <p className="text-sm text-text-secondary dark:text-dark-text-secondary mb-1">
+            {trigger.description}
+          </p>
+        )}
 
         <div className="text-sm text-text-muted dark:text-dark-text-muted">
           {trigger.type === 'schedule' && trigger.config.cron && (
             <span>Cron: {trigger.config.cron}</span>
           )}
-          {trigger.type === 'event' && trigger.config.event && (
-            <span>Event: {trigger.config.event}</span>
+          {trigger.type === 'event' && trigger.config.eventType && (
+            <span>Event: {trigger.config.eventType}</span>
           )}
           {trigger.type === 'condition' && trigger.config.condition && (
             <span>Condition: {trigger.config.condition}</span>
@@ -363,46 +386,119 @@ interface TriggerModalProps {
   onSave: () => void;
 }
 
+// Simple cron presets for quick selection
+const CRON_PRESETS: Array<{ label: string; cron: string; desc: string }> = [
+  { label: 'Every hour', cron: '0 * * * *', desc: 'At minute 0 of every hour' },
+  { label: 'Every morning (8:00)', cron: '0 8 * * *', desc: '8:00 AM daily' },
+  { label: 'Every evening (20:00)', cron: '0 20 * * *', desc: '8:00 PM daily' },
+  { label: 'Every 15 min', cron: '*/15 * * * *', desc: 'Every 15 minutes' },
+  { label: 'Weekdays 9AM', cron: '0 9 * * 1-5', desc: 'Mon-Fri at 9:00 AM' },
+  { label: 'Monday 9AM', cron: '0 9 * * 1', desc: 'Every Monday at 9:00 AM' },
+];
+
+/**
+ * Client-side cron validation: checks format and field ranges
+ */
+function validateCron(cron: string): { valid: boolean; error?: string } {
+  const trimmed = cron.trim();
+  if (!trimmed) return { valid: false, error: 'Cron expression is required' };
+
+  const parts = trimmed.split(/\s+/);
+  if (parts.length !== 5) {
+    return { valid: false, error: `Expected 5 fields (minute hour day month weekday), got ${parts.length}` };
+  }
+
+  const fieldNames = ['Minute', 'Hour', 'Day', 'Month', 'Weekday'];
+  const fieldRanges = [[0, 59], [0, 23], [1, 31], [1, 12], [0, 6]];
+
+  for (let i = 0; i < 5; i++) {
+    const part = parts[i]!;
+    const [min, max] = fieldRanges[i]!;
+    const name = fieldNames[i]!;
+
+    if (part === '*') continue;
+    if (part.startsWith('*/')) {
+      const step = parseInt(part.slice(2), 10);
+      if (isNaN(step) || step <= 0) return { valid: false, error: `${name}: invalid step "/${part.slice(2)}"` };
+      continue;
+    }
+    // Split on comma for lists, then check each element
+    const elements = part.split(',');
+    for (const el of elements) {
+      if (el.includes('-')) {
+        const [a, b] = el.split('-').map(Number);
+        if (isNaN(a!) || isNaN(b!)) return { valid: false, error: `${name}: invalid range "${el}"` };
+        if (a! < min! || a! > max! || b! < min! || b! > max!) return { valid: false, error: `${name}: ${el} out of range ${min}-${max}` };
+      } else {
+        const n = parseInt(el, 10);
+        if (isNaN(n)) return { valid: false, error: `${name}: "${el}" is not a number` };
+        if (n < min! || n > max!) return { valid: false, error: `${name}: ${n} out of range ${min}-${max}` };
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
 function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
   const [name, setName] = useState(trigger?.name ?? '');
+  const [description, setDescription] = useState(trigger?.description ?? '');
   const [type, setType] = useState<Trigger['type']>(trigger?.type ?? 'schedule');
   const [cron, setCron] = useState(trigger?.config.cron ?? '0 8 * * *');
-  const [event, setEvent] = useState(trigger?.config.event ?? '');
+  const [eventType, setEventType] = useState(trigger?.config.eventType ?? '');
   const [condition, setCondition] = useState(trigger?.config.condition ?? '');
+  const [threshold, setThreshold] = useState(trigger?.config.threshold ?? 0);
+  const [webhookPath, setWebhookPath] = useState(trigger?.config.webhookPath ?? '');
   const [actionType, setActionType] = useState<TriggerAction['type']>(
     trigger?.action.type ?? 'chat'
   );
   const [actionPayload, setActionPayload] = useState(
-    typeof trigger?.action.payload === 'string'
-      ? trigger.action.payload
-      : JSON.stringify(trigger?.action.payload ?? '', null, 2)
+    JSON.stringify(trigger?.action.payload ?? {}, null, 2)
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Cron validation
+  const cronValidation = type === 'schedule' ? validateCron(cron) : { valid: true };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    setSaveError(null);
+
+    // Client-side cron validation
+    if (type === 'schedule' && !cronValidation.valid) {
+      setSaveError(cronValidation.error ?? 'Invalid cron expression');
+      return;
+    }
 
     setIsSaving(true);
     try {
       const config: TriggerConfig = {};
       if (type === 'schedule') {
-        config.cron = cron;
+        config.cron = cron.trim();
       } else if (type === 'event') {
-        config.event = event;
+        config.eventType = eventType;
       } else if (type === 'condition') {
         config.condition = condition;
+        if (threshold > 0) config.threshold = threshold;
+      } else if (type === 'webhook') {
+        config.webhookPath = webhookPath;
       }
 
-      let payload: unknown = actionPayload;
+      let payload: Record<string, unknown> = {};
       try {
         payload = JSON.parse(actionPayload);
       } catch {
-        // Keep as string if not valid JSON
+        // If not valid JSON, wrap as message
+        if (actionPayload.trim()) {
+          payload = { message: actionPayload.trim() };
+        }
       }
 
       const body = {
         name: name.trim(),
+        description: description.trim() || undefined,
         type,
         config,
         action: {
@@ -424,9 +520,13 @@ function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
       const data = await response.json();
       if (data.success) {
         onSave();
+      } else {
+        // Show backend validation error
+        setSaveError(data.error?.message ?? 'Failed to save trigger');
       }
     } catch (err) {
       console.error('Failed to save trigger:', err);
+      setSaveError('Network error — could not reach server');
     } finally {
       setIsSaving(false);
     }
@@ -459,6 +559,19 @@ function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
 
             <div>
               <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                Description (optional)
+              </label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What does this trigger do?"
+                className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
                 Trigger Type
               </label>
               <select
@@ -481,25 +594,50 @@ function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
                 <input
                   type="text"
                   value={cron}
-                  onChange={(e) => setCron(e.target.value)}
+                  onChange={(e) => { setCron(e.target.value); setSaveError(null); }}
                   placeholder="0 8 * * *"
-                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className={`w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 ${
+                    cron.trim() && !cronValidation.valid
+                      ? 'border-error focus:ring-error/50'
+                      : 'border-border dark:border-dark-border focus:ring-primary/50'
+                  }`}
                 />
-                <p className="mt-1 text-xs text-text-muted dark:text-dark-text-muted">
-                  Format: minute hour day month weekday (e.g., "0 8 * * *" = 8:00 AM daily)
-                </p>
+                {cron.trim() && !cronValidation.valid ? (
+                  <p className="mt-1 text-xs text-error">{cronValidation.error}</p>
+                ) : (
+                  <p className="mt-1 text-xs text-text-muted dark:text-dark-text-muted">
+                    Format: minute hour day month weekday (e.g., "0 8 * * *" = 8:00 AM daily)
+                  </p>
+                )}
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {CRON_PRESETS.map((preset) => (
+                    <button
+                      key={preset.cron}
+                      type="button"
+                      onClick={() => { setCron(preset.cron); setSaveError(null); }}
+                      className={`px-2 py-0.5 text-xs rounded border transition-colors ${
+                        cron === preset.cron
+                          ? 'bg-primary/20 border-primary text-primary'
+                          : 'bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border text-text-muted dark:text-dark-text-muted hover:border-primary/50'
+                      }`}
+                      title={preset.desc}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
             {type === 'event' && (
               <div>
                 <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                  Event Name
+                  Event Type
                 </label>
                 <input
                   type="text"
-                  value={event}
-                  onChange={(e) => setEvent(e.target.value)}
+                  value={eventType}
+                  onChange={(e) => setEventType(e.target.value)}
                   placeholder="e.g., file_created, goal_completed"
                   className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
@@ -507,15 +645,57 @@ function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
             )}
 
             {type === 'condition' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                    Condition
+                  </label>
+                  <select
+                    value={condition}
+                    onChange={(e) => setCondition(e.target.value)}
+                    className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    <option value="">Select condition...</option>
+                    <option value="stale_goals">Stale Goals</option>
+                    <option value="upcoming_deadline">Upcoming Deadline</option>
+                    <option value="memory_threshold">Memory Threshold</option>
+                    <option value="low_progress">Low Progress</option>
+                    <option value="no_activity">No Activity</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                    Threshold
+                  </label>
+                  <input
+                    type="number"
+                    value={threshold}
+                    onChange={(e) => setThreshold(Number(e.target.value))}
+                    placeholder="0"
+                    min={0}
+                    className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <p className="mt-1 text-xs text-text-muted dark:text-dark-text-muted">
+                    {condition === 'stale_goals' && 'Days since last update (default: 3)'}
+                    {condition === 'upcoming_deadline' && 'Days until deadline (default: 7)'}
+                    {condition === 'memory_threshold' && 'Memory count threshold (default: 100)'}
+                    {condition === 'low_progress' && 'Progress percentage below (default: 20)'}
+                    {!condition && 'Depends on the condition type'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {type === 'webhook' && (
               <div>
                 <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                  Condition
+                  Webhook Path
                 </label>
                 <input
                   type="text"
-                  value={condition}
-                  onChange={(e) => setCondition(e.target.value)}
-                  placeholder="e.g., stale_goals > 3"
+                  value={webhookPath}
+                  onChange={(e) => setWebhookPath(e.target.value)}
+                  placeholder="/hooks/my-trigger"
                   className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
@@ -534,6 +714,7 @@ function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
                 <option value="tool">Run Tool</option>
                 <option value="notification">Send Notification</option>
                 <option value="goal_check">Check Goals</option>
+                <option value="memory_summary">Memory Summary</option>
               </select>
             </div>
 
@@ -555,21 +736,28 @@ function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
             </div>
           </div>
 
-          <div className="p-4 border-t border-border dark:border-dark-border flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!name.trim() || isSaving}
-              className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSaving ? 'Saving...' : trigger ? 'Save' : 'Create'}
-            </button>
+          <div className="p-4 border-t border-border dark:border-dark-border">
+            {saveError && (
+              <div className="mb-3 p-2 bg-error/10 border border-error/30 rounded-lg text-sm text-error">
+                {saveError}
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!name.trim() || isSaving || (type === 'schedule' && !cronValidation.valid)}
+                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSaving ? 'Saving...' : trigger ? 'Save' : 'Create'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -604,10 +792,33 @@ function HistoryModal({ history, onClose }: HistoryModalProps) {
                   key={entry.id}
                   className="p-3 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg"
                 >
-                  <div className="text-sm text-text-primary dark:text-dark-text-primary">
-                    {new Date(entry.firedAt).toLocaleString()}
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-text-primary dark:text-dark-text-primary">
+                      {new Date(entry.firedAt).toLocaleString()}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {entry.durationMs != null && (
+                        <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                          {entry.durationMs}ms
+                        </span>
+                      )}
+                      <span
+                        className={`px-2 py-0.5 text-xs rounded-full ${
+                          entry.status === 'success'
+                            ? 'bg-success/10 text-success'
+                            : entry.status === 'failure'
+                            ? 'bg-error/10 text-error'
+                            : 'bg-text-muted/10 text-text-muted'
+                        }`}
+                      >
+                        {entry.status}
+                      </span>
+                    </div>
                   </div>
-                  {entry.result && (
+                  {entry.error && (
+                    <p className="mt-1 text-xs text-error">{entry.error}</p>
+                  )}
+                  {entry.result != null && (
                     <pre className="mt-2 text-xs text-text-muted dark:text-dark-text-muted overflow-x-auto">
                       {JSON.stringify(entry.result, null, 2)}
                     </pre>

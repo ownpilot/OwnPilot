@@ -18,6 +18,8 @@ import {
 } from '../db/repositories/triggers.js';
 import { GoalsRepository } from '../db/repositories/goals.js';
 import { MemoriesRepository } from '../db/repositories/memories.js';
+import { executeTool, hasTool } from '../services/tool-executor.js';
+import { getNextRunTime, matchesCron } from '@ownpilot/core';
 
 // ============================================================================
 // Types
@@ -49,6 +51,8 @@ export interface TriggerEvent {
 // Trigger Engine
 // ============================================================================
 
+export type ChatHandler = (message: string, payload: Record<string, unknown>) => Promise<unknown>;
+
 export class TriggerEngine {
   private config: Required<TriggerEngineConfig>;
   private repo: TriggersRepository;
@@ -59,6 +63,7 @@ export class TriggerEngine {
   private running = false;
   private eventHandlers: Map<string, EventHandler[]> = new Map();
   private actionHandlers: Map<string, (payload: Record<string, unknown>) => Promise<ActionResult>> = new Map();
+  private chatHandler: ChatHandler | null = null;
 
   constructor(config: TriggerEngineConfig = {}) {
     this.config = {
@@ -74,6 +79,19 @@ export class TriggerEngine {
 
     // Register default action handlers
     this.registerDefaultActionHandlers();
+  }
+
+  // ==========================================================================
+  // External Handler Injection
+  // ==========================================================================
+
+  /**
+   * Set a handler for 'chat' actions.
+   * Called during server initialization once agents are available.
+   */
+  setChatHandler(handler: ChatHandler): void {
+    this.chatHandler = handler;
+    console.log('[TriggerEngine] Chat handler registered');
   }
 
   // ==========================================================================
@@ -184,27 +202,60 @@ export class TriggerEngine {
       };
     });
 
-    // Chat action (placeholder - would integrate with chat system)
+    // Chat action - sends a message through the AI agent system
+    // The chatHandler is injected later via setChatHandler() once agents are initialized
     this.registerActionHandler('chat', async (payload) => {
       const message = payload.prompt as string ?? payload.message as string;
-      console.log(`[TriggerEngine] Chat trigger: ${message}`);
-      // In production, this would initiate a chat message
+      if (!message) {
+        return { success: false, error: 'No message/prompt provided for chat action' };
+      }
+
+      // Use injected chat handler if available
+      if (this.chatHandler) {
+        try {
+          const result = await this.chatHandler(message, payload);
+          return {
+            success: true,
+            message: 'Chat executed',
+            data: result,
+          };
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Chat execution failed';
+          return { success: false, error: errorMsg };
+        }
+      }
+
+      // Fallback: log the message (chat handler not yet initialized)
+      console.log(`[TriggerEngine] Chat action (no handler): ${message}`);
       return {
         success: true,
-        message: 'Chat initiated',
+        message: 'Chat action logged (agent not initialized yet)',
         data: { prompt: message },
       };
     });
 
-    // Tool action (placeholder - would execute a tool)
+    // Tool action - executes a tool via the shared tool executor
     this.registerActionHandler('tool', async (payload) => {
       const toolName = payload.tool as string;
-      console.log(`[TriggerEngine] Tool trigger: ${toolName}`);
-      // In production, this would execute the tool
+      if (!toolName) {
+        return { success: false, error: 'No tool name specified' };
+      }
+
+      // Extract tool arguments (everything except internal fields)
+      const { tool: _tool, triggerId: _tid, triggerName: _tn, manual: _m, ...toolArgs } = payload;
+
+      if (!await hasTool(toolName)) {
+        return { success: false, error: `Tool '${toolName}' not found` };
+      }
+
+      console.log(`[TriggerEngine] Executing tool: ${toolName}`);
+      const result = await executeTool(toolName, toolArgs, this.config.userId);
+
       return {
-        success: true,
-        message: `Tool ${toolName} would be executed`,
-        data: payload,
+        success: result.success,
+        message: result.success ? `Tool ${toolName} executed successfully` : `Tool ${toolName} failed`,
+        data: result.result,
+        error: result.error,
       };
     });
   }
@@ -293,6 +344,15 @@ export class TriggerEngine {
 
     for (const trigger of triggers) {
       const config = trigger.config as ConditionConfig;
+
+      // Respect checkInterval to avoid firing too frequently
+      // Default: don't re-fire within the condition check interval
+      if (trigger.lastFired) {
+        const minIntervalMs = (config.checkInterval ?? 60) * 60 * 1000; // default 60 min
+        const timeSinceFire = Date.now() - trigger.lastFired.getTime();
+        if (timeSinceFire < minIntervalMs) continue;
+      }
+
       const shouldFire = await this.evaluateCondition(config);
 
       if (shouldFire) {
@@ -391,6 +451,11 @@ export class TriggerEngine {
         const config = trigger.config as ScheduleConfig;
         const nextFire = this.calculateNextFire(config);
         await this.repo.markFired(trigger.id, nextFire ?? undefined);
+        if (nextFire) {
+          console.log(`[TriggerEngine] Next fire for "${trigger.name}": ${nextFire}`);
+        } else {
+          console.warn(`[TriggerEngine] WARNING: Trigger "${trigger.name}" has no next fire time — will not auto-fire again`);
+        }
       } else {
         await this.repo.markFired(trigger.id);
       }
@@ -407,45 +472,21 @@ export class TriggerEngine {
   }
 
   /**
-   * Calculate next fire time from cron expression
+   * Calculate next fire time from cron expression using core's production parser.
    */
   private calculateNextFire(config: ScheduleConfig): string | null {
-    // Simple implementation - in production use a cron parser library
+    if (!config.cron) {
+      console.warn('[TriggerEngine] calculateNextFire called with empty cron');
+      return null;
+    }
     try {
-      const now = new Date();
-      // Parse simple cron patterns
-      const parts = config.cron.split(' ');
-
-      if (parts.length >= 5) {
-        const minute = parts[0] ?? '*';
-        const hour = parts[1] ?? '*';
-
-        // Handle common patterns
-        if (minute === '0' && hour !== '*') {
-          // Daily at specific hour
-          const targetHour = parseInt(hour, 10);
-          now.setHours(targetHour, 0, 0, 0);
-          if (now.getTime() <= Date.now()) {
-            now.setDate(now.getDate() + 1);
-          }
-          return now.toISOString();
-        }
-
-        if (minute !== '*' && hour === '*') {
-          // Every hour at specific minute
-          const targetMinute = parseInt(minute, 10);
-          now.setMinutes(targetMinute, 0, 0);
-          if (now.getTime() <= Date.now()) {
-            now.setHours(now.getHours() + 1);
-          }
-          return now.toISOString();
-        }
+      const nextRun = getNextRunTime(config.cron);
+      if (!nextRun) {
+        console.warn(`[TriggerEngine] No next fire time for cron "${config.cron}" — trigger will not reschedule`);
       }
-
-      // Default: next hour
-      now.setHours(now.getHours() + 1, 0, 0, 0);
-      return now.toISOString();
-    } catch {
+      return nextRun ? nextRun.toISOString() : null;
+    } catch (error) {
+      console.error(`[TriggerEngine] Failed to parse cron "${config.cron}":`, error);
       return null;
     }
   }

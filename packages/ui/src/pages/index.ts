@@ -1,6 +1,6 @@
 export { ChatPage } from './ChatPage';
 export { AgentsPage } from './AgentsPage';
-export { ToolsPage } from './ToolsPage';
+export { ToolsPage } from './tools';
 export { SettingsPage } from './SettingsPage';
 export { ConfigCenterPage } from './ConfigCenterPage';
 export { ApiKeysPage } from './ApiKeysPage';

@@ -154,19 +154,19 @@ export const httpRequestTool: ToolDefinition = {
       },
       headers: {
         type: 'object',
-        description: 'Request headers',
+        description: 'Request headers as key-value pairs, e.g. {"Authorization": "Bearer xxx", "Accept": "application/json"}',
       },
       body: {
         type: 'string',
-        description: 'Request body (for POST, PUT, PATCH)',
+        description: 'Request body as raw string (for POST, PUT, PATCH). Use "json" instead for JSON payloads.',
       },
       json: {
         type: 'object',
-        description: 'JSON body (automatically sets Content-Type)',
+        description: 'JSON body object (automatically sets Content-Type to application/json). Use this OR "body", not both.',
       },
       timeout: {
         type: 'number',
-        description: 'Request timeout in milliseconds (max 30000)',
+        description: 'Request timeout in milliseconds (default: 10000, max: 30000)',
       },
     },
     required: ['url'],
@@ -406,7 +406,7 @@ export const searchWebTool: ToolDefinition = {
       },
       maxResults: {
         type: 'number',
-        description: 'Maximum number of results to return',
+        description: 'Maximum number of results to return (default: 10)',
       },
       region: {
         type: 'string',
@@ -517,7 +517,7 @@ export const jsonApiTool: ToolDefinition = {
       },
       headers: {
         type: 'object',
-        description: 'Additional headers',
+        description: 'Additional headers as key-value pairs, e.g. {"X-Custom": "value"}',
       },
       bearerToken: {
         type: 'string',

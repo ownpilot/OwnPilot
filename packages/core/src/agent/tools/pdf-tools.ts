@@ -331,7 +331,7 @@ function convertMarkdownToText(markdown: string): string {
 
 export const pdfInfoTool: ToolDefinition = {
   name: 'pdf_info',
-  description: 'Get metadata and information about a PDF file without reading its full content',
+  description: 'Get metadata and information about a PDF file without reading its full content. Returns file size, page count, title, author, and other document properties.',
   parameters: {
     type: 'object',
     properties: {

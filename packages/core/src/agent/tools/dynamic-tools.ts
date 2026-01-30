@@ -825,13 +825,13 @@ export const toggleToolDefinition: ToolDefinition = {
  */
 export const searchToolsDefinition: ToolDefinition = {
   name: 'search_tools',
-  description: 'Search for available tools by keyword or intent. Returns matching tool names with short descriptions. Use this to discover which tools can help with the current task.',
+  description: 'Search for available tools by keyword or intent. Uses word-by-word AND matching: "email send" finds send_email. Use "all" to list every tool. Returns matching tool names with short descriptions.',
   parameters: {
     type: 'object',
     properties: {
       query: {
         type: 'string',
-        description: 'Search keyword or intent (e.g. "task", "calendar", "email", "file", "web search", "note", "expense")',
+        description: 'Search keywords (e.g. "email", "send email", "task add", "file read"). Multiple words use AND logic. Use "all" to list everything.',
       },
       category: {
         type: 'string',
@@ -870,17 +870,17 @@ export const getToolHelpDefinition: ToolDefinition = {
  */
 export const useToolDefinition: ToolDefinition = {
   name: 'use_tool',
-  description: 'Execute any tool by name. Use get_tool_help first to learn required parameters.',
+  description: 'Execute a tool by its exact name. IMPORTANT: Only use tool names from search_tools results or the TOOL CATALOG. If unsure about parameters, call get_tool_help first. Errors include parameter docs — read them and retry.',
   parameters: {
     type: 'object',
     properties: {
       tool_name: {
         type: 'string',
-        description: 'Name of the tool to execute',
+        description: 'Exact tool name (from search_tools results or TOOL CATALOG). Do NOT guess or invent names.',
       },
       arguments: {
         type: 'object',
-        description: 'Arguments object matching the tool parameters from get_tool_help',
+        description: 'Arguments matching the tool parameters. Call get_tool_help(tool_name) first if unsure.',
       },
     },
     required: ['tool_name', 'arguments'],

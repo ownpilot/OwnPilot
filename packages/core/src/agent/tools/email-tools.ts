@@ -193,25 +193,25 @@ export const sendEmailExecutor: ToolExecutor = async (params, context): Promise<
 
 export const listEmailsTool: ToolDefinition = {
   name: 'list_emails',
-  description: 'List emails from inbox using IMAP. Can filter by folder, date, sender, or subject.',
+  description: 'List emails from inbox using IMAP. All parameters are optional filters. Returns emails sorted by date.',
   parameters: {
     type: 'object',
     properties: {
       folder: {
         type: 'string',
-        description: 'Email folder to read (default: INBOX)',
+        description: 'Email folder to read (default: "INBOX")',
       },
       limit: {
         type: 'number',
-        description: 'Maximum number of emails to retrieve (default: 20)',
+        description: 'Maximum number of emails to retrieve (default: 20, max: 100)',
       },
       unreadOnly: {
         type: 'boolean',
-        description: 'Only retrieve unread emails',
+        description: 'Only retrieve unread emails (default: false)',
       },
       from: {
         type: 'string',
-        description: 'Filter by sender email or name',
+        description: 'Filter by sender email or name (partial match)',
       },
       subject: {
         type: 'string',
@@ -219,13 +219,14 @@ export const listEmailsTool: ToolDefinition = {
       },
       since: {
         type: 'string',
-        description: 'Only emails after this date (ISO format)',
+        description: 'Only emails after this date (ISO format, e.g. "2025-01-01")',
       },
       before: {
         type: 'string',
-        description: 'Only emails before this date (ISO format)',
+        description: 'Only emails before this date (ISO format, e.g. "2025-12-31")',
       },
     },
+    required: [],
   },
 };
 

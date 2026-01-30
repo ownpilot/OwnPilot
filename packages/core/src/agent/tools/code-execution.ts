@@ -237,7 +237,7 @@ export const executePythonExecutor: ToolExecutor = async (params, _context): Pro
 
 export const executeShellTool: ToolDefinition = {
   name: 'execute_shell',
-  description: 'Execute a shell command in a Docker sandboxed environment. Requires Docker to be running. Some dangerous commands are blocked.',
+  description: 'Execute a shell command in a Docker sandboxed environment. Requires Docker to be running. Blocked commands include: rm -rf /, mkfs, dd if=/dev, fork bombs, chmod -R 777 /, shutdown/reboot/halt, format c:, and similar destructive operations.',
   parameters: {
     type: 'object',
     properties: {

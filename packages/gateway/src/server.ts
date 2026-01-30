@@ -48,6 +48,8 @@ import { initializePluginsRepo } from './db/repositories/plugins.js';
 import { initializeLocalProvidersRepo } from './db/repositories/local-providers.js';
 import { seedConfigServices } from './db/seeds/config-services-seed.js';
 import { gatewayConfigCenter } from './services/config-center-impl.js';
+import { startTriggerEngine, getTriggerEngine, initializeDefaultTriggers } from './triggers/index.js';
+import { seedExamplePlans } from './db/seeds/plans-seed.js';
 
 // Database settings keys for gateway config
 const GATEWAY_API_KEYS_KEY = 'gateway_api_keys';
@@ -166,6 +168,50 @@ async function main() {
   console.log('[Startup] Initializing plugins...');
   await initializePlugins();
   console.log('[Startup] Plugins initialized.');
+
+  // Start trigger engine (proactive automation)
+  console.log('[Startup] Starting Trigger Engine...');
+  try {
+    const triggerEngine = startTriggerEngine({ userId: 'default' });
+
+    // Wire up the chat handler once agent system is available
+    // The chat handler uses dynamic import to avoid circular dependencies
+    triggerEngine.setChatHandler(async (message, payload) => {
+      const { getOrCreateChatAgent } = await import('./routes/agents.js');
+      const { resolveProviderAndModel } = await import('./routes/settings.js');
+      const resolved = await resolveProviderAndModel('default', 'default');
+      const agent = await getOrCreateChatAgent(resolved.provider ?? 'openai', resolved.model ?? 'gpt-4o-mini');
+      const result = await agent.chat(message);
+      if (result.ok) {
+        return {
+          content: result.value.content,
+          toolCalls: result.value.toolCalls?.length ?? 0,
+        };
+      }
+      throw new Error(result.error?.message ?? 'Chat execution failed');
+    });
+
+    // Seed default triggers (only creates if not already present)
+    const triggerSeed = await initializeDefaultTriggers('default');
+    if (triggerSeed.created > 0) {
+      console.log(`[Startup] Seeded ${triggerSeed.created} default triggers.`);
+    }
+
+    console.log('[Startup] Trigger Engine started.');
+  } catch (error) {
+    console.warn('[Startup] Trigger Engine failed to start:', error);
+    console.warn('[Startup] Triggers will be available but engine is not running.');
+  }
+
+  // Seed example plans (only creates if not already present)
+  try {
+    const planSeed = await seedExamplePlans('default');
+    if (planSeed.created > 0) {
+      console.log(`[Startup] Seeded ${planSeed.created} example plans.`);
+    }
+  } catch (error) {
+    console.warn('[Startup] Failed to seed example plans:', error);
+  }
 
   console.log(`Starting OwnPilot...`);
   console.log(`  Port: ${port}`);

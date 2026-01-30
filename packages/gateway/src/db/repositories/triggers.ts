@@ -6,6 +6,7 @@
  */
 
 import { BaseRepository } from './base.js';
+import { getNextRunTime } from '@ownpilot/core';
 
 // ============================================================================
 // Types
@@ -149,6 +150,12 @@ export class TriggersRepository extends BaseRepository {
     let nextFire: string | null = null;
     if (input.type === 'schedule' && input.enabled !== false) {
       nextFire = this.calculateNextFire(input.config as ScheduleConfig);
+      if (!nextFire) {
+        const cron = (input.config as ScheduleConfig).cron;
+        throw new Error(
+          `Cannot create schedule trigger: cron expression "${cron ?? '(empty)'}" did not produce a valid next fire time`
+        );
+      }
     }
 
     await this.execute(
@@ -225,8 +232,15 @@ export class TriggersRepository extends BaseRepository {
       const config = input.config ?? existing.config;
       const enabled = input.enabled ?? existing.enabled;
       if (existing.type === 'schedule' && enabled) {
+        const newNextFire = this.calculateNextFire(config as ScheduleConfig);
+        if (!newNextFire) {
+          const cron = (config as ScheduleConfig).cron;
+          throw new Error(
+            `Cannot update schedule trigger: cron expression "${cron ?? '(empty)'}" did not produce a valid next fire time`
+          );
+        }
         updates.push(`next_fire = $${paramIndex++}`);
-        values.push(this.calculateNextFire(config as ScheduleConfig));
+        values.push(newNextFire);
       }
     }
 
@@ -537,21 +551,19 @@ export class TriggersRepository extends BaseRepository {
   // ==========================================================================
 
   /**
-   * Calculate next fire time from cron expression
-   * Simple implementation - for production use a proper cron library
+   * Calculate next fire time from cron expression using core's production cron parser.
+   * Throws on invalid cron so callers can handle the error explicitly.
    */
   private calculateNextFire(config: ScheduleConfig): string | null {
-    // This is a simplified implementation
-    // In production, use a library like 'cron-parser'
-    try {
-      const now = new Date();
-      // Default: add 1 hour for demo purposes
-      // Real implementation would parse the cron expression
-      now.setHours(now.getHours() + 1);
-      return now.toISOString();
-    } catch {
+    if (!config.cron) {
+      console.warn('[TriggersRepo] calculateNextFire called with empty cron expression');
       return null;
     }
+    const nextRun = getNextRunTime(config.cron);
+    if (!nextRun) {
+      console.warn(`[TriggersRepo] No next fire time found for cron "${config.cron}" — trigger will not auto-fire`);
+    }
+    return nextRun ? nextRun.toISOString() : null;
   }
 
   private mapTrigger(row: TriggerRow): Trigger {

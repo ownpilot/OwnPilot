@@ -14,6 +14,7 @@ import {
   type StepStatus,
   type StepConfig,
 } from '../db/repositories/plans.js';
+import { executeTool, hasTool } from '../services/tool-executor.js';
 
 // ============================================================================
 // Types
@@ -303,7 +304,13 @@ export class PlanExecutor extends EventEmitter {
     results: Map<string, unknown>,
     signal: AbortSignal
   ): Promise<void> {
+    let stallCount = 0;
+    const MAX_STALL = 3;
+
     while (true) {
+      // Yield to event loop to prevent blocking
+      await new Promise((r) => setTimeout(r, 0));
+
       // Check for abort
       if (signal.aborted) {
         throw new Error('Plan execution aborted');
@@ -327,7 +334,7 @@ export class PlanExecutor extends EventEmitter {
       if (!await this.repo.areDependenciesMet(step.id)) {
         // Try to find another step that can run
         const pendingSteps = await this.repo.getStepsByStatus(planId, 'pending');
-        
+
         // Find a ready step (one with met dependencies)
         let readyStep: PlanStep | undefined;
         for (const s of pendingSteps) {
@@ -338,19 +345,30 @@ export class PlanExecutor extends EventEmitter {
         }
 
         if (!readyStep) {
-          // All pending steps are blocked - mark them as such
-          for (const s of pendingSteps) {
-            if (!await this.repo.areDependenciesMet(s.id)) {
-              await this.repo.updateStep(s.id, { status: 'blocked' });
+          stallCount++;
+          this.log(`No runnable steps (stall ${stallCount}/${MAX_STALL})`);
+
+          if (stallCount >= MAX_STALL) {
+            // Deadlock detected — mark blocked steps and fail plan
+            for (const s of pendingSteps) {
+              if (!await this.repo.areDependenciesMet(s.id)) {
+                await this.repo.updateStep(s.id, { status: 'blocked' });
+              }
             }
+            await this.repo.update(planId, { status: 'failed', error: 'Dependency deadlock: all pending steps have unmet dependencies' });
+            throw new Error('Dependency deadlock: all pending steps have unmet dependencies');
           }
-          await this.repo.update(planId, { status: 'failed', error: 'All steps blocked by unmet dependencies' });
-          throw new Error('All steps blocked by unmet dependencies');
+
+          // Wait before retrying to avoid busy loop
+          await new Promise((r) => setTimeout(r, 1000));
+          continue;
         }
 
-        // Execute the ready step instead
+        // Found a runnable step — reset stall counter
+        stallCount = 0;
         await this.executeStep(planId, readyStep, results, signal);
       } else {
+        stallCount = 0;
         await this.executeStep(planId, step, results, signal);
       }
 
@@ -437,14 +455,19 @@ export class PlanExecutor extends EventEmitter {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      // Check for retry
+      // Check for retry with exponential backoff
       if (step.retryCount < step.maxRetries) {
+        const retryNum = step.retryCount + 1;
+        const backoffMs = Math.min(1000 * Math.pow(2, step.retryCount), 30000);
+        this.log(`Step ${step.name} failed, retrying in ${backoffMs}ms (${retryNum}/${step.maxRetries})`);
+
+        await new Promise((r) => setTimeout(r, backoffMs));
+
         await this.repo.updateStep(step.id, {
           status: 'pending',
-          retryCount: step.retryCount + 1,
+          retryCount: retryNum,
           error: errorMessage,
         });
-        this.log(`Step ${step.name} failed, retrying (${step.retryCount + 1}/${step.maxRetries})`);
         return; // Will be retried in next iteration
       }
 
@@ -477,19 +500,30 @@ export class PlanExecutor extends EventEmitter {
     fn: () => Promise<T>,
     timeout: number
   ): Promise<T> {
+    let settled = false;
+
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
-        reject(new Error(`Step timed out after ${timeout}ms`));
+        if (!settled) {
+          settled = true;
+          reject(new Error(`Step timed out after ${timeout}ms`));
+        }
       }, timeout);
 
       fn()
         .then((result) => {
-          clearTimeout(timer);
-          resolve(result);
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            resolve(result);
+          }
         })
         .catch((error) => {
-          clearTimeout(timer);
-          reject(error);
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            reject(error);
+          }
         });
     });
   }
@@ -499,41 +533,93 @@ export class PlanExecutor extends EventEmitter {
   // ============================================================================
 
   private registerDefaultHandlers(): void {
-    // Tool call handler
+    // Tool call handler - executes tools via shared tool executor
     this.registerHandler('tool_call', async (config, context) => {
       if (!config.toolName) {
         return { success: false, error: 'No tool name specified' };
       }
 
-      // Tool execution will be handled by the caller
-      // This returns a placeholder that indicates tool should be called
+      const toolName = config.toolName as string;
+      const toolArgs = (config.toolArgs ?? {}) as Record<string, unknown>;
+
+      if (!await hasTool(toolName)) {
+        return { success: false, error: `Tool '${toolName}' not found` };
+      }
+
+      this.log(`Executing tool: ${toolName}`);
+      const result = await executeTool(toolName, toolArgs, this.config.userId);
+
+      if (result.success) {
+        return {
+          success: true,
+          data: {
+            type: 'tool_call',
+            toolName,
+            result: result.result,
+          },
+        };
+      }
+
       return {
-        success: true,
-        data: {
-          type: 'tool_call',
-          toolName: config.toolName,
-          toolArgs: config.toolArgs ?? {},
-          requiresExecution: true,
-        },
+        success: false,
+        error: result.error ?? `Tool '${toolName}' execution failed`,
       };
     });
 
-    // LLM decision handler
+    // LLM decision handler - calls the AI agent for decision-making
     this.registerHandler('llm_decision', async (config, context) => {
       if (!config.prompt) {
         return { success: false, error: 'No prompt specified' };
       }
 
-      // LLM call will be handled by the caller
-      return {
-        success: true,
-        data: {
-          type: 'llm_decision',
-          prompt: config.prompt,
-          choices: config.choices,
-          requiresExecution: true,
-        },
-      };
+      try {
+        // Dynamic import to avoid circular dependencies
+        const { getOrCreateChatAgent } = await import('../routes/agents.js');
+        const { resolveProviderAndModel } = await import('../routes/settings.js');
+        const resolved = await resolveProviderAndModel('default', 'default');
+        const agent = await getOrCreateChatAgent(resolved.provider ?? 'openai', resolved.model ?? 'gpt-4o-mini');
+
+        // Build the prompt with choices if provided
+        let fullPrompt = config.prompt as string;
+        if (config.choices && Array.isArray(config.choices)) {
+          fullPrompt += '\n\nAvailable choices:\n';
+          for (const choice of config.choices as string[]) {
+            fullPrompt += `- ${choice}\n`;
+          }
+          fullPrompt += '\nRespond with your decision and reasoning.';
+        }
+
+        // Add context from previous steps if available
+        if (context.previousResults.size > 0) {
+          fullPrompt += '\n\nPrevious step results:\n';
+          for (const [stepId, result] of context.previousResults) {
+            fullPrompt += `- Step ${stepId}: ${JSON.stringify(result)}\n`;
+          }
+        }
+
+        const result = await agent.chat(fullPrompt);
+
+        if (result.ok) {
+          return {
+            success: true,
+            data: {
+              type: 'llm_decision',
+              decision: result.value.content,
+              toolCalls: result.value.toolCalls?.length ?? 0,
+            },
+          };
+        }
+
+        return {
+          success: false,
+          error: result.error?.message ?? 'LLM decision failed',
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'LLM decision failed',
+        };
+      }
     });
 
     // User input handler
@@ -581,31 +667,88 @@ export class PlanExecutor extends EventEmitter {
       };
     });
 
-    // Parallel handler (simplified - marks steps as ready)
+    // Parallel handler - executes multiple tool calls concurrently (respects maxConcurrent)
     this.registerHandler('parallel', async (config, context) => {
-      // For now, just return success - parallel execution
-      // would require more complex orchestration
+      const rawSteps = (config.steps ?? []) as unknown[];
+      const steps = rawSteps.map((s) => {
+        if (typeof s === 'object' && s !== null) {
+          const obj = s as Record<string, unknown>;
+          return { toolName: obj.toolName as string, toolArgs: (obj.toolArgs ?? {}) as Record<string, unknown> };
+        }
+        return { toolName: String(s), toolArgs: {} as Record<string, unknown> };
+      });
+      if (steps.length === 0) {
+        return { success: true, data: { type: 'parallel', results: [] } };
+      }
+
+      const batchSize = this.config.maxConcurrent;
+      this.log(`Executing ${steps.length} steps in parallel (batch size: ${batchSize})`);
+
+      const allOutputs: Array<{ step: string | undefined; success: boolean; error?: string; result?: unknown }> = [];
+
+      // Process in batches to respect maxConcurrent
+      for (let i = 0; i < steps.length; i += batchSize) {
+        const batch = steps.slice(i, i + batchSize);
+        const promises = batch.map(async (step) => {
+          if (step.toolName && await hasTool(step.toolName)) {
+            return executeTool(step.toolName, step.toolArgs ?? {}, this.config.userId);
+          }
+          return { success: false, error: `Tool '${step.toolName}' not found` };
+        });
+
+        const results = await Promise.allSettled(promises);
+        const batchOutputs = results.map((r, j) => ({
+          step: batch[j]?.toolName,
+          ...(r.status === 'fulfilled' ? r.value : { success: false, error: r.reason?.message ?? 'Failed' }),
+        }));
+        allOutputs.push(...batchOutputs);
+      }
+
+      const allSucceeded = allOutputs.every((o) => o.success);
       return {
-        success: true,
-        data: {
-          type: 'parallel',
-          steps: config.steps,
-          message: 'Parallel execution requires external orchestration',
-        },
+        success: allSucceeded,
+        data: { type: 'parallel', results: allOutputs },
+        error: allSucceeded ? undefined : 'Some parallel steps failed',
       };
     });
 
-    // Loop handler
+    // Loop handler - executes a tool repeatedly until condition is met
     this.registerHandler('loop', async (config, context) => {
-      // Loop execution would need iteration tracking
+      const maxIterations = (config.maxIterations as number) ?? 10;
+      const toolName = config.toolName as string;
+      const toolArgs = (config.toolArgs ?? {}) as Record<string, unknown>;
+
+      if (!toolName || !await hasTool(toolName)) {
+        return { success: false, error: `Loop tool '${toolName}' not found` };
+      }
+
+      this.log(`Starting loop: ${toolName} (max ${maxIterations} iterations)`);
+      const iterationResults: unknown[] = [];
+
+      for (let i = 0; i < maxIterations; i++) {
+        const result = await executeTool(toolName, { ...toolArgs, iteration: i }, this.config.userId);
+        iterationResults.push(result.result);
+
+        if (!result.success) {
+          return {
+            success: false,
+            data: { type: 'loop', iterations: i + 1, results: iterationResults },
+            error: result.error ?? `Loop iteration ${i + 1} failed`,
+          };
+        }
+
+        // Check abort signal
+        if (context.abortSignal?.aborted) {
+          return {
+            success: true,
+            data: { type: 'loop', iterations: i + 1, results: iterationResults, aborted: true },
+          };
+        }
+      }
+
       return {
         success: true,
-        data: {
-          type: 'loop',
-          maxIterations: config.maxIterations,
-          condition: config.loopCondition,
-          message: 'Loop execution requires external orchestration',
-        },
+        data: { type: 'loop', iterations: maxIterations, results: iterationResults },
       };
     });
 

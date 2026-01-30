@@ -13,6 +13,7 @@ export {
   type ActionResult,
   type EventHandler,
   type TriggerEvent,
+  type ChatHandler,
 } from './engine.js';
 
 export {

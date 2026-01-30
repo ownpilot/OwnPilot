@@ -49,8 +49,6 @@ export interface MemoryInjectionOptions {
   includeTimeContext?: boolean;
   /** Include tool descriptions */
   includeToolDescriptions?: boolean;
-  /** Language preference */
-  language?: 'en' | 'tr' | 'auto';
   /** Maximum prompt length */
   maxPromptLength?: number;
 }

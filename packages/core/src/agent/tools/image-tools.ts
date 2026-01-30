@@ -27,12 +27,12 @@ export const analyzeImageTool: ToolDefinition = {
       },
       task: {
         type: 'string',
-        description: 'Analysis task to perform',
+        description: 'Analysis task to perform (default: "describe"). Use "custom" with the "question" parameter to ask a specific question about the image.',
         enum: ['describe', 'ocr', 'objects', 'faces', 'colors', 'custom'],
       },
       question: {
         type: 'string',
-        description: 'Specific question about the image (for custom task)',
+        description: 'Specific question about the image. REQUIRED when task is "custom", ignored otherwise.',
       },
       detailLevel: {
         type: 'string',

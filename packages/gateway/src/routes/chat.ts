@@ -36,11 +36,69 @@ import {
   getTraceSummary,
   type TraceSummary,
 } from '../tracing/index.js';
-import { debugLog } from '@ownpilot/core';
+import { debugLog, type ToolDefinition } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace, getSessionWorkspace } from '../workspace/file-workspace.js';
 import { parseLimit, parseOffset } from '../utils/index.js';
+import { getCustomDataRepository } from '../db/repositories/custom-data.js';
 
 export const chatRoutes = new Hono();
+
+/**
+ * Build a compact tool catalog for the first message.
+ * Lists all available tool names grouped by category + custom data tables.
+ * Sent only once at the start of a chat so the LLM knows what exists.
+ */
+async function buildToolCatalog(allTools: readonly ToolDefinition[]): Promise<string> {
+  // Skip meta-tools from the catalog
+  const skipTools = new Set(['search_tools', 'get_tool_help', 'use_tool']);
+  const tools = allTools.filter(t => !skipTools.has(t.name));
+
+  // Group by category
+  const groups: Record<string, string[]> = {};
+  for (const t of tools) {
+    const cat = t.category || 'other';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(t.name);
+  }
+
+  const lines: string[] = [
+    '',
+    '---',
+    '[TOOL CATALOG — Complete list of available tools. This catalog is sent once at the start of the chat.]',
+    '',
+    'AVAILABLE TOOLS (call via use_tool or directly if attached):',
+  ];
+
+  // Sort categories for consistent output
+  const sortedCats = Object.keys(groups).sort();
+  for (const cat of sortedCats) {
+    const toolNames = groups[cat]!.sort();
+    lines.push(`  [${cat}] ${toolNames.join(', ')}`);
+  }
+
+  // Fetch custom data tables
+  try {
+    const repo = getCustomDataRepository();
+    const tables = await repo.listTables();
+    if (tables.length > 0) {
+      lines.push('');
+      lines.push('CUSTOM DATA TABLES:');
+      for (const t of tables) {
+        const display = t.displayName && t.displayName !== t.name ? `${t.displayName} (${t.name})` : t.name;
+        lines.push(`  • ${display}`);
+      }
+    }
+  } catch {
+    // Custom data not available — skip
+  }
+
+  lines.push('');
+  lines.push('To use a tool: use_tool("tool_name", {parameters})');
+  lines.push('To discover parameters: get_tool_help("tool_name")');
+  lines.push('To search: search_tools("keyword")');
+
+  return lines.join('\n');
+}
 
 /**
  * Generate demo response based on user message
@@ -187,6 +245,19 @@ chatRoutes.post('/', async (c) => {
     // Continue without workspace - use global default
   }
 
+  // Build tool catalog for the first message (sent only once per chat)
+  let chatMessage = body.message;
+  if (body.includeToolList) {
+    try {
+      const allToolDefs = agent.getAllToolDefinitions();
+      const catalog = await buildToolCatalog(allToolDefs);
+      chatMessage = body.message + catalog;
+      console.log(`[Chat] Tool catalog injected: ${allToolDefs.length} tools`);
+    } catch (err) {
+      console.warn('[Chat] Failed to build tool catalog:', err);
+    }
+  }
+
   // Handle streaming
   if (body.stream) {
     return streamSSE(c, async (stream) => {
@@ -195,6 +266,11 @@ chatRoutes.post('/', async (c) => {
       const streamAgentId = body.agentId ?? `chat-${provider}`;
       const streamUserId = 'default'; // TODO: Get from auth context
       let lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+
+      // Expose direct tools to LLM if requested (from picker selection)
+      if (body.directTools?.length) {
+        agent.setAdditionalTools(body.directTools);
+      }
 
       // Collect tool execution info for trace
       const traceToolCalls: Array<{
@@ -206,7 +282,7 @@ chatRoutes.post('/', async (c) => {
         startTime?: number;
       }> = [];
 
-      const result = await agent.chat(body.message, {
+      const result = await agent.chat(chatMessage, {
         stream: true,
         onBeforeToolCall: async (toolCall) => {
           const approval = await checkToolCallApproval(streamUserId, toolCall, {
@@ -313,10 +389,19 @@ chatRoutes.post('/', async (c) => {
           });
         },
         onToolStart: async (toolCall) => {
-          // Add to trace collection
+          // Extract the real tool name from use_tool calls for better logs
+          const parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined;
+          const displayName = toolCall.name === 'use_tool' && parsedArgs?.tool_name
+            ? parsedArgs.tool_name
+            : toolCall.name;
+          const displayArgs = toolCall.name === 'use_tool' && parsedArgs?.arguments
+            ? parsedArgs.arguments
+            : parsedArgs;
+
+          // Add to trace collection with real tool name
           traceToolCalls.push({
-            name: toolCall.name,
-            arguments: toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined,
+            name: displayName,
+            arguments: displayArgs,
             success: true, // Will be updated in onToolEnd
             startTime: performance.now(),
           });
@@ -326,8 +411,8 @@ chatRoutes.post('/', async (c) => {
               type: 'tool_start',
               tool: {
                 id: toolCall.id,
-                name: toolCall.name,
-                arguments: toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined,
+                name: displayName,
+                arguments: displayArgs,
               },
               timestamp: new Date().toISOString(),
             }),
@@ -335,10 +420,19 @@ chatRoutes.post('/', async (c) => {
           });
         },
         onToolEnd: async (toolCall, result) => {
-          // Update trace with result
-          const traceEntry = traceToolCalls.find(tc => tc.name === toolCall.name && !tc.result);
+          // Extract real tool name for display
+          let displayName = toolCall.name;
+          try {
+            if (toolCall.name === 'use_tool' && toolCall.arguments) {
+              const args = JSON.parse(toolCall.arguments);
+              if (args.tool_name) displayName = args.tool_name;
+            }
+          } catch { /* ignore parse errors */ }
+
+          // Update trace with result (match by real tool name)
+          const traceEntry = traceToolCalls.find(tc => tc.name === displayName && !tc.result);
           if (traceEntry) {
-            traceEntry.result = result.content.substring(0, 1000);
+            traceEntry.result = result.content;
             traceEntry.success = !(result.isError ?? false);
             traceEntry.duration = result.durationMs ?? (traceEntry.startTime ? Math.round(performance.now() - traceEntry.startTime) : undefined);
             delete traceEntry.startTime;
@@ -349,7 +443,7 @@ chatRoutes.post('/', async (c) => {
               type: 'tool_end',
               tool: {
                 id: toolCall.id,
-                name: toolCall.name,
+                name: displayName,
               },
               result: {
                 success: !(result.isError ?? false),
@@ -373,6 +467,11 @@ chatRoutes.post('/', async (c) => {
           });
         },
       });
+
+      // Clear direct tools after chat completes
+      if (body.directTools?.length) {
+        agent.clearAdditionalTools();
+      }
 
       const streamLatency = Math.round(performance.now() - streamStartTime);
 
@@ -576,11 +675,16 @@ chatRoutes.post('/', async (c) => {
       requestId,
     }).catch((e) => console.warn('[Chat] Event logging failed:', e));
 
+    // Expose direct tools to LLM if requested (from picker selection)
+    if (body.directTools?.length) {
+      agent.setAdditionalTools(body.directTools);
+    }
+
     // Track model call timing
     const modelCallStart = Date.now();
 
     // Call chat with autonomy check callback for tool calls
-    const result = await agent.chat(body.message, {
+    const result = await agent.chat(chatMessage, {
       onBeforeToolCall: async (toolCall) => {
         // Parse arguments if it's a string
         const toolArgs = typeof toolCall.arguments === 'string'
@@ -611,6 +715,11 @@ chatRoutes.post('/', async (c) => {
         };
       },
     });
+
+    // Clear direct tools after chat completes
+    if (body.directTools?.length) {
+      agent.clearAdditionalTools();
+    }
 
     // Record model call
     if (result.ok) {

@@ -3,7 +3,7 @@ import { Layout } from './components/Layout';
 import { ChatPage } from './pages/ChatPage';
 import { InboxPage } from './pages/InboxPage';
 import { AgentsPage } from './pages/AgentsPage';
-import { ToolsPage } from './pages/ToolsPage';
+import { ToolsPage } from './pages/tools';
 import { ModelsPage } from './pages/ModelsPage';
 import { CostsPage } from './pages/CostsPage';
 import { SettingsPage } from './pages/SettingsPage';

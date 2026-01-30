@@ -52,7 +52,7 @@ interface ChatStore extends ChatState {
   setModel: (model: string) => void;
   setAgentId: (agentId: string | null) => void;
   setWorkspaceId: (workspaceId: string | null) => void;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, directTools?: string[]) => Promise<void>;
   retryLastMessage: () => Promise<void>;
   clearMessages: () => void;
   cancelRequest: () => void;
@@ -87,7 +87,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const sendMessage = useCallback(
-    async (content: string, isRetry = false) => {
+    async (content: string, directToolsOrRetry?: string[] | boolean, isRetryArg?: boolean) => {
+      // Support both old signature (content, isRetry) and new (content, directTools, isRetry)
+      const directTools = Array.isArray(directToolsOrRetry) ? directToolsOrRetry : undefined;
+      const isRetry = typeof directToolsOrRetry === 'boolean' ? directToolsOrRetry : (isRetryArg ?? false);
       // Cancel any previous ongoing request before starting a new one
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -137,6 +140,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             stream: true, // Enable streaming!
             ...(agentId && { agentId }),
             ...(workspaceId && { workspaceId }),
+            ...(directTools?.length && { directTools }),
+            // Send tool catalog only on the first message of a new chat
+            ...(currentMessages.length === 0 && !isRetry && { includeToolList: true }),
             history: currentMessages
               .filter((m) => !m.isError)
               .slice(-10)

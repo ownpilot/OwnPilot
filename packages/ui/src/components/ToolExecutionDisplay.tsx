@@ -43,8 +43,8 @@ interface ToolCallCardProps {
 }
 
 function ToolCallCard({ toolCall, onRerun }: ToolCallCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [showArgs, setShowArgs] = useState(true); // Show arguments by default
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showArgs, setShowArgs] = useState(false);
 
   // Note: getToolIcon is available for future use
   const category = getToolCategory(toolCall.name);
