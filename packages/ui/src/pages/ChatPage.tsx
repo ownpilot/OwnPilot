@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ChatInput } from '../components/ChatInput';
 import { MessageList } from '../components/MessageList';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
+import { SetupWizard } from '../components/SetupWizard';
 import { useChatStore } from '../hooks/useChatStore';
 import { AlertCircle, Settings, Bot } from '../components/icons';
 
@@ -447,19 +448,21 @@ export function ChatPage() {
                 {currentAgent ? `Chat with ${agentDisplayName}` : 'Welcome to OwnPilot'}
               </h3>
 
-              {!isLoadingModels && configuredProviders.length === 0 ? (
+              {!isLoadingModels && configuredProviders.length === 0 && localStorage.getItem('ownpilot-setup-complete') !== 'true' ? (
+                <SetupWizard onComplete={() => window.location.reload()} />
+              ) : !isLoadingModels && configuredProviders.length === 0 ? (
                 <>
                   <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg mb-4">
                     <div className="flex items-center justify-center gap-2 text-warning mb-2">
                       <AlertCircle className="w-5 h-5" />
-                      <span className="font-medium">Demo Mode</span>
+                      <span className="font-medium">No API Keys</span>
                     </div>
                     <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                      No API keys configured. You'll receive simulated responses.
+                      Configure at least one AI provider to start chatting.
                     </p>
                   </div>
                   <a
-                    href="/settings"
+                    href="/settings/api-keys"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors mb-4"
                   >
                     <Settings className="w-4 h-4" />

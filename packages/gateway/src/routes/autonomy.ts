@@ -50,7 +50,11 @@ autonomyRoutes.get('/config', (c) => {
  */
 autonomyRoutes.patch('/config', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
-  const body = await c.req.json();
+  const rawBody = await c.req.json();
+
+  // Validate config update body
+  const { validateBody, autonomyConfigSchema } = await import('../middleware/validation.js');
+  const body = validateBody(autonomyConfigSchema, rawBody);
 
   const manager = getApprovalManager();
   manager.setUserConfig(userId, body);
@@ -653,10 +657,11 @@ autonomyRoutes.get('/budget', (c) => {
  */
 autonomyRoutes.patch('/budget', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
-  const body = await c.req.json<{
-    dailyBudget?: number;
-    maxCostPerAction?: number;
-  }>();
+  const rawBody = await c.req.json();
+
+  // Validate budget update body
+  const { validateBody, autonomyBudgetSchema } = await import('../middleware/validation.js');
+  const body = validateBody(autonomyBudgetSchema, rawBody);
 
   const manager = getApprovalManager();
   const updates: Record<string, unknown> = {};
