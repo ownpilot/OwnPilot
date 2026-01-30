@@ -21,7 +21,7 @@ import {
 } from '../../scheduler/index.js';
 
 // =============================================================================
-// Natural Language Schedule Parser (Supports Turkish & English, One-time & Recurring)
+// Natural Language Schedule Parser (Supports English, One-time & Recurring)
 // =============================================================================
 
 /**
@@ -38,14 +38,12 @@ export interface ParsedSchedule {
  * Parse time from text (supports 12h and 24h formats)
  */
 function parseTime(text: string): { hour: number; minute: number } | null {
-  // Turkish time patterns: "12:50'de", "12.50'de", "saat 12:50", "12:50 de"
   // English patterns: "12:50", "12:50am", "12:50 pm", "at 12:50"
   const patterns = [
-    /(\d{1,2})[:.](\d{2})(?:'?de)?/i,           // 12:50, 12.50, 12:50'de
-    /(\d{1,2})[:.](\d{2})\s*(am|pm)/i,          // 12:50 am/pm
-    /saat\s*(\d{1,2})[:.]?(\d{2})?/i,           // saat 12:50, saat 12
-    /at\s*(\d{1,2})[:.]?(\d{2})?\s*(am|pm)?/i,  // at 12:50
-    /(\d{1,2})\s*(am|pm)/i,                      // 12 am/pm
+    /(\d{1,2})[:.](\d{2})/i,                      // 12:50, 12.50
+    /(\d{1,2})[:.](\d{2})\s*(am|pm)/i,           // 12:50 am/pm
+    /at\s*(\d{1,2})[:.]?(\d{2})?\s*(am|pm)?/i,   // at 12:50
+    /(\d{1,2})\s*(am|pm)/i,                       // 12 am/pm
   ];
 
   for (const pattern of patterns) {
@@ -84,11 +82,11 @@ export function parseSchedule(text: string): ParsedSchedule | null {
   const time = parseTime(normalized);
 
   // ==========================================================================
-  // ONE-TIME SCHEDULES (Turkish & English)
+  // ONE-TIME SCHEDULES
   // ==========================================================================
 
-  // "in X minutes" / "X dakika sonra" / "X dk sonra"
-  const inMinutesMatch = normalized.match(/(?:in\s+)?(\d+)\s*(?:dakika|dk|minute|min)(?:\s*sonra)?/i);
+  // "in X minutes"
+  const inMinutesMatch = normalized.match(/(?:in\s+)?(\d+)\s*(?:minute|min|minutes)(?:\s*from\s*now)?/i);
   if (inMinutesMatch) {
     const minutes = parseInt(inMinutesMatch[1]!, 10);
     const runAt = new Date(now.getTime() + minutes * 60 * 1000);
@@ -99,8 +97,8 @@ export function parseSchedule(text: string): ParsedSchedule | null {
     };
   }
 
-  // "in X hours" / "X saat sonra"
-  const inHoursMatch = normalized.match(/(?:in\s+)?(\d+)\s*(?:saat|hour|hr)(?:\s*sonra)?/i);
+  // "in X hours"
+  const inHoursMatch = normalized.match(/(?:in\s+)?(\d+)\s*(?:hour|hr|hours)(?:\s*from\s*now)?/i);
   if (inHoursMatch) {
     const hours = parseInt(inHoursMatch[1]!, 10);
     const runAt = new Date(now.getTime() + hours * 60 * 60 * 1000);
@@ -111,8 +109,8 @@ export function parseSchedule(text: string): ParsedSchedule | null {
     };
   }
 
-  // "today at X" / "bugün X" / "bugün saat X"
-  if (/today|bugün/.test(normalized) && time) {
+  // "today at X"
+  if (/today/.test(normalized) && time) {
     const runAt = new Date(now);
     runAt.setHours(time.hour, time.minute, 0, 0);
     // If time has passed, still schedule for today (user explicitly said "today")
@@ -124,8 +122,8 @@ export function parseSchedule(text: string): ParsedSchedule | null {
     };
   }
 
-  // "tomorrow at X" / "yarın X" / "yarın saat X"
-  if (/tomorrow|yarın/.test(normalized) && time) {
+  // "tomorrow at X"
+  if (/tomorrow/.test(normalized) && time) {
     const runAt = new Date(now);
     runAt.setDate(runAt.getDate() + 1);
     runAt.setHours(time.hour, time.minute, 0, 0);
@@ -139,7 +137,7 @@ export function parseSchedule(text: string): ParsedSchedule | null {
 
   // Just a bare time like "12:50" or "12:50'de" WITHOUT any recurring keyword
   // Treat as one-time for today (or tomorrow if time has passed)
-  if (time && !/(every|her|daily|günlük|weekly|haftalık|monthly|aylık|morning|sabah|evening|akşam|weekday|hafta içi|weekend|hafta sonu)/.test(normalized)) {
+  if (time && !/(every|daily|weekly|monthly|morning|evening|weekday|weekend)/.test(normalized)) {
     const runAt = new Date(now);
     runAt.setHours(time.hour, time.minute, 0, 0);
 
@@ -158,67 +156,66 @@ export function parseSchedule(text: string): ParsedSchedule | null {
   }
 
   // ==========================================================================
-  // RECURRING SCHEDULES (Turkish & English)
+  // RECURRING SCHEDULES
   // ==========================================================================
 
   const hour = time?.hour ?? 9;
   const minute = time?.minute ?? 0;
   const timeStr = `${hour}:${minute.toString().padStart(2, '0')}`;
 
-  // Every minute / Her dakika
-  if (/every\s*minute|her\s*dakika/.test(normalized)) {
+  // Every minute
+  if (/every\s*minute/.test(normalized)) {
     return { type: 'cron', cron: CRON_PRESETS.everyMinute, description: 'Every minute' };
   }
 
-  // Every X minutes / Her X dakikada
-  const minuteInterval = normalized.match(/(?:every|her)\s*(\d+)\s*(?:dakika|minute|dk|min)/);
+  // Every X minutes
+  const minuteInterval = normalized.match(/every\s*(\d+)\s*(?:minute|min|minutes)/);
   if (minuteInterval) {
     const interval = parseInt(minuteInterval[1]!, 10);
     return { type: 'cron', cron: `*/${interval} * * * *`, description: `Every ${interval} minutes` };
   }
 
-  // Every hour / Her saat
-  if (/every\s*hour|hourly|her\s*saat|saatlik/.test(normalized)) {
+  // Every hour
+  if (/every\s*hour|hourly/.test(normalized)) {
     return { type: 'cron', cron: CRON_PRESETS.everyHour, description: 'Every hour' };
   }
 
-  // Every X hours / Her X saatte
-  const hourInterval = normalized.match(/(?:every|her)\s*(\d+)\s*(?:saat|hour|hr)/);
+  // Every X hours
+  const hourInterval = normalized.match(/every\s*(\d+)\s*(?:hour|hr|hours)/);
   if (hourInterval) {
     const interval = parseInt(hourInterval[1]!, 10);
     return { type: 'cron', cron: `0 */${interval} * * *`, description: `Every ${interval} hours` };
   }
 
-  // Morning / Her sabah
-  if (/every\s*morning|mornings|her\s*sabah|sabahları/.test(normalized)) {
+  // Morning
+  if (/every\s*morning|mornings/.test(normalized)) {
     const h = time ? hour : 9;
     return { type: 'cron', cron: `${minute} ${h} * * *`, description: `Every morning at ${h}:${minute.toString().padStart(2, '0')}` };
   }
 
-  // Evening / Her akşam
-  if (/every\s*evening|evenings|her\s*akşam|akşamları/.test(normalized)) {
+  // Evening
+  if (/every\s*evening|evenings/.test(normalized)) {
     const h = time ? hour : 18;
     return { type: 'cron', cron: `${minute} ${h} * * *`, description: `Every evening at ${h}:${minute.toString().padStart(2, '0')}` };
   }
 
-  // Daily / Her gün / Günlük
-  if (/every\s*day|daily|her\s*gün|günlük/.test(normalized)) {
+  // Daily
+  if (/every\s*day|daily/.test(normalized)) {
     return { type: 'cron', cron: `${minute} ${hour} * * *`, description: `Daily at ${timeStr}` };
   }
 
-  // Weekdays / Hafta içi
-  if (/weekday|work\s*day|hafta\s*içi|iş\s*günü|iş\s*günleri/.test(normalized)) {
+  // Weekdays
+  if (/weekday|work\s*day/.test(normalized)) {
     return { type: 'cron', cron: `${minute} ${hour} * * 1-5`, description: `Weekdays at ${timeStr}` };
   }
 
-  // Weekends / Hafta sonu
-  if (/weekend|hafta\s*sonu/.test(normalized)) {
+  // Weekends
+  if (/weekend/.test(normalized)) {
     return { type: 'cron', cron: `${minute} ${hour} * * 0,6`, description: `Weekends at ${timeStr}` };
   }
 
-  // Specific days (Turkish & English)
+  // Specific days
   const dayMap: Record<string, { num: string; en: string }> = {
-    // English
     'monday': { num: '1', en: 'Monday' }, 'mon': { num: '1', en: 'Monday' },
     'tuesday': { num: '2', en: 'Tuesday' }, 'tue': { num: '2', en: 'Tuesday' },
     'wednesday': { num: '3', en: 'Wednesday' }, 'wed': { num: '3', en: 'Wednesday' },
@@ -226,14 +223,6 @@ export function parseSchedule(text: string): ParsedSchedule | null {
     'friday': { num: '5', en: 'Friday' }, 'fri': { num: '5', en: 'Friday' },
     'saturday': { num: '6', en: 'Saturday' }, 'sat': { num: '6', en: 'Saturday' },
     'sunday': { num: '0', en: 'Sunday' }, 'sun': { num: '0', en: 'Sunday' },
-    // Turkish
-    'pazartesi': { num: '1', en: 'Monday' }, 'pzt': { num: '1', en: 'Monday' },
-    'salı': { num: '2', en: 'Tuesday' }, 'sal': { num: '2', en: 'Tuesday' },
-    'çarşamba': { num: '3', en: 'Wednesday' }, 'çar': { num: '3', en: 'Wednesday' },
-    'perşembe': { num: '4', en: 'Thursday' }, 'per': { num: '4', en: 'Thursday' },
-    'cuma': { num: '5', en: 'Friday' }, 'cum': { num: '5', en: 'Friday' },
-    'cumartesi': { num: '6', en: 'Saturday' }, 'cmt': { num: '6', en: 'Saturday' },
-    'pazar': { num: '0', en: 'Sunday' }, 'paz': { num: '0', en: 'Sunday' },
   };
 
   for (const [dayName, info] of Object.entries(dayMap)) {
@@ -246,19 +235,19 @@ export function parseSchedule(text: string): ParsedSchedule | null {
     }
   }
 
-  // Weekly / Haftalık
-  if (/weekly|haftalık/.test(normalized)) {
+  // Weekly
+  if (/weekly/.test(normalized)) {
     return { type: 'cron', cron: `${minute} ${hour} * * 1`, description: `Weekly on Monday at ${timeStr}` };
   }
 
-  // Monthly / Aylık
-  if (/monthly|first\s*of\s*month|aylık|ayın\s*başı|ayın\s*1/i.test(normalized)) {
+  // Monthly
+  if (/monthly|first\s*of\s*month/i.test(normalized)) {
     return { type: 'cron', cron: `${minute} ${hour} 1 * *`, description: `Monthly on the 1st at ${timeStr}` };
   }
 
   // Specific day of month
-  const dayOfMonth = normalized.match(/(?:ayın\s*)?(\d+)(?:st|nd|rd|th|\.|\s*'?i)?(?:\s*of\s*(?:the\s*)?month)?(?:\s*günü)?/);
-  if (dayOfMonth && /ay|month/.test(normalized)) {
+  const dayOfMonth = normalized.match(/(\d+)(?:st|nd|rd|th)?(?:\s*of\s*(?:the\s*)?month)?/);
+  if (dayOfMonth && /month/.test(normalized)) {
     const day = parseInt(dayOfMonth[1]!, 10);
     if (day >= 1 && day <= 31) {
       return { type: 'cron', cron: `${minute} ${hour} ${day} * *`, description: `Monthly on day ${day} at ${timeStr}` };
@@ -347,22 +336,22 @@ async function getScheduler(): Promise<Scheduler> {
  */
 export const createScheduledTaskTool: ToolDefinition = {
   name: 'create_scheduled_task',
-  description: `Create a new scheduled task. Supports both ONE-TIME and RECURRING schedules with natural language (Turkish & English):
+  description: `Create a new scheduled task. Supports both ONE-TIME and RECURRING schedules with natural language:
 
-ONE-TIME (tek seferlik):
-- "12:50" or "12:50'de" - today at this time (or tomorrow if passed)
-- "bugün 14:30" / "today at 2:30pm" - today at specific time
-- "yarın 09:00" / "tomorrow at 9am" - tomorrow at specific time
-- "5 dakika sonra" / "in 5 minutes" - relative time
-- "2 saat sonra" / "in 2 hours" - relative time
+ONE-TIME:
+- "12:50" - today at this time (or tomorrow if passed)
+- "today at 2:30pm" - today at specific time
+- "tomorrow at 9am" - tomorrow at specific time
+- "in 5 minutes" - relative time
+- "in 2 hours" - relative time
 
-RECURRING (tekrarlayan):
-- "her sabah 9'da" / "every morning at 9" - daily recurring
-- "her gün 12:50" / "daily at 12:50" - daily recurring
-- "hafta içi 08:30" / "weekdays at 8:30" - weekdays only
-- "her pazartesi" / "every monday" - weekly on specific day
-- "aylık" / "monthly" - first of each month
-- "her 15 dakikada" / "every 15 minutes" - interval
+RECURRING:
+- "every morning at 9" - daily recurring
+- "daily at 12:50" - daily recurring
+- "weekdays at 8:30" - weekdays only
+- "every monday" - weekly on specific day
+- "monthly" - first of each month
+- "every 15 minutes" - interval
 
 The task will run automatically at the specified times.`,
   parameters: {
@@ -374,7 +363,7 @@ The task will run automatically at the specified times.`,
       },
       schedule: {
         type: 'string',
-        description: 'When to run: natural language in Turkish or English. For one-time: "12:50", "bugün 14:30", "5 dakika sonra". For recurring: "her gün 9da", "weekdays at 8:30"',
+        description: 'When to run: natural language schedule. For one-time: "12:50", "today at 2:30pm", "in 5 minutes". For recurring: "daily at 9", "weekdays at 8:30"',
       },
       taskType: {
         type: 'string',

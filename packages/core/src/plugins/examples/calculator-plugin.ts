@@ -575,7 +575,7 @@ const calculatorHandler: MessageHandler = {
     const lower = message.toLowerCase();
     return (
       /\d+\s*[+\-*/^%]\s*\d+/.test(message) ||
-      /\b(calculate|hesapla|convert|dönüştür|percent|yüzde|average|ortalama)\b/i.test(lower) ||
+      /\b(calculate|convert|percent|average|compute|sum|total)\b/i.test(lower) ||
       /\d+\s*(km|mi|lb|kg|celsius|fahrenheit|gb|mb)\s*(to|in)\s*\w+/i.test(message)
     );
   },

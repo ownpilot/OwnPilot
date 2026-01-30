@@ -175,9 +175,8 @@ function detectLanguage(text: string): string {
   // For Latin-based languages, use common word detection
   const lowerText = text.toLowerCase();
 
-  // Turkish indicators
-  if (/\b(ve|bir|bu|için|ile|de|da|ben|sen|o)\b/.test(lowerText) ||
-      /[ğüşıöç]/.test(lowerText)) {
+  // Turkish indicators (special characters)
+  if (/[ğşıöçĞŞİÖÇ]/.test(text)) {
     return 'tr';
   }
 
