@@ -12,6 +12,7 @@
  */
 
 import * as crypto from 'node:crypto';
+import { runInNewContext } from 'node:vm';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 
 // =============================================================================
@@ -190,9 +191,9 @@ export const calculateExecutor: ToolExecutor = async (args): Promise<ToolExecuti
       };
     }
 
-    // Evaluate
-    // eslint-disable-next-line no-eval
-    const result = eval(expr);
+    // Evaluate in an isolated VM context with only Math available.
+    // This prevents access to process, require, global, etc.
+    const result = runInNewContext(expr, { Math }, { timeout: 1000 });
 
     if (typeof result !== 'number' || !isFinite(result)) {
       return {

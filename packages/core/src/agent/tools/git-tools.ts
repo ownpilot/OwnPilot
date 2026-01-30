@@ -4,10 +4,22 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
-import { execSync, exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+/**
+ * Safely run a git command using execFile (no shell interpolation).
+ * All arguments are passed as an array to avoid command injection.
+ */
+async function gitExec(args: string[], cwd: string): Promise<string> {
+  const { stdout } = await execFileAsync('git', args, {
+    cwd,
+    maxBuffer: MAX_OUTPUT_SIZE,
+  });
+  return stdout;
+}
 
 // Maximum output size
 const MAX_OUTPUT_SIZE = 100000;
@@ -39,11 +51,9 @@ export const gitStatusExecutor: ToolExecutor = async (params, context): Promise<
   const short = params.short === true;
 
   try {
-    const args = short ? '-s' : '';
-    const { stdout } = await execAsync(`git status ${args}`, {
-      cwd: repoPath,
-      maxBuffer: MAX_OUTPUT_SIZE,
-    });
+    const args = ['status'];
+    if (short) args.push('-s');
+    const stdout = await gitExec(args, repoPath);
 
     // Parse status for structured output
     const status = parseGitStatus(stdout, short);
@@ -172,18 +182,15 @@ export const gitDiffExecutor: ToolExecutor = async (params, context): Promise<To
   const stat = params.stat === true;
 
   try {
-    let args = '';
+    const args = ['diff'];
 
-    if (staged) args += '--cached ';
-    if (stat) args += '--stat ';
-    if (commit) args += `${commit} `;
-    if (commitRange) args += `${commitRange} `;
-    if (file) args += `-- ${file}`;
+    if (staged) args.push('--cached');
+    if (stat) args.push('--stat');
+    if (commit) args.push(commit);
+    if (commitRange) args.push(commitRange);
+    if (file) { args.push('--'); args.push(file); }
 
-    const { stdout } = await execAsync(`git diff ${args}`.trim(), {
-      cwd: repoPath,
-      maxBuffer: MAX_OUTPUT_SIZE,
-    });
+    const stdout = await gitExec(args, repoPath);
 
     // Parse diff stats
     const stats = parseDiffStats(stdout);
@@ -273,21 +280,17 @@ export const gitLogExecutor: ToolExecutor = async (params, context): Promise<Too
   const branch = params.branch as string | undefined;
 
   try {
-    let args = `-n ${limit}`;
+    const args = ['log', '-n', String(limit)];
 
-    if (oneline) args += ' --oneline';
-    if (author) args += ` --author="${author}"`;
-    if (since) args += ` --since="${since}"`;
-    if (until) args += ` --until="${until}"`;
-    if (branch) args += ` ${branch}`;
-    if (file) args += ` -- ${file}`;
+    if (oneline) args.push('--oneline');
+    if (author) args.push(`--author=${author}`);
+    if (since) args.push(`--since=${since}`);
+    if (until) args.push(`--until=${until}`);
+    if (!oneline) args.push('--format=%H|%an|%ae|%at|%s');
+    if (branch) args.push(branch);
+    if (file) { args.push('--'); args.push(file); }
 
-    // Use structured format for parsing
-    const format = oneline ? '' : ' --format="%H|%an|%ae|%at|%s"';
-    const { stdout } = await execAsync(`git log ${args}${format}`, {
-      cwd: repoPath,
-      maxBuffer: MAX_OUTPUT_SIZE,
-    });
+    const stdout = await gitExec(args, repoPath);
 
     // Parse commits
     const commits = oneline
@@ -368,20 +371,15 @@ export const gitCommitExecutor: ToolExecutor = async (params, context): Promise<
   }
 
   try {
-    let args = '';
-    if (all) args += '-a ';
-    if (amend) args += '--amend ';
-    args += `-m "${message.replace(/"/g, '\\"')}"`;
+    const args = ['commit'];
+    if (all) args.push('-a');
+    if (amend) args.push('--amend');
+    args.push('-m', message);
 
-    const { stdout } = await execAsync(`git commit ${args}`, {
-      cwd: repoPath,
-      maxBuffer: MAX_OUTPUT_SIZE,
-    });
+    const stdout = await gitExec(args, repoPath);
 
     // Get commit hash
-    const { stdout: hash } = await execAsync('git rev-parse HEAD', {
-      cwd: repoPath,
-    });
+    const hash = await gitExec(['rev-parse', 'HEAD'], repoPath);
 
     return {
       content: {
@@ -435,17 +433,17 @@ export const gitAddExecutor: ToolExecutor = async (params, context): Promise<Too
   const all = params.all === true;
 
   try {
-    let args = all ? '-A' : (files?.join(' ') || '.');
+    const args = ['add'];
+    if (all) {
+      args.push('-A');
+    } else {
+      args.push(...(files || ['.']));
+    }
 
-    await execAsync(`git add ${args}`, {
-      cwd: repoPath,
-      maxBuffer: MAX_OUTPUT_SIZE,
-    });
+    await gitExec(args, repoPath);
 
     // Get status after adding
-    const { stdout: status } = await execAsync('git status -s', {
-      cwd: repoPath,
-    });
+    const status = await gitExec(['status', '-s'], repoPath);
 
     return {
       content: {
@@ -511,12 +509,11 @@ export const gitBranchExecutor: ToolExecutor = async (params, context): Promise<
 
     switch (action) {
       case 'list': {
-        const args = remote ? '-a' : '';
-        const { stdout } = await execAsync(`git branch ${args}`, {
-          cwd: repoPath,
-        });
+        const branchArgs = ['branch'];
+        if (remote) branchArgs.push('-a');
+        const branchOutput = await gitExec(branchArgs, repoPath);
 
-        const branches = stdout.trim().split('\n').map(b => {
+        const branches = branchOutput.trim().split('\n').map(b => {
           const isCurrent = b.startsWith('*');
           return {
             name: b.replace(/^\*?\s+/, ''),
@@ -532,7 +529,7 @@ export const gitBranchExecutor: ToolExecutor = async (params, context): Promise<
         if (!name) {
           return { content: { error: 'Branch name required' }, isError: true };
         }
-        await execAsync(`git branch ${name}`, { cwd: repoPath });
+        await gitExec(['branch', name], repoPath);
         result = { success: true, created: name };
         break;
       }
@@ -541,7 +538,7 @@ export const gitBranchExecutor: ToolExecutor = async (params, context): Promise<
         if (!name) {
           return { content: { error: 'Branch name required' }, isError: true };
         }
-        await execAsync(`git branch -d ${name}`, { cwd: repoPath });
+        await gitExec(['branch', '-d', name], repoPath);
         result = { success: true, deleted: name };
         break;
       }
@@ -550,7 +547,7 @@ export const gitBranchExecutor: ToolExecutor = async (params, context): Promise<
         if (!name || !newName) {
           return { content: { error: 'Both name and newName required' }, isError: true };
         }
-        await execAsync(`git branch -m ${name} ${newName}`, { cwd: repoPath });
+        await gitExec(['branch', '-m', name, newName], repoPath);
         result = { success: true, renamed: { from: name, to: newName } };
         break;
       }
@@ -613,19 +610,16 @@ export const gitCheckoutExecutor: ToolExecutor = async (params, context): Promis
   }
 
   try {
-    let args = '';
+    const args = ['checkout'];
     if (createBranch && branch) {
-      args = `-b ${branch}`;
+      args.push('-b', branch);
     } else if (branch) {
-      args = branch;
+      args.push(branch);
     } else if (file) {
-      args = `-- ${file}`;
+      args.push('--', file);
     }
 
-    const { stdout } = await execAsync(`git checkout ${args}`, {
-      cwd: repoPath,
-      maxBuffer: MAX_OUTPUT_SIZE,
-    });
+    const stdout = await gitExec(args, repoPath);
 
     return {
       content: {

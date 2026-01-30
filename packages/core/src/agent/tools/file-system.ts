@@ -12,6 +12,17 @@ import { Readable } from 'node:stream';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult, ToolContext } from '../types.js';
 
 /**
+ * Safely convert a glob pattern to a RegExp.
+ * Escapes all regex metacharacters first, then converts glob wildcards.
+ * Anchored to match the full string to prevent partial matches.
+ */
+function safeGlobToRegex(glob: string): RegExp {
+  const escaped = glob.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+  const pattern = escaped.replace(/\*/g, '.*').replace(/\?/g, '.');
+  return new RegExp(`^${pattern}$`, 'i');
+}
+
+/**
  * Get allowed base directories for file operations (security)
  * For self-hosted single-user setups, workspace and temp dirs are allowed
  * @param workspaceDir Optional workspace directory override from context
@@ -325,8 +336,7 @@ export const listDirectoryExecutor: ToolExecutor = async (args, context): Promis
 
         // Apply pattern filter
         if (pattern) {
-          const regex = new RegExp(pattern.replace(/\*/g, '.*').replace(/\?/g, '.'));
-          if (!regex.test(item.name)) continue;
+          if (!safeGlobToRegex(pattern).test(item.name)) continue;
         }
 
         const fullPath = path.join(dir, item.name);
@@ -428,7 +438,15 @@ export const searchFilesExecutor: ToolExecutor = async (args, context): Promise<
 
   try {
     const flags = caseSensitive ? 'g' : 'gi';
-    const regex = new RegExp(query, flags);
+    let regex: RegExp;
+    try {
+      regex = new RegExp(query, flags);
+    } catch {
+      return {
+        content: JSON.stringify({ error: `Invalid search pattern: ${query}` }),
+        isError: true,
+      };
+    }
 
     const results: Array<{
       file: string;
@@ -452,8 +470,7 @@ export const searchFilesExecutor: ToolExecutor = async (args, context): Promise<
         } else if (item.isFile()) {
           // Apply file pattern filter
           if (filePattern) {
-            const patternRegex = new RegExp(filePattern.replace(/\*/g, '.*').replace(/\?/g, '.'));
-            if (!patternRegex.test(item.name)) continue;
+            if (!safeGlobToRegex(filePattern).test(item.name)) continue;
           }
 
           try {
