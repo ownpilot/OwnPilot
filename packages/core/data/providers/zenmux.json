@@ -12,6 +12,71 @@
   },
   "models": [
     {
+      "id": "moonshotai/kimi-k2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.58,
+      "outputPrice": 3.02,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-25"
+    },
+    {
+      "id": "qwen/qwen3-max-thinking",
+      "name": "Qwen3-Max-Thinking",
+      "contextWindow": 256000,
+      "maxOutput": 32000,
+      "inputPrice": 1.2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-23"
+    },
+    {
+      "id": "z-ai/glm-4.7-flashx",
+      "name": "GLM 4.7 FlashX",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0.0715,
+      "outputPrice": 0.425,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-19"
+    },
+    {
+      "id": "openai/gpt-5.2-codex",
+      "name": "GPT-5.2-Codex",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-15"
+    },
+    {
       "id": "xiaomi/mimo-v2-flash-free",
       "name": "MiMo-V2-Flash Free",
       "contextWindow": 262144,
@@ -24,7 +89,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-31"
     },
     {

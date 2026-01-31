@@ -59,6 +59,23 @@
       "releaseDate": "2026-01-27"
     },
     {
+      "id": "z-ai/glm-4.7-flash",
+      "name": "GLM-4.7",
+      "contextWindow": 200000,
+      "maxOutput": 65535,
+      "inputPrice": 0.07,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-19"
+    },
+    {
       "id": "openai/gpt-5.2-codex",
       "name": "GPT-5.2-Codex",
       "contextWindow": 400000,
@@ -267,7 +284,7 @@
       "id": "openrouter/sherlock-think-alpha",
       "name": "Sherlock Think Alpha",
       "contextWindow": 1840000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -284,7 +301,7 @@
       "id": "openrouter/sherlock-dash-alpha",
       "name": "Sherlock Dash Alpha",
       "contextWindow": 1840000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1282,6 +1299,20 @@
       "releaseDate": "2025-07-09"
     },
     {
+      "id": "google/gemma-3n-e2b-it:free",
+      "name": "Gemma 3n 2B (free)",
+      "contextWindow": 8192,
+      "maxOutput": 2000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-09"
+    },
+    {
       "id": "tngtech/deepseek-r1t2-chimera:free",
       "name": "DeepSeek R1T2 Chimera (free)",
       "contextWindow": 163840,
@@ -1494,15 +1525,13 @@
     },
     {
       "id": "google/gemma-3n-e4b-it",
-      "name": "Gemma 3n E4B IT",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "name": "Gemma 3n 4B",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.02,
+      "outputPrice": 0.04,
       "capabilities": [
         "chat",
-        "vision",
-        "audio",
         "streaming"
       ],
       "default": false,
@@ -1512,14 +1541,11 @@
       "id": "google/gemma-3n-e4b-it:free",
       "name": "Gemma 3n 4B (free)",
       "contextWindow": 8192,
-      "maxOutput": 8192,
+      "maxOutput": 2000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
-        "audio",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -1874,16 +1900,60 @@
       "releaseDate": "2025-03-17"
     },
     {
-      "id": "google/gemma-3-12b-it",
-      "name": "Gemma 3 12B IT",
+      "id": "google/gemma-3-4b-it",
+      "name": "Gemma 3 4B",
       "contextWindow": 96000,
+      "maxOutput": 96000,
+      "inputPrice": 0.01703,
+      "outputPrice": 0.06815,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-13"
+    },
+    {
+      "id": "google/gemma-3-12b-it:free",
+      "name": "Gemma 3 12B (free)",
+      "contextWindow": 32768,
       "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-13"
+    },
+    {
+      "id": "google/gemma-3-12b-it",
+      "name": "Gemma 3 12B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.03,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-13"
+    },
+    {
+      "id": "google/gemma-3-4b-it:free",
+      "name": "Gemma 3 4B (free)",
+      "contextWindow": 32768,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
         "streaming"
       ],
       "default": false,
@@ -1891,7 +1961,7 @@
     },
     {
       "id": "google/gemma-3-27b-it:free",
-      "name": "Gemma 3 27B",
+      "name": "Gemma 3 27B (free)",
       "contextWindow": 131072,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -1907,11 +1977,11 @@
     },
     {
       "id": "google/gemma-3-27b-it",
-      "name": "Gemma 3 27B IT",
+      "name": "Gemma 3 27B",
       "contextWindow": 96000,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "maxOutput": 96000,
+      "inputPrice": 0.04,
+      "outputPrice": 0.15,
       "capabilities": [
         "chat",
         "vision",
@@ -2298,15 +2368,14 @@
       "releaseDate": "2024-07-18"
     },
     {
-      "id": "google/gemma-2-9b-it:free",
-      "name": "Gemma 2 9B (free)",
+      "id": "google/gemma-2-9b-it",
+      "name": "Gemma 2 9B",
       "contextWindow": 8192,
       "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 0.03,
+      "outputPrice": 0.09,
       "capabilities": [
         "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,

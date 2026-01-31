@@ -12,6 +12,21 @@
   },
   "models": [
     {
+      "id": "trinity-large-preview-free",
+      "name": "Trinity Large Preview",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-28"
+    },
+    {
       "id": "kimi-k2.5",
       "name": "Kimi K2.5",
       "contextWindow": 262144,
@@ -25,7 +40,24 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "kimi-k2.5-free",
+      "name": "Kimi K2.5 Free",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-01-27"
     },
     {
@@ -48,7 +80,7 @@
     },
     {
       "id": "minimax-m2.1-free",
-      "name": "MiniMax M2.1",
+      "name": "MiniMax M2.1 Free",
       "contextWindow": 204800,
       "maxOutput": 131072,
       "inputPrice": 0,
@@ -96,7 +128,7 @@
     },
     {
       "id": "glm-4.7-free",
-      "name": "GLM-4.7",
+      "name": "GLM-4.7 Free",
       "contextWindow": 204800,
       "maxOutput": 131072,
       "inputPrice": 0,

@@ -47,7 +47,7 @@
       "id": "openai/gpt-image-1.5",
       "name": "gpt-image-1.5",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -63,7 +63,7 @@
       "id": "novita/kat-coder-pro",
       "name": "kat-coder-pro",
       "contextWindow": 256000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -78,7 +78,7 @@
       "id": "google/gemini-deep-research",
       "name": "gemini-deep-research",
       "contextWindow": 1048576,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 1.6,
       "outputPrice": 9.6,
       "capabilities": [
@@ -178,8 +178,8 @@
     {
       "id": "poetools/claude-code",
       "name": "claude-code",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -245,7 +245,7 @@
       "id": "google/nano-banana-pro",
       "name": "Nano-Banana-Pro",
       "contextWindow": 65536,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 1.7,
       "outputPrice": 10,
       "capabilities": [
@@ -343,7 +343,7 @@
       "id": "novita/kimi-k2-thinking",
       "name": "kimi-k2-thinking",
       "contextWindow": 256000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -377,7 +377,7 @@
       "id": "google/veo-3.1",
       "name": "Veo-3.1",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -392,7 +392,7 @@
       "id": "google/veo-3.1-fast",
       "name": "Veo-3.1-Fast",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -424,7 +424,7 @@
       "id": "google/veo-3-fast",
       "name": "Veo-3-Fast",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -456,8 +456,8 @@
     {
       "id": "openai/sora-2",
       "name": "Sora-2",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -472,8 +472,8 @@
     {
       "id": "openai/sora-2-pro",
       "name": "Sora-2-Pro",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -505,8 +505,8 @@
     {
       "id": "novita/glm-4.6",
       "name": "GLM-4.6",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -588,7 +588,7 @@
       "id": "elevenlabs/elevenlabs-music",
       "name": "ElevenLabs-Music",
       "contextWindow": 2000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -602,8 +602,8 @@
     {
       "id": "openai/gpt-image-1-mini",
       "name": "GPT-Image-1-Mini",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -635,7 +635,7 @@
       "id": "google/nano-banana",
       "name": "Nano-Banana",
       "contextWindow": 32768,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0.21,
       "outputPrice": 1.8,
       "capabilities": [
@@ -666,8 +666,8 @@
     {
       "id": "cerebras/gpt-oss-120b-cs",
       "name": "gpt-oss-120b-cs",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -783,7 +783,7 @@
       "id": "google/imagen-4-fast",
       "name": "Imagen-4-Fast",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -884,7 +884,7 @@
       "id": "elevenlabs/elevenlabs-v3",
       "name": "ElevenLabs-v3",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -898,8 +898,8 @@
     {
       "id": "google/lyria",
       "name": "Lyria",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -914,7 +914,7 @@
       "id": "google/imagen-4-ultra",
       "name": "Imagen-4-Ultra",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -929,7 +929,7 @@
       "id": "google/imagen-4",
       "name": "Imagen-4",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -944,7 +944,7 @@
       "id": "google/veo-3",
       "name": "Veo-3",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1060,7 +1060,7 @@
       "id": "runwayml/runway-gen-4-turbo",
       "name": "Runway-Gen-4-Turbo",
       "contextWindow": 256,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1207,7 +1207,7 @@
       "id": "openai/gpt-image-1",
       "name": "GPT-Image-1",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1270,7 +1270,7 @@
       "id": "ideogramai/ideogram-v2a",
       "name": "Ideogram-v2a",
       "contextWindow": 150,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1285,7 +1285,7 @@
       "id": "ideogramai/ideogram-v2a-turbo",
       "name": "Ideogram-v2a-Turbo",
       "contextWindow": 150,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1300,7 +1300,7 @@
       "id": "lumalabs/ray2",
       "name": "Ray2",
       "contextWindow": 5000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1453,7 +1453,7 @@
       "id": "topazlabs-co/topazlabs",
       "name": "TopazLabs",
       "contextWindow": 204,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1468,7 +1468,7 @@
       "id": "google/veo-2",
       "name": "Veo-2",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1515,7 +1515,7 @@
       "id": "elevenlabs/elevenlabs-v2.5-turbo",
       "name": "ElevenLabs-v2.5-Turbo",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1530,7 +1530,7 @@
       "id": "google/imagen-3-fast",
       "name": "Imagen-3-Fast",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1545,7 +1545,7 @@
       "id": "google/imagen-3",
       "name": "Imagen-3",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1560,7 +1560,7 @@
       "id": "runwayml/runway",
       "name": "Runway",
       "contextWindow": 256,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1592,7 +1592,7 @@
       "id": "lumalabs/dream-machine",
       "name": "Dream-Machine",
       "contextWindow": 5000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1624,7 +1624,7 @@
       "id": "ideogramai/ideogram-v2",
       "name": "Ideogram-v2",
       "contextWindow": 150,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1640,7 +1640,7 @@
       "id": "trytako/tako",
       "name": "Tako",
       "contextWindow": 2048,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1719,7 +1719,7 @@
       "id": "ideogramai/ideogram",
       "name": "Ideogram",
       "contextWindow": 150,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1783,7 +1783,7 @@
       "id": "openai/dall-e-3",
       "name": "DALL-E-3",
       "contextWindow": 800,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1862,7 +1862,7 @@
       "id": "stabilityai/stablediffusionxl",
       "name": "StableDiffusionXL",
       "contextWindow": 200,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [

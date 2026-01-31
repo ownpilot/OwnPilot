@@ -14,8 +14,8 @@
     {
       "id": "kimi-k2-5",
       "name": "Kimi K2.5",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
+      "contextWindow": 256000,
+      "maxOutput": 64000,
       "inputPrice": 0.75,
       "outputPrice": 3.75,
       "capabilities": [
@@ -32,8 +32,8 @@
     {
       "id": "qwen3-vl-235b-a22b",
       "name": "Qwen3 VL 235B",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
+      "contextWindow": 256000,
+      "maxOutput": 64000,
       "inputPrice": 0.25,
       "outputPrice": 1.5,
       "capabilities": [
@@ -49,8 +49,8 @@
     {
       "id": "zai-org-glm-4.7",
       "name": "GLM 4.7",
-      "contextWindow": 202752,
-      "maxOutput": 50688,
+      "contextWindow": 198000,
+      "maxOutput": 49500,
       "inputPrice": 0.55,
       "outputPrice": 2.65,
       "capabilities": [
@@ -66,8 +66,8 @@
     {
       "id": "gemini-3-flash-preview",
       "name": "Gemini 3 Flash Preview",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
+      "contextWindow": 256000,
+      "maxOutput": 64000,
       "inputPrice": 0.7,
       "outputPrice": 3.75,
       "capabilities": [
@@ -85,8 +85,8 @@
     {
       "id": "openai-gpt-52",
       "name": "GPT-5.2",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
+      "contextWindow": 256000,
+      "maxOutput": 64000,
       "inputPrice": 2.19,
       "outputPrice": 17.5,
       "capabilities": [
@@ -102,8 +102,8 @@
     {
       "id": "kimi-k2-thinking",
       "name": "Kimi K2 Thinking",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
+      "contextWindow": 256000,
+      "maxOutput": 64000,
       "inputPrice": 0.75,
       "outputPrice": 3.2,
       "capabilities": [
@@ -119,8 +119,8 @@
     {
       "id": "claude-opus-45",
       "name": "Claude Opus 4.5",
-      "contextWindow": 202752,
-      "maxOutput": 50688,
+      "contextWindow": 198000,
+      "maxOutput": 49500,
       "inputPrice": 6,
       "outputPrice": 30,
       "capabilities": [
@@ -137,8 +137,8 @@
     {
       "id": "deepseek-v3.2",
       "name": "DeepSeek V3.2",
-      "contextWindow": 163840,
-      "maxOutput": 40960,
+      "contextWindow": 160000,
+      "maxOutput": 40000,
       "inputPrice": 0.4,
       "outputPrice": 1,
       "capabilities": [
@@ -152,8 +152,8 @@
     {
       "id": "gemini-3-pro-preview",
       "name": "Gemini 3 Pro Preview",
-      "contextWindow": 202752,
-      "maxOutput": 50688,
+      "contextWindow": 198000,
+      "maxOutput": 49500,
       "inputPrice": 2.5,
       "outputPrice": 15,
       "capabilities": [
@@ -171,8 +171,8 @@
     {
       "id": "grok-41-fast",
       "name": "Grok 4.1 Fast",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
+      "contextWindow": 256000,
+      "maxOutput": 64000,
       "inputPrice": 0.5,
       "outputPrice": 1.25,
       "capabilities": [
@@ -189,8 +189,8 @@
     {
       "id": "grok-code-fast-1",
       "name": "Grok Code Fast 1",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
+      "contextWindow": 256000,
+      "maxOutput": 64000,
       "inputPrice": 0.25,
       "outputPrice": 1.87,
       "capabilities": [
@@ -206,8 +206,8 @@
     {
       "id": "minimax-m21",
       "name": "MiniMax M2.1",
-      "contextWindow": 202752,
-      "maxOutput": 50688,
+      "contextWindow": 198000,
+      "maxOutput": 49500,
       "inputPrice": 0.4,
       "outputPrice": 1.6,
       "capabilities": [
@@ -223,8 +223,8 @@
     {
       "id": "openai-gpt-oss-120b",
       "name": "OpenAI GPT OSS 120B",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
+      "contextWindow": 128000,
+      "maxOutput": 32000,
       "inputPrice": 0.07,
       "outputPrice": 0.3,
       "capabilities": [
@@ -238,8 +238,8 @@
     {
       "id": "google-gemma-3-27b-it",
       "name": "Google Gemma 3 27B Instruct",
-      "contextWindow": 202752,
-      "maxOutput": 50688,
+      "contextWindow": 198000,
+      "maxOutput": 49500,
       "inputPrice": 0.12,
       "outputPrice": 0.2,
       "capabilities": [
@@ -255,8 +255,8 @@
     {
       "id": "hermes-3-llama-3.1-405b",
       "name": "Hermes 3 Llama 3.1 405b",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
+      "contextWindow": 128000,
+      "maxOutput": 32000,
       "inputPrice": 1.1,
       "outputPrice": 3,
       "capabilities": [
@@ -269,8 +269,8 @@
     {
       "id": "qwen3-235b-a22b-instruct-2507",
       "name": "Qwen 3 235B A22B Instruct 2507",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
+      "contextWindow": 128000,
+      "maxOutput": 32000,
       "inputPrice": 0.15,
       "outputPrice": 0.75,
       "capabilities": [
@@ -285,8 +285,8 @@
     {
       "id": "qwen3-4b",
       "name": "Venice Small",
-      "contextWindow": 32768,
-      "maxOutput": 8192,
+      "contextWindow": 32000,
+      "maxOutput": 8000,
       "inputPrice": 0.05,
       "outputPrice": 0.15,
       "capabilities": [
@@ -302,8 +302,8 @@
     {
       "id": "qwen3-235b-a22b-thinking-2507",
       "name": "Qwen 3 235B A22B Thinking 2507",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
+      "contextWindow": 128000,
+      "maxOutput": 32000,
       "inputPrice": 0.45,
       "outputPrice": 3.5,
       "capabilities": [
@@ -319,8 +319,8 @@
     {
       "id": "qwen3-next-80b",
       "name": "Qwen 3 Next 80b",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
+      "contextWindow": 256000,
+      "maxOutput": 64000,
       "inputPrice": 0.35,
       "outputPrice": 1.9,
       "capabilities": [
@@ -335,8 +335,8 @@
     {
       "id": "qwen3-coder-480b-a35b-instruct",
       "name": "Qwen 3 Coder 480b",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
+      "contextWindow": 256000,
+      "maxOutput": 64000,
       "inputPrice": 0.75,
       "outputPrice": 3,
       "capabilities": [
@@ -351,8 +351,8 @@
     {
       "id": "llama-3.3-70b",
       "name": "Llama 3.3 70B",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
+      "contextWindow": 128000,
+      "maxOutput": 32000,
       "inputPrice": 0.7,
       "outputPrice": 2.8,
       "capabilities": [
@@ -366,8 +366,8 @@
     {
       "id": "mistral-31-24b",
       "name": "Venice Medium",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
+      "contextWindow": 128000,
+      "maxOutput": 32000,
       "inputPrice": 0.5,
       "outputPrice": 2,
       "capabilities": [
@@ -383,8 +383,8 @@
     {
       "id": "venice-uncensored",
       "name": "Venice Uncensored 1.1",
-      "contextWindow": 32768,
-      "maxOutput": 8192,
+      "contextWindow": 32000,
+      "maxOutput": 8000,
       "inputPrice": 0.2,
       "outputPrice": 0.9,
       "capabilities": [
@@ -398,8 +398,8 @@
     {
       "id": "claude-sonnet-45",
       "name": "Claude Sonnet 4.5",
-      "contextWindow": 202752,
-      "maxOutput": 50688,
+      "contextWindow": 198000,
+      "maxOutput": 49500,
       "inputPrice": 3.75,
       "outputPrice": 18.75,
       "capabilities": [
@@ -416,8 +416,8 @@
     {
       "id": "openai-gpt-52-codex",
       "name": "GPT-5.2 Codex",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
+      "contextWindow": 256000,
+      "maxOutput": 64000,
       "inputPrice": 2.19,
       "outputPrice": 17.5,
       "capabilities": [
@@ -434,8 +434,8 @@
     {
       "id": "llama-3.2-3b",
       "name": "Llama 3.2 3B",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
+      "contextWindow": 128000,
+      "maxOutput": 32000,
       "inputPrice": 0.15,
       "outputPrice": 0.6,
       "capabilities": [

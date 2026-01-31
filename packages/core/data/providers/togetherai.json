@@ -29,6 +29,23 @@
       "releaseDate": "2026-01-27"
     },
     {
+      "id": "moonshotai/Kimi-K2-5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.5,
+      "outputPrice": 2.8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
       "id": "essentialai/Rnj-1-Instruct",
       "name": "Rnj-1 Instruct",
       "contextWindow": 32768,
@@ -75,6 +92,21 @@
       "releaseDate": "2025-09-30"
     },
     {
+      "id": "moonshotai/Kimi-K2-Instruct-0905",
+      "name": "Kimi K2 Instruct-0905",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-05"
+    },
+    {
       "id": "deepseek-ai/DeepSeek-V3-1",
       "name": "DeepSeek V3.1",
       "contextWindow": 131072,
@@ -105,6 +137,53 @@
       ],
       "default": false,
       "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
+      "name": "Qwen3 235B A22B Instruct 2507 FP8",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-25"
+    },
+    {
+      "id": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "name": "Qwen3-Next-80B-A3B-Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0.15,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-25"
+    },
+    {
+      "id": "zai-org/GLM-4.7",
+      "name": "GLM-4.7",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0.45,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-25"
     },
     {
       "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",

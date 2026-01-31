@@ -15,9 +15,9 @@
       "id": "hf:moonshotai/Kimi-K2.5",
       "name": "Kimi K2.5",
       "contextWindow": 262144,
-      "maxOutput": 32768,
-      "inputPrice": 1.2,
-      "outputPrice": 1.2,
+      "maxOutput": 65536,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
       "capabilities": [
         "chat",
         "vision",

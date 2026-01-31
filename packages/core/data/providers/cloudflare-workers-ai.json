@@ -15,7 +15,7 @@
       "id": "granite-4.0-h-micro",
       "name": "@cf/ibm-granite/granite-4.0-h-micro",
       "contextWindow": 131000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0.017,
       "outputPrice": 0.11,
       "capabilities": [
@@ -30,7 +30,7 @@
       "id": "gemma-sea-lion-v4-27b-it",
       "name": "@cf/aisingapore/gemma-sea-lion-v4-27b-it",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0.35,
       "outputPrice": 0.56,
       "capabilities": [
@@ -44,8 +44,8 @@
     {
       "id": "aura-1",
       "name": "@cf/deepgram/aura-1",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0.015,
       "outputPrice": 0.015,
       "capabilities": [
@@ -58,8 +58,8 @@
     {
       "id": "lucid-origin",
       "name": "@cf/leonardo/lucid-origin",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0.007,
       "outputPrice": 0.007,
       "capabilities": [
@@ -72,8 +72,8 @@
     {
       "id": "phoenix-1.0",
       "name": "@cf/leonardo/phoenix-1.0",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0.0058,
       "outputPrice": 0.0058,
       "capabilities": [
@@ -116,8 +116,8 @@
     {
       "id": "nova-3",
       "name": "@cf/deepgram/nova-3",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0.0052,
       "outputPrice": 0.0052,
       "capabilities": [
@@ -132,7 +132,7 @@
       "id": "qwen3-30b-a3b-fp8",
       "name": "@cf/qwen/qwen3-30b-a3b-fp8",
       "contextWindow": 32768,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0.051,
       "outputPrice": 0.34,
       "capabilities": [
@@ -253,8 +253,8 @@
     {
       "id": "whisper-large-v3-turbo",
       "name": "@cf/openai/whisper-large-v3-turbo",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0.00051,
       "outputPrice": 0.00051,
       "capabilities": [
@@ -314,7 +314,7 @@
       "id": "flux-1-schnell",
       "name": "@cf/black-forest-labs/flux-1-schnell",
       "contextWindow": 2048,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0.000053,
       "outputPrice": 0.00011,
       "capabilities": [
@@ -358,7 +358,7 @@
       "id": "llama-guard-3-8b",
       "name": "@cf/meta/llama-guard-3-8b",
       "contextWindow": 131072,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0.48,
       "outputPrice": 0.03,
       "capabilities": [
@@ -371,8 +371,8 @@
     {
       "id": "melotts",
       "name": "@cf/myshell-ai/melotts",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0.0002,
       "outputPrice": 0,
       "capabilities": [
@@ -535,8 +535,8 @@
     {
       "id": "stable-diffusion-v1-5-inpainting",
       "name": "@cf/runwayml/stable-diffusion-v1-5-inpainting",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -549,8 +549,8 @@
     {
       "id": "stable-diffusion-v1-5-img2img",
       "name": "@cf/runwayml/stable-diffusion-v1-5-img2img",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -563,8 +563,8 @@
     {
       "id": "stable-diffusion-xl-lightning",
       "name": "@cf/bytedance/stable-diffusion-xl-lightning",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -577,8 +577,8 @@
     {
       "id": "uform-gen2-qwen-500m",
       "name": "@cf/unum/uform-gen2-qwen-500m",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -787,8 +787,8 @@
     {
       "id": "dreamshaper-8-lcm",
       "name": "@cf/lykon/dreamshaper-8-lcm",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -801,8 +801,8 @@
     {
       "id": "llava-1.5-7b-hf",
       "name": "@cf/llava-hf/llava-1.5-7b-hf",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -846,8 +846,8 @@
     {
       "id": "whisper",
       "name": "@cf/openai/whisper",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0.00045,
       "outputPrice": 0.00045,
       "capabilities": [
@@ -996,8 +996,8 @@
     {
       "id": "stable-diffusion-xl-base-1.0",
       "name": "@cf/stabilityai/stable-diffusion-xl-base-1.0",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1040,8 +1040,8 @@
     {
       "id": "whisper-tiny-en",
       "name": "@cf/openai/whisper-tiny-en",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1055,8 +1055,8 @@
     {
       "id": "resnet-50",
       "name": "@cf/microsoft/resnet-50",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0.0000025,
       "outputPrice": 0,
       "capabilities": [
@@ -1070,8 +1070,8 @@
     {
       "id": "bart-large-cnn",
       "name": "@cf/facebook/bart-large-cnn",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1084,8 +1084,8 @@
     {
       "id": "m2m100-1.2b",
       "name": "@cf/meta/m2m100-1.2b",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0.34,
       "outputPrice": 0.34,
       "capabilities": [

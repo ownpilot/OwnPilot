@@ -305,7 +305,41 @@
       "releaseDate": "2024-05-13"
     },
     {
-      "id": "cerebras-zai-glm-4.7",
+      "id": "kimi-k2-thinking-turbo",
+      "name": "Kimi K2 Thinking Turbo",
+      "contextWindow": 262000,
+      "maxOutput": 128000,
+      "inputPrice": 1.15,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "1970-01-01"
+    },
+    {
+      "id": "kimi-k2.5",
+      "name": "Kimi-K2.5",
+      "contextWindow": 262000,
+      "maxOutput": 128000,
+      "inputPrice": 0.1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "1970-01-01"
+    },
+    {
+      "id": "zai-glm-4.7",
       "name": "Z.AI GLM-4.7",
       "contextWindow": 131072,
       "maxOutput": 40000,
@@ -321,7 +355,24 @@
       "releaseDate": "1970-01-01"
     },
     {
-      "id": "cerebras-gpt-oss-120b",
+      "id": "kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 262000,
+      "maxOutput": 128000,
+      "inputPrice": 0.6,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "1970-01-01"
+    },
+    {
+      "id": "gpt-oss-120b",
       "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 32768,

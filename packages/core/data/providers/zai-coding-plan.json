@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "glm-4.7-flash",
+      "name": "GLM-4.7-Flash",
+      "contextWindow": 200000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-19"
+    },
+    {
       "id": "glm-4.7",
       "name": "GLM-4.7",
       "contextWindow": 204800,
@@ -24,7 +40,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-22"
     },
     {
