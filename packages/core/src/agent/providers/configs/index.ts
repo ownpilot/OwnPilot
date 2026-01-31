@@ -10,6 +10,17 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Resolve the provider data directory.
+ * Works from both src/ (dev) and dist/ (production):
+ *   src/agent/providers/configs/ → 4 levels up → packages/core/ → data/providers/
+ *   dist/agent/providers/configs/ → 4 levels up → packages/core/ → data/providers/
+ */
+function getProviderDataDir(): string {
+  const packageRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  return path.join(packageRoot, 'data', 'providers');
+}
+
 // Re-export all types from types.ts
 export type {
   ModelCapability,
@@ -131,7 +142,7 @@ export function loadProviderConfig(id: string): ProviderConfig | null {
   }
 
   try {
-    const configPath = path.join(__dirname, `${id}.json`);
+    const configPath = path.join(getProviderDataDir(), `${id}.json`);
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as ProviderConfig;
     configCache.set(id, config);
     return config;

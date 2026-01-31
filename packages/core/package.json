@@ -47,9 +47,9 @@
       }
     }
   },
-  "files": ["dist", "README.md"],
+  "files": ["dist", "data", "README.md"],
   "scripts": {
-    "build": "tsc && node -e \"const fs=require('fs');const path=require('path');const src='src/agent/providers/configs';const dst='dist/agent/providers/configs';fs.readdirSync(src).filter(f=>f.endsWith('.json')).forEach(f=>fs.copyFileSync(path.join(src,f),path.join(dst,f)));console.log('Copied provider configs to dist')\"",
+    "build": "tsc",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",

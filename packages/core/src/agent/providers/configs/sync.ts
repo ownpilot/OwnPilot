@@ -223,6 +223,14 @@ function mergeConfigs(
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Resolve the provider data directory.
+ */
+function getProviderDataDir(): string {
+  const packageRoot = join(__dirname, '..', '..', '..', '..');
+  return join(packageRoot, 'data', 'providers');
+}
+
 const MODELS_DEV_API = 'https://models.dev/api.json';
 
 /**
@@ -405,7 +413,7 @@ export function syncProvider(
   outputDir?: string
 ): ProviderConfig {
   const newConfig = convertProvider(providerId, providerData);
-  const dir = outputDir ?? __dirname;
+  const dir = outputDir ?? getProviderDataDir();
 
   // Ensure directory exists
   if (!existsSync(dir)) {

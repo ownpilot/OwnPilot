@@ -351,7 +351,7 @@ function transformProvider(id: string, provider: ModelsDevProvider): ProviderCon
 const MODELS_DEV_API_URL = 'https://models.dev/api.json';
 
 async function main() {
-  const outputDir = path.join(__dirname, '..', 'packages', 'core', 'src', 'agent', 'providers', 'configs');
+  const outputDir = path.join(__dirname, '..', 'packages', 'core', 'data', 'providers');
   const cachePath = path.join(__dirname, '..', 'models-dev-full.json');
 
   console.log('Fetching models.dev API data...');
@@ -413,8 +413,8 @@ async function main() {
     return provider.models && Object.keys(provider.models).length > 0;
   }).sort();
 
-  // Update PROVIDER_IDS in the existing index.ts
-  const indexPath = path.join(outputDir, 'index.ts');
+  // Update PROVIDER_IDS in the existing index.ts (stays in src/, not in data/)
+  const indexPath = path.join(__dirname, '..', 'packages', 'core', 'src', 'agent', 'providers', 'configs', 'index.ts');
   if (fs.existsSync(indexPath)) {
     let indexContent = fs.readFileSync(indexPath, 'utf-8');
     // Replace the PROVIDER_IDS array
