@@ -204,7 +204,11 @@ export {
   type ModelCapability,
   type ProviderFeatures,
   type ProviderType,
+  // Provider IDs
+  PROVIDER_IDS,
+  type ProviderId,
   // Config loaders
+  loadProviderConfig,
   loadProviderConfigs,
   getProviderConfig,
   getAvailableProviders,

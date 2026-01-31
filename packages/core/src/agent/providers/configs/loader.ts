@@ -17,6 +17,14 @@ import type {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
+ * Resolve the provider data directory.
+ */
+function getProviderDataDir(): string {
+  const packageRoot = join(__dirname, '..', '..', '..', '..');
+  return join(packageRoot, 'data', 'providers');
+}
+
+/**
  * Cache for loaded configs
  */
 let configCache: Map<string, ProviderConfig> | null = null;
@@ -30,7 +38,7 @@ export function loadProviderConfigs(): Map<string, ProviderConfig> {
   }
 
   configCache = new Map();
-  const configDir = __dirname;
+  const configDir = getProviderDataDir();
 
   // Find all JSON files in config directory
   const files = readdirSync(configDir).filter(f => f.endsWith('.json'));

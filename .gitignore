@@ -41,6 +41,9 @@ credentials.enc
 
 # User Data - contains personal information
 data/
+!packages/core/data/
+!packages/core/data/providers/
+!packages/core/data/providers/*.json
 *.db
 *.db-shm
 *.db-wal

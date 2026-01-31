@@ -6,52 +6,13 @@
  */
 
 import { Hono } from 'hono';
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import { loadProviderConfig, PROVIDER_IDS } from '@ownpilot/core';
 import type { ApiResponse } from '../types/index.js';
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
 
 const app = new Hono();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Path to provider configs
-const CONFIGS_DIR = path.join(__dirname, '..', '..', '..', 'core', 'src', 'agent', 'providers', 'configs');
-
-interface ProviderModel {
-  id: string;
-  name: string;
-  contextWindow: number;
-  maxOutput: number;
-  inputPrice: number;
-  outputPrice: number;
-  capabilities: string[];
-  default?: boolean;
-  notes?: string;
-  releaseDate?: string;
-}
-
-interface ProviderConfig {
-  id: string;
-  name: string;
-  type: string;
-  baseUrl?: string;
-  apiKeyEnv: string;
-  docsUrl?: string;
-  features: {
-    streaming: boolean;
-    toolUse: boolean;
-    vision: boolean;
-    jsonMode: boolean;
-    systemMessage: boolean;
-  };
-  models: ProviderModel[];
-  notes?: string;
-}
 
 // Provider UI metadata (colors, placeholders, etc.)
 const PROVIDER_UI_METADATA: Record<string, { color: string; apiKeyPlaceholder?: string }> = {
@@ -191,43 +152,11 @@ const PROVIDER_CATEGORIES: Record<string, string[]> = {
   ]
 };
 
-// Cache for loaded configs
-const configCache = new Map<string, ProviderConfig>();
-
 /**
- * Load a provider config by ID
- */
-function loadProviderConfig(id: string): ProviderConfig | null {
-  if (configCache.has(id)) {
-    return configCache.get(id)!;
-  }
-
-  try {
-    const configPath = path.join(CONFIGS_DIR, `${id}.json`);
-    if (!fs.existsSync(configPath)) {
-      return null;
-    }
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as ProviderConfig;
-    configCache.set(id, config);
-    return config;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Get all available provider IDs
+ * Get all available provider IDs (from core PROVIDER_IDS)
  */
 function getProviderIds(): string[] {
-  try {
-    const files = fs.readdirSync(CONFIGS_DIR);
-    return files
-      .filter(f => f.endsWith('.json') && f !== 'index.json')
-      .map(f => f.replace('.json', ''))
-      .sort();
-  } catch {
-    return [];
-  }
+  return [...PROVIDER_IDS];
 }
 
 /**
