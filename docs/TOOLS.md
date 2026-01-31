@@ -1,6 +1,6 @@
 # OwnPilot Tool System
 
-Comprehensive reference for the OwnPilot tool architecture, all 130+ built-in tools, the registration lifecycle, execution model, and extensibility system.
+Comprehensive reference for the OwnPilot tool architecture, all 148+ built-in tools, the registration lifecycle, execution model, and extensibility system.
 
 ---
 
@@ -15,6 +15,9 @@ Comprehensive reference for the OwnPilot tool architecture, all 130+ built-in to
   - [RegisteredTool](#registeredtool)
   - [ToolRegistry](#toolregistry)
 - [Tool Registration Flow](#tool-registration-flow)
+- [Tool Provider Pattern](#tool-provider-pattern)
+- [Tool Middleware](#tool-middleware)
+- [Batch Operations](#batch-operations)
 - [Tool Execution Lifecycle](#tool-execution-lifecycle)
 - [Tool Groups and Configuration](#tool-groups-and-configuration)
 - [Tool Discovery System](#tool-discovery-system)
@@ -285,6 +288,100 @@ registerToolSet(registry, 'git');          // Only git tools
 
 ---
 
+## Tool Provider Pattern
+
+Tool providers allow modular registration of related tools. A provider bundles a set of tool definitions and their executors, making it easy to register entire tool families at once.
+
+```typescript
+interface ToolProvider {
+  /** Unique provider name */
+  readonly name: string;
+  /** Returns tool definitions paired with their executors */
+  getTools(): Array<{ definition: ToolDefinition; executor: ToolExecutor }>;
+}
+```
+
+Providers are registered with the registry:
+
+```typescript
+// Register a provider -- all its tools are added to the registry
+tools.registerProvider(new MemoryToolProvider(userId));
+tools.registerProvider(new GoalToolProvider(userId));
+tools.registerProvider(new CustomDataToolProvider(userId));
+
+// Selectively apply providers to specific contexts
+tools.useFor('conversation', [memoryProvider, goalProvider]);
+```
+
+This pattern replaces the manual loop of `register()` calls for each tool definition. The gateway uses providers for all service-backed tool families (memory, goals, custom data, personal data, etc.).
+
+---
+
+## Tool Middleware
+
+Middleware intercepts tool execution for cross-cutting concerns like logging, validation, rate limiting, and event emission.
+
+```typescript
+interface ToolMiddleware {
+  /** Middleware name for identification */
+  name: string;
+  /** Called before tool execution; can modify args or abort */
+  before?(context: ToolContext, args: Record<string, unknown>): Promise<void>;
+  /** Called after tool execution; can transform or augment the result */
+  after?(context: ToolContext, result: ToolExecutionResult): Promise<ToolExecutionResult>;
+}
+```
+
+Middleware is applied in registration order:
+
+```
+before(middleware1) → before(middleware2) → executor → after(middleware2) → after(middleware1)
+```
+
+Built-in middleware includes:
+- **EventBus emission** -- emits `tool:before` and `tool:after` events for every tool call
+- **Rate limiting** -- enforces per-tool and per-user call rate limits
+- **Audit logging** -- records tool usage for analytics and debugging
+
+---
+
+## Batch Operations
+
+Two batch mechanisms reduce round-trips between the LLM and the tool system:
+
+### `batch_use_tool`
+
+Executes multiple tool calls in a single request:
+
+```typescript
+// LLM calls batch_use_tool with an array of operations
+{
+  "tool_name": "batch_use_tool",
+  "arguments": {
+    "operations": [
+      { "tool": "add_task", "args": { "title": "Buy groceries" } },
+      { "tool": "add_task", "args": { "title": "Call dentist" } },
+      { "tool": "add_bookmark", "args": { "url": "https://example.com", "title": "Example" } }
+    ]
+  }
+}
+```
+
+All operations execute concurrently via `Promise.all()`. Each operation returns its own success/error status independently.
+
+### `search_tools` with `include_params`
+
+The `search_tools` meta-tool accepts an optional `include_params` flag. When set to `true`, the response includes the full parameter schema for each matching tool, eliminating the need for separate `get_tool_help` calls:
+
+```
+search_tools({ query: "email", include_params: true })
+→ Returns tool names, descriptions, AND full parameter schemas
+```
+
+This reduces the typical three-step discovery workflow (search → help → use) to two steps (search+help → use).
+
+---
+
 ## Tool Execution Lifecycle
 
 When the LLM produces a tool call, this is the full sequence:
@@ -397,14 +494,13 @@ getToolStats(): { totalGroups, totalTools, enabledByDefault, disabledByDefault }
 
 ## Tool Discovery System
 
-With 130+ tools, the LLM cannot have all tool schemas in every API request. OwnPilot solves this with a discovery-based architecture.
+With 148+ tools, the LLM cannot have all tool schemas in every API request. OwnPilot solves this with a discovery-based architecture.
 
 ### Search Tags
 
 Defined in `packages/core/src/agent/tools/tool-tags.ts`, the `TOOL_SEARCH_TAGS` registry maps tool names to arrays of search keywords. These keywords include:
 
-- **Synonyms** in English (e.g., "todo" for `add_task`)
-- **Turkish translations** (e.g., "gorev" for `add_task`, "hatirla" for `remember`)
+- **Synonyms** (e.g., "todo" for `add_task`, "reminder" for `add_task`)
 - **Related concepts** (e.g., "appointment" and "meeting" for `add_calendar_event`)
 - **Common intents** (e.g., "send" and "notify" for `send_email`)
 - **Technical terms** (e.g., "smtp" for email tools, "cron" for scheduler tools)
@@ -413,9 +509,9 @@ Example tag entries:
 
 ```typescript
 TOOL_SEARCH_TAGS = {
-  add_task: ['gorev', 'todo', 'to-do', 'plan', 'reminder', 'hatirlatma', ...],
-  remember: ['hatirla', 'save', 'store', 'memorize', 'bilgi kaydet', ...],
-  search_web: ['ara', 'google', 'internet', 'find', 'information', ...],
+  add_task: ['todo', 'to-do', 'plan', 'reminder', 'checklist', 'assignment', ...],
+  remember: ['save', 'store', 'memorize', 'note', 'record', ...],
+  search_web: ['google', 'internet', 'find', 'information', 'lookup', ...],
   // ... entries for every tool
 }
 ```
@@ -1338,7 +1434,7 @@ All tool source files are located under `packages/core/src/agent/tools/`.
 
 ---
 
-## Quick Reference: All 130+ Tools by Category
+## Quick Reference: All 148+ Tools by Category
 
 | # | Category | Tool Count | Tools |
 |---|----------|-----------|-------|

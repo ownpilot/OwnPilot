@@ -1260,7 +1260,9 @@ interface TokenUsage {
 | `packages/core/src/agent/providers/openai-compatible.ts` | `OpenAICompatibleProvider` for third-party providers |
 | `packages/core/src/agent/providers/fallback.ts` | `FallbackProvider` with automatic provider failover |
 | `packages/core/src/agent/providers/router.ts` | `ProviderRouter` with strategy-based selection |
-| `packages/core/src/agent/providers/configs/` | Provider configuration files (base URLs, API key env vars, model catalogs) |
+| `packages/core/src/agent/providers/configs/` | Provider config loader and sync logic |
+| `data/providers/` | Provider JSON configuration files (100+), synced from models.dev |
+| `packages/core/src/events/` | EventBus -- typed event system with wildcard subscriptions for agent, tool, and system events |
 | `packages/core/src/agent/prompt-composer.ts` | `PromptComposer`, `WorkspaceContext`, `TimeContext`, `AgentCapabilities` |
 | `packages/core/src/agent/memory-injector.ts` | `MemoryInjector`, `injectMemoryIntoPrompt()`, `createEnhancedAgentPrompt()` |
 | `packages/core/src/agent/memory.ts` | `ConversationMemory`, `createMemory()` |

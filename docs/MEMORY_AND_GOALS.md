@@ -971,8 +971,10 @@ The frontend provides a `GoalsPage` component at `packages/ui/src/pages/GoalsPag
 | `packages/core/src/agent/prompt-composer.ts` | @ownpilot/core | PromptComposer, section assembly, autonomy guidelines |
 | `packages/core/src/agent/memory.ts` | @ownpilot/core | ConversationMemory class (in-session) |
 | `packages/core/src/memory/personal.ts` | @ownpilot/core | PersonalMemoryStore (file-based profile) |
-| `packages/gateway/src/routes/memories.ts` | @ownpilot/gateway | Memory REST API + tool executor |
-| `packages/gateway/src/routes/goals.ts` | @ownpilot/gateway | Goals REST API + tool executor |
+| `packages/gateway/src/services/memory-service.ts` | @ownpilot/gateway | MemoryService -- business logic layer for memory operations, EventBus emission |
+| `packages/gateway/src/services/goal-service.ts` | @ownpilot/gateway | GoalService -- business logic layer for goal operations, EventBus emission |
+| `packages/gateway/src/routes/memories.ts` | @ownpilot/gateway | Memory REST API (thin HTTP handler, delegates to MemoryService) |
+| `packages/gateway/src/routes/goals.ts` | @ownpilot/gateway | Goals REST API (thin HTTP handler, delegates to GoalService) |
 | `packages/gateway/src/db/repositories/memories.ts` | @ownpilot/gateway | MemoriesRepository (PostgreSQL) |
 | `packages/gateway/src/db/repositories/goals.ts` | @ownpilot/gateway | GoalsRepository (PostgreSQL) |
 | `packages/gateway/src/db/schema.ts` | @ownpilot/gateway | Full database schema DDL |

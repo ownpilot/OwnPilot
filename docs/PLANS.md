@@ -1341,10 +1341,11 @@ Also creates 10 sample triggers (schedule, event, condition, webhook) that can b
 
 | File | Purpose |
 |------|---------|
+| `packages/gateway/src/services/plan-service.ts` | PlanService -- business logic layer for plan operations, EventBus emission |
 | `packages/gateway/src/plans/executor.ts` | PlanExecutor class: runtime engine with execute/pause/resume/abort/checkpoint |
 | `packages/gateway/src/plans/index.ts` | Module exports for the plans package |
 | `packages/gateway/src/db/repositories/plans.ts` | PlansRepository: all SQL operations, types, cycle detection |
-| `packages/gateway/src/routes/plans.ts` | Hono REST API routes for plans |
+| `packages/gateway/src/routes/plans.ts` | Hono REST API routes (thin HTTP handler, delegates to PlanService) |
 | `packages/gateway/src/tools/plan-tools.ts` | AI agent tool definitions and execution handlers |
 | `packages/gateway/src/db/seeds/plans-seed.ts` | Database seed with example plans |
 | `packages/gateway/scripts/seed-triggers-plans.ts` | API-based seed script for triggers and plans |

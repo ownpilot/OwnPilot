@@ -21,6 +21,7 @@
    - 5.5 [Privacy and Security](#55-privacy-and-security)
    - 5.6 [Plugin System](#56-plugin-system)
    - 5.7 [Memory System](#57-memory-system)
+   - 5.8 [Event System (EventBus)](#58-event-system-eventbus)
 6. [Gateway Package (`@ownpilot/gateway`)](#6-gateway-package-ownpilotgateway)
    - 6.1 [HTTP Server](#61-http-server)
    - 6.2 [Route Modules](#62-route-modules)
@@ -29,6 +30,7 @@
    - 6.5 [WebSocket Server](#65-websocket-server)
    - 6.6 [Channel Manager](#66-channel-manager)
    - 6.7 [Autonomy System](#67-autonomy-system)
+   - 6.8 [Service Layer](#68-service-layer)
 7. [UI Package (`@ownpilot/ui`)](#7-ui-package-ownpilotui)
    - 7.1 [Frontend Stack](#71-frontend-stack)
    - 7.2 [Pages and Routing](#72-pages-and-routing)
@@ -48,13 +50,13 @@
 
 ## 1. System Overview
 
-OwnPilot is a self-hosted, privacy-first personal AI assistant platform. It connects to multiple LLM providers (OpenAI, Anthropic, Google, DeepSeek, and 80+ others) while keeping all data under the user's control. The system is built as a TypeScript monorepo with zero production dependencies in its core package, using only Node.js built-in modules.
+OwnPilot is a self-hosted, privacy-first personal AI assistant platform. It connects to multiple LLM providers (OpenAI, Anthropic, Google, DeepSeek, and 100+ others) while keeping all data under the user's control. The system is built as a TypeScript monorepo with zero production dependencies in its core package, using only Node.js built-in modules.
 
 ### Design Principles
 
 - **Privacy First** -- All data stays on infrastructure the user controls. PII detection and redaction are built in.
 - **Zero-Dependency Core** -- The `@ownpilot/core` package uses only Node.js built-in modules. No npm runtime dependencies.
-- **Multi-Provider** -- Config-driven provider system supports 80+ AI providers via JSON configuration files.
+- **Multi-Provider** -- Config-driven provider system supports 100+ AI providers via JSON configuration files.
 - **Extensible** -- Plugin system with worker-thread isolation, marketplace verification, and capability-based access control.
 - **Type-Safe** -- Branded types, Result pattern for error handling, and strict TypeScript throughout.
 
@@ -91,7 +93,7 @@ OwnPilot is a self-hosted, privacy-first personal AI assistant platform. It conn
  |   |  | - Rate Limiting  |  | - /api/tools    |  | - Streaming  | |      |
  |   |  | - Error Handler  |  | - /api/settings |  +---------------+ |      |
  |   |  +------------------+  | - /api/models   |                    |      |
- |   |                        | - 37 modules    |                    |      |
+ |   |                        | - 35 modules    |                    |      |
  |   |                        +-----------------+                    |      |
  |   +---------------------------------------------------------------+      |
  |                               |                                           |
@@ -101,10 +103,10 @@ OwnPilot is a self-hosted, privacy-first personal AI assistant platform. It conn
  |   |  +-----------------+  +-----------------+  +---------------+  |      |
  |   |  | Agent System    |  | Tool System     |  | Provider      |  |      |
  |   |  | - Orchestrator  |  | - ToolRegistry  |  | System        |  |      |
- |   |  | - Agent         |  | - 130+ tools    |  | - OpenAI      |  |      |
+ |   |  | - Agent         |  | - 148+ tools    |  | - OpenAI      |  |      |
  |   |  | - PromptComposer|  | - 20 categories |  | - Anthropic   |  |      |
  |   |  | - MemoryInjector|  | - Dynamic tools |  | - Google      |  |      |
- |   |  | - AgentBuilder  |  | - Tool limits   |  | - 80+ configs |  |      |
+ |   |  | - AgentBuilder  |  | - Tool limits   |  | - 100+ configs|  |      |
  |   |  +-----------------+  +-----------------+  +---------------+  |      |
  |   |  +-----------------+  +-----------------+  +---------------+  |      |
  |   |  | Type System     |  | Privacy         |  | Plugin System |  |      |
@@ -120,7 +122,7 @@ OwnPilot is a self-hosted, privacy-first personal AI assistant platform. It conn
  |   |  DATABASE LAYER                                                |      |
  |   |  +-------------------------+  +-----------------------------+  |      |
  |   |  | PostgreSQL 16           |  | Repository Pattern          |  |      |
- |   |  | (docker-compose)        |  | - 32 repositories           |  |      |
+ |   |  | (docker-compose)        |  | - 30 repositories           |  |      |
  |   |  | - Schema migrations     |  | - BaseRepository class      |  |      |
  |   |  | - Seed scripts          |  | - DatabaseAdapter interface  |  |      |
  |   |  +-------------------------+  +-----------------------------+  |      |
@@ -191,16 +193,16 @@ ownpilot/
 |   |   |   |-- channels/         # Channel adapters (Discord, Slack, Telegram)
 |   |   |   |-- db/               # Database layer
 |   |   |   |   |-- adapters/     # PostgreSQL adapter (DatabaseAdapter interface)
-|   |   |   |   |-- migrations/   # SQL schema migrations
-|   |   |   |   |-- repositories/ # 32 repository classes
+|   |   |   |   |-- migrations/   # SQL schema migrations (47 tables)
+|   |   |   |   |-- repositories/ # 30 repository classes (IRepository<T> interface)
 |   |   |   |   +-- seeds/        # Default data seeds
 |   |   |   |-- middleware/       # HTTP middleware stack
 |   |   |   |-- paths/            # Data directory management and migration
 |   |   |   |-- plans/            # Plan execution engine
 |   |   |   |-- plugins/          # Plugin initialization
-|   |   |   |-- routes/           # 37 route modules
+|   |   |   |-- routes/           # 35 route modules
 |   |   |   |-- scheduler/        # Scheduled task runner
-|   |   |   |-- services/         # Dashboard, Gmail, media tool executors
+|   |   |   |-- services/         # 16 business logic services (GoalService, MemoryService, etc.)
 |   |   |   |-- tools/            # Gateway-specific tools (channel tools)
 |   |   |   |-- tracing/          # Request tracing
 |   |   |   |-- triggers/         # Proactive trigger engine
@@ -394,7 +396,7 @@ The agent system orchestrates all AI interactions, from single-turn completions 
 
 ### 5.2 Tool System
 
-The tool system provides 130+ built-in tools organized into 20 categories, plus support for user-created dynamic tools.
+The tool system provides 148+ built-in tools organized into 20 categories, plus support for user-created dynamic tools and modular tool providers.
 
 ```
                             Tool System Architecture
@@ -485,12 +487,44 @@ interface ToolExecutor {
 }
 ```
 
+#### Tool Provider Pattern
+
+Tool providers allow modular registration of related tools:
+
+```typescript
+interface ToolProvider {
+  readonly name: string;
+  getTools(): Array<{ definition: ToolDefinition; executor: ToolExecutor }>;
+}
+
+// Registration:
+tools.registerProvider(new MemoryToolProvider(userId));
+tools.registerProvider(new GoalToolProvider(userId));
+```
+
+#### Tool Middleware
+
+Middleware intercepts tool execution for cross-cutting concerns:
+
+```typescript
+interface ToolMiddleware {
+  name: string;
+  before?(context: ToolContext): Promise<void>;
+  after?(context: ToolContext, result: ToolExecutionResult): Promise<ToolExecutionResult>;
+}
+
+// Registration:
+tools.useFor('*', new AuditMiddleware());
+tools.useFor('file_*', new WorkspaceMiddleware());
+```
+
 #### Tool Registration Flow
 
 1. Each tool category exports a `TOOLS` array of `{ definition, executor }` pairs.
 2. `registerAllTools(registry)` registers all built-in tools into a `ToolRegistry`.
-3. Gateway-specific tool executors (e.g., personal data, memory, goals) have definitions in core but executors in the gateway package, since they need database access.
-4. Dynamic tools are created at runtime by the LLM and managed via `createDynamicToolRegistry()`.
+3. `ToolProvider` implementations register domain-specific tools (memory, goals, custom data, etc.).
+4. Gateway-specific tool executors (e.g., personal data, memory, goals) have definitions in core but executors in the gateway package, since they need database access.
+5. Dynamic tools are created at runtime by the LLM and managed via `createDynamicToolRegistry()`.
 
 #### Tool Limits
 
@@ -498,13 +532,13 @@ The `TOOL_MAX_LIMITS` system caps parameters on list-returning tools to prevent 
 
 #### Tool Discovery
 
-The `TOOL_SEARCH_TAGS` index enables the `search_tools` meta-tool, allowing the agent to discover relevant tools by keyword search at runtime rather than loading all 130+ tool definitions into every prompt.
+The `TOOL_SEARCH_TAGS` index enables the `search_tools` meta-tool, allowing the agent to discover relevant tools by keyword search at runtime rather than loading all 148+ tool definitions into every prompt.
 
 ---
 
 ### 5.3 Provider System
 
-The provider system is config-driven and supports 80+ AI providers through a combination of JSON configuration files, protocol adapters, and intelligent routing.
+The provider system is config-driven and supports 100+ AI providers through a combination of JSON configuration files, protocol adapters, and intelligent routing.
 
 ```
                        Provider System Architecture
@@ -565,7 +599,7 @@ type AIProvider =
 
 #### JSON Config Files
 
-Each provider has a JSON configuration file in `packages/core/src/agent/providers/configs/`. The file specifies the API base URL, authentication scheme, available models, capabilities, pricing, and feature flags. Over 80 configuration files are included.
+Each provider has a JSON configuration file in `data/providers/` (synced from models.dev via `syncAllProviders()`). The file specifies the API base URL, authentication scheme, available models, capabilities, pricing, and feature flags. Over 100 configuration files are included.
 
 Examples of configured providers:
 `openai`, `anthropic`, `google`, `deepseek`, `groq`, `mistral`, `xai`, `cohere`, `together`, `fireworks`, `perplexity`, `openrouter`, `nvidia`, `azure`, `amazon-bedrock`, `google-vertex`, `huggingface`, `ollama-cloud`, `cerebras`, `alibaba`, and many more.
@@ -746,6 +780,38 @@ The memory system has two layers:
 
 ---
 
+### 5.8 Event System (EventBus)
+
+The EventBus (`packages/core/src/events/`) provides a typed event system that replaces ad-hoc `EventEmitter` usage with a unified, structured approach.
+
+```typescript
+interface IEventBus {
+  emit(event: string, data: unknown): void;
+  on(event: string, handler: EventHandler): void;
+  off(event: string, handler: EventHandler): void;
+  once(event: string, handler: EventHandler): void;
+}
+```
+
+#### Event Categories
+
+| Category   | Events                                          | Description                     |
+|------------|------------------------------------------------|---------------------------------|
+| `tool`     | `tool:call`, `tool:result`, `tool:error`       | Tool execution lifecycle        |
+| `resource` | `resource:created`, `resource:updated`, `resource:deleted` | Data mutation events |
+| `agent`    | `agent:start`, `agent:complete`, `agent:error` | Agent execution events          |
+| `plugin`   | `plugin:loaded`, `plugin:error`                | Plugin lifecycle events         |
+| `system`   | `system:startup`, `system:shutdown`            | System lifecycle events         |
+
+#### Key Features
+
+- **Wildcard subscriptions** -- Subscribe to `tool:*` to receive all tool events.
+- **Async handler execution** -- Handlers can be async; errors are caught and logged without breaking the emitter.
+- **Singleton access** -- `getEventBus()` returns the global instance.
+- **Replaces** -- Orchestrator `EventEmitter` and plugin custom pub/sub patterns.
+
+---
+
 ## 6. Gateway Package (`@ownpilot/gateway`)
 
 The gateway is the HTTP API server that connects all pieces together. It provides REST endpoints, WebSocket real-time communication, database persistence, and channel integrations.
@@ -769,7 +835,7 @@ const app = createApp();
 
 ### 6.2 Route Modules
 
-The gateway has **37 route modules**, each responsible for a specific domain. All routes are exported from `packages/gateway/src/routes/index.ts`.
+The gateway has **35 route modules**, each responsible for a specific domain. All routes are exported from `packages/gateway/src/routes/index.ts`.
 
 | Route Module          | Base Path              | Purpose                              |
 |-----------------------|------------------------|--------------------------------------|
@@ -909,7 +975,7 @@ The database layer uses a **repository pattern** with a `DatabaseAdapter` interf
  +-----------------------------------------------------------------------+
 ```
 
-#### Repositories (32 total)
+#### Repositories (30 total)
 
 The repositories are organized by domain:
 
@@ -1066,6 +1132,46 @@ Tool Call --> Risk Assessment --> Compare to Autonomy Level
                                                   |
                                             Execute or cancel
 ```
+
+---
+
+### 6.8 Service Layer
+
+The service layer (`packages/gateway/src/services/`) encapsulates business logic, keeping route handlers thin and tool executors focused on parameter mapping.
+
+#### Services (16 total)
+
+| Service                  | Responsibility                                      |
+|--------------------------|-----------------------------------------------------|
+| `GoalService`            | Goal CRUD, decomposition, progress tracking         |
+| `MemoryService`          | Memory CRUD, recall, boost, stats                   |
+| `CustomDataService`      | Dynamic table/record operations                     |
+| `TriggerService`         | Trigger CRUD, evaluation, history                   |
+| `PlanService`            | Plan CRUD, step execution, state transitions        |
+| `DashboardService`       | Aggregated dashboard data                           |
+| `GmailService`           | Gmail integration (send, list, read)                |
+| `MediaService`           | Image/audio provider management                     |
+| `PomodoroService`        | Pomodoro timer sessions and settings                |
+| `HabitsService`          | Habit tracking and logging                          |
+| `CaptureService`         | Quick capture inbox                                 |
+| `PluginService`          | Plugin state persistence                            |
+| `IntegrationService`     | OAuth token management                              |
+| `WorkspaceService`       | File workspace operations                           |
+| `ConfigService`          | Configuration center                                |
+| `AuditService`           | Audit trail queries                                 |
+
+#### Pattern
+
+```
+Route Handler --> Service --> Repository --> Database
+     |                |
+     v                v
+  HTTP concerns   Business logic + EventBus emission
+  (validation,    (rules, calculations, side effects)
+   serialization)
+```
+
+Services emit events via `EventBus` for cross-cutting concerns (audit logging, real-time notifications, cache invalidation).
 
 ---
 
@@ -1349,17 +1455,21 @@ The Docker container starts via `node packages/cli/dist/index.js start`.
 
 ## 11. Key Design Patterns
 
-### 11.1 Event-Driven Architecture
+### 11.1 Event-Driven Architecture (EventBus)
 
-The system uses Node.js `EventEmitter` extensively for loose coupling:
+The system uses the **EventBus** (see [Section 5.8](#58-event-system-eventbus)) as the primary event system, replacing ad-hoc `EventEmitter` instances with a typed, centralized event bus that supports wildcard subscriptions:
 
 ```typescript
-// AgentOrchestrator events
-orchestrator.on('step:start', (step: AgentStep) => { ... });
-orchestrator.on('step:complete', (step: AgentStep) => { ... });
-orchestrator.on('tool:call', (call: ToolCallRecord) => { ... });
-orchestrator.on('tool:result', (result: ToolResult) => { ... });
-orchestrator.on('error', (error: Error) => { ... });
+// EventBus - typed events with wildcard support
+const bus = getEventBus();
+bus.on('tool:*', (data) => { ... });         // All tool events
+bus.on('resource:created', (data) => { ... }); // Specific events
+
+// AgentOrchestrator events (via EventBus)
+bus.on('agent:start', (data) => { ... });
+bus.on('agent:complete', (data) => { ... });
+bus.on('tool:call', (call) => { ... });
+bus.on('tool:result', (result) => { ... });
 
 // Gateway events
 gatewayEvents.on('message:incoming', (msg: IncomingMessage) => { ... });
@@ -1369,21 +1479,37 @@ gatewayEvents.on('channel:connected', (channel: Channel) => { ... });
 
 ### 11.2 Repository Pattern
 
-Every database entity is accessed through a dedicated repository class that extends `BaseRepository`:
+Every database entity is accessed through a dedicated repository class that extends `BaseRepository` and implements `IRepository<T>`:
 
 ```typescript
+// Standard query interface for all repositories
+interface StandardQuery {
+  limit?: number;
+  offset?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  search?: string;
+}
+
+interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+interface IRepository<T> {
+  findById(id: string): Promise<T | null>;
+  create(input: Partial<T>): Promise<T>;
+  update(id: string, input: Partial<T>): Promise<T | null>;
+  delete(id: string): Promise<boolean>;
+}
+
 abstract class BaseRepository {
   protected async query<T>(sql: string, params?: unknown[]): Promise<T[]>;
   protected async queryOne<T>(sql: string, params?: unknown[]): Promise<T | null>;
   protected async execute(sql: string, params?: unknown[]): Promise<{ changes: number }>;
-}
-
-class TasksRepository extends BaseRepository {
-  async create(input: CreateTaskInput): Promise<Task> { ... }
-  async findById(id: string): Promise<Task | null> { ... }
-  async list(query: TaskQuery): Promise<Task[]> { ... }
-  async update(id: string, input: UpdateTaskInput): Promise<Task | null> { ... }
-  async delete(id: string): Promise<boolean> { ... }
+  protected async paginatedQuery<T>(sql: string, query: StandardQuery): Promise<PaginatedResult<T>>;
 }
 ```
 
@@ -1469,6 +1595,40 @@ IsolationEnforcer              Sandboxed Context
 - resource limits              - no network (default)
 - storage quotas               - limited memory
 - audit logging                - timeout enforcement
+```
+
+### 11.8 Service Layer Pattern
+
+Services encapsulate business logic between route handlers and repositories:
+
+```typescript
+class GoalService {
+  constructor(private repo: GoalsRepository, private bus: IEventBus) {}
+
+  async createGoal(input: CreateGoalInput): Promise<Goal> {
+    const goal = await this.repo.create(input);
+    this.bus.emit('resource:created', { type: 'goal', id: goal.id });
+    return goal;
+  }
+}
+```
+
+See [Section 6.8](#68-service-layer) for the full service listing.
+
+### 11.9 Tool Provider Pattern
+
+Tool providers enable modular tool registration by domain:
+
+```typescript
+interface ToolProvider {
+  readonly name: string;
+  getTools(): Array<{ definition: ToolDefinition; executor: ToolExecutor }>;
+}
+
+// Registration in agent setup
+tools.registerProvider(new MemoryToolProvider(userId));
+tools.registerProvider(new GoalToolProvider(userId));
+tools.registerProvider(new CustomDataToolProvider(userId));
 ```
 
 ---
@@ -1606,7 +1766,7 @@ pnpm --filter @ownpilot/cli start
 | `HOST`                      | No       | `0.0.0.0`             | HTTP server bind address                       |
 | `DATA_DIR`                  | No       | `./data`              | Persistent data directory                      |
 | **Database**                |          |                       |                                                |
-| `DB_TYPE`                   | No       | `sqlite`              | Database type (`sqlite` or `postgres`)         |
+| `DB_TYPE`                   | No       | `postgres`            | Database type (PostgreSQL only)                |
 | `DATABASE_URL`              | No       | --                    | PostgreSQL connection string                   |
 | `POSTGRES_HOST`             | No       | `postgres`            | PostgreSQL host                                |
 | `POSTGRES_PORT`             | No       | `5432`                | PostgreSQL port                                |
@@ -1685,14 +1845,14 @@ The `^build` dependency notation means "build all upstream workspace dependencie
 
 ## 16. Testing Strategy
 
-All packages use **Vitest** as the test framework.
+All packages use **Vitest** as the test framework. The project has **65 test files** with **1,075+ tests** across all packages.
 
 ### Test Organization
 
 Tests are co-located with source files using the `.test.ts` naming convention:
 
 ```
-packages/core/src/types/result.test.ts
+packages/core/src/types/result.test.ts       # Core type tests
 packages/core/src/types/branded.test.ts
 packages/core/src/audit/logger.test.ts
 packages/core/src/crypto/derive.test.ts
@@ -1703,13 +1863,29 @@ packages/core/src/agent/tools.test.ts
 packages/core/src/agent/memory.test.ts
 packages/core/src/agent/provider.test.ts
 packages/core/src/agent/agent.test.ts
-packages/gateway/src/routes/health.test.ts
-packages/gateway/src/routes/tools.test.ts
-packages/gateway/src/middleware/middleware.test.ts
+packages/gateway/src/routes/*.test.ts        # 27 route integration tests
+packages/gateway/src/services/*.test.ts      # Service unit tests
+packages/gateway/src/middleware/*.test.ts     # Middleware tests
 packages/channels/src/telegram/bot.test.ts
 packages/cli/src/index.test.ts
 packages/ui/src/App.test.tsx
 ```
+
+### Test Coverage Summary
+
+| Package            | Test Files | Tests  | Description                              |
+|--------------------|:----------:|:------:|------------------------------------------|
+| `@ownpilot/gateway`| 50         | 1,075+ | Route integration, service, middleware   |
+| `@ownpilot/core`   | 11         | ~100   | Types, crypto, privacy, agent            |
+| `@ownpilot/channels`| 1         | ~10    | Telegram bot                             |
+| `@ownpilot/ui`     | 1          | ~5     | App rendering                            |
+| `@ownpilot/cli`    | 1          | ~5     | CLI commands                             |
+
+### Test Patterns
+
+- **Route integration tests** use Hono's built-in `app.request()` test client with `vi.mock()` for module-level mocking of singletons and repositories.
+- **Service tests** test business logic in isolation with mocked repositories.
+- **Middleware tests** verify the HTTP pipeline (auth, rate limiting, error handling).
 
 ### Test Commands
 
@@ -1778,6 +1954,6 @@ pnpm dev
 
 ### Adding a New Provider
 
-1. Create a JSON configuration file in `packages/core/src/agent/providers/configs/`.
+1. Create a JSON configuration file in `data/providers/`.
 2. If the provider is OpenAI-compatible, no code changes are needed -- the JSON config is sufficient.
 3. For non-standard APIs, create a custom provider class implementing `IProvider`.

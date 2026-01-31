@@ -36,7 +36,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 ## Features
 
 ### AI & Agents
-- **88+ AI Provider Configs** - OpenAI, Anthropic, Google, DeepSeek, Groq, xAI, Mistral, Together AI, Fireworks, Perplexity, OpenRouter, Cohere, Azure, NVIDIA, Hugging Face, and many more
+- **100+ AI Provider Configs** - OpenAI, Anthropic, Google, DeepSeek, Groq, xAI, Mistral, Together AI, Fireworks, Perplexity, OpenRouter, Cohere, Azure, NVIDIA, Hugging Face, and many more
 - **Local AI Support** - Ollama, LM Studio, and custom OpenAI-compatible endpoints
 - **29 Pre-configured Agents** - Code Assistant, Writing Assistant, Research, Data Analyst, and more across 8 categories
 - **Smart Provider Routing** - Cheapest, fastest, smartest, balanced, or fallback strategies
@@ -45,12 +45,14 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 ### Tools
 - **148+ Built-in Tools** across 20 categories (personal data, files, code, web, email, media, AI/NLP, finance, automation, utilities)
 - **Meta-tool Proxy** - Only 3 tools sent to the LLM (`search_tools`, `get_tool_help`, `use_tool`); all 148+ tools remain available via dynamic discovery
+- **Batch Operations** - `batch_use_tool` for multiple tool calls in one request, `search_tools` with `include_params` for faster workflows
 - **Custom Tools** - Create new tools at runtime via LLM (sandboxed JavaScript)
 - **Tool Limits** - Automatic parameter capping to prevent unbounded queries
-- **Bilingual Search Tags** - 260+ keywords (English + Turkish) for natural language tool discovery
+- **Search Tags** - 150+ English keywords for natural language tool discovery
 
 ### Personal Data
 - **Notes, Tasks, Bookmarks, Contacts, Calendar, Expenses** - Full CRUD with categories, tags, and search
+- **Productivity** - Pomodoro timer with sessions/settings/stats, habit tracker with streaks, quick capture inbox
 - **Memories** - Long-term persistent memory (facts, preferences, events, skills) with importance scoring
 - **Goals** - Goal creation, decomposition, progress tracking, next-action recommendations
 - **Custom Data Tables** - Create your own structured data types
@@ -66,7 +68,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 - **Telegram Bot** - Full bot integration with user/chat filtering
 - **Discord Bot** - Multi-guild support with DMs
 - **Slack Bot** - Socket Mode with thread support
-- **REST API** - 37+ route modules, full CRUD for all entities
+- **REST API** - 35 route modules, full CRUD for all entities
 
 ### Security
 - **Encrypted Credential Storage** - AES-256-GCM + PBKDF2 (600K iterations)
@@ -96,20 +98,21 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
                        │
               ┌────────▼────────┐
               │    Gateway      │  Hono API Server
-              │  (Port 8080)    │  37+ Route Modules
+              │  (Port 8080)    │  35 Route Modules
               ├─────────────────┤
+              │  Service Layer  │  Business Logic
               │  Agent Engine   │  Tool Orchestration
               │  Provider Router│  Smart Model Selection
               │  Autonomy       │  Risk Assessment
-              │  Memory Injection│ Context Management
+              │  EventBus       │  Typed Event System
               ├─────────────────┤
               │     Core        │  Tools, Providers, Types
-              │  148+ Tools     │  88+ Provider Configs
+              │  148+ Tools     │  100+ Provider Configs
               │  Sandbox, Crypto│  Privacy, Audit
               └────────┬────────┘
                        │
               ┌────────▼────────┐
-              │   PostgreSQL    │  30+ Tables
+              │   PostgreSQL    │  47 Tables
               │  (Port 25432)   │  Conversations, Personal Data,
               │                 │  Memories, Goals, Triggers, Plans
               └─────────────────┘
@@ -177,9 +180,11 @@ ownpilot/
 │   ├── core/                    # AI runtime, providers, tools, types
 │   │   ├── src/
 │   │   │   ├── agent/           # Agent engine, orchestrator, types
-│   │   │   │   ├── providers/   # 88 provider configs (JSON)
-│   │   │   │   ├── tools/       # 20 tool modules (148+ tools)
-│   │   │   │   └── types.ts     # Agent, provider, message types
+│   │   │   │   ├── providers/   # 100+ provider configs (JSON), synced from models.dev
+│   │   │   │   ├── tools/       # 23 tool modules (148+ tools)
+│   │   │   │   └── types.ts     # Agent, provider, ToolProvider, ToolMiddleware types
+│   │   │   ├── events/          # EventBus - typed event system
+│   │   │   ├── memory/          # Conversation & personal memory
 │   │   │   ├── sandbox/         # Isolated code execution (VM)
 │   │   │   ├── privacy/         # PII detection & redaction
 │   │   │   ├── crypto/          # AES-256-GCM encryption, keychain
@@ -192,10 +197,11 @@ ownpilot/
 │   │
 │   ├── gateway/                 # Hono API server
 │   │   ├── src/
-│   │   │   ├── routes/          # 37 route modules
+│   │   │   ├── routes/          # 35 route modules
+│   │   │   ├── services/        # 16 business logic services, tool providers
 │   │   │   ├── db/
-│   │   │   │   ├── repositories/  # 32 data access repositories
-│   │   │   │   ├── migrations/    # PostgreSQL schema
+│   │   │   │   ├── repositories/  # 30 data access repositories
+│   │   │   │   ├── migrations/    # PostgreSQL schema (47 tables)
 │   │   │   │   └── seeds/         # Default agents, config services
 │   │   │   ├── channels/        # Discord, Slack adapters
 │   │   │   ├── triggers/        # Trigger engine
@@ -248,9 +254,11 @@ The core runtime library. Contains all AI provider integrations, tool definition
 
 | Module | Description |
 |--------|-------------|
-| `agent/providers/` | 88 provider config JSONs synced from models.dev |
-| `agent/tools/` | 20 tool modules with 148+ tool definitions and executors |
-| `agent/types.ts` | Agent config, provider types, message types |
+| `agent/providers/` | 100+ provider config JSONs synced from models.dev |
+| `agent/tools/` | 23 tool modules with 148+ tool definitions and executors |
+| `agent/types.ts` | Agent config, provider types, ToolProvider, ToolMiddleware |
+| `events/` | EventBus - typed event system with wildcard subscriptions |
+| `memory/` | Conversation memory and personal memory stores |
 | `sandbox/` | Isolated VM code execution with resource limits |
 | `privacy/` | PII detection patterns (email, phone, SSN, credit card, etc.) |
 | `crypto/` | AES-256-GCM encryption, PBKDF2 key derivation, vault |
@@ -263,13 +271,14 @@ The core runtime library. Contains all AI provider integrations, tool definition
 
 The API server built on [Hono](https://hono.dev/). Handles all HTTP/WebSocket communication, database operations, agent execution, and channel management.
 
-**Route Modules (37):**
+**Route Modules (35):**
 
 | Category | Routes |
 |----------|--------|
 | **Chat & Agents** | `chat.ts`, `agents.ts` |
 | **AI Configuration** | `models.ts`, `providers.ts`, `model-configs.ts`, `local-providers.ts` |
 | **Personal Data** | `personal-data.ts`, `personal-data-tools.ts`, `memories.ts`, `goals.ts`, `expenses.ts`, `custom-data.ts` |
+| **Productivity** | `productivity.ts` (Pomodoro, Habits, Captures) |
 | **Automation** | `triggers.ts`, `plans.ts`, `autonomy.ts` |
 | **Tools & Plugins** | `tools.ts`, `custom-tools.ts`, `plugins.ts` |
 | **Channels** | `channels.ts` |
@@ -277,9 +286,11 @@ The API server built on [Hono](https://hono.dev/). Handles all HTTP/WebSocket co
 | **Integration** | `integrations.ts`, `auth.ts` |
 | **System** | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts` |
 
-**Database Repositories (32):**
+**Services (16):** GoalService, MemoryService, CustomDataService, TriggerService, PlanService, DashboardService, ToolExecutor, ToolOverrides, ToolProviders, GmailExecutors, MediaExecutors, ConfigCenter, ConfigTools, ApiServiceRegistrar, LocalDiscovery, ToolSource.
 
-agents, conversations, messages, chat, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, costs, logs, settings, workspaces, model-configs, media-settings, oauth-integrations, local-providers, config-services, pomodoro, habits, captures, and more.
+**Database Repositories (30):**
+
+agents, conversations, messages, chat, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, costs, logs, settings, workspaces, model-configs, media-settings, oauth-integrations, local-providers, config-services, pomodoro, habits, captures.
 
 ### UI (`@ownpilot/ui`)
 
@@ -390,7 +401,7 @@ ownpilot channel disconnect <id>  # Disconnect channel
 
 ## AI Providers
 
-OwnPilot supports **88+ AI provider configurations** via OpenAI-compatible API format, Anthropic native API, and Google Gemini API.
+OwnPilot supports **100+ AI provider configurations** via OpenAI-compatible API format, Anthropic native API, and Google Gemini API.
 
 ### Supported Providers
 
@@ -410,7 +421,7 @@ OwnPilot supports **88+ AI provider configurations** via OpenAI-compatible API f
 | **Ollama** | Local | Llama 4, Qwen3, Mistral, CodeLlama | None (local) |
 | **LM Studio** | Local | Any GGUF model | None (local) |
 
-Plus 75+ more providers including Azure, AWS Bedrock, Google Vertex, NVIDIA, Hugging Face, Cerebras, Scaleway, OVHcloud, and more.
+Plus 85+ more providers including Azure, AWS Bedrock, Google Vertex, NVIDIA, Hugging Face, Cerebras, Scaleway, OVHcloud, and more.
 
 ### Provider Routing Strategies
 
@@ -479,9 +490,10 @@ Each agent has:
 
 OwnPilot has **148+ tools** organized into **20 categories**. Rather than sending all tool definitions to the LLM (which would consume too many tokens), OwnPilot uses a **meta-tool proxy pattern**:
 
-1. **`search_tools`** - Find tools by keyword (supports English + Turkish)
-2. **`get_tool_help`** - Get detailed help for a specific tool
+1. **`search_tools`** - Find tools by keyword (supports `include_params` for inline parameter schemas)
+2. **`get_tool_help`** - Get detailed help for a specific tool (supports batch lookup)
 3. **`use_tool`** - Execute a tool with automatic parameter validation and limit enforcement
+4. **`batch_use_tool`** - Execute multiple tools in a single call for faster workflows
 
 ### Tool Categories
 
@@ -625,7 +637,7 @@ Multi-step autonomous execution:
 | **PostgreSQL 16+** | Primary | Recommended for production |
 | **SQLite** | Legacy | Development/single-user |
 
-### Schema (30+ Tables)
+### Schema (47 Tables)
 
 **Core Tables:**
 - `conversations`, `messages` - Chat history
@@ -636,8 +648,12 @@ Multi-step autonomous execution:
 
 **Personal Data Tables:**
 - `tasks`, `notes`, `bookmarks`, `calendar_events`, `contacts`
-- `projects`, `reminders`, `captures` (quick capture)
+- `projects`, `reminders`, `captures` (quick capture inbox)
 - `expenses`
+
+**Productivity Tables:**
+- `pomodoro_sessions`, `pomodoro_settings` - Pomodoro timer
+- `habits`, `habit_logs` - Habit tracking
 
 **Autonomous AI Tables:**
 - `memories` - Long-term memory with embeddings
@@ -649,6 +665,11 @@ Multi-step autonomous execution:
 - `channels`, `channel_messages` - Messaging channels
 - `custom_tools` - LLM-created tools
 - `custom_data_tables`, `custom_data_records` - User-defined data
+- `plugins` - Plugin state persistence
+- `oauth_integrations` - OAuth token storage
+- `media_provider_settings` - Media provider configuration
+- `user_model_configs` - Per-user model enable/disable
+- `local_providers`, `local_models` - Local AI provider management
 
 ### Migration
 
@@ -913,16 +934,26 @@ pnpm --filter @ownpilot/ui build                    # Build UI
 | **Build** | Turborepo with incremental caching |
 | **Container** | Docker multi-stage |
 
+### Testing
+
+- **65 test files** across all packages
+- **1,075+ tests** in the gateway package alone
+- Integration tests for all route modules
+- Unit tests for services, middleware, and core modules
+- Framework: **Vitest** with `vi.mock` for module-level mocking
+
 ### Architecture Patterns
 
 | Pattern | Usage |
 |---------|-------|
 | **Result<T, E>** | Error handling throughout core |
-| **Repository** | Data access abstraction for all entities |
+| **Repository** | Data access abstraction (`IRepository<T>`, `StandardQuery`, `PaginatedResult`) |
 | **Strategy** | Provider routing (cheapest/fastest/smartest) |
 | **Registry** | Tool registration and discovery |
-| **Event Emitter** | Orchestrator events, autonomy approvals, scheduler |
-| **Middleware** | Hono request pipeline (auth, rate limiting, timing) |
+| **EventBus** | Typed event system with wildcard subscriptions (tool, resource, agent, system events) |
+| **Service Layer** | Business logic services (GoalService, MemoryService, PlanService, TriggerService, etc.) |
+| **Tool Provider** | Modular tool registration via `ToolProvider` interface and `ToolMiddleware` |
+| **Middleware** | Hono request pipeline (auth, rate limiting, timing, circuit breaker) |
 | **Context + Hook** | React state management (Chat, Theme, Dialog) |
 
 ---
