@@ -167,7 +167,7 @@ Your autonomy level is set to: {{level}}
   automation: `## Automation
 You can create **triggers** (recurring automated actions) and **plans** (multi-step workflows).
 Use search_tools("trigger") or search_tools("plan") to discover automation tools.
-Use get_tool_help on each tool for detailed parameter documentation.`,
+Use get_tool_help with tool_names array to get parameter docs for multiple tools at once.`,
 };
 
 const AUTONOMY_GUIDELINES: Record<string, string> = {
@@ -283,6 +283,7 @@ function formatTools(tools: readonly ToolDefinition[]): string {
     '### Tool Workflow',
     '1. **search_tools("keyword")** → find tool name',
     '2. **get_tool_help("tool_name")** → see parameters (if unsure)',
+    '   - Batch: **get_tool_help({ tool_names: ["tool_a", "tool_b"] })** → get help for multiple tools at once',
     '3. **use_tool("tool_name", { params })** → execute',
     '',
     'Rules:',
@@ -290,6 +291,7 @@ function formatTools(tools: readonly ToolDefinition[]): string {
     '- On error, read the error message (it shows correct parameters) and retry.',
     '- Search uses AND matching: "send email" finds tools with both words.',
     '- Use "all" to list every tool.',
+    '- When you need help for multiple tools, use tool_names array instead of calling get_tool_help multiple times.',
     '',
     'If a user message has an `[ATTACHED CONTEXT]` block, follow its tool instructions directly.',
     'After tool calls, always provide a text summary of results.',

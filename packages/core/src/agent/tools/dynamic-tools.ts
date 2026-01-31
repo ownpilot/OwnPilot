@@ -849,16 +849,20 @@ export const searchToolsDefinition: ToolDefinition = {
  */
 export const getToolHelpDefinition: ToolDefinition = {
   name: 'get_tool_help',
-  description: 'Get detailed parameter info and usage for a specific tool. Call this after search_tools to learn exactly how to call a tool.',
+  description: 'Get detailed parameter info and usage for one or more tools. Accepts a single tool_name or an array of tool_names for batch lookup. Call this after search_tools to learn exactly how to call tools.',
   parameters: {
     type: 'object',
     properties: {
       tool_name: {
         type: 'string',
-        description: 'Exact tool name from search_tools results (e.g. "add_task", "remember", "search_web")',
+        description: 'Exact tool name from search_tools results (e.g. "add_task", "remember", "search_web"). Use this for a single tool.',
+      },
+      tool_names: {
+        type: 'array',
+        description: 'Array of exact tool names to get help for multiple tools at once (e.g. ["add_task", "list_tasks", "complete_task"]). More efficient than calling get_tool_help multiple times.',
+        items: { type: 'string' },
       },
     },
-    required: ['tool_name'],
   },
   category: 'System',
 };
@@ -896,6 +900,6 @@ export const DYNAMIC_TOOL_DEFINITIONS: ToolDefinition[] = [
   listToolsDefinition,
   deleteToolDefinition,
   toggleToolDefinition,
-];;
+];
 
 export const DYNAMIC_TOOL_NAMES = DYNAMIC_TOOL_DEFINITIONS.map((t) => t.name);
