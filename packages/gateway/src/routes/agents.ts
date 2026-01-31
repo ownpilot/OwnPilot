@@ -112,7 +112,7 @@ function findSimilarTools(tools: ToolRegistry, query: string): string[] {
   const qWords = q.split(/\s+/).filter(Boolean);
 
   const scored = allDefs
-    .filter(d => d.name !== 'search_tools' && d.name !== 'get_tool_help' && d.name !== 'use_tool')
+    .filter(d => d.name !== 'search_tools' && d.name !== 'get_tool_help' && d.name !== 'use_tool' && d.name !== 'batch_use_tool')
     .map(d => {
       const name = d.name.toLowerCase();
       const nameWords = name.replace(/[_\-]/g, ' ');
@@ -831,7 +831,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
     // search_tools, get_tool_help and use_tool have special executors (registered below)
-    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool') continue;
+    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool' || toolDef.name === 'batch_use_tool') continue;
 
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
@@ -869,7 +869,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   const searchToolsDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'search_tools');
   if (searchToolsDef) {
     tools.register(searchToolsDef, async (args): Promise<CoreToolResult> => {
-      const { query, category: filterCategory } = args as { query: string; category?: string };
+      const { query, category: filterCategory, include_params } = args as { query: string; category?: string; include_params?: boolean };
       const allDefs = tools.getDefinitions();
       const q = query.trim().toLowerCase();
 
@@ -881,7 +881,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
       const matches = allDefs.filter(d => {
         // Skip meta-tools from results
-        if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool') return false;
+        if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool' || d.name === 'batch_use_tool') return false;
         // Category filter
         if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
 
@@ -905,8 +905,14 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
         return { content: `No tools found for "${query}". Tips:\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"` };
       }
 
+      // When include_params is true, return full parameter docs for each match
+      if (include_params) {
+        const sections = matches.map(d => formatFullToolHelp(tools, d.name));
+        return { content: [`Found ${matches.length} tool(s) for "${query}" (with parameters):`, '', ...sections.join('\n\n---\n\n').split('\n')].join('\n') };
+      }
+
       const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
-      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines, '', 'Use get_tool_help(tool_name) for full parameter details.'].join('\n') };
+      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines, '', 'Tip: Add include_params=true to get full parameter docs, or use get_tool_help(tool_name).'].join('\n') };
     });
   }
 
@@ -980,6 +986,72 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
         const msg = error instanceof Error ? error.message : 'Tool execution failed';
         return { content: msg + buildToolHelpText(tools, tool_name), isError: true };
       }
+    });
+  }
+
+  // Register batch_use_tool — parallel execution of multiple tools
+  const batchUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'batch_use_tool');
+  if (batchUseToolDef) {
+    tools.register(batchUseToolDef, async (args): Promise<CoreToolResult> => {
+      const { calls } = args as { calls: Array<{ tool_name: string; arguments: Record<string, unknown> }> };
+
+      if (!calls?.length) {
+        return { content: 'Provide a "calls" array with at least one tool call.', isError: true };
+      }
+
+      // Execute all tool calls in parallel
+      const results = await Promise.allSettled(
+        calls.map(async (call, idx) => {
+          const { tool_name, arguments: toolArgs } = call;
+
+          // Check tool exists
+          if (!tools.has(tool_name)) {
+            const similar = findSimilarTools(tools, tool_name);
+            const hint = similar.length > 0
+              ? ` Did you mean: ${similar.join(', ')}?`
+              : '';
+            return { idx, tool_name, ok: false, content: `Tool '${tool_name}' not found.${hint}` };
+          }
+
+          // Validate required params
+          const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
+          if (missingError) {
+            return { idx, tool_name, ok: false, content: missingError };
+          }
+
+          try {
+            const cappedArgs = applyToolLimits(tool_name, toolArgs);
+            const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
+            if (result.ok) {
+              return { idx, tool_name, ok: true, content: typeof result.value.content === 'string' ? result.value.content : JSON.stringify(result.value.content, null, 2) };
+            }
+            return { idx, tool_name, ok: false, content: result.error.message };
+          } catch (error) {
+            const msg = error instanceof Error ? error.message : 'Execution failed';
+            return { idx, tool_name, ok: false, content: msg };
+          }
+        })
+      );
+
+      // Format combined results
+      const sections = results.map((r, i) => {
+        const call = calls[i]!;
+        if (r.status === 'fulfilled') {
+          const v = r.value;
+          const status = v.ok ? '✓' : '✗';
+          return `### ${i + 1}. ${call.tool_name} ${status}\n${v.content}`;
+        }
+        return `### ${i + 1}. ${call.tool_name} ✗\nUnexpected error: ${r.reason}`;
+      });
+
+      const hasErrors = results.some(r =>
+        r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)
+      );
+
+      return {
+        content: `[Batch: ${calls.length} tool calls]\n\n${sections.join('\n\n---\n\n')}`,
+        isError: hasErrors && results.every(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)),
+      };
     });
   }
 
@@ -1109,7 +1181,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Only expose meta-tools (search_tools, get_tool_help, use_tool) to the API.
   // This prevents 100+ tool schemas from consuming ~20K+ tokens per request.
   // All tools remain registered in the ToolRegistry and can be executed via use_tool proxy.
-  const metaToolFilter = ['search_tools', 'get_tool_help', 'use_tool'].map(
+  const metaToolFilter = ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'].map(
     n => n as unknown as import('@ownpilot/core').ToolId
   );
 
@@ -1738,7 +1810,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
     // search_tools, get_tool_help and use_tool have special executors (registered below)
-    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool') continue;
+    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool' || toolDef.name === 'batch_use_tool') continue;
 
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
@@ -1757,7 +1829,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   const chatSearchToolsDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'search_tools');
   if (chatSearchToolsDef) {
     tools.register(chatSearchToolsDef, async (args): Promise<CoreToolResult> => {
-      const { query, category: filterCategory } = args as { query: string; category?: string };
+      const { query, category: filterCategory, include_params } = args as { query: string; category?: string; include_params?: boolean };
       const allDefs = tools.getDefinitions();
       const q = query.trim().toLowerCase();
 
@@ -1768,7 +1840,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
       const queryWords = q.split(/\s+/).filter(Boolean);
 
       const matches = allDefs.filter(d => {
-        if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool') return false;
+        if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool' || d.name === 'batch_use_tool') return false;
         if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
 
         if (showAll) return true;
@@ -1791,8 +1863,14 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
         return { content: `No tools found for "${query}". Tips:\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"` };
       }
 
+      // When include_params is true, return full parameter docs for each match
+      if (include_params) {
+        const sections = matches.map(d => formatFullToolHelp(tools, d.name));
+        return { content: [`Found ${matches.length} tool(s) for "${query}" (with parameters):`, '', ...sections.join('\n\n---\n\n').split('\n')].join('\n') };
+      }
+
       const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
-      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines, '', 'Use get_tool_help(tool_name) for full parameter details.'].join('\n') };
+      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines, '', 'Tip: Add include_params=true to get full parameter docs, or use get_tool_help(tool_name).'].join('\n') };
     });
   }
 
@@ -1869,6 +1947,69 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
     });
   }
 
+  // Register batch_use_tool — parallel execution of multiple tools
+  const chatBatchUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'batch_use_tool');
+  if (chatBatchUseToolDef) {
+    tools.register(chatBatchUseToolDef, async (args): Promise<CoreToolResult> => {
+      const { calls } = args as { calls: Array<{ tool_name: string; arguments: Record<string, unknown> }> };
+
+      if (!calls?.length) {
+        return { content: 'Provide a "calls" array with at least one tool call.', isError: true };
+      }
+
+      // Execute all tool calls in parallel
+      const results = await Promise.allSettled(
+        calls.map(async (call, idx) => {
+          const { tool_name, arguments: toolArgs } = call;
+
+          if (!tools.has(tool_name)) {
+            const similar = findSimilarTools(tools, tool_name);
+            const hint = similar.length > 0
+              ? ` Did you mean: ${similar.join(', ')}?`
+              : '';
+            return { idx, tool_name, ok: false, content: `Tool '${tool_name}' not found.${hint}` };
+          }
+
+          const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
+          if (missingError) {
+            return { idx, tool_name, ok: false, content: missingError };
+          }
+
+          try {
+            const cappedArgs = applyToolLimits(tool_name, toolArgs);
+            const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
+            if (result.ok) {
+              return { idx, tool_name, ok: true, content: typeof result.value.content === 'string' ? result.value.content : JSON.stringify(result.value.content, null, 2) };
+            }
+            return { idx, tool_name, ok: false, content: result.error.message };
+          } catch (error) {
+            const msg = error instanceof Error ? error.message : 'Execution failed';
+            return { idx, tool_name, ok: false, content: msg };
+          }
+        })
+      );
+
+      const sections = results.map((r, i) => {
+        const call = calls[i]!;
+        if (r.status === 'fulfilled') {
+          const v = r.value;
+          const status = v.ok ? '✓' : '✗';
+          return `### ${i + 1}. ${call.tool_name} ${status}\n${v.content}`;
+        }
+        return `### ${i + 1}. ${call.tool_name} ✗\nUnexpected error: ${r.reason}`;
+      });
+
+      const hasErrors = results.some(r =>
+        r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)
+      );
+
+      return {
+        content: `[Batch: ${calls.length} tool calls]\n\n${sections.join('\n\n---\n\n')}`,
+        isError: hasErrors && results.every(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)),
+      };
+    });
+  }
+
   // Register active custom tools (user-created dynamic tools)
   const activeCustomToolDefs = await getActiveCustomToolDefinitions(userId);
   for (const toolDef of activeCustomToolDefs) {
@@ -1941,7 +2082,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   });
 
   // Only expose meta-tools to the API to prevent token bloat from 100+ tool schemas.
-  const chatMetaToolFilter = ['search_tools', 'get_tool_help', 'use_tool'].map(
+  const chatMetaToolFilter = ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'].map(
     n => n as unknown as import('@ownpilot/core').ToolId
   );
 

@@ -257,6 +257,7 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   search_tools: ['find tool', 'discover', 'search', 'which tool', 'available tools'],
   get_tool_help: ['help', 'usage', 'parameters', 'how to use', 'docs', 'documentation', 'batch help', 'multiple tools'],
   use_tool: ['execute', 'run tool', 'call tool', 'invoke'],
+  batch_use_tool: ['batch', 'parallel', 'multiple tools', 'concurrent', 'bulk execute', 'run many'],
 
   // ─────────────────────────────────────────────
   // CONFIG CENTER

@@ -825,7 +825,7 @@ export const toggleToolDefinition: ToolDefinition = {
  */
 export const searchToolsDefinition: ToolDefinition = {
   name: 'search_tools',
-  description: 'Search for available tools by keyword or intent. Uses word-by-word AND matching: "email send" finds send_email. Use "all" to list every tool. Returns matching tool names with short descriptions.',
+  description: 'Search for available tools by keyword or intent. Uses word-by-word AND matching: "email send" finds send_email. Use "all" to list every tool. Set include_params=true to also get full parameter docs (skips the need for get_tool_help).',
   parameters: {
     type: 'object',
     properties: {
@@ -836,6 +836,10 @@ export const searchToolsDefinition: ToolDefinition = {
       category: {
         type: 'string',
         description: 'Optional: filter by category name',
+      },
+      include_params: {
+        type: 'boolean',
+        description: 'If true, include full parameter documentation for each matched tool. Saves a separate get_tool_help call. Default: false.',
       },
     },
     required: ['query'],
@@ -892,10 +896,45 @@ export const useToolDefinition: ToolDefinition = {
   category: 'System',
 };
 
+/**
+ * batch_use_tool — Execute multiple tools in parallel.
+ * Saves round-trips when the LLM needs results from several tools at once.
+ */
+export const batchUseToolDefinition: ToolDefinition = {
+  name: 'batch_use_tool',
+  description: 'Execute multiple tools in parallel and return all results at once. Much faster than calling use_tool sequentially. Each call runs concurrently.',
+  parameters: {
+    type: 'object',
+    properties: {
+      calls: {
+        type: 'array',
+        description: 'Array of tool calls. Each item: { tool_name: "exact_name", arguments: { ... } }',
+        items: {
+          type: 'object',
+          properties: {
+            tool_name: {
+              type: 'string',
+              description: 'Exact tool name (from search_tools or TOOL CATALOG)',
+            },
+            arguments: {
+              type: 'object',
+              description: 'Arguments for this tool',
+            },
+          },
+          required: ['tool_name', 'arguments'],
+        },
+      },
+    },
+    required: ['calls'],
+  },
+  category: 'System',
+};
+
 export const DYNAMIC_TOOL_DEFINITIONS: ToolDefinition[] = [
   searchToolsDefinition,
   getToolHelpDefinition,
   useToolDefinition,
+  batchUseToolDefinition,
   createToolDefinition,
   listToolsDefinition,
   deleteToolDefinition,
