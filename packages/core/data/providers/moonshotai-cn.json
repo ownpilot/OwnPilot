@@ -16,8 +16,8 @@
       "name": "Kimi K2.5",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 0.6,
+      "outputPrice": 3,
       "capabilities": [
         "chat",
         "vision",

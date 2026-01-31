@@ -78,7 +78,7 @@
     {
       "id": "whisper-large-v3",
       "name": "Whisper large-v3",
-      "contextWindow": 8192,
+      "contextWindow": 0,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,

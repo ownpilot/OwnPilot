@@ -45,22 +45,6 @@
       "releaseDate": "2025-12-23"
     },
     {
-      "id": "z-ai/glm-4.7",
-      "name": "GLM-4.7",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-22"
-    },
-    {
       "id": "z-ai/glm4.7",
       "name": "GLM-4.7",
       "contextWindow": 204800,
@@ -739,7 +723,7 @@
       "id": "black-forest-labs/flux.1-dev",
       "name": "FLUX.1-dev",
       "contextWindow": 4096,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1085,7 +1069,7 @@
     {
       "id": "nvidia/parakeet-tdt-0.6b-v2",
       "name": "Parakeet TDT 0.6B v2",
-      "contextWindow": 8192,
+      "contextWindow": 0,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -1100,7 +1084,7 @@
     {
       "id": "nvidia/nemoretriever-ocr-v1",
       "name": "NeMo Retriever OCR v1",
-      "contextWindow": 8192,
+      "contextWindow": 0,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -1131,7 +1115,7 @@
     {
       "id": "openai/whisper-large-v3",
       "name": "Whisper Large v3",
-      "contextWindow": 8192,
+      "contextWindow": 0,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,

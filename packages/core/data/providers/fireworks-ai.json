@@ -15,7 +15,7 @@
       "id": "accounts/fireworks/models/kimi-k2p5",
       "name": "Kimi K2.5",
       "contextWindow": 256000,
-      "maxOutput": 32768,
+      "maxOutput": 256000,
       "inputPrice": 0.6,
       "outputPrice": 3,
       "capabilities": [

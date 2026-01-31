@@ -1226,7 +1226,7 @@
       "id": "bfl/flux-kontext-pro",
       "name": "FLUX.1 Kontext Pro",
       "contextWindow": 512,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1240,7 +1240,7 @@
       "id": "bfl/flux-kontext-max",
       "name": "FLUX.1 Kontext Max",
       "contextWindow": 512,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1254,7 +1254,7 @@
       "id": "google/imagen-4.0-fast-generate-001",
       "name": "Imagen 4 Fast",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1282,7 +1282,7 @@
       "id": "google/imagen-4.0-ultra-generate-001",
       "name": "Imagen 4 Ultra",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1313,7 +1313,7 @@
       "id": "google/imagen-4.0-generate-001",
       "name": "Imagen 4",
       "contextWindow": 480,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -2274,7 +2274,7 @@
       "id": "bfl/flux-pro-1.1-ultra",
       "name": "FLUX1.1 [pro] Ultra",
       "contextWindow": 512,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -2350,7 +2350,7 @@
       "id": "recraft/recraft-v3",
       "name": "Recraft V3",
       "contextWindow": 512,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -2364,7 +2364,7 @@
       "id": "bfl/flux-pro-1.1",
       "name": "FLUX1.1 [pro]",
       "contextWindow": 512,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -2378,7 +2378,7 @@
       "id": "bfl/flux-pro-1.0-fill",
       "name": "FLUX.1 Fill [pro]",
       "contextWindow": 512,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -2742,7 +2742,7 @@
       "id": "recraft/recraft-v2",
       "name": "Recraft V2",
       "contextWindow": 512,
-      "maxOutput": 4096,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [

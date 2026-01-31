@@ -16,8 +16,8 @@
       "name": "Devstral 2",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "function_calling",
