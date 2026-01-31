@@ -911,18 +911,37 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   }
 
   // Register get_tool_help with a closure over the tools registry
+  // Supports both single tool_name and batch tool_names array
   const getToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
   if (getToolHelpDef) {
     tools.register(getToolHelpDef, async (args): Promise<CoreToolResult> => {
-      const { tool_name } = args as { tool_name: string };
-      if (!tools.getDefinition(tool_name)) {
-        const similar = findSimilarTools(tools, tool_name);
-        const hint = similar.length > 0
-          ? `\n\nDid you mean one of these?\n${similar.map(s => `  • ${s}`).join('\n')}\n\nUse search_tools("keyword") to find the correct tool name.`
-          : '\n\nUse search_tools("keyword") to discover available tools.';
-        return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
+      const { tool_name, tool_names } = args as { tool_name?: string; tool_names?: string[] };
+
+      // Resolve list of tool names (batch or single)
+      const names: string[] = tool_names?.length ? tool_names : tool_name ? [tool_name] : [];
+      if (names.length === 0) {
+        return { content: 'Provide either "tool_name" (string) or "tool_names" (array) parameter.', isError: true };
       }
-      return { content: formatFullToolHelp(tools, tool_name) };
+
+      const results: string[] = [];
+      const notFound: string[] = [];
+      for (const name of names) {
+        if (!tools.getDefinition(name)) {
+          notFound.push(name);
+          continue;
+        }
+        results.push(formatFullToolHelp(tools, name));
+      }
+
+      if (notFound.length > 0) {
+        const similar = notFound.flatMap(n => findSimilarTools(tools, n));
+        const hint = similar.length > 0
+          ? `\nDid you mean one of these?\n${[...new Set(similar)].map(s => `  • ${s}`).join('\n')}\n\nUse search_tools("keyword") to find the correct tool name.`
+          : '\nUse search_tools("keyword") to discover available tools.';
+        results.push(`Tools not found: ${notFound.join(', ')}${hint}`);
+      }
+
+      return { content: results.join('\n\n---\n\n'), isError: notFound.length > 0 && results.length === notFound.length };
     });
   }
 
@@ -1778,18 +1797,37 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   }
 
   // Register get_tool_help with a closure over the tools registry
+  // Supports both single tool_name and batch tool_names array
   const chatGetToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
   if (chatGetToolHelpDef) {
     tools.register(chatGetToolHelpDef, async (args): Promise<CoreToolResult> => {
-      const { tool_name } = args as { tool_name: string };
-      if (!tools.getDefinition(tool_name)) {
-        const similar = findSimilarTools(tools, tool_name);
-        const hint = similar.length > 0
-          ? `\n\nDid you mean one of these?\n${similar.map(s => `  • ${s}`).join('\n')}\n\nUse search_tools("keyword") to find the correct tool name.`
-          : '\n\nUse search_tools("keyword") to discover available tools.';
-        return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
+      const { tool_name, tool_names } = args as { tool_name?: string; tool_names?: string[] };
+
+      // Resolve list of tool names (batch or single)
+      const names: string[] = tool_names?.length ? tool_names : tool_name ? [tool_name] : [];
+      if (names.length === 0) {
+        return { content: 'Provide either "tool_name" (string) or "tool_names" (array) parameter.', isError: true };
       }
-      return { content: formatFullToolHelp(tools, tool_name) };
+
+      const results: string[] = [];
+      const notFound: string[] = [];
+      for (const name of names) {
+        if (!tools.getDefinition(name)) {
+          notFound.push(name);
+          continue;
+        }
+        results.push(formatFullToolHelp(tools, name));
+      }
+
+      if (notFound.length > 0) {
+        const similar = notFound.flatMap(n => findSimilarTools(tools, n));
+        const hint = similar.length > 0
+          ? `\nDid you mean one of these?\n${[...new Set(similar)].map(s => `  • ${s}`).join('\n')}\n\nUse search_tools("keyword") to find the correct tool name.`
+          : '\nUse search_tools("keyword") to discover available tools.';
+        results.push(`Tools not found: ${notFound.join(', ')}${hint}`);
+      }
+
+      return { content: results.join('\n\n---\n\n'), isError: notFound.length > 0 && results.length === notFound.length };
     });
   }
 
