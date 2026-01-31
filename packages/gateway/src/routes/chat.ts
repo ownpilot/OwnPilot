@@ -39,7 +39,7 @@ import {
 import { debugLog, type ToolDefinition } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace, getSessionWorkspace } from '../workspace/file-workspace.js';
 import { parseLimit, parseOffset } from '../utils/index.js';
-import { getCustomDataRepository } from '../db/repositories/custom-data.js';
+import { getCustomDataService } from '../services/custom-data-service.js';
 
 export const chatRoutes = new Hono();
 
@@ -78,8 +78,8 @@ async function buildToolCatalog(allTools: readonly ToolDefinition[]): Promise<st
 
   // Fetch custom data tables
   try {
-    const repo = getCustomDataRepository();
-    const tables = await repo.listTables();
+    const service = getCustomDataService();
+    const tables = await service.listTables();
     if (tables.length > 0) {
       lines.push('');
       lines.push('CUSTOM DATA TABLES:');
@@ -93,9 +93,12 @@ async function buildToolCatalog(allTools: readonly ToolDefinition[]): Promise<st
   }
 
   lines.push('');
-  lines.push('To use a tool: use_tool("tool_name", {parameters})');
-  lines.push('To discover parameters: get_tool_help("tool_name")');
-  lines.push('To search: search_tools("keyword")');
+  lines.push('IMPORTANT: This catalog only lists tool NAMES. You do NOT know how to call these tools.');
+  lines.push('Before executing any tool, you MUST look up its parameters first:');
+  lines.push('  1. search_tools("keyword", include_params=true) → find tools + get parameter docs');
+  lines.push('  2. OR get_tool_help("tool_name") → get parameter docs for a known tool name');
+  lines.push('  3. THEN use_tool("tool_name", {parameters}) → execute with correct parameters');
+  lines.push('NEVER guess parameters — always look them up first.');
 
   return lines.join('\n');
 }

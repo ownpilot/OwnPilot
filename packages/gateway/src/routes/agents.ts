@@ -61,7 +61,9 @@ import type {
   AgentInfo,
   AgentDetail,
 } from '../types/index.js';
-import { agentsRepo, localProvidersRepo, type AgentRecord, MemoriesRepository, GoalsRepository } from '../db/repositories/index.js';
+import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
+import { getMemoryService } from '../services/memory-service.js';
+import { getGoalService } from '../services/goal-service.js';
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
 import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-center-impl.js';
 
@@ -367,10 +369,10 @@ function validateRequiredParams(tools: ToolRegistry, toolName: string, args: Rec
  * Build memory context string from important memories
  */
 async function buildMemoryContext(userId = 'default'): Promise<string> {
-  const repo = new MemoriesRepository(userId);
+  const memoryService = getMemoryService();
 
   // Get important memories
-  const importantMemories = await repo.getImportant(0.5, 10);
+  const importantMemories = await memoryService.getImportantMemories(userId, 0.5, 10);
 
   const sections: string[] = [];
 
@@ -431,11 +433,11 @@ You have access to a persistent memory system. Use it wisely:
  * Build goal context string from active goals
  */
 async function buildGoalContext(userId = 'default'): Promise<string> {
-  const repo = new GoalsRepository(userId);
+  const goalService = getGoalService();
 
   // Get active goals
-  const activeGoals = await repo.getActive(5);
-  const nextActions = await repo.getNextActions(3);
+  const activeGoals = await goalService.getActive(userId, 5);
+  const nextActions = await goalService.getNextActions(userId, 3);
 
   const sections: string[] = [];
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Database, Plus, Trash2, Search, Table, ChevronRight, Edit3 } from '../components/icons';
+import { Database, Plus, Trash2, Search, Table, ChevronRight, Edit3, Lock } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 
 interface ColumnDefinition {
@@ -16,6 +16,8 @@ interface CustomTable {
   description?: string;
   columns: ColumnDefinition[];
   recordCount?: number;
+  ownerPluginId?: string;
+  isProtected?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -191,6 +193,11 @@ export function CustomDataPage() {
                       <div className="flex items-center gap-2 min-w-0">
                         <Table className="w-4 h-4 flex-shrink-0" />
                         <span className="truncate text-sm">{table.displayName}</span>
+                        {table.isProtected && (
+                          <Lock className={`w-3 h-3 flex-shrink-0 ${
+                            selectedTable?.id === table.id ? 'text-white/70' : 'text-text-muted dark:text-dark-text-muted'
+                          }`} />
+                        )}
                       </div>
                       <span className={`text-xs ${selectedTable?.id === table.id ? 'text-white/70' : 'text-text-muted dark:text-dark-text-muted'}`}>
                         {table.recordCount ?? 0}
@@ -214,13 +221,20 @@ export function CustomDataPage() {
                     <h3 className="font-medium text-text-primary dark:text-dark-text-primary">
                       {selectedTable.displayName}
                     </h3>
-                    <button
-                      onClick={() => handleDeleteTable(selectedTable.id)}
-                      className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
-                      title="Delete table"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {selectedTable.isProtected ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                        <Lock className="w-3 h-3" />
+                        {selectedTable.ownerPluginId ?? 'Plugin'}
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleDeleteTable(selectedTable.id)}
+                        className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+                        title="Delete table"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                   {selectedTable.description && (
                     <p className="text-sm text-text-muted dark:text-dark-text-muted">

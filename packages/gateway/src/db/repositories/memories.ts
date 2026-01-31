@@ -6,6 +6,15 @@
  */
 
 import { BaseRepository } from './base.js';
+import type { StandardQuery } from './interfaces.js';
+import {
+  getEventBus,
+  createEvent,
+  EventTypes,
+  type ResourceCreatedData,
+  type ResourceUpdatedData,
+  type ResourceDeletedData,
+} from '@ownpilot/core';
 
 export type MemoryType = 'fact' | 'preference' | 'conversation' | 'event' | 'skill';
 
@@ -44,15 +53,12 @@ export interface UpdateMemoryInput {
   metadata?: Record<string, unknown>;
 }
 
-export interface MemoryQuery {
+export interface MemoryQuery extends StandardQuery {
   type?: MemoryType;
   types?: MemoryType[];
   minImportance?: number;
   tags?: string[];
   source?: string;
-  search?: string;
-  limit?: number;
-  offset?: number;
   orderBy?: 'importance' | 'created' | 'accessed' | 'relevance';
 }
 
@@ -114,6 +120,13 @@ export class MemoriesRepository extends BaseRepository {
   }
 
   /**
+   * Get a memory by ID (standard interface alias)
+   */
+  async getById(id: string): Promise<Memory | null> {
+    return this.get(id, false);
+  }
+
+  /**
    * Create a new memory
    */
   async create(input: CreateMemoryInput): Promise<Memory> {
@@ -141,7 +154,14 @@ export class MemoriesRepository extends BaseRepository {
       ]
     );
 
-    return (await this.get(id))!;
+    const memory = (await this.get(id))!;
+
+    getEventBus().emit(createEvent<ResourceCreatedData>(
+      EventTypes.RESOURCE_CREATED, 'resource', 'memories-repository',
+      { resourceType: 'memory', id },
+    ));
+
+    return memory;
   }
 
   /**
@@ -192,7 +212,16 @@ export class MemoriesRepository extends BaseRepository {
       ]
     );
 
-    return this.get(id, false);
+    const updated = await this.get(id, false);
+
+    if (updated) {
+      getEventBus().emit(createEvent<ResourceUpdatedData>(
+        EventTypes.RESOURCE_UPDATED, 'resource', 'memories-repository',
+        { resourceType: 'memory', id, changes: input },
+      ));
+    }
+
+    return updated;
   }
 
   /**
@@ -203,7 +232,16 @@ export class MemoriesRepository extends BaseRepository {
       `DELETE FROM memories WHERE id = $1 AND user_id = $2`,
       [id, this.userId]
     );
-    return result.changes > 0;
+    const deleted = result.changes > 0;
+
+    if (deleted) {
+      getEventBus().emit(createEvent<ResourceDeletedData>(
+        EventTypes.RESOURCE_DELETED, 'resource', 'memories-repository',
+        { resourceType: 'memory', id },
+      ));
+    }
+
+    return deleted;
   }
 
   /**

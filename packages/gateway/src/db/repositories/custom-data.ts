@@ -27,6 +27,8 @@ export interface CustomTableSchema {
   displayName: string;
   description?: string;
   columns: ColumnDefinition[];
+  ownerPluginId?: string;
+  isProtected: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,6 +50,8 @@ interface SchemaRow {
   display_name: string;
   description: string | null;
   columns: string;
+  owner_plugin_id: string | null;
+  is_protected: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -71,7 +75,8 @@ export class CustomDataRepository extends BaseRepository {
     name: string,
     displayName: string,
     columns: ColumnDefinition[],
-    description?: string
+    description?: string,
+    options?: { ownerPluginId?: string; isProtected?: boolean }
   ): Promise<CustomTableSchema> {
     const id = `table_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
@@ -86,11 +91,13 @@ export class CustomDataRepository extends BaseRepository {
 
     // Sanitize table name
     const sanitizedName = name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    const ownerPluginId = options?.ownerPluginId ?? null;
+    const isProtected = options?.isProtected ?? false;
 
     await this.execute(
-      `INSERT INTO custom_table_schemas (id, name, display_name, description, columns, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [id, sanitizedName, displayName, description ?? null, JSON.stringify(columns), now, now]
+      `INSERT INTO custom_table_schemas (id, name, display_name, description, columns, owner_plugin_id, is_protected, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [id, sanitizedName, displayName, description ?? null, JSON.stringify(columns), ownerPluginId, isProtected, now, now]
     );
 
     return {
@@ -99,6 +106,8 @@ export class CustomDataRepository extends BaseRepository {
       displayName,
       description,
       columns,
+      ownerPluginId: ownerPluginId ?? undefined,
+      isProtected,
       createdAt: now,
       updatedAt: now,
     };
@@ -115,15 +124,7 @@ export class CustomDataRepository extends BaseRepository {
 
     if (!row) return null;
 
-    return {
-      id: row.id,
-      name: row.name,
-      displayName: row.display_name,
-      description: row.description ?? undefined,
-      columns: typeof row.columns === 'string' ? JSON.parse(row.columns) : row.columns,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    };
+    return this.mapSchemaRow(row);
   }
 
   /**
@@ -134,15 +135,32 @@ export class CustomDataRepository extends BaseRepository {
       'SELECT * FROM custom_table_schemas ORDER BY display_name'
     );
 
-    return rows.map((row) => ({
+    return rows.map((row) => this.mapSchemaRow(row));
+  }
+
+  /**
+   * List tables owned by a specific plugin
+   */
+  async getTablesByPlugin(pluginId: string): Promise<CustomTableSchema[]> {
+    const rows = await this.query<SchemaRow>(
+      'SELECT * FROM custom_table_schemas WHERE owner_plugin_id = $1 ORDER BY display_name',
+      [pluginId]
+    );
+    return rows.map((row) => this.mapSchemaRow(row));
+  }
+
+  private mapSchemaRow(row: SchemaRow): CustomTableSchema {
+    return {
       id: row.id,
       name: row.name,
       displayName: row.display_name,
       description: row.description ?? undefined,
       columns: typeof row.columns === 'string' ? JSON.parse(row.columns) : row.columns,
+      ownerPluginId: row.owner_plugin_id ?? undefined,
+      isProtected: !!row.is_protected,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-    }));
+    };
   }
 
   /**
@@ -177,11 +195,19 @@ export class CustomDataRepository extends BaseRepository {
   }
 
   /**
-   * Delete a custom table and all its data
+   * Delete a custom table and all its data.
+   * Protected tables require `force: true` (used during plugin uninstall).
    */
-  async deleteTable(nameOrId: string): Promise<boolean> {
+  async deleteTable(nameOrId: string, options?: { force?: boolean }): Promise<boolean> {
     const table = await this.getTable(nameOrId);
     if (!table) return false;
+
+    // Protection check
+    if (table.isProtected && !options?.force) {
+      throw new Error(
+        `Table "${table.displayName}" is protected by plugin "${table.ownerPluginId}". Cannot delete.`
+      );
+    }
 
     // Delete all records first
     await this.execute('DELETE FROM custom_data_records WHERE table_id = $1', [table.id]);
@@ -190,6 +216,43 @@ export class CustomDataRepository extends BaseRepository {
     await this.execute('DELETE FROM custom_table_schemas WHERE id = $1', [table.id]);
 
     return true;
+  }
+
+  /**
+   * Force-delete all tables owned by a plugin (for uninstall).
+   */
+  async deletePluginTables(pluginId: string): Promise<number> {
+    const tables = await this.getTablesByPlugin(pluginId);
+    for (const table of tables) {
+      await this.execute('DELETE FROM custom_data_records WHERE table_id = $1', [table.id]);
+      await this.execute('DELETE FROM custom_table_schemas WHERE id = $1', [table.id]);
+    }
+    return tables.length;
+  }
+
+  /**
+   * Create a plugin-owned table if it doesn't exist (idempotent).
+   * Used during plugin initialization.
+   */
+  async ensurePluginTable(
+    pluginId: string,
+    name: string,
+    displayName: string,
+    columns: ColumnDefinition[],
+    description?: string,
+  ): Promise<CustomTableSchema> {
+    const existing = await this.getTable(name);
+    if (existing) {
+      // Verify ownership
+      if (existing.ownerPluginId && existing.ownerPluginId !== pluginId) {
+        throw new Error(`Table "${name}" is owned by plugin "${existing.ownerPluginId}", not "${pluginId}"`);
+      }
+      return existing;
+    }
+    return this.createTable(name, displayName, columns, description, {
+      ownerPluginId: pluginId,
+      isProtected: true,
+    });
   }
 
   /**

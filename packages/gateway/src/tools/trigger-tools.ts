@@ -5,7 +5,7 @@
  */
 
 import type { ToolDefinition, ToolExecutionResult as CoreToolResult } from '@ownpilot/core';
-import { TriggersRepository } from '../db/repositories/triggers.js';
+import { getTriggerService } from '../services/trigger-service.js';
 import { getTriggerEngine } from '../triggers/index.js';
 
 // =============================================================================
@@ -177,7 +177,7 @@ export async function executeTriggerTool(
   args: Record<string, unknown>,
   userId = 'default'
 ): Promise<{ success: boolean; result?: unknown; error?: string }> {
-  const repo = new TriggersRepository(userId);
+  const service = getTriggerService();
 
   switch (toolName) {
     case 'create_trigger': {
@@ -208,7 +208,7 @@ export async function executeTriggerTool(
       }
 
       try {
-        const trigger = await repo.create({
+        const trigger = await service.createTrigger(userId, {
           name: args.name as string,
           description: args.description as string | undefined,
           type: type as 'schedule' | 'event' | 'condition' | 'webhook',
@@ -239,7 +239,7 @@ export async function executeTriggerTool(
     }
 
     case 'list_triggers': {
-      const triggers = await repo.list({
+      const triggers = await service.listTriggers(userId, {
         type: args.type as string | undefined as never,
         enabled: args.enabled as boolean | undefined,
         limit: 50,
@@ -265,7 +265,7 @@ export async function executeTriggerTool(
     case 'enable_trigger': {
       const triggerId = args.trigger_id as string;
       const enabled = args.enabled as boolean;
-      const updated = await repo.update(triggerId, { enabled });
+      const updated = await service.updateTrigger(userId, triggerId, { enabled });
       if (!updated) {
         return { success: false, error: `Trigger not found: ${triggerId}` };
       }
@@ -277,7 +277,7 @@ export async function executeTriggerTool(
 
     case 'fire_trigger': {
       const triggerId = args.trigger_id as string;
-      const trigger = await repo.get(triggerId);
+      const trigger = await service.getTrigger(userId, triggerId);
       if (!trigger) {
         return { success: false, error: `Trigger not found: ${triggerId}` };
       }
@@ -300,7 +300,7 @@ export async function executeTriggerTool(
 
     case 'delete_trigger': {
       const triggerId = args.trigger_id as string;
-      const deleted = await repo.delete(triggerId);
+      const deleted = await service.deleteTrigger(userId, triggerId);
       if (!deleted) {
         return { success: false, error: `Trigger not found: ${triggerId}` };
       }
@@ -308,7 +308,7 @@ export async function executeTriggerTool(
     }
 
     case 'trigger_stats': {
-      const stats = await repo.getStats();
+      const stats = await service.getStats(userId);
       return { success: true, result: stats };
     }
 

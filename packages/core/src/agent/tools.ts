@@ -17,14 +17,27 @@ import type {
   ToolExecutionResult,
   ToolCall,
   ToolResult,
+  ToolProvider,
+  ToolMiddleware,
+  ToolMiddlewareContext,
 } from './types.js';
 import { logToolCall, logToolResult } from './debug.js';
 import type { ConfigCenter } from '../services/config-center.js';
+import {
+  getEventBus,
+  createEvent,
+  EventTypes,
+  type ToolRegisteredData,
+  type ToolExecutedData,
+} from '../events/index.js';
 // Backward compat alias
 type ApiKeyCenter = ConfigCenter;
 
 // Re-export types for consumers
-export type { ToolDefinition, ToolExecutor, RegisteredTool, ToolContext, ToolExecutionResult, ToolCall, ToolResult };
+export type {
+  ToolDefinition, ToolExecutor, RegisteredTool, ToolContext, ToolExecutionResult,
+  ToolCall, ToolResult, ToolProvider, ToolMiddleware, ToolMiddlewareContext,
+};
 
 /**
  * Tool registry for managing available tools
@@ -33,6 +46,8 @@ export class ToolRegistry {
   private readonly tools = new Map<string, RegisteredTool>();
   private readonly pluginTools = new Map<string, Set<string>>();
   private _apiKeyCenter?: ApiKeyCenter;
+  private readonly globalMiddleware: ToolMiddleware[] = [];
+  private readonly perToolMiddleware = new Map<string, ToolMiddleware[]>();
 
   /**
    * Register a tool
@@ -79,6 +94,13 @@ export class ToolRegistry {
       pluginToolSet.add(definition.name);
     }
 
+    // Emit tool registered event
+    const source: ToolRegisteredData['source'] = pluginId ? 'plugin' : 'core';
+    getEventBus().emit(createEvent<ToolRegisteredData>(
+      EventTypes.TOOL_REGISTERED, 'tool', 'tool-registry',
+      { name: definition.name, source, pluginId: pluginId ?? undefined },
+    ));
+
     return ok(toolId);
   }
 
@@ -109,7 +131,9 @@ export class ToolRegistry {
    * Update executor for an existing tool
    * Used to override placeholder implementations with real ones (e.g., Gmail, Media services)
    */
+  /** @deprecated Use `useFor()` middleware instead. Will be removed in a future release. */
   updateExecutor(name: string, executor: ToolExecutor): boolean {
+    console.warn(`[ToolRegistry] updateExecutor('${name}') is deprecated. Use useFor() middleware instead.`);
     const tool = this.tools.get(name);
     if (!tool) return false;
 
@@ -226,11 +250,39 @@ export class ToolRegistry {
         : undefined,
     };
 
+    const startTime = Date.now();
     try {
-      const result = await tool.executor(args, fullContext);
+      // Run middleware before hooks
+      const middleware = this.getMiddleware(name);
+      const mwContext: ToolMiddlewareContext = {
+        toolName: name,
+        args,
+        conversationId: context.conversationId,
+        userId: context.userId,
+      };
+      await this.runBeforeMiddleware(middleware, mwContext);
+
+      let result = await tool.executor(mwContext.args, fullContext);
+
+      // Run middleware after hooks
+      result = await this.runAfterMiddleware(middleware, mwContext, result);
+
+      // Emit tool executed event (success)
+      getEventBus().emit(createEvent<ToolExecutedData>(
+        EventTypes.TOOL_EXECUTED, 'tool', 'tool-registry',
+        { name, duration: Date.now() - startTime, success: true, conversationId: context.conversationId },
+      ));
+
       return ok(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+
+      // Emit tool executed event (failure)
+      getEventBus().emit(createEvent<ToolExecutedData>(
+        EventTypes.TOOL_EXECUTED, 'tool', 'tool-registry',
+        { name, duration: Date.now() - startTime, success: false, error: message, conversationId: context.conversationId },
+      ));
+
       return err(new PluginError(tool.pluginId ?? 'core', `Tool execution failed: ${message}`));
     }
   }
@@ -385,12 +437,86 @@ export class ToolRegistry {
     };
   }
 
+  // ==========================================================================
+  // Provider & Middleware
+  // ==========================================================================
+
+  /**
+   * Register all tools from a ToolProvider at once.
+   * Duplicates are silently skipped (same as register).
+   */
+  registerProvider(provider: ToolProvider): void {
+    for (const { definition, executor } of provider.getTools()) {
+      this.register(definition, executor);
+    }
+  }
+
+  /**
+   * Add a global middleware that runs for every tool execution.
+   */
+  use(middleware: ToolMiddleware): void {
+    this.globalMiddleware.push(middleware);
+  }
+
+  /**
+   * Add a middleware that only runs for a specific tool.
+   */
+  useFor(toolName: string, middleware: ToolMiddleware): void {
+    let list = this.perToolMiddleware.get(toolName);
+    if (!list) {
+      list = [];
+      this.perToolMiddleware.set(toolName, list);
+    }
+    list.push(middleware);
+  }
+
+  /**
+   * Collect all middleware that applies to a given tool name.
+   */
+  private getMiddleware(toolName: string): ToolMiddleware[] {
+    const perTool = this.perToolMiddleware.get(toolName) ?? [];
+    return [...this.globalMiddleware, ...perTool];
+  }
+
+  /**
+   * Run middleware 'before' hooks. Modifies context.args in-place if middleware changes them.
+   */
+  private async runBeforeMiddleware(
+    middleware: ToolMiddleware[],
+    ctx: ToolMiddlewareContext,
+  ): Promise<void> {
+    for (const mw of middleware) {
+      if (mw.before) {
+        await mw.before(ctx);
+      }
+    }
+  }
+
+  /**
+   * Run middleware 'after' hooks. Returns possibly-transformed result.
+   */
+  private async runAfterMiddleware(
+    middleware: ToolMiddleware[],
+    ctx: ToolMiddlewareContext,
+    result: ToolExecutionResult,
+  ): Promise<ToolExecutionResult> {
+    let current = result;
+    for (const mw of middleware) {
+      if (mw.after) {
+        current = await mw.after(ctx, current);
+      }
+    }
+    return current;
+  }
+
   /**
    * Clear all tools
    */
   clear(): void {
     this.tools.clear();
     this.pluginTools.clear();
+    this.globalMiddleware.length = 0;
+    this.perToolMiddleware.clear();
   }
 }
 

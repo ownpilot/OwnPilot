@@ -89,6 +89,43 @@ const CATEGORY_INFO: Record<string, { icon: string; description: string }> = {
   automation: { icon: '🤖', description: 'Triggers & plans' },
 };
 
+/**
+ * Resolve and execute a tool from the shared registry or plugin registry.
+ * Throws HTTPException 404 if the tool is not found in either.
+ */
+async function resolveAndExecuteTool(
+  name: string,
+  args: Record<string, unknown>,
+  conversationId: string,
+): Promise<{ content: unknown; isError?: boolean }> {
+  const registry = getSharedToolRegistry();
+
+  // Try shared registry first
+  if (registry.has(name)) {
+    const result = await registry.execute(name, args, { conversationId });
+    if (!result.ok) throw new Error(result.error.message);
+    return result.value;
+  }
+
+  // Fallback: try plugin registry
+  try {
+    const pluginRegistry = await getDefaultPluginRegistry();
+    const pluginTool = pluginRegistry.getTool(name);
+    if (pluginTool) {
+      const context = {
+        callId: `exec-${Date.now()}`,
+        conversationId,
+        pluginId: pluginTool.plugin.manifest.id,
+      };
+      return await pluginTool.executor(args, context as any);
+    }
+  } catch {
+    // Plugin registry not available
+  }
+
+  throw new HTTPException(404, { message: `Tool not found: ${name}` });
+}
+
 function getCategoryForTool(toolName: string): string {
   for (const [groupId, group] of Object.entries(TOOL_GROUPS)) {
     if (group.tools.includes(toolName)) {
@@ -376,7 +413,7 @@ toolsRoutes.get('/:name', async (c) => {
   const name = c.req.param('name');
   const agentId = c.req.query('agentId');
 
-  let tool;
+  let tool: ToolDefinition | undefined;
 
   if (agentId) {
     const agent = await getAgent(agentId);
@@ -387,7 +424,9 @@ toolsRoutes.get('/:name', async (c) => {
     }
     tool = agent.getTools().find((t) => t.name === name);
   } else {
-    tool = CORE_TOOLS.find((t) => t.name === name);
+    // Search all tool sources (core, memory, goal, custom data, personal data, triggers, plans, plugins)
+    const allTools = await getAllTools();
+    tool = allTools.find((t) => t.name === name);
   }
 
   if (!tool) {
@@ -420,33 +459,16 @@ toolsRoutes.post('/:name/execute', async (c) => {
   const name = c.req.param('name');
   const body = await c.req.json<{ arguments: Record<string, unknown> }>();
 
-  // Use shared tool registry (has ALL tools including gateway-wrapped ones)
-  const registry = getSharedToolRegistry();
-
-  if (!registry.has(name)) {
-    throw new HTTPException(404, {
-      message: `Tool not found: ${name}`,
-    });
-  }
-
   const startTime = Date.now();
-  const result = await registry.execute(name, body.arguments ?? {}, {
-    conversationId: 'direct-execution',
-  });
+  const result = await resolveAndExecuteTool(name, body.arguments ?? {}, 'direct-execution');
   const duration = Date.now() - startTime;
-
-  if (!result.ok) {
-    throw new HTTPException(500, {
-      message: result.error.message,
-    });
-  }
 
   const response: ApiResponse = {
     success: true,
     data: {
       tool: name,
-      result: result.value.content,
-      isError: result.value.isError,
+      result: result.content,
+      isError: result.isError,
       duration,
     },
     meta: {
@@ -465,14 +487,6 @@ toolsRoutes.post('/:name/stream', async (c) => {
   const name = c.req.param('name');
   const body = await c.req.json<{ arguments: Record<string, unknown> }>();
 
-  const registry = getSharedToolRegistry();
-
-  if (!registry.has(name)) {
-    throw new HTTPException(404, {
-      message: `Tool not found: ${name}`,
-    });
-  }
-
   return streamSSE(c, async (stream) => {
     const startTime = Date.now();
 
@@ -487,31 +501,17 @@ toolsRoutes.post('/:name/stream', async (c) => {
         }),
       });
 
-      // Execute tool
-      const result = await registry.execute(name, body.arguments ?? {}, {
-        conversationId: 'stream-execution',
-      });
+      // Execute tool (shared registry + plugin fallback)
+      const result = await resolveAndExecuteTool(name, body.arguments ?? {}, 'stream-execution');
       const duration = Date.now() - startTime;
-
-      if (!result.ok) {
-        await stream.writeSSE({
-          event: 'error',
-          data: JSON.stringify({
-            success: false,
-            error: result.error.message,
-            duration,
-          }),
-        });
-        return;
-      }
 
       // Send result event
       await stream.writeSSE({
         event: 'result',
         data: JSON.stringify({
           success: true,
-          result: result.value.content,
-          isError: result.value.isError,
+          result: result.content,
+          isError: result.isError,
           duration,
         }),
       });
@@ -554,42 +554,18 @@ toolsRoutes.post('/batch', async (c) => {
     });
   }
 
-  const registry = getSharedToolRegistry();
   const startTime = Date.now();
 
   const executeOne = async (exec: { tool: string; arguments: Record<string, unknown> }) => {
     const toolStartTime = Date.now();
 
-    if (!registry.has(exec.tool)) {
-      return {
-        tool: exec.tool,
-        success: false,
-        result: null,
-        error: `Tool not found: ${exec.tool}`,
-        duration: Date.now() - toolStartTime,
-      };
-    }
-
     try {
-      const result = await registry.execute(exec.tool, exec.arguments ?? {}, {
-        conversationId: 'batch-execution',
-      });
-
-      if (!result.ok) {
-        return {
-          tool: exec.tool,
-          success: false,
-          result: null,
-          error: result.error.message,
-          duration: Date.now() - toolStartTime,
-        };
-      }
-
+      const result = await resolveAndExecuteTool(exec.tool, exec.arguments ?? {}, 'batch-execution');
       return {
         tool: exec.tool,
         success: true,
-        result: result.value.content,
-        isError: result.value.isError,
+        result: result.content,
+        isError: result.isError,
         duration: Date.now() - toolStartTime,
       };
     } catch (err: any) {

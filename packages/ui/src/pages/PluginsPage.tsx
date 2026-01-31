@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Puzzle, Power, Wrench, Shield, Lock, Check, X, RefreshCw, Settings, Globe, AlertTriangle } from '../components/icons';
+import { Puzzle, Power, Wrench, Shield, Lock, Check, X, RefreshCw, Settings, Globe, AlertTriangle, Database } from '../components/icons';
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
 import type { ApiResponse } from '../types';
 
@@ -388,6 +388,25 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
   const showSettingsTab = plugin.hasSettings;
   const showServicesTab = (plugin.requiredServices?.length ?? 0) > 0;
 
+  // Plugin-owned database tables
+  const [pluginTables, setPluginTables] = useState<Array<{ name: string; displayName: string; recordCount: number; columns: Array<{ name: string }> }>>([]);
+
+  // Fetch plugin-owned tables
+  useEffect(() => {
+    if (plugin) {
+      fetch(`/api/v1/custom-data/tables/by-plugin/${plugin.id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.data)) {
+            setPluginTables(data.data);
+          } else {
+            setPluginTables([]);
+          }
+        })
+        .catch(() => setPluginTables([]));
+    }
+  }, [plugin]);
+
   // Initialize settings values when modal opens or plugin changes
   useEffect(() => {
     if (plugin) {
@@ -568,6 +587,38 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
                         <Wrench className="w-3 h-3 inline mr-1.5" />
                         {tool}
                       </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Database Tables */}
+              {pluginTables.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2 flex items-center gap-2">
+                    <Database className="w-4 h-4" />
+                    Database Tables ({pluginTables.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {pluginTables.map((t) => (
+                      <div
+                        key={t.name}
+                        className="flex items-center justify-between p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
+                          <span className="text-sm text-text-primary dark:text-dark-text-primary font-medium">
+                            {t.displayName}
+                          </span>
+                          <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                            ({t.name})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-text-muted dark:text-dark-text-muted">
+                          <span>{t.columns?.length ?? 0} cols</span>
+                          <span>{t.recordCount ?? 0} records</span>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>

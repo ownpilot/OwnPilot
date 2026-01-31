@@ -715,6 +715,8 @@ CREATE TABLE IF NOT EXISTS custom_table_schemas (
   display_name TEXT NOT NULL,
   description TEXT,
   columns JSONB NOT NULL DEFAULT '[]',
+  owner_plugin_id TEXT,
+  is_protected BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -997,6 +999,21 @@ CREATE TABLE IF NOT EXISTS plugins (
 );
 
 -- =====================================================
+-- CUSTOM TABLE SCHEMAS: Plugin ownership
+-- =====================================================
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'custom_table_schemas' AND column_name = 'owner_plugin_id') THEN
+    ALTER TABLE custom_table_schemas ADD COLUMN owner_plugin_id TEXT;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'custom_table_schemas' AND column_name = 'is_protected') THEN
+    ALTER TABLE custom_table_schemas ADD COLUMN is_protected BOOLEAN NOT NULL DEFAULT FALSE;
+  END IF;
+END $$;
+
+-- =====================================================
 -- LOCAL AI PROVIDERS
 -- =====================================================
 
@@ -1168,6 +1185,8 @@ CREATE INDEX IF NOT EXISTS idx_custom_tools_category ON custom_tools(category);
 
 -- Custom table schemas indexes
 CREATE INDEX IF NOT EXISTS idx_custom_table_schemas_name ON custom_table_schemas(name);
+CREATE INDEX IF NOT EXISTS idx_custom_table_schemas_owner ON custom_table_schemas(owner_plugin_id);
+CREATE INDEX IF NOT EXISTS idx_custom_table_schemas_protected ON custom_table_schemas(is_protected);
 CREATE INDEX IF NOT EXISTS idx_custom_data_records_table ON custom_data_records(table_id);
 
 -- Local AI Providers indexes

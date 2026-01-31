@@ -3,25 +3,22 @@
  *
  * API for managing goals and goal steps.
  * Also provides tool executors for AI to manage goals.
+ *
+ * All business logic is delegated to GoalService.
  */
 
 import { Hono } from 'hono';
 import type { ApiResponse } from '../types/index.js';
-import {
-  GoalsRepository,
-  type GoalStatus,
-  type StepStatus,
-  type CreateGoalInput,
-  type UpdateGoalInput,
-  type CreateStepInput,
+import type {
+  GoalStatus,
+  StepStatus,
+  CreateGoalInput,
+  UpdateGoalInput,
+  CreateStepInput,
 } from '../db/repositories/goals.js';
+import { getGoalService, GoalServiceError } from '../services/goal-service.js';
 
 export const goalsRoutes = new Hono();
-
-// Get repository instance
-function getRepo(userId = 'default'): GoalsRepository {
-  return new GoalsRepository(userId);
-}
 
 // ============================================================================
 // Goal Routes
@@ -36,8 +33,8 @@ goalsRoutes.get('/', async (c) => {
   const limit = parseInt(c.req.query('limit') ?? '20', 10);
   const parentId = c.req.query('parentId');
 
-  const repo = getRepo(userId);
-  const goals = await repo.list({
+  const service = getGoalService();
+  const goals = await service.listGoals(userId, {
     status,
     limit,
     parentId: parentId === 'null' ? null : parentId,
@@ -62,31 +59,34 @@ goalsRoutes.post('/', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const body = await c.req.json<CreateGoalInput>();
 
-  if (!body.title) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'title is required',
-        },
+  try {
+    const service = getGoalService();
+    const goal = await service.createGoal(userId, body);
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        goal,
+        message: 'Goal created successfully.',
       },
-      400
-    );
+    };
+
+    return c.json(response, 201);
+  } catch (err) {
+    if (err instanceof GoalServiceError && err.code === 'VALIDATION_ERROR') {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_REQUEST',
+            message: err.message,
+          },
+        },
+        400
+      );
+    }
+    throw err;
   }
-
-  const repo = getRepo(userId);
-  const goal = await repo.create(body);
-
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      goal,
-      message: 'Goal created successfully.',
-    },
-  };
-
-  return c.json(response, 201);
 });
 
 /**
@@ -94,8 +94,8 @@ goalsRoutes.post('/', async (c) => {
  */
 goalsRoutes.get('/stats', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
-  const repo = getRepo(userId);
-  const stats = await repo.getStats();
+  const service = getGoalService();
+  const stats = await service.getStats(userId);
 
   const response: ApiResponse = {
     success: true,
@@ -112,8 +112,8 @@ goalsRoutes.get('/next-actions', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const limit = parseInt(c.req.query('limit') ?? '5', 10);
 
-  const repo = getRepo(userId);
-  const actions = await repo.getNextActions(limit);
+  const service = getGoalService();
+  const actions = await service.getNextActions(userId, limit);
 
   const response: ApiResponse = {
     success: true,
@@ -133,8 +133,8 @@ goalsRoutes.get('/upcoming', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const days = parseInt(c.req.query('days') ?? '7', 10);
 
-  const repo = getRepo(userId);
-  const goals = await repo.getUpcoming(days);
+  const service = getGoalService();
+  const goals = await service.getUpcoming(userId, days);
 
   const response: ApiResponse = {
     success: true,
@@ -154,10 +154,10 @@ goalsRoutes.get('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const goal = await repo.get(id);
+  const service = getGoalService();
+  const goalWithSteps = await service.getGoalWithSteps(userId, id);
 
-  if (!goal) {
+  if (!goalWithSteps) {
     return c.json(
       {
         success: false,
@@ -170,14 +170,9 @@ goalsRoutes.get('/:id', async (c) => {
     );
   }
 
-  const steps = await repo.getSteps(id);
-
   const response: ApiResponse = {
     success: true,
-    data: {
-      ...goal,
-      steps,
-    },
+    data: goalWithSteps,
   };
 
   return c.json(response);
@@ -191,8 +186,8 @@ goalsRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<UpdateGoalInput>();
 
-  const repo = getRepo(userId);
-  const updated = await repo.update(id, body);
+  const service = getGoalService();
+  const updated = await service.updateGoal(userId, id, body);
 
   if (!updated) {
     return c.json(
@@ -222,8 +217,8 @@ goalsRoutes.delete('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const deleted = await repo.delete(id);
+  const service = getGoalService();
+  const deleted = await service.deleteGoal(userId, id);
 
   if (!deleted) {
     return c.json(
@@ -260,43 +255,42 @@ goalsRoutes.post('/:id/steps', async (c) => {
   const goalId = c.req.param('id');
   const body = await c.req.json<{ steps: CreateStepInput[] } | CreateStepInput>();
 
-  const repo = getRepo(userId);
+  try {
+    const service = getGoalService();
 
-  // Check if goal exists
-  const goal = await repo.get(goalId);
-  if (!goal) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Goal not found: ${goalId}`,
-        },
+    // Handle single step or array of steps
+    const stepsToAdd = 'steps' in body ? body.steps : [body];
+    const validSteps = stepsToAdd.filter((s) => s.title);
+
+    // Use decomposeGoal which validates goal exists and recalculates progress
+    const createdSteps = await service.decomposeGoal(userId, goalId, validSteps);
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        steps: createdSteps,
+        count: createdSteps.length,
+        message: `Added ${createdSteps.length} step(s) to goal.`,
       },
-      404
-    );
+    };
+
+    return c.json(response, 201);
+  } catch (err) {
+    if (err instanceof GoalServiceError) {
+      const status = err.code === 'NOT_FOUND' ? 404 : 400;
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: err.code,
+            message: err.message,
+          },
+        },
+        status
+      );
+    }
+    throw err;
   }
-
-  // Handle single step or array of steps
-  const stepsToAdd = 'steps' in body ? body.steps : [body];
-  const createdSteps = [];
-
-  for (const stepInput of stepsToAdd) {
-    if (!stepInput.title) continue;
-    const step = await repo.addStep(goalId, stepInput);
-    if (step) createdSteps.push(step);
-  }
-
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      steps: createdSteps,
-      count: createdSteps.length,
-      message: `Added ${createdSteps.length} step(s) to goal.`,
-    },
-  };
-
-  return c.json(response, 201);
 });
 
 /**
@@ -306,8 +300,8 @@ goalsRoutes.get('/:id/steps', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const goalId = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const steps = await repo.getSteps(goalId);
+  const service = getGoalService();
+  const steps = await service.getSteps(userId, goalId);
 
   const response: ApiResponse = {
     success: true,
@@ -322,6 +316,7 @@ goalsRoutes.get('/:id/steps', async (c) => {
 
 /**
  * PATCH /goals/:goalId/steps/:stepId - Update a step
+ * Progress is recalculated automatically when status changes.
  */
 goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
@@ -333,8 +328,8 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
     result?: string;
   }>();
 
-  const repo = getRepo(userId);
-  const updated = await repo.updateStep(stepId, body);
+  const service = getGoalService();
+  const updated = await service.updateStep(userId, stepId, body);
 
   if (!updated) {
     return c.json(
@@ -359,17 +354,15 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
 
 /**
  * POST /goals/:goalId/steps/:stepId/complete - Mark step as completed
+ * Progress is recalculated automatically.
  */
 goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const stepId = c.req.param('stepId');
   const body = await c.req.json<{ result?: string }>().catch((): { result?: string } => ({}));
 
-  const repo = getRepo(userId);
-  const updated = await repo.updateStep(stepId, {
-    status: 'completed',
-    result: body.result,
-  });
+  const service = getGoalService();
+  const updated = await service.completeStep(userId, stepId, body.result);
 
   if (!updated) {
     return c.json(
@@ -397,13 +390,14 @@ goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
 
 /**
  * DELETE /goals/:goalId/steps/:stepId - Delete a step
+ * Progress is recalculated automatically.
  */
 goalsRoutes.delete('/:goalId/steps/:stepId', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const stepId = c.req.param('stepId');
 
-  const repo = getRepo(userId);
-  const deleted = await repo.deleteStep(stepId);
+  const service = getGoalService();
+  const deleted = await service.deleteStep(userId, stepId);
 
   if (!deleted) {
     return c.json(
@@ -439,14 +433,14 @@ export interface ToolExecutionResult {
 }
 
 /**
- * Execute goal tool
+ * Execute goal tool - delegates to GoalService
  */
 export async function executeGoalTool(
   toolId: string,
   params: Record<string, unknown>,
   userId = 'default'
 ): Promise<ToolExecutionResult> {
-  const repo = getRepo(userId);
+  const service = getGoalService();
 
   try {
     switch (toolId) {
@@ -459,11 +453,7 @@ export async function executeGoalTool(
           parentId?: string;
         };
 
-        if (!title) {
-          return { success: false, error: 'title is required' };
-        }
-
-        const goal = await repo.create({
+        const goal = await service.createGoal(userId, {
           title,
           description,
           priority,
@@ -474,7 +464,7 @@ export async function executeGoalTool(
         return {
           success: true,
           result: {
-            message: `Created goal: "${title}"`,
+            message: `Created goal: "${goal.title}"`,
             goal: {
               id: goal.id,
               title: goal.title,
@@ -491,7 +481,7 @@ export async function executeGoalTool(
           limit?: number;
         };
 
-        const goals = await repo.list({
+        const goals = await service.listGoals(userId, {
           status: status ?? 'active',
           limit,
           orderBy: 'priority',
@@ -538,7 +528,7 @@ export async function executeGoalTool(
           return { success: false, error: 'goalId is required' };
         }
 
-        const updated = await repo.update(goalId, {
+        const updated = await service.updateGoal(userId, goalId, {
           status,
           progress,
           title,
@@ -578,22 +568,20 @@ export async function executeGoalTool(
           return { success: false, error: 'steps array is required' };
         }
 
-        const goal = await repo.get(goalId);
-        if (!goal) {
-          return { success: false, error: `Goal not found: ${goalId}` };
-        }
+        // decomposeGoal validates goal exists and recalculates progress
+        const createdSteps = await service.decomposeGoal(
+          userId,
+          goalId,
+          steps.filter((s) => s.title),
+        );
 
-        const createdSteps = [];
-        for (const stepInput of steps) {
-          if (!stepInput.title) continue;
-          const step = await repo.addStep(goalId, stepInput);
-          if (step) createdSteps.push(step);
-        }
+        // Get goal title for message
+        const goal = await service.getGoal(userId, goalId);
 
         return {
           success: true,
           result: {
-            message: `Added ${createdSteps.length} steps to "${goal.title}"`,
+            message: `Added ${createdSteps.length} steps to "${goal?.title ?? goalId}"`,
             steps: createdSteps.map((s) => ({
               id: s.id,
               title: s.title,
@@ -606,7 +594,7 @@ export async function executeGoalTool(
       case 'get_next_actions': {
         const { limit = 5 } = params as { limit?: number };
 
-        const actions = await repo.getNextActions(limit);
+        const actions = await service.getNextActions(userId, limit);
 
         if (actions.length === 0) {
           return {
@@ -642,10 +630,8 @@ export async function executeGoalTool(
           return { success: false, error: 'stepId is required' };
         }
 
-        const updated = await repo.updateStep(stepId, {
-          status: 'completed',
-          result,
-        });
+        // completeStep recalculates goal progress automatically
+        const updated = await service.completeStep(userId, stepId, result);
 
         if (!updated) {
           return { success: false, error: `Step not found: ${stepId}` };
@@ -671,12 +657,12 @@ export async function executeGoalTool(
           return { success: false, error: 'goalId is required' };
         }
 
-        const goal = await repo.get(goalId);
-        if (!goal) {
+        const goalWithSteps = await service.getGoalWithSteps(userId, goalId);
+        if (!goalWithSteps) {
           return { success: false, error: `Goal not found: ${goalId}` };
         }
 
-        const steps = await repo.getSteps(goalId);
+        const { steps, ...goal } = goalWithSteps;
 
         return {
           success: true,
@@ -704,7 +690,7 @@ export async function executeGoalTool(
       }
 
       case 'goal_stats': {
-        const stats = await repo.getStats();
+        const stats = await service.getStats(userId);
 
         return {
           success: true,
@@ -719,6 +705,9 @@ export async function executeGoalTool(
         return { success: false, error: `Unknown tool: ${toolId}` };
     }
   } catch (err) {
+    if (err instanceof GoalServiceError) {
+      return { success: false, error: err.message };
+    }
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Unknown error',

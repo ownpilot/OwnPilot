@@ -8,6 +8,15 @@ import type { ToolDefinition, ToolExecutor } from './tools.js';
 import { ToolRegistry } from './tools.js';
 import type { Message, ToolCall } from './types.js';
 import { injectMemoryIntoPrompt, type MemoryInjectionOptions } from './memory-injector.js';
+import {
+  getEventBus,
+  createEvent,
+  EventTypes,
+  type AgentIterationData,
+  type AgentCompleteData,
+  type AgentErrorData,
+  type AgentToolCallData,
+} from '../events/index.js';
 
 /**
  * LLM Provider interface for orchestrator
@@ -209,11 +218,30 @@ export class AgentOrchestrator extends EventEmitter {
       context.status = 'completed';
       context.endTime = new Date();
       this.emit('complete', context);
+      // Bridge to EventBus
+      getEventBus().emit(createEvent<AgentCompleteData>(
+        EventTypes.AGENT_COMPLETE, 'agent', `orchestrator:${context.id}`,
+        {
+          agentId: context.id,
+          response: context.response,
+          iterationCount: context.iteration,
+          duration: context.endTime!.getTime() - context.startTime.getTime(),
+        },
+      ));
     } catch (error: unknown) {
       context.status = 'failed';
       context.error = error instanceof Error ? error.message : String(error);
       context.endTime = new Date();
       this.emit('error', error instanceof Error ? error : new Error(String(error)), context);
+      // Bridge to EventBus
+      getEventBus().emit(createEvent<AgentErrorData>(
+        EventTypes.AGENT_ERROR, 'agent', `orchestrator:${context.id}`,
+        {
+          agentId: context.id,
+          error: context.error,
+          iteration: context.iteration,
+        },
+      ));
     } finally {
       this.currentExecution = null;
       this.abortController = null;
@@ -348,6 +376,11 @@ export class AgentOrchestrator extends EventEmitter {
 
       context.iteration++;
       this.emit('iteration', context.iteration, context);
+      // Bridge to EventBus
+      getEventBus().emit(createEvent<AgentIterationData>(
+        EventTypes.AGENT_ITERATION, 'agent', `orchestrator:${context.id}`,
+        { agentId: context.id, iteration: context.iteration },
+      ));
 
       // Call LLM
       const response = await this.config.provider.complete({
@@ -580,6 +613,18 @@ export class AgentOrchestrator extends EventEmitter {
 
     context.toolCalls.push(record);
     this.emit('tool_call', record, context);
+    // Bridge to EventBus
+    getEventBus().emit(createEvent<AgentToolCallData>(
+      EventTypes.AGENT_TOOL_CALL, 'agent', `orchestrator:${context.id}`,
+      {
+        agentId: context.id,
+        toolName: record.name,
+        args: record.arguments,
+        duration: record.duration,
+        success: record.success,
+        error: record.error,
+      },
+    ));
 
     if (this.config.verbose) {
       console.log(`[Tool] ${toolName}:`, args, '->', record.result);

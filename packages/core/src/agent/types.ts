@@ -229,6 +229,42 @@ export interface RegisteredTool {
 }
 
 /**
+ * Tool Provider - groups related tools with their executors.
+ * Used to register multiple tools from a domain (memory, goal, etc.)
+ * in a single call via ToolRegistry.registerProvider().
+ */
+export interface ToolProvider {
+  /** Provider name (e.g. 'memory', 'goal', 'custom-data') */
+  readonly name: string;
+
+  /** Return all tool definitions with their executors. */
+  getTools(): Array<{ definition: ToolDefinition; executor: ToolExecutor }>;
+}
+
+/**
+ * Context passed to tool middleware before/after hooks.
+ */
+export interface ToolMiddlewareContext {
+  toolName: string;
+  args: Record<string, unknown>;
+  conversationId?: string;
+  userId?: string;
+}
+
+/**
+ * Tool Middleware - intercepts tool execution for cross-cutting concerns.
+ * Applied globally or per-tool. Replaces the need for updateExecutor().
+ */
+export interface ToolMiddleware {
+  /** Middleware name for debugging */
+  name: string;
+  /** Called before tool execution. Can modify args or abort. */
+  before?(context: ToolMiddlewareContext): Promise<void>;
+  /** Called after tool execution. Can transform the result. */
+  after?(context: ToolMiddlewareContext, result: ToolExecutionResult): Promise<ToolExecutionResult>;
+}
+
+/**
  * Model configuration
  */
 export interface ModelConfig {

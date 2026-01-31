@@ -5,6 +5,15 @@
  */
 
 import { BaseRepository } from './base.js';
+import type { StandardQuery } from './interfaces.js';
+import {
+  getEventBus,
+  createEvent,
+  EventTypes,
+  type ResourceCreatedData,
+  type ResourceUpdatedData,
+  type ResourceDeletedData,
+} from '@ownpilot/core';
 
 export interface Task {
   id: string;
@@ -55,7 +64,7 @@ export interface UpdateTaskInput {
   recurrence?: string;
 }
 
-export interface TaskQuery {
+export interface TaskQuery extends StandardQuery {
   status?: Task['status'] | Task['status'][];
   priority?: Task['priority'] | Task['priority'][];
   category?: string;
@@ -63,9 +72,6 @@ export interface TaskQuery {
   parentId?: string | null;
   dueBefore?: string;
   dueAfter?: string;
-  search?: string;
-  limit?: number;
-  offset?: number;
 }
 
 interface TaskRow {
@@ -118,6 +124,13 @@ export class TasksRepository extends BaseRepository {
     this.userId = userId;
   }
 
+  /**
+   * Get a task by ID (standard interface alias)
+   */
+  async getById(id: string): Promise<Task | null> {
+    return this.get(id);
+  }
+
   async create(input: CreateTaskInput): Promise<Task> {
     const id = crypto.randomUUID();
 
@@ -142,9 +155,15 @@ export class TasksRepository extends BaseRepository {
       ]
     );
 
-    const result = await this.get(id);
-    if (!result) throw new Error('Failed to create task');
-    return result;
+    const task = await this.get(id);
+    if (!task) throw new Error('Failed to create task');
+
+    getEventBus().emit(createEvent<ResourceCreatedData>(
+      EventTypes.RESOURCE_CREATED, 'resource', 'tasks-repository',
+      { resourceType: 'task', id },
+    ));
+
+    return task;
   }
 
   async get(id: string): Promise<Task | null> {
@@ -229,7 +248,16 @@ export class TasksRepository extends BaseRepository {
       values
     );
 
-    return this.get(id);
+    const updated = await this.get(id);
+
+    if (updated) {
+      getEventBus().emit(createEvent<ResourceUpdatedData>(
+        EventTypes.RESOURCE_UPDATED, 'resource', 'tasks-repository',
+        { resourceType: 'task', id, changes: input },
+      ));
+    }
+
+    return updated;
   }
 
   async delete(id: string): Promise<boolean> {
@@ -237,7 +265,16 @@ export class TasksRepository extends BaseRepository {
       `DELETE FROM tasks WHERE id = $1 AND user_id = $2`,
       [id, this.userId]
     );
-    return result.changes > 0;
+    const deleted = result.changes > 0;
+
+    if (deleted) {
+      getEventBus().emit(createEvent<ResourceDeletedData>(
+        EventTypes.RESOURCE_DELETED, 'resource', 'tasks-repository',
+        { resourceType: 'task', id },
+      ));
+    }
+
+    return deleted;
   }
 
   async complete(id: string): Promise<Task | null> {

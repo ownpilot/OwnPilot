@@ -7,20 +7,15 @@
 import { Hono } from 'hono';
 import type { ApiResponse } from '../types/index.js';
 import {
-  PlansRepository,
   type PlanStatus,
   type CreatePlanInput,
   type UpdatePlanInput,
   type CreateStepInput,
 } from '../db/repositories/plans.js';
+import { getPlanService } from '../services/plan-service.js';
 import { getPlanExecutor } from '../plans/index.js';
 
 export const plansRoutes = new Hono();
-
-// Get repository instance
-function getRepo(userId = 'default'): PlansRepository {
-  return new PlansRepository(userId);
-}
 
 // ============================================================================
 // Plan Routes
@@ -37,8 +32,8 @@ plansRoutes.get('/', async (c) => {
   const limit = parseInt(c.req.query('limit') ?? '20', 10);
   const offset = parseInt(c.req.query('offset') ?? '0', 10);
 
-  const repo = getRepo(userId);
-  const plans = await repo.list({ status, goalId, triggerId, limit, offset });
+  const service = getPlanService();
+  const plans = await service.listPlans(userId, { status, goalId, triggerId, limit, offset });
 
   const response: ApiResponse = {
     success: true,
@@ -73,8 +68,8 @@ plansRoutes.post('/', async (c) => {
     );
   }
 
-  const repo = getRepo(userId);
-  const plan = await repo.create(body);
+  const service = getPlanService();
+  const plan = await service.createPlan(userId, body);
 
   const response: ApiResponse = {
     success: true,
@@ -92,8 +87,8 @@ plansRoutes.post('/', async (c) => {
  */
 plansRoutes.get('/stats', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
-  const repo = getRepo(userId);
-  const stats = await repo.getStats();
+  const service = getPlanService();
+  const stats = await service.getStats(userId);
 
   const response: ApiResponse = {
     success: true,
@@ -108,8 +103,8 @@ plansRoutes.get('/stats', async (c) => {
  */
 plansRoutes.get('/active', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
-  const repo = getRepo(userId);
-  const plans = await repo.getActive();
+  const service = getPlanService();
+  const plans = await service.getActive(userId);
 
   const response: ApiResponse = {
     success: true,
@@ -127,8 +122,8 @@ plansRoutes.get('/active', async (c) => {
  */
 plansRoutes.get('/pending', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
-  const repo = getRepo(userId);
-  const plans = await repo.getPending();
+  const service = getPlanService();
+  const plans = await service.getPending(userId);
 
   const response: ApiResponse = {
     success: true,
@@ -148,8 +143,8 @@ plansRoutes.get('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
+  const service = getPlanService();
+  const plan = await service.getPlan(userId, id);
 
   if (!plan) {
     return c.json(
@@ -165,8 +160,8 @@ plansRoutes.get('/:id', async (c) => {
   }
 
   // Get steps and history
-  const steps = await repo.getSteps(id);
-  const history = await repo.getHistory(id, 20);
+  const steps = await service.getSteps(userId, id);
+  const history = await service.getHistory(userId, id, 20);
 
   const response: ApiResponse = {
     success: true,
@@ -188,8 +183,8 @@ plansRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<UpdatePlanInput>();
 
-  const repo = getRepo(userId);
-  const updated = await repo.update(id, body);
+  const service = getPlanService();
+  const updated = await service.updatePlan(userId, id, body);
 
   if (!updated) {
     return c.json(
@@ -219,8 +214,8 @@ plansRoutes.delete('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const deleted = await repo.delete(id);
+  const service = getPlanService();
+  const deleted = await service.deletePlan(userId, id);
 
   if (!deleted) {
     return c.json(
@@ -256,8 +251,8 @@ plansRoutes.post('/:id/execute', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
+  const service = getPlanService();
+  const plan = await service.getPlan(userId, id);
 
   if (!plan) {
     return c.json(
@@ -328,8 +323,8 @@ plansRoutes.post('/:id/pause', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
+  const service = getPlanService();
+  const plan = await service.getPlan(userId, id);
 
   if (!plan) {
     return c.json(
@@ -365,8 +360,8 @@ plansRoutes.post('/:id/resume', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
+  const service = getPlanService();
+  const plan = await service.getPlan(userId, id);
 
   if (!plan) {
     return c.json(
@@ -429,8 +424,8 @@ plansRoutes.post('/:id/abort', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
+  const service = getPlanService();
+  const plan = await service.getPlan(userId, id);
 
   if (!plan) {
     return c.json(
@@ -467,8 +462,8 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<{ data?: unknown }>().catch((): { data?: unknown } => ({}));
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
+  const service = getPlanService();
+  const plan = await service.getPlan(userId, id);
 
   if (!plan) {
     return c.json(
@@ -503,8 +498,8 @@ plansRoutes.post('/:id/start', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
+  const service = getPlanService();
+  const plan = await service.getPlan(userId, id);
 
   if (!plan) {
     return c.json(
@@ -575,8 +570,8 @@ plansRoutes.post('/:id/rollback', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
+  const service = getPlanService();
+  const plan = await service.getPlan(userId, id);
 
   if (!plan) {
     return c.json(
@@ -609,17 +604,17 @@ plansRoutes.post('/:id/rollback', async (c) => {
     const checkpointData = await executor.restoreFromCheckpoint(id);
 
     // Reset failed/completed steps back to pending
-    const steps = await repo.getSteps(id);
+    const steps = await service.getSteps(userId, id);
     for (const step of steps) {
       if (step.status === 'failed' || step.status === 'completed') {
-        await repo.updateStep(step.id, { status: 'pending', error: undefined, result: undefined });
+        await service.updateStep(userId, step.id, { status: 'pending', error: undefined, result: undefined });
       }
     }
 
     // Reset plan status to pending so it can be re-executed
-    await repo.update(id, { status: 'pending' });
-    await repo.recalculateProgress(id);
-    await repo.logEvent(id, 'rollback', undefined, { checkpoint: checkpointData });
+    await service.updatePlan(userId, id, { status: 'pending' });
+    await service.recalculateProgress(userId, id);
+    await service.logEvent(userId, id, 'rollback', undefined, { checkpoint: checkpointData });
 
     const response: ApiResponse = {
       success: true,
@@ -656,8 +651,8 @@ plansRoutes.get('/:id/steps', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
+  const service = getPlanService();
+  const plan = await service.getPlan(userId, id);
 
   if (!plan) {
     return c.json(
@@ -672,7 +667,7 @@ plansRoutes.get('/:id/steps', async (c) => {
     );
   }
 
-  const steps = await repo.getSteps(id);
+  const steps = await service.getSteps(userId, id);
 
   const response: ApiResponse = {
     success: true,
@@ -707,24 +702,9 @@ plansRoutes.post('/:id/steps', async (c) => {
     );
   }
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
-
-  if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
-  }
-
   try {
-    const step = await repo.addStep(id, body);
+    const service = getPlanService();
+    const step = await service.addStep(userId, id, body);
 
     const response: ApiResponse = {
       success: true,
@@ -757,8 +737,8 @@ plansRoutes.get('/:id/steps/:stepId', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const stepId = c.req.param('stepId');
 
-  const repo = getRepo(userId);
-  const step = await repo.getStep(stepId);
+  const service = getPlanService();
+  const step = await service.getStep(userId, stepId);
 
   if (!step) {
     return c.json(
@@ -793,8 +773,8 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
   const { validateBody, updatePlanStepSchema } = await import('../middleware/validation.js');
   const body = validateBody(updatePlanStepSchema, rawBody);
 
-  const repo = getRepo(userId);
-  const updated = await repo.updateStep(stepId, body);
+  const service = getPlanService();
+  const updated = await service.updateStep(userId, stepId, body);
 
   if (!updated) {
     return c.json(
@@ -829,8 +809,8 @@ plansRoutes.get('/:id/history', async (c) => {
   const id = c.req.param('id');
   const limit = parseInt(c.req.query('limit') ?? '50', 10);
 
-  const repo = getRepo(userId);
-  const plan = await repo.get(id);
+  const service = getPlanService();
+  const plan = await service.getPlan(userId, id);
 
   if (!plan) {
     return c.json(
@@ -845,7 +825,7 @@ plansRoutes.get('/:id/history', async (c) => {
     );
   }
 
-  const history = await repo.getHistory(id, limit);
+  const history = await service.getHistory(userId, id, limit);
 
   const response: ApiResponse = {
     success: true,

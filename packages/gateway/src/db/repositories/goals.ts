@@ -6,6 +6,15 @@
  */
 
 import { BaseRepository } from './base.js';
+import type { StandardQuery } from './interfaces.js';
+import {
+  getEventBus,
+  createEvent,
+  EventTypes,
+  type ResourceCreatedData,
+  type ResourceUpdatedData,
+  type ResourceDeletedData,
+} from '@ownpilot/core';
 
 // ============================================================================
 // Types
@@ -79,13 +88,10 @@ export interface UpdateStepInput {
   result?: string;
 }
 
-export interface GoalQuery {
+export interface GoalQuery extends StandardQuery {
   status?: GoalStatus | GoalStatus[];
   parentId?: string | null;
   minPriority?: number;
-  search?: string;
-  limit?: number;
-  offset?: number;
   orderBy?: 'priority' | 'created' | 'due_date' | 'progress';
 }
 
@@ -130,6 +136,13 @@ export class GoalsRepository extends BaseRepository {
     this.userId = userId;
   }
 
+  /**
+   * Get a goal by ID (standard interface alias)
+   */
+  async getById(id: string): Promise<Goal | null> {
+    return this.get(id);
+  }
+
   // ==========================================================================
   // Goal CRUD
   // ==========================================================================
@@ -160,7 +173,14 @@ export class GoalsRepository extends BaseRepository {
       ]
     );
 
-    return (await this.get(id))!;
+    const goal = (await this.get(id))!;
+
+    getEventBus().emit(createEvent<ResourceCreatedData>(
+      EventTypes.RESOURCE_CREATED, 'resource', 'goals-repository',
+      { resourceType: 'goal', id },
+    ));
+
+    return goal;
   }
 
   /**
@@ -225,7 +245,16 @@ export class GoalsRepository extends BaseRepository {
       values
     );
 
-    return this.get(id);
+    const updated = await this.get(id);
+
+    if (updated) {
+      getEventBus().emit(createEvent<ResourceUpdatedData>(
+        EventTypes.RESOURCE_UPDATED, 'resource', 'goals-repository',
+        { resourceType: 'goal', id, changes: input },
+      ));
+    }
+
+    return updated;
   }
 
   /**
@@ -236,7 +265,16 @@ export class GoalsRepository extends BaseRepository {
       'DELETE FROM goals WHERE id = $1 AND user_id = $2',
       [id, this.userId]
     );
-    return result.changes > 0;
+    const deleted = result.changes > 0;
+
+    if (deleted) {
+      getEventBus().emit(createEvent<ResourceDeletedData>(
+        EventTypes.RESOURCE_DELETED, 'resource', 'goals-repository',
+        { resourceType: 'goal', id },
+      ));
+    }
+
+    return deleted;
   }
 
   /**

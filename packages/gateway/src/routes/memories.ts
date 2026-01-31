@@ -3,22 +3,19 @@
  *
  * API for managing persistent AI memory.
  * Also provides tool executors for AI to manage memories.
+ *
+ * All business logic is delegated to MemoryService.
  */
 
 import { Hono } from 'hono';
 import type { ApiResponse } from '../types/index.js';
-import {
-  MemoriesRepository,
-  type MemoryType,
-  type CreateMemoryInput,
+import type {
+  MemoryType,
+  CreateMemoryInput,
 } from '../db/repositories/memories.js';
+import { getMemoryService, MemoryServiceError } from '../services/memory-service.js';
 
 export const memoriesRoutes = new Hono();
-
-// Get repository instance
-function getRepo(userId = 'default'): MemoriesRepository {
-  return new MemoriesRepository(userId);
-}
 
 // ============================================================================
 // Memory Routes
@@ -35,8 +32,8 @@ memoriesRoutes.get('/', async (c) => {
     ? parseFloat(c.req.query('minImportance')!)
     : undefined;
 
-  const repo = getRepo(userId);
-  const memories = await repo.list({
+  const service = getMemoryService();
+  const memories = await service.listMemories(userId, {
     type,
     limit,
     minImportance,
@@ -47,7 +44,7 @@ memoriesRoutes.get('/', async (c) => {
     success: true,
     data: {
       memories,
-      total: await repo.count(type),
+      total: await service.countMemories(userId, type),
     },
   };
 
@@ -55,54 +52,51 @@ memoriesRoutes.get('/', async (c) => {
 });
 
 /**
- * POST /memories - Create a new memory
+ * POST /memories - Create a new memory (with deduplication)
  */
 memoriesRoutes.post('/', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const body = await c.req.json<CreateMemoryInput>();
 
-  if (!body.content || !body.type) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'content and type are required',
+  try {
+    const service = getMemoryService();
+    const { memory, deduplicated } = await service.rememberMemory(userId, body);
+
+    if (deduplicated) {
+      return c.json({
+        success: true,
+        data: {
+          memory,
+          message: 'Similar memory exists, boosted importance instead.',
+          deduplicated: true,
         },
-      },
-      400
-    );
-  }
+      });
+    }
 
-  const repo = getRepo(userId);
-
-  // Check for duplicate
-  const existing = await repo.findSimilar(body.content, body.type);
-  if (existing) {
-    // Boost existing memory instead of creating duplicate
-    await repo.boost(existing.id, 0.1);
-    const updated = await repo.get(existing.id);
-    return c.json({
+    const response: ApiResponse = {
       success: true,
       data: {
-        memory: updated,
-        message: 'Similar memory exists, boosted importance instead.',
-        deduplicated: true,
+        memory,
+        message: 'Memory created successfully.',
       },
-    });
+    };
+
+    return c.json(response, 201);
+  } catch (err) {
+    if (err instanceof MemoryServiceError && err.code === 'VALIDATION_ERROR') {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_REQUEST',
+            message: err.message,
+          },
+        },
+        400
+      );
+    }
+    throw err;
   }
-
-  const memory = await repo.create(body);
-
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      memory,
-      message: 'Memory created successfully.',
-    },
-  };
-
-  return c.json(response, 201);
 });
 
 /**
@@ -127,8 +121,8 @@ memoriesRoutes.get('/search', async (c) => {
     );
   }
 
-  const repo = getRepo(userId);
-  const memories = await repo.search(query, { type, limit });
+  const service = getMemoryService();
+  const memories = await service.searchMemories(userId, query, { type, limit });
 
   const response: ApiResponse = {
     success: true,
@@ -147,8 +141,8 @@ memoriesRoutes.get('/search', async (c) => {
  */
 memoriesRoutes.get('/stats', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
-  const repo = getRepo(userId);
-  const stats = await repo.getStats();
+  const service = getMemoryService();
+  const stats = await service.getStats(userId);
 
   const response: ApiResponse = {
     success: true,
@@ -165,8 +159,8 @@ memoriesRoutes.get('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const memory = await repo.get(id);
+  const service = getMemoryService();
+  const memory = await service.getMemory(userId, id);
 
   if (!memory) {
     return c.json(
@@ -201,8 +195,8 @@ memoriesRoutes.patch('/:id', async (c) => {
     tags?: string[];
   }>();
 
-  const repo = getRepo(userId);
-  const updated = await repo.update(id, body);
+  const service = getMemoryService();
+  const updated = await service.updateMemory(userId, id, body);
 
   if (!updated) {
     return c.json(
@@ -234,8 +228,8 @@ memoriesRoutes.post('/:id/boost', async (c) => {
   const body = await c.req.json<{ amount?: number }>().catch((): { amount?: number } => ({}));
   const amount = body.amount ?? 0.1;
 
-  const repo = getRepo(userId);
-  const boosted = await repo.boost(id, amount);
+  const service = getMemoryService();
+  const boosted = await service.boostMemory(userId, id, amount);
 
   if (!boosted) {
     return c.json(
@@ -268,8 +262,8 @@ memoriesRoutes.delete('/:id', async (c) => {
   const userId = c.req.query('userId') ?? 'default';
   const id = c.req.param('id');
 
-  const repo = getRepo(userId);
-  const deleted = await repo.delete(id);
+  const service = getMemoryService();
+  const deleted = await service.deleteMemory(userId, id);
 
   if (!deleted) {
     return c.json(
@@ -304,8 +298,8 @@ memoriesRoutes.post('/decay', async (c) => {
     decayFactor?: number;
   }>().catch((): { daysThreshold?: number; decayFactor?: number } => ({}));
 
-  const repo = getRepo(userId);
-  const affected = await repo.decay(body);
+  const service = getMemoryService();
+  const affected = await service.decayMemories(userId, body);
 
   const response: ApiResponse = {
     success: true,
@@ -328,8 +322,8 @@ memoriesRoutes.post('/cleanup', async (c) => {
     minImportance?: number;
   }>().catch((): { maxAge?: number; minImportance?: number } => ({}));
 
-  const repo = getRepo(userId);
-  const deleted = await repo.cleanup(body);
+  const service = getMemoryService();
+  const deleted = await service.cleanupMemories(userId, body);
 
   const response: ApiResponse = {
     success: true,
@@ -353,14 +347,14 @@ export interface ToolExecutionResult {
 }
 
 /**
- * Execute memory tool
+ * Execute memory tool - delegates to MemoryService
  */
 export async function executeMemoryTool(
   toolId: string,
   params: Record<string, unknown>,
   userId = 'default'
 ): Promise<ToolExecutionResult> {
-  const repo = getRepo(userId);
+  const service = getMemoryService();
 
   try {
     switch (toolId) {
@@ -376,26 +370,23 @@ export async function executeMemoryTool(
           return { success: false, error: 'content and type are required' };
         }
 
-        // Check for duplicates
-        const existing = await repo.findSimilar(content, type);
-        if (existing) {
-          await repo.boost(existing.id, 0.1);
-          return {
-            success: true,
-            result: {
-              message: 'Similar memory already exists. Boosted its importance instead.',
-              memory: await repo.get(existing.id),
-              deduplicated: true,
-            },
-          };
-        }
-
-        const memory = await repo.create({
+        const { memory, deduplicated } = await service.rememberMemory(userId, {
           content,
           type,
           importance: importance ?? 0.5,
           tags,
         });
+
+        if (deduplicated) {
+          return {
+            success: true,
+            result: {
+              message: 'Similar memory already exists. Boosted its importance instead.',
+              memory,
+              deduplicated: true,
+            },
+          };
+        }
 
         return {
           success: true,
@@ -424,51 +415,27 @@ export async function executeMemoryTool(
           return { success: false, error: 'memories must be an array' };
         }
 
-        const results = {
-          created: 0,
-          deduplicated: 0,
-          memories: [] as Array<{ id: string; type: MemoryType; importance: number }>,
-        };
-
-        for (const input of memoriesInput) {
-          if (!input.content || !input.type) {
-            continue; // Skip invalid entries
-          }
-
-          // Check for duplicates
-          const existing = await repo.findSimilar(input.content, input.type);
-          if (existing) {
-            await repo.boost(existing.id, 0.1);
-            results.deduplicated++;
-            const boosted = await repo.get(existing.id);
-            if (boosted) {
-              results.memories.push({
-                id: boosted.id,
-                type: boosted.type,
-                importance: boosted.importance,
-              });
-            }
-          } else {
-            const memory = await repo.create({
-              content: input.content,
-              type: input.type,
-              importance: input.importance ?? 0.5,
-              tags: input.tags,
-            });
-            results.created++;
-            results.memories.push({
-              id: memory.id,
-              type: memory.type,
-              importance: memory.importance,
-            });
-          }
-        }
+        const results = await service.batchRemember(
+          userId,
+          memoriesInput.map((m) => ({
+            content: m.content,
+            type: m.type,
+            importance: m.importance ?? 0.5,
+            tags: m.tags,
+          })),
+        );
 
         return {
           success: true,
           result: {
             message: `Processed ${memoriesInput.length} memories: ${results.created} created, ${results.deduplicated} deduplicated.`,
-            ...results,
+            created: results.created,
+            deduplicated: results.deduplicated,
+            memories: results.memories.map((m) => ({
+              id: m.id,
+              type: m.type,
+              importance: m.importance,
+            })),
           },
         };
       }
@@ -485,7 +452,7 @@ export async function executeMemoryTool(
           return { success: false, error: 'query is required' };
         }
 
-        const memories = await repo.list({
+        const memories = await service.listMemories(userId, {
           search: query,
           type,
           tags,
@@ -525,12 +492,12 @@ export async function executeMemoryTool(
           return { success: false, error: 'memoryId is required' };
         }
 
-        const memory = await repo.get(memoryId, false);
+        const memory = await service.getMemory(userId, memoryId, false);
         if (!memory) {
           return { success: false, error: `Memory not found: ${memoryId}` };
         }
 
-        await repo.delete(memoryId);
+        await service.deleteMemory(userId, memoryId);
 
         return {
           success: true,
@@ -547,14 +514,14 @@ export async function executeMemoryTool(
           minImportance?: number;
         };
 
-        const memories = await repo.list({
+        const memories = await service.listMemories(userId, {
           type,
           limit,
           minImportance,
           orderBy: 'importance',
         });
 
-        const total = await repo.count(type);
+        const total = await service.countMemories(userId, type);
 
         return {
           success: true,
@@ -583,7 +550,7 @@ export async function executeMemoryTool(
           return { success: false, error: 'memoryId is required' };
         }
 
-        const boosted = await repo.boost(memoryId, amount);
+        const boosted = await service.boostMemory(userId, memoryId, amount);
         if (!boosted) {
           return { success: false, error: `Memory not found: ${memoryId}` };
         }
@@ -602,7 +569,7 @@ export async function executeMemoryTool(
       }
 
       case 'memory_stats': {
-        const stats = await repo.getStats();
+        const stats = await service.getStats(userId);
 
         return {
           success: true,
@@ -617,6 +584,9 @@ export async function executeMemoryTool(
         return { success: false, error: `Unknown tool: ${toolId}` };
     }
   } catch (err) {
+    if (err instanceof MemoryServiceError) {
+      return { success: false, error: err.message };
+    }
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Unknown error',

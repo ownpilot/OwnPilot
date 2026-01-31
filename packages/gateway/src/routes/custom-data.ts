@@ -3,14 +3,14 @@
  *
  * API for managing dynamic custom tables and data.
  * Also provides tool executors for AI to manage user's custom data.
+ *
+ * All business logic is delegated to CustomDataService.
  */
 
 import { Hono } from 'hono';
 import type { ApiResponse } from '../types/index.js';
-import {
-  getCustomDataRepository,
-  type ColumnDefinition,
-} from '../db/repositories/custom-data.js';
+import type { ColumnDefinition } from '../db/repositories/custom-data.js';
+import { getCustomDataService, CustomDataServiceError } from '../services/custom-data-service.js';
 
 export const customDataRoutes = new Hono();
 
@@ -22,23 +22,28 @@ export const customDataRoutes = new Hono();
  * GET /custom-data/tables - List all custom tables
  */
 customDataRoutes.get('/tables', async (c) => {
-  const repo = getCustomDataRepository();
-  const tables = await repo.listTables();
-
-  // Add stats for each table
-  const tablesWithStats = await Promise.all(
-    tables.map(async (table) => {
-      const stats = await repo.getTableStats(table.id);
-      return {
-        ...table,
-        recordCount: stats?.recordCount ?? 0,
-      };
-    })
-  );
+  const service = getCustomDataService();
+  const tables = await service.listTablesWithStats();
 
   const response: ApiResponse = {
     success: true,
-    data: tablesWithStats,
+    data: tables,
+  };
+
+  return c.json(response);
+});
+
+/**
+ * GET /custom-data/tables/by-plugin/:pluginId - List tables owned by a plugin
+ */
+customDataRoutes.get('/tables/by-plugin/:pluginId', async (c) => {
+  const pluginId = c.req.param('pluginId');
+  const service = getCustomDataService();
+  const tables = await service.listTablesWithStats({ pluginId });
+
+  const response: ApiResponse = {
+    success: true,
+    data: tables,
   };
 
   return c.json(response);
@@ -55,22 +60,14 @@ customDataRoutes.post('/tables', async (c) => {
     columns: ColumnDefinition[];
   }>();
 
-  if (!body.name || !body.displayName || !body.columns?.length) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'name, displayName, and columns are required',
-        },
-      },
-      400
-    );
-  }
-
   try {
-    const repo = getCustomDataRepository();
-    const table = await repo.createTable(body.name, body.displayName, body.columns, body.description);
+    const service = getCustomDataService();
+    const table = await service.createTable(
+      body.name,
+      body.displayName,
+      body.columns,
+      body.description,
+    );
 
     const response: ApiResponse = {
       success: true,
@@ -79,6 +76,18 @@ customDataRoutes.post('/tables', async (c) => {
 
     return c.json(response, 201);
   } catch (err) {
+    if (err instanceof CustomDataServiceError && err.code === 'VALIDATION_ERROR') {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_REQUEST',
+            message: err.message,
+          },
+        },
+        400
+      );
+    }
     return c.json(
       {
         success: false,
@@ -97,9 +106,9 @@ customDataRoutes.post('/tables', async (c) => {
  */
 customDataRoutes.get('/tables/:table', async (c) => {
   const tableId = c.req.param('table');
-  const repo = getCustomDataRepository();
+  const service = getCustomDataService();
 
-  const table = await repo.getTable(tableId);
+  const table = await service.getTable(tableId);
   if (!table) {
     return c.json(
       {
@@ -113,7 +122,7 @@ customDataRoutes.get('/tables/:table', async (c) => {
     );
   }
 
-  const stats = await repo.getTableStats(table.id);
+  const stats = await service.getTableStats(tableId);
 
   const response: ApiResponse = {
     success: true,
@@ -137,8 +146,8 @@ customDataRoutes.put('/tables/:table', async (c) => {
     columns?: ColumnDefinition[];
   }>();
 
-  const repo = getCustomDataRepository();
-  const updated = await repo.updateTable(tableId, body);
+  const service = getCustomDataService();
+  const updated = await service.updateTable(tableId, body);
 
   if (!updated) {
     return c.json(
@@ -163,31 +172,49 @@ customDataRoutes.put('/tables/:table', async (c) => {
 
 /**
  * DELETE /custom-data/tables/:table - Delete table and all data
+ * Protected tables cannot be deleted through this endpoint.
  */
 customDataRoutes.delete('/tables/:table', async (c) => {
   const tableId = c.req.param('table');
-  const repo = getCustomDataRepository();
+  const service = getCustomDataService();
 
-  const deleted = await repo.deleteTable(tableId);
-  if (!deleted) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Table not found: ${tableId}`,
+  try {
+    const deleted = await service.deleteTable(tableId);
+
+    if (!deleted) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: `Table not found: ${tableId}`,
+          },
         },
-      },
-      404
-    );
+        404
+      );
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: { deleted: true },
+    };
+
+    return c.json(response);
+  } catch (err) {
+    if (err instanceof CustomDataServiceError && err.code === 'PROTECTED') {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'PROTECTED',
+            message: err.message,
+          },
+        },
+        403
+      );
+    }
+    throw err;
   }
-
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
-  };
-
-  return c.json(response);
 });
 
 // ============================================================================
@@ -213,8 +240,8 @@ customDataRoutes.get('/tables/:table/records', async (c) => {
   }
 
   try {
-    const repo = getCustomDataRepository();
-    const { records, total } = await repo.listRecords(tableId, { limit, offset, filter });
+    const service = getCustomDataService();
+    const { records, total } = await service.listRecords(tableId, { limit, offset, filter });
 
     const response: ApiResponse = {
       success: true,
@@ -263,8 +290,8 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
   }
 
   try {
-    const repo = getCustomDataRepository();
-    const record = await repo.addRecord(tableId, body.data);
+    const service = getCustomDataService();
+    const record = await service.addRecord(tableId, body.data);
 
     const response: ApiResponse = {
       success: true,
@@ -308,8 +335,8 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
   }
 
   try {
-    const repo = getCustomDataRepository();
-    const records = await repo.searchRecords(tableId, query, { limit });
+    const service = getCustomDataService();
+    const records = await service.searchRecords(tableId, query, { limit });
 
     const response: ApiResponse = {
       success: true,
@@ -336,9 +363,9 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
  */
 customDataRoutes.get('/records/:id', async (c) => {
   const recordId = c.req.param('id');
-  const repo = getCustomDataRepository();
+  const service = getCustomDataService();
 
-  const record = await repo.getRecord(recordId);
+  const record = await service.getRecord(recordId);
   if (!record) {
     return c.json(
       {
@@ -381,8 +408,8 @@ customDataRoutes.put('/records/:id', async (c) => {
   }
 
   try {
-    const repo = getCustomDataRepository();
-    const updated = await repo.updateRecord(recordId, body.data);
+    const service = getCustomDataService();
+    const updated = await service.updateRecord(recordId, body.data);
 
     if (!updated) {
       return c.json(
@@ -422,9 +449,9 @@ customDataRoutes.put('/records/:id', async (c) => {
  */
 customDataRoutes.delete('/records/:id', async (c) => {
   const recordId = c.req.param('id');
-  const repo = getCustomDataRepository();
+  const service = getCustomDataService();
 
-  const deleted = await repo.deleteRecord(recordId);
+  const deleted = await service.deleteRecord(recordId);
   if (!deleted) {
     return c.json(
       {
@@ -457,13 +484,13 @@ export interface ToolExecutionResult {
 }
 
 /**
- * Execute custom data tool
+ * Execute custom data tool - delegates to CustomDataService
  */
 export async function executeCustomDataTool(
   toolId: string,
   params: Record<string, unknown>
 ): Promise<ToolExecutionResult> {
-  const repo = getCustomDataRepository();
+  const service = getCustomDataService();
 
   try {
     switch (toolId) {
@@ -474,7 +501,7 @@ export async function executeCustomDataTool(
           description?: string;
           columns: ColumnDefinition[];
         };
-        const table = await repo.createTable(name, displayName, columns, description);
+        const table = await service.createTable(name, displayName, columns, description);
         return {
           success: true,
           result: {
@@ -485,8 +512,8 @@ export async function executeCustomDataTool(
       }
 
       case 'list_custom_tables': {
-        const tables = await repo.listTables();
-        if (tables.length === 0) {
+        const tablesWithStats = await service.listTablesWithStats();
+        if (tablesWithStats.length === 0) {
           return {
             success: true,
             result: {
@@ -495,31 +522,30 @@ export async function executeCustomDataTool(
             },
           };
         }
-        const tablesWithStats = await Promise.all(
-          tables.map(async (t) => ({
-            name: t.name,
-            displayName: t.displayName,
-            description: t.description,
-            columnCount: t.columns.length,
-            recordCount: (await repo.getTableStats(t.id))?.recordCount ?? 0,
-          }))
-        );
         return {
           success: true,
           result: {
-            message: `Found ${tables.length} custom table(s).`,
-            tables: tablesWithStats,
+            message: `Found ${tablesWithStats.length} custom table(s).`,
+            tables: tablesWithStats.map((t) => ({
+              name: t.name,
+              displayName: t.displayName,
+              description: t.description,
+              columnCount: t.columns.length,
+              recordCount: t.recordCount,
+              ownerPluginId: t.ownerPluginId ?? null,
+              isProtected: t.isProtected,
+            })),
           },
         };
       }
 
       case 'describe_custom_table': {
         const { table: tableId } = params as { table: string };
-        const table = await repo.getTable(tableId);
+        const table = await service.getTable(tableId);
         if (!table) {
           return { success: false, error: `Table not found: ${tableId}` };
         }
-        const stats = await repo.getTableStats(table.id);
+        const stats = await service.getTableStats(table.id);
         return {
           success: true,
           result: {
@@ -537,12 +563,16 @@ export async function executeCustomDataTool(
         if (!confirm) {
           return { success: false, error: 'Must set confirm: true to delete a table' };
         }
-        const table = await repo.getTable(tableId);
+        // Get display name before deletion
+        const table = await service.getTable(tableId);
         if (!table) {
           return { success: false, error: `Table not found: ${tableId}` };
         }
         const displayName = table.displayName;
-        await repo.deleteTable(tableId);
+
+        // Service handles protection check
+        await service.deleteTable(tableId);
+
         return {
           success: true,
           result: {
@@ -556,8 +586,8 @@ export async function executeCustomDataTool(
           table: string;
           data: Record<string, unknown>;
         };
-        const record = await repo.addRecord(tableId, data);
-        const table = await repo.getTable(tableId);
+        const record = await service.addRecord(tableId, data);
+        const table = await service.getTable(tableId);
         return {
           success: true,
           result: {
@@ -577,21 +607,13 @@ export async function executeCustomDataTool(
           return { success: false, error: 'records must be an array' };
         }
 
-        const table = await repo.getTable(tableId);
-        if (!table) {
-          return { success: false, error: `Table not found: ${tableId}` };
-        }
-
-        const results = [];
-        for (const data of recordsInput) {
-          const record = await repo.addRecord(tableId, data);
-          results.push(record);
-        }
+        const results = await service.batchAddRecords(tableId, recordsInput);
+        const table = await service.getTable(tableId);
 
         return {
           success: true,
           result: {
-            message: `Added ${results.length} record(s) to "${table.displayName}".`,
+            message: `Added ${results.length} record(s) to "${table?.displayName ?? tableId}".`,
             records: results,
             count: results.length,
           },
@@ -605,8 +627,8 @@ export async function executeCustomDataTool(
           offset?: number;
           filter?: Record<string, unknown>;
         };
-        const { records, total } = await repo.listRecords(tableId, { limit, offset, filter });
-        const table = await repo.getTable(tableId);
+        const { records, total } = await service.listRecords(tableId, { limit, offset, filter });
+        const table = await service.getTable(tableId);
         return {
           success: true,
           result: {
@@ -624,8 +646,8 @@ export async function executeCustomDataTool(
           query: string;
           limit?: number;
         };
-        const records = await repo.searchRecords(tableId, query, { limit });
-        const table = await repo.getTable(tableId);
+        const records = await service.searchRecords(tableId, query, { limit });
+        const table = await service.getTable(tableId);
         return {
           success: true,
           result: {
@@ -637,7 +659,7 @@ export async function executeCustomDataTool(
 
       case 'get_custom_record': {
         const { recordId } = params as { recordId: string };
-        const record = await repo.getRecord(recordId);
+        const record = await service.getRecord(recordId);
         if (!record) {
           return { success: false, error: `Record not found: ${recordId}` };
         }
@@ -655,7 +677,7 @@ export async function executeCustomDataTool(
           recordId: string;
           data: Record<string, unknown>;
         };
-        const updated = await repo.updateRecord(recordId, data);
+        const updated = await service.updateRecord(recordId, data);
         if (!updated) {
           return { success: false, error: `Record not found: ${recordId}` };
         }
@@ -670,7 +692,7 @@ export async function executeCustomDataTool(
 
       case 'delete_custom_record': {
         const { recordId } = params as { recordId: string };
-        const deleted = await repo.deleteRecord(recordId);
+        const deleted = await service.deleteRecord(recordId);
         if (!deleted) {
           return { success: false, error: `Record not found: ${recordId}` };
         }
@@ -686,6 +708,9 @@ export async function executeCustomDataTool(
         return { success: false, error: `Unknown tool: ${toolId}` };
     }
   } catch (err) {
+    if (err instanceof CustomDataServiceError) {
+      return { success: false, error: err.message };
+    }
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Unknown error',

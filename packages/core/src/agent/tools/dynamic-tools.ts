@@ -878,7 +878,7 @@ export const getToolHelpDefinition: ToolDefinition = {
  */
 export const useToolDefinition: ToolDefinition = {
   name: 'use_tool',
-  description: 'Execute a tool by its exact name. IMPORTANT: Only use tool names from search_tools results or the TOOL CATALOG. If unsure about parameters, call get_tool_help first. Errors include parameter docs — read them and retry.',
+  description: 'Execute a tool by its exact name. MANDATORY: You MUST call get_tool_help or search_tools(include_params=true) BEFORE using any tool for the first time. You cannot know the correct parameters without checking — NEVER guess. Errors include parameter docs — read them and retry.',
   parameters: {
     type: 'object',
     properties: {
@@ -888,7 +888,7 @@ export const useToolDefinition: ToolDefinition = {
       },
       arguments: {
         type: 'object',
-        description: 'Arguments matching the tool parameters. Call get_tool_help(tool_name) first if unsure.',
+        description: 'Arguments matching the tool parameters. You MUST look up parameters via get_tool_help or search_tools(include_params=true) before calling this.',
       },
     },
     required: ['tool_name', 'arguments'],
@@ -902,7 +902,7 @@ export const useToolDefinition: ToolDefinition = {
  */
 export const batchUseToolDefinition: ToolDefinition = {
   name: 'batch_use_tool',
-  description: 'Execute multiple tools in parallel and return all results at once. Much faster than calling use_tool sequentially. Each call runs concurrently.',
+  description: 'Execute multiple tools in parallel and return all results at once. Much faster than calling use_tool sequentially. MANDATORY: You MUST look up parameters for each tool via get_tool_help or search_tools(include_params=true) BEFORE calling this.',
   parameters: {
     type: 'object',
     properties: {

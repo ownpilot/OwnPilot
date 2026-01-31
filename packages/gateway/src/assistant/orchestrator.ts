@@ -11,9 +11,10 @@
  */
 
 import type { ToolCall } from '@ownpilot/core';
-import { MemoriesRepository } from '../db/repositories/memories.js';
-import { GoalsRepository } from '../db/repositories/goals.js';
-import { TriggersRepository } from '../db/repositories/triggers.js';
+import { getMemoryService } from '../services/memory-service.js';
+import { getGoalService } from '../services/goal-service.js';
+import { getTriggerService } from '../services/trigger-service.js';
+import { getResourceRegistry } from '../services/resource-registry.js';
 import { getApprovalManager, assessRisk, type ActionCategory } from '../autonomy/index.js';
 import { getTriggerEngine } from '../triggers/engine.js';
 
@@ -45,8 +46,8 @@ export async function buildEnhancedSystemPrompt(
   basePrompt: string,
   options: OrchestratorOptions
 ): Promise<{ prompt: string; stats: { memoriesUsed: number; goalsUsed: number } }> {
-  const memoriesRepo = new MemoriesRepository(options.userId);
-  const goalsRepo = new GoalsRepository(options.userId);
+  const memoryService = getMemoryService();
+  const goalService = getGoalService();
 
   const maxMemories = options.maxMemories ?? 10;
   const maxGoals = options.maxGoals ?? 5;
@@ -56,7 +57,7 @@ export async function buildEnhancedSystemPrompt(
   let goalsUsed = 0;
 
   // === MEMORIES SECTION ===
-  const memories = await memoriesRepo.list({
+  const memories = await memoryService.listMemories(options.userId, {
     limit: maxMemories,
     orderBy: 'importance',
   });
@@ -91,7 +92,7 @@ export async function buildEnhancedSystemPrompt(
   }
 
   // === GOALS SECTION ===
-  const goals = await goalsRepo.list({ status: 'active', limit: maxGoals });
+  const goals = await goalService.listGoals(options.userId, { status: 'active', limit: maxGoals });
 
   if (goals.length > 0) {
     goalsUsed = goals.length;
@@ -106,7 +107,7 @@ export async function buildEnhancedSystemPrompt(
       }
 
       // Include pending steps
-      const steps = await goalsRepo.getSteps(goal.id);
+      const steps = await goalService.getSteps(options.userId, goal.id);
       const pendingSteps = steps.filter((s) => s.status === 'pending' || s.status === 'in_progress');
       if (pendingSteps.length > 0) {
         goalLines.push('  Next steps:');
@@ -117,6 +118,19 @@ export async function buildEnhancedSystemPrompt(
     }
 
     sections.push('\n---\n' + goalLines.join('\n'));
+  }
+
+  // === AVAILABLE RESOURCES ===
+  const registry = getResourceRegistry();
+  const resourceSummary = registry.getSummary();
+
+  if (resourceSummary.length > 0) {
+    const resourceLines: string[] = ['## Available Data Resources'];
+    for (const r of resourceSummary) {
+      resourceLines.push(`- **${r.displayName}** (\`${r.name}\`): ${r.description}`);
+      resourceLines.push(`  Capabilities: ${r.capabilities.join(', ')}`);
+    }
+    sections.push('\n---\n' + resourceLines.join('\n'));
   }
 
   // === AUTONOMY GUIDANCE ===
@@ -259,8 +273,8 @@ export async function evaluateTriggers(
   message: string,
   response: string
 ): Promise<{ triggered: string[]; pending: string[]; executed: string[] }> {
-  const triggersRepo = new TriggersRepository(userId);
-  const triggers = await triggersRepo.list({ enabled: true });
+  const triggerService = getTriggerService();
+  const triggers = await triggerService.listTriggers(userId, { enabled: true });
   const triggerEngine = getTriggerEngine({ userId });
 
   const triggered: string[] = [];
@@ -333,7 +347,7 @@ export async function extractMemories(
   message: string,
   _response: string
 ): Promise<number> {
-  const memoriesRepo = new MemoriesRepository(userId);
+  const memoryService = getMemoryService();
 
   // Simple pattern-based memory extraction
   // In a real implementation, this would use the LLM to extract facts
@@ -360,9 +374,12 @@ export async function extractMemories(
       const content = pattern.template.replace('$1', match[1] ?? '');
 
       // Check for duplicates using search
-      const existing = await memoriesRepo.search(content.substring(0, 20), { type: pattern.type, limit: 1 });
+      const existing = await memoryService.searchMemories(userId, content.substring(0, 20), {
+        type: pattern.type,
+        limit: 1,
+      });
       if (existing.length === 0) {
-        await memoriesRepo.create({
+        await memoryService.createMemory(userId, {
           type: pattern.type,
           content,
           source: 'conversation',
@@ -385,11 +402,11 @@ export async function updateGoalProgress(
   response: string,
   _toolCalls?: readonly ToolCall[]
 ): Promise<void> {
-  const goalsRepo = new GoalsRepository(userId);
-  const activeGoals = await goalsRepo.list({ status: 'active' });
+  const goalService = getGoalService();
+  const activeGoals = await goalService.getActive(userId);
 
   for (const goal of activeGoals) {
-    const steps = await goalsRepo.getSteps(goal.id);
+    const steps = await goalService.getSteps(userId, goal.id);
     const pendingSteps = steps.filter((s) => s.status === 'pending' || s.status === 'in_progress');
 
     for (const step of pendingSteps) {
@@ -400,8 +417,8 @@ export async function updateGoalProgress(
           response.includes('done') ||
           response.includes('finished'))
       ) {
-        await goalsRepo.updateStep(step.id, { status: 'completed' });
-        await goalsRepo.recalculateProgress(goal.id);
+        // completeStep auto-recalculates goal progress
+        await goalService.completeStep(userId, step.id);
       }
     }
   }
@@ -417,18 +434,18 @@ export async function getOrchestratorStats(userId: string): Promise<{
   pendingApprovals: number;
   autonomyLevel: number;
 }> {
-  const memoriesRepo = new MemoriesRepository(userId);
-  const goalsRepo = new GoalsRepository(userId);
-  const triggersRepo = new TriggersRepository(userId);
+  const memoryService = getMemoryService();
+  const goalService = getGoalService();
+  const triggerService = getTriggerService();
   const approvalManager = getApprovalManager();
 
   const config = approvalManager.getUserConfig(userId);
   const pending = approvalManager.getPendingActions(userId);
 
   const [memoryStats, activeGoals, activeTriggers] = await Promise.all([
-    memoriesRepo.getStats(),
-    goalsRepo.list({ status: 'active' }),
-    triggersRepo.list({ enabled: true }),
+    memoryService.getStats(userId),
+    goalService.getActive(userId),
+    triggerService.listTriggers(userId, { enabled: true }),
   ]);
 
   return {

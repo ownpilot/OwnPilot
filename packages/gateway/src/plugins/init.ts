@@ -19,6 +19,8 @@ import {
 import type { Plugin } from '@ownpilot/core';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
+import { getCustomDataService } from '../services/custom-data-service.js';
+import { pomodoroRepo } from '../db/repositories/pomodoro.js';
 import { registerPluginApiDependencies } from '../services/api-service-registrar.js';
 
 // =============================================================================
@@ -233,6 +235,55 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
     },
   ];
 
+  /** Minimal RSS/Atom parser - extracts items from XML text */
+  function parseRssItems(xml: string): Array<{ title: string; link: string; content: string; published: string }> {
+    const items: Array<{ title: string; link: string; content: string; published: string }> = [];
+
+    // RSS 2.0 <item> elements
+    const rssItemRegex = /<item[\s>]([\s\S]*?)<\/item>/gi;
+    // Atom <entry> elements
+    const atomEntryRegex = /<entry[\s>]([\s\S]*?)<\/entry>/gi;
+
+    const extract = (block: string, tag: string): string => {
+      const m = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i').exec(block);
+      return (m?.[1] ?? m?.[2] ?? '').trim();
+    };
+    const extractLink = (block: string): string => {
+      // Atom uses <link href="..."/>
+      const atomLink = /<link[^>]+href=["']([^"']+)["']/i.exec(block);
+      if (atomLink?.[1]) return atomLink[1];
+      return extract(block, 'link');
+    };
+
+    let match: RegExpExecArray | null;
+
+    // Try RSS first
+    while ((match = rssItemRegex.exec(xml)) !== null) {
+      const block = match[1] ?? '';
+      items.push({
+        title: extract(block, 'title'),
+        link: extractLink(block),
+        content: extract(block, 'description') || extract(block, 'content:encoded'),
+        published: extract(block, 'pubDate') || extract(block, 'dc:date'),
+      });
+    }
+
+    // Try Atom if no RSS items found
+    if (items.length === 0) {
+      while ((match = atomEntryRegex.exec(xml)) !== null) {
+        const block = match[1] ?? '';
+        items.push({
+          title: extract(block, 'title'),
+          link: extractLink(block),
+          content: extract(block, 'summary') || extract(block, 'content'),
+          published: extract(block, 'published') || extract(block, 'updated'),
+        });
+      }
+    }
+
+    return items;
+  }
+
   return createPlugin()
     .meta({
       id: 'news-rss',
@@ -251,10 +302,25 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         default_category: '',
       },
     })
+    .database('plugin_rss_feeds', 'RSS Feeds', [
+      { name: 'url', type: 'text', required: true, description: 'Feed URL' },
+      { name: 'title', type: 'text', description: 'Feed title' },
+      { name: 'category', type: 'text', description: 'Feed category' },
+      { name: 'last_fetched', type: 'datetime', description: 'Last fetch timestamp' },
+      { name: 'status', type: 'text', defaultValue: 'active', description: 'active | error' },
+    ], { description: 'Stores subscribed RSS/Atom feed URLs and metadata' })
+    .database('plugin_rss_items', 'RSS Items', [
+      { name: 'feed_id', type: 'text', required: true, description: 'Parent feed record ID' },
+      { name: 'title', type: 'text', description: 'Item title' },
+      { name: 'link', type: 'text', description: 'Item link' },
+      { name: 'content', type: 'text', description: 'Item content/summary' },
+      { name: 'published_at', type: 'datetime', description: 'Publish date' },
+      { name: 'is_read', type: 'boolean', defaultValue: false, description: 'Read status' },
+    ], { description: 'Stores individual RSS/Atom feed items' })
     .tool(
       {
         name: 'news_add_feed',
-        description: 'Add an RSS/Atom feed to track',
+        description: 'Add an RSS/Atom feed and fetch its latest items',
         parameters: {
           type: 'object',
           properties: {
@@ -264,14 +330,66 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
           required: ['url'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          message: 'Feed added successfully',
-          feedId: `feed_${Date.now()}`,
-          url: params.url,
-        },
-      }),
+      async (params) => {
+        const repo = getCustomDataService();
+        const feedUrl = String(params.url);
+
+        // Create feed record
+        const feedRecord = await repo.addRecord('plugin_rss_feeds', {
+          url: feedUrl,
+          title: feedUrl,
+          category: params.category ?? '',
+          last_fetched: null,
+          status: 'active',
+        });
+
+        // Try to fetch and parse the feed
+        let itemCount = 0;
+        let feedTitle = feedUrl;
+        try {
+          const response = await fetch(feedUrl, {
+            headers: { 'User-Agent': 'OwnPilot RSS Reader/1.0' },
+            signal: AbortSignal.timeout(10000),
+          });
+          const xml = await response.text();
+
+          // Extract feed title
+          const titleMatch = /<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i.exec(xml);
+          if (titleMatch?.[1]) feedTitle = titleMatch[1].trim();
+
+          const items = parseRssItems(xml);
+          for (const item of items.slice(0, 20)) {
+            await repo.addRecord('plugin_rss_items', {
+              feed_id: feedRecord.id,
+              title: item.title,
+              link: item.link,
+              content: item.content.substring(0, 2000),
+              published_at: item.published || new Date().toISOString(),
+              is_read: false,
+            });
+            itemCount++;
+          }
+
+          // Update feed with title and last_fetched
+          await repo.updateRecord(feedRecord.id, {
+            title: feedTitle,
+            last_fetched: new Date().toISOString(),
+            status: 'active',
+          });
+        } catch (fetchErr) {
+          await repo.updateRecord(feedRecord.id, { status: 'error' });
+        }
+
+        return {
+          content: {
+            success: true,
+            message: `Feed "${feedTitle}" added with ${itemCount} item(s).`,
+            feedId: feedRecord.id,
+            title: feedTitle,
+            itemsFetched: itemCount,
+          },
+        };
+      },
     )
     .tool(
       {
@@ -279,32 +397,53 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         description: 'List all subscribed RSS feeds',
         parameters: { type: 'object', properties: {} },
       },
-      async () => ({
-        content: {
-          success: true,
-          feeds: [],
-          message: 'No feeds subscribed yet',
-        },
-      }),
+      async () => {
+        const repo = getCustomDataService();
+        const { records } = await repo.listRecords('plugin_rss_feeds', { limit: 100 });
+        return {
+          content: {
+            success: true,
+            feeds: records.map((r) => ({
+              id: r.id,
+              url: r.data.url,
+              title: r.data.title,
+              category: r.data.category,
+              status: r.data.status,
+              lastFetched: r.data.last_fetched,
+            })),
+          },
+        };
+      },
     )
     .tool(
       {
         name: 'news_get_latest',
-        description: 'Get latest news from subscribed feeds',
+        description: 'Get latest news items from subscribed feeds',
         parameters: {
           type: 'object',
           properties: {
-            limit: { type: 'number', description: 'Maximum items to return' },
+            limit: { type: 'number', description: 'Maximum items to return (default 20)' },
           },
         },
       },
-      async () => ({
-        content: {
-          success: true,
-          items: [],
-          message: 'No news items available',
-        },
-      }),
+      async (params) => {
+        const repo = getCustomDataService();
+        const limit = (params.limit as number) || 20;
+        const { records } = await repo.listRecords('plugin_rss_items', { limit });
+        return {
+          content: {
+            success: true,
+            items: records.map((r) => ({
+              id: r.id,
+              title: r.data.title,
+              link: r.data.link,
+              content: String(r.data.content ?? '').substring(0, 300),
+              publishedAt: r.data.published_at,
+              isRead: r.data.is_read,
+            })),
+          },
+        };
+      },
     )
     .build();
 }
@@ -364,23 +503,54 @@ function buildCodeAssistantPlugin(): BuiltinPluginEntry {
     .tool(
       {
         name: 'code_format',
-        description: 'Format code in various languages',
+        description: 'Format code: JSON pretty-print, normalize line endings, trim trailing whitespace',
         parameters: {
           type: 'object',
           properties: {
             code: { type: 'string', description: 'Code to format' },
-            language: { type: 'string', description: 'Programming language' },
+            language: { type: 'string', description: 'Programming language (auto-detected for JSON)' },
+            tabSize: { type: 'number', description: 'Indentation size (default 2)' },
           },
           required: ['code'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          formatted: params.code,
-          language: params.language || 'auto-detected',
-        },
-      }),
+      async (params) => {
+        const code = String(params.code);
+        const language = String(params.language || '').toLowerCase();
+        const tabSize = (params.tabSize as number) || 2;
+
+        let formatted = code;
+        let detectedLang = language || 'unknown';
+
+        // Try JSON formatting
+        if (language === 'json' || (!language && code.trimStart().startsWith('{'))) {
+          try {
+            formatted = JSON.stringify(JSON.parse(code), null, tabSize);
+            detectedLang = 'json';
+          } catch {
+            // Not valid JSON, fall through
+          }
+        }
+
+        // General formatting: normalize line endings and trim trailing whitespace
+        formatted = formatted
+          .replace(/\r\n/g, '\n')
+          .replace(/\r/g, '\n')
+          .split('\n')
+          .map((line) => line.trimEnd())
+          .join('\n')
+          .trimEnd() + '\n';
+
+        return {
+          content: {
+            success: true,
+            formatted,
+            language: detectedLang,
+            originalLength: code.length,
+            formattedLength: formatted.length,
+          },
+        };
+      },
     )
     .tool(
       {
@@ -479,6 +649,12 @@ function buildReminderPlugin(): BuiltinPluginEntry {
         sound_enabled: true,
       },
     })
+    .database('plugin_reminders', 'Reminders', [
+      { name: 'title', type: 'text', required: true, description: 'Reminder title' },
+      { name: 'time', type: 'text', required: true, description: 'Reminder time' },
+      { name: 'note', type: 'text', description: 'Additional notes' },
+      { name: 'status', type: 'text', defaultValue: 'active', description: 'active | done | dismissed' },
+    ], { description: 'Stores user reminders with title, time and status' })
     .tool(
       {
         name: 'reminder_create',
@@ -493,32 +669,45 @@ function buildReminderPlugin(): BuiltinPluginEntry {
           required: ['title', 'time'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          reminder: {
-            id: `rem_${Date.now()}`,
-            title: params.title,
-            time: params.time,
-            note: params.note,
-            createdAt: new Date().toISOString(),
+      async (params) => {
+        const repo = getCustomDataService();
+        const record = await repo.addRecord('plugin_reminders', {
+          title: params.title,
+          time: params.time,
+          note: params.note ?? '',
+          status: 'active',
+        });
+        return {
+          content: {
+            success: true,
+            reminder: { id: record.id, ...record.data, createdAt: record.createdAt },
           },
-        },
-      }),
+        };
+      },
     )
     .tool(
       {
         name: 'reminder_list',
         description: 'List all reminders',
-        parameters: { type: 'object', properties: {} },
-      },
-      async () => ({
-        content: {
-          success: true,
-          reminders: [],
-          message: 'No reminders set',
+        parameters: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', description: 'Filter by status (active, done, dismissed)' },
+          },
         },
-      }),
+      },
+      async (params) => {
+        const repo = getCustomDataService();
+        const filter = params.status ? { status: params.status } : undefined;
+        const { records, total } = await repo.listRecords('plugin_reminders', { limit: 100, filter });
+        return {
+          content: {
+            success: true,
+            reminders: records.map((r) => ({ id: r.id, ...r.data, createdAt: r.createdAt })),
+            total,
+          },
+        };
+      },
     )
     .build();
 }
@@ -571,6 +760,12 @@ function buildClipboardPlugin(): BuiltinPluginEntry {
         retention_days: 30,
       },
     })
+    .database('plugin_clipboard', 'Clipboard History', [
+      { name: 'content', type: 'text', required: true, description: 'Clipboard text content' },
+      { name: 'preview', type: 'text', description: 'Short preview of content' },
+      { name: 'tags', type: 'json', defaultValue: null, description: 'Tags for organization' },
+      { name: 'is_pinned', type: 'boolean', defaultValue: false, description: 'Whether item is pinned' },
+    ], { description: 'Stores clipboard history entries with search and pinning' })
     .tool(
       {
         name: 'clipboard_save',
@@ -584,13 +779,23 @@ function buildClipboardPlugin(): BuiltinPluginEntry {
           required: ['content'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          id: `clip_${Date.now()}`,
-          preview: String(params.content).substring(0, 50),
-        },
-      }),
+      async (params) => {
+        const repo = getCustomDataService();
+        const content = String(params.content);
+        const record = await repo.addRecord('plugin_clipboard', {
+          content,
+          preview: content.substring(0, 100),
+          tags: params.tags ?? [],
+          is_pinned: false,
+        });
+        return {
+          content: {
+            success: true,
+            id: record.id,
+            preview: content.substring(0, 50),
+          },
+        };
+      },
     )
     .tool(
       {
@@ -599,17 +804,29 @@ function buildClipboardPlugin(): BuiltinPluginEntry {
         parameters: {
           type: 'object',
           properties: {
-            limit: { type: 'number', description: 'Max items to return' },
+            limit: { type: 'number', description: 'Max items to return (default 20)' },
           },
         },
       },
-      async () => ({
-        content: {
-          success: true,
-          items: [],
-          message: 'Clipboard history is empty',
-        },
-      }),
+      async (params) => {
+        const repo = getCustomDataService();
+        const limit = (params.limit as number) || 20;
+        const { records, total } = await repo.listRecords('plugin_clipboard', { limit });
+        return {
+          content: {
+            success: true,
+            items: records.map((r) => ({
+              id: r.id,
+              content: r.data.content,
+              preview: r.data.preview,
+              tags: r.data.tags,
+              isPinned: r.data.is_pinned,
+              createdAt: r.createdAt,
+            })),
+            total,
+          },
+        };
+      },
     )
     .tool(
       {
@@ -623,13 +840,23 @@ function buildClipboardPlugin(): BuiltinPluginEntry {
           required: ['query'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          query: params.query,
-          results: [],
-        },
-      }),
+      async (params) => {
+        const repo = getCustomDataService();
+        const results = await repo.searchRecords('plugin_clipboard', String(params.query), { limit: 20 });
+        return {
+          content: {
+            success: true,
+            query: params.query,
+            results: results.map((r) => ({
+              id: r.id,
+              content: r.data.content,
+              preview: r.data.preview,
+              tags: r.data.tags,
+              createdAt: r.createdAt,
+            })),
+          },
+        };
+      },
     )
     .build();
 }
@@ -889,6 +1116,13 @@ function buildExpenseTrackerPlugin(): BuiltinPluginEntry {
         default_category: '',
       },
     })
+    .database('plugin_expenses', 'Expenses', [
+      { name: 'amount', type: 'number', required: true, description: 'Expense amount' },
+      { name: 'category', type: 'text', required: true, description: 'Expense category' },
+      { name: 'description', type: 'text', description: 'Description of the expense' },
+      { name: 'currency', type: 'text', defaultValue: 'USD', description: 'Currency code' },
+      { name: 'date', type: 'datetime', description: 'Expense date' },
+    ], { description: 'Stores expense records with amount, category and date' })
     .tool(
       {
         name: 'expense_add',
@@ -899,57 +1133,93 @@ function buildExpenseTrackerPlugin(): BuiltinPluginEntry {
             amount: { type: 'number', description: 'Expense amount' },
             category: { type: 'string', description: 'Category (food, transport, etc.)' },
             description: { type: 'string', description: 'Description' },
+            currency: { type: 'string', description: 'Currency code (default: USD)' },
           },
           required: ['amount', 'category'],
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          expense: {
-            id: `exp_${Date.now()}`,
-            amount: params.amount,
-            category: params.category,
-            description: params.description,
-            date: new Date().toISOString(),
+      async (params) => {
+        const repo = getCustomDataService();
+        const record = await repo.addRecord('plugin_expenses', {
+          amount: params.amount,
+          category: params.category,
+          description: params.description ?? '',
+          currency: params.currency ?? 'USD',
+          date: new Date().toISOString(),
+        });
+        return {
+          content: {
+            success: true,
+            expense: { id: record.id, ...record.data },
           },
-        },
-      }),
+        };
+      },
     )
     .tool(
       {
         name: 'expense_list',
-        description: 'List expenses',
+        description: 'List expenses with optional category filter',
         parameters: {
           type: 'object',
           properties: {
             category: { type: 'string', description: 'Filter by category' },
-            limit: { type: 'number', description: 'Max items' },
+            limit: { type: 'number', description: 'Max items (default 50)' },
           },
         },
       },
-      async () => ({
-        content: {
-          success: true,
-          expenses: [],
-          total: 0,
-        },
-      }),
+      async (params) => {
+        const repo = getCustomDataService();
+        const filter = params.category ? { category: params.category } : undefined;
+        const limit = (params.limit as number) || 50;
+        const { records, total } = await repo.listRecords('plugin_expenses', { limit, filter });
+        const expenses = records.map((r) => ({ id: r.id, ...r.data }));
+        const sum = expenses.reduce((acc, e) => acc + (Number((e as Record<string, unknown>).amount) || 0), 0);
+        return {
+          content: {
+            success: true,
+            expenses,
+            total,
+            sum: Math.round(sum * 100) / 100,
+          },
+        };
+      },
     )
     .tool(
       {
         name: 'expense_summary',
-        description: 'Get expense summary',
-        parameters: { type: 'object', properties: {} },
-      },
-      async () => ({
-        content: {
-          success: true,
-          totalExpenses: 0,
-          byCategory: {},
-          message: 'No expenses recorded yet',
+        description: 'Get expense summary grouped by category',
+        parameters: {
+          type: 'object',
+          properties: {
+            limit: { type: 'number', description: 'Max records to scan (default 500)' },
+          },
         },
-      }),
+      },
+      async (params) => {
+        const repo = getCustomDataService();
+        const limit = (params.limit as number) || 500;
+        const { records, total } = await repo.listRecords('plugin_expenses', { limit });
+
+        const byCategory: Record<string, { count: number; total: number }> = {};
+        let grandTotal = 0;
+        for (const r of records) {
+          const cat = String(r.data.category ?? 'uncategorized');
+          const amt = Number(r.data.amount) || 0;
+          if (!byCategory[cat]) byCategory[cat] = { count: 0, total: 0 };
+          byCategory[cat].count++;
+          byCategory[cat].total = Math.round((byCategory[cat].total + amt) * 100) / 100;
+          grandTotal += amt;
+        }
+
+        return {
+          content: {
+            success: true,
+            totalExpenses: Math.round(grandTotal * 100) / 100,
+            recordCount: total,
+            byCategory,
+          },
+        };
+      },
     )
     .build();
 }
@@ -2209,50 +2479,120 @@ function buildPomodoroPlugin(): BuiltinPluginEntry {
           type: 'object',
           properties: {
             task: { type: 'string', description: 'Task description for this session' },
+            duration: { type: 'number', description: 'Duration in minutes (default 25)' },
           },
         },
       },
-      async (params) => ({
-        content: {
-          success: true,
-          session: {
-            id: `pom_${Date.now()}`,
-            task: params.task || 'Untitled session',
-            startedAt: new Date().toISOString(),
-            duration: 25,
-            type: 'work',
+      async (params) => {
+        // Check for existing active session
+        const active = await pomodoroRepo.getActiveSession();
+        if (active) {
+          return {
+            content: {
+              success: false,
+              message: `A session is already running: "${active.taskDescription}" (started at ${active.startedAt})`,
+              session: active,
+            },
+          };
+        }
+
+        const session = await pomodoroRepo.startSession({
+          type: 'work',
+          taskDescription: String(params.task || 'Untitled session'),
+          durationMinutes: (params.duration as number) || 25,
+        });
+
+        return {
+          content: {
+            success: true,
+            message: `Pomodoro session started: "${session.taskDescription}" for ${session.durationMinutes} minutes`,
+            session,
           },
-          message: 'Pomodoro session started',
-        },
-      }),
+        };
+      },
     )
     .tool(
       {
         name: 'pomodoro_status',
-        description: 'Get current Pomodoro session status',
+        description: 'Get current Pomodoro session status and daily stats',
         parameters: { type: 'object', properties: {} },
       },
-      async () => ({
-        content: {
-          success: true,
-          active: false,
-          message: 'No active Pomodoro session',
-        },
-      }),
+      async () => {
+        const active = await pomodoroRepo.getActiveSession();
+        const todayStats = await pomodoroRepo.getDailyStats(new Date().toISOString().split('T')[0]);
+        const totalStats = await pomodoroRepo.getTotalStats();
+
+        if (active) {
+          const elapsed = Math.round((Date.now() - new Date(active.startedAt).getTime()) / 60000);
+          const remaining = Math.max(0, active.durationMinutes - elapsed);
+          return {
+            content: {
+              success: true,
+              active: true,
+              session: {
+                ...active,
+                elapsedMinutes: elapsed,
+                remainingMinutes: remaining,
+              },
+              today: todayStats,
+              total: totalStats,
+            },
+          };
+        }
+
+        return {
+          content: {
+            success: true,
+            active: false,
+            message: 'No active Pomodoro session',
+            today: todayStats,
+            total: totalStats,
+          },
+        };
+      },
     )
     .tool(
       {
         name: 'pomodoro_stop',
-        description: 'Stop the current Pomodoro session',
-        parameters: { type: 'object', properties: {} },
-      },
-      async () => ({
-        content: {
-          success: true,
-          active: false,
-          message: 'No active session to stop',
+        description: 'Stop/complete the current Pomodoro session',
+        parameters: {
+          type: 'object',
+          properties: {
+            reason: { type: 'string', description: 'Reason for stopping early (if interrupted)' },
+          },
         },
-      }),
+      },
+      async (params) => {
+        const active = await pomodoroRepo.getActiveSession();
+        if (!active) {
+          return {
+            content: {
+              success: false,
+              message: 'No active session to stop',
+            },
+          };
+        }
+
+        const elapsed = Math.round((Date.now() - new Date(active.startedAt).getTime()) / 60000);
+        const isComplete = elapsed >= active.durationMinutes;
+
+        let session;
+        if (isComplete || !params.reason) {
+          session = await pomodoroRepo.completeSession(active.id);
+        } else {
+          session = await pomodoroRepo.interruptSession(active.id, String(params.reason));
+        }
+
+        return {
+          content: {
+            success: true,
+            message: isComplete
+              ? `Session completed! Worked for ${elapsed} minutes on "${active.taskDescription}"`
+              : `Session interrupted after ${elapsed} minutes. Reason: ${params.reason || 'none'}`,
+            session,
+          },
+        };
+      },
     )
     .build();
 }
@@ -2322,10 +2662,28 @@ export async function initializePlugins(): Promise<void> {
         );
       }
 
-      // 3. Register in PluginRegistry
+      // 3. Auto-create declared database tables (protected, owned by plugin)
+      if (manifest.databaseTables?.length) {
+        const customDataRepo = getCustomDataService();
+        for (const table of manifest.databaseTables) {
+          try {
+            await customDataRepo.ensurePluginTable(
+              manifest.id,
+              table.name,
+              table.displayName,
+              table.columns,
+              table.description,
+            );
+          } catch (tableErr) {
+            console.error(`[Plugins] Failed to create table "${table.name}" for ${manifest.id}:`, tableErr);
+          }
+        }
+      }
+
+      // 4. Register in PluginRegistry
       const plugin = await registry.register(manifest, implementation);
 
-      // 4. Apply DB state
+      // 5. Apply DB state
       plugin.config.settings = dbRecord.settings;
       plugin.config.grantedPermissions = dbRecord.grantedPermissions as PluginPermission[];
       plugin.config.enabled = dbRecord.status === 'enabled';

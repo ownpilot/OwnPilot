@@ -5,7 +5,8 @@
  */
 
 import type { ToolDefinition, ToolExecutionResult as CoreToolResult } from '@ownpilot/core';
-import { PlansRepository, type CreateStepInput } from '../db/repositories/plans.js';
+import type { CreateStepInput } from '../db/repositories/plans.js';
+import { getPlanService } from '../services/plan-service.js';
 import { getPlanExecutor } from '../plans/executor.js';
 
 // =============================================================================
@@ -214,11 +215,11 @@ export async function executePlanTool(
   args: Record<string, unknown>,
   userId = 'default'
 ): Promise<{ success: boolean; result?: unknown; error?: string }> {
-  const repo = new PlansRepository(userId);
+  const service = getPlanService();
 
   switch (toolName) {
     case 'create_plan': {
-      const plan = await repo.create({
+      const plan = await service.createPlan(userId, {
         name: args.name as string,
         goal: args.goal as string,
         description: args.description as string | undefined,
@@ -264,7 +265,7 @@ export async function executePlanTool(
       };
 
       try {
-        const step = await repo.addStep(planId, stepInput);
+        const step = await service.addStep(userId, planId, stepInput);
         return {
           success: true,
           result: {
@@ -282,7 +283,7 @@ export async function executePlanTool(
     }
 
     case 'list_plans': {
-      const plans = await repo.list({
+      const plans = await service.listPlans(userId, {
         status: args.status as string | undefined as never,
         limit: 50,
       });
@@ -307,13 +308,13 @@ export async function executePlanTool(
 
     case 'get_plan_details': {
       const planId = args.plan_id as string;
-      const plan = await repo.get(planId);
+      const plan = await service.getPlan(userId, planId);
       if (!plan) {
         return { success: false, error: `Plan not found: ${planId}` };
       }
 
-      const steps = await repo.getSteps(planId);
-      const history = await repo.getHistory(planId, 20);
+      const steps = await service.getSteps(userId, planId);
+      const history = await service.getHistory(userId, planId, 20);
 
       return {
         success: true,
@@ -347,7 +348,7 @@ export async function executePlanTool(
 
     case 'execute_plan': {
       const planId = args.plan_id as string;
-      const plan = await repo.get(planId);
+      const plan = await service.getPlan(userId, planId);
       if (!plan) {
         return { success: false, error: `Plan not found: ${planId}` };
       }
@@ -355,7 +356,7 @@ export async function executePlanTool(
         return { success: false, error: `Plan status is "${plan.status}", must be "pending" to execute.` };
       }
 
-      const steps = await repo.getSteps(planId);
+      const steps = await service.getSteps(userId, planId);
       if (steps.length === 0) {
         return { success: false, error: 'Plan has no steps. Add steps with add_plan_step first.' };
       }
@@ -384,7 +385,7 @@ export async function executePlanTool(
 
     case 'pause_plan': {
       const planId = args.plan_id as string;
-      const plan = await repo.get(planId);
+      const plan = await service.getPlan(userId, planId);
       if (!plan) {
         return { success: false, error: `Plan not found: ${planId}` };
       }
@@ -403,7 +404,7 @@ export async function executePlanTool(
 
     case 'delete_plan': {
       const planId = args.plan_id as string;
-      const deleted = await repo.delete(planId);
+      const deleted = await service.deletePlan(userId, planId);
       if (!deleted) {
         return { success: false, error: `Plan not found: ${planId}` };
       }

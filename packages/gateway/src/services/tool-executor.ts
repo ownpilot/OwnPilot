@@ -10,19 +10,18 @@
 import {
   ToolRegistry,
   registerAllTools,
-  MEMORY_TOOLS,
-  GOAL_TOOLS,
-  CUSTOM_DATA_TOOLS,
-  PERSONAL_DATA_TOOLS,
-  type ToolExecutionResult as CoreToolResult,
+  registerCoreTools,
 } from '@ownpilot/core';
-import { executeMemoryTool } from '../routes/memories.js';
-import { executeGoalTool } from '../routes/goals.js';
-import { executeCustomDataTool } from '../routes/custom-data.js';
-import { executePersonalDataTool } from '../routes/personal-data-tools.js';
-import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool } from '../tools/index.js';
 import { gatewayConfigCenter as gatewayApiKeyCenter } from './config-center-impl.js';
 import { getDefaultPluginRegistry } from '../plugins/index.js';
+import {
+  createMemoryToolProvider,
+  createGoalToolProvider,
+  createCustomDataToolProvider,
+  createPersonalDataToolProvider,
+  createTriggerToolProvider,
+  createPlanToolProvider,
+} from './tool-providers/index.js';
 
 // ============================================================================
 // Types
@@ -50,99 +49,22 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
 
   const tools = new ToolRegistry();
 
-  // Register all core tools (file system, code exec, web fetch, etc.)
+  // Register all modular tools (file system, code exec, web fetch, etc.)
   registerAllTools(tools);
+
+  // Register legacy core tools (get_current_time, calculate, etc.)
+  // Duplicates are safely ignored by ToolRegistry
+  registerCoreTools(tools);
+
   tools.setApiKeyCenter(gatewayApiKeyCenter);
 
-  // Register memory tools with gateway executors
-  for (const toolDef of MEMORY_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executeMemoryTool(toolDef.name, args as Record<string, unknown>, userId);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register goal tools
-  for (const toolDef of GOAL_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executeGoalTool(toolDef.name, args as Record<string, unknown>, userId);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register custom data tools
-  for (const toolDef of CUSTOM_DATA_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executeCustomDataTool(toolDef.name, args as Record<string, unknown>);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register personal data tools
-  for (const toolDef of PERSONAL_DATA_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executePersonalDataTool(toolDef.name, args as Record<string, unknown>);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register trigger tools
-  for (const toolDef of TRIGGER_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executeTriggerTool(toolDef.name, args as Record<string, unknown>);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register plan tools
-  for (const toolDef of PLAN_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executePlanTool(toolDef.name, args as Record<string, unknown>);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
+  // Register gateway tool providers
+  tools.registerProvider(createMemoryToolProvider(userId));
+  tools.registerProvider(createGoalToolProvider(userId));
+  tools.registerProvider(createCustomDataToolProvider());
+  tools.registerProvider(createPersonalDataToolProvider());
+  tools.registerProvider(createTriggerToolProvider());
+  tools.registerProvider(createPlanToolProvider());
 
   sharedRegistry = tools;
   return tools;

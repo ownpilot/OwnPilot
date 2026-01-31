@@ -9,15 +9,15 @@
  */
 
 import {
-  TriggersRepository,
   type Trigger,
   type TriggerAction,
   type ScheduleConfig,
   type ConditionConfig,
   type EventConfig,
 } from '../db/repositories/triggers.js';
-import { GoalsRepository } from '../db/repositories/goals.js';
-import { MemoriesRepository } from '../db/repositories/memories.js';
+import { getTriggerService, type TriggerService } from '../services/trigger-service.js';
+import { getGoalService, type GoalService } from '../services/goal-service.js';
+import { getMemoryService, type MemoryService } from '../services/memory-service.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
 import { getNextRunTime, matchesCron } from '@ownpilot/core';
 
@@ -55,9 +55,9 @@ export type ChatHandler = (message: string, payload: Record<string, unknown>) =>
 
 export class TriggerEngine {
   private config: Required<TriggerEngineConfig>;
-  private repo: TriggersRepository;
-  private goalsRepo: GoalsRepository;
-  private memoriesRepo: MemoriesRepository;
+  private triggerService: TriggerService;
+  private goalService: GoalService;
+  private memoryService: MemoryService;
   private pollTimer: NodeJS.Timeout | null = null;
   private conditionTimer: NodeJS.Timeout | null = null;
   private running = false;
@@ -73,9 +73,9 @@ export class TriggerEngine {
       userId: config.userId ?? 'default',
     };
 
-    this.repo = new TriggersRepository(this.config.userId);
-    this.goalsRepo = new GoalsRepository(this.config.userId);
-    this.memoriesRepo = new MemoriesRepository(this.config.userId);
+    this.triggerService = getTriggerService();
+    this.goalService = getGoalService();
+    this.memoryService = getMemoryService();
 
     // Register default action handlers
     this.registerDefaultActionHandlers();
@@ -179,7 +179,7 @@ export class TriggerEngine {
 
     // Goal check action
     this.registerActionHandler('goal_check', async (payload) => {
-      const goals = await this.goalsRepo.getActive(5);
+      const goals = await this.goalService.getActive(this.config.userId,5);
       const staleGoals = goals.filter((g) => {
         const daysSinceUpdate = (Date.now() - g.updatedAt.getTime()) / (1000 * 60 * 60 * 24);
         return daysSinceUpdate > (payload.staleDays as number ?? 3);
@@ -194,7 +194,7 @@ export class TriggerEngine {
 
     // Memory summary action
     this.registerActionHandler('memory_summary', async () => {
-      const stats = await this.memoriesRepo.getStats();
+      const stats = await this.memoryService.getStats(this.config.userId);
       return {
         success: true,
         message: `Memory summary: ${stats.total} memories`,
@@ -305,7 +305,7 @@ export class TriggerEngine {
    * Process due schedule triggers
    */
   private async processScheduleTriggers(): Promise<void> {
-    const dueTriggers = await this.repo.getDueTriggers();
+    const dueTriggers = await this.triggerService.getDueTriggers(this.config.userId);
 
     for (const trigger of dueTriggers) {
       await this.executeTrigger(trigger);
@@ -319,7 +319,7 @@ export class TriggerEngine {
     eventType: string,
     payload: Record<string, unknown>
   ): Promise<void> {
-    const triggers = await this.repo.getByEventType(eventType);
+    const triggers = await this.triggerService.getByEventType(this.config.userId, eventType);
 
     for (const trigger of triggers) {
       const config = trigger.config as EventConfig;
@@ -340,7 +340,7 @@ export class TriggerEngine {
    * Process condition-based triggers
    */
   private async processConditionTriggers(): Promise<void> {
-    const triggers = await this.repo.getConditionTriggers();
+    const triggers = await this.triggerService.getConditionTriggers(this.config.userId);
 
     for (const trigger of triggers) {
       const config = trigger.config as ConditionConfig;
@@ -370,7 +370,7 @@ export class TriggerEngine {
     switch (config.condition) {
       case 'stale_goals': {
         // Fire if any goals haven't been updated in X days
-        const goals = await this.goalsRepo.getActive(10);
+        const goals = await this.goalService.getActive(this.config.userId,10);
         const staleDays = threshold || 3;
         const hasStaleGoals = goals.some((g) => {
           const daysSinceUpdate = (Date.now() - g.updatedAt.getTime()) / (1000 * 60 * 60 * 24);
@@ -381,26 +381,26 @@ export class TriggerEngine {
 
       case 'upcoming_deadline': {
         // Fire if any goals have deadlines within X days
-        const upcoming = await this.goalsRepo.getUpcoming(threshold || 7);
+        const upcoming = await this.goalService.getUpcoming(this.config.userId,threshold || 7);
         return upcoming.length > 0;
       }
 
       case 'memory_threshold': {
         // Fire if memory count exceeds threshold
-        const stats = await this.memoriesRepo.getStats();
+        const stats = await this.memoryService.getStats(this.config.userId);
         return stats.total >= (threshold || 100);
       }
 
       case 'low_progress': {
         // Fire if active goals have low progress
-        const goals = await this.goalsRepo.getActive(10);
+        const goals = await this.goalService.getActive(this.config.userId,10);
         const lowProgressGoals = goals.filter((g) => g.progress < (threshold || 20));
         return lowProgressGoals.length > 0;
       }
 
       case 'no_activity': {
         // Fire if no recent activity
-        const stats = await this.memoriesRepo.getStats();
+        const stats = await this.memoryService.getStats(this.config.userId);
         return stats.recentCount === 0;
       }
 
@@ -438,7 +438,8 @@ export class TriggerEngine {
       const durationMs = Date.now() - startTime;
 
       // Log success
-      await this.repo.logExecution(
+      await this.triggerService.logExecution(
+        this.config.userId,
         trigger.id,
         result.success ? 'success' : 'failure',
         result.data,
@@ -450,14 +451,14 @@ export class TriggerEngine {
       if (trigger.type === 'schedule') {
         const config = trigger.config as ScheduleConfig;
         const nextFire = this.calculateNextFire(config);
-        await this.repo.markFired(trigger.id, nextFire ?? undefined);
+        await this.triggerService.markFired(this.config.userId, trigger.id, nextFire ?? undefined);
         if (nextFire) {
           console.log(`[TriggerEngine] Next fire for "${trigger.name}": ${nextFire}`);
         } else {
           console.warn(`[TriggerEngine] WARNING: Trigger "${trigger.name}" has no next fire time — will not auto-fire again`);
         }
       } else {
-        await this.repo.markFired(trigger.id);
+        await this.triggerService.markFired(this.config.userId, trigger.id);
       }
 
       console.log(`[TriggerEngine] Executed trigger: ${trigger.name} (${durationMs}ms)`);
@@ -466,7 +467,7 @@ export class TriggerEngine {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       // Log failure
-      await this.repo.logExecution(trigger.id, 'failure', undefined, errorMessage, durationMs);
+      await this.triggerService.logExecution(this.config.userId, trigger.id, 'failure', undefined, errorMessage, durationMs);
       console.error(`[TriggerEngine] Trigger failed: ${trigger.name}`, error);
     }
   }
@@ -499,7 +500,7 @@ export class TriggerEngine {
    * Manually fire a trigger
    */
   async fireTrigger(triggerId: string): Promise<ActionResult> {
-    const trigger = await this.repo.get(triggerId);
+    const trigger = await this.triggerService.getTrigger(this.config.userId, triggerId);
     if (!trigger) {
       return { success: false, error: 'Trigger not found' };
     }
@@ -521,7 +522,8 @@ export class TriggerEngine {
 
       const durationMs = Date.now() - startTime;
 
-      await this.repo.logExecution(
+      await this.triggerService.logExecution(
+        this.config.userId,
         trigger.id,
         result.success ? 'success' : 'failure',
         result.data,
@@ -534,7 +536,7 @@ export class TriggerEngine {
       const durationMs = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      await this.repo.logExecution(trigger.id, 'failure', undefined, errorMessage, durationMs);
+      await this.triggerService.logExecution(this.config.userId, trigger.id, 'failure', undefined, errorMessage, durationMs);
       return { success: false, error: errorMessage };
     }
   }

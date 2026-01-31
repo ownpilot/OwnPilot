@@ -34,6 +34,9 @@ export * from './scheduler/index.js';
 // Secure Memory
 export * from './memory/index.js';
 
+// Events
+export * from './events/index.js';
+
 // Plugins
 export * from './plugins/index.js';
 

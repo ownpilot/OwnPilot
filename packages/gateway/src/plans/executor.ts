@@ -7,13 +7,13 @@
 
 import { EventEmitter } from 'events';
 import {
-  PlansRepository,
   type Plan,
   type PlanStep,
   type PlanStatus,
   type StepStatus,
   type StepConfig,
 } from '../db/repositories/plans.js';
+import { getPlanService, type PlanService } from '../services/plan-service.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
 
 // ============================================================================
@@ -82,7 +82,7 @@ export interface PlanExecutorEvents {
 
 export class PlanExecutor extends EventEmitter {
   private config: Required<ExecutorConfig>;
-  private repo: PlansRepository;
+  private planService: PlanService;
   private stepHandlers: Map<string, StepHandler> = new Map();
   private runningPlans: Map<string, AbortController> = new Map();
   private pausedPlans: Set<string> = new Set();
@@ -96,7 +96,7 @@ export class PlanExecutor extends EventEmitter {
       verbose: config.verbose ?? false,
       autonomyLevel: config.autonomyLevel ?? 1,
     };
-    this.repo = new PlansRepository(this.config.userId);
+    this.planService = getPlanService();
     this.registerDefaultHandlers();
   }
 
@@ -108,7 +108,7 @@ export class PlanExecutor extends EventEmitter {
    * Execute a plan
    */
   async execute(planId: string): Promise<ExecutionResult> {
-    const plan = await this.repo.get(planId);
+    const plan = await this.planService.getPlan(this.config.userId, planId);
     if (!plan) {
       throw new Error(`Plan not found: ${planId}`);
     }
@@ -126,12 +126,12 @@ export class PlanExecutor extends EventEmitter {
 
     try {
       // Update plan status
-      await this.repo.update(planId, { status: 'running' });
-      await this.repo.logEvent(planId, 'started');
+      await this.planService.updatePlan(this.config.userId, planId, { status: 'running' });
+      await this.planService.logEvent(this.config.userId, planId, 'started');
       this.emit('plan:started', plan);
 
       // Load previous results if resuming
-      const steps = await this.repo.getSteps(planId);
+      const steps = await this.planService.getSteps(this.config.userId, planId);
       for (const step of steps) {
         if (step.status === 'completed' && step.result) {
           results.set(step.id, step.result);
@@ -142,8 +142,8 @@ export class PlanExecutor extends EventEmitter {
       await this.executeSteps(planId, results, abortController.signal);
 
       // Check final status
-      const updatedPlan = (await this.repo.get(planId))!;
-      const completedSteps = (await this.repo.getStepsByStatus(planId, 'completed')).length;
+      const updatedPlan = (await this.planService.getPlan(this.config.userId, planId))!;
+      const completedSteps = (await this.planService.getStepsByStatus(this.config.userId, planId, 'completed')).length;
       const totalSteps = steps.length;
 
       const result: ExecutionResult = {
@@ -156,22 +156,22 @@ export class PlanExecutor extends EventEmitter {
       };
 
       if (updatedPlan.status === 'completed') {
-        await this.repo.logEvent(planId, 'completed', undefined, { duration: result.duration });
+        await this.planService.logEvent(this.config.userId, planId, 'completed', undefined, { duration: result.duration });
         this.emit('plan:completed', updatedPlan, result);
       }
 
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.repo.update(planId, { status: 'failed', error: errorMessage });
-      await this.repo.logEvent(planId, 'failed', undefined, { error: errorMessage });
+      await this.planService.updatePlan(this.config.userId, planId, { status: 'failed', error: errorMessage });
+      await this.planService.logEvent(this.config.userId, planId, 'failed', undefined, { error: errorMessage });
       this.emit('plan:failed', plan, errorMessage);
 
       return {
         planId,
         status: 'failed',
-        completedSteps: (await this.repo.getStepsByStatus(planId, 'completed')).length,
-        totalSteps: (await this.repo.getSteps(planId)).length,
+        completedSteps: (await this.planService.getStepsByStatus(this.config.userId, planId, 'completed')).length,
+        totalSteps: (await this.planService.getSteps(this.config.userId, planId)).length,
         duration: Date.now() - startTime,
         results,
         error: errorMessage,
@@ -190,10 +190,10 @@ export class PlanExecutor extends EventEmitter {
     }
 
     this.pausedPlans.add(planId);
-    await this.repo.update(planId, { status: 'paused' });
-    await this.repo.logEvent(planId, 'paused');
+    await this.planService.updatePlan(this.config.userId, planId, { status: 'paused' });
+    await this.planService.logEvent(this.config.userId, planId, 'paused');
 
-    const plan = await this.repo.get(planId);
+    const plan = await this.planService.getPlan(this.config.userId, planId);
     if (plan) {
       this.emit('plan:paused', plan);
     }
@@ -205,7 +205,7 @@ export class PlanExecutor extends EventEmitter {
    * Resume a paused plan
    */
   async resume(planId: string): Promise<ExecutionResult> {
-    const plan = await this.repo.get(planId);
+    const plan = await this.planService.getPlan(this.config.userId, planId);
     if (!plan) {
       throw new Error(`Plan not found: ${planId}`);
     }
@@ -215,8 +215,8 @@ export class PlanExecutor extends EventEmitter {
     }
 
     this.pausedPlans.delete(planId);
-    await this.repo.update(planId, { status: 'running' });
-    await this.repo.logEvent(planId, 'resumed');
+    await this.planService.updatePlan(this.config.userId, planId, { status: 'running' });
+    await this.planService.logEvent(this.config.userId, planId, 'resumed');
     this.emit('plan:resumed', plan);
 
     return this.execute(planId);
@@ -232,8 +232,8 @@ export class PlanExecutor extends EventEmitter {
     }
 
     controller.abort();
-    await this.repo.update(planId, { status: 'cancelled' });
-    await this.repo.logEvent(planId, 'cancelled');
+    await this.planService.updatePlan(this.config.userId, planId, { status: 'cancelled' });
+    await this.planService.logEvent(this.config.userId, planId, 'cancelled');
 
     return true;
   }
@@ -247,15 +247,15 @@ export class PlanExecutor extends EventEmitter {
       data,
     };
 
-    await this.repo.update(planId, { checkpoint: JSON.stringify(checkpointData) });
-    await this.repo.logEvent(planId, 'checkpoint', undefined, checkpointData);
+    await this.planService.updatePlan(this.config.userId, planId, { checkpoint: JSON.stringify(checkpointData) });
+    await this.planService.logEvent(this.config.userId, planId, 'checkpoint', undefined, checkpointData);
   }
 
   /**
    * Restore a plan from checkpoint
    */
   async restoreFromCheckpoint(planId: string): Promise<unknown | null> {
-    const plan = await this.repo.get(planId);
+    const plan = await this.planService.getPlan(this.config.userId, planId);
     if (!plan?.checkpoint) {
       return null;
     }
@@ -322,23 +322,23 @@ export class PlanExecutor extends EventEmitter {
       }
 
       // Get next pending step
-      const step = await this.repo.getNextStep(planId);
+      const step = await this.planService.getNextStep(this.config.userId, planId);
       if (!step) {
         // All steps completed
-        await this.repo.update(planId, { status: 'completed' });
-        await this.repo.recalculateProgress(planId);
+        await this.planService.updatePlan(this.config.userId, planId, { status: 'completed' });
+        await this.planService.recalculateProgress(this.config.userId, planId);
         return;
       }
 
       // Check dependencies
-      if (!await this.repo.areDependenciesMet(step.id)) {
+      if (!await this.planService.areDependenciesMet(this.config.userId, step.id)) {
         // Try to find another step that can run
-        const pendingSteps = await this.repo.getStepsByStatus(planId, 'pending');
+        const pendingSteps = await this.planService.getStepsByStatus(this.config.userId, planId, 'pending');
 
         // Find a ready step (one with met dependencies)
         let readyStep: PlanStep | undefined;
         for (const s of pendingSteps) {
-          if (await this.repo.areDependenciesMet(s.id)) {
+          if (await this.planService.areDependenciesMet(this.config.userId, s.id)) {
             readyStep = s;
             break;
           }
@@ -351,11 +351,11 @@ export class PlanExecutor extends EventEmitter {
           if (stallCount >= MAX_STALL) {
             // Deadlock detected — mark blocked steps and fail plan
             for (const s of pendingSteps) {
-              if (!await this.repo.areDependenciesMet(s.id)) {
-                await this.repo.updateStep(s.id, { status: 'blocked' });
+              if (!await this.planService.areDependenciesMet(this.config.userId, s.id)) {
+                await this.planService.updateStep(this.config.userId, s.id, { status: 'blocked' });
               }
             }
-            await this.repo.update(planId, { status: 'failed', error: 'Dependency deadlock: all pending steps have unmet dependencies' });
+            await this.planService.updatePlan(this.config.userId, planId, { status: 'failed', error: 'Dependency deadlock: all pending steps have unmet dependencies' });
             throw new Error('Dependency deadlock: all pending steps have unmet dependencies');
           }
 
@@ -373,7 +373,7 @@ export class PlanExecutor extends EventEmitter {
       }
 
       // Update progress
-      await this.repo.recalculateProgress(planId);
+      await this.planService.recalculateProgress(this.config.userId, planId);
     }
   }
 
@@ -383,11 +383,11 @@ export class PlanExecutor extends EventEmitter {
     results: Map<string, unknown>,
     signal: AbortSignal
   ): Promise<void> {
-    const plan = (await this.repo.get(planId))!;
+    const plan = (await this.planService.getPlan(this.config.userId, planId))!;
 
     // Update step status
-    await this.repo.updateStep(step.id, { status: 'running' });
-    await this.repo.logEvent(planId, 'step_started', step.id);
+    await this.planService.updateStep(this.config.userId, step.id, { status: 'running' });
+    await this.planService.logEvent(this.config.userId, planId, 'step_started', step.id);
     this.emit('step:started', plan, step);
 
     const context: StepExecutionContext = {
@@ -414,24 +414,24 @@ export class PlanExecutor extends EventEmitter {
       // Handle result
       if (result.success) {
         results.set(step.id, result.data);
-        await this.repo.updateStep(step.id, {
+        await this.planService.updateStep(this.config.userId, step.id, {
           status: 'completed',
           result: result.data,
         });
-        await this.repo.logEvent(planId, 'step_completed', step.id, { result: result.data });
+        await this.planService.logEvent(this.config.userId, planId, 'step_completed', step.id, { result: result.data });
         this.emit('step:completed', plan, step, result);
 
         // Handle branching
         if (result.nextStep) {
           // Jump to specific step (for conditions)
-          const allSteps = await this.repo.getSteps(planId);
+          const allSteps = await this.planService.getSteps(this.config.userId, planId);
           const targetStep = allSteps.find((s) => s.id === result.nextStep);
           if (targetStep && targetStep.status === 'pending') {
             // Mark skipped steps
-            const steps = await this.repo.getSteps(planId);
+            const steps = await this.planService.getSteps(this.config.userId, planId);
             for (const s of steps) {
               if (s.orderNum > step.orderNum && s.orderNum < targetStep.orderNum && s.status === 'pending') {
-                await this.repo.updateStep(s.id, { status: 'skipped' });
+                await this.planService.updateStep(this.config.userId, s.id, { status: 'skipped' });
                 this.emit('step:skipped', plan, s, 'Skipped due to condition branch');
               }
             }
@@ -445,7 +445,7 @@ export class PlanExecutor extends EventEmitter {
 
         // Handle approval required
         if (result.requiresApproval) {
-          await this.repo.update(planId, { status: 'paused' });
+          await this.planService.updatePlan(this.config.userId, planId, { status: 'paused' });
           this.emit('approval:required', plan, step, result.data);
           this.pausedPlans.add(planId);
         }
@@ -463,7 +463,7 @@ export class PlanExecutor extends EventEmitter {
 
         await new Promise((r) => setTimeout(r, backoffMs));
 
-        await this.repo.updateStep(step.id, {
+        await this.planService.updateStep(this.config.userId, step.id, {
           status: 'pending',
           retryCount: retryNum,
           error: errorMessage,
@@ -472,11 +472,11 @@ export class PlanExecutor extends EventEmitter {
       }
 
       // Max retries exceeded
-      await this.repo.updateStep(step.id, {
+      await this.planService.updateStep(this.config.userId, step.id, {
         status: 'failed',
         error: errorMessage,
       });
-      await this.repo.logEvent(planId, 'step_failed', step.id, { error: errorMessage });
+      await this.planService.logEvent(this.config.userId, planId, 'step_failed', step.id, { error: errorMessage });
       this.emit('step:failed', plan, step, errorMessage);
 
       // Handle failure action
@@ -487,7 +487,7 @@ export class PlanExecutor extends EventEmitter {
         this.log(`Step ${step.name} failed but continuing (onFailure: skip)`);
       } else {
         // Jump to specific step
-        const failureSteps = await this.repo.getSteps(planId);
+        const failureSteps = await this.planService.getSteps(this.config.userId, planId);
         const targetStep = failureSteps.find((s) => s.id === step.onFailure);
         if (targetStep) {
           // Will be picked up in next iteration

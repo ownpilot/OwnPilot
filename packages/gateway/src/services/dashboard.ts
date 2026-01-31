@@ -8,13 +8,9 @@
 import {
   TasksRepository,
   CalendarRepository,
-  GoalsRepository,
-  TriggersRepository,
-  MemoriesRepository,
   HabitsRepository,
   CostsRepository,
   NotesRepository,
-  PlansRepository,
   type Task,
   type CalendarEvent,
   type Goal,
@@ -27,7 +23,12 @@ import {
   type Habit,
   type DailyCost,
 } from '../db/repositories/index.js';
-import { getCustomDataRepository, type CustomTableSchema } from '../db/repositories/custom-data.js';
+import { type CustomTableSchema } from '../db/repositories/custom-data.js';
+import { getMemoryService } from './memory-service.js';
+import { getGoalService } from './goal-service.js';
+import { getTriggerService } from './trigger-service.js';
+import { getPlanService } from './plan-service.js';
+import { getCustomDataService } from './custom-data-service.js';
 
 // ============================================================================
 // Types
@@ -254,14 +255,14 @@ export class DashboardService {
   async aggregateDailyData(): Promise<DailyBriefingData> {
     const tasksRepo = new TasksRepository(this.userId);
     const calendarRepo = new CalendarRepository(this.userId);
-    const goalsRepo = new GoalsRepository(this.userId);
-    const triggersRepo = new TriggersRepository(this.userId);
-    const memoriesRepo = new MemoriesRepository(this.userId);
+    const goalService = getGoalService();
+    const triggerService = getTriggerService();
+    const memoryService = getMemoryService();
     const habitsRepo = new HabitsRepository(this.userId);
     const costsRepo = new CostsRepository();
     const notesRepo = new NotesRepository(this.userId);
-    const customDataRepo = getCustomDataRepository();
-    const plansRepo = new PlansRepository(this.userId);
+    const customDataService = getCustomDataService();
+    const planService = getPlanService();
 
     const today = new Date().toISOString().split('T')[0] ?? '';
 
@@ -277,24 +278,24 @@ export class DashboardService {
     const upcomingEvents = await calendarRepo.getUpcoming(7);
 
     // Goals
-    const activeGoals = await goalsRepo.getActive(10);
-    const nextActions = await goalsRepo.getNextActions(5);
+    const activeGoals = await goalService.getActive(this.userId, 10);
+    const nextActions = await goalService.getNextActions(this.userId, 5);
     const goalStats = this.calculateGoalStats(activeGoals);
 
     // Triggers
-    const allTriggers = await triggersRepo.list({ limit: 100 });
+    const allTriggers = await triggerService.listTriggers(this.userId, { limit: 100 });
     const enabledTriggers = allTriggers.filter(t => t.enabled);
     const scheduledToday = enabledTriggers.filter(t => {
       if (!t.nextFire) return false;
       const fireDate = new Date(t.nextFire).toISOString().split('T')[0];
       return fireDate === today;
     });
-    const triggerHistory = await triggersRepo.getRecentHistory(10);
+    const triggerHistory = await triggerService.getRecentHistory(this.userId, 10);
 
     // Memories
-    const recentMemories = await memoriesRepo.getRecent(10);
-    const importantMemories = await memoriesRepo.getImportant(0.7, 5);
-    const memoryStats = await memoriesRepo.getStats();
+    const recentMemories = await memoryService.getRecentMemories(this.userId, 10);
+    const importantMemories = await memoryService.getImportantMemories(this.userId, 0.7, 5);
+    const memoryStats = await memoryService.getStats(this.userId);
 
     // Habits
     const todayHabits = await this.getHabitProgress(habitsRepo);
@@ -309,11 +310,11 @@ export class DashboardService {
     const monthlyCosts = await this.getMonthlyCosts(costsRepo);
 
     // Custom Data
-    const customTables = await customDataRepo.listTables();
-    const customDataSummary = await this.getCustomDataSummary(customDataRepo, customTables);
+    const customTables = await customDataService.listTables();
+    const customDataSummary = await this.getCustomDataSummary(customDataService, customTables);
 
     // Plans
-    const allPlans = await plansRepo.list({ limit: 50 });
+    const allPlans = await planService.listPlans(this.userId, { limit: 50 });
     const runningPlans = allPlans.filter(p => p.status === 'running');
     const pendingApprovalPlans = allPlans.filter(p => p.status === 'pending');
 
@@ -720,14 +721,14 @@ Format your response as JSON:
    * Get custom data summary
    */
   private async getCustomDataSummary(
-    repo: ReturnType<typeof getCustomDataRepository>,
+    service: ReturnType<typeof getCustomDataService>,
     tables: CustomTableSchema[]
   ): Promise<CustomDataSummary> {
     let totalRecords = 0;
     const tableSummaries: CustomTableSummaryItem[] = [];
 
     for (const t of tables) {
-      const stats = await repo.getTableStats(t.id);
+      const stats = await service.getTableStats(t.id);
       const recordCount = stats?.recordCount ?? 0;
       totalRecords += recordCount;
       tableSummaries.push({

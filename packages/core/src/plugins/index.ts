@@ -14,6 +14,13 @@ import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor, ToolContext, ToolExecutionResult } from '../agent/types.js';
 import type { PluginId, ToolId } from '../types/branded.js';
 import type { ConfigFieldDefinition } from '../services/config-center.js';
+import {
+  getEventBus,
+  createEvent,
+  EventTypes,
+  type PluginCustomData,
+  type PluginStatusData,
+} from '../events/index.js';
 
 // =============================================================================
 // Types
@@ -87,6 +94,29 @@ export interface PluginRequiredService {
 /**
  * Plugin manifest
  */
+
+/**
+ * Column definition for plugin database tables
+ */
+export interface PluginDatabaseColumn {
+  name: string;
+  type: 'text' | 'number' | 'boolean' | 'date' | 'datetime' | 'json';
+  required?: boolean;
+  defaultValue?: string | number | boolean | null;
+  description?: string;
+}
+
+/**
+ * Database table declaration for plugins.
+ * Used by PluginBuilder.database() to auto-create protected tables on startup.
+ */
+export interface PluginDatabaseTable {
+  name: string;
+  displayName: string;
+  description?: string;
+  columns: PluginDatabaseColumn[];
+}
+
 export interface PluginManifest {
   /** Unique plugin ID */
   id: string;
@@ -133,6 +163,8 @@ export interface PluginManifest {
     docsUrl?: string;
     envVarName?: string;
   }>;
+  /** Database tables this plugin needs (auto-created on startup, protected from deletion) */
+  databaseTables?: PluginDatabaseTable[];
 }
 
 /**
@@ -387,6 +419,7 @@ export class PluginRegistry {
     const plugin = this.plugins.get(id);
     if (!plugin) return false;
 
+    const oldStatus = plugin.status;
     plugin.status = 'enabled';
     plugin.config.enabled = true;
     plugin.config.updatedAt = new Date().toISOString();
@@ -396,6 +429,12 @@ export class PluginRegistry {
     if (plugin.lifecycle.onEnable) {
       await plugin.lifecycle.onEnable();
     }
+
+    // Bridge to EventBus
+    getEventBus().emit(createEvent<PluginStatusData>(
+      EventTypes.PLUGIN_STATUS, 'plugin', `plugin-registry`,
+      { pluginId: id, oldStatus, newStatus: 'enabled' },
+    ));
 
     return true;
   }
@@ -411,11 +450,19 @@ export class PluginRegistry {
       await plugin.lifecycle.onDisable();
     }
 
+    const oldStatus = plugin.status;
     plugin.status = 'disabled';
     plugin.config.enabled = false;
     plugin.config.updatedAt = new Date().toISOString();
 
     await this.savePluginConfig(id, plugin.config);
+
+    // Bridge to EventBus
+    getEventBus().emit(createEvent<PluginStatusData>(
+      EventTypes.PLUGIN_STATUS, 'plugin', `plugin-registry`,
+      { pluginId: id, oldStatus, newStatus: 'disabled' },
+    ));
+
     return true;
   }
 
@@ -497,6 +544,15 @@ export class PluginRegistry {
         }
       }
     }
+
+    // Bridge to EventBus: forward plugin events
+    const parts = event.split(':');
+    const pluginId = parts[0] ?? event;
+    const eventName = parts.slice(1).join(':') || event;
+    getEventBus().emit(createEvent<PluginCustomData>(
+      EventTypes.PLUGIN_CUSTOM, 'plugin', `plugin:${pluginId}`,
+      { pluginId, event: eventName, data },
+    ));
   }
 
   /**
@@ -665,6 +721,7 @@ export class PluginBuilder {
   private handlers: MessageHandler[] = [];
   private api: PluginPublicAPI = {};
   private lifecycle: Plugin['lifecycle'] = {};
+  private dbTables: PluginDatabaseTable[] = [];
 
   /**
    * Set plugin metadata
@@ -789,6 +846,25 @@ export class PluginBuilder {
   }
 
   /**
+   * Declare a database table for this plugin.
+   * The table will be auto-created on startup and protected from deletion.
+   */
+  database(
+    name: string,
+    displayName: string,
+    columns: PluginDatabaseColumn[],
+    options?: { description?: string }
+  ): this {
+    this.dbTables.push({
+      name,
+      displayName,
+      description: options?.description,
+      columns,
+    });
+    return this;
+  }
+
+  /**
    * Build the plugin
    */
   build(): { manifest: PluginManifest; implementation: Partial<Plugin> } {
@@ -805,6 +881,7 @@ export class PluginBuilder {
       permissions: this.manifest.permissions ?? [],
       main: this.manifest.main ?? 'index.js',
       ...this.manifest,
+      ...(this.dbTables.length > 0 ? { databaseTables: this.dbTables } : {}),
     };
 
     return {
