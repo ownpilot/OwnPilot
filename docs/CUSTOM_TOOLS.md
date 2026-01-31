@@ -1040,6 +1040,8 @@ The UI component at `packages/ui/src/pages/CustomToolsPage.tsx` provides a full 
 
 The `DynamicToolRegistry` is an in-memory registry that holds active custom tools and provides the execution bridge between the agent and the sandbox.
 
+> **Note:** Custom tools use the `DynamicToolRegistry` for runtime-created user tools. For built-in tool families (memory, goals, custom data, etc.), the system uses the **ToolProvider** pattern (`ToolProvider` interface with `registerProvider()`) as described in [TOOLS.md](TOOLS.md#tool-provider-pattern).
+
 ### Interface
 
 Defined in `packages/core/src/agent/tools/dynamic-tools.ts`:

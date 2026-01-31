@@ -657,11 +657,11 @@ Streaming fallback has a special constraint: if the primary provider has already
 
 ## 7. Provider Configuration System
 
-**Source:** `packages/core/src/agent/providers/configs/`
+**Source:** `data/providers/` (JSON configs synced from models.dev), `packages/core/src/agent/providers/configs/` (loader and sync logic)
 
 ### 7.1 Type Definitions
 
-**Source:** `configs/types.ts`
+**Source:** `packages/core/src/agent/providers/configs/types.ts`
 
 ```typescript
 export type ProviderType =
@@ -717,7 +717,7 @@ export interface ResolvedProviderConfig extends Omit<ProviderConfig, 'apiKeyEnv'
 
 ### 7.2 JSON Configuration Files
 
-Each provider has a JSON file at `packages/core/src/agent/providers/configs/<provider-id>.json`. These files follow the `ProviderConfig` schema and are loaded at runtime.
+Each provider has a JSON file at `data/providers/<provider-id>.json`. These files follow the `ProviderConfig` schema and are loaded at runtime. The configs were moved from `packages/core/src/agent/providers/configs/` to the top-level `data/providers/` directory for easier management and sync.
 
 **Example: `openai.json` (abbreviated)**
 
@@ -996,7 +996,7 @@ Discovery is triggered:
 
 ### Database Storage
 
-Local providers and their models are persisted in SQLite:
+Local providers and their models are persisted in PostgreSQL:
 
 **`local_providers` table:**
 
@@ -1043,7 +1043,7 @@ GET    /api/v1/local-providers/:id/models    - List discovered models
 
 ## 12. Database Layer
 
-The gateway persists provider and model configurations in SQLite, enabling per-user customization.
+The gateway persists provider and model configurations in PostgreSQL, enabling per-user customization.
 
 ### Database Tables
 
@@ -1415,7 +1415,7 @@ The system can automatically sync provider and model data from the [models.dev](
 2. For each provider, converts the models.dev format to OwnPilot's `ProviderConfig` format.
 3. Maps capabilities: `tool_call` -> `function_calling`, `structured_output` -> `json_mode`, `reasoning` -> `reasoning`, image/video/audio modalities -> `vision`/`audio`.
 4. **Merges** with existing config files, preserving protected fields.
-5. Writes updated JSON files to `packages/core/src/agent/providers/configs/`.
+5. Writes updated JSON files to `data/providers/`.
 
 ### Protected Fields
 
@@ -1473,7 +1473,7 @@ GET  /api/v1/models/modelsdev/providers - List models.dev providers
 
 ### Option 1: JSON Config (Recommended)
 
-Create a new JSON file at `packages/core/src/agent/providers/configs/<provider-id>.json`:
+Create a new JSON file at `data/providers/<provider-id>.json`:
 
 ```json
 {
@@ -1505,7 +1505,7 @@ Create a new JSON file at `packages/core/src/agent/providers/configs/<provider-i
 }
 ```
 
-Then add the provider ID to the `PROVIDER_IDS` array in `configs/index.ts`, or let the sync system discover it.
+The sync system will automatically discover new provider JSON files in `data/providers/`. Alternatively, add the provider ID to the `PROVIDER_IDS` array in `configs/index.ts`.
 
 If the provider uses the OpenAI API format, no code changes are needed. The `OpenAICompatibleProvider` will handle it automatically.
 

@@ -110,7 +110,7 @@ This function is called automatically on the **first database connection** via t
 
 ## 3. Table Reference
 
-OwnPilot defines **44 tables** organized into 11 domain groups. Every table uses `TEXT PRIMARY KEY`.
+OwnPilot defines **47 tables** organized into 11 domain groups. Every table uses `TEXT PRIMARY KEY`.
 
 ---
 
@@ -1327,7 +1327,50 @@ export abstract class BaseRepository {
 
 The `BaseRepository` lazily acquires the database adapter via `getAdapter()`. All repositories inherit this behavior.
 
-### 6.2 Repository Catalog
+### 6.2 IRepository Interface
+
+All repositories conform to the `IRepository<T>` interface pattern, which standardizes common query operations:
+
+```typescript
+interface IRepository<T> {
+  getById(id: string): Promise<T | null>;
+  list(query?: StandardQuery): Promise<T[]>;
+  create(data: Partial<T>): Promise<T>;
+  update(id: string, data: Partial<T>): Promise<T | null>;
+  delete(id: string): Promise<boolean>;
+}
+
+interface StandardQuery {
+  limit?: number;
+  offset?: number;
+  orderBy?: string;
+  orderDir?: 'asc' | 'desc';
+  search?: string;
+  filters?: Record<string, unknown>;
+}
+
+interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+```
+
+The `BaseRepository` provides a `paginatedQuery()` helper that wraps standard list queries with pagination:
+
+```typescript
+protected async paginatedQuery<T>(
+  sql: string,
+  countSql: string,
+  params: unknown[],
+  page: number,
+  pageSize: number
+): Promise<PaginatedResult<T>>;
+```
+
+### 6.3 Repository Catalog
 
 Each repository exports: the repository class, a factory function, TypeScript interfaces for row types and input types, and optionally a singleton instance.
 
@@ -1364,7 +1407,7 @@ Each repository exports: the repository class, a factory function, TypeScript in
 | `config-services.ts` | `ConfigServicesRepository` | config_services, config_entries |
 | `local-providers.ts` | `LocalProvidersRepository` | local_providers, local_models |
 
-### 6.3 Usage Pattern
+### 6.4 Usage Pattern
 
 Repositories are consumed in two ways:
 
@@ -1384,7 +1427,7 @@ const agents = await agentsRepo.getAll();
 const theme = await settingsRepo.get('theme');
 ```
 
-### 6.4 Repository Index
+### 6.5 Repository Index
 
 **File:** `packages/gateway/src/db/repositories/index.ts`
 

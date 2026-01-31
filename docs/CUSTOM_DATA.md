@@ -1217,7 +1217,8 @@ Both table IDs (`table_<timestamp>_<random>`) and record IDs (`rec_<timestamp>_<
 | File | Purpose |
 |------|---------|
 | `packages/core/src/agent/tools/custom-data.ts` | AI tool definitions (11 tools) and `CUSTOM_DATA_TOOLS` export |
-| `packages/gateway/src/routes/custom-data.ts` | Hono REST routes + `executeCustomDataTool()` executor |
+| `packages/gateway/src/services/custom-data-service.ts` | CustomDataService -- business logic layer for custom data operations, EventBus emission |
+| `packages/gateway/src/routes/custom-data.ts` | Hono REST routes (thin HTTP handler, delegates to CustomDataService) |
 | `packages/gateway/src/db/repositories/custom-data.ts` | `CustomDataRepository` class with all database operations |
 | `packages/gateway/src/db/schema.ts` | SQL DDL for `custom_table_schemas`, `custom_data_records`, and `custom_data` |
 | `packages/gateway/src/app.ts` | Mounts routes at `/api/v1/custom-data` |

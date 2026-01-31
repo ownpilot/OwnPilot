@@ -1235,10 +1235,11 @@ The script requires the gateway API to be running (default: `http://localhost:30
 | `packages/gateway/src/db/schema.ts` | SQL schema for `triggers`, `trigger_history`, and `plans` tables with indexes |
 | `packages/gateway/src/db/repositories/triggers.ts` | `TriggersRepository` class -- all CRUD, history, stats, due trigger queries |
 | `packages/gateway/src/db/repositories/plans.ts` | `PlansRepository` class -- plan/step CRUD, progress tracking, dependency cycle detection |
+| `packages/gateway/src/services/trigger-service.ts` | TriggerService -- business logic layer for trigger operations, EventBus emission |
 | `packages/gateway/src/triggers/engine.ts` | `TriggerEngine` singleton -- polling, condition evaluation, event dispatch, action execution |
 | `packages/gateway/src/triggers/proactive.ts` | Built-in default trigger definitions and management functions |
 | `packages/gateway/src/triggers/index.ts` | Module barrel export |
-| `packages/gateway/src/routes/triggers.ts` | Hono routes for trigger REST API |
+| `packages/gateway/src/routes/triggers.ts` | Hono routes for trigger REST API (thin HTTP handler, delegates to TriggerService) |
 | `packages/gateway/src/routes/autonomy.ts` | Hono routes for autonomy configuration, approvals, budgets |
 | `packages/gateway/src/tools/trigger-tools.ts` | Agent-accessible tools for trigger management (6 tools) |
 | `packages/gateway/src/autonomy/index.ts` | Autonomy module barrel export |
