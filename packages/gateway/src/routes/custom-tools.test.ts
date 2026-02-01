@@ -81,7 +81,7 @@ vi.mock('./agents.js', () => ({
 }));
 
 vi.mock('../services/api-service-registrar.js', () => ({
-  registerToolApiDependencies: vi.fn(async () => undefined),
+  registerToolConfigRequirements: vi.fn(async () => undefined),
   unregisterDependencies: vi.fn(async () => undefined),
 }));
 

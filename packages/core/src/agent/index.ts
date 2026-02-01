@@ -24,6 +24,9 @@ export type {
   ToolProvider,
   ToolMiddleware,
   ToolMiddlewareContext,
+  ToolSource,
+  ToolTrustLevel,
+  ToolConfigRequirement,
   CompletionRequest,
   CompletionResponse,
   StreamChunk,
@@ -134,6 +137,9 @@ export {
   applyToolLimits,
   type ToolLimit,
 } from './tools/index.js';
+
+// Middleware
+export { createPluginSecurityMiddleware } from './middleware/plugin-security.js';
 
 // Memory
 export { ConversationMemory, createMemory } from './memory.js';

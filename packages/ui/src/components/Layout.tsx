@@ -35,6 +35,7 @@ import {
   Image,
   Link,
   Container,
+  Info,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 
@@ -131,6 +132,7 @@ const simpleSettingsItems: NavItem[] = [
 
 // Bottom navigation items
 const bottomItems: NavItem[] = [
+  { to: '/about', icon: Info, label: 'About' },
   { to: '/profile', icon: UserCircle, label: 'Profile' },
 ];
 

@@ -22,7 +22,7 @@ import {
 import type { ApiResponse } from '../types/index.js';
 import { invalidateAgentCache } from './agents.js';
 import {
-  registerToolApiDependencies,
+  registerToolConfigRequirements,
   unregisterDependencies,
 } from '../services/api-service-registrar.js';
 
@@ -32,17 +32,80 @@ export const customToolsRoutes = new Hono();
 const dynamicRegistry = createDynamicToolRegistry(ALL_TOOLS);
 
 /**
+ * Get the dynamic tool registry (for use by tool-executor.ts to create sandboxed executors)
+ */
+export function getCustomToolDynamicRegistry() {
+  return dynamicRegistry;
+}
+
+/**
  * Helper to get userId from context
  */
 function getUserId(c: any): string {
   return c.get('userId') ?? 'default';
 }
 
+// Reference to shared registry — set by tool-executor.ts during initialization
+let _sharedRegistry: {
+  registerCustomTool: (def: ToolDefinition, exec: (args: Record<string, unknown>, ctx: any) => Promise<any>, id: string) => any;
+  unregister: (name: string) => void;
+  has: (name: string) => boolean;
+  execute: (name: string, args: Record<string, unknown>, context: any) => Promise<any>;
+} | null = null;
+
 /**
- * Sync database tools with dynamic registry
+ * Set the shared ToolRegistry reference so CRUD operations can sync custom tools into it.
+ * Called by tool-executor.ts during initialization.
+ */
+export function setSharedRegistryForCustomTools(registry: typeof _sharedRegistry): void {
+  _sharedRegistry = registry;
+}
+
+/**
+ * Execute a custom tool via the shared ToolRegistry (preferred) or fall back to DynamicToolRegistry.
+ * Going through the shared registry ensures middleware, scoped config access, and event emission.
+ */
+async function executeCustomToolUnified(
+  toolName: string,
+  args: Record<string, unknown>,
+  context: { callId?: string; conversationId?: string; userId?: string }
+): Promise<{ content: unknown; isError: boolean; metadata?: Record<string, unknown> }> {
+  // Prefer shared registry (has middleware, scoped config, event emission)
+  if (_sharedRegistry?.has(toolName)) {
+    const result = await _sharedRegistry.execute(toolName, args, {
+      conversationId: context.conversationId ?? 'custom-tool-execution',
+      userId: context.userId,
+    });
+    if (result.ok) {
+      return {
+        content: result.value.content,
+        isError: result.value.isError ?? false,
+        metadata: result.value.metadata,
+      };
+    }
+    return { content: result.error.message, isError: true };
+  }
+
+  // Fallback: direct dynamic registry (shared registry not yet initialized)
+  const result = await dynamicRegistry.execute(toolName, args, {
+    callId: context.callId ?? `exec_${Date.now()}`,
+    conversationId: context.conversationId ?? 'custom-tool-execution',
+    userId: context.userId,
+  });
+  return {
+    content: result.content,
+    isError: result.isError ?? false,
+    metadata: result.metadata,
+  };
+}
+
+/**
+ * Sync database tools with both the dynamic registry (for sandbox execution)
+ * and the shared ToolRegistry (for unified access from agents/triggers/plans).
  */
 function syncToolToRegistry(tool: CustomToolRecord): void {
   if (tool.status === 'active') {
+    // Register in dynamic registry (handles sandbox execution)
     const dynamicTool: DynamicToolDefinition = {
       name: tool.name,
       description: tool.description,
@@ -53,8 +116,32 @@ function syncToolToRegistry(tool: CustomToolRecord): void {
       requiresApproval: tool.requiresApproval,
     };
     dynamicRegistry.register(dynamicTool);
+
+    // Also register in shared ToolRegistry (for unified tool access)
+    if (_sharedRegistry && !_sharedRegistry.has(tool.name)) {
+      const def: ToolDefinition = {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters as ToolDefinition['parameters'],
+        category: tool.category ?? 'Custom',
+        configRequirements: tool.requiredApiKeys?.map(k => ({
+          name: k.name,
+          displayName: k.displayName,
+          description: k.description,
+          category: k.category,
+          docsUrl: k.docsUrl,
+        })),
+      };
+      const executor = (args: Record<string, unknown>, context: any) =>
+        dynamicRegistry.execute(tool.name, args, context);
+      _sharedRegistry.registerCustomTool(def, executor, tool.id);
+    }
   } else {
+    // Unregister from both registries
     dynamicRegistry.unregister(tool.name);
+    if (_sharedRegistry?.has(tool.name)) {
+      _sharedRegistry.unregister(tool.name);
+    }
   }
 }
 
@@ -219,9 +306,9 @@ customToolsRoutes.post('/', async (c) => {
     requiredApiKeys: body.requiredApiKeys,
   });
 
-  // Register API dependencies in API Center
+  // Register config dependencies in Config Center
   if (body.requiredApiKeys?.length) {
-    await registerToolApiDependencies(tool.id, tool.name, body.requiredApiKeys);
+    await registerToolConfigRequirements(tool.name, tool.id, 'custom', body.requiredApiKeys);
   }
 
   // Sync to dynamic registry if active
@@ -296,11 +383,11 @@ customToolsRoutes.patch('/:id', async (c) => {
     });
   }
 
-  // Re-register API dependencies if changed
+  // Re-register config dependencies if changed
   if (body.requiredApiKeys !== undefined) {
     await unregisterDependencies(id);
     if (body.requiredApiKeys?.length) {
-      await registerToolApiDependencies(id, tool.name, body.requiredApiKeys);
+      await registerToolConfigRequirements(tool.name, id, 'custom', body.requiredApiKeys);
     }
   }
 
@@ -333,6 +420,9 @@ customToolsRoutes.delete('/:id', async (c) => {
   const tool = await repo.get(id);
   if (tool) {
     dynamicRegistry.unregister(tool.name);
+    if (_sharedRegistry?.has(tool.name)) {
+      _sharedRegistry.unregister(tool.name);
+    }
   }
 
   // Unregister API dependencies
@@ -529,11 +619,10 @@ customToolsRoutes.post('/:id/execute', async (c) => {
   syncToolToRegistry(tool);
 
   const startTime = Date.now();
-  const result = await dynamicRegistry.execute(
+  const result = await executeCustomToolUnified(
     tool.name,
     body.arguments ?? {},
     {
-      callId: `exec_${Date.now()}`,
       conversationId: 'direct-execution',
       userId: getUserId(c),
     }
@@ -795,7 +884,7 @@ export async function executeCustomToolTool(
 
         // Register config dependencies in Config Center
         if (requiredApiKeys?.length) {
-          await registerToolApiDependencies(tool.id, tool.name, requiredApiKeys);
+          await registerToolConfigRequirements(tool.name, tool.id, 'custom', requiredApiKeys);
         }
 
         // If pending approval, notify user
@@ -894,8 +983,11 @@ export async function executeCustomToolTool(
           };
         }
 
-        // Unregister from dynamic registry
+        // Unregister from both registries
         dynamicRegistry.unregister(name);
+        if (_sharedRegistry?.has(name)) {
+          _sharedRegistry.unregister(name);
+        }
 
         // Unregister API dependencies
         await unregisterDependencies(tool.id);
@@ -988,9 +1080,9 @@ export async function executeActiveCustomTool(
   syncToolToRegistry(tool);
 
   try {
-    // Execute the tool
-    const result = await dynamicRegistry.execute(toolName, params, {
-      callId: context?.callId ?? `exec_${Date.now()}`,
+    // Execute via shared registry (middleware, scoped config, events)
+    const result = await executeCustomToolUnified(toolName, params, {
+      callId: context?.callId,
       conversationId: context?.conversationId ?? 'agent-execution',
       userId,
     });

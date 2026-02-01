@@ -3,7 +3,7 @@
  */
 
 import type { PluginId, ToolId } from '../types/branded.js';
-import type { ApiServiceConfig, ConfigEntry } from '../services/config-center.js';
+import type { ApiServiceConfig, ConfigEntry, ConfigFieldDefinition } from '../services/config-center.js';
 
 /**
  * Supported AI providers (Updated January 2026)
@@ -137,6 +137,45 @@ export interface Conversation {
 /**
  * Tool definition for function calling
  */
+
+/**
+ * Where a tool originated from
+ */
+export type ToolSource = 'core' | 'gateway' | 'plugin' | 'custom' | 'dynamic';
+
+/**
+ * Security/trust level derived from tool source
+ * - trusted: Core and gateway tools with full access
+ * - semi-trusted: Plugin tools with scoped config access
+ * - sandboxed: Custom/dynamic tools with sandboxed execution and scoped config access
+ */
+export type ToolTrustLevel = 'trusted' | 'semi-trusted' | 'sandboxed';
+
+/**
+ * Unified declaration of a Config Center service dependency.
+ * Used by ALL tool sources (core, custom, plugin) to declare what
+ * config they need. Auto-registered with Config Center on tool registration.
+ */
+export interface ToolConfigRequirement {
+  /** Config Center service name (lookup key, e.g. 'openweathermap', 'smtp') */
+  readonly name: string;
+  /** Human-readable display name (used if service doesn't exist yet) */
+  readonly displayName?: string;
+  /** Description of what this service provides */
+  readonly description?: string;
+  /** Category for UI grouping (e.g. 'weather', 'email', 'ai') */
+  readonly category?: string;
+  /** Documentation/signup URL */
+  readonly docsUrl?: string;
+  /** Whether the service supports multiple config entries (e.g. multiple email accounts) */
+  readonly multiEntry?: boolean;
+  /**
+   * Schema to auto-register if the service doesn't exist in Config Center.
+   * If omitted, a default schema with api_key + base_url fields is assumed.
+   */
+  readonly configSchema?: readonly ConfigFieldDefinition[];
+}
+
 export interface ToolDefinition {
   /** Tool name (unique identifier) */
   readonly name: string;
@@ -154,6 +193,8 @@ export interface ToolDefinition {
   readonly category?: string;
   /** Hidden search tags for tool discovery via search_tools. Not sent to LLM API. */
   readonly tags?: readonly string[];
+  /** Config Center services this tool depends on. Auto-registered on tool registration. */
+  readonly configRequirements?: readonly ToolConfigRequirement[];
 }
 
 /**
@@ -194,6 +235,10 @@ export interface ToolContext {
   readonly signal?: AbortSignal;
   /** Workspace directory for file operations (overrides WORKSPACE_DIR) */
   readonly workspaceDir?: string;
+  /** Tool source for source-aware middleware */
+  readonly source?: ToolSource;
+  /** Tool trust level for security decisions */
+  readonly trustLevel?: ToolTrustLevel;
   /** Get API key for a named service from Config Center (returns undefined if not configured) */
   readonly getApiKey?: (serviceName: string) => string | undefined;
   /** Get full service config from Config Center (returns null if service not found) */
@@ -226,6 +271,14 @@ export interface RegisteredTool {
   readonly definition: ToolDefinition;
   executor: ToolExecutor;  // Mutable to allow executor overrides
   readonly pluginId?: PluginId;
+  /** Where this tool originated from */
+  readonly source: ToolSource;
+  /** Security/trust level derived from source */
+  readonly trustLevel: ToolTrustLevel;
+  /** Custom tool DB ID (if source is 'custom') */
+  readonly customToolId?: string;
+  /** Provider name (e.g. 'memory', 'weather-plugin') */
+  readonly providerName?: string;
 }
 
 /**
@@ -236,6 +289,12 @@ export interface RegisteredTool {
 export interface ToolProvider {
   /** Provider name (e.g. 'memory', 'goal', 'custom-data') */
   readonly name: string;
+  /** Tool source for all tools from this provider */
+  readonly source?: ToolSource;
+  /** Trust level for all tools from this provider */
+  readonly trustLevel?: ToolTrustLevel;
+  /** Plugin ID if this provider represents a plugin */
+  readonly pluginId?: PluginId;
 
   /** Return all tool definitions with their executors. */
   getTools(): Array<{ definition: ToolDefinition; executor: ToolExecutor }>;
@@ -249,6 +308,12 @@ export interface ToolMiddlewareContext {
   args: Record<string, unknown>;
   conversationId?: string;
   userId?: string;
+  /** Tool source for source-aware middleware decisions */
+  readonly source?: ToolSource;
+  /** Tool trust level for security decisions */
+  readonly trustLevel?: ToolTrustLevel;
+  /** Plugin ID (if from a plugin) */
+  readonly pluginId?: string;
 }
 
 /**

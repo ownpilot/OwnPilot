@@ -5,6 +5,42 @@
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 
+// Config requirements for vector search tools
+const OPENAI_EMBEDDING_CONFIG = {
+  name: 'openai',
+  displayName: 'OpenAI',
+  category: 'ai',
+  description: 'OpenAI API for text embeddings',
+  docsUrl: 'https://platform.openai.com/docs/api-reference/embeddings',
+  configSchema: [
+    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'OPENAI_API_KEY' },
+  ],
+} as const;
+
+const PINECONE_CONFIG = {
+  name: 'pinecone',
+  displayName: 'Pinecone',
+  category: 'vector-db',
+  description: 'Pinecone vector database for semantic search',
+  docsUrl: 'https://docs.pinecone.io',
+  configSchema: [
+    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'PINECONE_API_KEY' },
+    { name: 'environment', label: 'Environment', type: 'string' as const, required: false, envVar: 'PINECONE_ENVIRONMENT' },
+  ],
+} as const;
+
+const QDRANT_CONFIG = {
+  name: 'qdrant',
+  displayName: 'Qdrant',
+  category: 'vector-db',
+  description: 'Qdrant vector database for semantic search',
+  docsUrl: 'https://qdrant.tech/documentation',
+  configSchema: [
+    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: false, envVar: 'QDRANT_API_KEY' },
+    { name: 'url', label: 'Server URL', type: 'string' as const, required: true, envVar: 'QDRANT_URL', defaultValue: 'http://localhost:6333' },
+  ],
+} as const;
+
 // ============================================================================
 // CREATE EMBEDDING TOOL
 // ============================================================================
@@ -36,6 +72,7 @@ export const createEmbeddingTool: ToolDefinition = {
     },
     required: [],
   },
+  configRequirements: [OPENAI_EMBEDDING_CONFIG],
 };
 
 export const createEmbeddingExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -129,6 +166,7 @@ export const semanticSearchTool: ToolDefinition = {
     },
     required: ['query', 'collection'],
   },
+  configRequirements: [OPENAI_EMBEDDING_CONFIG, PINECONE_CONFIG, QDRANT_CONFIG],
 };
 
 export const semanticSearchExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -210,6 +248,7 @@ export const upsertVectorsTool: ToolDefinition = {
     },
     required: ['collection'],
   },
+  configRequirements: [OPENAI_EMBEDDING_CONFIG, PINECONE_CONFIG, QDRANT_CONFIG],
 };
 
 export const upsertVectorsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -290,6 +329,7 @@ export const deleteVectorsTool: ToolDefinition = {
     },
     required: ['collection'],
   },
+  configRequirements: [PINECONE_CONFIG, QDRANT_CONFIG],
 };
 
 export const deleteVectorsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -349,6 +389,7 @@ export const listCollectionsTool: ToolDefinition = {
     },
     required: [],
   },
+  configRequirements: [PINECONE_CONFIG, QDRANT_CONFIG],
 };
 
 export const listCollectionsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -394,6 +435,7 @@ export const createCollectionTool: ToolDefinition = {
     },
     required: ['name', 'dimensions'],
   },
+  configRequirements: [PINECONE_CONFIG, QDRANT_CONFIG],
 };
 
 export const createCollectionExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -468,6 +510,7 @@ export const similarityScoreTool: ToolDefinition = {
     },
     required: [],
   },
+  configRequirements: [OPENAI_EMBEDDING_CONFIG],
 };
 
 export const similarityScoreExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {

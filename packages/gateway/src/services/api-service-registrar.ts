@@ -7,9 +7,9 @@
  */
 
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import type { ConfigServiceRequiredBy, ConfigFieldDefinition } from '@ownpilot/core';
+import type { ConfigServiceRequiredBy, ConfigFieldDefinition, ToolSource, ToolConfigRequirement } from '@ownpilot/core';
 
-/** Legacy format (from requiredApiKeys) */
+/** @deprecated Use ToolConfigRequirement from @ownpilot/core instead */
 interface RequiredKeyInput {
   name: string;
   displayName?: string;
@@ -19,7 +19,7 @@ interface RequiredKeyInput {
   envVarName?: string;
 }
 
-/** New format (from requiredConfigs) — includes optional schema */
+/** @deprecated Use ToolConfigRequirement from @ownpilot/core instead */
 interface RequiredConfigInput {
   name: string;
   displayName?: string;
@@ -30,59 +30,82 @@ interface RequiredConfigInput {
   configSchema?: ConfigFieldDefinition[];
 }
 
+// ---------------------------------------------------------------------------
+// Unified registration function
+// ---------------------------------------------------------------------------
+
 /**
- * Register config service dependencies for a custom tool.
- * Upserts each required service and adds the tool to its `required_by` list.
+ * Unified config service registration for ALL tool sources (core, custom, plugin).
+ * Auto-registers each required service in the Config Center and tracks the dependency.
  *
- * Accepts both legacy RequiredKeyInput (from requiredApiKeys) and
- * new RequiredConfigInput (from requiredConfigs) formats.
+ * This is the single entry point called by ToolRegistry's config registration handler.
+ */
+export async function registerToolConfigRequirements(
+  toolName: string,
+  toolId: string,
+  source: ToolSource,
+  requirements: readonly ToolConfigRequirement[],
+): Promise<void> {
+  const dependentType = source === 'plugin' ? 'plugin' : 'tool';
+  const dependent: ConfigServiceRequiredBy = { type: dependentType, name: toolName, id: toolId };
+
+  for (const req of requirements) {
+    await configServicesRepo.upsert({
+      name: req.name,
+      displayName: req.displayName ?? req.name,
+      category: req.category ?? 'general',
+      description: req.description,
+      docsUrl: req.docsUrl,
+      multiEntry: req.multiEntry,
+      configSchema: req.configSchema as ConfigFieldDefinition[] | undefined,
+    });
+
+    await configServicesRepo.addRequiredBy(req.name, dependent);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Deprecated wrappers (for existing callers — will be removed in next version)
+// ---------------------------------------------------------------------------
+
+/**
+ * @deprecated Use registerToolConfigRequirements instead.
  */
 export async function registerToolApiDependencies(
   toolId: string,
   toolName: string,
-  requiredKeys: (RequiredKeyInput | RequiredConfigInput)[]
+  requiredKeys: (RequiredKeyInput | RequiredConfigInput)[],
 ): Promise<void> {
-  const dependent: ConfigServiceRequiredBy = { type: 'tool', name: toolName, id: toolId };
-
-  for (const key of requiredKeys) {
-    await configServicesRepo.upsert({
-      name: key.name,
-      displayName: key.displayName ?? key.name,
-      category: key.category ?? 'general',
-      description: key.description,
-      docsUrl: key.docsUrl,
-      multiEntry: 'multiEntry' in key ? key.multiEntry : undefined,
-      configSchema: 'configSchema' in key ? key.configSchema : undefined,
-    });
-
-    await configServicesRepo.addRequiredBy(key.name, dependent);
-  }
+  const requirements: ToolConfigRequirement[] = requiredKeys.map(key => ({
+    name: key.name,
+    displayName: key.displayName,
+    description: key.description,
+    category: key.category,
+    docsUrl: key.docsUrl,
+    multiEntry: 'multiEntry' in key ? key.multiEntry : undefined,
+    configSchema: 'configSchema' in key ? key.configSchema : undefined,
+  }));
+  await registerToolConfigRequirements(toolName, toolId, 'custom', requirements);
 }
 
 /**
- * Register config service dependencies for a plugin.
- * Upserts each required service and adds the plugin to its `required_by` list.
+ * @deprecated Use registerToolConfigRequirements instead.
  */
 export async function registerPluginApiDependencies(
   pluginId: string,
   pluginName: string,
-  requiredServices: (RequiredKeyInput | RequiredConfigInput)[]
+  requiredServices: (RequiredKeyInput | RequiredConfigInput)[],
 ): Promise<void> {
-  const dependent: ConfigServiceRequiredBy = { type: 'plugin', name: pluginName, id: pluginId };
-
-  for (const svc of requiredServices) {
-    await configServicesRepo.upsert({
-      name: svc.name,
-      displayName: svc.displayName ?? svc.name,
-      category: svc.category ?? 'general',
-      description: svc.description,
-      docsUrl: svc.docsUrl,
-      multiEntry: 'multiEntry' in svc ? svc.multiEntry : undefined,
-      configSchema: 'configSchema' in svc ? svc.configSchema : undefined,
-    });
-
-    await configServicesRepo.addRequiredBy(svc.name, dependent);
-  }
+  const requirements: ToolConfigRequirement[] = requiredServices.map(svc => ({
+    name: svc.name,
+    displayName: svc.displayName,
+    description: svc.description,
+    category: svc.category,
+    docsUrl: svc.docsUrl,
+    multiEntry: 'multiEntry' in svc ? svc.multiEntry : undefined,
+    configSchema: 'configSchema' in svc ? svc.configSchema : undefined,
+  }));
+  await registerToolConfigRequirements(pluginName, pluginId, 'plugin', requirements);
 }
 
 /**

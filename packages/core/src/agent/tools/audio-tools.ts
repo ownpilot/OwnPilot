@@ -12,6 +12,29 @@ const SUPPORTED_OUTPUT_FORMATS = ['mp3', 'opus', 'aac', 'flac', 'wav', 'pcm'];
 // Maximum file size for audio (25MB for Whisper API)
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
 
+// Config requirements for audio tools
+const OPENAI_AUDIO_CONFIG = {
+  name: 'openai',
+  displayName: 'OpenAI',
+  category: 'ai',
+  description: 'OpenAI API for TTS and Whisper speech-to-text',
+  docsUrl: 'https://platform.openai.com/docs/api-reference/audio',
+  configSchema: [
+    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'OPENAI_API_KEY' },
+  ],
+} as const;
+
+const ELEVENLABS_CONFIG = {
+  name: 'elevenlabs',
+  displayName: 'ElevenLabs',
+  category: 'audio',
+  description: 'ElevenLabs API for high-quality text-to-speech',
+  docsUrl: 'https://elevenlabs.io/docs/api-reference',
+  configSchema: [
+    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'ELEVENLABS_API_KEY' },
+  ],
+} as const;
+
 // ============================================================================
 // TEXT TO SPEECH TOOL
 // ============================================================================
@@ -52,6 +75,7 @@ export const textToSpeechTool: ToolDefinition = {
     },
     required: ['text'],
   },
+  configRequirements: [OPENAI_AUDIO_CONFIG, ELEVENLABS_CONFIG],
 };
 
 export const textToSpeechExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -165,6 +189,7 @@ export const speechToTextTool: ToolDefinition = {
     },
     required: ['source'],
   },
+  configRequirements: [OPENAI_AUDIO_CONFIG],
 };
 
 export const speechToTextExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -300,6 +325,7 @@ export const translateAudioTool: ToolDefinition = {
     },
     required: ['source'],
   },
+  configRequirements: [OPENAI_AUDIO_CONFIG],
 };
 
 export const translateAudioExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {

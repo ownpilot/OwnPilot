@@ -9,6 +9,38 @@ import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools
 // SEND EMAIL TOOL
 // ============================================================================
 
+// Shared config requirements for email tools
+const SMTP_CONFIG_REQUIREMENT = {
+  name: 'smtp',
+  displayName: 'SMTP Server',
+  category: 'email',
+  description: 'SMTP server configuration for sending emails',
+  multiEntry: true,
+  configSchema: [
+    { name: 'host', label: 'SMTP Host', type: 'string' as const, required: true, envVar: 'SMTP_HOST' },
+    { name: 'port', label: 'SMTP Port', type: 'string' as const, required: true, envVar: 'SMTP_PORT', defaultValue: '587' },
+    { name: 'user', label: 'Username', type: 'string' as const, required: true, envVar: 'SMTP_USER' },
+    { name: 'pass', label: 'Password', type: 'secret' as const, required: true, envVar: 'SMTP_PASS' },
+    { name: 'from', label: 'From Address', type: 'string' as const, required: false, envVar: 'SMTP_FROM' },
+    { name: 'secure', label: 'Use TLS', type: 'string' as const, required: false, defaultValue: 'true' },
+  ],
+} as const;
+
+const IMAP_CONFIG_REQUIREMENT = {
+  name: 'imap',
+  displayName: 'IMAP Server',
+  category: 'email',
+  description: 'IMAP server configuration for reading emails',
+  multiEntry: true,
+  configSchema: [
+    { name: 'host', label: 'IMAP Host', type: 'string' as const, required: true, envVar: 'IMAP_HOST' },
+    { name: 'port', label: 'IMAP Port', type: 'string' as const, required: true, envVar: 'IMAP_PORT', defaultValue: '993' },
+    { name: 'user', label: 'Username', type: 'string' as const, required: true, envVar: 'IMAP_USER' },
+    { name: 'pass', label: 'Password', type: 'secret' as const, required: true, envVar: 'IMAP_PASS' },
+    { name: 'tls', label: 'Use TLS', type: 'string' as const, required: false, defaultValue: 'true' },
+  ],
+} as const;
+
 export const sendEmailTool: ToolDefinition = {
   name: 'send_email',
   description: 'Send an email using configured SMTP server. Supports HTML content, attachments, and CC/BCC.',
@@ -59,6 +91,7 @@ export const sendEmailTool: ToolDefinition = {
     },
     required: ['to', 'subject', 'body'],
   },
+  configRequirements: [SMTP_CONFIG_REQUIREMENT],
 };
 
 export const sendEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -228,6 +261,7 @@ export const listEmailsTool: ToolDefinition = {
     },
     required: [],
   },
+  configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
 export const listEmailsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -315,6 +349,7 @@ export const readEmailTool: ToolDefinition = {
     },
     required: ['id'],
   },
+  configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
 export const readEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -366,6 +401,7 @@ export const deleteEmailTool: ToolDefinition = {
     },
     required: ['id'],
   },
+  configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
 export const deleteEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -422,6 +458,7 @@ export const searchEmailsTool: ToolDefinition = {
     },
     required: ['query'],
   },
+  configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
 export const searchEmailsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -482,6 +519,7 @@ export const replyEmailTool: ToolDefinition = {
     },
     required: ['id', 'body'],
   },
+  configRequirements: [SMTP_CONFIG_REQUIREMENT, IMAP_CONFIG_REQUIREMENT],
 };
 
 export const replyEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {

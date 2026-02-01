@@ -70,7 +70,29 @@ export const getWeatherTool: ToolDefinition = {
     },
     required: ['location'],
   },
-};
+  configRequirements: [
+    {
+      name: 'openweathermap',
+      displayName: 'OpenWeatherMap',
+      description: 'Weather data provider (primary)',
+      category: 'weather',
+      docsUrl: 'https://openweathermap.org/api',
+      configSchema: [
+        { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'OPENWEATHERMAP_API_KEY' },
+      ],
+    },
+    {
+      name: 'weatherapi',
+      displayName: 'WeatherAPI',
+      description: 'Weather data provider (fallback)',
+      category: 'weather',
+      docsUrl: 'https://www.weatherapi.com/',
+      configSchema: [
+        { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'WEATHERAPI_KEY' },
+      ],
+    },
+  ],
+};;
 
 export const getWeatherExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
   const location = params.location as string;
@@ -150,7 +172,29 @@ export const getWeatherForecastTool: ToolDefinition = {
     },
     required: ['location'],
   },
-};
+  configRequirements: [
+    {
+      name: 'openweathermap',
+      displayName: 'OpenWeatherMap',
+      description: 'Weather data provider (primary)',
+      category: 'weather',
+      docsUrl: 'https://openweathermap.org/api',
+      configSchema: [
+        { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'OPENWEATHERMAP_API_KEY' },
+      ],
+    },
+    {
+      name: 'weatherapi',
+      displayName: 'WeatherAPI',
+      description: 'Weather data provider (fallback)',
+      category: 'weather',
+      docsUrl: 'https://www.weatherapi.com/',
+      configSchema: [
+        { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'WEATHERAPI_KEY' },
+      ],
+    },
+  ],
+};;
 
 export const getWeatherForecastExecutor: ToolExecutor = async (
   params,

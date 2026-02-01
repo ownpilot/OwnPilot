@@ -11,6 +11,29 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 // Supported image formats
 const SUPPORTED_FORMATS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
 
+// Config requirements for image tools
+const OPENAI_IMAGE_CONFIG = {
+  name: 'openai',
+  displayName: 'OpenAI',
+  category: 'ai',
+  description: 'OpenAI API for image analysis (Vision) and generation (DALL-E)',
+  docsUrl: 'https://platform.openai.com/docs/api-reference',
+  configSchema: [
+    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'OPENAI_API_KEY' },
+  ],
+} as const;
+
+const STABILITY_IMAGE_CONFIG = {
+  name: 'stability',
+  displayName: 'Stability AI',
+  category: 'ai',
+  description: 'Stability AI API for image generation (Stable Diffusion)',
+  docsUrl: 'https://platform.stability.ai/docs/api-reference',
+  configSchema: [
+    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'STABILITY_API_KEY' },
+  ],
+} as const;
+
 // ============================================================================
 // ANALYZE IMAGE TOOL
 // ============================================================================
@@ -46,6 +69,7 @@ export const analyzeImageTool: ToolDefinition = {
     },
     required: ['source'],
   },
+  configRequirements: [OPENAI_IMAGE_CONFIG],
 };
 
 export const analyzeImageExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -222,6 +246,7 @@ export const generateImageTool: ToolDefinition = {
     },
     required: ['prompt'],
   },
+  configRequirements: [OPENAI_IMAGE_CONFIG, STABILITY_IMAGE_CONFIG],
 };
 
 export const generateImageExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -314,6 +339,7 @@ export const editImageTool: ToolDefinition = {
     },
     required: ['source', 'prompt'],
   },
+  configRequirements: [OPENAI_IMAGE_CONFIG],
 };
 
 export const editImageExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -376,6 +402,7 @@ export const imageVariationTool: ToolDefinition = {
     },
     required: ['source'],
   },
+  configRequirements: [OPENAI_IMAGE_CONFIG],
 };
 
 export const imageVariationExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {

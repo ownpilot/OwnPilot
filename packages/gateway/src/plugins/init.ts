@@ -21,7 +21,7 @@ import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getCustomDataService } from '../services/custom-data-service.js';
 import { pomodoroRepo } from '../db/repositories/pomodoro.js';
-import { registerPluginApiDependencies } from '../services/api-service-registrar.js';
+import { registerToolConfigRequirements } from '../services/api-service-registrar.js';
 
 // =============================================================================
 // Types
@@ -2655,9 +2655,10 @@ export async function initializePlugins(): Promise<void> {
 
       // 2. Register required services in Config Center
       if (manifest.requiredServices?.length) {
-        await registerPluginApiDependencies(
-          manifest.id,
+        await registerToolConfigRequirements(
           manifest.name,
+          manifest.id,
+          'plugin',
           manifest.requiredServices,
         );
       }

@@ -66,7 +66,9 @@ export interface AgentStepData {
 
 // --- Tool events ---
 
-export type ToolSource = 'core' | 'gateway' | 'plugin' | 'dynamic';
+import type { ToolSource } from '../agent/types.js';
+
+export type { ToolSource };
 
 export interface ToolRegisteredData {
   name: string;
