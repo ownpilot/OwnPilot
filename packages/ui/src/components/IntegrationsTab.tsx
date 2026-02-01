@@ -1,35 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useDialog } from './ConfirmDialog';
 import { Check, AlertCircle, ExternalLink, Trash2, RefreshCw, Link, Unlink } from './icons';
+import { integrationsApi, authApi } from '../api';
 
-interface Integration {
-  id: string;
-  provider: string;
-  service: string;
-  email?: string;
-  status: 'active' | 'expired' | 'revoked' | 'error';
-  scopes: string[];
-  lastSyncAt?: string;
-  errorMessage?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface AvailableIntegration {
-  provider: string;
-  service: string;
-  name: string;
-  description: string;
-  icon: string;
-  requiredConfig: string[];
-  isConfigured: boolean;
-}
-
-interface OAuthConfig {
-  clientId: string;
-  clientSecret: string;
-  redirectUri?: string;
-}
+import type { Integration, AvailableIntegration, OAuthConfig } from '../types';
 
 export function IntegrationsTab() {
   const { confirm } = useDialog();
@@ -57,20 +31,12 @@ export function IntegrationsTab() {
 
   const loadData = async () => {
     try {
-      const [integrationsRes, availableRes] = await Promise.all([
-        fetch('/api/v1/integrations'),
-        fetch('/api/v1/integrations/available'),
+      const [integrationsList, availableList] = await Promise.all([
+        integrationsApi.list(),
+        integrationsApi.available(),
       ]);
-
-      const integrationsData = await integrationsRes.json();
-      if (integrationsData.success) {
-        setIntegrations(integrationsData.data);
-      }
-
-      const availableData = await availableRes.json();
-      if (availableData.success) {
-        setAvailable(availableData.data);
-      }
+      setIntegrations(integrationsList);
+      setAvailable(availableList);
     } catch (err) {
       console.error('Failed to load integrations:', err);
       setError('Failed to load integrations');
@@ -81,11 +47,8 @@ export function IntegrationsTab() {
 
   const checkOAuthStatus = async () => {
     try {
-      const res = await fetch('/api/v1/auth/status');
-      const data = await res.json();
-      if (data.success) {
-        setConfigStatus(data.data.google);
-      }
+      const data = await authApi.status();
+      setConfigStatus(data.google);
     } catch (err) {
       console.error('Failed to check OAuth status:', err);
     }
@@ -93,8 +56,8 @@ export function IntegrationsTab() {
 
   const handleConnect = (provider: string, service: string) => {
     // Redirect to OAuth flow
-    const returnUrl = encodeURIComponent(window.location.pathname + '?tab=integrations');
-    window.location.href = `/api/v1/auth/${provider}/start?service=${service}&returnUrl=${returnUrl}`;
+    const returnUrl = window.location.pathname + '?tab=integrations';
+    window.location.href = authApi.startUrl(provider, service, returnUrl);
   };
 
   const handleDisconnect = async (integrationId: string) => {
@@ -103,36 +66,20 @@ export function IntegrationsTab() {
     }
 
     try {
-      const res = await fetch(`/api/v1/integrations/${integrationId}`, {
-        method: 'DELETE',
-      });
-
-      if (res.ok) {
-        setIntegrations((prev) => prev.filter((i) => i.id !== integrationId));
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to disconnect');
-      }
+      await integrationsApi.delete(integrationId);
+      setIntegrations((prev) => prev.filter((i) => i.id !== integrationId));
     } catch (err) {
-      setError('Failed to disconnect integration');
+      setError(err instanceof Error ? err.message : 'Failed to disconnect integration');
     }
   };
 
   const handleSync = async (integrationId: string) => {
     setSyncingId(integrationId);
     try {
-      const res = await fetch(`/api/v1/integrations/${integrationId}/sync`, {
-        method: 'POST',
-      });
-
-      if (res.ok) {
-        await loadData();
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Sync failed');
-      }
+      await integrationsApi.sync(integrationId);
+      await loadData();
     } catch (err) {
-      setError('Failed to sync integration');
+      setError(err instanceof Error ? err.message : 'Failed to sync integration');
     } finally {
       setSyncingId(null);
     }
@@ -146,23 +93,13 @@ export function IntegrationsTab() {
 
     setIsSavingConfig(true);
     try {
-      const res = await fetch('/api/v1/auth/config/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(oauthConfig),
-      });
-
-      if (res.ok) {
-        setShowConfig(false);
-        setOauthConfig({ clientId: '', clientSecret: '', redirectUri: '' });
-        await checkOAuthStatus();
-        await loadData();
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to save configuration');
-      }
+      await authApi.saveGoogleConfig(oauthConfig);
+      setShowConfig(false);
+      setOauthConfig({ clientId: '', clientSecret: '', redirectUri: '' });
+      await checkOAuthStatus();
+      await loadData();
     } catch (err) {
-      setError('Failed to save OAuth configuration');
+      setError(err instanceof Error ? err.message : 'Failed to save OAuth configuration');
     } finally {
       setIsSavingConfig(false);
     }
@@ -174,19 +111,11 @@ export function IntegrationsTab() {
     }
 
     try {
-      const res = await fetch('/api/v1/auth/config/google', {
-        method: 'DELETE',
-      });
-
-      if (res.ok) {
-        await checkOAuthStatus();
-        await loadData();
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to remove configuration');
-      }
+      await authApi.deleteGoogleConfig();
+      await checkOAuthStatus();
+      await loadData();
     } catch (err) {
-      setError('Failed to remove OAuth configuration');
+      setError(err instanceof Error ? err.message : 'Failed to remove OAuth configuration');
     }
   };
 

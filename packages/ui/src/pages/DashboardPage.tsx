@@ -14,39 +14,11 @@ import {
 import { AIBriefingCard } from '../components/AIBriefingCard';
 import { TimelineView } from '../components/TimelineView';
 
-interface Summary {
-  tasks: {
-    total: number;
-    pending: number;
-    completed: number;
-    overdue: number;
-  };
-  notes: {
-    total: number;
-    recent: number;
-  };
-  bookmarks: {
-    total: number;
-    favorites: number;
-  };
-  calendar: {
-    today: number;
-    upcoming: number;
-  };
-  contacts: {
-    total: number;
-    favorites: number;
-  };
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
+import { summaryApi } from '../api';
+import type { SummaryData } from '../types';
 
 export function DashboardPage() {
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [summary, setSummary] = useState<SummaryData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -55,13 +27,8 @@ export function DashboardPage() {
 
   const fetchSummary = async () => {
     try {
-      const response = await fetch('/api/v1/summary');
-      const data: ApiResponse<Summary> = await response.json();
-      if (data.success && data.data) {
-        setSummary(data.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch summary:', err);
+      const data = await summaryApi.get();
+      setSummary(data);
     } finally {
       setIsLoading(false);
     }

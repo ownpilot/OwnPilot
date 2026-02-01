@@ -10,6 +10,7 @@ import {
   Edit,
 } from './icons';
 import { CodeBlock } from './CodeBlock';
+import { toolsApi } from '../api';
 
 interface FileItem {
   name: string;
@@ -44,18 +45,12 @@ export function FileBrowser({ initialPath = '~', onFileSelect, onFileOpen }: Fil
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/v1/tools/list_directory/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          arguments: { path, recursive: false },
-        }),
-      });
-      const data = await response.json();
-      if (data.success && data.data?.result?.files) {
-        setFiles(data.data.result.files);
+      const data = await toolsApi.execute('list_directory', { path, recursive: false }) as Record<string, unknown>;
+      const result = data?.result as Record<string, unknown> | undefined;
+      if (result?.files) {
+        setFiles(result.files as FileItem[]);
       } else {
-        setError(data.data?.result?.error || 'Failed to load directory');
+        setError((result?.error as string) || 'Failed to load directory');
       }
     } catch (err) {
       setError('Failed to connect to server');
@@ -69,17 +64,11 @@ export function FileBrowser({ initialPath = '~', onFileSelect, onFileOpen }: Fil
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/v1/tools/read_file/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          arguments: { path: file.path },
-        }),
-      });
-      const data = await response.json();
-      if (data.success && data.data?.result?.content !== undefined) {
-        setFileContent(data.data.result.content);
-        onFileOpen?.(file, data.data.result.content);
+      const data = await toolsApi.execute('read_file', { path: file.path }) as Record<string, unknown>;
+      const result = data?.result as Record<string, unknown> | undefined;
+      if (result?.content !== undefined) {
+        setFileContent(result.content as string);
+        onFileOpen?.(file, result.content as string);
       }
     } catch (err) {
       console.error('Failed to read file:', err);

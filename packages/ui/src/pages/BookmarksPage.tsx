@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Bookmark, Plus, Trash2, Star, ExternalLink, Search, Folder } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { bookmarksApi } from '../api';
 
 interface BookmarkItem {
   id: string;
@@ -15,11 +16,6 @@ interface BookmarkItem {
   updatedAt: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
 
 export function BookmarksPage() {
   const { confirm } = useDialog();
@@ -33,16 +29,13 @@ export function BookmarksPage() {
 
   const fetchBookmarks = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append('search', searchQuery);
-      if (filter === 'favorites') params.append('favorite', 'true');
-      if (selectedFolder) params.append('folder', selectedFolder);
+      const params: Record<string, string> = {};
+      if (searchQuery) params.search = searchQuery;
+      if (filter === 'favorites') params.favorite = 'true';
+      if (selectedFolder) params.folder = selectedFolder;
 
-      const response = await fetch(`/api/v1/bookmarks?${params}`);
-      const data: ApiResponse<BookmarkItem[]> = await response.json();
-      if (data.success && data.data) {
-        setBookmarks(data.data);
-      }
+      const data = await bookmarksApi.list(params);
+      setBookmarks(data);
     } catch (err) {
       console.error('Failed to fetch bookmarks:', err);
     } finally {
@@ -58,13 +51,8 @@ export function BookmarksPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this bookmark?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`/api/v1/bookmarks/${bookmarkId}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchBookmarks();
-      }
+      await bookmarksApi.delete(bookmarkId);
+      fetchBookmarks();
     } catch (err) {
       console.error('Failed to delete bookmark:', err);
     }
@@ -72,13 +60,8 @@ export function BookmarksPage() {
 
   const handleToggleFavorite = async (bookmark: BookmarkItem) => {
     try {
-      const response = await fetch(`/api/v1/bookmarks/${bookmark.id}/favorite`, {
-        method: 'POST',
-      });
-      const data: ApiResponse<BookmarkItem> = await response.json();
-      if (data.success) {
-        fetchBookmarks();
-      }
+      await bookmarksApi.favorite(bookmark.id);
+      fetchBookmarks();
     } catch (err) {
       console.error('Failed to update bookmark:', err);
     }

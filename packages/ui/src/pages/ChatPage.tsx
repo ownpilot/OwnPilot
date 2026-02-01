@@ -6,56 +6,8 @@ import { WorkspaceSelector } from '../components/WorkspaceSelector';
 import { SetupWizard } from '../components/SetupWizard';
 import { useChatStore } from '../hooks/useChatStore';
 import { AlertCircle, Settings, Bot } from '../components/icons';
-
-interface ModelInfo {
-  id: string;
-  name: string;
-  provider: string;
-  description?: string;
-  recommended?: boolean;
-}
-
-interface ModelsResponse {
-  success: boolean;
-  data: {
-    models: ModelInfo[];
-    configuredProviders: string[];
-    availableProviders: string[];
-  };
-}
-
-interface ProviderInfo {
-  id: string;
-  name: string;
-}
-
-interface ProvidersResponse {
-  success: boolean;
-  data: {
-    providers: ProviderInfo[];
-  };
-}
-
-interface SettingsResponse {
-  success: boolean;
-  data: {
-    configuredProviders: string[];
-    defaultProvider: string | null;
-    defaultModel: string | null;
-  };
-}
-
-interface AgentInfo {
-  id: string;
-  name: string;
-  provider: string;
-  model: string;
-}
-
-interface AgentResponse {
-  success: boolean;
-  data: AgentInfo;
-}
+import { modelsApi, providersApi, settingsApi, agentsApi, chatApi } from '../api';
+import type { ModelInfo, AgentDetail } from '../types';
 
 export function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -85,7 +37,7 @@ export function ChatPage() {
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [providerNames, setProviderNames] = useState<Record<string, string>>({});
   const [isLoadingModels, setIsLoadingModels] = useState(true);
-  const [currentAgent, setCurrentAgent] = useState<AgentInfo | null>(null);
+  const [currentAgent, setCurrentAgent] = useState<AgentDetail | null>(null);
 
   // Fetch data on mount (only if provider not set - preserves state on navigation)
   useEffect(() => {
@@ -100,26 +52,18 @@ export function ChatPage() {
   // Fetch only models list (for dropdown) without changing provider/model
   const fetchModelsOnly = async () => {
     try {
-      const [modelsRes, providersRes] = await Promise.all([
-        fetch('/api/v1/models'),
-        fetch('/api/v1/providers'),
+      const [modelsData, providersData] = await Promise.all([
+        modelsApi.list(),
+        providersApi.list(),
       ]);
 
-      const modelsData: ModelsResponse = await modelsRes.json();
-      const providersData: ProvidersResponse = await providersRes.json();
-
-      if (providersData.success) {
-        const namesMap: Record<string, string> = {};
-        for (const p of providersData.data.providers) {
-          namesMap[p.id] = p.name;
-        }
-        setProviderNames(namesMap);
+      const namesMap: Record<string, string> = {};
+      for (const p of providersData.providers) {
+        namesMap[(p as { id: string }).id] = (p as { name: string }).name;
       }
-
-      if (modelsData.success) {
-        setModels(modelsData.data.models);
-        setConfiguredProviders(modelsData.data.configuredProviders);
-      }
+      setProviderNames(namesMap);
+      setModels(modelsData.models);
+      setConfiguredProviders(modelsData.configuredProviders);
     } catch (err) {
       console.error('Failed to fetch models:', err);
     } finally {
@@ -130,111 +74,98 @@ export function ChatPage() {
   const fetchData = async () => {
     try {
       // Fetch models, providers, and settings in parallel
-      const [modelsRes, providersRes, settingsRes] = await Promise.all([
-        fetch('/api/v1/models'),
-        fetch('/api/v1/providers'),
-        fetch('/api/v1/settings'),
+      const [modelsData, providersData, settingsData] = await Promise.all([
+        modelsApi.list(),
+        providersApi.list(),
+        settingsApi.get(),
       ]);
 
-      const modelsData: ModelsResponse = await modelsRes.json();
-      const providersData: ProvidersResponse = await providersRes.json();
-      const settingsData: SettingsResponse = await settingsRes.json();
-
       // Build provider names lookup
-      let namesMap: Record<string, string> = {};
-      if (providersData.success) {
-        for (const p of providersData.data.providers) {
-          namesMap[p.id] = p.name;
+      const namesMap: Record<string, string> = {};
+      for (const p of providersData.providers) {
+        namesMap[(p as { id: string }).id] = (p as { name: string }).name;
+      }
+      setProviderNames(namesMap);
+
+      setModels(modelsData.models);
+      setConfiguredProviders(modelsData.configuredProviders);
+
+      // Check URL params for agent/provider/model
+      const agentId = searchParams.get('agent');
+      const urlProvider = searchParams.get('provider');
+      const urlModel = searchParams.get('model');
+
+      // If agent is specified, fetch agent details
+      if (agentId) {
+        try {
+          const agentData = await agentsApi.get(agentId);
+          setCurrentAgent(agentData);
+          setAgentId(agentData.id); // Set agentId for chat requests
+
+          // Resolve "default" provider/model to actual values
+          let agentProvider = agentData.provider;
+          let agentModel = agentData.model;
+
+          // If provider is "default", use settings default or first configured
+          if (agentProvider === 'default') {
+            if (settingsData.defaultProvider &&
+                modelsData.configuredProviders.includes(settingsData.defaultProvider)) {
+              agentProvider = settingsData.defaultProvider;
+            } else if (modelsData.configuredProviders.length > 0) {
+              agentProvider = modelsData.configuredProviders[0];
+            }
+          }
+
+          // If model is "default", use settings default or first model of provider
+          if (agentModel === 'default') {
+            if (settingsData.defaultModel) {
+              agentModel = settingsData.defaultModel;
+            } else {
+              const firstModel = modelsData.models.find((m) => m.provider === agentProvider);
+              if (firstModel) agentModel = firstModel.id;
+            }
+          }
+
+          setProvider(agentProvider);
+          setModel(agentModel);
+          return; // Agent takes priority
+        } catch {
+          // Agent not found, continue with URL params or defaults
         }
-        setProviderNames(namesMap);
       }
 
-      if (modelsData.success) {
-        setModels(modelsData.data.models);
-        setConfiguredProviders(modelsData.data.configuredProviders);
-
-        // Check URL params for agent/provider/model
-        const agentId = searchParams.get('agent');
-        const urlProvider = searchParams.get('provider');
-        const urlModel = searchParams.get('model');
-
-        // If agent is specified, fetch agent details
-        if (agentId) {
-          try {
-            const agentRes = await fetch(`/api/v1/agents/${agentId}`);
-            const agentData: AgentResponse = await agentRes.json();
-            if (agentData.success && agentData.data) {
-              setCurrentAgent(agentData.data);
-              setAgentId(agentData.data.id); // Set agentId for chat requests
-
-              // Resolve "default" provider/model to actual values
-              let agentProvider = agentData.data.provider;
-              let agentModel = agentData.data.model;
-
-              // If provider is "default", use settings default or first configured
-              if (agentProvider === 'default') {
-                if (settingsData.success && settingsData.data.defaultProvider &&
-                    modelsData.data.configuredProviders.includes(settingsData.data.defaultProvider)) {
-                  agentProvider = settingsData.data.defaultProvider;
-                } else if (modelsData.data.configuredProviders.length > 0) {
-                  agentProvider = modelsData.data.configuredProviders[0];
-                }
-              }
-
-              // If model is "default", use settings default or first model of provider
-              if (agentModel === 'default') {
-                if (settingsData.success && settingsData.data.defaultModel) {
-                  agentModel = settingsData.data.defaultModel;
-                } else {
-                  const firstModel = modelsData.data.models.find((m) => m.provider === agentProvider);
-                  if (firstModel) agentModel = firstModel.id;
-                }
-              }
-
-              setProvider(agentProvider);
-              setModel(agentModel);
-              return; // Agent takes priority
-            }
-          } catch {
-            // Agent not found, continue with URL params or defaults
-          }
+      // Use URL params if provided
+      if (urlProvider && modelsData.configuredProviders.includes(urlProvider)) {
+        setProvider(urlProvider);
+        if (urlModel) {
+          setModel(urlModel);
+        } else {
+          // Set first model of provider
+          const firstModel = modelsData.models.find((m) => m.provider === urlProvider);
+          if (firstModel) setModel(firstModel.id);
         }
+        return;
+      }
 
-        // Use URL params if provided
-        if (urlProvider && modelsData.data.configuredProviders.includes(urlProvider)) {
-          setProvider(urlProvider);
-          if (urlModel) {
-            setModel(urlModel);
-          } else {
-            // Set first model of provider
-            const firstModel = modelsData.data.models.find((m) => m.provider === urlProvider);
-            if (firstModel) setModel(firstModel.id);
-          }
-          return;
+      // Use settings default if available
+      if (settingsData.defaultProvider && modelsData.configuredProviders.includes(settingsData.defaultProvider)) {
+        setProvider(settingsData.defaultProvider);
+        if (settingsData.defaultModel) {
+          setModel(settingsData.defaultModel);
+        } else {
+          const firstModel = modelsData.models.find((m) => m.provider === settingsData.defaultProvider);
+          if (firstModel) setModel(firstModel.id);
         }
+        return;
+      }
 
-        // Use settings default if available
-        if (settingsData.success) {
-          if (settingsData.data.defaultProvider && modelsData.data.configuredProviders.includes(settingsData.data.defaultProvider)) {
-            setProvider(settingsData.data.defaultProvider);
-            if (settingsData.data.defaultModel) {
-              setModel(settingsData.data.defaultModel);
-            } else {
-              const firstModel = modelsData.data.models.find((m) => m.provider === settingsData.data.defaultProvider);
-              if (firstModel) setModel(firstModel.id);
-            }
-            return;
-          }
-        }
-
-        // Fallback to first configured provider
-        if (modelsData.data.configuredProviders.length > 0) {
-          const firstProvider = modelsData.data.configuredProviders[0];
-          const firstModel = modelsData.data.models.find((m) => m.provider === firstProvider);
-          if (firstModel && !modelsData.data.configuredProviders.includes(provider)) {
-            setProvider(firstProvider);
-            setModel(firstModel.id);
-          }
+      // Fallback to first configured provider
+      if (modelsData.configuredProviders.length > 0) {
+        const firstProvider = modelsData.configuredProviders[0];
+        const firstModel = modelsData.models.find((m) => m.provider === firstProvider);
+        if (firstModel && !modelsData.configuredProviders.includes(provider)) {
+          setProvider(firstProvider);
+          setModel(firstModel.id);
         }
       }
     } catch (err) {
@@ -280,11 +211,7 @@ export function ChatPage() {
 
     // Reset backend context for fresh conversation
     try {
-      await fetch('/api/v1/chat/reset-context', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, model }),
-      });
+      await chatApi.resetContext(provider, model);
     } catch {
       // Ignore errors - context reset is best-effort
     }

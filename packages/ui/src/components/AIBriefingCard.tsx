@@ -10,6 +10,8 @@ import {
   Target,
   Settings,
 } from './icons';
+import { providersApi } from '../api';
+import type { ProviderInfo } from '../types';
 
 interface AIBriefing {
   id: string;
@@ -23,43 +25,11 @@ interface AIBriefing {
   cached: boolean;
 }
 
-interface BriefingResponse {
-  success: boolean;
-  data?: {
-    aiBriefing: AIBriefing | null;
-    cached?: boolean;
-    error?: string;
-  };
-  error?: { message: string };
-}
-
 interface ProviderModel {
   provider: string;
   providerName: string;
   model: string;
   modelName: string;
-}
-
-interface ProvidersListResponse {
-  success: boolean;
-  data?: {
-    providers: Array<{
-      id: string;
-      name: string;
-      isConfigured: boolean;
-      isEnabled: boolean;
-    }>;
-  };
-}
-
-interface ProviderModelsResponse {
-  success: boolean;
-  data?: {
-    provider: string;
-    providerName: string;
-    models: Array<{ id: string; name: string }>;
-    isConfigured: boolean;
-  };
 }
 
 const STORAGE_KEY = 'briefing-model-preference';
@@ -101,16 +71,15 @@ export function AIBriefingCard() {
     const fetchProvidersAndModels = async () => {
       try {
         // Step 1: Get list of all providers
-        const providersRes = await fetch('/api/v1/providers');
-        const providersData: ProvidersListResponse = await providersRes.json();
+        const providersData = await providersApi.list();
 
-        if (!providersData.success || !providersData.data?.providers) {
+        if (!providersData?.providers) {
           console.error('Failed to fetch providers list');
           return;
         }
 
         // Filter to only configured and enabled providers
-        const configuredProviders = providersData.data.providers.filter(
+        const configuredProviders = (providersData.providers as ProviderInfo[]).filter(
           p => p.isConfigured && p.isEnabled
         );
 
@@ -122,12 +91,13 @@ export function AIBriefingCard() {
         // Step 2: Fetch models for each configured provider (in parallel)
         const modelPromises = configuredProviders.map(async (provider) => {
           try {
+            // TODO: migrate to providersApi.models(provider.id) once endpoint is added
             const modelsRes = await fetch(`/api/v1/providers/${provider.id}/models`);
-            const modelsData: ProviderModelsResponse = await modelsRes.json();
+            const modelsData = await modelsRes.json();
 
             if (modelsData.success && modelsData.data?.models) {
               // Take first 5 models per provider for briefing dropdown
-              return modelsData.data.models.slice(0, 5).map(model => ({
+              return modelsData.data.models.slice(0, 5).map((model: { id: string; name: string }) => ({
                 provider: provider.id,
                 providerName: modelsData.data?.providerName || provider.name,
                 model: model.id,
@@ -197,6 +167,7 @@ export function AIBriefingCard() {
     try {
       // If streaming, use the streaming endpoint
       if (useStreaming || refresh) {
+        // TODO: migrate to dashboardApi.briefingStream() once endpoint is added (SSE streaming)
         const url = `/api/v1/dashboard/briefing/stream?provider=${selectedModel.provider}&model=${selectedModel.model}`;
         const response = await fetch(url, {
           signal: abortControllerRef.current.signal,
@@ -250,12 +221,13 @@ export function AIBriefingCard() {
           }
         }
       } else {
+        // TODO: migrate to dashboardApi.briefing() once endpoint is added
         // Non-streaming fetch for initial load (use cache)
         const url = `/api/v1/dashboard/briefing?provider=${selectedModel.provider}&model=${selectedModel.model}`;
         const response = await fetch(url, {
           signal: abortControllerRef.current.signal,
         });
-        const data: BriefingResponse = await response.json();
+        const data = await response.json();
 
         if (data.success && data.data?.aiBriefing) {
           setBriefing(data.data.aiBriefing);

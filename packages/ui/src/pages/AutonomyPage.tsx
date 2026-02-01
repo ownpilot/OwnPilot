@@ -13,6 +13,7 @@ import {
   Trash2,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { autonomyApi } from '../api';
 
 interface AutonomyLevel {
   level: number;
@@ -51,12 +52,6 @@ interface PendingApproval {
   status: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
-
 const levelColors = [
   'bg-red-500',
   'bg-orange-500',
@@ -83,27 +78,21 @@ export function AutonomyPage() {
 
   const fetchConfig = useCallback(async () => {
     try {
-      const response = await fetch('/api/v1/autonomy/config');
-      const data: ApiResponse<{ config: AutonomyConfig; levels: AutonomyLevel[] }> =
-        await response.json();
-      if (data.success && data.data) {
-        setConfig(data.data.config);
-        setLevels(data.data.levels);
-      }
+      const data = await autonomyApi.getConfig();
+      const { config: cfg, levels: lvls } = data as { config: AutonomyConfig; levels: AutonomyLevel[] };
+      setConfig(cfg);
+      setLevels(lvls);
     } catch (err) {
-      console.error('Failed to fetch config:', err);
+      console.error("Failed to fetch config:", err);
     }
   }, []);
 
   const fetchPendingApprovals = useCallback(async () => {
     try {
-      const response = await fetch('/api/v1/autonomy/approvals');
-      const data: ApiResponse<{ pending: PendingApproval[] }> = await response.json();
-      if (data.success && data.data) {
-        setPendingApprovals(data.data.pending);
-      }
+      const data = await autonomyApi.getApprovals();
+      setPendingApprovals(data as unknown as PendingApproval[]);
     } catch (err) {
-      console.error('Failed to fetch approvals:', err);
+      console.error("Failed to fetch approvals:", err);
     }
   }, []);
 
@@ -118,95 +107,63 @@ export function AutonomyPage() {
 
   const handleLevelChange = async (level: number) => {
     try {
-      const response = await fetch('/api/v1/autonomy/level', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ level }),
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchConfig();
-      }
+      await autonomyApi.setLevel(String(level));
+      fetchConfig();
     } catch (err) {
-      console.error('Failed to update level:', err);
+      console.error("Failed to update level:", err);
     }
   };
 
   const handleBudgetUpdate = async (updates: Partial<AutonomyConfig>) => {
     try {
-      const response = await fetch('/api/v1/autonomy/budget', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchConfig();
-      }
+      await autonomyApi.updateBudget(updates as Record<string, unknown>);
+      fetchConfig();
     } catch (err) {
-      console.error('Failed to update budget:', err);
+      console.error("Failed to update budget:", err);
     }
   };
 
-  const handleAddTool = async (type: 'allow' | 'block', tool: string) => {
+  const handleAddTool = async (type: "allow" | "block", tool: string) => {
     if (!tool.trim()) return;
     try {
-      const response = await fetch(`/api/v1/autonomy/tools/${type}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tool: tool.trim() }),
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchConfig();
-        if (type === 'allow') setNewAllowedTool('');
-        else setNewBlockedTool('');
+      if (type === "allow") {
+        await autonomyApi.allowTool(tool.trim());
+      } else {
+        await autonomyApi.blockTool(tool.trim());
       }
+      fetchConfig();
+      if (type === "allow") setNewAllowedTool("");
+      else setNewBlockedTool("");
     } catch (err) {
-      console.error('Failed to add tool:', err);
+      console.error("Failed to add tool:", err);
     }
   };
 
   const handleRemoveTool = async (tool: string) => {
     try {
-      const response = await fetch(`/api/v1/autonomy/tools/${encodeURIComponent(tool)}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchConfig();
-      }
+      await autonomyApi.removeTool(tool);
+      fetchConfig();
     } catch (err) {
-      console.error('Failed to remove tool:', err);
+      console.error("Failed to remove tool:", err);
     }
   };
 
   const handleApproval = async (actionId: string, decision: 'approve' | 'reject') => {
     try {
-      const response = await fetch(`/api/v1/autonomy/approvals/${actionId}/${decision}`, {
-        method: 'POST',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchPendingApprovals();
-      }
+      await autonomyApi.resolveApproval(actionId, decision);
+      fetchPendingApprovals();
     } catch (err) {
-      console.error('Failed to process approval:', err);
+      console.error("Failed to process approval:", err);
     }
   };
 
   const handleResetConfig = async () => {
     if (!await confirm({ message: 'Are you sure you want to reset autonomy settings to defaults?', variant: 'danger' })) return;
     try {
-      const response = await fetch('/api/v1/autonomy/config/reset', {
-        method: 'POST',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchConfig();
-      }
+      await autonomyApi.resetConfig();
+      fetchConfig();
     } catch (err) {
-      console.error('Failed to reset config:', err);
+      console.error("Failed to reset config:", err);
     }
   };
 

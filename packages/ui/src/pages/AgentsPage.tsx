@@ -8,43 +8,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash, Bot, Settings, MessageSquare, Play } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
-import type { Agent, ApiResponse, Tool } from '../types';
-
-interface ModelInfo {
-  id: string;
-  name: string;
-  provider: string;
-  description?: string;
-  contextWindow: number;
-  inputPrice: number;
-  outputPrice: number;
-  capabilities: string[];
-  recommended?: boolean;
-}
-
-interface ModelsResponse {
-  success: boolean;
-  data: {
-    models: ModelInfo[];
-    configuredProviders: string[];
-    availableProviders: string[];
-  };
-}
-
-interface ToolsResponse {
-  success: boolean;
-  data: Tool[];
-}
-
-interface AgentDetail extends Agent {
-  systemPrompt: string;
-  config: {
-    maxTokens: number;
-    temperature: number;
-    maxTurns: number;
-    maxToolCalls: number;
-  };
-}
+import { agentsApi, modelsApi, toolsApi } from '../api';
+import type { Agent, Tool, ModelInfo, AgentDetail } from '../types';
 
 export function AgentsPage() {
   const navigate = useNavigate();
@@ -67,11 +32,8 @@ export function AgentsPage() {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/v1/agents');
-      const data: ApiResponse<Agent[]> = await response.json();
-      if (data.success && data.data) {
-        setAgents(data.data);
-      }
+      const data = await agentsApi.list();
+      setAgents(data);
     } catch (err) {
       console.error('Failed to fetch agents:', err);
     } finally {
@@ -83,7 +45,7 @@ export function AgentsPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this agent?', variant: 'danger' })) return;
 
     try {
-      await fetch(`/api/v1/agents/${id}`, { method: 'DELETE' });
+      await agentsApi.delete(id);
       setAgents((prev) => prev.filter((a) => a.id !== id));
       if (selectedAgent?.id === id) {
         setSelectedAgent(null);
@@ -321,15 +283,12 @@ function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) {
 
   const fetchModels = async () => {
     try {
-      const response = await fetch('/api/v1/models');
-      const data: ModelsResponse = await response.json();
-      if (data.success) {
-        setModels(data.data.models);
-        setConfiguredProviders(data.data.configuredProviders);
-        // Set default model
-        const recommended = data.data.models.find((m) => m.recommended);
-        if (recommended) setSelectedModel(recommended);
-      }
+      const data = await modelsApi.list();
+      setModels(data.models);
+      setConfiguredProviders(data.configuredProviders);
+      // Set default model
+      const recommended = data.models.find((m) => m.recommended);
+      if (recommended) setSelectedModel(recommended);
     } catch (err) {
       console.error('Failed to fetch models:', err);
     }
@@ -337,11 +296,8 @@ function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) {
 
   const fetchTools = async () => {
     try {
-      const response = await fetch('/api/v1/tools');
-      const data: ToolsResponse = await response.json();
-      if (data.success && data.data) {
-        setTools(data.data);
-      }
+      const data = await toolsApi.list();
+      setTools(data);
     } catch (err) {
       console.error('Failed to fetch tools:', err);
     }
@@ -354,25 +310,15 @@ function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/v1/agents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          systemPrompt,
-          provider: selectedModel.provider,
-          model: selectedModel.id,
-          tools: selectedTools,
-        }),
+      const created = await agentsApi.create({
+        name,
+        systemPrompt,
+        provider: selectedModel.provider,
+        model: selectedModel.id,
+        tools: selectedTools,
       });
 
-      const data: ApiResponse<Agent> = await response.json();
-
-      if (!data.success || !data.data) {
-        throw new Error(data.error?.message ?? 'Failed to create agent');
-      }
-
-      onCreated(data.data);
+      onCreated(created);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -717,19 +663,15 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
 
   const fetchAgentDetail = async () => {
     try {
-      const response = await fetch(`/api/v1/agents/${agentId}`);
-      const data: ApiResponse<AgentDetail> = await response.json();
-      if (data.success && data.data) {
-        const agent = data.data;
-        setAgentDetail(agent);
-        setName(agent.name);
-        setSystemPrompt(agent.systemPrompt || '');
-        setSelectedTools(agent.tools || []);
-        setMaxTokens(agent.config?.maxTokens || 4096);
-        setTemperature(agent.config?.temperature || 0.7);
-        setMaxTurns(agent.config?.maxTurns || 50);
-        setMaxToolCalls(agent.config?.maxToolCalls || 200);
-      }
+      const agent = await agentsApi.get(agentId);
+      setAgentDetail(agent);
+      setName(agent.name);
+      setSystemPrompt(agent.systemPrompt || '');
+      setSelectedTools(agent.tools || []);
+      setMaxTokens(agent.config?.maxTokens || 4096);
+      setTemperature(agent.config?.temperature || 0.7);
+      setMaxTurns(agent.config?.maxTurns || 50);
+      setMaxToolCalls(agent.config?.maxToolCalls || 200);
     } catch (err) {
       console.error('Failed to fetch agent detail:', err);
       setError('Failed to load agent details');
@@ -738,12 +680,9 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
 
   const fetchModels = async () => {
     try {
-      const response = await fetch('/api/v1/models');
-      const data: ModelsResponse = await response.json();
-      if (data.success) {
-        setModels(data.data.models);
-        setConfiguredProviders(data.data.configuredProviders);
-      }
+      const data = await modelsApi.list();
+      setModels(data.models);
+      setConfiguredProviders(data.configuredProviders);
     } catch (err) {
       console.error('Failed to fetch models:', err);
     }
@@ -751,11 +690,8 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
 
   const fetchTools = async () => {
     try {
-      const response = await fetch('/api/v1/tools');
-      const data: ToolsResponse = await response.json();
-      if (data.success && data.data) {
-        setTools(data.data);
-      }
+      const data = await toolsApi.list();
+      setTools(data);
     } catch (err) {
       console.error('Failed to fetch tools:', err);
     }
@@ -780,29 +716,19 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/v1/agents/${agentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          systemPrompt,
-          provider: selectedModel?.provider,
-          model: selectedModel?.id,
-          tools: selectedTools,
-          maxTokens,
-          temperature,
-          maxTurns,
-          maxToolCalls,
-        }),
+      const updated = await agentsApi.update(agentId, {
+        name,
+        systemPrompt,
+        provider: selectedModel?.provider,
+        model: selectedModel?.id,
+        tools: selectedTools,
+        maxTokens,
+        temperature,
+        maxTurns,
+        maxToolCalls,
       });
 
-      const data: ApiResponse<AgentDetail> = await response.json();
-
-      if (!data.success || !data.data) {
-        throw new Error(data.error?.message ?? 'Failed to update agent');
-      }
-
-      onUpdated(data.data);
+      onUpdated(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Users, Plus, Trash2, Phone, Mail, Building, Star, Search } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { contactsApi } from '../api';
 
 interface Contact {
   id: string;
@@ -24,11 +25,6 @@ interface Contact {
   updatedAt: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
 
 export function ContactsPage() {
   const { confirm } = useDialog();
@@ -41,15 +37,12 @@ export function ContactsPage() {
 
   const fetchContacts = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append('search', searchQuery);
-      if (filter === 'favorites') params.append('favorite', 'true');
+      const params: Record<string, string> = {};
+      if (searchQuery) params.search = searchQuery;
+      if (filter === 'favorites') params.favorite = 'true';
 
-      const response = await fetch(`/api/v1/contacts?${params}`);
-      const data: ApiResponse<Contact[]> = await response.json();
-      if (data.success && data.data) {
-        setContacts(data.data);
-      }
+      const data = await contactsApi.list(params);
+      setContacts(data);
     } catch (err) {
       console.error('Failed to fetch contacts:', err);
     } finally {
@@ -65,13 +58,8 @@ export function ContactsPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this contact?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`/api/v1/contacts/${contactId}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchContacts();
-      }
+      await contactsApi.delete(contactId);
+      fetchContacts();
     } catch (err) {
       console.error('Failed to delete contact:', err);
     }
@@ -79,13 +67,8 @@ export function ContactsPage() {
 
   const handleToggleFavorite = async (contact: Contact) => {
     try {
-      const response = await fetch(`/api/v1/contacts/${contact.id}/favorite`, {
-        method: 'POST',
-      });
-      const data: ApiResponse<Contact> = await response.json();
-      if (data.success) {
-        fetchContacts();
-      }
+      await contactsApi.favorite(contact.id);
+      fetchContacts();
     } catch (err) {
       console.error('Failed to update contact:', err);
     }

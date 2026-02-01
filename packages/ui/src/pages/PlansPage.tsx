@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { plansApi, apiClient } from '../api';
 import {
   ListChecks,
   Plus,
@@ -69,12 +70,6 @@ interface Plan {
   steps?: PlanStep[];
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
-
 const statusColors: Record<Plan['status'], string> = {
   pending: 'bg-warning/10 text-warning',
   running: 'bg-primary/10 text-primary',
@@ -117,12 +112,9 @@ export function PlansPage() {
 
   const fetchPlanHistory = async (planId: string) => {
     try {
-      const response = await fetch(`/api/v1/plans/${planId}/history`);
-      const data: ApiResponse<{ history: PlanHistoryEntry[] }> = await response.json();
-      if (data.success && data.data) {
-        setPlanHistory(data.data.history);
-        setHistoryPlanId(planId);
-      }
+      const data = await plansApi.history(planId);
+      setPlanHistory((data as any).history);
+      setHistoryPlanId(planId);
     } catch (err) {
       console.error('Failed to fetch plan history:', err);
     }
@@ -130,16 +122,13 @@ export function PlansPage() {
 
   const fetchPlans = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
       if (statusFilter !== 'all') {
-        params.append('status', statusFilter);
+        params.status = statusFilter;
       }
 
-      const response = await fetch(`/api/v1/plans?${params}`);
-      const data: ApiResponse<{ plans: Plan[] }> = await response.json();
-      if (data.success && data.data) {
-        setPlans(data.data.plans);
-      }
+      const data = await plansApi.list(params);
+      setPlans((data as any).plans);
     } catch (err) {
       console.error('Failed to fetch plans:', err);
     } finally {
@@ -165,13 +154,8 @@ export function PlansPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this plan?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`/api/v1/plans/${planId}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchPlans();
-      }
+      await plansApi.delete(planId);
+      fetchPlans();
     } catch (err) {
       console.error('Failed to delete plan:', err);
     }
@@ -181,13 +165,8 @@ export function PlansPage() {
     try {
       // Backend uses /execute endpoint instead of /start
       const endpoint = action === 'start' ? 'execute' : action;
-      const response = await fetch(`/api/v1/plans/${planId}/${endpoint}`, {
-        method: 'POST',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchPlans();
-      }
+      await plansApi.action(planId, endpoint);
+      fetchPlans();
     } catch (err) {
       console.error(`Failed to ${action} plan:`, err);
     }
@@ -197,13 +176,8 @@ export function PlansPage() {
     if (!await confirm({ message: 'Are you sure you want to rollback to the last checkpoint?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`/api/v1/plans/${planId}/rollback`, {
-        method: 'POST',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchPlans();
-      }
+      await plansApi.rollback(planId);
+      fetchPlans();
     } catch (err) {
       console.error('Failed to rollback plan:', err);
     }
@@ -366,12 +340,9 @@ function PlanItem({
   useEffect(() => {
     if (isExpanded && steps.length === 0) {
       setLoadingSteps(true);
-      fetch(`/api/v1/plans/${plan.id}/steps`)
-        .then((res) => res.json())
+      plansApi.steps(plan.id)
         .then((data) => {
-          if (data.success && data.data) {
-            setSteps(data.data.steps);
-          }
+          setSteps((data as any).steps);
         })
         .catch(console.error)
         .finally(() => setLoadingSteps(false));
@@ -382,12 +353,9 @@ function PlanItem({
   useEffect(() => {
     if (plan.status === 'running' && isExpanded) {
       const interval = setInterval(() => {
-        fetch(`/api/v1/plans/${plan.id}/steps`)
-          .then((res) => res.json())
+        plansApi.steps(plan.id)
           .then((data) => {
-            if (data.success && data.data) {
-              setSteps(data.data.steps);
-            }
+            setSteps((data as any).steps);
           })
           .catch(console.error);
       }, 2000);
@@ -786,19 +754,12 @@ function PlanModal({ plan, onClose, onSave }: PlanModalProps) {
         description: description.trim() || undefined,
       };
 
-      const url = plan ? `/api/v1/plans/${plan.id}` : '/api/v1/plans';
-      const method = plan ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        onSave();
+if (plan) {
+        await apiClient.patch(`/plans/${plan.id}`, body);
+      } else {
+        await apiClient.post('/plans', body);
       }
+      onSave();
     } catch (err) {
       console.error('Failed to save plan:', err);
     } finally {
@@ -919,22 +880,14 @@ function AddStepForm({ planId, nextOrder, onAdded, onCancel }: AddStepFormProps)
         config.question = prompt.trim();
       }
 
-      const response = await fetch(`/api/v1/plans/${planId}/steps`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+await plansApi.addStep(planId, {
           type: stepType,
           name: stepName.trim(),
           description: stepDescription.trim() || undefined,
           orderNum: nextOrder,
           config,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        onAdded();
-      }
+        });
+      onAdded();
     } catch (err) {
       console.error('Failed to add step:', err);
     } finally {

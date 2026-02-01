@@ -24,19 +24,8 @@ import {
   TrendingUp,
   Cpu,
 } from './icons';
-
-interface SummaryData {
-  tasks: { total: number; pending: number; overdue: number; dueToday: number };
-  bookmarks: { total: number; favorites: number };
-  notes: { total: number; pinned: number };
-  calendar: { total: number; today: number; upcoming: number };
-  contacts: { total: number; favorites: number; upcomingBirthdays: number };
-}
-
-interface CostsData {
-  daily: { totalTokens: number; totalCost: number };
-  monthly: { totalTokens: number; totalCost: number };
-}
+import { summaryApi, costsApi, providersApi, modelsApi } from '../api';
+import type { SummaryData, CostsData } from '../types';
 
 interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -96,35 +85,21 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
 
   const fetchStats = async () => {
     try {
-      const [summaryRes, costsRes, providersRes, modelsRes] = await Promise.all([
-        fetch('/api/v1/summary').catch(() => null),
-        fetch('/api/v1/costs/usage').catch(() => null),
-        fetch('/api/v1/providers').catch(() => null),
-        fetch('/api/v1/models').catch(() => null),
+      const results = await Promise.allSettled([
+        summaryApi.get(),
+        costsApi.usage(),
+        providersApi.list(),
+        modelsApi.list(),
       ]);
 
-      if (summaryRes?.ok) {
-        const data = await summaryRes.json();
-        if (data.success) setSummary(data.data);
+      if (results[0].status === 'fulfilled') setSummary(results[0].value);
+      if (results[1].status === 'fulfilled') setCosts(results[1].value);
+      if (results[2].status === 'fulfilled') {
+        const providersList = results[2].value.providers as Array<{ isConfigured?: boolean }>;
+        setProviderCount(providersList?.filter((p) => p.isConfigured).length ?? 0);
       }
-
-      if (costsRes?.ok) {
-        const data = await costsRes.json();
-        if (data.success) setCosts(data.data);
-      }
-
-      if (providersRes?.ok) {
-        const data = await providersRes.json();
-        if (data.success) {
-          setProviderCount(data.data.providers?.filter((p: { isConfigured: boolean }) => p.isConfigured).length ?? 0);
-        }
-      }
-
-      if (modelsRes?.ok) {
-        const data = await modelsRes.json();
-        if (data.success) {
-          setModelCount(data.data.models?.length ?? 0);
-        }
+      if (results[3].status === 'fulfilled') {
+        setModelCount(results[3].value.models?.length ?? 0);
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);

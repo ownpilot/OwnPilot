@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { memoriesApi, apiClient } from '../api';
 import { Brain, Plus, Trash2, Search, Star, Filter } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 
@@ -12,12 +13,6 @@ interface Memory {
   updatedAt: string;
   accessedAt?: string;
   metadata?: Record<string, unknown>;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
 }
 
 const typeColors = {
@@ -45,19 +40,16 @@ export function MemoriesPage() {
 
   const fetchMemories = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
       if (searchQuery) {
-        params.append('query', searchQuery);
+        params.query = searchQuery;
       }
       if (typeFilter !== 'all') {
-        params.append('type', typeFilter);
+        params.type = typeFilter;
       }
 
-      const response = await fetch(`/api/v1/memories?${params}`);
-      const data: ApiResponse<{ memories: Memory[] }> = await response.json();
-      if (data.success && data.data) {
-        setMemories(data.data.memories);
-      }
+      const data = await memoriesApi.list(params);
+      setMemories((data as any).memories);
     } catch (err) {
       console.error('Failed to fetch memories:', err);
     } finally {
@@ -73,13 +65,8 @@ export function MemoriesPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this memory?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`/api/v1/memories/${memoryId}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchMemories();
-      }
+      await memoriesApi.delete(memoryId);
+      fetchMemories();
     } catch (err) {
       console.error('Failed to delete memory:', err);
     }
@@ -287,19 +274,12 @@ function MemoryModal({ memory, onClose, onSave }: MemoryModalProps) {
         importance,
       };
 
-      const url = memory ? `/api/v1/memories/${memory.id}` : '/api/v1/memories';
-      const method = memory ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        onSave();
+      if (memory) {
+        await apiClient.patch(`/memories/${memory.id}`, body);
+      } else {
+        await apiClient.post('/memories', body);
       }
+      onSave();
     } catch (err) {
       console.error('Failed to save memory:', err);
     } finally {

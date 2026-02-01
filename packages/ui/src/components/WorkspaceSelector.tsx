@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { HardDrive, Plus, Trash2, Download, Folder, FolderOpen, RefreshCw } from './icons';
+import { workspacesApi, apiClient } from '../api';
 
 interface WorkspaceInfo {
   id: string;
@@ -40,14 +41,12 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
 
   const fetchWorkspaces = async () => {
     try {
-      const res = await fetch('/api/v1/workspaces');
-      const data = await res.json();
-      if (data.success) {
-        setWorkspaces(data.data.workspaces);
-        // Auto-select first workspace if none selected
-        if (!selectedWorkspaceId && data.data.workspaces.length > 0) {
-          onWorkspaceChange(data.data.workspaces[0].id);
-        }
+      const data = await workspacesApi.list();
+      const list = (data as any).workspaces ?? data;
+      setWorkspaces(Array.isArray(list) ? list : []);
+      // Auto-select first workspace if none selected
+      if (!selectedWorkspaceId && Array.isArray(list) && list.length > 0) {
+        onWorkspaceChange(list[0].id);
       }
     } catch (err) {
       console.error('Failed to fetch workspaces:', err);
@@ -64,22 +63,12 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
     if (!newWorkspaceName.trim()) return;
     setIsCreating(true);
     try {
-      const res = await fetch('/api/v1/workspaces', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newWorkspaceName.trim(),
-          description: newWorkspaceDesc.trim() || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setWorkspaces([data.data, ...workspaces]);
-        onWorkspaceChange(data.data.id);
-        setShowCreateModal(false);
-        setNewWorkspaceName('');
-        setNewWorkspaceDesc('');
-      }
+      const created = await workspacesApi.create(newWorkspaceName.trim()) as any;
+      setWorkspaces([created, ...workspaces]);
+      onWorkspaceChange(created.id);
+      setShowCreateModal(false);
+      setNewWorkspaceName('');
+      setNewWorkspaceDesc('');
     } catch (err) {
       console.error('Failed to create workspace:', err);
     } finally {
@@ -89,14 +78,11 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
 
   const handleDeleteWorkspace = async (id: string) => {
     try {
-      const res = await fetch(`/api/v1/workspaces/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        const remaining = workspaces.filter(w => w.id !== id);
-        setWorkspaces(remaining);
-        if (selectedWorkspaceId === id) {
-          onWorkspaceChange(remaining.length > 0 ? remaining[0].id : null);
-        }
+      await apiClient.delete(`/workspaces/${id}`);
+      const remaining = workspaces.filter(w => w.id !== id);
+      setWorkspaces(remaining);
+      if (selectedWorkspaceId === id) {
+        onWorkspaceChange(remaining.length > 0 ? remaining[0].id : null);
       }
     } catch (err) {
       console.error('Failed to delete workspace:', err);

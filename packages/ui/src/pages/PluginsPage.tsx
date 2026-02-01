@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Puzzle, Power, Wrench, Shield, Lock, Check, X, RefreshCw, Settings, Globe, AlertTriangle, Database } from '../components/icons';
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
-import type { ApiResponse } from '../types';
+import { pluginsApi, apiClient } from '../api';
 
 interface ConfigFieldDefinition {
   name: string;
@@ -104,11 +104,9 @@ export function PluginsPage() {
 
   const fetchPlugins = async () => {
     try {
-      const response = await fetch('/api/v1/plugins');
-      const data: ApiResponse<PluginInfo[]> = await response.json();
-      if (data.success && data.data) {
-        setPlugins(data.data);
-      }
+      const data = await pluginsApi.list();
+      const result = data as unknown as { plugins: PluginInfo[] };
+      setPlugins(result.plugins);
     } catch (err) {
       console.error('Failed to fetch plugins:', err);
     } finally {
@@ -118,11 +116,8 @@ export function PluginsPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/v1/plugins/stats');
-      const data: ApiResponse<PluginStats> = await response.json();
-      if (data.success && data.data) {
-        setStats(data.data);
-      }
+      const data = await pluginsApi.stats();
+      setStats(data as unknown as PluginStats);
     } catch (err) {
       console.error('Failed to fetch plugin stats:', err);
     }
@@ -131,14 +126,9 @@ export function PluginsPage() {
   const togglePlugin = async (plugin: PluginInfo) => {
     const action = plugin.status === 'enabled' ? 'disable' : 'enable';
     try {
-      const response = await fetch(`/api/v1/plugins/${plugin.id}/${action}`, {
-        method: 'POST',
-      });
-      const data: ApiResponse = await response.json();
-      if (data.success) {
-        fetchPlugins();
-        fetchStats();
-      }
+      await apiClient.post<void>(`/plugins/${plugin.id}/${action}`);
+      fetchPlugins();
+      fetchStats();
     } catch (err) {
       console.error(`Failed to ${action} plugin:`, err);
     }
@@ -394,14 +384,9 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
   // Fetch plugin-owned tables
   useEffect(() => {
     if (plugin) {
-      fetch(`/api/v1/custom-data/tables/by-plugin/${plugin.id}`)
-        .then((r) => r.json())
+      apiClient.get<Array<{ name: string; displayName: string; recordCount: number; columns: Array<{ name: string }> }>>(`/custom-data/tables/by-plugin/${plugin.id}`)
         .then((data) => {
-          if (data.success && Array.isArray(data.data)) {
-            setPluginTables(data.data);
-          } else {
-            setPluginTables([]);
-          }
+          setPluginTables(data);
         })
         .catch(() => setPluginTables([]));
     }
@@ -429,18 +414,9 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
     setIsSavingSettings(true);
     setSettingsMessage(null);
     try {
-      const response = await fetch(`/api/v1/plugins/${plugin.id}/settings`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: settingsValues }),
-      });
-      const data: ApiResponse = await response.json();
-      if (data.success) {
-        setSettingsMessage({ type: 'success', text: 'Settings saved successfully.' });
-        onPluginUpdated();
-      } else {
-        setSettingsMessage({ type: 'error', text: 'Failed to save settings.' });
-      }
+      await apiClient.put<void>(`/plugins/${plugin.id}/settings`, { settings: settingsValues });
+      setSettingsMessage({ type: 'success', text: 'Settings saved successfully.' });
+      onPluginUpdated();
     } catch {
       setSettingsMessage({ type: 'error', text: 'An error occurred while saving settings.' });
     } finally {

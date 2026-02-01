@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDialog } from '../components/ConfirmDialog';
+import { debugApi, apiClient } from '../api';
 
 interface RequestLog {
   id: string;
@@ -90,19 +91,13 @@ export function LogsPage() {
     setError(null);
 
     try {
-      const params = new URLSearchParams();
-      params.set('limit', '100');
-      if (filterType !== 'all') params.set('type', filterType);
-      if (errorFilter === 'errors') params.set('errors', 'true');
-      if (errorFilter === 'success') params.set('errors', 'false');
+      const params: Record<string, string> = { limit: '100' };
+      if (filterType !== 'all') params.type = filterType;
+      if (errorFilter === 'errors') params.errors = 'true';
+      if (errorFilter === 'success') params.errors = 'false';
 
-      const res = await fetch(`/api/v1/chat/logs?${params}`);
-      const data = await res.json();
-      if (data.success) {
-        setLogs(data.data.logs);
-      } else {
-        setError(data.error?.message || 'Failed to fetch logs');
-      }
+      const data = await apiClient.get<{ logs: RequestLog[] }>('/chat/logs', { params });
+      setLogs(data.logs);
     } catch {
       setError('Failed to fetch logs');
     } finally {
@@ -112,11 +107,8 @@ export function LogsPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/chat/logs/stats?days=${days}`);
-      const data = await res.json();
-      if (data.success) {
-        setStats(data.data);
-      }
+      const data = await apiClient.get<LogStats>('/chat/logs/stats', { params: { days: String(days) } });
+      setStats(data);
     } catch {
       // Ignore stats errors
     }
@@ -125,11 +117,8 @@ export function LogsPage() {
   const fetchDebugLogs = useCallback(async () => {
     setDebugLoading(true);
     try {
-      const res = await fetch('/api/v1/debug?count=100');
-      const data = await res.json();
-      if (data.success) {
-        setDebugInfo(data.data);
-      }
+      const data = await debugApi.get(100);
+      setDebugInfo(data as unknown as DebugInfo);
     } catch {
       // Ignore debug errors
     } finally {
@@ -139,11 +128,8 @@ export function LogsPage() {
 
   const fetchLogDetail = async (id: string) => {
     try {
-      const res = await fetch(`/api/v1/chat/logs/${id}`);
-      const data = await res.json();
-      if (data.success) {
-        setSelectedLog(data.data);
-      }
+      const data = await debugApi.getLogs(id);
+      setSelectedLog(data as unknown as LogDetail);
     } catch {
       // Ignore detail errors
     }
@@ -153,15 +139,10 @@ export function LogsPage() {
     if (!await confirm({ message: `Delete logs older than ${olderThanDays} days?`, variant: 'danger' })) return;
 
     try {
-      const res = await fetch(`/api/v1/chat/logs?olderThanDays=${olderThanDays}`, {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-      if (data.success) {
-        await showAlert(`Deleted ${data.data.deleted} logs`);
-        fetchLogs();
-        fetchStats();
-      }
+      await debugApi.deleteLogs({ olderThanDays });
+      await showAlert('Logs deleted');
+      fetchLogs();
+      fetchStats();
     } catch {
       setError('Failed to delete logs');
     }
@@ -171,15 +152,10 @@ export function LogsPage() {
     if (!await confirm({ message: 'Delete ALL request logs? This cannot be undone.', variant: 'danger' })) return;
 
     try {
-      const res = await fetch('/api/v1/chat/logs?all=true', {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-      if (data.success) {
-        await showAlert(`Deleted ${data.data.deleted} logs`);
-        fetchLogs();
-        fetchStats();
-      }
+      await debugApi.deleteLogs({ all: true });
+      await showAlert('All logs deleted');
+      fetchLogs();
+      fetchStats();
     } catch {
       setError('Failed to delete logs');
     }
@@ -188,7 +164,7 @@ export function LogsPage() {
   const clearDebugLogs = async () => {
     if (!await confirm({ message: 'Clear all debug logs?', variant: 'danger' })) return;
     try {
-      await fetch('/api/v1/debug', { method: 'DELETE' });
+      await debugApi.clear();
       fetchDebugLogs();
     } catch {
       // Ignore
