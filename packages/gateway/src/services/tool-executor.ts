@@ -37,6 +37,8 @@ import {
   setSharedRegistryForCustomTools,
 } from '../routes/custom-tools.js';
 import { getLog } from './log.js';
+import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
+import type { IAuditService } from '@ownpilot/core';
 
 const log = getLog('ToolExecutor');
 
@@ -208,6 +210,34 @@ export async function executeTool(
   toolName: string,
   args: Record<string, unknown>,
   userId = 'default'
+): Promise<ToolExecutionResult> {
+  const start = Date.now();
+  const result = await executeToolInternal(toolName, args, userId);
+
+  // Audit log (fire-and-forget)
+  if (hasServiceRegistry()) {
+    const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
+    audit?.logAudit({
+      userId,
+      action: 'tool_execute',
+      resource: 'tool',
+      resourceId: toolName,
+      details: {
+        tool: toolName,
+        success: result.success,
+        durationMs: Date.now() - start,
+        error: result.error,
+      },
+    });
+  }
+
+  return result;
+}
+
+async function executeToolInternal(
+  toolName: string,
+  args: Record<string, unknown>,
+  userId: string,
 ): Promise<ToolExecutionResult> {
   const tools = getSharedToolRegistry(userId);
 
