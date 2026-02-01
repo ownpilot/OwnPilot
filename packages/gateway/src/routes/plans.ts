@@ -14,6 +14,7 @@ import {
 } from '../db/repositories/plans.js';
 import { getPlanService } from '../services/plan-service.js';
 import { getPlanExecutor } from '../plans/index.js';
+import { getUserId } from './helpers.js';
 
 export const plansRoutes = new Hono();
 
@@ -25,7 +26,7 @@ export const plansRoutes = new Hono();
  * GET /plans - List plans
  */
 plansRoutes.get('/', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const status = c.req.query('status') as PlanStatus | undefined;
   const goalId = c.req.query('goalId');
   const triggerId = c.req.query('triggerId');
@@ -52,7 +53,7 @@ plansRoutes.get('/', async (c) => {
  * POST /plans - Create a new plan
  */
 plansRoutes.post('/', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const body = await c.req.json<CreatePlanInput>();
 
   if (!body.name || !body.goal) {
@@ -86,7 +87,7 @@ plansRoutes.post('/', async (c) => {
  * GET /plans/stats - Get plan statistics
  */
 plansRoutes.get('/stats', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const service = getPlanService();
   const stats = await service.getStats(userId);
 
@@ -102,7 +103,7 @@ plansRoutes.get('/stats', async (c) => {
  * GET /plans/active - Get active plans
  */
 plansRoutes.get('/active', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const service = getPlanService();
   const plans = await service.getActive(userId);
 
@@ -121,7 +122,7 @@ plansRoutes.get('/active', async (c) => {
  * GET /plans/pending - Get pending plans
  */
 plansRoutes.get('/pending', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const service = getPlanService();
   const plans = await service.getPending(userId);
 
@@ -140,7 +141,7 @@ plansRoutes.get('/pending', async (c) => {
  * GET /plans/:id - Get a specific plan
  */
 plansRoutes.get('/:id', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -179,7 +180,7 @@ plansRoutes.get('/:id', async (c) => {
  * PATCH /plans/:id - Update a plan
  */
 plansRoutes.patch('/:id', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
   const body = await c.req.json<UpdatePlanInput>();
 
@@ -211,7 +212,7 @@ plansRoutes.patch('/:id', async (c) => {
  * DELETE /plans/:id - Delete a plan
  */
 plansRoutes.delete('/:id', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -248,7 +249,7 @@ plansRoutes.delete('/:id', async (c) => {
  * POST /plans/:id/execute - Execute a plan
  */
 plansRoutes.post('/:id/execute', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -320,7 +321,7 @@ plansRoutes.post('/:id/execute', async (c) => {
  * POST /plans/:id/pause - Pause a running plan
  */
 plansRoutes.post('/:id/pause', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -357,7 +358,7 @@ plansRoutes.post('/:id/pause', async (c) => {
  * POST /plans/:id/resume - Resume a paused plan
  */
 plansRoutes.post('/:id/resume', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -421,7 +422,7 @@ plansRoutes.post('/:id/resume', async (c) => {
  * POST /plans/:id/abort - Abort a running plan
  */
 plansRoutes.post('/:id/abort', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -458,7 +459,7 @@ plansRoutes.post('/:id/abort', async (c) => {
  * POST /plans/:id/checkpoint - Create a checkpoint
  */
 plansRoutes.post('/:id/checkpoint', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
   const body = await c.req.json<{ data?: unknown }>().catch((): { data?: unknown } => ({}));
 
@@ -495,7 +496,7 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
  * POST /plans/:id/start - Start a plan (alias for /execute)
  */
 plansRoutes.post('/:id/start', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -567,7 +568,7 @@ plansRoutes.post('/:id/start', async (c) => {
  * POST /plans/:id/rollback - Rollback plan to last checkpoint
  */
 plansRoutes.post('/:id/rollback', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -648,7 +649,7 @@ plansRoutes.post('/:id/rollback', async (c) => {
  * GET /plans/:id/steps - Get all steps for a plan
  */
 plansRoutes.get('/:id/steps', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -685,7 +686,7 @@ plansRoutes.get('/:id/steps', async (c) => {
  * POST /plans/:id/steps - Add a step to a plan
  */
 plansRoutes.post('/:id/steps', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
   const body = await c.req.json<CreateStepInput>();
 
@@ -734,7 +735,7 @@ plansRoutes.post('/:id/steps', async (c) => {
  * GET /plans/:id/steps/:stepId - Get a specific step
  */
 plansRoutes.get('/:id/steps/:stepId', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const stepId = c.req.param('stepId');
 
   const service = getPlanService();
@@ -765,7 +766,7 @@ plansRoutes.get('/:id/steps/:stepId', async (c) => {
  * PATCH /plans/:id/steps/:stepId - Update a step
  */
 plansRoutes.patch('/:id/steps/:stepId', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const stepId = c.req.param('stepId');
   const rawBody = await c.req.json();
 
@@ -805,7 +806,7 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
  * GET /plans/:id/history - Get history for a plan
  */
 plansRoutes.get('/:id/history', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
   const limit = parseInt(c.req.query('limit') ?? '50', 10);
 
@@ -847,7 +848,7 @@ plansRoutes.get('/:id/history', async (c) => {
  * GET /plans/executor/status - Get executor status
  */
 plansRoutes.get('/executor/status', (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const executor = getPlanExecutor({ userId });
 
   const response: ApiResponse = {

@@ -14,6 +14,7 @@ import {
 import { getTriggerService } from '../services/trigger-service.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression } from '@ownpilot/core';
+import { getUserId } from './helpers.js';
 
 export const triggersRoutes = new Hono();
 
@@ -25,7 +26,7 @@ export const triggersRoutes = new Hono();
  * GET /triggers - List triggers
  */
 triggersRoutes.get('/', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const type = c.req.query('type') as TriggerType | undefined;
   const enabled = c.req.query('enabled');
   const limit = parseInt(c.req.query('limit') ?? '20', 10);
@@ -52,7 +53,7 @@ triggersRoutes.get('/', async (c) => {
  * POST /triggers - Create a new trigger
  */
 triggersRoutes.post('/', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const rawBody = await c.req.json();
   const { validateBody, createTriggerSchema } = await import('../middleware/validation.js');
   const body = validateBody(createTriggerSchema, rawBody) as unknown as CreateTriggerInput;
@@ -121,7 +122,7 @@ triggersRoutes.post('/', async (c) => {
  * GET /triggers/stats - Get trigger statistics
  */
 triggersRoutes.get('/stats', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const service = getTriggerService();
   const stats = await service.getStats(userId);
 
@@ -137,7 +138,7 @@ triggersRoutes.get('/stats', async (c) => {
  * GET /triggers/history - Get recent trigger history
  */
 triggersRoutes.get('/history', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const limit = parseInt(c.req.query('limit') ?? '50', 10);
 
   const service = getTriggerService();
@@ -158,7 +159,7 @@ triggersRoutes.get('/history', async (c) => {
  * GET /triggers/due - Get triggers that are due to fire
  */
 triggersRoutes.get('/due', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
 
   const service = getTriggerService();
   const triggers = await service.getDueTriggers(userId);
@@ -178,7 +179,7 @@ triggersRoutes.get('/due', async (c) => {
  * GET /triggers/:id - Get a specific trigger
  */
 triggersRoutes.get('/:id', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getTriggerService();
@@ -215,7 +216,7 @@ triggersRoutes.get('/:id', async (c) => {
  * PATCH /triggers/:id - Update a trigger
  */
 triggersRoutes.patch('/:id', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
   const body = await c.req.json<UpdateTriggerInput>();
 
@@ -271,7 +272,7 @@ triggersRoutes.patch('/:id', async (c) => {
  * POST /triggers/:id/enable - Enable a trigger
  */
 triggersRoutes.post('/:id/enable', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getTriggerService();
@@ -305,7 +306,7 @@ triggersRoutes.post('/:id/enable', async (c) => {
  * POST /triggers/:id/disable - Disable a trigger
  */
 triggersRoutes.post('/:id/disable', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getTriggerService();
@@ -339,7 +340,7 @@ triggersRoutes.post('/:id/disable', async (c) => {
  * POST /triggers/:id/fire - Manually fire a trigger
  */
 triggersRoutes.post('/:id/fire', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getTriggerService();
@@ -383,7 +384,7 @@ triggersRoutes.post('/:id/fire', async (c) => {
  * DELETE /triggers/:id - Delete a trigger
  */
 triggersRoutes.delete('/:id', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getTriggerService();
@@ -416,7 +417,7 @@ triggersRoutes.delete('/:id', async (c) => {
  * GET /triggers/:id/history - Get history for a specific trigger
  */
 triggersRoutes.get('/:id/history', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const id = c.req.param('id');
   const limit = parseInt(c.req.query('limit') ?? '20', 10);
 
@@ -455,7 +456,7 @@ triggersRoutes.get('/:id/history', async (c) => {
  * POST /triggers/cleanup - Clean up old history
  */
 triggersRoutes.post('/cleanup', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const body = await c.req.json<{ maxAgeDays?: number }>().catch((): { maxAgeDays?: number } => ({}));
 
   const service = getTriggerService();
