@@ -254,6 +254,7 @@ export class WorkspaceManager {
   private workspaces = new Map<string, WorkspaceInstance>();
   private channelToWorkspace = new Map<string, string>();
   private defaultWorkspaceId: string | null = null;
+  private unsubscribes: Array<() => void> = [];
 
   constructor() {
     // Setup channel message forwarding
@@ -461,7 +462,7 @@ export class WorkspaceManager {
    * Setup forwarding of channel messages to workspaces
    */
   private setupChannelForwarding(): void {
-    gatewayEvents.on('channel:message', async ({ message }) => {
+    const unsub = gatewayEvents.on('channel:message', async ({ message }) => {
       // Find workspace for this channel
       const workspace = this.getByChannel(message.channelId) as WorkspaceInstance | undefined;
 
@@ -473,6 +474,18 @@ export class WorkspaceManager {
         await defaultWorkspace.processIncomingMessage(message);
       }
     });
+    this.unsubscribes.push(unsub);
+  }
+
+  /**
+   * Dispose event listeners. Call during shutdown to prevent leaks.
+   */
+  dispose(): void {
+    for (const unsub of this.unsubscribes) {
+      unsub();
+    }
+    this.unsubscribes = [];
+    log.info('WorkspaceManager disposed');
   }
 
   /**
