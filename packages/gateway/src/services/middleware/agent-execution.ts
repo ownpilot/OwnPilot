@@ -195,7 +195,7 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
       }
 
       const err = error instanceof Error ? error : new Error(String(error));
-      log.error('Agent execution failed', { error: err.message });
+      log.error('Agent execution failed', { error: err.message, stack: err.stack });
 
       // Notify stream of error
       if (stream?.onError) {

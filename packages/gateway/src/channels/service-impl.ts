@@ -162,8 +162,8 @@ export class ChannelServiceImpl implements IChannelService {
             }
           )
         );
-      } catch {
-        // EventBus not ready
+      } catch (emitErr) {
+        log.debug('EventBus not available for MESSAGE_SENT event', { error: emitErr });
       }
 
       return messageId;
@@ -184,8 +184,8 @@ export class ChannelServiceImpl implements IChannelService {
             }
           )
         );
-      } catch {
-        // EventBus not ready
+      } catch (emitErr) {
+        log.debug('EventBus not available for MESSAGE_SEND_ERROR event', { error: emitErr });
       }
       throw error;
     }
@@ -281,8 +281,8 @@ export class ChannelServiceImpl implements IChannelService {
           }
         )
       );
-    } catch {
-      // EventBus not ready
+    } catch (emitErr) {
+      log.debug('EventBus not available for CONNECTING event', { error: emitErr });
     }
 
     await api.connect();
@@ -301,8 +301,8 @@ export class ChannelServiceImpl implements IChannelService {
           }
         )
       );
-    } catch {
-      // EventBus not ready
+    } catch (emitErr) {
+      log.debug('EventBus not available for CONNECTED event', { error: emitErr });
     }
   }
 
@@ -328,8 +328,8 @@ export class ChannelServiceImpl implements IChannelService {
           }
         )
       );
-    } catch {
-      // EventBus not ready
+    } catch (emitErr) {
+      log.debug('EventBus not available for DISCONNECTED event', { error: emitErr });
     }
   }
 
