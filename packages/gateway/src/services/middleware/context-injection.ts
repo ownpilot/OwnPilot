@@ -47,8 +47,9 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
 
       ctx.set('contextStats', stats);
     } catch (error) {
-      log.warn('Failed to build enhanced prompt', { error });
-      ctx.addWarning('Context injection failed');
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      log.warn('Failed to build enhanced prompt', { error: errorMsg });
+      ctx.addWarning(`Context injection failed: ${errorMsg}`);
     }
 
     return next();

@@ -51,7 +51,7 @@ import { gatewayConfigCenter } from './services/config-center-impl.js';
 import { startTriggerEngine, getTriggerEngine, initializeDefaultTriggers } from './triggers/index.js';
 import { seedExamplePlans } from './db/seeds/plans-seed.js';
 import { createChannelServiceImpl } from './channels/service-impl.js';
-import { initServiceRegistry, Services, getEventSystem } from '@ownpilot/core';
+import { initServiceRegistry, Services, getEventSystem, setChannelService } from '@ownpilot/core';
 import { createLogService } from './services/log-service-impl.js';
 import { createSessionService } from './services/session-service-impl.js';
 import { createMessageBus } from './services/message-bus-impl.js';
@@ -211,7 +211,8 @@ async function main() {
   const pluginRegistry = await getDefaultPluginRegistry();
   const channelService = createChannelServiceImpl(pluginRegistry);
 
-  // Register in ServiceRegistry (getChannelService() now delegates here)
+  // Register both as singleton and in ServiceRegistry
+  setChannelService(channelService);
   registry.register(Services.Channel, channelService);
   log.info('Channel Service initialized.');
 
