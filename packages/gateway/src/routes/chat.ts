@@ -625,7 +625,7 @@ chatRoutes.post('/', async (c) => {
       return streamSSE(c, async (stream) => {
         const conversationId = agent.getConversation().id;
         const streamAgentId = body.agentId ?? `chat-${provider}`;
-        const streamUserId = 'default'; // TODO: Get from auth context
+        const streamUserId = getUserId(c);
 
         await processStreamingViaBus(streamBus, stream, {
           agent: agent!,
@@ -645,7 +645,7 @@ chatRoutes.post('/', async (c) => {
       const conversationId = agent.getConversation().id;
       const streamStartTime = performance.now();
       const streamAgentId = body.agentId ?? `chat-${provider}`;
-      const streamUserId = 'default'; // TODO: Get from auth context
+      const streamUserId = getUserId(c);
       let lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
 
       // Expose direct tools to LLM if requested (from picker selection)
@@ -1199,7 +1199,7 @@ chatRoutes.post('/', async (c) => {
     // Record failed request
     try {
       await usageTracker.record({
-        userId: 'anonymous', // TODO: Get from auth
+        userId,
         provider: provider as AIProvider,
         model,
         inputTokens: 0,
@@ -1258,7 +1258,7 @@ chatRoutes.post('/', async (c) => {
   if (result.value.usage) {
     try {
       await usageTracker.record({
-        userId: 'anonymous', // TODO: Get from auth
+        userId,
         sessionId: conversation.id,
         provider: provider as AIProvider,
         model,

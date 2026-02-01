@@ -34,11 +34,9 @@ import {
   type UpdateContactInput,
   type ContactQuery,
 } from '../db/repositories/index.js';
+import { getUserId } from './helpers.js';
 
 export const personalDataRoutes = new Hono();
-
-// Default user ID (TODO: get from auth)
-const getUserId = () => 'default';
 
 // =====================================================
 // TASKS
@@ -47,7 +45,7 @@ const getUserId = () => 'default';
 const tasksRoutes = new Hono();
 
 tasksRoutes.get('/', async (c) => {
-  const repo = new TasksRepository(getUserId());
+  const repo = new TasksRepository(getUserId(c));
   const query: TaskQuery = {
     status: c.req.query('status') as TaskQuery['status'],
     priority: c.req.query('priority') as TaskQuery['priority'],
@@ -68,7 +66,7 @@ tasksRoutes.get('/', async (c) => {
 });
 
 tasksRoutes.get('/today', async (c) => {
-  const repo = new TasksRepository(getUserId());
+  const repo = new TasksRepository(getUserId(c));
   const tasks = await repo.getDueToday();
   const response: ApiResponse = {
     success: true,
@@ -79,7 +77,7 @@ tasksRoutes.get('/today', async (c) => {
 });
 
 tasksRoutes.get('/overdue', async (c) => {
-  const repo = new TasksRepository(getUserId());
+  const repo = new TasksRepository(getUserId(c));
   const tasks = await repo.getOverdue();
   const response: ApiResponse = {
     success: true,
@@ -90,7 +88,7 @@ tasksRoutes.get('/overdue', async (c) => {
 });
 
 tasksRoutes.get('/upcoming', async (c) => {
-  const repo = new TasksRepository(getUserId());
+  const repo = new TasksRepository(getUserId(c));
   const days = c.req.query('days') ? parseInt(c.req.query('days')!) : 7;
   const tasks = await repo.getUpcoming(days);
   const response: ApiResponse = {
@@ -102,7 +100,7 @@ tasksRoutes.get('/upcoming', async (c) => {
 });
 
 tasksRoutes.get('/categories', async (c) => {
-  const repo = new TasksRepository(getUserId());
+  const repo = new TasksRepository(getUserId(c));
   const categories = await repo.getCategories();
   const response: ApiResponse = {
     success: true,
@@ -113,7 +111,7 @@ tasksRoutes.get('/categories', async (c) => {
 });
 
 tasksRoutes.get('/:id', async (c) => {
-  const repo = new TasksRepository(getUserId());
+  const repo = new TasksRepository(getUserId(c));
   const task = await repo.get(c.req.param('id'));
   if (!task) {
     throw new HTTPException(404, { message: 'Task not found' });
@@ -127,7 +125,7 @@ tasksRoutes.get('/:id', async (c) => {
 });
 
 tasksRoutes.post('/', async (c) => {
-  const repo = new TasksRepository(getUserId());
+  const repo = new TasksRepository(getUserId(c));
   const body = await c.req.json<CreateTaskInput>();
   const task = await repo.create(body);
   const response: ApiResponse = {
@@ -139,7 +137,7 @@ tasksRoutes.post('/', async (c) => {
 });
 
 tasksRoutes.patch('/:id', async (c) => {
-  const repo = new TasksRepository(getUserId());
+  const repo = new TasksRepository(getUserId(c));
   const body = await c.req.json<UpdateTaskInput>();
   const task = await repo.update(c.req.param('id'), body);
   if (!task) {
@@ -154,7 +152,7 @@ tasksRoutes.patch('/:id', async (c) => {
 });
 
 tasksRoutes.post('/:id/complete', async (c) => {
-  const repo = new TasksRepository(getUserId());
+  const repo = new TasksRepository(getUserId(c));
   const task = await repo.complete(c.req.param('id'));
   if (!task) {
     throw new HTTPException(404, { message: 'Task not found' });
@@ -168,7 +166,7 @@ tasksRoutes.post('/:id/complete', async (c) => {
 });
 
 tasksRoutes.delete('/:id', async (c) => {
-  const repo = new TasksRepository(getUserId());
+  const repo = new TasksRepository(getUserId(c));
   const deleted = await repo.delete(c.req.param('id'));
   if (!deleted) {
     throw new HTTPException(404, { message: 'Task not found' });
@@ -188,7 +186,7 @@ tasksRoutes.delete('/:id', async (c) => {
 const bookmarksRoutes = new Hono();
 
 bookmarksRoutes.get('/', async (c) => {
-  const repo = new BookmarksRepository(getUserId());
+  const repo = new BookmarksRepository(getUserId(c));
   const query: BookmarkQuery = {
     category: c.req.query('category'),
     isFavorite: c.req.query('favorite') === 'true' ? true : undefined,
@@ -207,7 +205,7 @@ bookmarksRoutes.get('/', async (c) => {
 });
 
 bookmarksRoutes.get('/favorites', async (c) => {
-  const repo = new BookmarksRepository(getUserId());
+  const repo = new BookmarksRepository(getUserId(c));
   const bookmarks = await repo.getFavorites();
   const response: ApiResponse = {
     success: true,
@@ -218,7 +216,7 @@ bookmarksRoutes.get('/favorites', async (c) => {
 });
 
 bookmarksRoutes.get('/recent', async (c) => {
-  const repo = new BookmarksRepository(getUserId());
+  const repo = new BookmarksRepository(getUserId(c));
   const limit = c.req.query('limit') ? parseInt(c.req.query('limit')!) : 10;
   const bookmarks = await repo.getRecent(limit);
   const response: ApiResponse = {
@@ -230,7 +228,7 @@ bookmarksRoutes.get('/recent', async (c) => {
 });
 
 bookmarksRoutes.get('/categories', async (c) => {
-  const repo = new BookmarksRepository(getUserId());
+  const repo = new BookmarksRepository(getUserId(c));
   const categories = await repo.getCategories();
   const response: ApiResponse = {
     success: true,
@@ -241,7 +239,7 @@ bookmarksRoutes.get('/categories', async (c) => {
 });
 
 bookmarksRoutes.get('/:id', async (c) => {
-  const repo = new BookmarksRepository(getUserId());
+  const repo = new BookmarksRepository(getUserId(c));
   const bookmark = await repo.get(c.req.param('id'));
   if (!bookmark) {
     throw new HTTPException(404, { message: 'Bookmark not found' });
@@ -255,7 +253,7 @@ bookmarksRoutes.get('/:id', async (c) => {
 });
 
 bookmarksRoutes.post('/', async (c) => {
-  const repo = new BookmarksRepository(getUserId());
+  const repo = new BookmarksRepository(getUserId(c));
   const body = await c.req.json<CreateBookmarkInput>();
   const bookmark = await repo.create(body);
   const response: ApiResponse = {
@@ -267,7 +265,7 @@ bookmarksRoutes.post('/', async (c) => {
 });
 
 bookmarksRoutes.patch('/:id', async (c) => {
-  const repo = new BookmarksRepository(getUserId());
+  const repo = new BookmarksRepository(getUserId(c));
   const body = await c.req.json<UpdateBookmarkInput>();
   const bookmark = await repo.update(c.req.param('id'), body);
   if (!bookmark) {
@@ -282,7 +280,7 @@ bookmarksRoutes.patch('/:id', async (c) => {
 });
 
 bookmarksRoutes.post('/:id/favorite', async (c) => {
-  const repo = new BookmarksRepository(getUserId());
+  const repo = new BookmarksRepository(getUserId(c));
   const bookmark = await repo.toggleFavorite(c.req.param('id'));
   if (!bookmark) {
     throw new HTTPException(404, { message: 'Bookmark not found' });
@@ -296,7 +294,7 @@ bookmarksRoutes.post('/:id/favorite', async (c) => {
 });
 
 bookmarksRoutes.delete('/:id', async (c) => {
-  const repo = new BookmarksRepository(getUserId());
+  const repo = new BookmarksRepository(getUserId(c));
   const deleted = await repo.delete(c.req.param('id'));
   if (!deleted) {
     throw new HTTPException(404, { message: 'Bookmark not found' });
@@ -316,7 +314,7 @@ bookmarksRoutes.delete('/:id', async (c) => {
 const notesRoutes = new Hono();
 
 notesRoutes.get('/', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const query: NoteQuery = {
     category: c.req.query('category'),
     isPinned: c.req.query('pinned') === 'true' ? true : undefined,
@@ -336,7 +334,7 @@ notesRoutes.get('/', async (c) => {
 });
 
 notesRoutes.get('/pinned', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const notes = await repo.getPinned();
   const response: ApiResponse = {
     success: true,
@@ -347,7 +345,7 @@ notesRoutes.get('/pinned', async (c) => {
 });
 
 notesRoutes.get('/archived', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const notes = await repo.getArchived();
   const response: ApiResponse = {
     success: true,
@@ -358,7 +356,7 @@ notesRoutes.get('/archived', async (c) => {
 });
 
 notesRoutes.get('/categories', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const categories = await repo.getCategories();
   const response: ApiResponse = {
     success: true,
@@ -369,7 +367,7 @@ notesRoutes.get('/categories', async (c) => {
 });
 
 notesRoutes.get('/:id', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const note = await repo.get(c.req.param('id'));
   if (!note) {
     throw new HTTPException(404, { message: 'Note not found' });
@@ -383,7 +381,7 @@ notesRoutes.get('/:id', async (c) => {
 });
 
 notesRoutes.post('/', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const body = await c.req.json<CreateNoteInput>();
   const note = await repo.create(body);
   const response: ApiResponse = {
@@ -395,7 +393,7 @@ notesRoutes.post('/', async (c) => {
 });
 
 notesRoutes.patch('/:id', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const body = await c.req.json<UpdateNoteInput>();
   const note = await repo.update(c.req.param('id'), body);
   if (!note) {
@@ -410,7 +408,7 @@ notesRoutes.patch('/:id', async (c) => {
 });
 
 notesRoutes.post('/:id/pin', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const note = await repo.togglePin(c.req.param('id'));
   if (!note) {
     throw new HTTPException(404, { message: 'Note not found' });
@@ -424,7 +422,7 @@ notesRoutes.post('/:id/pin', async (c) => {
 });
 
 notesRoutes.post('/:id/archive', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const note = await repo.archive(c.req.param('id'));
   if (!note) {
     throw new HTTPException(404, { message: 'Note not found' });
@@ -438,7 +436,7 @@ notesRoutes.post('/:id/archive', async (c) => {
 });
 
 notesRoutes.post('/:id/unarchive', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const note = await repo.unarchive(c.req.param('id'));
   if (!note) {
     throw new HTTPException(404, { message: 'Note not found' });
@@ -452,7 +450,7 @@ notesRoutes.post('/:id/unarchive', async (c) => {
 });
 
 notesRoutes.delete('/:id', async (c) => {
-  const repo = new NotesRepository(getUserId());
+  const repo = new NotesRepository(getUserId(c));
   const deleted = await repo.delete(c.req.param('id'));
   if (!deleted) {
     throw new HTTPException(404, { message: 'Note not found' });
@@ -472,7 +470,7 @@ notesRoutes.delete('/:id', async (c) => {
 const calendarRoutes = new Hono();
 
 calendarRoutes.get('/', async (c) => {
-  const repo = new CalendarRepository(getUserId());
+  const repo = new CalendarRepository(getUserId(c));
   const query: EventQuery = {
     startAfter: c.req.query('startAfter'),
     startBefore: c.req.query('startBefore'),
@@ -492,7 +490,7 @@ calendarRoutes.get('/', async (c) => {
 });
 
 calendarRoutes.get('/today', async (c) => {
-  const repo = new CalendarRepository(getUserId());
+  const repo = new CalendarRepository(getUserId(c));
   const events = await repo.getToday();
   const response: ApiResponse = {
     success: true,
@@ -503,7 +501,7 @@ calendarRoutes.get('/today', async (c) => {
 });
 
 calendarRoutes.get('/upcoming', async (c) => {
-  const repo = new CalendarRepository(getUserId());
+  const repo = new CalendarRepository(getUserId(c));
   const days = c.req.query('days') ? parseInt(c.req.query('days')!) : 7;
   const events = await repo.getUpcoming(days);
   const response: ApiResponse = {
@@ -515,7 +513,7 @@ calendarRoutes.get('/upcoming', async (c) => {
 });
 
 calendarRoutes.get('/categories', async (c) => {
-  const repo = new CalendarRepository(getUserId());
+  const repo = new CalendarRepository(getUserId(c));
   const categories = await repo.getCategories();
   const response: ApiResponse = {
     success: true,
@@ -526,7 +524,7 @@ calendarRoutes.get('/categories', async (c) => {
 });
 
 calendarRoutes.get('/:id', async (c) => {
-  const repo = new CalendarRepository(getUserId());
+  const repo = new CalendarRepository(getUserId(c));
   const event = await repo.get(c.req.param('id'));
   if (!event) {
     throw new HTTPException(404, { message: 'Event not found' });
@@ -540,7 +538,7 @@ calendarRoutes.get('/:id', async (c) => {
 });
 
 calendarRoutes.post('/', async (c) => {
-  const repo = new CalendarRepository(getUserId());
+  const repo = new CalendarRepository(getUserId(c));
   const body = await c.req.json<CreateEventInput>();
   const event = await repo.create(body);
   const response: ApiResponse = {
@@ -552,7 +550,7 @@ calendarRoutes.post('/', async (c) => {
 });
 
 calendarRoutes.patch('/:id', async (c) => {
-  const repo = new CalendarRepository(getUserId());
+  const repo = new CalendarRepository(getUserId(c));
   const body = await c.req.json<UpdateEventInput>();
   const event = await repo.update(c.req.param('id'), body);
   if (!event) {
@@ -567,7 +565,7 @@ calendarRoutes.patch('/:id', async (c) => {
 });
 
 calendarRoutes.delete('/:id', async (c) => {
-  const repo = new CalendarRepository(getUserId());
+  const repo = new CalendarRepository(getUserId(c));
   const deleted = await repo.delete(c.req.param('id'));
   if (!deleted) {
     throw new HTTPException(404, { message: 'Event not found' });
@@ -587,7 +585,7 @@ calendarRoutes.delete('/:id', async (c) => {
 const contactsRoutes = new Hono();
 
 contactsRoutes.get('/', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const query: ContactQuery = {
     relationship: c.req.query('relationship'),
     company: c.req.query('company'),
@@ -607,7 +605,7 @@ contactsRoutes.get('/', async (c) => {
 });
 
 contactsRoutes.get('/favorites', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const contacts = await repo.getFavorites();
   const response: ApiResponse = {
     success: true,
@@ -618,7 +616,7 @@ contactsRoutes.get('/favorites', async (c) => {
 });
 
 contactsRoutes.get('/recent', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const limit = c.req.query('limit') ? parseInt(c.req.query('limit')!) : 10;
   const contacts = await repo.getRecentlyContacted(limit);
   const response: ApiResponse = {
@@ -630,7 +628,7 @@ contactsRoutes.get('/recent', async (c) => {
 });
 
 contactsRoutes.get('/birthdays', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const days = c.req.query('days') ? parseInt(c.req.query('days')!) : 30;
   const contacts = await repo.getUpcomingBirthdays(days);
   const response: ApiResponse = {
@@ -642,7 +640,7 @@ contactsRoutes.get('/birthdays', async (c) => {
 });
 
 contactsRoutes.get('/relationships', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const relationships = await repo.getRelationships();
   const response: ApiResponse = {
     success: true,
@@ -653,7 +651,7 @@ contactsRoutes.get('/relationships', async (c) => {
 });
 
 contactsRoutes.get('/companies', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const companies = await repo.getCompanies();
   const response: ApiResponse = {
     success: true,
@@ -664,7 +662,7 @@ contactsRoutes.get('/companies', async (c) => {
 });
 
 contactsRoutes.get('/:id', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const contact = await repo.get(c.req.param('id'));
   if (!contact) {
     throw new HTTPException(404, { message: 'Contact not found' });
@@ -678,7 +676,7 @@ contactsRoutes.get('/:id', async (c) => {
 });
 
 contactsRoutes.post('/', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const body = await c.req.json<CreateContactInput>();
   const contact = await repo.create(body);
   const response: ApiResponse = {
@@ -690,7 +688,7 @@ contactsRoutes.post('/', async (c) => {
 });
 
 contactsRoutes.patch('/:id', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const body = await c.req.json<UpdateContactInput>();
   const contact = await repo.update(c.req.param('id'), body);
   if (!contact) {
@@ -705,7 +703,7 @@ contactsRoutes.patch('/:id', async (c) => {
 });
 
 contactsRoutes.post('/:id/favorite', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const contact = await repo.toggleFavorite(c.req.param('id'));
   if (!contact) {
     throw new HTTPException(404, { message: 'Contact not found' });
@@ -719,7 +717,7 @@ contactsRoutes.post('/:id/favorite', async (c) => {
 });
 
 contactsRoutes.delete('/:id', async (c) => {
-  const repo = new ContactsRepository(getUserId());
+  const repo = new ContactsRepository(getUserId(c));
   const deleted = await repo.delete(c.req.param('id'));
   if (!deleted) {
     throw new HTTPException(404, { message: 'Contact not found' });
@@ -744,7 +742,7 @@ personalDataRoutes.route('/contacts', contactsRoutes);
 
 // Summary endpoint - get overview of all personal data
 personalDataRoutes.get('/summary', async (c) => {
-  const userId = getUserId();
+  const userId = getUserId(c);
 
   const tasksRepo = new TasksRepository(userId);
   const bookmarksRepo = new BookmarksRepository(userId);
