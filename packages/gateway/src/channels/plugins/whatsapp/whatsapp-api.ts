@@ -94,7 +94,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       this.socket.ev.on('creds.update', saveCreds);
 
       // Connection updates
-      this.socket.ev.on('connection.update', (update: any) => {
+      this.socket.ev.on('connection.update', (update: { connection?: string; lastDisconnect?: { error?: Error }; qr?: string }) => {
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
@@ -109,8 +109,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
         }
 
         if (connection === 'close') {
+          const err = lastDisconnect?.error;
           const statusCode =
-            (lastDisconnect?.error as any)?.output?.statusCode;
+            err && 'output' in err ? (err as { output: { statusCode: number } }).output.statusCode : undefined;
           const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
           if (shouldReconnect) {
@@ -127,7 +128,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       });
 
       // Message handler
-      this.socket.ev.on('messages.upsert', (m: any) => {
+      this.socket.ev.on('messages.upsert', (m: { type: string; messages: any[] }) => {
         if (m.type !== 'notify') return;
         for (const msg of m.messages) {
           if (msg.key.fromMe) continue;

@@ -45,6 +45,8 @@ export class LINEChannelAPI implements ChannelPluginAPI {
   private readonly pluginId: string;
   // Map to store recent reply tokens (LINE requires reply tokens for replies)
   private replyTokens: Map<string, string> = new Map();
+  // Track reply-token expiry timers for cleanup
+  private replyTokenTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
   constructor(config: Record<string, unknown>, pluginId: string) {
     this.config = config as unknown as LINEChannelConfig;
@@ -81,7 +83,7 @@ export class LINEChannelAPI implements ChannelPluginAPI {
       const http = await import('node:http');
       const port = this.config.webhook_port ?? 3100;
 
-      this.server = http.createServer(async (req: any, res: any) => {
+      this.server = http.createServer(async (req, res) => {
         if (req.method === 'POST' && req.url === '/webhook') {
           // Collect body
           const chunks: Buffer[] = [];
@@ -117,6 +119,13 @@ export class LINEChannelAPI implements ChannelPluginAPI {
   }
 
   async disconnect(): Promise<void> {
+    // Clear all pending reply-token timers
+    for (const timer of this.replyTokenTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.replyTokenTimers.clear();
+    this.replyTokens.clear();
+
     if (this.server) {
       this.server.close();
       this.server = null;
@@ -179,11 +188,15 @@ export class LINEChannelAPI implements ChannelPluginAPI {
       this.replyTokens.set(userId, event.replyToken);
 
       // Clear expired tokens after 25 seconds (LINE tokens expire ~30s)
-      setTimeout(() => {
+      const prevTimer = this.replyTokenTimers.get(userId);
+      if (prevTimer) clearTimeout(prevTimer);
+      const timer = setTimeout(() => {
         if (this.replyTokens.get(userId) === event.replyToken) {
           this.replyTokens.delete(userId);
         }
+        this.replyTokenTimers.delete(userId);
       }, 25000);
+      this.replyTokenTimers.set(userId, timer);
 
       this.handleIncomingMessage(event).catch((err) => {
         log.error('[LINE] Error handling message:', err);
