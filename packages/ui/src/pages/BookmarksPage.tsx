@@ -35,7 +35,7 @@ export function BookmarksPage() {
       if (selectedFolder) params.folder = selectedFolder;
 
       const data = await bookmarksApi.list(params);
-      setBookmarks(data);
+      setBookmarks(data as BookmarkItem[]);
     } catch (err) {
       console.error('Failed to fetch bookmarks:', err);
     } finally {

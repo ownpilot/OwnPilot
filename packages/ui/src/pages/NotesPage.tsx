@@ -34,7 +34,7 @@ export function NotesPage() {
       }
 
       const data = await notesApi.list(params);
-      setNotes(data);
+      setNotes(data as Note[]);
     } catch (err) {
       console.error('Failed to fetch notes:', err);
     } finally {

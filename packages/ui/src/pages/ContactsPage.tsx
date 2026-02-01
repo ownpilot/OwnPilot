@@ -42,7 +42,7 @@ export function ContactsPage() {
       if (filter === 'favorites') params.favorite = 'true';
 
       const data = await contactsApi.list(params);
-      setContacts(data);
+      setContacts(data as Contact[]);
     } catch (err) {
       console.error('Failed to fetch contacts:', err);
     } finally {

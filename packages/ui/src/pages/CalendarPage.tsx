@@ -48,7 +48,7 @@ export function CalendarPage() {
       };
 
       const data = await calendarApi.list(params);
-      setEvents(data);
+      setEvents(data as CalendarEvent[]);
     } catch (err) {
       console.error('Failed to fetch events:', err);
     } finally {
