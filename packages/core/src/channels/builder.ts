@@ -92,7 +92,7 @@ export class ChannelPluginBuilder extends PluginBuilder {
     }
 
     // Inject channel metadata into manifest
-    this.meta({ category: 'channel' as any });
+    this.meta({ category: 'channel' });
 
     // Build via parent
     const base = super.build();

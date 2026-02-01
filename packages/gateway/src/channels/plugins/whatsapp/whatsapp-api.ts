@@ -229,7 +229,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       eventBus.emit(
         createEvent<ChannelMessageReceivedData>(
           ChannelEvents.MESSAGE_RECEIVED,
-          'channel' as any,
+          'channel',
           this.pluginId,
           { message: normalized }
         )
@@ -256,7 +256,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       eventBus.emit(
         createEvent<ChannelConnectionEventData>(
           eventName,
-          'channel' as any,
+          'channel',
           this.pluginId,
           {
             channelPluginId: this.pluginId,
