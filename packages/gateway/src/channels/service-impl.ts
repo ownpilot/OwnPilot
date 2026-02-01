@@ -152,7 +152,7 @@ export class ChannelServiceImpl implements IChannelService {
         eventBus.emit(
           createEvent(
             ChannelEvents.MESSAGE_SENT,
-            'channel' as any,
+            'channel',
             `channel-service`,
             {
               channelPluginId,
@@ -174,7 +174,7 @@ export class ChannelServiceImpl implements IChannelService {
         eventBus.emit(
           createEvent(
             ChannelEvents.MESSAGE_SEND_ERROR,
-            'channel' as any,
+            'channel',
             'channel-service',
             {
               channelPluginId,
@@ -272,7 +272,7 @@ export class ChannelServiceImpl implements IChannelService {
       eventBus.emit(
         createEvent<ChannelConnectionEventData>(
           ChannelEvents.CONNECTING,
-          'channel' as any,
+          'channel',
           'channel-service',
           {
             channelPluginId,
@@ -292,7 +292,7 @@ export class ChannelServiceImpl implements IChannelService {
       eventBus.emit(
         createEvent<ChannelConnectionEventData>(
           ChannelEvents.CONNECTED,
-          'channel' as any,
+          'channel',
           'channel-service',
           {
             channelPluginId,
@@ -319,7 +319,7 @@ export class ChannelServiceImpl implements IChannelService {
       eventBus.emit(
         createEvent<ChannelConnectionEventData>(
           ChannelEvents.DISCONNECTED,
-          'channel' as any,
+          'channel',
           'channel-service',
           {
             channelPluginId,

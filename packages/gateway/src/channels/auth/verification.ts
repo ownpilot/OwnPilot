@@ -94,7 +94,7 @@ export class ChannelVerificationService {
       eventBus.emit(
         createEvent<ChannelUserVerifiedData>(
           'channel.user.verified',
-          'channel' as any,
+          'channel',
           'channel-verification-service',
           {
             platform,
