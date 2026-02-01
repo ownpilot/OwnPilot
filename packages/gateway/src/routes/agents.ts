@@ -105,6 +105,76 @@ function removeSupersededCoreStubs(tools: ToolRegistry, pluginToolNames: Set<str
 }
 
 // =============================================================================
+// Shared tool registration
+// =============================================================================
+
+type ToolExecutor = (
+  name: string,
+  args: Record<string, unknown>,
+  userId?: string
+) => Promise<{ success: boolean; result?: unknown; error?: string }>;
+
+interface ToolGroup {
+  definitions: readonly import('@ownpilot/core').ToolDefinition[];
+  executor: ToolExecutor;
+  needsUserId: boolean;
+}
+
+/**
+ * Convert a tool execution result to the CoreToolResult format.
+ */
+function toToolResult(result: { success: boolean; result?: unknown; error?: string }): CoreToolResult {
+  if (result.success) {
+    return {
+      content: typeof result.result === 'string'
+        ? result.result
+        : JSON.stringify(result.result, null, 2),
+    };
+  }
+  return { content: result.error ?? 'Unknown error', isError: true };
+}
+
+/**
+ * Register all gateway domain tools (memory, goals, custom data, personal data,
+ * config, triggers, plans) on the given ToolRegistry.
+ *
+ * When `trace` is true, each tool call is wrapped with traceToolCallStart/End.
+ */
+function registerGatewayTools(
+  tools: ToolRegistry,
+  userId: string,
+  trace: boolean,
+): void {
+  const groups: ToolGroup[] = [
+    { definitions: MEMORY_TOOLS, executor: executeMemoryTool, needsUserId: true },
+    { definitions: GOAL_TOOLS, executor: executeGoalTool, needsUserId: true },
+    { definitions: CUSTOM_DATA_TOOLS, executor: executeCustomDataTool as ToolExecutor, needsUserId: false },
+    { definitions: PERSONAL_DATA_TOOLS, executor: executePersonalDataTool as ToolExecutor, needsUserId: false },
+    { definitions: CONFIG_TOOLS, executor: executeConfigTool as ToolExecutor, needsUserId: false },
+    { definitions: TRIGGER_TOOLS, executor: executeTriggerTool, needsUserId: true },
+    { definitions: PLAN_TOOLS, executor: executePlanTool, needsUserId: true },
+  ];
+
+  for (const group of groups) {
+    for (const toolDef of group.definitions) {
+      tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+        const startTime = trace ? traceToolCallStart(toolDef.name, args as Record<string, unknown>) : 0;
+
+        const result = group.needsUserId
+          ? await group.executor(toolDef.name, args as Record<string, unknown>, userId)
+          : await group.executor(toolDef.name, args as Record<string, unknown>);
+
+        if (trace) {
+          traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
+        }
+
+        return toToolResult(result);
+      });
+    }
+  }
+}
+
+// =============================================================================
 // Shared meta-tool helpers (used by both named-agent and chat-agent executors)
 // =============================================================================
 
@@ -629,213 +699,9 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   registerAllTools(tools);
   tools.setApiKeyCenter(gatewayApiKeyCenter);
 
-  // Register memory tools with gateway executors (with tracing)
+  // Register all gateway domain tools (memory, goals, etc.) with tracing
   const userId = 'default';
-  for (const toolDef of MEMORY_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
-
-      const result = await executeMemoryTool(toolDef.name, args as Record<string, unknown>, userId);
-
-      // Trace memory operation
-      if (toolDef.name === 'remember') {
-        traceMemoryOp('add', { content: (args as Record<string, unknown>).content });
-        traceDbWrite('memories', 'insert');
-      } else if (toolDef.name === 'recall') {
-        traceMemoryOp('recall', { query: (args as Record<string, unknown>).query });
-        traceDbRead('memories', 'search');
-      } else if (toolDef.name === 'forget') {
-        traceMemoryOp('delete', { id: (args as Record<string, unknown>).memoryId });
-        traceDbWrite('memories', 'delete');
-      } else if (toolDef.name === 'list_memories') {
-        traceDbRead('memories', 'list');
-      }
-
-      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return {
-        content: result.error ?? 'Unknown error',
-        isError: true,
-      };
-    });
-  }
-
-  // Register goal tools with gateway executors (with tracing)
-  for (const toolDef of GOAL_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
-
-      const result = await executeGoalTool(toolDef.name, args as Record<string, unknown>, userId);
-
-      // Trace goal/database operation
-      if (toolDef.name === 'create_goal') {
-        traceDbWrite('goals', 'insert');
-      } else if (toolDef.name === 'list_goals' || toolDef.name === 'get_goal_details') {
-        traceDbRead('goals', 'select');
-      } else if (toolDef.name === 'update_goal' || toolDef.name === 'complete_step') {
-        traceDbWrite('goals', 'update');
-      }
-
-      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return {
-        content: result.error ?? 'Unknown error',
-        isError: true,
-      };
-    });
-  }
-
-  // Register custom data tools with gateway executors (with tracing)
-  for (const toolDef of CUSTOM_DATA_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
-
-      const result = await executeCustomDataTool(toolDef.name, args as Record<string, unknown>);
-
-      // Trace database operations
-      if (toolDef.name === 'create_custom_table' || toolDef.name === 'delete_custom_table') {
-        traceDbWrite('custom_tables', toolDef.name === 'create_custom_table' ? 'insert' : 'delete');
-      } else if (toolDef.name === 'list_custom_tables' || toolDef.name === 'describe_custom_table') {
-        traceDbRead('custom_tables', 'select');
-      } else if (toolDef.name === 'add_custom_record') {
-        traceDbWrite('custom_records', 'insert');
-      } else if (toolDef.name === 'list_custom_records' || toolDef.name === 'search_custom_records' || toolDef.name === 'get_custom_record') {
-        traceDbRead('custom_records', 'select');
-      } else if (toolDef.name === 'update_custom_record') {
-        traceDbWrite('custom_records', 'update');
-      } else if (toolDef.name === 'delete_custom_record') {
-        traceDbWrite('custom_records', 'delete');
-      }
-
-      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return {
-        content: result.error ?? 'Unknown error',
-        isError: true,
-      };
-    });
-  }
-
-  // Register personal data tools with gateway executors (with tracing)
-  for (const toolDef of PERSONAL_DATA_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
-
-      const result = await executePersonalDataTool(toolDef.name, args as Record<string, unknown>);
-
-      // Trace database operations
-      const toolName = toolDef.name;
-      if (toolName.includes('task')) {
-        traceDbWrite('tasks', toolName.includes('add') || toolName.includes('update') ? 'upsert' : toolName.includes('delete') ? 'delete' : 'select');
-      } else if (toolName.includes('bookmark')) {
-        traceDbWrite('bookmarks', toolName.includes('add') ? 'insert' : toolName.includes('delete') ? 'delete' : 'select');
-      } else if (toolName.includes('note')) {
-        traceDbWrite('notes', toolName.includes('add') || toolName.includes('update') ? 'upsert' : toolName.includes('delete') ? 'delete' : 'select');
-      } else if (toolName.includes('calendar') || toolName.includes('event')) {
-        traceDbWrite('calendar_events', toolName.includes('add') ? 'insert' : toolName.includes('delete') ? 'delete' : 'select');
-      } else if (toolName.includes('contact')) {
-        traceDbWrite('contacts', toolName.includes('add') || toolName.includes('update') ? 'upsert' : toolName.includes('delete') ? 'delete' : 'select');
-      }
-
-      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return {
-        content: result.error ?? 'Unknown error',
-        isError: true,
-      };
-    });
-  }
-
-  // Register config center management tools (with tracing)
-  for (const toolDef of CONFIG_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
-
-      const result = await executeConfigTool(toolDef.name, args as Record<string, unknown>);
-
-      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return {
-        content: result.error ?? 'Unknown error',
-        isError: true,
-      };
-    });
-  }
-
-  // Register trigger management tools (with tracing)
-  for (const toolDef of TRIGGER_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
-
-      const result = await executeTriggerTool(toolDef.name, args as Record<string, unknown>, userId);
-
-      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register plan management tools (with tracing)
-  for (const toolDef of PLAN_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
-
-      const result = await executePlanTool(toolDef.name, args as Record<string, unknown>, userId);
-
-      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
+  registerGatewayTools(tools, userId, true);
 
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
@@ -1710,111 +1576,9 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   registerAllTools(tools);
   tools.setApiKeyCenter(gatewayApiKeyCenter);
 
-  // Register memory tools with gateway executors
+  // Register all gateway domain tools (memory, goals, etc.) without tracing
   const userId = 'default';
-  for (const toolDef of MEMORY_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executeMemoryTool(toolDef.name, args as Record<string, unknown>, userId);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register goal tools with gateway executors
-  for (const toolDef of GOAL_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executeGoalTool(toolDef.name, args as Record<string, unknown>, userId);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register custom data tools with gateway executors
-  for (const toolDef of CUSTOM_DATA_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executeCustomDataTool(toolDef.name, args as Record<string, unknown>);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register personal data tools with gateway executors
-  for (const toolDef of PERSONAL_DATA_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executePersonalDataTool(toolDef.name, args as Record<string, unknown>);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register config center management tools
-  for (const toolDef of CONFIG_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executeConfigTool(toolDef.name, args as Record<string, unknown>);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register trigger management tools
-  for (const toolDef of TRIGGER_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executeTriggerTool(toolDef.name, args as Record<string, unknown>, userId);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register plan management tools
-  for (const toolDef of PLAN_TOOLS) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const result = await executePlanTool(toolDef.name, args as Record<string, unknown>, userId);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
+  registerGatewayTools(tools, userId, false);
 
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
