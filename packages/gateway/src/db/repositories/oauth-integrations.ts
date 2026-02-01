@@ -7,6 +7,9 @@
 
 import { BaseRepository } from './base.js';
 import { randomUUID, randomBytes, createCipheriv, createDecipheriv, createHash } from 'node:crypto';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('OAuthRepo');
 
 // ============================================================================
 // Types
@@ -232,7 +235,7 @@ export class OAuthIntegrationsRepository extends BaseRepository {
 
       return { accessToken, refreshToken, expiresAt };
     } catch (error) {
-      console.error('Failed to decrypt tokens:', error);
+      log.error('Failed to decrypt tokens:', error);
       return null;
     }
   }

@@ -10,6 +10,7 @@
 import {
   getDefaultPluginRegistry,
   createPlugin,
+  buildCorePlugin,
   type PluginManifest,
   type PluginCapability,
   type PluginPermission,
@@ -22,6 +23,16 @@ import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getCustomDataService } from '../services/custom-data-service.js';
 import { pomodoroRepo } from '../db/repositories/pomodoro.js';
 import { registerToolConfigRequirements } from '../services/api-service-registrar.js';
+import { buildTelegramChannelPlugin } from '../channels/plugins/telegram/index.js';
+import { buildWhatsAppChannelPlugin } from '../channels/plugins/whatsapp/index.js';
+import { buildDiscordChannelPlugin } from '../channels/plugins/discord/index.js';
+import { buildSlackChannelPlugin } from '../channels/plugins/slack/index.js';
+import { buildLINEChannelPlugin } from '../channels/plugins/line/index.js';
+import { buildMatrixChannelPlugin } from '../channels/plugins/matrix/index.js';
+import { buildGatewayPlugin } from './gateway-plugin.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Plugins');
 
 // =============================================================================
 // Types
@@ -2606,6 +2617,10 @@ function buildPomodoroPlugin(): BuiltinPluginEntry {
  */
 function getAllBuiltinPlugins(): BuiltinPluginEntry[] {
   return [
+    // Core plugin — built-in tools (file system, code exec, web fetch, utilities, etc.)
+    buildCorePlugin(),
+    // Gateway plugin — service tools (memory, goals, custom data, personal data, triggers, plans)
+    buildGatewayPlugin(),
     // Existing plugins (1-7)
     buildWeatherPlugin(),
     buildNewsRssPlugin(),
@@ -2620,6 +2635,13 @@ function getAllBuiltinPlugins(): BuiltinPluginEntry[] {
     buildWebSearchPlugin(),
     buildTextUtilsPlugin(),
     buildPomodoroPlugin(),
+    // Channel plugins
+    buildTelegramChannelPlugin(),
+    buildWhatsAppChannelPlugin(),
+    buildDiscordChannelPlugin(),
+    buildSlackChannelPlugin(),
+    buildLINEChannelPlugin(),
+    buildMatrixChannelPlugin(),
   ];
 }
 
@@ -2676,7 +2698,7 @@ export async function initializePlugins(): Promise<void> {
               table.description,
             );
           } catch (tableErr) {
-            console.error(`[Plugins] Failed to create table "${table.name}" for ${manifest.id}:`, tableErr);
+            log.error(`[Plugins] Failed to create table "${table.name}" for ${manifest.id}:`, tableErr);
           }
         }
       }
@@ -2690,15 +2712,15 @@ export async function initializePlugins(): Promise<void> {
       plugin.config.enabled = dbRecord.status === 'enabled';
       plugin.status = dbRecord.status as PluginStatus;
 
-      console.log(`[Plugins] Registered: ${manifest.name} v${manifest.version} (${dbRecord.status})`);
+      log.info(`[Plugins] Registered: ${manifest.name} v${manifest.version} (${dbRecord.status})`);
     } catch (error) {
-      console.error(`[Plugins] Failed to register ${manifest.id}:`, error);
+      log.error(`[Plugins] Failed to register ${manifest.id}:`, error);
     }
   }
 
   const allPlugins = registry.getAll();
   const enabledPlugins = registry.getEnabled();
-  console.log(`[Plugins] Initialized ${allPlugins.length} plugins (${enabledPlugins.length} enabled)`);
+  log.info(`[Plugins] Initialized ${allPlugins.length} plugins (${enabledPlugins.length} enabled)`);
 }
 
 /**

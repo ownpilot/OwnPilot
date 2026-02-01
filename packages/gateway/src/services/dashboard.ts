@@ -29,6 +29,9 @@ import { getGoalService } from './goal-service.js';
 import { getTriggerService } from './trigger-service.js';
 import { getPlanService } from './plan-service.js';
 import { getCustomDataService } from './custom-data-service.js';
+import { getLog } from './log.js';
+
+const log = getLog('DashboardService');
 
 // ============================================================================
 // Types
@@ -199,7 +202,7 @@ class BriefingCache {
 
     // Check if data has changed (smart invalidation)
     if (currentDataHash && entry.dataHash !== currentDataHash) {
-      console.log('[BriefingCache] Data changed, invalidating cache');
+      log.info('[BriefingCache] Data changed, invalidating cache');
       this.cache.delete(userId);
       return null;
     }
@@ -422,7 +425,7 @@ export class DashboardService {
 
       return briefing;
     } catch (error) {
-      console.error('[DashboardService] AI briefing generation failed:', error);
+      log.error('[DashboardService] AI briefing generation failed:', error);
 
       // Return fallback briefing
       return this.generateFallbackBriefing(data);
@@ -458,7 +461,7 @@ export class DashboardService {
             fullContent += chunk.content;
             // Fire async callback but don't await (streaming shouldn't block)
             onChunk(chunk.content).catch(err =>
-              console.error('[DashboardService] Chunk callback error:', err)
+              log.error('[DashboardService] Chunk callback error:', err)
             );
           }
         },
@@ -479,7 +482,7 @@ export class DashboardService {
 
       return briefing;
     } catch (error) {
-      console.error('[DashboardService] Streaming AI briefing failed:', error);
+      log.error('[DashboardService] Streaming AI briefing failed:', error);
 
       // Return fallback briefing
       return this.generateFallbackBriefing(data);
@@ -618,7 +621,7 @@ Format your response as JSON:
         cached: false,
       };
     } catch (error) {
-      console.error('[DashboardService] Failed to parse AI response:', error);
+      log.error('[DashboardService] Failed to parse AI response:', error);
       throw error;
     }
   }

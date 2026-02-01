@@ -7,6 +7,9 @@
 import { Hono } from 'hono';
 import { oauthIntegrationsRepo, settingsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Integrations');
 
 export const integrationsRoutes = new Hono();
 
@@ -203,7 +206,7 @@ integrationsRoutes.delete('/:id', async (c) => {
         }
       } catch (error) {
         // Log but don't fail - token might already be revoked
-        console.warn('Failed to revoke token:', error);
+        log.warn('Failed to revoke token:', error);
       }
     }
   }

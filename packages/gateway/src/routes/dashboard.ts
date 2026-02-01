@@ -7,6 +7,9 @@
 import { Hono } from 'hono';
 import type { ApiResponse } from '../types/index.js';
 import { DashboardService, briefingCache, type DailyBriefingData, type AIBriefing } from '../services/dashboard.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Dashboard');
 
 export const dashboardRoutes = new Hono();
 
@@ -46,7 +49,7 @@ dashboardRoutes.get('/briefing', async (c) => {
         model: model ?? undefined,
       });
     } catch (error) {
-      console.error('[Dashboard] AI briefing generation failed:', error);
+      log.error('AI briefing generation failed:', error);
       aiError = error instanceof Error ? error.message : 'AI briefing generation failed';
     }
 
@@ -63,7 +66,7 @@ dashboardRoutes.get('/briefing', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    console.error('[Dashboard] Failed to generate briefing:', error);
+    log.error('Failed to generate briefing:', error);
 
     const response: ApiResponse = {
       success: false,
@@ -102,7 +105,7 @@ dashboardRoutes.get('/data', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    console.error('[Dashboard] Failed to aggregate data:', error);
+    log.error('Failed to aggregate data:', error);
 
     const response: ApiResponse = {
       success: false,
@@ -154,7 +157,7 @@ dashboardRoutes.post('/briefing/refresh', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    console.error('[Dashboard] Failed to refresh briefing:', error);
+    log.error('Failed to refresh briefing:', error);
 
     const response: ApiResponse = {
       success: false,
@@ -248,7 +251,7 @@ dashboardRoutes.get('/timeline', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    console.error('[Dashboard] Failed to generate timeline:', error);
+    log.error('Failed to generate timeline:', error);
 
     const response: ApiResponse = {
       success: false,
@@ -316,7 +319,7 @@ dashboardRoutes.get('/briefing/stream', async (c) => {
       await sendEvent({ type: 'complete', briefing });
       await sendEvent('[DONE]');
     } catch (error) {
-      console.error('[Dashboard] Streaming briefing failed:', error);
+      log.error('Streaming briefing failed:', error);
       await sendEvent({
         type: 'error',
         message: error instanceof Error ? error.message : 'Streaming failed',

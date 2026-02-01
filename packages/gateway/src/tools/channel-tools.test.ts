@@ -2,36 +2,57 @@
  * Channel Tools Tests
  *
  * Tests the channel tool executors (sendChannelMessage, listChannels)
- * and the channel manager injection mechanism.
+ * using the unified IChannelService from @ownpilot/core.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
+
+// ---------------------------------------------------------------------------
+// Mock IChannelService via @ownpilot/core
+// ---------------------------------------------------------------------------
+
+const mockService = {
+  send: vi.fn(async () => 'msg-123'),
+  listChannels: vi.fn(() => [
+    { pluginId: 'channel.telegram', platform: 'telegram', name: 'Telegram', status: 'connected', icon: 'telegram' },
+    { pluginId: 'channel.discord', platform: 'discord', name: 'Discord', status: 'disconnected', icon: 'discord' },
+  ]),
+  getByPlatform: vi.fn((platform: string) => {
+    if (platform === 'telegram') return [{ getStatus: () => 'connected', getPlatform: () => 'telegram' }];
+    if (platform === 'discord') return [{ getStatus: () => 'disconnected', getPlatform: () => 'discord' }];
+    return [];
+  }),
+  getChannel: vi.fn(() => undefined),
+  broadcast: vi.fn(),
+  broadcastAll: vi.fn(),
+  connect: vi.fn(),
+  disconnect: vi.fn(),
+  resolveUser: vi.fn(),
+};
+
+let serviceInitialized = true;
+
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    getChannelService: () => {
+      if (!serviceInitialized) {
+        throw new Error('ChannelService not initialized. Call setChannelService() during gateway startup.');
+      }
+      return mockService;
+    },
+  };
+});
+
+// Import after mocks
+const {
   setChannelManager,
   sendChannelMessageExecutor,
   listChannelsExecutor,
   CHANNEL_TOOLS,
   CHANNEL_TOOL_NAMES,
-} from './channel-tools.js';
-
-// ---------------------------------------------------------------------------
-// Mock channel manager
-// ---------------------------------------------------------------------------
-
-function createMockChannelManager() {
-  return {
-    send: vi.fn(async () => 'msg-123'),
-    getAll: vi.fn(() => [
-      { id: 'telegram:111', type: 'telegram', status: 'connected' },
-      { id: 'discord:222', type: 'discord', status: 'disconnected' },
-    ]),
-    getByType: vi.fn((type: string) => {
-      if (type === 'telegram') return [{ id: 'telegram:111', type: 'telegram', status: 'connected' }];
-      if (type === 'discord') return [{ id: 'discord:222', type: 'discord', status: 'disconnected' }];
-      return [];
-    }),
-  };
-}
+} = await import('./channel-tools.js');
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -40,8 +61,18 @@ function createMockChannelManager() {
 describe('Channel Tools', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset channel manager to null
-    setChannelManager(null);
+    serviceInitialized = true;
+    // Reset mock return values
+    mockService.listChannels.mockReturnValue([
+      { pluginId: 'channel.telegram', platform: 'telegram', name: 'Telegram', status: 'connected', icon: 'telegram' },
+      { pluginId: 'channel.discord', platform: 'discord', name: 'Discord', status: 'disconnected', icon: 'discord' },
+    ]);
+    mockService.getByPlatform.mockImplementation((platform: string) => {
+      if (platform === 'telegram') return [{ getStatus: () => 'connected', getPlatform: () => 'telegram' }];
+      if (platform === 'discord') return [{ getStatus: () => 'disconnected', getPlatform: () => 'discord' }];
+      return [];
+    });
+    mockService.send.mockResolvedValue('msg-123');
   });
 
   // ========================================================================
@@ -73,19 +104,18 @@ describe('Channel Tools', () => {
   // ========================================================================
 
   describe('sendChannelMessageExecutor', () => {
-    it('returns error when channel manager not configured', async () => {
-      const result = await sendChannelMessageExecutor({ message: 'hello' }, {} as any);
+    it('returns error when channel service not initialized', async () => {
+      serviceInitialized = false;
+
+      const result = await sendChannelMessageExecutor({ message: 'hello', chatId: '123' }, {} as any);
 
       expect(result.isError).toBe(true);
-      expect(JSON.parse(result.content as string).error).toContain('Channel manager not configured');
+      expect(JSON.parse(result.content as string).details).toContain('ChannelService not initialized');
     });
 
     it('sends message to specified channelId', async () => {
-      const manager = createMockChannelManager();
-      setChannelManager(manager);
-
       const result = await sendChannelMessageExecutor(
-        { message: 'Hello!', channelId: 'telegram:111' },
+        { message: 'Hello!', channelId: 'channel.telegram', chatId: '111' },
         {} as any,
       );
 
@@ -93,51 +123,44 @@ describe('Channel Tools', () => {
       const content = JSON.parse(result.content as string);
       expect(content.success).toBe(true);
       expect(content.messageId).toBe('msg-123');
-      expect(manager.send).toHaveBeenCalledWith('telegram:111', {
-        content: 'Hello!',
-        channelId: 'telegram:111',
+      expect(content.channelId).toBe('channel.telegram');
+      expect(mockService.send).toHaveBeenCalledWith('channel.telegram', {
+        platformChatId: '111',
+        text: 'Hello!',
         replyToId: undefined,
       });
     });
 
-    it('resolves channel by type when no channelId', async () => {
-      const manager = createMockChannelManager();
-      setChannelManager(manager);
-
+    it('resolves channel by platform when no channelId', async () => {
       const result = await sendChannelMessageExecutor(
-        { message: 'Hello!', channelType: 'telegram' },
+        { message: 'Hello!', platform: 'telegram', chatId: '111' },
         {} as any,
       );
 
       expect(result.isError).toBeFalsy();
       const content = JSON.parse(result.content as string);
-      expect(content.channelId).toBe('telegram:111');
+      expect(content.channelId).toBe('channel.telegram');
     });
 
     it('falls back to any connected channel', async () => {
-      const manager = createMockChannelManager();
-      setChannelManager(manager);
-
       const result = await sendChannelMessageExecutor(
-        { message: 'Hello!' },
+        { message: 'Hello!', chatId: '111' },
         {} as any,
       );
 
       expect(result.isError).toBeFalsy();
       const content = JSON.parse(result.content as string);
-      expect(content.channelId).toBe('telegram:111');
+      expect(content.channelId).toBe('channel.telegram');
     });
 
     it('returns error when no connected channels available', async () => {
-      const manager = createMockChannelManager();
-      manager.getAll.mockReturnValue([
-        { id: 'discord:222', type: 'discord', status: 'disconnected' },
+      mockService.listChannels.mockReturnValue([
+        { pluginId: 'channel.discord', platform: 'discord', name: 'Discord', status: 'disconnected' },
       ]);
-      manager.getByType.mockReturnValue([]);
-      setChannelManager(manager);
+      mockService.getByPlatform.mockReturnValue([]);
 
       const result = await sendChannelMessageExecutor(
-        { message: 'Hello!', channelType: 'slack' },
+        { message: 'Hello!', platform: 'slack', chatId: '111' },
         {} as any,
       );
 
@@ -145,29 +168,34 @@ describe('Channel Tools', () => {
       expect(JSON.parse(result.content as string).error).toContain('No connected channels');
     });
 
-    it('passes replyToId when provided', async () => {
-      const manager = createMockChannelManager();
-      setChannelManager(manager);
-
-      await sendChannelMessageExecutor(
-        { message: 'Reply', channelId: 'telegram:111', replyToId: 'orig-msg' },
+    it('returns error when chatId is missing', async () => {
+      const result = await sendChannelMessageExecutor(
+        { message: 'Hello!', channelId: 'channel.telegram' },
         {} as any,
       );
 
-      expect(manager.send).toHaveBeenCalledWith('telegram:111', {
-        content: 'Reply',
-        channelId: 'telegram:111',
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content as string).error).toContain('chatId is required');
+    });
+
+    it('passes replyToId when provided', async () => {
+      await sendChannelMessageExecutor(
+        { message: 'Reply', channelId: 'channel.telegram', chatId: '111', replyToId: 'orig-msg' },
+        {} as any,
+      );
+
+      expect(mockService.send).toHaveBeenCalledWith('channel.telegram', {
+        platformChatId: '111',
+        text: 'Reply',
         replyToId: 'orig-msg',
       });
     });
 
     it('handles send error gracefully', async () => {
-      const manager = createMockChannelManager();
-      manager.send.mockRejectedValue(new Error('Network timeout'));
-      setChannelManager(manager);
+      mockService.send.mockRejectedValue(new Error('Network timeout'));
 
       const result = await sendChannelMessageExecutor(
-        { message: 'Hello!', channelId: 'telegram:111' },
+        { message: 'Hello!', channelId: 'channel.telegram', chatId: '111' },
         {} as any,
       );
 
@@ -175,24 +203,19 @@ describe('Channel Tools', () => {
       expect(JSON.parse(result.content as string).details).toContain('Network timeout');
     });
 
-    it('skips disconnected channels when resolving by type', async () => {
-      const manager = createMockChannelManager();
-      manager.getByType.mockReturnValue([
-        { id: 'discord:222', type: 'discord', status: 'disconnected' },
+    it('skips disconnected channels when resolving by platform', async () => {
+      mockService.getByPlatform.mockReturnValue([
+        { getStatus: () => 'disconnected', getPlatform: () => 'discord' },
       ]);
-      manager.getAll.mockReturnValue([
-        { id: 'telegram:111', type: 'telegram', status: 'connected' },
-      ]);
-      setChannelManager(manager);
 
       const result = await sendChannelMessageExecutor(
-        { message: 'Hello!', channelType: 'discord' },
+        { message: 'Hello!', platform: 'discord', chatId: '111' },
         {} as any,
       );
 
       // Should fall back to any connected channel
       const content = JSON.parse(result.content as string);
-      expect(content.channelId).toBe('telegram:111');
+      expect(content.channelId).toBe('channel.telegram');
     });
   });
 
@@ -201,47 +224,52 @@ describe('Channel Tools', () => {
   // ========================================================================
 
   describe('listChannelsExecutor', () => {
-    it('returns error when channel manager not configured', async () => {
+    it('returns error when channel service not initialized', async () => {
+      serviceInitialized = false;
+
       const result = await listChannelsExecutor({}, {} as any);
 
       expect(result.isError).toBe(true);
-      expect(JSON.parse(result.content as string).error).toContain('Channel manager not configured');
+      expect(JSON.parse(result.content as string).details).toContain('ChannelService not initialized');
     });
 
     it('lists all channels', async () => {
-      const manager = createMockChannelManager();
-      setChannelManager(manager);
-
       const result = await listChannelsExecutor({}, {} as any);
 
       expect(result.isError).toBeFalsy();
       const content = JSON.parse(result.content as string);
       expect(content.count).toBe(2);
       expect(content.channels).toHaveLength(2);
-      expect(manager.getAll).toHaveBeenCalled();
+      expect(mockService.listChannels).toHaveBeenCalled();
     });
 
-    it('filters by channel type', async () => {
-      const manager = createMockChannelManager();
-      setChannelManager(manager);
-
-      const result = await listChannelsExecutor({ type: 'telegram' }, {} as any);
+    it('filters by platform', async () => {
+      const result = await listChannelsExecutor({ platform: 'telegram' }, {} as any);
 
       expect(result.isError).toBeFalsy();
       const content = JSON.parse(result.content as string);
       expect(content.count).toBe(1);
-      expect(manager.getByType).toHaveBeenCalledWith('telegram');
+      expect(content.channels[0].platform).toBe('telegram');
     });
 
     it('handles list error gracefully', async () => {
-      const manager = createMockChannelManager();
-      manager.getAll.mockImplementation(() => { throw new Error('DB error'); });
-      setChannelManager(manager);
+      mockService.listChannels.mockImplementation(() => { throw new Error('DB error'); });
 
       const result = await listChannelsExecutor({}, {} as any);
 
       expect(result.isError).toBe(true);
       expect(JSON.parse(result.content as string).details).toContain('DB error');
+    });
+  });
+
+  // ========================================================================
+  // setChannelManager (deprecated no-op)
+  // ========================================================================
+
+  describe('setChannelManager', () => {
+    it('is a no-op function for backward compatibility', () => {
+      expect(() => setChannelManager(null)).not.toThrow();
+      expect(() => setChannelManager({})).not.toThrow();
     });
   });
 });

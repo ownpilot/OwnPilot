@@ -6,6 +6,9 @@
 
 import type { DatabaseAdapter, DatabaseConfig, Row, QueryParams } from './types.js';
 import pg from 'pg';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('PostgresAdapter');
 
 const { Pool } = pg;
 type PoolType = InstanceType<typeof Pool>;
@@ -31,11 +34,19 @@ export class PostgresAdapter implements DatabaseAdapter {
       connectionTimeoutMillis: 5000,
     });
 
-    // Test connection
+    // Test connection and register pgvector types
     const client = await this.pool.connect();
     try {
       await client.query('SELECT 1');
-      console.log(`[PostgreSQL] Connected to ${this.config.postgresHost || 'database'}`);
+
+      // Register pgvector type handlers (vector <-> number[])
+      try {
+        const pgvectorModule = await import('pgvector/pg');
+        await pgvectorModule.registerTypes(client);
+        log.info(`[PostgreSQL] Connected to ${this.config.postgresHost || 'database'} (pgvector enabled)`);
+      } catch {
+        log.info(`[PostgreSQL] Connected to ${this.config.postgresHost || 'database'} (pgvector not available)`);
+      }
     } finally {
       client.release();
     }
@@ -92,7 +103,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (this.pool) {
       await this.pool.end();
       this.pool = null;
-      console.log('[PostgreSQL] Connection pool closed');
+      log.info('[PostgreSQL] Connection pool closed');
     }
   }
 

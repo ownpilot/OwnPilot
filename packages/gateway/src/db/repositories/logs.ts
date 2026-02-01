@@ -5,6 +5,9 @@
  */
 
 import { BaseRepository } from './base.js';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('LogsRepo');
 
 // =====================================================
 // TYPES
@@ -184,7 +187,7 @@ export class LogsRepository extends BaseRepository {
       return (await this.getLog(id))!;
     } catch (err) {
       // Don't throw - logging should never break the main flow
-      console.error('[LogsRepository] Failed to log request:', err);
+      log.error('[LogsRepository] Failed to log request:', err);
       return {
         id,
         userId: this.userId,

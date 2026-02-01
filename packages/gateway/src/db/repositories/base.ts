@@ -8,6 +8,9 @@ import { getAdapter, getAdapterSync } from '../adapters/index.js';
 import type { DatabaseAdapter, Row } from '../adapters/types.js';
 import type { StandardQuery, PaginatedResult } from './interfaces.js';
 import { buildPaginatedResult } from './interfaces.js';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('Repository');
 
 /**
  * Base class for all PostgreSQL repositories
@@ -170,6 +173,6 @@ export async function ensureTable(tableName: string, createSQL: string): Promise
 
   if (!result?.exists) {
     await adapter.exec(createSQL);
-    console.log(`[PostgreSQL] Created table: ${tableName}`);
+    log.info(`[PostgreSQL] Created table: ${tableName}`);
   }
 }

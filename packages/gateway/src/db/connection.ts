@@ -7,6 +7,10 @@
  * SQLite support has been removed. Use PostgreSQL instead.
  */
 
+import { getLog } from '../services/log.js';
+
+const log = getLog('Database');
+
 /**
  * @deprecated Use PostgreSQL adapter instead
  * @throws Error - SQLite is no longer supported
@@ -22,14 +26,14 @@ export function getDatabase(): never {
  */
 export function closeDatabase(): void {
   // No-op for backward compatibility
-  console.warn('[Database] closeDatabase() called but SQLite is no longer supported');
+  log.warn('[Database] closeDatabase() called but SQLite is no longer supported');
 }
 
 /**
  * @deprecated Use PostgreSQL adapter instead
  */
 export function getRawDatabase(): null {
-  console.warn('[Database] getRawDatabase() called but SQLite is no longer supported');
+  log.warn('[Database] getRawDatabase() called but SQLite is no longer supported');
   return null;
 }
 

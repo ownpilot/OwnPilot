@@ -14,34 +14,39 @@ import { errorHandler } from '../middleware/error-handler.js';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const sampleEntries = [
-  { id: '1', type: 'request', timestamp: '2026-01-31T10:00:00Z', data: { url: '/chat' } },
-  { id: '2', type: 'response', timestamp: '2026-01-31T10:00:01Z', data: { status: 200 } },
-  { id: '3', type: 'error', timestamp: '2026-01-31T10:00:02Z', data: { message: 'timeout' } },
-  { id: '4', type: 'retry', timestamp: '2026-01-31T10:00:03Z', data: { attempt: 2 } },
-  { id: '5', type: 'tool_call', timestamp: '2026-01-31T10:00:04Z', data: { tool: 'search' } },
-  { id: '6', type: 'tool_result', timestamp: '2026-01-31T10:00:05Z', data: { success: true } },
-  {
-    id: '7',
-    type: 'sandbox_execution',
-    timestamp: '2026-01-31T10:00:06Z',
-    data: { language: 'javascript', sandboxed: true, success: true, timedOut: false },
-  },
-  {
-    id: '8',
-    type: 'sandbox_execution',
-    timestamp: '2026-01-31T10:00:07Z',
-    data: { language: 'python', sandboxed: false, success: false, timedOut: true },
-  },
-];
+const { sampleEntries, mockDebugLog } = vi.hoisted(() => {
+  const entries = [
+    { id: '1', type: 'request', timestamp: '2026-01-31T10:00:00Z', data: { url: '/chat' } },
+    { id: '2', type: 'response', timestamp: '2026-01-31T10:00:01Z', data: { status: 200 } },
+    { id: '3', type: 'error', timestamp: '2026-01-31T10:00:02Z', data: { message: 'timeout' } },
+    { id: '4', type: 'retry', timestamp: '2026-01-31T10:00:03Z', data: { attempt: 2 } },
+    { id: '5', type: 'tool_call', timestamp: '2026-01-31T10:00:04Z', data: { tool: 'search' } },
+    { id: '6', type: 'tool_result', timestamp: '2026-01-31T10:00:05Z', data: { success: true } },
+    {
+      id: '7',
+      type: 'sandbox_execution',
+      timestamp: '2026-01-31T10:00:06Z',
+      data: { language: 'javascript', sandboxed: true, success: true, timedOut: false },
+    },
+    {
+      id: '8',
+      type: 'sandbox_execution',
+      timestamp: '2026-01-31T10:00:07Z',
+      data: { language: 'python', sandboxed: false, success: false, timedOut: true },
+    },
+  ];
 
-const mockDebugLog = {
-  getRecent: vi.fn((count: number) => sampleEntries.slice(-count)),
-  clear: vi.fn(),
-  isEnabled: vi.fn(() => true),
-  setEnabled: vi.fn(),
-  getAll: vi.fn(() => [...sampleEntries]),
-};
+  return {
+    sampleEntries: entries,
+    mockDebugLog: {
+      getRecent: vi.fn((count: number) => entries.slice(-count)),
+      clear: vi.fn(),
+      isEnabled: vi.fn(() => true),
+      setEnabled: vi.fn(),
+      getAll: vi.fn(() => [...entries]),
+    },
+  };
+});
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();

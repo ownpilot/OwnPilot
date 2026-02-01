@@ -25,6 +25,9 @@ import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-c
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { initToolSourceMappings, getToolSource } from '../services/tool-source.js';
 import { TRIGGER_TOOLS, PLAN_TOOLS } from '../tools/index.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Tools');
 
 export const toolsRoutes = new Hono();
 
@@ -54,7 +57,7 @@ function getToolRegistry(): ToolRegistry {
         initializeToolOverrides(toolRegistry);
         toolOverridesInitialized = true;
       } catch (error) {
-        console.error('[tools] Failed to initialize tool overrides:', error);
+        log.error('Failed to initialize tool overrides:', error);
       }
     }
   }

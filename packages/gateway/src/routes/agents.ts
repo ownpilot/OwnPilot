@@ -10,6 +10,7 @@ import { HTTPException } from 'hono/http-exception';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
 import {
   Agent,
   createAgent,
@@ -66,6 +67,9 @@ import { getMemoryService } from '../services/memory-service.js';
 import { getGoalService } from '../services/goal-service.js';
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
 import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-center-impl.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Agents');
 
 /**
  * Maps plugin tool names to the core stub tool names they supersede.
@@ -576,7 +580,7 @@ export function invalidateAgentCache(): void {
   agentCache.clear();
   agentConfigCache.clear();
   chatAgentCache.clear();
-  console.log('[Agents] Agent cache invalidated due to tool/plugin changes');
+  log.info('Agent cache invalidated due to tool/plugin changes');
 }
 
 /**
@@ -590,11 +594,14 @@ function generateAgentId(): string {
  * Create runtime Agent instance from database record
  */
 async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
-  // Resolve "default" provider/model to actual values
-  const { provider: resolvedProvider, model: resolvedModel } = await resolveProviderAndModel(
-    record.provider,
-    record.model
-  );
+  // Resolve "default" provider/model to actual values via IProviderService
+  const providerSvc = hasServiceRegistry()
+    ? getServiceRegistry().tryGet(Services.Provider)
+    : null;
+
+  const { provider: resolvedProvider, model: resolvedModel } = providerSvc
+    ? await providerSvc.resolve({ provider: record.provider, model: record.model })
+    : await resolveProviderAndModel(record.provider, record.model);
 
   // Validate resolved values
   if (!resolvedProvider) {
@@ -1083,7 +1090,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
       };
     });
   }
-  console.log(`[Agents] Registered ${activeCustomToolDefs.length} active custom tools`);
+  log.info(`Registered ${activeCustomToolDefs.length} active custom tools`);
 
   // Register channel tools
   setChannelManager(channelManager);
@@ -1120,13 +1127,13 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     }
     pluginToolDefs.push(definition);
   }
-  console.log(`[Agents] Registered ${pluginTools.length} plugin tools (${pluginOverrides} overrides)`);
+  log.info(`Registered ${pluginTools.length} plugin tools (${pluginOverrides} overrides)`);
 
   // Remove core stub tools that overlap with plugin tools to prevent LLM confusion
   const pluginToolNames = new Set(pluginToolDefs.map(t => t.name));
   const removedStubs = removeSupersededCoreStubs(tools, pluginToolNames);
   if (removedStubs > 0) {
-    console.log(`[Agents] Removed ${removedStubs} superseded core stubs`);
+    log.info(`Removed ${removedStubs} superseded core stubs`);
   }
 
   // Get tool definitions for prompt injection
@@ -2134,7 +2141,7 @@ export function resetChatAgentContext(provider: string, model: string): boolean 
     const newConversation = memory.create(currentConversation.systemPrompt);
     agent.loadConversation(newConversation.id);
 
-    console.log(`[Chat] Reset context for ${provider}/${model}, new conversation: ${newConversation.id}`);
+    log.info(`Reset context for ${provider}/${model}, new conversation: ${newConversation.id}`);
     return true;
   }
 
@@ -2147,7 +2154,7 @@ export function resetChatAgentContext(provider: string, model: string): boolean 
 export function clearAllChatAgentCaches(): number {
   const count = chatAgentCache.size;
   chatAgentCache.clear();
-  console.log(`[Chat] Cleared ${count} cached chat agents`);
+  log.info(`Cleared ${count} cached chat agents`);
   return count;
 }
 

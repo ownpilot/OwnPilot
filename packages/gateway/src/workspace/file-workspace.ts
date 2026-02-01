@@ -26,6 +26,9 @@ import {
   initializeDataDirectories,
   type WorkspaceSubdir,
 } from '../paths/index.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('FileWorkspace');
 
 // Workspace subdirectories
 const WORKSPACE_SUBDIRS: WorkspaceSubdir[] = ['scripts', 'output', 'temp', 'downloads'];
@@ -64,7 +67,7 @@ export function initializeFileWorkspace(): FileWorkspaceConfig {
   // Set environment variable for code execution tools
   process.env.WORKSPACE_DIR = fileWorkspaceConfig.workspaceDir;
 
-  console.log(`[FileWorkspace] Initialized at: ${fileWorkspaceConfig.workspaceDir}`);
+  log.info(`[FileWorkspace] Initialized at: ${fileWorkspaceConfig.workspaceDir}`);
 
   return fileWorkspaceConfig;
 }
@@ -355,7 +358,7 @@ export function createSessionWorkspace(options: {
     JSON.stringify(meta, null, 2)
   );
 
-  console.log(`[FileWorkspace] Created session workspace: ${id}`);
+  log.info(`[FileWorkspace] Created session workspace: ${id}`);
 
   return {
     ...meta,
@@ -609,7 +612,7 @@ export function deleteSessionWorkspace(id: string): boolean {
     rmSync(zipPath, { force: true });
   }
 
-  console.log(`[FileWorkspace] Deleted session workspace: ${id}`);
+  log.info(`[FileWorkspace] Deleted session workspace: ${id}`);
   return true;
 }
 
@@ -636,7 +639,7 @@ export async function zipSessionWorkspace(id: string): Promise<string> {
     const archive = archiver('zip', { zlib: { level: 9 } });
 
     output.on('close', () => {
-      console.log(`[FileWorkspace] Created zip: ${zipPath} (${archive.pointer()} bytes)`);
+      log.info(`[FileWorkspace] Created zip: ${zipPath} (${archive.pointer()} bytes)`);
       resolve(zipPath);
     });
 
@@ -670,7 +673,7 @@ export function cleanupSessionWorkspaces(maxAgeDays: number = 7): { deleted: str
   }
 
   if (deleted.length > 0) {
-    console.log(`[FileWorkspace] Cleaned up ${deleted.length} old workspaces`);
+    log.info(`[FileWorkspace] Cleaned up ${deleted.length} old workspaces`);
   }
 
   return { deleted, kept };

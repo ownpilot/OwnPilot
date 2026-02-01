@@ -14,6 +14,9 @@ import type { ApiResponse } from '../types/index.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Database');
 
 
 // Tables to export (in dependency order) — also serves as whitelist for SQL operations
@@ -308,7 +311,7 @@ databaseRoutes.post('/backup', async (c) => {
     const line = data.toString().trim();
     if (line) {
       operationStatus.output?.push(line);
-      console.log(`[Backup] ${line}`);
+      log.info(`${line}`);
     }
   });
 
@@ -316,7 +319,7 @@ databaseRoutes.post('/backup', async (c) => {
     const line = data.toString().trim();
     if (line) {
       operationStatus.output?.push(line);
-      console.log(`[Backup] ${line}`);
+      log.info(`${line}`);
     }
   });
 
@@ -328,14 +331,14 @@ databaseRoutes.post('/backup', async (c) => {
     } else {
       operationStatus.output?.push(`Backup saved to: ${filename}`);
     }
-    console.log(`[Backup] Completed with code ${code}`);
+    log.info(`Completed with code ${code}`);
   });
 
   backup.on('error', (err) => {
     operationStatus.isRunning = false;
     operationStatus.lastResult = 'failure';
     operationStatus.lastError = err.message;
-    console.error(`[Backup] Error: ${err.message}`);
+    log.error(`Error: ${err.message}`);
   });
 
   return c.json({
@@ -442,7 +445,7 @@ databaseRoutes.post('/restore', async (c) => {
     const line = data.toString().trim();
     if (line) {
       operationStatus.output?.push(line);
-      console.log(`[Restore] ${line}`);
+      log.info(`${line}`);
     }
   });
 
@@ -450,7 +453,7 @@ databaseRoutes.post('/restore', async (c) => {
     const line = data.toString().trim();
     if (line) {
       operationStatus.output?.push(line);
-      console.log(`[Restore] ${line}`);
+      log.info(`${line}`);
     }
   });
 
@@ -460,14 +463,14 @@ databaseRoutes.post('/restore', async (c) => {
     if (code !== 0) {
       operationStatus.lastError = `Restore exited with code ${code}`;
     }
-    console.log(`[Restore] Completed with code ${code}`);
+    log.info(`Completed with code ${code}`);
   });
 
   restore.on('error', (err) => {
     operationStatus.isRunning = false;
     operationStatus.lastResult = 'failure';
     operationStatus.lastError = err.message;
-    console.error(`[Restore] Error: ${err.message}`);
+    log.error(`Error: ${err.message}`);
   });
 
   return c.json({
@@ -1300,7 +1303,7 @@ databaseRoutes.post('/migrate', async (c) => {
     const line = data.toString().trim();
     if (line) {
       operationStatus.output?.push(line);
-      console.log(`[Migration] ${line}`);
+      log.info(`${line}`);
     }
   });
 
@@ -1308,7 +1311,7 @@ databaseRoutes.post('/migrate', async (c) => {
     const line = data.toString().trim();
     if (line) {
       operationStatus.output?.push(`[ERROR] ${line}`);
-      console.error(`[Migration ERROR] ${line}`);
+      log.error(`[Migration ERROR] ${line}`);
     }
   });
 
@@ -1318,14 +1321,14 @@ databaseRoutes.post('/migrate', async (c) => {
     if (code !== 0) {
       operationStatus.lastError = `Migration exited with code ${code}`;
     }
-    console.log(`[Migration] Completed with code ${code}`);
+    log.info(`Completed with code ${code}`);
   });
 
   migration.on('error', (err) => {
     operationStatus.isRunning = false;
     operationStatus.lastResult = 'failure';
     operationStatus.lastError = err.message;
-    console.error(`[Migration] Error: ${err.message}`);
+    log.error(`Error: ${err.message}`);
   });
 
   return c.json({

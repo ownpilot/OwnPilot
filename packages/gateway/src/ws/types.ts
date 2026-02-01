@@ -17,26 +17,15 @@ export interface Session {
 }
 
 /**
- * Channel types supported by the gateway
+ * Channel platform identifier.
+ * Open string type — channels are now dynamic plugins.
  */
-export type ChannelType =
-  | 'telegram'
-  | 'discord'
-  | 'slack'
-  | 'matrix'
-  | 'webchat'
-  | 'whatsapp'
-  | 'signal';
+export type ChannelType = string;
 
 /**
  * Channel connection status
  */
-export type ChannelStatus =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
-  | 'error';
+export type ChannelStatus = string;
 
 /**
  * Channel info

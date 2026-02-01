@@ -16,6 +16,9 @@ import type {
 import { gatewayEvents } from '../ws/events.js';
 import { channelManager } from '../channels/manager.js';
 import type { IncomingMessage, OutgoingMessage } from '../ws/types.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('WorkspaceManager');
 
 type EventHandler<T extends keyof WorkspaceEvents> = WorkspaceEvents[T];
 
@@ -218,7 +221,7 @@ class WorkspaceInstance implements Workspace {
         try {
           (handler as (...args: unknown[]) => void)(...args);
         } catch (error) {
-          console.error(`Error in workspace event handler for ${event}:`, error);
+          log.error(`Error in workspace event handler for ${event}:`, error);
         }
       }
     }
@@ -285,7 +288,7 @@ export class WorkspaceManager {
       },
     });
 
-    console.log(`Workspace created: ${fullConfig.name} (${id})`);
+    log.info(`Workspace created: ${fullConfig.name} (${id})`);
     return workspace;
   }
 

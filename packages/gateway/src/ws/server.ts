@@ -14,6 +14,9 @@ import { sessionManager } from './session.js';
 import { gatewayEvents, ClientEventHandler } from './events.js';
 import { channelManager } from '../channels/index.js';
 import { getOrCreateDefaultAgent, getAgent, isDemoMode } from '../routes/agents.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('WebSocket');
 
 export interface WSGatewayConfig {
   /** Port for standalone WebSocket server (if not using HTTP upgrade) */
@@ -66,7 +69,7 @@ export class WSGateway {
 
     this.setupServer();
 
-    console.log(`WebSocket Gateway listening on ws://0.0.0.0:${this.config.port}`);
+    log.info('Gateway listening', { address: `ws://0.0.0.0:${this.config.port}` });
   }
 
   /**
@@ -97,7 +100,7 @@ export class WSGateway {
       }
     });
 
-    console.log(`WebSocket Gateway attached at path: ${this.config.path}`);
+    log.info('Gateway attached', { path: this.config.path });
   }
 
   /**
@@ -111,7 +114,7 @@ export class WSGateway {
     });
 
     this.wss.on('error', (error) => {
-      console.error('WebSocket server error:', error);
+      log.error('Server error', { error });
     });
 
     // Start heartbeat
@@ -123,7 +126,7 @@ export class WSGateway {
     this.cleanupTimer = setInterval(() => {
       const removed = sessionManager.cleanup(this.config.sessionTimeout);
       if (removed > 0) {
-        console.log(`Cleaned up ${removed} stale sessions`);
+        log.info('Cleaned up stale sessions', { removed });
       }
     }, this.config.sessionTimeout / 2);
   }
@@ -135,7 +138,7 @@ export class WSGateway {
     // Create session
     const session = sessionManager.create(socket);
 
-    console.log(`New WebSocket connection: ${session.id} from ${request.socket.remoteAddress}`);
+    log.info('New connection', { sessionId: session.id, remoteAddress: request.socket.remoteAddress });
 
     // Send ready event
     sessionManager.send(session.id, 'connection:ready', { sessionId: session.id });
@@ -146,12 +149,12 @@ export class WSGateway {
     });
 
     socket.on('close', (code, reason) => {
-      console.log(`WebSocket closed: ${session.id} (code: ${code}, reason: ${reason.toString()})`);
+      log.info('Connection closed', { sessionId: session.id, code, reason: reason.toString() });
       sessionManager.removeBySocket(socket);
     });
 
     socket.on('error', (error) => {
-      console.error(`WebSocket error for session ${session.id}:`, error);
+      log.error('Connection error', { sessionId: session.id, error });
     });
 
     socket.on('pong', () => {
@@ -180,7 +183,7 @@ export class WSGateway {
         this.clientHandler
           .process(eventType, message.payload as ClientEvents[typeof eventType], sessionId)
           .catch((error) => {
-            console.error(`Error processing ${eventType}:`, error);
+            log.error('Error processing event', { eventType, error });
             this.sendError(
               sessionId,
               'HANDLER_ERROR',
@@ -188,10 +191,10 @@ export class WSGateway {
             );
           });
       } else {
-        console.warn(`Unknown client event: ${message.type}`);
+        log.warn('Unknown client event', { type: message.type });
       }
     } catch (error) {
-      console.error('Failed to parse WebSocket message:', error);
+      log.error('Failed to parse message', { error });
       this.sendError(sessionId, 'PARSE_ERROR', 'Invalid JSON message');
     }
   }
@@ -202,7 +205,7 @@ export class WSGateway {
   private setupClientHandlers(): void {
     // Chat send - Integrate with agent system
     this.clientHandler.handle('chat:send', async (data, sessionId) => {
-      console.log('Chat message received:', data);
+      log.info('Chat message received', { data });
 
       try {
         // Get or create default agent
@@ -317,7 +320,7 @@ export class WSGateway {
           });
         }
       } catch (error) {
-        console.error('Error processing chat message:', error);
+        log.error('Error processing chat message', { error });
         if (sessionId) {
           sessionManager.send(sessionId, 'chat:error', {
             sessionId,
@@ -329,7 +332,7 @@ export class WSGateway {
 
     // Chat stop
     this.clientHandler.handle('chat:stop', async (data, sessionId) => {
-      console.log('Chat stop requested:', data);
+      log.info('Chat stop requested', { data });
       // Agent stop would be implemented here
       if (sessionId) {
         sessionManager.send(sessionId, 'system:notification', {
@@ -341,7 +344,7 @@ export class WSGateway {
 
     // Chat retry
     this.clientHandler.handle('chat:retry', async (data, sessionId) => {
-      console.log('Chat retry requested:', data);
+      log.info('Chat retry requested', { data });
       if (sessionId) {
         sessionManager.send(sessionId, 'system:notification', {
           type: 'info',
@@ -352,7 +355,7 @@ export class WSGateway {
 
     // Channel connect - Initialize channel adapter based on type
     this.clientHandler.handle('channel:connect', async (data, sessionId) => {
-      console.log('Channel connect:', data);
+      log.info('Channel connect', { data });
 
       try {
         // Generate channel ID if not provided
@@ -366,10 +369,14 @@ export class WSGateway {
           type: data.type,
           name: channelName,
           ...config,
-        } as import('../channels/types.js').AnyChannelConfig;
+        };
 
         // Connect the channel using the channel manager
         const adapter = await channelManager.connect(fullConfig);
+
+        if (!adapter) {
+          throw new Error(`Channel plugin ${channelId} not found`);
+        }
 
         // Subscribe this session to the channel
         if (sessionId) {
@@ -388,9 +395,9 @@ export class WSGateway {
           });
         }
 
-        console.log(`Channel connected: ${data.type}:${channelId}`);
+        log.info('Channel connected', { type: data.type, channelId });
       } catch (error) {
-        console.error('Failed to connect channel:', error);
+        log.error('Failed to connect channel', { error });
         if (sessionId) {
           sessionManager.send(sessionId, 'channel:status', {
             channelId: 'unknown',
@@ -403,7 +410,7 @@ export class WSGateway {
 
     // Channel disconnect
     this.clientHandler.handle('channel:disconnect', async (data, sessionId) => {
-      console.log('Channel disconnect:', data);
+      log.info('Channel disconnect', { data });
 
       try {
         await channelManager.disconnect(data.channelId);
@@ -416,7 +423,7 @@ export class WSGateway {
           });
         }
       } catch (error) {
-        console.error('Failed to disconnect channel:', error);
+        log.error('Failed to disconnect channel', { error });
         if (sessionId) {
           sessionManager.send(sessionId, 'system:notification', {
             type: 'error',
@@ -428,7 +435,7 @@ export class WSGateway {
 
     // Channel subscribe
     this.clientHandler.handle('channel:subscribe', async (data, sessionId) => {
-      console.log('Channel subscribe:', data);
+      log.info('Channel subscribe', { data });
 
       if (sessionId) {
         const success = sessionManager.subscribeToChannel(sessionId, data.channelId);
@@ -441,7 +448,7 @@ export class WSGateway {
 
     // Channel unsubscribe
     this.clientHandler.handle('channel:unsubscribe', async (data, sessionId) => {
-      console.log('Channel unsubscribe:', data);
+      log.info('Channel unsubscribe', { data });
 
       if (sessionId) {
         const success = sessionManager.unsubscribeFromChannel(sessionId, data.channelId);
@@ -454,7 +461,7 @@ export class WSGateway {
 
     // Channel send - Send message to a channel
     this.clientHandler.handle('channel:send', async (data, sessionId) => {
-      console.log('Channel send:', data);
+      log.info('Channel send', { data });
 
       try {
         const messageId = await channelManager.send(data.message.channelId, data.message);
@@ -466,7 +473,7 @@ export class WSGateway {
           });
         }
       } catch (error) {
-        console.error('Failed to send channel message:', error);
+        log.error('Failed to send channel message', { error });
         if (sessionId) {
           sessionManager.send(sessionId, 'channel:message:error', {
             channelId: data.message.channelId,
@@ -478,7 +485,7 @@ export class WSGateway {
 
     // Channel list - Return list of connected channels
     this.clientHandler.handle('channel:list', async (_data, sessionId) => {
-      console.log('Channel list requested');
+      log.info('Channel list requested');
 
       const adapters = channelManager.getAll();
       const channels: Channel[] = adapters.map((adapter) => ({
@@ -510,7 +517,7 @@ export class WSGateway {
 
     // Workspace create
     this.clientHandler.handle('workspace:create', async (data, sessionId) => {
-      console.log('Workspace create:', data);
+      log.info('Workspace create', { data });
       if (sessionId) {
         sessionManager.send(sessionId, 'workspace:created', {
           workspace: {
@@ -525,7 +532,7 @@ export class WSGateway {
 
     // Workspace switch
     this.clientHandler.handle('workspace:switch', async (data, sessionId) => {
-      console.log('Workspace switch:', data);
+      log.info('Workspace switch', { data });
       if (sessionId) {
         sessionManager.setMetadata(sessionId, 'currentWorkspace', data.workspaceId);
         sessionManager.send(sessionId, 'system:notification', {
@@ -537,7 +544,7 @@ export class WSGateway {
 
     // Workspace delete
     this.clientHandler.handle('workspace:delete', async (data, sessionId) => {
-      console.log('Workspace delete:', data);
+      log.info('Workspace delete', { data });
       if (sessionId) {
         sessionManager.send(sessionId, 'workspace:deleted', {
           workspaceId: data.workspaceId,
@@ -547,7 +554,7 @@ export class WSGateway {
 
     // Workspace list
     this.clientHandler.handle('workspace:list', async (_data, sessionId) => {
-      console.log('Workspace list requested');
+      log.info('Workspace list requested');
       if (sessionId) {
         sessionManager.send(sessionId, 'system:notification', {
           type: 'info',
@@ -558,7 +565,7 @@ export class WSGateway {
 
     // Agent configure
     this.clientHandler.handle('agent:configure', async (data, sessionId) => {
-      console.log('Agent configure:', data);
+      log.info('Agent configure', { data });
       if (sessionId) {
         sessionManager.setMetadata(sessionId, 'agentConfig', data);
         sessionManager.send(sessionId, 'agent:state', {
@@ -570,7 +577,7 @@ export class WSGateway {
 
     // Agent stop
     this.clientHandler.handle('agent:stop', async (_data, sessionId) => {
-      console.log('Agent stop requested');
+      log.info('Agent stop requested');
       if (sessionId) {
         sessionManager.send(sessionId, 'agent:state', {
           agentId: 'default',
@@ -581,7 +588,7 @@ export class WSGateway {
 
     // Tool cancel
     this.clientHandler.handle('tool:cancel', async (data, sessionId) => {
-      console.log('Tool cancel:', data);
+      log.info('Tool cancel', { data });
       if (sessionId) {
         sessionManager.send(sessionId, 'tool:end', {
           sessionId,
@@ -604,7 +611,7 @@ export class WSGateway {
 
     // Session pong (response to server ping)
     this.clientHandler.handle('session:pong', async (data) => {
-      console.log('Session pong:', data);
+      log.debug('Session pong', { data });
     });
   }
 

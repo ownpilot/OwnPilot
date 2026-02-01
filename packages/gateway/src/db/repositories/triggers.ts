@@ -7,6 +7,9 @@
 
 import { BaseRepository } from './base.js';
 import { getNextRunTime } from '@ownpilot/core';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('TriggersRepo');
 
 // ============================================================================
 // Types
@@ -556,12 +559,12 @@ export class TriggersRepository extends BaseRepository {
    */
   private calculateNextFire(config: ScheduleConfig): string | null {
     if (!config.cron) {
-      console.warn('[TriggersRepo] calculateNextFire called with empty cron expression');
+      log.warn('[TriggersRepo] calculateNextFire called with empty cron expression');
       return null;
     }
     const nextRun = getNextRunTime(config.cron);
     if (!nextRun) {
-      console.warn(`[TriggersRepo] No next fire time found for cron "${config.cron}" — trigger will not auto-fire`);
+      log.warn(`[TriggersRepo] No next fire time found for cron "${config.cron}" — trigger will not auto-fire`);
     }
     return nextRun ? nextRun.toISOString() : null;
   }

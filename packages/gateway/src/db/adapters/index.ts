@@ -11,6 +11,9 @@ import type { DatabaseAdapter, DatabaseConfig } from './types.js';
 import { getDatabaseConfig } from './types.js';
 import { PostgresAdapter } from './postgres-adapter.js';
 import { initializeSchema } from '../schema.js';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('DbAdapter');
 
 let adapter: DatabaseAdapter | null = null;
 let schemaInitialized = false;
@@ -59,7 +62,7 @@ export function getAdapterSync(): DatabaseAdapter {
  */
 export async function initializeAdapter(config?: DatabaseConfig): Promise<DatabaseAdapter> {
   if (adapter) {
-    console.log('[Database] Adapter already initialized');
+    log.info('[Database] Adapter already initialized');
     return adapter;
   }
   adapter = await createAdapter(config);

@@ -7,6 +7,9 @@
 
 import { type CreateTriggerInput } from '../db/repositories/triggers.js';
 import { getTriggerService } from '../services/trigger-service.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Proactive');
 
 // ============================================================================
 // Default Trigger Definitions
@@ -158,13 +161,13 @@ export async function initializeDefaultTriggers(userId = 'default'): Promise<{
       await service.createTrigger(userId, trigger);
       created++;
     } catch (error) {
-      console.error(`[Proactive] Failed to create trigger "${trigger.name}":`, error);
+      log.error(`[Proactive] Failed to create trigger "${trigger.name}":`, error);
       skipped++;
     }
   }
 
   if (created > 0) {
-    console.log(`[Proactive] Created ${created} default triggers for user ${userId}`);
+    log.info(`[Proactive] Created ${created} default triggers for user ${userId}`);
   }
 
   return { created, skipped };

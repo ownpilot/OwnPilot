@@ -15,6 +15,9 @@ import {
 } from '../db/repositories/plans.js';
 import { getPlanService, type PlanService } from '../services/plan-service.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('PlanExecutor');
 
 // ============================================================================
 // Types
@@ -781,7 +784,7 @@ export class PlanExecutor extends EventEmitter {
 
   private log(message: string): void {
     if (this.config.verbose) {
-      console.log(`[PlanExecutor] ${message}`);
+      log.info(`[PlanExecutor] ${message}`);
     }
   }
 }

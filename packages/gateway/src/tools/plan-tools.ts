@@ -8,6 +8,9 @@ import type { ToolDefinition, ToolExecutionResult as CoreToolResult } from '@own
 import type { CreateStepInput } from '../db/repositories/plans.js';
 import { getPlanService } from '../services/plan-service.js';
 import { getPlanExecutor } from '../plans/executor.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('PlanTools');
 
 // =============================================================================
 // Tool Definitions
@@ -365,7 +368,7 @@ export async function executePlanTool(
       try {
         // Start execution in background (non-blocking)
         executor.execute(planId).catch((e) => {
-          console.error(`[Plans] Execution failed for ${planId}:`, e);
+          log.error(`[Plans] Execution failed for ${planId}:`, e);
         });
 
         return {
