@@ -95,25 +95,12 @@ export function MediaSettingsTab() {
     setError(null);
 
     try {
-      // TODO: migrate to mediaSettingsApi.update(capability, { provider, model }) once endpoint is added
-      const res = await fetch(`/api/v1/media-settings/${capability}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, model }),
-      });
-
-      const data = await res.json();
-
-      if (!data.success) {
-        setError(data.error || 'Failed to save setting');
-        // Reload to revert optimistic update
-        await loadSettings();
-      } else {
-        setSaved(capability);
-        setTimeout(() => setSaved(null), 2000);
-      }
+      await mediaSettingsApi.update(capability, { provider, model });
+      setSaved(capability);
+      setTimeout(() => setSaved(null), 2000);
     } catch (err) {
-      setError('Failed to save setting');
+      const message = err instanceof Error ? err.message : 'Failed to save setting';
+      setError(message);
       await loadSettings();
     } finally {
       setSavingCapability(null);
@@ -126,19 +113,11 @@ export function MediaSettingsTab() {
     setSavingCapability(capability);
 
     try {
-      // TODO: migrate to mediaSettingsApi.reset(capability) once endpoint is added
-      const res = await fetch(`/api/v1/media-settings/${capability}`, {
-        method: 'DELETE',
-      });
-
-      if (res.ok) {
-        await loadSettings();
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to reset');
-      }
+      await mediaSettingsApi.reset(capability);
+      await loadSettings();
     } catch (err) {
-      setError('Failed to reset setting');
+      const message = err instanceof Error ? err.message : 'Failed to reset';
+      setError(message);
     } finally {
       setSavingCapability(null);
     }
