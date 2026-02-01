@@ -1,31 +1,26 @@
 /**
- * EventBus Tests
+ * EventBus Legacy API Tests
  *
- * Tests for the typed event system including:
- * - Basic emit/on/off
- * - Category handlers
- * - Pattern matching (wildcard)
- * - Async handler safety
- * - createEvent helper
- * - Singleton lifecycle
+ * Tests backward compatibility of the legacy API (getEventBus, createEvent).
+ * These tests verify that existing code continues to work unchanged.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  EventBus,
   createEvent,
   getEventBus,
   resetEventBus,
   EventTypes,
+  type ILegacyEventBus,
   type TypedEvent,
-  type EventCategory,
 } from './index.js';
 
-describe('EventBus', () => {
-  let bus: EventBus;
+describe('Legacy EventBus API', () => {
+  let bus: ILegacyEventBus;
 
   beforeEach(() => {
-    bus = new EventBus();
+    resetEventBus();
+    bus = getEventBus();
   });
 
   // ==========================================================================
@@ -163,7 +158,6 @@ describe('EventBus', () => {
       const handler = vi.fn();
       bus.onPattern('resource.*', handler);
 
-      // 'resource.goal.updated' has 3 segments, pattern has 2
       bus.emit(createEvent('resource.goal.updated', 'resource', 'test', {}));
 
       expect(handler).not.toHaveBeenCalled();
@@ -264,7 +258,6 @@ describe('EventBus', () => {
         bus.emit(createEvent('test.event', 'system', 'test', {}));
       }).not.toThrow();
 
-      // Allow async rejection to be caught
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(errorSpy).toHaveBeenCalled();

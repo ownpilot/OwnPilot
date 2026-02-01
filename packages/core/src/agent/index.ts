@@ -183,7 +183,7 @@ export {
   type OrchestratorContext,
   type ToolCallRecord,
   type AgentStep,
-  type OrchestratorEvents,
+
   type AgentTeam,
   type Plan,
   type PlanStep,

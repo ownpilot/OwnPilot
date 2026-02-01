@@ -59,6 +59,37 @@
       "releaseDate": "2026-01-27"
     },
     {
+      "id": "liquid/lfm-2.5-1.2b-thinking:free",
+      "name": "LFM2.5-1.2B-Thinking (free)",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-20"
+    },
+    {
+      "id": "liquid/lfm-2.5-1.2b-instruct:free",
+      "name": "LFM2.5-1.2B-Instruct (free)",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-20"
+    },
+    {
       "id": "z-ai/glm-4.7-flash",
       "name": "GLM-4.7",
       "contextWindow": 200000,
@@ -92,6 +123,53 @@
       ],
       "default": false,
       "releaseDate": "2026-01-14"
+    },
+    {
+      "id": "black-forest-labs/flux.2-klein-4b",
+      "name": "FLUX.2 Klein 4B",
+      "contextWindow": 40960,
+      "maxOutput": 40960,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-14"
+    },
+    {
+      "id": "allenai/molmo-2-8b:free",
+      "name": "Molmo2 8B (free)",
+      "contextWindow": 36864,
+      "maxOutput": 36864,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-09"
+    },
+    {
+      "id": "bytedance-seed/seedream-4.5",
+      "name": "Seedream 4.5",
+      "contextWindow": 4096,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-23"
     },
     {
       "id": "minimax/minimax-m2.1",
@@ -144,12 +222,43 @@
       "releaseDate": "2025-12-17"
     },
     {
-      "id": "openai/gpt-5.2-pro",
-      "name": "GPT-5.2 Pro",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 21,
-      "outputPrice": 168,
+      "id": "black-forest-labs/flux.2-max",
+      "name": "FLUX.2 Max",
+      "contextWindow": 46864,
+      "maxOutput": 46864,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-16"
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "name": "Nemotron 3 Nano 30B A3B (free)",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-14"
+    },
+    {
+      "id": "openai/gpt-5.2-chat",
+      "name": "GPT-5.2 Chat",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
       "capabilities": [
         "chat",
         "vision",
@@ -162,12 +271,12 @@
       "releaseDate": "2025-12-11"
     },
     {
-      "id": "openai/gpt-5.2-chat-latest",
-      "name": "GPT-5.2 Chat",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 1.75,
-      "outputPrice": 14,
+      "id": "openai/gpt-5.2-pro",
+      "name": "GPT-5.2 Pro",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 21,
+      "outputPrice": 168,
       "capabilities": [
         "chat",
         "vision",
@@ -195,6 +304,51 @@
       ],
       "default": false,
       "releaseDate": "2025-12-11"
+    },
+    {
+      "id": "sourceful/riverflow-v2-max-preview",
+      "name": "Riverflow V2 Max Preview",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-08"
+    },
+    {
+      "id": "sourceful/riverflow-v2-fast-preview",
+      "name": "Riverflow V2 Fast Preview",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-08"
+    },
+    {
+      "id": "sourceful/riverflow-v2-standard-preview",
+      "name": "Riverflow V2 Standard Preview",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-08"
     },
     {
       "id": "deepseek/deepseek-v3.2-speciale",
@@ -227,6 +381,51 @@
       ],
       "default": false,
       "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "tngtech/tng-r1t-chimera:free",
+      "name": "R1T Chimera (free)",
+      "contextWindow": 163840,
+      "maxOutput": 163840,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-26"
+    },
+    {
+      "id": "black-forest-labs/flux.2-pro",
+      "name": "FLUX.2 Pro",
+      "contextWindow": 46864,
+      "maxOutput": 46864,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-25"
+    },
+    {
+      "id": "black-forest-labs/flux.2-flex",
+      "name": "FLUX.2 Flex",
+      "contextWindow": 67344,
+      "maxOutput": 67344,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-25"
     },
     {
       "id": "anthropic/claude-opus-4.5",
@@ -449,6 +648,23 @@
       ],
       "default": false,
       "releaseDate": "2025-10-29"
+    },
+    {
+      "id": "nvidia/nemotron-nano-12b-v2-vl:free",
+      "name": "Nemotron Nano 12B 2 VL (free)",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-28"
     },
     {
       "id": "minimax/minimax-m2",
@@ -697,6 +913,21 @@
       "releaseDate": "2025-09-11"
     },
     {
+      "id": "qwen/qwen3-next-80b-a3b-instruct:free",
+      "name": "Qwen3 Next 80B A3B Instruct (free)",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-11"
+    },
+    {
       "id": "qwen/qwen3-next-80b-a3b-thinking",
       "name": "Qwen3 Next 80B A3B Thinking",
       "contextWindow": 262144,
@@ -737,6 +968,22 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "nvidia/nemotron-nano-9b-v2:free",
+      "name": "Nemotron Nano 9B V2 (free)",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -954,6 +1201,38 @@
       ],
       "default": false,
       "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-oss-20b:free",
+      "name": "gpt-oss-20b (free)",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "openai/gpt-oss-120b:free",
+      "name": "gpt-oss-120b (free)",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
     },
     {
       "id": "openai/gpt-oss-120b:exacto",
@@ -1299,6 +1578,21 @@
       "releaseDate": "2025-07-09"
     },
     {
+      "id": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+      "name": "Uncensored (free)",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-09"
+    },
+    {
       "id": "google/gemma-3n-e2b-it:free",
       "name": "Gemma 3n 2B (free)",
       "contextWindow": 8192,
@@ -1451,7 +1745,6 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -1599,6 +1892,22 @@
       ],
       "default": false,
       "releaseDate": "2025-05-06"
+    },
+    {
+      "id": "qwen/qwen3-4b:free",
+      "name": "Qwen3 4B (free)",
+      "contextWindow": 40960,
+      "maxOutput": 40960,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-30"
     },
     {
       "id": "qwen/qwen3-32b:free",
@@ -2279,8 +2588,8 @@
     {
       "id": "meta-llama/llama-3.3-70b-instruct:free",
       "name": "Llama 3.3 70B Instruct (free)",
-      "contextWindow": 65536,
-      "maxOutput": 65536,
+      "contextWindow": 131072,
+      "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -2335,6 +2644,69 @@
       ],
       "default": false,
       "releaseDate": "2024-09-25"
+    },
+    {
+      "id": "meta-llama/llama-3.2-3b-instruct:free",
+      "name": "Llama 3.2 3B Instruct (free)",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-25"
+    },
+    {
+      "id": "qwen/qwen-2.5-vl-7b-instruct:free",
+      "name": "Qwen2.5-VL 7B Instruct (free)",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-28"
+    },
+    {
+      "id": "nousresearch/hermes-3-llama-3.1-405b:free",
+      "name": "Hermes 3 405B Instruct (free)",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-16"
+    },
+    {
+      "id": "meta-llama/llama-3.1-405b-instruct:free",
+      "name": "Llama 3.1 405B Instruct (free)",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
     },
     {
       "id": "mistralai/mistral-nemo:free",

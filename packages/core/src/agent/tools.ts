@@ -28,10 +28,12 @@ import { logToolCall, logToolResult } from './debug.js';
 import type { ConfigCenter } from '../services/config-center.js';
 import {
   getEventBus,
+  getEventSystem,
   createEvent,
   EventTypes,
   type ToolRegisteredData,
   type ToolExecutedData,
+  type IHookBus,
 } from '../events/index.js';
 // Backward compat alias
 type ApiKeyCenter = ConfigCenter;
@@ -73,6 +75,7 @@ export class ToolRegistry {
   private _apiKeyCenter?: ApiKeyCenter;
   private readonly globalMiddleware: ToolMiddleware[] = [];
   private readonly perToolMiddleware = new Map<string, ToolMiddleware[]>();
+  private readonly hookUnsubs: (() => void)[] = [];
   private _onConfigRegistration?: ConfigRegistrationHandler;
 
   /**
@@ -328,9 +331,9 @@ export class ToolRegistry {
 
     const startTime = Date.now();
     try {
-      // Run middleware before hooks
-      const middleware = this.getMiddleware(name);
-      const mwContext: ToolMiddlewareContext = {
+      // Run before hooks (replaces runBeforeMiddleware)
+      const hookBus = getEventSystem().hooks;
+      const beforeCtx = await hookBus.call('tool:before-execute', {
         toolName: name,
         args,
         conversationId: context.conversationId,
@@ -338,13 +341,31 @@ export class ToolRegistry {
         source: tool.source,
         trustLevel: tool.trustLevel,
         pluginId: tool.pluginId,
-      };
-      await this.runBeforeMiddleware(middleware, mwContext);
+      });
 
-      let result = await tool.executor(mwContext.args, fullContext);
+      // Check if hook cancelled the execution
+      if (beforeCtx.cancelled) {
+        return err(new PluginError(
+          tool.pluginId ?? 'core',
+          `Tool execution cancelled by hook`,
+        ));
+      }
 
-      // Run middleware after hooks
-      result = await this.runAfterMiddleware(middleware, mwContext, result);
+      // Use potentially modified args from hooks
+      let result = await tool.executor(beforeCtx.data.args, fullContext);
+
+      // Run after hooks (replaces runAfterMiddleware)
+      const afterCtx = await hookBus.call('tool:after-execute', {
+        toolName: name,
+        args: beforeCtx.data.args,
+        result,
+        conversationId: context.conversationId,
+        userId: context.userId,
+        source: tool.source,
+        trustLevel: tool.trustLevel,
+        pluginId: tool.pluginId,
+      });
+      result = afterCtx.data.result;
 
       // Emit tool executed event (success)
       getEventBus().emit(createEvent<ToolExecutedData>(
@@ -612,6 +633,41 @@ export class ToolRegistry {
    */
   use(middleware: ToolMiddleware): void {
     this.globalMiddleware.push(middleware);
+
+    // Bridge to hook bus
+    const hookBus = getEventSystem().hooks;
+    if (middleware.before) {
+      const unsub = hookBus.tap('tool:before-execute', async (ctx) => {
+        const mwCtx: ToolMiddlewareContext = {
+          toolName: ctx.data.toolName,
+          args: ctx.data.args,
+          conversationId: ctx.data.conversationId,
+          userId: ctx.data.userId,
+          source: ctx.data.source,
+          trustLevel: ctx.data.trustLevel,
+          pluginId: ctx.data.pluginId,
+        };
+        await middleware.before!(mwCtx);
+        // Write back any modifications
+        ctx.data.args = mwCtx.args;
+      });
+      this.hookUnsubs.push(unsub);
+    }
+    if (middleware.after) {
+      const unsub = hookBus.tap('tool:after-execute', async (ctx) => {
+        const mwCtx: ToolMiddlewareContext = {
+          toolName: ctx.data.toolName,
+          args: ctx.data.args,
+          conversationId: ctx.data.conversationId,
+          userId: ctx.data.userId,
+          source: ctx.data.source,
+          trustLevel: ctx.data.trustLevel,
+          pluginId: ctx.data.pluginId,
+        };
+        ctx.data.result = await middleware.after!(mwCtx, ctx.data.result);
+      });
+      this.hookUnsubs.push(unsub);
+    }
   }
 
   /**
@@ -624,6 +680,42 @@ export class ToolRegistry {
       this.perToolMiddleware.set(toolName, list);
     }
     list.push(middleware);
+
+    // Bridge to hook bus with tool name filter
+    const hookBus = getEventSystem().hooks;
+    if (middleware.before) {
+      const unsub = hookBus.tap('tool:before-execute', async (ctx) => {
+        if (ctx.data.toolName !== toolName) return;
+        const mwCtx: ToolMiddlewareContext = {
+          toolName: ctx.data.toolName,
+          args: ctx.data.args,
+          conversationId: ctx.data.conversationId,
+          userId: ctx.data.userId,
+          source: ctx.data.source,
+          trustLevel: ctx.data.trustLevel,
+          pluginId: ctx.data.pluginId,
+        };
+        await middleware.before!(mwCtx);
+        ctx.data.args = mwCtx.args;
+      }, 20); // per-tool runs after global (priority 20 > default 10)
+      this.hookUnsubs.push(unsub);
+    }
+    if (middleware.after) {
+      const unsub = hookBus.tap('tool:after-execute', async (ctx) => {
+        if (ctx.data.toolName !== toolName) return;
+        const mwCtx: ToolMiddlewareContext = {
+          toolName: ctx.data.toolName,
+          args: ctx.data.args,
+          conversationId: ctx.data.conversationId,
+          userId: ctx.data.userId,
+          source: ctx.data.source,
+          trustLevel: ctx.data.trustLevel,
+          pluginId: ctx.data.pluginId,
+        };
+        ctx.data.result = await middleware.after!(mwCtx, ctx.data.result);
+      }, 20);
+      this.hookUnsubs.push(unsub);
+    }
   }
 
   /**
@@ -673,6 +765,11 @@ export class ToolRegistry {
     this.pluginTools.clear();
     this.globalMiddleware.length = 0;
     this.perToolMiddleware.clear();
+    // Unsubscribe all hook handlers
+    for (const unsub of this.hookUnsubs) {
+      unsub();
+    }
+    this.hookUnsubs.length = 0;
   }
 }
 

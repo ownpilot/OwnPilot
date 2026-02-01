@@ -3,20 +3,12 @@
  * Handles tool calling, reasoning, multi-step planning, and agent execution
  */
 
-import { EventEmitter } from 'events';
+// EventEmitter removed - using unified EventSystem instead
 import type { ToolDefinition, ToolExecutor } from './tools.js';
 import { ToolRegistry } from './tools.js';
 import type { Message, ToolCall } from './types.js';
 import { injectMemoryIntoPrompt, type MemoryInjectionOptions } from './memory-injector.js';
-import {
-  getEventBus,
-  createEvent,
-  EventTypes,
-  type AgentIterationData,
-  type AgentCompleteData,
-  type AgentErrorData,
-  type AgentToolCallData,
-} from '../events/index.js';
+import { getEventSystem } from '../events/index.js';
 
 /**
  * LLM Provider interface for orchestrator
@@ -133,26 +125,19 @@ export interface AgentStep {
   timestamp: Date;
 }
 
-export interface OrchestratorEvents {
-  'step': (step: AgentStep, context: OrchestratorContext) => void;
-  'tool_call': (toolCall: ToolCallRecord, context: OrchestratorContext) => void;
-  'iteration': (iteration: number, context: OrchestratorContext) => void;
-  'complete': (context: OrchestratorContext) => void;
-  'error': (error: Error, context: OrchestratorContext) => void;
-}
+/** @deprecated OrchestratorEvents removed - use EventSystem with 'agent.*' events instead */
 
 // ============================================================================
 // AGENT ORCHESTRATOR
 // ============================================================================
 
-export class AgentOrchestrator extends EventEmitter {
+export class AgentOrchestrator {
   private config: AgentConfig;
   private registry: ToolRegistry | null = null;
   private currentExecution: OrchestratorContext | null = null;
   private abortController: AbortController | null = null;
 
   constructor(config: AgentConfig) {
-    super();
     this.config = {
       maxIterations: 10,
       maxTokens: 4096,
@@ -217,31 +202,21 @@ export class AgentOrchestrator extends EventEmitter {
       await this.runExecutionLoop(context);
       context.status = 'completed';
       context.endTime = new Date();
-      this.emit('complete', context);
-      // Bridge to EventBus
-      getEventBus().emit(createEvent<AgentCompleteData>(
-        EventTypes.AGENT_COMPLETE, 'agent', `orchestrator:${context.id}`,
-        {
-          agentId: context.id,
-          response: context.response,
-          iterationCount: context.iteration,
-          duration: context.endTime!.getTime() - context.startTime.getTime(),
-        },
-      ));
+      getEventSystem().emit('agent.complete', `orchestrator:${context.id}`, {
+        agentId: context.id,
+        response: context.response,
+        iterationCount: context.iteration,
+        duration: context.endTime!.getTime() - context.startTime.getTime(),
+      });
     } catch (error: unknown) {
       context.status = 'failed';
       context.error = error instanceof Error ? error.message : String(error);
       context.endTime = new Date();
-      this.emit('error', error instanceof Error ? error : new Error(String(error)), context);
-      // Bridge to EventBus
-      getEventBus().emit(createEvent<AgentErrorData>(
-        EventTypes.AGENT_ERROR, 'agent', `orchestrator:${context.id}`,
-        {
-          agentId: context.id,
-          error: context.error,
-          iteration: context.iteration,
-        },
-      ));
+      getEventSystem().emit('agent.error', `orchestrator:${context.id}`, {
+        agentId: context.id,
+        error: context.error,
+        iteration: context.iteration,
+      });
     } finally {
       this.currentExecution = null;
       this.abortController = null;
@@ -375,12 +350,10 @@ export class AgentOrchestrator extends EventEmitter {
       }
 
       context.iteration++;
-      this.emit('iteration', context.iteration, context);
-      // Bridge to EventBus
-      getEventBus().emit(createEvent<AgentIterationData>(
-        EventTypes.AGENT_ITERATION, 'agent', `orchestrator:${context.id}`,
-        { agentId: context.id, iteration: context.iteration },
-      ));
+      getEventSystem().emit('agent.iteration', `orchestrator:${context.id}`, {
+        agentId: context.id,
+        iteration: context.iteration,
+      });
 
       // Call LLM
       const response = await this.config.provider.complete({
@@ -612,19 +585,14 @@ export class AgentOrchestrator extends EventEmitter {
     record.duration = record.endTime.getTime() - startTime.getTime();
 
     context.toolCalls.push(record);
-    this.emit('tool_call', record, context);
-    // Bridge to EventBus
-    getEventBus().emit(createEvent<AgentToolCallData>(
-      EventTypes.AGENT_TOOL_CALL, 'agent', `orchestrator:${context.id}`,
-      {
-        agentId: context.id,
-        toolName: record.name,
-        args: record.arguments,
-        duration: record.duration,
-        success: record.success,
-        error: record.error,
-      },
-    ));
+    getEventSystem().emit('agent.tool_call', `orchestrator:${context.id}`, {
+      agentId: context.id,
+      toolName: record.name,
+      args: record.arguments,
+      duration: record.duration,
+      success: record.success,
+      error: record.error,
+    });
 
     if (this.config.verbose) {
       console.log(`[Tool] ${toolName}:`, args, '->', record.result);
@@ -781,7 +749,7 @@ export interface AgentTeam {
   sharedContext: Record<string, unknown>;
 }
 
-export class MultiAgentOrchestrator extends EventEmitter {
+export class MultiAgentOrchestrator {
   private teams: Map<string, AgentTeam> = new Map();
   private defaultTeam: string | null = null;
 

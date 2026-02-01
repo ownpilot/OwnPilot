@@ -15,9 +15,7 @@ import type { ToolDefinition, ToolExecutor, ToolContext, ToolExecutionResult } f
 import type { PluginId, ToolId } from '../types/branded.js';
 import type { ConfigFieldDefinition } from '../services/config-center.js';
 import {
-  getEventBus,
-  createEvent,
-  EventTypes,
+  getEventSystem,
   type PluginCustomData,
   type PluginStatusData,
 } from '../events/index.js';
@@ -61,6 +59,7 @@ export type PluginStatus = 'installed' | 'enabled' | 'disabled' | 'error' | 'upd
  * Plugin category for UI grouping
  */
 export type PluginCategoryType =
+  | 'core'
   | 'productivity'
   | 'communication'
   | 'utilities'
@@ -69,6 +68,7 @@ export type PluginCategoryType =
   | 'media'
   | 'developer'
   | 'lifestyle'
+  | 'channel'
   | 'other';
 
 /**
@@ -314,7 +314,6 @@ export interface HandlerResult {
 export class PluginRegistry {
   private plugins: Map<string, Plugin> = new Map();
   private handlers: MessageHandler[] = [];
-  private eventHandlers: Map<string, Set<(data: unknown) => void>> = new Map();
   private storageDir: string;
 
   constructor(storageDir?: string) {
@@ -430,11 +429,11 @@ export class PluginRegistry {
       await plugin.lifecycle.onEnable();
     }
 
-    // Bridge to EventBus
-    getEventBus().emit(createEvent<PluginStatusData>(
-      EventTypes.PLUGIN_STATUS, 'plugin', `plugin-registry`,
-      { pluginId: id, oldStatus, newStatus: 'enabled' },
-    ));
+    getEventSystem().emit('plugin.status', 'plugin-registry', {
+      pluginId: id,
+      oldStatus,
+      newStatus: 'enabled',
+    } as PluginStatusData);
 
     return true;
   }
@@ -457,11 +456,11 @@ export class PluginRegistry {
 
     await this.savePluginConfig(id, plugin.config);
 
-    // Bridge to EventBus
-    getEventBus().emit(createEvent<PluginStatusData>(
-      EventTypes.PLUGIN_STATUS, 'plugin', `plugin-registry`,
-      { pluginId: id, oldStatus, newStatus: 'disabled' },
-    ));
+    getEventSystem().emit('plugin.status', 'plugin-registry', {
+      pluginId: id,
+      oldStatus,
+      newStatus: 'disabled',
+    } as PluginStatusData);
 
     return true;
   }
@@ -531,38 +530,26 @@ export class PluginRegistry {
   }
 
   /**
-   * Emit event to all plugins
+   * Emit event to all plugins (delegates to unified EventSystem)
    */
   emitEvent(event: string, data: unknown): void {
-    const handlers = this.eventHandlers.get(event);
-    if (handlers) {
-      for (const handler of handlers) {
-        try {
-          handler(data);
-        } catch (error) {
-          console.error(`[PluginRegistry] Event handler error for ${event}:`, error);
-        }
-      }
-    }
-
-    // Bridge to EventBus: forward plugin events
+    // Parse pluginId:eventName format (legacy convention)
     const parts = event.split(':');
     const pluginId = parts[0] ?? event;
     const eventName = parts.slice(1).join(':') || event;
-    getEventBus().emit(createEvent<PluginCustomData>(
-      EventTypes.PLUGIN_CUSTOM, 'plugin', `plugin:${pluginId}`,
-      { pluginId, event: eventName, data },
-    ));
+
+    getEventSystem().emit('plugin.custom', `plugin:${pluginId}`, {
+      pluginId,
+      event: eventName,
+      data,
+    } as PluginCustomData);
   }
 
   /**
-   * Subscribe to events
+   * Subscribe to events (delegates to unified EventSystem)
    */
   onEvent(event: string, handler: (data: unknown) => void): void {
-    if (!this.eventHandlers.has(event)) {
-      this.eventHandlers.set(event, new Set());
-    }
-    this.eventHandlers.get(event)!.add(handler);
+    getEventSystem().onAny(event, (e) => handler(e.data));
   }
 
   /**
@@ -663,16 +650,23 @@ export class PluginRegistry {
   }
 
   /**
-   * Create events API for a plugin
+   * Create events API for a plugin (backed by ScopedBus)
    */
   private createEvents(pluginId: string): PluginEvents {
+    const bus = getEventSystem().scoped(`plugin.${pluginId}`, `plugin:${pluginId}`);
+    const handlerMap = new Map<Function, () => void>();
+
     return {
-      emit: (event, data) => this.emitEvent(`${pluginId}:${event}`, data),
-      on: (event, handler) => this.onEvent(event, handler),
-      off: (event, handler) => {
-        const handlers = this.eventHandlers.get(event);
-        if (handlers) {
-          handlers.delete(handler);
+      emit: (event, data) => bus.emit(event, data),
+      on: (event, handler) => {
+        const unsub = bus.on(event, (e) => handler(e.data));
+        handlerMap.set(handler, unsub);
+      },
+      off: (_event, handler) => {
+        const unsub = handlerMap.get(handler);
+        if (unsub) {
+          unsub();
+          handlerMap.delete(handler);
         }
       },
     };
@@ -1030,6 +1024,9 @@ export {
   containsForbiddenPatterns,
   createPluginAPIProxy,
 } from './api-boundary.js';
+
+// CorePlugin - built-in tools packaged as a plugin
+export { buildCorePlugin } from './core-plugin.js';
 
 // Example plugins - reference implementations
 // NOTE: Only Weather plugin is exported here. Other plugins cause circular dependencies

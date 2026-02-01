@@ -70,5 +70,8 @@ export * from './agent-executor/index.js';
 // Agent Builder
 export * from './agent-builder/index.js';
 
+// Channels (unified multi-platform messaging)
+export * from './channels/index.js';
+
 // Version
 export const VERSION = '0.1.0';

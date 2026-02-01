@@ -828,7 +828,6 @@ export function calculateCost(
   const pricing = getModelPricing(provider, modelId);
 
   if (!pricing) {
-    console.warn(`No pricing found for ${provider}/${modelId}`);
     return 0;
   }
 

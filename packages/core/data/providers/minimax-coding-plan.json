@@ -44,6 +44,6 @@
       "releaseDate": "2025-10-27"
     }
   ],
-  "baseUrl": "https://api.minimax.io/anthropic/v1",
+  "baseUrl": "https://api.minimax.io/v1",
   "docsUrl": "https://platform.minimax.io/docs/coding-plan/intro"
 }

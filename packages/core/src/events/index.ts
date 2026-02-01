@@ -1,140 +1,140 @@
 /**
- * EventBus - Unified Typed Event System
+ * OwnPilot Event System - Public API
  *
- * A single event bus that replaces both the AgentOrchestrator EventEmitter
- * and the PluginRegistry custom pub/sub. Provides typed events, wildcard
- * subscriptions, and async handler support.
+ * Unified event and hook system. All event/hook operations go through
+ * the EventSystem singleton.
+ *
+ * NEW API (typed, recommended):
+ *   import { getEventSystem } from './events/index.js';
+ *   const system = getEventSystem();
+ *   system.emit('agent.complete', 'orchestrator', { ... }); // compile-time checked
+ *   system.hooks.tap('tool:before-execute', handler);
+ *   const scoped = system.scoped('channel', 'my-source');
+ *
+ * LEGACY API (backward compatible, still works):
+ *   import { getEventBus, createEvent, EventTypes } from './events/index.js';
+ *   const bus = getEventBus();
+ *   bus.emit(createEvent('agent.complete', 'agent', 'orchestrator', data));
  */
 
 // ============================================================================
-// Event Categories & Base Types
+// New API - Types
 // ============================================================================
 
-export type EventCategory = 'tool' | 'resource' | 'plugin' | 'agent' | 'system';
+export type {
+  EventCategory,
+  TypedEvent,
+  EventHandler,
+  Unsubscribe,
+  HookContext,
+  HookHandler,
+} from './types.js';
 
-export interface TypedEvent<T = unknown> {
-  /** Dot-delimited event type, e.g. 'agent.complete', 'resource.created' */
-  type: string;
-  /** Top-level category for wildcard subscriptions */
-  category: EventCategory;
-  /** ISO-8601 timestamp */
-  timestamp: string;
-  /** Who emitted: 'orchestrator', 'plugin:reminder', 'goal-service', etc. */
-  source: string;
-  /** Event-specific payload */
-  data: T;
-}
+export { deriveCategory } from './types.js';
 
 // ============================================================================
-// Concrete Event Data Types
+// New API - Event Map
 // ============================================================================
 
-// --- Agent events (bridge from AgentOrchestrator EventEmitter) ---
+export type { EventMap, EventType, EventPayload } from './event-map.js';
 
-export interface AgentIterationData {
-  agentId: string;
-  iteration: number;
-}
-
-export interface AgentCompleteData {
-  agentId: string;
-  response?: string;
-  iterationCount: number;
-  duration: number;
-}
-
-export interface AgentErrorData {
-  agentId: string;
-  error: string;
-  iteration: number;
-}
-
-export interface AgentToolCallData {
-  agentId: string;
-  toolName: string;
-  args: unknown;
-  duration: number;
-  success: boolean;
-  error?: string;
-}
-
-export interface AgentStepData {
-  agentId: string;
-  stepType: string;
-  content: unknown;
-}
-
-// --- Tool events ---
-
-import type { ToolSource } from '../agent/types.js';
-
-export type { ToolSource };
-
-export interface ToolRegisteredData {
-  name: string;
-  source: ToolSource;
-  pluginId?: string;
-}
-
-export interface ToolUnregisteredData {
-  name: string;
-}
-
-export interface ToolExecutedData {
-  name: string;
-  duration: number;
-  success: boolean;
-  error?: string;
-  conversationId?: string;
-}
-
-// --- Resource events (generic CRUD for any repository) ---
-
-export interface ResourceCreatedData {
-  resourceType: string;
-  id: string;
-  data?: unknown;
-}
-
-export interface ResourceUpdatedData {
-  resourceType: string;
-  id: string;
-  changes?: unknown;
-}
-
-export interface ResourceDeletedData {
-  resourceType: string;
-  id: string;
-}
-
-// --- Plugin events ---
-
-export interface PluginStatusData {
-  pluginId: string;
-  oldStatus: string;
-  newStatus: string;
-}
-
-export interface PluginCustomData {
-  pluginId: string;
-  event: string;
-  data: unknown;
-}
-
-// --- System events ---
-
-export interface SystemStartupData {
-  version: string;
-}
-
-export interface SystemShutdownData {
-  reason?: string;
-}
+// Event data interfaces (re-export for convenience)
+export type {
+  AgentIterationData,
+  AgentCompleteData,
+  AgentErrorData,
+  AgentToolCallData,
+  AgentStepData,
+  ToolRegisteredData,
+  ToolUnregisteredData,
+  ToolExecutedData,
+  ResourceCreatedData,
+  ResourceUpdatedData,
+  ResourceDeletedData,
+  PluginStatusData,
+  PluginCustomData,
+  SystemStartupData,
+  SystemShutdownData,
+  ChannelMessageEditedData,
+  ChannelMessageDeletedData,
+  ChannelReactionData,
+  GatewayConnectionReadyData,
+  GatewayConnectionErrorData,
+  GatewayChannelConnectedData,
+  GatewayChannelDisconnectedData,
+  GatewayChannelStatusData,
+  GatewayChannelMessageData,
+  GatewayChatMessageData,
+  GatewayChatStreamStartData,
+  GatewayChatStreamChunkData,
+  GatewayChatStreamEndData,
+  GatewayChatErrorData,
+  GatewayToolStartData,
+  GatewayToolEndData,
+  GatewayWorkspaceCreatedData,
+  GatewayWorkspaceDeletedData,
+  GatewaySystemNotificationData,
+  GatewaySystemStatusData,
+} from './event-map.js';
 
 // ============================================================================
-// Event Type Constants
+// New API - Hook Map
 // ============================================================================
 
+export type { HookMap, HookType, HookPayload } from './hook-map.js';
+
+export type {
+  ToolBeforeExecuteHookData,
+  ToolAfterExecuteHookData,
+  PluginBeforeLoadHookData,
+  PluginAfterLoadHookData,
+  PluginBeforeEnableHookData,
+  PluginBeforeDisableHookData,
+  PluginBeforeUnloadHookData,
+  MessageBeforeProcessHookData,
+  MessageAfterProcessHookData,
+  AgentBeforeExecuteHookData,
+  AgentAfterExecuteHookData,
+  ClientChatSendHookData,
+  ClientChatStopHookData,
+  ClientChatRetryHookData,
+  ClientChannelConnectHookData,
+  ClientChannelDisconnectHookData,
+  ClientChannelSendHookData,
+  ClientWorkspaceCreateHookData,
+  ClientWorkspaceDeleteHookData,
+  ClientAgentConfigureHookData,
+} from './hook-map.js';
+
+// ============================================================================
+// New API - Interfaces
+// ============================================================================
+
+export type { IEventBus } from './event-bus.js';
+export type { IHookBus } from './hook-bus.js';
+export type { IScopedBus, IScopedHookBus } from './scoped-bus.js';
+export type { IEventSystem } from './event-system.js';
+
+// ============================================================================
+// New API - Singleton
+// ============================================================================
+
+export { getEventSystem, resetEventSystem } from './event-system.js';
+
+// ============================================================================
+// Legacy API - Backward Compatibility
+// ============================================================================
+
+import type { EventCategory, TypedEvent, EventHandler } from './types.js';
+import type { IEventBus } from './event-bus.js';
+import { getEventSystem, resetEventSystem } from './event-system.js';
+
+// Re-export ToolSource for backward compat (was exported from old index.ts)
+export type { ToolSource } from '../agent/types.js';
+
+/**
+ * Event type constants (preserved from old API).
+ */
 export const EventTypes = {
   // Agent
   AGENT_ITERATION: 'agent.iteration',
@@ -162,218 +162,81 @@ export const EventTypes = {
   SYSTEM_SHUTDOWN: 'system.shutdown',
 } as const;
 
-// ============================================================================
-// IEventBus Interface
-// ============================================================================
-
-export type EventHandler<T = unknown> = (event: TypedEvent<T>) => void | Promise<void>;
-
-export interface IEventBus {
-  /** Emit a typed event to all matching subscribers */
+/**
+ * Legacy IEventBus interface (preserved for backward compat).
+ * This is the OLD interface shape where emit() takes a TypedEvent object.
+ */
+export interface ILegacyEventBus {
   emit<T>(event: TypedEvent<T>): void;
-
-  /** Subscribe to a specific event type. Returns an unsubscribe function. */
   on<T = unknown>(type: string, handler: EventHandler<T>): () => void;
-
-  /** Unsubscribe a handler from a specific event type */
   off(type: string, handler: EventHandler): void;
-
-  /**
-   * Subscribe to all events in a category (e.g. 'agent', 'tool').
-   * Returns an unsubscribe function.
-   */
   onCategory(category: EventCategory, handler: EventHandler): () => void;
-
-  /**
-   * Subscribe using a wildcard pattern (e.g. 'agent.*', 'resource.*').
-   * The '*' matches any single segment, '**' matches any depth.
-   * Returns an unsubscribe function.
-   */
   onPattern(pattern: string, handler: EventHandler): () => void;
-
-  /** Remove all handlers (for testing/cleanup) */
   clear(): void;
 }
 
-// ============================================================================
-// EventBus Implementation
-// ============================================================================
-
-export class EventBus implements IEventBus {
-  private handlers = new Map<string, Set<EventHandler>>();
-  private categoryHandlers = new Map<EventCategory, Set<EventHandler>>();
-  private patternHandlers = new Map<string, Set<EventHandler>>();
+/**
+ * Backward-compatible wrapper that presents the old IEventBus interface
+ * while delegating to the new EventSystem.
+ */
+class LegacyEventBusWrapper implements ILegacyEventBus {
+  constructor(private readonly system: IEventBus) {}
 
   emit<T>(event: TypedEvent<T>): void {
-    // 1. Exact type match
-    const typeHandlers = this.handlers.get(event.type);
-    if (typeHandlers) {
-      for (const handler of typeHandlers) {
-        this.safeCall(handler, event);
-      }
-    }
-
-    // 2. Category match
-    const catHandlers = this.categoryHandlers.get(event.category);
-    if (catHandlers) {
-      for (const handler of catHandlers) {
-        this.safeCall(handler, event);
-      }
-    }
-
-    // 3. Pattern match
-    for (const [pattern, patHandlers] of this.patternHandlers) {
-      if (this.matchPattern(pattern, event.type)) {
-        for (const handler of patHandlers) {
-          this.safeCall(handler, event);
-        }
-      }
-    }
+    this.system.emitRaw(event);
   }
 
   on<T = unknown>(type: string, handler: EventHandler<T>): () => void {
-    if (!this.handlers.has(type)) {
-      this.handlers.set(type, new Set());
-    }
-    const h = handler as EventHandler;
-    this.handlers.get(type)!.add(h);
-    return () => this.off(type, h);
+    return this.system.onAny(type, handler as EventHandler);
   }
 
   off(type: string, handler: EventHandler): void {
-    const set = this.handlers.get(type);
-    if (set) {
-      set.delete(handler);
-      if (set.size === 0) this.handlers.delete(type);
-    }
+    this.system.off(type, handler);
   }
 
   onCategory(category: EventCategory, handler: EventHandler): () => void {
-    if (!this.categoryHandlers.has(category)) {
-      this.categoryHandlers.set(category, new Set());
-    }
-    this.categoryHandlers.get(category)!.add(handler);
-    return () => {
-      const set = this.categoryHandlers.get(category);
-      if (set) {
-        set.delete(handler);
-        if (set.size === 0) this.categoryHandlers.delete(category);
-      }
-    };
+    return this.system.onCategory(category, handler);
   }
 
   onPattern(pattern: string, handler: EventHandler): () => void {
-    if (!this.patternHandlers.has(pattern)) {
-      this.patternHandlers.set(pattern, new Set());
-    }
-    this.patternHandlers.get(pattern)!.add(handler);
-    return () => {
-      const set = this.patternHandlers.get(pattern);
-      if (set) {
-        set.delete(handler);
-        if (set.size === 0) this.patternHandlers.delete(pattern);
-      }
-    };
+    return this.system.onPattern(pattern, handler);
   }
 
   clear(): void {
-    this.handlers.clear();
-    this.categoryHandlers.clear();
-    this.patternHandlers.clear();
-  }
-
-  // --- Internal ---
-
-  /**
-   * Fire-and-forget handler execution.
-   * Async handlers run without blocking; errors are logged but never propagate.
-   */
-  private safeCall<T>(handler: EventHandler<T>, event: TypedEvent<T>): void {
-    try {
-      const result = handler(event);
-      if (result && typeof (result as Promise<void>).catch === 'function') {
-        (result as Promise<void>).catch((err) => {
-          console.error(`[EventBus] Async handler error for "${event.type}":`, err);
-        });
-      }
-    } catch (err) {
-      console.error(`[EventBus] Handler error for "${event.type}":`, err);
-    }
-  }
-
-  /**
-   * Match a dot-delimited pattern against an event type.
-   * Supports '*' (single segment) and '**' (any depth).
-   *
-   * Examples:
-   *   'agent.*' matches 'agent.complete', 'agent.error'
-   *   'resource.**' matches 'resource.created', 'resource.goal.updated'
-   *   'plugin.*.status' matches 'plugin.reminder.status'
-   */
-  private matchPattern(pattern: string, type: string): boolean {
-    const patternParts = pattern.split('.');
-    const typeParts = type.split('.');
-    return this.matchParts(patternParts, 0, typeParts, 0);
-  }
-
-  private matchParts(
-    pattern: string[], pi: number,
-    type: string[], ti: number
-  ): boolean {
-    while (pi < pattern.length && ti < type.length) {
-      if (pattern[pi] === '**') {
-        // '**' matches zero or more segments
-        // Try matching rest of pattern at every position
-        for (let i = ti; i <= type.length; i++) {
-          if (this.matchParts(pattern, pi + 1, type, i)) return true;
-        }
-        return false;
-      }
-      if (pattern[pi] !== '*' && pattern[pi] !== type[ti]) {
-        return false;
-      }
-      pi++;
-      ti++;
-    }
-    // Skip trailing '**'
-    while (pi < pattern.length && pattern[pi] === '**') pi++;
-    return pi === pattern.length && ti === type.length;
+    this.system.clear();
   }
 }
 
-// ============================================================================
-// Singleton
-// ============================================================================
-
-let globalEventBus: EventBus | null = null;
+let legacyWrapper: LegacyEventBusWrapper | null = null;
 
 /**
- * Get the global EventBus singleton.
- * Creates one on first call.
+ * Get the global EventBus singleton (LEGACY API).
+ *
+ * Returns a backward-compatible wrapper that presents the old interface
+ * where emit() takes a TypedEvent object. Internally delegates to the
+ * new EventSystem.
+ *
+ * For new code, use getEventSystem() instead.
  */
-export function getEventBus(): IEventBus {
-  if (!globalEventBus) {
-    globalEventBus = new EventBus();
+export function getEventBus(): ILegacyEventBus {
+  if (!legacyWrapper) {
+    legacyWrapper = new LegacyEventBusWrapper(getEventSystem());
   }
-  return globalEventBus;
+  return legacyWrapper;
 }
 
 /**
- * Reset the global EventBus (for testing).
+ * Reset the global EventBus (LEGACY API).
+ * For new code, use resetEventSystem() instead.
  */
 export function resetEventBus(): void {
-  if (globalEventBus) {
-    globalEventBus.clear();
-  }
-  globalEventBus = null;
+  resetEventSystem();
+  legacyWrapper = null;
 }
 
-// ============================================================================
-// Helper: Create a typed event
-// ============================================================================
-
 /**
- * Convenience factory to create a TypedEvent with defaults filled in.
+ * Create a TypedEvent object (LEGACY API).
+ * For new code, use system.emit(type, source, data) directly.
  */
 export function createEvent<T>(
   type: string,

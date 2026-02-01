@@ -420,12 +420,13 @@ export class AuditLogger {
     const reset = '\x1b[0m';
     const color = colors[event.severity];
 
+    const errorSuffix = event.details?.error ? ` error="${event.details.error}"` : '';
     console.log(
       `${color}[${event.severity.toUpperCase()}]${reset} ` +
         `${event.timestamp} ${event.type} ` +
         `actor=${event.actor.type}:${event.actor.id} ` +
         `resource=${event.resource.type}:${event.resource.id} ` +
-        `outcome=${event.outcome}`
+        `outcome=${event.outcome}${errorSuffix}`
     );
   }
 }
