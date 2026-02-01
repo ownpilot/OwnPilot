@@ -17,7 +17,7 @@ import {
 } from '../components/icons';
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
 import { useDialog } from '../components/ConfirmDialog';
-import type { ApiResponse } from '../types';
+import { configServicesApi } from '../api';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,8 +81,6 @@ interface Stats {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const API_BASE = '/api/v1/config-services';
 
 const CATEGORY_PALETTE = [
   'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
@@ -148,14 +146,8 @@ export function ConfigCenterPage() {
 
   const fetchServices = useCallback(async () => {
     try {
-      const response = await fetch(API_BASE);
-      const data: ApiResponse<{ services: ConfigServiceView[]; count: number }> =
-        await response.json();
-      if (data.success && data.data) {
-        setServices(data.data.services);
-      } else {
-        setError(data.error?.message ?? 'Failed to load services');
-      }
+      const data = await configServicesApi.list();
+      setServices(data.services as unknown as ConfigServiceView[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load services');
     }
@@ -163,11 +155,8 @@ export function ConfigCenterPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE}/stats`);
-      const data: ApiResponse<Stats> = await response.json();
-      if (data.success && data.data) {
-        setStats(data.data);
-      }
+      const data = await configServicesApi.stats();
+      setStats(data as unknown as Stats);
     } catch {
       // Stats are non-critical
     }
@@ -175,11 +164,8 @@ export function ConfigCenterPage() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE}/categories`);
-      const data: ApiResponse<{ categories: string[] }> = await response.json();
-      if (data.success && data.data) {
-        setCategories(data.data.categories);
-      }
+      const data = await configServicesApi.categories();
+      setCategories(data.categories);
     } catch {
       // Categories are non-critical
     }
@@ -325,20 +311,12 @@ export function ConfigCenterPage() {
     const isCreating = activeEntryId === null;
 
     try {
-      let url: string;
-      let method: string;
       let bodyData: Record<string, unknown>;
 
       if (isCreating) {
-        // POST - send all values
-        url = `${API_BASE}/${editingService.name}/entries`;
-        method = 'POST';
         bodyData = { ...entryFormValues };
       } else {
         // PUT - only send dirty + non-secret fields
-        url = `${API_BASE}/${editingService.name}/entries/${activeEntryId}`;
-        method = 'PUT';
-
         const activeEntry = editingService.entries.find(
           (e) => e.id === activeEntryId,
         );
@@ -348,7 +326,6 @@ export function ConfigCenterPage() {
         for (const [key, value] of Object.entries(entryFormValues)) {
           const isSecret = secretFieldNames.has(key);
           if (isSecret) {
-            // Only include if user actually modified it
             if (dirtyFieldsRef.current.has(key)) {
               bodyData[key] = value;
             }
@@ -371,49 +348,33 @@ export function ConfigCenterPage() {
         body.isDefault = true;
       }
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      const result = isCreating
+        ? await configServicesApi.createEntry(editingService.name, body)
+        : await configServicesApi.updateEntry(editingService.name, activeEntryId!, body);
 
-      const result: ApiResponse<ConfigEntryView> = await response.json();
+      setSaveMessage({ type: 'success', text: isCreating ? 'Entry created' : 'Entry updated' });
 
-      if (result.success) {
-        setSaveMessage({ type: 'success', text: isCreating ? 'Entry created' : 'Entry updated' });
+      // Refresh services to get updated data
+      await Promise.all([fetchServices(), fetchStats()]);
 
-        // Refresh services to get updated data
-        await Promise.all([fetchServices(), fetchStats()]);
-
-        // Re-fetch the service to get its updated entries
-        try {
-          const svcRes = await fetch(API_BASE);
-          const svcData: ApiResponse<{ services: ConfigServiceView[]; count: number }> =
-            await svcRes.json();
-          if (svcData.success && svcData.data) {
-            const updatedService = svcData.data.services.find(
-              (s) => s.name === editingService.name,
-            );
-            if (updatedService) {
-              setEditingService(updatedService);
-              // Select the saved/created entry
-              const targetId = result.data?.id ?? activeEntryId;
-              const targetEntry = updatedService.entries.find(
-                (e) => e.id === targetId,
-              );
-              if (targetEntry) {
-                loadEntryIntoForm(targetEntry);
-              }
-            }
+      // Re-fetch the service to get its updated entries
+      try {
+        const svcData = await configServicesApi.list();
+        const updatedService = (svcData.services as unknown as ConfigServiceView[]).find(
+          (s) => s.name === editingService.name,
+        );
+        if (updatedService) {
+          setEditingService(updatedService);
+          const targetId = (result as Record<string, unknown>).id as string ?? activeEntryId;
+          const targetEntry = updatedService.entries.find(
+            (e) => e.id === targetId,
+          );
+          if (targetEntry) {
+            loadEntryIntoForm(targetEntry);
           }
-        } catch {
-          // Non-critical: modal data may be stale
         }
-      } else {
-        setSaveMessage({
-          type: 'error',
-          text: result.error?.message ?? 'Failed to save entry',
-        });
+      } catch {
+        // Non-critical: modal data may be stale
       }
     } catch (err) {
       setSaveMessage({
@@ -454,46 +415,30 @@ export function ConfigCenterPage() {
     setSaveMessage(null);
 
     try {
-      const response = await fetch(
-        `${API_BASE}/${editingService.name}/entries/${activeEntryId}`,
-        { method: 'DELETE' },
-      );
+      await configServicesApi.deleteEntry(editingService.name, activeEntryId);
 
-      const result: ApiResponse = await response.json();
+      setSaveMessage({ type: 'success', text: 'Entry deleted' });
+      await Promise.all([fetchServices(), fetchStats()]);
 
-      if (result.success) {
-        setSaveMessage({ type: 'success', text: 'Entry deleted' });
-        await Promise.all([fetchServices(), fetchStats()]);
-
-        // Refresh modal
-        try {
-          const svcRes = await fetch(API_BASE);
-          const svcData: ApiResponse<{ services: ConfigServiceView[]; count: number }> =
-            await svcRes.json();
-          if (svcData.success && svcData.data) {
-            const updatedService = svcData.data.services.find(
-              (s) => s.name === editingService.name,
-            );
-            if (updatedService) {
-              setEditingService(updatedService);
-              if (updatedService.entries.length > 0) {
-                const next =
-                  updatedService.entries.find((e) => e.isDefault) ??
-                  updatedService.entries[0];
-                loadEntryIntoForm(next);
-              } else {
-                startNewEntry();
-              }
-            }
+      // Refresh modal
+      try {
+        const svcData = await configServicesApi.list();
+        const updatedService = (svcData.services as unknown as ConfigServiceView[]).find(
+          (s) => s.name === editingService.name,
+        );
+        if (updatedService) {
+          setEditingService(updatedService);
+          if (updatedService.entries.length > 0) {
+            const next =
+              updatedService.entries.find((e) => e.isDefault) ??
+              updatedService.entries[0];
+            loadEntryIntoForm(next);
+          } else {
+            startNewEntry();
           }
-        } catch {
-          closeConfigModal();
         }
-      } else {
-        setSaveMessage({
-          type: 'error',
-          text: result.error?.message ?? 'Failed to delete entry',
-        });
+      } catch {
+        closeConfigModal();
       }
     } catch (err) {
       setSaveMessage({
@@ -524,43 +469,27 @@ export function ConfigCenterPage() {
     setSaveMessage(null);
 
     try {
-      const response = await fetch(
-        `${API_BASE}/${editingService.name}/entries/${activeEntryId}/default`,
-        { method: 'PUT' },
-      );
+      await configServicesApi.setDefault(editingService.name, activeEntryId);
 
-      const result: ApiResponse = await response.json();
+      setSaveMessage({ type: 'success', text: 'Set as default' });
+      await Promise.all([fetchServices(), fetchStats()]);
 
-      if (result.success) {
-        setSaveMessage({ type: 'success', text: 'Set as default' });
-        await Promise.all([fetchServices(), fetchStats()]);
-
-        try {
-          const svcRes = await fetch(API_BASE);
-          const svcData: ApiResponse<{ services: ConfigServiceView[]; count: number }> =
-            await svcRes.json();
-          if (svcData.success && svcData.data) {
-            const updatedService = svcData.data.services.find(
-              (s) => s.name === editingService.name,
-            );
-            if (updatedService) {
-              setEditingService(updatedService);
-              const entry = updatedService.entries.find(
-                (e) => e.id === activeEntryId,
-              );
-              if (entry) {
-                loadEntryIntoForm(entry);
-              }
-            }
+      try {
+        const svcData = await configServicesApi.list();
+        const updatedService = (svcData.services as unknown as ConfigServiceView[]).find(
+          (s) => s.name === editingService.name,
+        );
+        if (updatedService) {
+          setEditingService(updatedService);
+          const entry = updatedService.entries.find(
+            (e) => e.id === activeEntryId,
+          );
+          if (entry) {
+            loadEntryIntoForm(entry);
           }
-        } catch {
-          // Non-critical
         }
-      } else {
-        setSaveMessage({
-          type: 'error',
-          text: result.error?.message ?? 'Failed to set default',
-        });
+      } catch {
+        // Non-critical
       }
     } catch (err) {
       setSaveMessage({

@@ -340,21 +340,12 @@ function BookmarkModal({ bookmark, folders, onClose, onSave }: BookmarkModalProp
         isFavorite,
       };
 
-      const apiUrl = bookmark ? `/api/v1/bookmarks/${bookmark.id}` : '/api/v1/bookmarks';
-      const method = bookmark ? 'PATCH' : 'POST';
-
-      const response = await fetch(apiUrl, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        onSave();
-      }
-    } catch (err) {
-      console.error('Failed to save bookmark:', err);
+      bookmark
+        ? await bookmarksApi.update(bookmark.id, body)
+        : await bookmarksApi.create(body);
+      onSave();
+    } catch {
+      // handled by API client
     } finally {
       setIsSaving(false);
     }
