@@ -9,18 +9,11 @@ import { Hono } from 'hono';
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { discoverModels } from '../services/local-discovery.js';
 import { getLog } from '../services/log.js';
+import { getUserId } from './helpers.js';
 
 const log = getLog('LocalProviders');
 
 export const localProvidersRoutes = new Hono();
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function getUserId(c: { req: { query: (key: string) => string | undefined } }): string {
-  return c.req.query('userId') || 'default';
-}
 
 // =============================================================================
 // Templates
