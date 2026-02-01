@@ -7,6 +7,7 @@
 import type { DatabaseAdapter, DatabaseConfig, Row, QueryParams } from './types.js';
 import pg from 'pg';
 import { getLog } from '../../services/log.js';
+import { DB_POOL_MAX, DB_IDLE_TIMEOUT_MS, DB_CONNECT_TIMEOUT_MS } from '../../config/defaults.js';
 
 const log = getLog('PostgresAdapter');
 
@@ -29,9 +30,9 @@ export class PostgresAdapter implements DatabaseAdapter {
 
     this.pool = new Pool({
       connectionString: this.config.postgresUrl,
-      max: this.config.postgresPoolSize || 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
+      max: this.config.postgresPoolSize || DB_POOL_MAX,
+      idleTimeoutMillis: DB_IDLE_TIMEOUT_MS,
+      connectionTimeoutMillis: DB_CONNECT_TIMEOUT_MS,
     });
 
     // Test connection and register pgvector types

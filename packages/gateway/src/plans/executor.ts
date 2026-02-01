@@ -13,6 +13,12 @@ import {
   type StepStatus,
   type StepConfig,
 } from '../db/repositories/plans.js';
+import {
+  PLAN_MAX_STALL,
+  PLAN_STALL_RETRY_MS,
+  PLAN_MAX_BACKOFF_MS,
+  PLAN_MAX_LOOP_ITERATIONS,
+} from '../config/defaults.js';
 import { getPlanService, type PlanService } from '../services/plan-service.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
 import { getLog } from '../services/log.js';
@@ -308,7 +314,7 @@ export class PlanExecutor extends EventEmitter {
     signal: AbortSignal
   ): Promise<void> {
     let stallCount = 0;
-    const MAX_STALL = 3;
+    const MAX_STALL = PLAN_MAX_STALL;
 
     while (true) {
       // Yield to event loop to prevent blocking
@@ -363,7 +369,7 @@ export class PlanExecutor extends EventEmitter {
           }
 
           // Wait before retrying to avoid busy loop
-          await new Promise((r) => setTimeout(r, 1000));
+          await new Promise((r) => setTimeout(r, PLAN_STALL_RETRY_MS));
           continue;
         }
 
@@ -461,7 +467,7 @@ export class PlanExecutor extends EventEmitter {
       // Check for retry with exponential backoff
       if (step.retryCount < step.maxRetries) {
         const retryNum = step.retryCount + 1;
-        const backoffMs = Math.min(1000 * Math.pow(2, step.retryCount), 30000);
+        const backoffMs = Math.min(1000 * Math.pow(2, step.retryCount), PLAN_MAX_BACKOFF_MS);
         this.log(`Step ${step.name} failed, retrying in ${backoffMs}ms (${retryNum}/${step.maxRetries})`);
 
         await new Promise((r) => setTimeout(r, backoffMs));
@@ -717,7 +723,7 @@ export class PlanExecutor extends EventEmitter {
 
     // Loop handler - executes a tool repeatedly until condition is met
     this.registerHandler('loop', async (config, context) => {
-      const maxIterations = (config.maxIterations as number) ?? 10;
+      const maxIterations = (config.maxIterations as number) ?? PLAN_MAX_LOOP_ITERATIONS;
       const toolName = config.toolName as string;
       const toolArgs = (config.toolArgs ?? {}) as Record<string, unknown>;
 

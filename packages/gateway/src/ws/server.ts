@@ -13,6 +13,12 @@ import type { ClientEvents, WSMessage, Channel } from './types.js';
 import { sessionManager } from './session.js';
 import { gatewayEvents, ClientEventHandler } from './events.js';
 import { channelManager } from '../channels/index.js';
+import {
+  WS_PORT,
+  WS_HEARTBEAT_INTERVAL_MS,
+  WS_SESSION_TIMEOUT_MS,
+  WS_MAX_PAYLOAD_BYTES,
+} from '../config/defaults.js';
 import { getOrCreateDefaultAgent, getAgent, isDemoMode } from '../routes/agents.js';
 import { getLog } from '../services/log.js';
 
@@ -32,11 +38,11 @@ export interface WSGatewayConfig {
 }
 
 const DEFAULT_CONFIG: Required<WSGatewayConfig> = {
-  port: 18789,
+  port: WS_PORT,
   path: '/ws',
-  heartbeatInterval: 30000,
-  sessionTimeout: 300000, // 5 minutes
-  maxPayloadSize: 1024 * 1024, // 1MB
+  heartbeatInterval: WS_HEARTBEAT_INTERVAL_MS,
+  sessionTimeout: WS_SESSION_TIMEOUT_MS,
+  maxPayloadSize: WS_MAX_PAYLOAD_BYTES,
 };
 
 /**

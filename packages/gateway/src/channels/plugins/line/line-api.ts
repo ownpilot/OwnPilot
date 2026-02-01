@@ -20,6 +20,7 @@ import {
   createEvent,
 } from '@ownpilot/core';
 import { getLog } from '../../../services/log.js';
+import { LINE_REPLY_TOKEN_EXPIRY_MS, LINE_WEBHOOK_PORT } from '../../../config/defaults.js';
 
 const log = getLog('Line');
 
@@ -81,7 +82,7 @@ export class LINEChannelAPI implements ChannelPluginAPI {
       // Create webhook handler
       const middleware = line.middleware(lineConfig);
       const http = await import('node:http');
-      const port = this.config.webhook_port ?? 3100;
+      const port = this.config.webhook_port ?? LINE_WEBHOOK_PORT;
 
       this.server = http.createServer(async (req, res) => {
         if (req.method === 'POST' && req.url === '/webhook') {
@@ -195,7 +196,7 @@ export class LINEChannelAPI implements ChannelPluginAPI {
           this.replyTokens.delete(userId);
         }
         this.replyTokenTimers.delete(userId);
-      }, 25000);
+      }, LINE_REPLY_TOKEN_EXPIRY_MS);
       this.replyTokenTimers.set(userId, timer);
 
       this.handleIncomingMessage(event).catch((err) => {
