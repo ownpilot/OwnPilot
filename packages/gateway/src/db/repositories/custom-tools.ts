@@ -54,7 +54,11 @@ export interface CustomToolRecord {
   updatedAt: Date;
   /** Optional metadata (tags, notes, etc.) */
   metadata?: Record<string, unknown>;
-  /** API keys this tool requires (auto-registered in API Center) */
+  /**
+   * API keys / config services this tool requires (auto-registered in Config Center).
+   * Shape is compatible with ToolConfigRequirement from @ownpilot/core.
+   * New tools should use configRequirements on ToolDefinition instead.
+   */
   requiredApiKeys?: Array<{
     name: string;
     displayName?: string;

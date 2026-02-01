@@ -100,30 +100,14 @@ async function resolveAndExecuteTool(
 ): Promise<{ content: unknown; isError?: boolean }> {
   const registry = getSharedToolRegistry();
 
-  // Try shared registry first
-  if (registry.has(name)) {
-    const result = await registry.execute(name, args, { conversationId });
-    if (!result.ok) throw new Error(result.error.message);
-    return result.value;
+  // Single dispatch — all tools (core, gateway, plugin, custom) are in one registry
+  if (!registry.has(name)) {
+    throw new HTTPException(404, { message: `Tool not found: ${name}` });
   }
 
-  // Fallback: try plugin registry
-  try {
-    const pluginRegistry = await getDefaultPluginRegistry();
-    const pluginTool = pluginRegistry.getTool(name);
-    if (pluginTool) {
-      const context = {
-        callId: `exec-${Date.now()}`,
-        conversationId,
-        pluginId: pluginTool.plugin.manifest.id,
-      };
-      return await pluginTool.executor(args, context as any);
-    }
-  } catch {
-    // Plugin registry not available
-  }
-
-  throw new HTTPException(404, { message: `Tool not found: ${name}` });
+  const result = await registry.execute(name, args, { conversationId });
+  if (!result.ok) throw new Error(result.error.message);
+  return result.value;
 }
 
 function getCategoryForTool(toolName: string): string {
@@ -137,74 +121,23 @@ function getCategoryForTool(toolName: string): string {
 
 // Get all tools from all sources
 async function getAllTools(): Promise<Array<ToolDefinition & { category: string; source: string }>> {
+  const registry = getSharedToolRegistry();
   const allTools: Array<ToolDefinition & { category: string; source: string }> = [];
-  const seen = new Set<string>();
 
-  // Core tools
-  for (const tool of CORE_TOOLS) {
-    if (!seen.has(tool.name)) {
-      allTools.push({ ...tool, category: getCategoryForTool(tool.name), source: 'core' });
-      seen.add(tool.name);
-    }
+  for (const def of registry.getDefinitions()) {
+    const tool = registry.getRegisteredTool(def.name);
+    allTools.push({
+      ...def,
+      category: def.category ?? getCategoryForTool(def.name),
+      source: tool?.source ?? 'core',
+    });
   }
 
-  // Memory tools
-  for (const tool of MEMORY_TOOLS) {
-    if (!seen.has(tool.name)) {
-      allTools.push({ ...tool, category: 'memory', source: 'memory' });
-      seen.add(tool.name);
-    }
-  }
-
-  // Goal tools
-  for (const tool of GOAL_TOOLS) {
-    if (!seen.has(tool.name)) {
-      allTools.push({ ...tool, category: 'goals', source: 'goals' });
-      seen.add(tool.name);
-    }
-  }
-
-  // Custom data tools
-  for (const tool of CUSTOM_DATA_TOOLS) {
-    if (!seen.has(tool.name)) {
-      allTools.push({ ...tool, category: 'customData', source: 'customData' });
-      seen.add(tool.name);
-    }
-  }
-
-  // Personal data tools
-  for (const tool of PERSONAL_DATA_TOOLS) {
-    if (!seen.has(tool.name)) {
-      const category = tool.name.includes('task') ? 'tasks'
-        : tool.name.includes('bookmark') ? 'bookmarks'
-        : tool.name.includes('note') ? 'notes'
-        : tool.name.includes('calendar') || tool.name.includes('event') ? 'calendar'
-        : tool.name.includes('contact') ? 'contacts'
-        : 'other';
-      allTools.push({ ...tool, category, source: 'personalData' });
-      seen.add(tool.name);
-    }
-  }
-
-  // Trigger tools
-  for (const tool of TRIGGER_TOOLS) {
-    if (!seen.has(tool.name)) {
-      allTools.push({ ...tool, category: 'automation', source: 'triggers' });
-      seen.add(tool.name);
-    }
-  }
-
-  // Plan tools
-  for (const tool of PLAN_TOOLS) {
-    if (!seen.has(tool.name)) {
-      allTools.push({ ...tool, category: 'automation', source: 'plans' });
-      seen.add(tool.name);
-    }
-  }
-
-  // Plugin tools
+  // Fallback: also check plugin registry for tools not yet in shared registry
+  // (e.g. if plugins initialized after registry was created)
   try {
     const pluginRegistry = await getDefaultPluginRegistry();
+    const seen = new Set(allTools.map(t => t.name));
     const pluginTools = pluginRegistry.getAllTools();
     for (const { definition } of pluginTools) {
       if (!seen.has(definition.name)) {

@@ -20,6 +20,9 @@ import type {
   ToolProvider,
   ToolMiddleware,
   ToolMiddlewareContext,
+  ToolSource,
+  ToolTrustLevel,
+  ToolConfigRequirement,
 } from './types.js';
 import { logToolCall, logToolResult } from './debug.js';
 import type { ConfigCenter } from '../services/config-center.js';
@@ -37,17 +40,40 @@ type ApiKeyCenter = ConfigCenter;
 export type {
   ToolDefinition, ToolExecutor, RegisteredTool, ToolContext, ToolExecutionResult,
   ToolCall, ToolResult, ToolProvider, ToolMiddleware, ToolMiddlewareContext,
+  ToolSource, ToolTrustLevel, ToolConfigRequirement,
 };
 
 /**
  * Tool registry for managing available tools
  */
+/**
+ * Registration metadata for tools. Allows specifying source, trust level, and other metadata.
+ */
+export interface ToolRegistrationMetadata {
+  source?: ToolSource;
+  pluginId?: PluginId;
+  customToolId?: string;
+  trustLevel?: ToolTrustLevel;
+  providerName?: string;
+}
+
+/**
+ * Callback type for config auto-registration when tools with configRequirements are registered.
+ */
+export type ConfigRegistrationHandler = (
+  toolName: string,
+  toolId: string,
+  source: ToolSource,
+  requirements: readonly ToolConfigRequirement[],
+) => Promise<void>;
+
 export class ToolRegistry {
   private readonly tools = new Map<string, RegisteredTool>();
   private readonly pluginTools = new Map<string, Set<string>>();
   private _apiKeyCenter?: ApiKeyCenter;
   private readonly globalMiddleware: ToolMiddleware[] = [];
   private readonly perToolMiddleware = new Map<string, ToolMiddleware[]>();
+  private _onConfigRegistration?: ConfigRegistrationHandler;
 
   /**
    * Register a tool
@@ -55,8 +81,13 @@ export class ToolRegistry {
   register(
     definition: ToolDefinition,
     executor: ToolExecutor,
-    pluginId?: PluginId
+    metadataOrPluginId?: PluginId | ToolRegistrationMetadata
   ): Result<ToolId, ValidationError> {
+    // Backward compat: string = old pluginId param
+    const metadata: ToolRegistrationMetadata = typeof metadataOrPluginId === 'string'
+      ? { source: 'plugin', pluginId: metadataOrPluginId, trustLevel: 'semi-trusted' }
+      : metadataOrPluginId ?? {};
+
     // Validate tool name
     if (!definition.name || definition.name.length > 64) {
       return err(new ValidationError('Tool name must be 1-64 characters'));
@@ -74,12 +105,20 @@ export class ToolRegistry {
     }
 
     const toolId = createToolId(definition.name);
+    const pluginId = metadata.pluginId;
+    const source: ToolSource = metadata.source ?? (pluginId ? 'plugin' : 'core');
+    const trustLevel: ToolTrustLevel = metadata.trustLevel
+      ?? (source === 'plugin' ? 'semi-trusted' : source === 'custom' ? 'sandboxed' : 'trusted');
 
     const tool: RegisteredTool = {
       id: toolId,
       definition,
       executor,
       pluginId,
+      source,
+      trustLevel,
+      customToolId: metadata.customToolId,
+      providerName: metadata.providerName,
     };
 
     this.tools.set(definition.name, tool);
@@ -95,11 +134,16 @@ export class ToolRegistry {
     }
 
     // Emit tool registered event
-    const source: ToolRegisteredData['source'] = pluginId ? 'plugin' : 'core';
     getEventBus().emit(createEvent<ToolRegisteredData>(
       EventTypes.TOOL_REGISTERED, 'tool', 'tool-registry',
       { name: definition.name, source, pluginId: pluginId ?? undefined },
     ));
+
+    // Auto-register config requirements (fire-and-forget)
+    if (definition.configRequirements?.length && this._onConfigRegistration) {
+      this._onConfigRegistration(definition.name, toolId, source, definition.configRequirements)
+        .catch(e => console.warn(`[ToolRegistry] Config registration failed for ${definition.name}:`, e));
+    }
 
     return ok(toolId);
   }
@@ -227,26 +271,58 @@ export class ToolRegistry {
       return err(new NotFoundError('Tool', name));
     }
 
+    // Scoped config access for non-trusted tools
+    const allowedServices = tool.definition.configRequirements?.map(r => r.name);
+    const isRestricted = tool.trustLevel !== 'trusted';
+
     const fullContext: ToolContext = {
       ...context,
       callId: randomUUID(),
       pluginId: tool.pluginId,
       workspaceDir: context.workspaceDir ?? this._workspaceDir,
-      // Config Center accessors (if configured)
+      source: tool.source,
+      trustLevel: tool.trustLevel,
+      // Config Center accessors - scoped for plugin/custom tools
       getApiKey: this._apiKeyCenter
-        ? (serviceName: string) => this._apiKeyCenter!.getApiKey(serviceName)
+        ? (serviceName: string) => {
+            if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
+              console.warn(`[ToolRegistry] Tool '${name}' tried to access undeclared service '${serviceName}'`);
+              return undefined;
+            }
+            return this._apiKeyCenter!.getApiKey(serviceName);
+          }
         : undefined,
       getServiceConfig: this._apiKeyCenter
-        ? (serviceName: string) => this._apiKeyCenter!.getServiceConfig(serviceName)
+        ? (serviceName: string) => {
+            if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
+              return null;
+            }
+            return this._apiKeyCenter!.getServiceConfig(serviceName);
+          }
         : undefined,
       getConfigEntry: this._apiKeyCenter
-        ? (serviceName: string, entryLabel?: string) => this._apiKeyCenter!.getConfigEntry(serviceName, entryLabel)
+        ? (serviceName: string, entryLabel?: string) => {
+            if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
+              return null;
+            }
+            return this._apiKeyCenter!.getConfigEntry(serviceName, entryLabel);
+          }
         : undefined,
       getConfigEntries: this._apiKeyCenter
-        ? (serviceName: string) => this._apiKeyCenter!.getConfigEntries(serviceName)
+        ? (serviceName: string) => {
+            if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
+              return [];
+            }
+            return this._apiKeyCenter!.getConfigEntries(serviceName);
+          }
         : undefined,
       getFieldValue: this._apiKeyCenter
-        ? (serviceName: string, fieldName: string, entryLabel?: string) => this._apiKeyCenter!.getFieldValue(serviceName, fieldName, entryLabel)
+        ? (serviceName: string, fieldName: string, entryLabel?: string) => {
+            if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
+              return undefined;
+            }
+            return this._apiKeyCenter!.getFieldValue(serviceName, fieldName, entryLabel);
+          }
         : undefined,
     };
 
@@ -259,6 +335,9 @@ export class ToolRegistry {
         args,
         conversationId: context.conversationId,
         userId: context.userId,
+        source: tool.source,
+        trustLevel: tool.trustLevel,
+        pluginId: tool.pluginId,
       };
       await this.runBeforeMiddleware(middleware, mwContext);
 
@@ -307,6 +386,78 @@ export class ToolRegistry {
    */
   setApiKeyCenter(center: ApiKeyCenter): void {
     this._apiKeyCenter = center;
+  }
+
+  /**
+   * Set a callback that fires when a tool with configRequirements is registered.
+   * Used by the gateway to auto-register config service definitions in Config Center.
+   */
+  setConfigRegistrationHandler(handler: ConfigRegistrationHandler): void {
+    this._onConfigRegistration = handler;
+  }
+
+  /**
+   * Register all tools from a plugin into the shared registry.
+   * Plugin tools are marked as 'semi-trusted' with scoped config access.
+   */
+  registerPluginTools(
+    pluginId: PluginId,
+    tools: Map<string, { definition: ToolDefinition; executor: ToolExecutor }>
+  ): void {
+    for (const [, { definition, executor }] of tools) {
+      this.register(definition, executor, {
+        source: 'plugin',
+        pluginId,
+        trustLevel: 'semi-trusted',
+        providerName: `plugin:${pluginId}`,
+      });
+    }
+  }
+
+  /**
+   * Unregister all tools from a plugin (e.g. when plugin is disabled).
+   * Alias for unregisterPlugin for clarity in the unified API.
+   */
+  unregisterPluginTools(pluginId: PluginId): number {
+    return this.unregisterPlugin(pluginId);
+  }
+
+  /**
+   * Register a custom (user/LLM-created) tool with sandboxed trust level.
+   */
+  registerCustomTool(
+    definition: ToolDefinition,
+    executor: ToolExecutor,
+    customToolId: string
+  ): Result<ToolId, ValidationError> {
+    return this.register(definition, executor, {
+      source: 'custom',
+      customToolId,
+      trustLevel: 'sandboxed',
+      providerName: 'custom-tools',
+    });
+  }
+
+  /**
+   * Get all tools from a specific source.
+   */
+  getToolsBySource(source: ToolSource): readonly RegisteredTool[] {
+    return Array.from(this.tools.values()).filter(t => t.source === source);
+  }
+
+  /**
+   * Get tools that require a specific Config Center service.
+   */
+  getToolsRequiringService(serviceName: string): readonly RegisteredTool[] {
+    return Array.from(this.tools.values())
+      .filter(t => t.definition.configRequirements?.some(r => r.name === serviceName));
+  }
+
+  /**
+   * Get full registered tool metadata (source, trustLevel, etc.) by name.
+   */
+  getRegisteredTool(name: string): RegisteredTool | undefined {
+    return this.tools.get(name);
   }
 
   /**
@@ -447,7 +598,12 @@ export class ToolRegistry {
    */
   registerProvider(provider: ToolProvider): void {
     for (const { definition, executor } of provider.getTools()) {
-      this.register(definition, executor);
+      this.register(definition, executor, {
+        source: provider.source ?? 'gateway',
+        pluginId: provider.pluginId,
+        trustLevel: provider.trustLevel ?? 'trusted',
+        providerName: provider.name,
+      });
     }
   }
 

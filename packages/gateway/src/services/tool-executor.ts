@@ -3,17 +3,26 @@
  *
  * Provides a reusable tool execution capability for triggers, plans,
  * and any other system that needs to run tools outside of a chat session.
- * Creates and caches a ToolRegistry with all tools registered.
- * Also bridges plugin tools from the PluginRegistry as a fallback.
+ * Creates and caches a ToolRegistry with ALL tools registered:
+ *   - Core tools (file system, code exec, web fetch, etc.)
+ *   - Gateway providers (memory, goals, custom data, etc.)
+ *   - Plugin tools (weather, expense, etc.)
+ *   - Custom tools (user/LLM-created, sandboxed)
+ *
+ * All tools go through the same ToolRegistry with middleware support.
  */
 
 import {
   ToolRegistry,
   registerAllTools,
   registerCoreTools,
+  createPluginSecurityMiddleware,
+  createPluginId,
 } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core';
 import { gatewayConfigCenter as gatewayApiKeyCenter } from './config-center-impl.js';
 import { getDefaultPluginRegistry } from '../plugins/index.js';
+import { registerToolConfigRequirements } from './api-service-registrar.js';
 import {
   createMemoryToolProvider,
   createGoalToolProvider,
@@ -22,6 +31,11 @@ import {
   createTriggerToolProvider,
   createPlanToolProvider,
 } from './tool-providers/index.js';
+import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
+import {
+  getCustomToolDynamicRegistry,
+  setSharedRegistryForCustomTools,
+} from '../routes/custom-tools.js';
 
 // ============================================================================
 // Types
@@ -40,14 +54,25 @@ export interface ToolExecutionResult {
 let sharedRegistry: ToolRegistry | null = null;
 
 /**
- * Get or create a shared ToolRegistry with all tools registered.
- * This registry can be used by triggers, plans, and other systems
- * that need to execute tools outside of a chat session.
+ * Get or create a shared ToolRegistry with ALL tools registered.
+ * This is the single registry used by routes, triggers, plans, agents, etc.
+ *
+ * Tool sources registered:
+ * 1. Core tools (source: 'core')
+ * 2. Gateway providers (source: 'gateway')
+ * 3. Plugin tools (source: 'plugin') — brought in from PluginRegistry
+ * 4. Custom tools are registered on-demand via registerCustomTool()
  */
 export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   if (sharedRegistry) return sharedRegistry;
 
   const tools = new ToolRegistry();
+
+  // Wire config auto-registration handler
+  tools.setConfigRegistrationHandler(registerToolConfigRequirements);
+
+  // Security middleware for plugin/custom tools (rate limiting, arg validation, output sanitization)
+  tools.use(createPluginSecurityMiddleware());
 
   // Register all modular tools (file system, code exec, web fetch, etc.)
   registerAllTools(tools);
@@ -58,7 +83,7 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
 
   tools.setApiKeyCenter(gatewayApiKeyCenter);
 
-  // Register gateway tool providers
+  // Register gateway tool providers (source: 'gateway')
   tools.registerProvider(createMemoryToolProvider(userId));
   tools.registerProvider(createGoalToolProvider(userId));
   tools.registerProvider(createCustomDataToolProvider());
@@ -66,57 +91,111 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   tools.registerProvider(createTriggerToolProvider());
   tools.registerProvider(createPlanToolProvider());
 
+  // Register plugin tools into the shared registry (source: 'plugin')
+  initPluginToolsIntoRegistry(tools);
+
+  // Sync active custom tools from DB into the shared registry (source: 'custom')
+  syncCustomToolsIntoRegistry(tools, userId);
+
+  // Wire the shared registry reference so custom-tools CRUD operations keep it in sync
+  setSharedRegistryForCustomTools(tools);
+
   sharedRegistry = tools;
   return tools;
 }
 
 /**
- * Try to find and execute a tool from the PluginRegistry.
- * Falls back to this when tool is not found in the shared registry.
+ * Bring plugin tools into the shared ToolRegistry.
+ * Also listens for plugin enable/disable events to add/remove tools dynamically.
  */
-async function executePluginTool(
-  toolName: string,
-  args: Record<string, unknown>,
-): Promise<ToolExecutionResult | null> {
-  try {
-    const pluginRegistry = await getDefaultPluginRegistry();
-    const pluginTool = pluginRegistry.getTool(toolName);
-    if (!pluginTool) return null;
+function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
+  // getDefaultPluginRegistry() is async — fire-and-forget registration
+  getDefaultPluginRegistry()
+    .then((pluginRegistry) => {
+      // Register tools from all currently enabled plugins
+      for (const plugin of pluginRegistry.getEnabled()) {
+        if (plugin.tools.size > 0) {
+          registry.registerPluginTools(createPluginId(plugin.manifest.id), plugin.tools);
+        }
+      }
 
-    const context = {
-      callId: `plan-${Date.now()}`,
-      conversationId: 'system-execution',
-      pluginId: pluginTool.plugin.manifest.id,
-    } as const;
-    const result = await pluginTool.executor(args, context as any);
-    return {
-      success: !result.isError,
-      result: result.content,
-      error: result.isError ? String(result.content) : undefined,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Plugin tool execution failed',
-    };
-  }
+      // Listen for future plugin state changes
+      pluginRegistry.onEvent('plugin.status', (data: unknown) => {
+        const event = data as { pluginId: string; newStatus: string };
+        const pluginId = createPluginId(event.pluginId);
+        if (event.newStatus === 'enabled') {
+          const plugin = pluginRegistry.get(event.pluginId);
+          if (plugin && plugin.tools.size > 0) {
+            registry.registerPluginTools(createPluginId(plugin.manifest.id), plugin.tools);
+          }
+        } else if (event.newStatus === 'disabled') {
+          registry.unregisterPluginTools(pluginId);
+        }
+      });
+    })
+    .catch(() => {
+      // Plugin registry not initialized yet — plugins will register later
+    });
 }
 
 /**
- * Check if a tool exists in the PluginRegistry.
+ * Sync active custom tools from DB into the shared ToolRegistry.
+ * Each custom tool gets a sandboxed executor that delegates to the DynamicToolRegistry.
+ * Fire-and-forget — runs async so getSharedToolRegistry() stays synchronous.
  */
-async function hasPluginTool(toolName: string): Promise<boolean> {
-  try {
-    const pluginRegistry = await getDefaultPluginRegistry();
-    return !!pluginRegistry.getTool(toolName);
-  } catch {
-    return false;
-  }
+function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): void {
+  const repo = createCustomToolsRepo(userId);
+
+  repo.getActiveTools()
+    .then((tools) => {
+      const dynamicRegistry = getCustomToolDynamicRegistry();
+
+      for (const tool of tools) {
+        // Ensure the tool is also registered in the dynamic registry (for sandbox execution)
+        dynamicRegistry.register({
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters as any,
+          code: tool.code,
+          category: tool.category,
+          permissions: tool.permissions as any,
+          requiresApproval: tool.requiresApproval,
+        });
+
+        // Register in shared registry with sandboxed executor
+        const def: ToolDefinition = {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters as ToolDefinition['parameters'],
+          category: tool.category ?? 'Custom',
+          configRequirements: tool.requiredApiKeys?.map(k => ({
+            name: k.name,
+            displayName: k.displayName,
+            description: k.description,
+            category: k.category,
+            docsUrl: k.docsUrl,
+          })),
+        };
+
+        // Executor delegates to dynamic registry which handles sandboxing
+        const executor = (args: Record<string, unknown>, context: any) =>
+          dynamicRegistry.execute(tool.name, args, context);
+
+        registry.registerCustomTool(def, executor, tool.id);
+      }
+
+      if (tools.length > 0) {
+        console.log(`[tool-executor] Synced ${tools.length} custom tool(s) into shared registry`);
+      }
+    })
+    .catch(() => {
+      // DB not ready yet — custom tools will be registered on-demand via CRUD routes
+    });
 }
 
 /**
  * Execute a tool by name with arguments.
- * Checks the shared registry first, then falls back to plugin tools.
+ * All tools (core, gateway, plugin, custom) are in the shared registry.
  * Returns a standardized result object.
  */
 export async function executeTool(
@@ -126,53 +205,45 @@ export async function executeTool(
 ): Promise<ToolExecutionResult> {
   const tools = getSharedToolRegistry(userId);
 
-  // Try shared registry first
-  if (tools.has(toolName)) {
-    try {
-      const result = await tools.execute(toolName, args, {
-        conversationId: 'system-execution',
-      });
+  if (!tools.has(toolName)) {
+    return {
+      success: false,
+      error: `Tool '${toolName}' not found`,
+    };
+  }
 
-      if (result.ok) {
-        const value = result.value;
-        return {
-          success: !value.isError,
-          result: value.content,
-          error: value.isError ? String(value.content) : undefined,
-        };
-      }
+  try {
+    const result = await tools.execute(toolName, args, {
+      conversationId: 'system-execution',
+    });
 
+    if (result.ok) {
+      const value = result.value;
       return {
-        success: false,
-        error: result.error.message,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Tool execution failed',
+        success: !value.isError,
+        result: value.content,
+        error: value.isError ? String(value.content) : undefined,
       };
     }
-  }
 
-  // Fallback: try plugin tools
-  const pluginResult = await executePluginTool(toolName, args);
-  if (pluginResult) {
-    return pluginResult;
+    return {
+      success: false,
+      error: result.error.message,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Tool execution failed',
+    };
   }
-
-  return {
-    success: false,
-    error: `Tool '${toolName}' not found in shared registry or plugins`,
-  };
 }
 
 /**
- * Check if a tool exists in the shared registry or plugin registry.
+ * Check if a tool exists in the shared registry.
  */
 export async function hasTool(toolName: string): Promise<boolean> {
   const tools = getSharedToolRegistry();
-  if (tools.has(toolName)) return true;
-  return hasPluginTool(toolName);
+  return tools.has(toolName);
 }
 
 /**

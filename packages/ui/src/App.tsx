@@ -33,6 +33,7 @@ import { AIModelsPage } from './pages/AIModelsPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { MediaSettingsPage } from './pages/MediaSettingsPage';
 import { SystemPage } from './pages/SystemPage';
+import { AboutPage } from './pages/AboutPage';
 
 export function App() {
   return (
@@ -70,6 +71,7 @@ export function App() {
         <Route path="settings/integrations" element={<IntegrationsPage />} />
         <Route path="settings/media" element={<MediaSettingsPage />} />
         <Route path="settings/system" element={<SystemPage />} />
+        <Route path="about" element={<AboutPage />} />
         <Route path="profile" element={<ProfilePage />} />
         {/* Catch-all route - redirect unknown paths to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -89,6 +89,10 @@ export interface DynamicToolDefinition {
   requiredApiKeys?: RequiredApiKey[];
 }
 
+/**
+ * @deprecated Use ToolRegistry.registerCustomTool() instead.
+ * Dynamic tools should be registered in the shared ToolRegistry with source: 'custom'.
+ */
 export interface DynamicToolRegistry {
   /** All registered dynamic tools */
   tools: Map<string, DynamicToolDefinition>;
@@ -566,7 +570,8 @@ async function executeDynamicTool(
 // =============================================================================
 
 /**
- * Create a dynamic tool registry
+ * Create a dynamic tool registry.
+ * @deprecated Use ToolRegistry.registerCustomTool() for registering custom/dynamic tools.
  */
 export function createDynamicToolRegistry(
   callableTools?: Array<{ definition: ToolDefinition; executor: ToolExecutor }>

@@ -51,6 +51,19 @@ const SUPPORTED_LANGUAGES: Record<string, string> = {
 // TRANSLATE TEXT TOOL
 // ============================================================================
 
+// Config requirement for translation services
+const DEEPL_CONFIG_REQUIREMENT = {
+  name: 'deepl',
+  displayName: 'DeepL',
+  category: 'translation',
+  description: 'DeepL translation API for high-quality translations',
+  docsUrl: 'https://www.deepl.com/docs-api',
+  configSchema: [
+    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'DEEPL_API_KEY' },
+    { name: 'api_url', label: 'API URL', type: 'string' as const, required: false, envVar: 'DEEPL_API_URL', defaultValue: 'https://api-free.deepl.com' },
+  ],
+} as const;
+
 export const translateTextTool: ToolDefinition = {
   name: 'translate_text',
   description: 'Translate text between languages using AI. Supports 40+ languages with automatic source language detection.',
@@ -80,6 +93,7 @@ export const translateTextTool: ToolDefinition = {
     },
     required: ['text', 'targetLanguage'],
   },
+  configRequirements: [DEEPL_CONFIG_REQUIREMENT],
 };
 
 export const translateTextExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
@@ -387,6 +401,7 @@ export const batchTranslateTool: ToolDefinition = {
     },
     required: ['texts', 'targetLanguage'],
   },
+  configRequirements: [DEEPL_CONFIG_REQUIREMENT],
 };
 
 export const batchTranslateExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
