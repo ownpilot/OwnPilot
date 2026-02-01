@@ -142,23 +142,42 @@ class WorkspaceInstance implements Workspace {
     this.setState('processing');
 
     try {
-      // Get context messages
+      // Get context messages for the agent
       const contextMessages = this.getContextMessages();
+      const lastUserMessage = contextMessages.filter((m) => m.role === 'user').pop();
 
-      // TODO: Integrate with actual agent system
-      // For now, simulate a response
+      if (!lastUserMessage?.content) {
+        this.setState('idle');
+        return;
+      }
+
       const responseId = randomUUID();
-
-      // Emit stream start
       this.emit('streamStart', responseId);
 
-      // Simulate typing delay
-      const delay = this.config.settings?.replyDelay ?? 1000;
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      // Use the real agent system (dynamic import to avoid circular deps)
+      const { getOrCreateChatAgent } = await import('../routes/agents.js');
+      const { resolveProviderAndModel } = await import('../routes/settings.js');
 
-      // Generate mock response
-      const lastUserMessage = contextMessages.filter((m) => m.role === 'user').pop();
-      const responseContent = `I received your message: "${lastUserMessage?.content?.slice(0, 50)}..."`;
+      const agentConfig = this.config.agent;
+      const resolved = await resolveProviderAndModel(
+        agentConfig?.provider ?? 'default',
+        agentConfig?.model ?? 'default',
+      );
+
+      const agent = await getOrCreateChatAgent(
+        resolved.provider ?? 'openai',
+        resolved.model ?? 'gpt-4o-mini',
+      );
+
+      const result = await agent.chat(lastUserMessage.content);
+
+      let responseContent: string;
+      if (result.ok) {
+        responseContent = result.value.content;
+      } else {
+        responseContent = `Error: ${result.error?.message ?? 'Agent execution failed'}`;
+        log.warn('Workspace agent response failed', { error: result.error });
+      }
 
       // Add assistant message
       const assistantMessage: WorkspaceMessage = {
