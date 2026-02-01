@@ -7,6 +7,13 @@ import { toolsApi, customToolsApi, customDataApi } from '../api';
 export type ResourceType = 'tool' | 'custom-tool' | 'custom-data' | 'builtin-data';
 type TabId = 'tools' | 'custom-data' | 'builtin-data';
 
+interface CustomDataTable {
+  name: string;
+  displayName?: string;
+  description?: string;
+  recordCount?: number;
+}
+
 export interface ResourceAttachment {
   name: string;
   displayName?: string;
@@ -304,14 +311,14 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
             });
           }
         }
-        const customTools: ResourceItem[] = (customData.tools || []).map((t: any) => ({
-          name: t.name, description: t.description, category: t.category || 'Custom', type: 'custom-tool' as ResourceType,
+        const customTools: ResourceItem[] = (customData.tools || []).map((t) => ({
+          name: t.name, description: t.description || '', category: t.category || 'Custom', type: 'custom-tool' as ResourceType,
         }));
         setItems([...customTools, ...builtinTools]);
 
       } else if (tab === 'custom-data') {
         const tables = await customDataApi.tables();
-        const tableItems: ResourceItem[] = (Array.isArray(tables) ? tables : []).map((t: any) => ({
+        const tableItems: ResourceItem[] = ((Array.isArray(tables) ? tables : []) as unknown as CustomDataTable[]).map((t) => ({
           name: t.displayName || t.name,
           displayName: t.displayName || t.name,
           internalName: t.name,

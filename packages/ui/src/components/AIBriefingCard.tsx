@@ -10,7 +10,7 @@ import {
   Target,
   Settings,
 } from './icons';
-import { providersApi } from '../api';
+import { providersApi, dashboardApi } from '../api';
 import type { ProviderInfo } from '../types';
 
 interface AIBriefing {
@@ -74,7 +74,6 @@ export function AIBriefingCard() {
         const providersData = await providersApi.list();
 
         if (!providersData?.providers) {
-          console.error('Failed to fetch providers list');
           return;
         }
 
@@ -84,29 +83,25 @@ export function AIBriefingCard() {
         );
 
         if (configuredProviders.length === 0) {
-          console.log('No configured providers found');
           return;
         }
 
         // Step 2: Fetch models for each configured provider (in parallel)
         const modelPromises = configuredProviders.map(async (provider) => {
           try {
-            // TODO: migrate to providersApi.models(provider.id) once endpoint is added
-            const modelsRes = await fetch(`/api/v1/providers/${provider.id}/models`);
-            const modelsData = await modelsRes.json();
-
-            if (modelsData.success && modelsData.data?.models) {
+            const modelsData = await providersApi.models(provider.id);
+            const models = (modelsData as any).models;
+            if (models) {
               // Take first 5 models per provider for briefing dropdown
-              return modelsData.data.models.slice(0, 5).map((model: { id: string; name: string }) => ({
+              return models.slice(0, 5).map((model: { id: string; name: string }) => ({
                 provider: provider.id,
-                providerName: modelsData.data?.providerName || provider.name,
+                providerName: (modelsData as any).providerName || provider.name,
                 model: model.id,
                 modelName: model.name,
               }));
             }
             return [];
-          } catch (err) {
-            console.error(`Failed to fetch models for ${provider.id}:`, err);
+          } catch {
             return [];
           }
         });
@@ -140,8 +135,8 @@ export function AIBriefingCard() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(models[0]));
           }
         }
-      } catch (err) {
-        console.error('Failed to fetch providers:', err);
+      } catch {
+        // Provider fetch failed — available models will remain empty
       }
     };
 
@@ -167,15 +162,10 @@ export function AIBriefingCard() {
     try {
       // If streaming, use the streaming endpoint
       if (useStreaming || refresh) {
-        // TODO: migrate to dashboardApi.briefingStream() once endpoint is added (SSE streaming)
-        const url = `/api/v1/dashboard/briefing/stream?provider=${selectedModel.provider}&model=${selectedModel.model}`;
-        const response = await fetch(url, {
+        const response = await dashboardApi.briefingStream({
           signal: abortControllerRef.current.signal,
+          params: { provider: selectedModel.provider, model: selectedModel.model },
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to start streaming');
-        }
 
         const reader = response.body?.getReader();
         if (!reader) {
@@ -221,27 +211,22 @@ export function AIBriefingCard() {
           }
         }
       } else {
-        // TODO: migrate to dashboardApi.briefing() once endpoint is added
         // Non-streaming fetch for initial load (use cache)
-        const url = `/api/v1/dashboard/briefing?provider=${selectedModel.provider}&model=${selectedModel.model}`;
-        const response = await fetch(url, {
+        const data = await dashboardApi.briefing({
           signal: abortControllerRef.current.signal,
+          params: { provider: selectedModel.provider, model: selectedModel.model },
         });
-        const data = await response.json();
 
-        if (data.success && data.data?.aiBriefing) {
-          setBriefing(data.data.aiBriefing);
-        } else if (data.data?.error) {
-          setError(data.data.error);
-        } else if (data.error) {
-          setError(data.error.message);
+        if ((data as any).aiBriefing) {
+          setBriefing((data as any).aiBriefing);
+        } else if ((data as any).error) {
+          setError((data as any).error);
         }
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         return;
       }
-      console.error('Failed to fetch briefing:', err);
       setError('Failed to load AI briefing');
     } finally {
       setIsLoading(false);

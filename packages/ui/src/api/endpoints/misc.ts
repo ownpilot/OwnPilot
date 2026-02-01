@@ -5,6 +5,7 @@
  */
 
 import { apiClient } from '../client';
+import type { RequestOptions, StreamOptions } from '../client';
 
 // ---- Autonomy ----
 
@@ -105,9 +106,11 @@ export const customDataApi = {
 
 export const dashboardApi = {
   data: () => apiClient.get<Record<string, unknown>>('/dashboard/data'),
-  briefing: () => apiClient.get<Record<string, unknown>>('/dashboard/briefing'),
+  briefing: (options?: RequestOptions) =>
+    apiClient.get<Record<string, unknown>>('/dashboard/briefing', options),
   /** Returns raw Response for SSE stream parsing */
-  briefingStream: () => apiClient.stream('/dashboard/briefing/stream', {}),
+  briefingStream: (options?: StreamOptions) =>
+    apiClient.stream('/dashboard/briefing/stream', {}, options),
 };
 
 // ---- Media Settings ----

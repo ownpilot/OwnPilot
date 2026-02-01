@@ -67,8 +67,8 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
       await settingsApi.saveApiKey(selectedProvider, apiKey.trim());
       setProviderConfigured(true);
       setStep(2);
-    } catch (e: any) {
-      setError(e.message || 'Connection error. Is the server running?');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Connection error. Is the server running?');
     } finally {
       setSaving(false);
     }
