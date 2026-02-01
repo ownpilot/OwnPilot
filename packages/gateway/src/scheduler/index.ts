@@ -9,6 +9,11 @@
 
 import { join } from 'node:path';
 import {
+  SCHEDULER_CHECK_INTERVAL_MS,
+  SCHEDULER_DEFAULT_TIMEOUT_MS,
+  SCHEDULER_MAX_HISTORY_PER_TASK,
+} from '../config/defaults.js';
+import {
   createScheduler,
   createSchedulerNotificationBridge,
   type Scheduler,
@@ -226,9 +231,9 @@ export async function initializeScheduler(): Promise<Scheduler> {
   schedulerInstance = createScheduler({
     tasksFilePath: join(schedulerDir, 'tasks.json'),
     historyFilePath: join(schedulerDir, 'history.json'),
-    checkInterval: 60000, // Check every minute
-    defaultTimeout: 300000, // 5 minutes
-    maxHistoryPerTask: 100,
+    checkInterval: SCHEDULER_CHECK_INTERVAL_MS,
+    defaultTimeout: SCHEDULER_DEFAULT_TIMEOUT_MS,
+    maxHistoryPerTask: SCHEDULER_MAX_HISTORY_PER_TASK,
   });
 
   // Set task executor
