@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { costsApi } from '../api';
 
 interface CostSummary {
   totalRequests: number;
@@ -78,22 +79,16 @@ export function CostsPage() {
 
     try {
       // Fetch summary
-      const summaryRes = await fetch(`/api/v1/costs?period=${period}`);
-      const summaryData = await summaryRes.json();
-      if (summaryData.success) {
-        setSummary(summaryData.data.summary);
-        setBudget(summaryData.data.budget);
-      }
+      const summaryData = await costsApi.getSummary(period);
+      setSummary(summaryData.summary as unknown as CostSummary);
+      setBudget(summaryData.budget as unknown as BudgetStatus);
 
       // Fetch breakdown
-      const breakdownRes = await fetch(`/api/v1/costs/breakdown?period=${period}`);
-      const breakdownData = await breakdownRes.json();
-      if (breakdownData.success) {
-        setBreakdown({
-          byProvider: breakdownData.data.byProvider,
-          daily: breakdownData.data.daily,
-        });
-      }
+      const breakdownData = await costsApi.getBreakdown(period);
+      setBreakdown({
+        byProvider: breakdownData.byProvider as unknown as ProviderBreakdown[],
+        daily: breakdownData.daily as unknown as DailyUsage[],
+      });
     } catch {
       setError('Failed to fetch cost data');
     } finally {
@@ -113,16 +108,8 @@ export function CostsPage() {
       if (weeklyLimit) body.weeklyLimit = parseFloat(weeklyLimit);
       if (monthlyLimit) body.monthlyLimit = parseFloat(monthlyLimit);
 
-      const res = await fetch('/api/v1/costs/budget', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setBudget(data.data.status);
-      }
+      const data = await costsApi.setBudget(body);
+      setBudget(data.status as unknown as BudgetStatus);
     } catch {
       setError('Failed to save budget');
     } finally {

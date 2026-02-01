@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Plus, Trash2, Clock, MapPin } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { calendarApi } from '../api';
 
 interface CalendarEvent {
   id: string;
@@ -18,11 +19,6 @@ interface CalendarEvent {
   updatedAt: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
 
 const colorOptions = [
   { value: 'blue', label: 'Blue', class: 'bg-primary' },
@@ -46,16 +42,13 @@ export function CalendarPage() {
       const startDate = getViewStartDate(selectedDate, viewMode);
       const endDate = getViewEndDate(selectedDate, viewMode);
 
-      const params = new URLSearchParams({
+      const params: Record<string, string> = {
         startAfter: startDate,
         startBefore: endDate,
-      });
+      };
 
-      const response = await fetch(`/api/v1/calendar?${params}`);
-      const data: ApiResponse<CalendarEvent[]> = await response.json();
-      if (data.success && data.data) {
-        setEvents(data.data);
-      }
+      const data = await calendarApi.list(params);
+      setEvents(data);
     } catch (err) {
       console.error('Failed to fetch events:', err);
     } finally {
@@ -71,13 +64,8 @@ export function CalendarPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this event?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`/api/v1/calendar/${eventId}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchEvents();
-      }
+      await calendarApi.delete(eventId);
+      fetchEvents();
     } catch (err) {
       console.error('Failed to delete event:', err);
     }

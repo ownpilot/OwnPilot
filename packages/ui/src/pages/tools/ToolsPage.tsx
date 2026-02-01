@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Wrench } from '../../components/icons';
-import type { ApiResponse } from '../../types';
+import { toolsApi } from '../../api';
 import type { GroupedTools, ToolItem } from './types';
 import { CATEGORY_ORDER, CATEGORY_NAMES } from './constants';
 import { ToolCard } from './ToolCard';
@@ -16,11 +16,8 @@ export function ToolsPage() {
   useEffect(() => {
     const fetchTools = async () => {
       try {
-        const response = await fetch('/api/v1/tools?grouped=true');
-        const data: ApiResponse<GroupedTools> = await response.json();
-        if (data.success && data.data) {
-          setGroupedTools(data.data);
-        }
+        const data = await toolsApi.listGrouped();
+        setGroupedTools(data as unknown as GroupedTools);
       } catch (err) {
         console.error('Failed to fetch tools:', err);
       } finally {

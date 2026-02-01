@@ -12,7 +12,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from '../components/icons';
-import type { ApiResponse } from '../types';
+import { fileWorkspacesApi } from '../api';
 
 interface WorkspaceInfo {
   id: string;
@@ -87,19 +87,17 @@ export function WorkspacesPage() {
   const fetchWorkspaces = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/v1/file-workspaces');
-      const data: ApiResponse<{ workspaces: WorkspaceInfo[]; count: number }> = await response.json();
-      if (data.success && data.data) {
-        setWorkspaces(data.data.workspaces);
-        // Calculate stats
-        const totalSize = data.data.workspaces.reduce((acc, w) => acc + (w.size || 0), 0);
-        const totalFiles = data.data.workspaces.reduce((acc, w) => acc + (w.fileCount || 0), 0);
-        setStats({
-          total: data.data.count,
-          totalSize,
-          totalFiles,
-        });
-      }
+      const data = await fileWorkspacesApi.list();
+      const workspaceList = (data as unknown as { workspaces: WorkspaceInfo[]; count: number });
+      setWorkspaces(workspaceList.workspaces);
+      // Calculate stats
+      const totalSize = workspaceList.workspaces.reduce((acc, w) => acc + (w.size || 0), 0);
+      const totalFiles = workspaceList.workspaces.reduce((acc, w) => acc + (w.fileCount || 0), 0);
+      setStats({
+        total: workspaceList.count,
+        totalSize,
+        totalFiles,
+      });
     } catch (err) {
       console.error('Failed to fetch workspaces:', err);
     } finally {
@@ -110,15 +108,10 @@ export function WorkspacesPage() {
   const fetchWorkspaceFiles = async (workspaceId: string, path: string = '') => {
     setIsLoadingFiles(true);
     try {
-      const url = path
-        ? `/api/v1/file-workspaces/${workspaceId}/files?path=${encodeURIComponent(path)}`
-        : `/api/v1/file-workspaces/${workspaceId}/files`;
-      const response = await fetch(url);
-      const data: ApiResponse<{ path: string; files: WorkspaceFile[]; count: number }> = await response.json();
-      if (data.success && data.data) {
-        setWorkspaceFiles(data.data.files);
-        setCurrentPath(path);
-      }
+      const data = await fileWorkspacesApi.files(workspaceId, path || undefined);
+      const filesData = data as unknown as { path: string; files: WorkspaceFile[]; count: number };
+      setWorkspaceFiles(filesData.files);
+      setCurrentPath(path);
     } catch (err) {
       console.error('Failed to fetch workspace files:', err);
     } finally {
@@ -135,7 +128,7 @@ export function WorkspacesPage() {
 
   const handleDownload = async (workspaceId: string) => {
     try {
-      const response = await fetch(`/api/v1/file-workspaces/${workspaceId}/download`);
+      const response = await fetch(fileWorkspacesApi.downloadUrl(workspaceId));
       if (!response.ok) throw new Error('Download failed');
 
       const blob = await response.blob();
@@ -154,17 +147,12 @@ export function WorkspacesPage() {
 
   const handleDelete = async (workspaceId: string) => {
     try {
-      const response = await fetch(`/api/v1/file-workspaces/${workspaceId}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse = await response.json();
-      if (data.success) {
-        if (selectedWorkspace?.id === workspaceId) {
-          setSelectedWorkspace(null);
-          setWorkspaceFiles([]);
-        }
-        fetchWorkspaces();
+      await fileWorkspacesApi.delete(workspaceId);
+      if (selectedWorkspace?.id === workspaceId) {
+        setSelectedWorkspace(null);
+        setWorkspaceFiles([]);
       }
+      fetchWorkspaces();
     } catch (err) {
       console.error('Failed to delete workspace:', err);
     } finally {
@@ -174,15 +162,8 @@ export function WorkspacesPage() {
 
   const handleCleanup = async () => {
     try {
-      const response = await fetch('/api/v1/file-workspaces/cleanup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ maxAgeDays: 7 }),
-      });
-      const data: ApiResponse = await response.json();
-      if (data.success) {
-        fetchWorkspaces();
-      }
+      await fileWorkspacesApi.cleanup(7);
+      fetchWorkspaces();
     } catch (err) {
       console.error('Failed to cleanup workspaces:', err);
     }

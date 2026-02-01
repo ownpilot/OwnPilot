@@ -2,6 +2,27 @@
  * UI types
  */
 
+// Re-export domain types from dedicated modules
+export type { CustomTool, ToolStats, ToolStatus, ToolPermission } from './tools';
+export type { Task } from './tasks';
+export type {
+  ModelInfo,
+  ProviderInfo,
+  ProviderConfig,
+  UserOverride,
+  LocalProviderInfo,
+} from './models';
+export type {
+  ModelsData,
+  ProvidersListData,
+  SettingsData,
+  CategoriesData,
+  SummaryData,
+  CostsData,
+  AgentDetail,
+} from './api';
+export type { Integration, AvailableIntegration, OAuthConfig } from './integrations';
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';

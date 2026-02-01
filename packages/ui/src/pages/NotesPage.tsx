@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileText, Plus, Trash2, Pin, Search } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { notesApi } from '../api';
 
 interface Note {
   id: string;
@@ -16,11 +17,6 @@ interface Note {
   updatedAt: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
 
 export function NotesPage() {
   const { confirm } = useDialog();
@@ -32,16 +28,13 @@ export function NotesPage() {
 
   const fetchNotes = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
       if (searchQuery) {
-        params.append('search', searchQuery);
+        params.search = searchQuery;
       }
 
-      const response = await fetch(`/api/v1/notes?${params}`);
-      const data: ApiResponse<Note[]> = await response.json();
-      if (data.success && data.data) {
-        setNotes(data.data);
-      }
+      const data = await notesApi.list(params);
+      setNotes(data);
     } catch (err) {
       console.error('Failed to fetch notes:', err);
     } finally {
@@ -57,15 +50,10 @@ export function NotesPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this note?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`/api/v1/notes/${noteId}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchNotes();
-        if (selectedNote?.id === noteId) {
-          setSelectedNote(null);
-        }
+      await notesApi.delete(noteId);
+      fetchNotes();
+      if (selectedNote?.id === noteId) {
+        setSelectedNote(null);
       }
     } catch (err) {
       console.error('Failed to delete note:', err);
@@ -74,13 +62,8 @@ export function NotesPage() {
 
   const handleTogglePin = async (note: Note) => {
     try {
-      const response = await fetch(`/api/v1/notes/${note.id}/pin`, {
-        method: 'POST',
-      });
-      const data: ApiResponse<Note> = await response.json();
-      if (data.success) {
-        fetchNotes();
-      }
+      await notesApi.pin(note.id);
+      fetchNotes();
     } catch (err) {
       console.error('Failed to toggle pin:', err);
     }

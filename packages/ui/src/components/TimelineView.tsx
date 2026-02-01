@@ -6,6 +6,7 @@ import {
   Clock,
   AlertTriangle,
 } from './icons';
+import { dashboardApi } from '../api';
 
 interface TimelineItem {
   id: string;
@@ -54,12 +55,6 @@ interface DailyBriefingData {
   };
 }
 
-interface DataResponse {
-  success: boolean;
-  data?: DailyBriefingData;
-  error?: { message: string };
-}
-
 export function TimelineView() {
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,15 +66,9 @@ export function TimelineView() {
 
   const fetchTimelineData = async () => {
     try {
-      const response = await fetch('/api/v1/dashboard/data');
-      const result: DataResponse = await response.json();
-
-      if (result.success && result.data) {
-        const timelineItems = buildTimelineItems(result.data);
-        setItems(timelineItems);
-      } else if (result.error) {
-        setError(result.error.message);
-      }
+      const data = await dashboardApi.data() as unknown as DailyBriefingData;
+      const timelineItems = buildTimelineItems(data);
+      setItems(timelineItems);
     } catch (err) {
       console.error('Failed to fetch timeline data:', err);
       setError('Failed to load timeline');

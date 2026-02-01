@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Database, Plus, Trash2, Search, Table, ChevronRight, Edit3, Lock } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { customDataApi } from '../api';
 
 interface ColumnDefinition {
   name: string;
@@ -30,11 +31,7 @@ interface CustomRecord {
   updatedAt: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
+
 
 export function CustomDataPage() {
   const { confirm } = useDialog();
@@ -51,11 +48,8 @@ export function CustomDataPage() {
 
   const fetchTables = useCallback(async () => {
     try {
-      const response = await fetch('/api/v1/custom-data/tables');
-      const data: ApiResponse<CustomTable[]> = await response.json();
-      if (data.success && data.data) {
-        setTables(data.data);
-      }
+      const data = await customDataApi.tables();
+      setTables(data as unknown as CustomTable[]);
     } catch (err) {
       console.error('Failed to fetch tables:', err);
     } finally {
@@ -67,19 +61,15 @@ export function CustomDataPage() {
     setIsLoadingRecords(true);
     try {
       if (search) {
-        const response = await fetch(`/api/v1/custom-data/tables/${tableId}/search?q=${encodeURIComponent(search)}`);
-        const data: ApiResponse<CustomRecord[]> = await response.json();
-        if (data.success && data.data) {
-          setRecords(data.data);
-          setTotalRecords(data.data.length);
-        }
+        const data = await customDataApi.search(tableId, search);
+        const results = data as unknown as CustomRecord[];
+        setRecords(results);
+        setTotalRecords(results.length);
       } else {
-        const response = await fetch(`/api/v1/custom-data/tables/${tableId}/records?limit=100`);
-        const data: ApiResponse<{ records: CustomRecord[]; total: number }> = await response.json();
-        if (data.success && data.data) {
-          setRecords(data.data.records);
-          setTotalRecords(data.data.total);
-        }
+        const data = await customDataApi.records(tableId, 100);
+        const result = data as unknown as { records: CustomRecord[]; total: number };
+        setRecords(result.records);
+        setTotalRecords(result.total);
       }
     } catch (err) {
       console.error('Failed to fetch records:', err);
@@ -110,17 +100,12 @@ export function CustomDataPage() {
     }
 
     try {
-      const response = await fetch(`/api/v1/custom-data/tables/${tableId}`, {
-        method: 'DELETE',
-      });
-      const data = await response.json();
-      if (data.success) {
-        if (selectedTable?.id === tableId) {
-          setSelectedTable(null);
-          setRecords([]);
-        }
-        fetchTables();
+      await customDataApi.deleteTable(tableId);
+      if (selectedTable?.id === tableId) {
+        setSelectedTable(null);
+        setRecords([]);
       }
+      fetchTables();
     } catch (err) {
       console.error('Failed to delete table:', err);
     }
@@ -132,11 +117,8 @@ export function CustomDataPage() {
     }
 
     try {
-      const response = await fetch(`/api/v1/custom-data/records/${recordId}`, {
-        method: 'DELETE',
-      });
-      const data = await response.json();
-      if (data.success && selectedTable) {
+      await customDataApi.deleteRecord(recordId);
+      if (selectedTable) {
         fetchRecords(selectedTable.id, searchQuery || undefined);
       }
     } catch (err) {
@@ -458,24 +440,16 @@ function CreateTableModal({ onClose, onSave }: CreateTableModalProps) {
 
     setIsSaving(true);
     try {
-      const response = await fetch('/api/v1/custom-data/tables', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-          displayName,
-          description: description || undefined,
-          columns: validColumns.map((c) => ({
-            ...c,
-            name: c.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-          })),
-        }),
+      await customDataApi.createTable({
+        name: name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        displayName,
+        description: description || undefined,
+        columns: validColumns.map((c) => ({
+          ...c,
+          name: c.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        })),
       });
-
-      const data = await response.json();
-      if (data.success) {
-        onSave();
-      }
+      onSave();
     } catch (err) {
       console.error('Failed to create table:', err);
     } finally {
@@ -642,21 +616,12 @@ function RecordModal({ table, record, onClose, onSave }: RecordModalProps) {
 
     setIsSaving(true);
     try {
-      const url = record
-        ? `/api/v1/custom-data/records/${record.id}`
-        : `/api/v1/custom-data/tables/${table.id}/records`;
-      const method = record ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        onSave();
+      if (record) {
+        await customDataApi.updateRecord(record.id, data);
+      } else {
+        await customDataApi.createRecord(table.id, data);
       }
+      onSave();
     } catch (err) {
       console.error('Failed to save record:', err);
     } finally {

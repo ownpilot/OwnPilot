@@ -24,6 +24,7 @@ import {
   Star,
   X,
 } from './icons';
+import { apiClient, modelConfigsApi, localProvidersApi } from '../api';
 
 // ============================================================================
 // Types
@@ -322,27 +323,19 @@ export function AIModelsTab() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [modelsRes, providersRes, capsRes, localRes, templatesRes] = await Promise.all([
-        fetch('/api/v1/model-configs'),
-        fetch('/api/v1/model-configs/providers/available'),
-        fetch('/api/v1/model-configs/capabilities/list'),
-        fetch('/api/v1/local-providers'),
-        fetch('/api/v1/local-providers/templates'),
-      ]);
-
       const [modelsData, providersData, capsData, localData, templatesData] = await Promise.all([
-        modelsRes.json(),
-        providersRes.json(),
-        capsRes.json(),
-        localRes.json(),
-        templatesRes.json(),
+        modelConfigsApi.list(),
+        modelConfigsApi.availableProviders(),
+        modelConfigsApi.capabilities(),
+        localProvidersApi.list(),
+        localProvidersApi.templates(),
       ]);
 
-      if (modelsData.success) setModels(modelsData.data);
-      if (providersData.success) setAvailableProviders(providersData.data);
-      if (capsData.success) setCapabilities(capsData.data);
-      if (localData.success) setLocalProviders(localData.data);
-      if (templatesData.success) setLocalTemplates(templatesData.data);
+      setModels(modelsData as unknown as MergedModel[]);
+      setAvailableProviders(providersData as unknown as AvailableProvider[]);
+      setCapabilities(capsData as unknown as CapabilityDef[]);
+      setLocalProviders(localData as unknown as LocalProvider[]);
+      setLocalTemplates(templatesData as unknown as LocalProviderTemplate[]);
     } catch (err) {
       console.error('Failed to load model configs:', err);
       setError('Failed to load model configurations');
@@ -417,31 +410,21 @@ export function AIModelsTab() {
     setError(null);
 
     try {
-      const res = await fetch(
-        `/api/v1/model-configs/${model.providerId}/${encodeURIComponent(model.modelId)}/toggle`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled }),
-        }
+      await apiClient.patch(
+        `/model-configs/${model.providerId}/${encodeURIComponent(model.modelId)}/toggle`,
+        { enabled },
       );
 
-      const data = await res.json();
-
-      if (data.success) {
-        // Update local state
-        setModels((prev) =>
-          prev.map((m) =>
-            m.providerId === model.providerId && m.modelId === model.modelId
-              ? { ...m, isEnabled: enabled }
-              : m
-          )
-        );
-        setSuccess(`Model ${enabled ? 'enabled' : 'disabled'}`);
-        setTimeout(() => setSuccess(null), 2000);
-      } else {
-        setError(data.error || 'Failed to toggle model');
-      }
+      // Update local state
+      setModels((prev) =>
+        prev.map((m) =>
+          m.providerId === model.providerId && m.modelId === model.modelId
+            ? { ...m, isEnabled: enabled }
+            : m
+        )
+      );
+      setSuccess(`Model ${enabled ? 'enabled' : 'disabled'}`);
+      setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
       setError('Failed to toggle model');
     } finally {
@@ -470,25 +453,15 @@ export function AIModelsTab() {
     setError(null);
 
     try {
-      const res = await fetch(
-        `/api/v1/model-configs/${model.providerId}/${encodeURIComponent(model.modelId)}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
-        }
+      await apiClient.put(
+        `/model-configs/${model.providerId}/${encodeURIComponent(model.modelId)}`,
+        updates,
       );
 
-      const data = await res.json();
-
-      if (data.success) {
-        await loadData(); // Reload to get fresh data
-        setEditingModel(null);
-        setSuccess('Model updated');
-        setTimeout(() => setSuccess(null), 2000);
-      } else {
-        setError(data.error || 'Failed to update model');
-      }
+      await loadData(); // Reload to get fresh data
+      setEditingModel(null);
+      setSuccess('Model updated');
+      setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
       setError('Failed to update model');
     }
@@ -500,20 +473,12 @@ export function AIModelsTab() {
     setError(null);
 
     try {
-      const res = await fetch('/api/v1/model-configs/sync/apply', {
-        method: 'POST',
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        setSuccess(`Synced ${data.stats?.providers || 0} providers with ${data.stats?.totalModels || 0} models`);
-        setTimeout(() => setSuccess(null), 3000);
-        // Reload data after sync
-        await loadData();
-      } else {
-        setError(data.error || 'Sync failed');
-      }
+      const data = await modelConfigsApi.syncApply() as Record<string, unknown>;
+      const stats = data.stats as Record<string, number> | undefined;
+      setSuccess(`Synced ${stats?.providers || 0} providers with ${stats?.totalModels || 0} models`);
+      setTimeout(() => setSuccess(null), 3000);
+      // Reload data after sync
+      await loadData();
     } catch (err) {
       setError('Sync failed');
     } finally {
@@ -531,19 +496,11 @@ export function AIModelsTab() {
     setError(null);
 
     try {
-      const res = await fetch('/api/v1/model-configs/sync/reset', {
-        method: 'POST',
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        setSuccess(`Reset complete! Deleted ${data.stats?.deleted || 0}, synced ${data.stats?.synced || 0} providers`);
-        setTimeout(() => setSuccess(null), 5000);
-        await loadData();
-      } else {
-        setError(data.error || 'Reset failed');
-      }
+      const data = await modelConfigsApi.syncReset() as Record<string, unknown>;
+      const stats = data.stats as Record<string, number> | undefined;
+      setSuccess(`Reset complete! Deleted ${stats?.deleted || 0}, synced ${stats?.synced || 0} providers`);
+      setTimeout(() => setSuccess(null), 5000);
+      await loadData();
     } catch (err) {
       setError('Reset sync failed');
     } finally {
@@ -557,18 +514,14 @@ export function AIModelsTab() {
     setIsDiscovering(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/model-configs/providers/${providerId}/discover-models`, {
-        method: 'POST',
-      });
-      const data = await res.json();
-      if (data.success) {
-        const newCount = data.data?.newModels || 0;
-        const total = data.data?.models?.length || 0;
-        setSuccess(`Discovered ${total} models from ${data.data?.providerName || providerId}${newCount > 0 ? ` (${newCount} new)` : ''}`);
-        await loadData();
-      } else {
-        setError(data.error || 'Discovery failed');
-      }
+      const data = await apiClient.post<Record<string, unknown>>(
+        `/model-configs/providers/${providerId}/discover-models`,
+      );
+      const newCount = (data.newModels as number) || 0;
+      const models = (data.models as unknown[]) || [];
+      const providerName = (data.providerName as string) || providerId;
+      setSuccess(`Discovered ${models.length} models from ${providerName}${newCount > 0 ? ` (${newCount} new)` : ''}`);
+      await loadData();
     } catch {
       setError('Failed to discover models. Is the provider running?');
     } finally {
@@ -580,51 +533,37 @@ export function AIModelsTab() {
   const handleAddLocalProvider = async (template: LocalProviderTemplate, customUrl?: string, customApiKey?: string) => {
     setError(null);
     try {
-      const res = await fetch('/api/v1/local-providers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: template.name,
-          providerType: template.providerType,
-          baseUrl: customUrl || template.baseUrl,
-          apiKey: customApiKey || undefined,
-        }),
+      const data = await localProvidersApi.create({
+        providerName: template.name,
+        url: customUrl || template.baseUrl,
+        apiKey: customApiKey || undefined,
       });
-      const data = await res.json();
-      if (data.success) {
-        setSuccess(`Added ${template.name} provider. Discovering models...`);
-        setShowAddLocalDialog(false);
-        await loadData();
-        // Auto-discover models after adding provider
-        if (data.data?.id) {
-          await handleLocalDiscover(data.data.id);
-        }
-      } else {
-        setError(data.error?.message || 'Failed to add provider');
+      setSuccess(`Added ${template.name} provider. Discovering models...`);
+      setShowAddLocalDialog(false);
+      await loadData();
+      // Auto-discover models after adding provider
+      const result = data as Record<string, unknown>;
+      if (result.id) {
+        await handleLocalDiscover(result.id as string);
       }
     } catch {
       setError('Failed to add local provider');
     }
-  };;
+  };
 
   // Handle discover models for a local provider
   const handleLocalDiscover = async (providerId: string) => {
     setDiscoveringLocal(providerId);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/local-providers/${providerId}/discover`, {
-        method: 'POST',
-      });
-      const data = await res.json();
-      if (data.success) {
-        const total = data.data?.totalModels || 0;
-        const newCount = data.data?.newModels || 0;
-        setSuccess(`Discovered ${total} models${newCount > 0 ? ` (${newCount} new)` : ''}`);
-        setTimeout(() => setSuccess(null), 3000);
-        await loadData();
-      } else {
-        setError(data.error?.message || 'Discovery failed');
-      }
+      const data = await apiClient.post<Record<string, unknown>>(
+        `/local-providers/${providerId}/discover`,
+      );
+      const total = (data.totalModels as number) || 0;
+      const newCount = (data.newModels as number) || 0;
+      setSuccess(`Discovered ${total} models${newCount > 0 ? ` (${newCount} new)` : ''}`);
+      setTimeout(() => setSuccess(null), 3000);
+      await loadData();
     } catch {
       setError('Failed to discover models. Is the provider running?');
     } finally {
@@ -636,15 +575,10 @@ export function AIModelsTab() {
   const handleDeleteLocalProvider = async (providerId: string, name: string) => {
     if (!await confirm({ message: `Delete local provider "${name}" and all its models?`, variant: 'danger' })) return;
     try {
-      const res = await fetch(`/api/v1/local-providers/${providerId}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        setSuccess(`Deleted ${name}`);
-        setTimeout(() => setSuccess(null), 2000);
-        await loadData();
-      } else {
-        setError(data.error?.message || 'Failed to delete provider');
-      }
+      await apiClient.delete(`/local-providers/${providerId}`);
+      setSuccess(`Deleted ${name}`);
+      setTimeout(() => setSuccess(null), 2000);
+      await loadData();
     } catch {
       setError('Failed to delete provider');
     }
@@ -653,9 +587,8 @@ export function AIModelsTab() {
   // Handle toggle local provider
   const handleToggleLocalProvider = async (providerId: string) => {
     try {
-      const res = await fetch(`/api/v1/local-providers/${providerId}/toggle`, { method: 'PATCH' });
-      const data = await res.json();
-      if (data.success) await loadData();
+      await apiClient.patch(`/local-providers/${providerId}/toggle`);
+      await loadData();
     } catch {
       setError('Failed to toggle provider');
     }
@@ -664,13 +597,10 @@ export function AIModelsTab() {
   // Handle set default local provider
   const handleSetDefaultLocal = async (providerId: string) => {
     try {
-      const res = await fetch(`/api/v1/local-providers/${providerId}/set-default`, { method: 'PATCH' });
-      const data = await res.json();
-      if (data.success) {
-        setSuccess('Default provider updated');
-        setTimeout(() => setSuccess(null), 2000);
-        await loadData();
-      }
+      await apiClient.patch(`/local-providers/${providerId}/set-default`);
+      setSuccess('Default provider updated');
+      setTimeout(() => setSuccess(null), 2000);
+      await loadData();
     } catch {
       setError('Failed to set default provider');
     }

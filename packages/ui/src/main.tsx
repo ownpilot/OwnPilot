@@ -7,6 +7,7 @@ import { ThemeProvider } from './hooks/useTheme';
 import { ChatProvider } from './hooks/useChatStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DialogProvider } from './components/ConfirmDialog';
+import { ToastProvider } from './components/ToastProvider';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -17,7 +18,9 @@ createRoot(document.getElementById('root')!).render(
           <WebSocketProvider>
             <ChatProvider>
               <DialogProvider>
-                <App />
+                <ToastProvider>
+                  <App />
+                </ToastProvider>
               </DialogProvider>
             </ChatProvider>
           </WebSocketProvider>

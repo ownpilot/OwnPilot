@@ -1,26 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, Circle, AlertTriangle, Plus, Trash2, Calendar } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
-
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  dueDate?: string;
-  dueTime?: string;
-  category?: string;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
+import { tasksApi } from '../api';
+import type { Task } from '../types';
 
 const priorityColors = {
   low: 'text-text-muted dark:text-dark-text-muted',
@@ -46,19 +28,8 @@ export function TasksPage() {
 
   const fetchTasks = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
-      if (filter === 'pending') {
-        params.append('status', 'pending');
-        params.append('status', 'in_progress');
-      } else if (filter === 'completed') {
-        params.append('status', 'completed');
-      }
-
-      const response = await fetch(`/api/v1/tasks?${params}`);
-      const data: ApiResponse<Task[]> = await response.json();
-      if (data.success && data.data) {
-        setTasks(data.data);
-      }
+      const data = await tasksApi.list(filter === 'pending' ? { status: ['pending', 'in_progress'] } : filter === 'completed' ? { status: ['completed'] } : undefined);
+      setTasks(data);
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
     } finally {
@@ -72,13 +43,8 @@ export function TasksPage() {
 
   const handleComplete = async (taskId: string) => {
     try {
-      const response = await fetch(`/api/v1/tasks/${taskId}/complete`, {
-        method: 'POST',
-      });
-      const data: ApiResponse<Task> = await response.json();
-      if (data.success) {
-        fetchTasks();
-      }
+      await tasksApi.complete(taskId);
+      fetchTasks();
     } catch (err) {
       console.error('Failed to complete task:', err);
     }
@@ -88,13 +54,8 @@ export function TasksPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this task?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`/api/v1/tasks/${taskId}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchTasks();
-      }
+      await tasksApi.delete(taskId);
+      fetchTasks();
     } catch (err) {
       console.error('Failed to delete task:', err);
     }

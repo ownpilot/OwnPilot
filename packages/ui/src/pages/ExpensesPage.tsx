@@ -11,6 +11,7 @@ import {
   RefreshCw,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { expensesApi } from '../api';
 
 interface ExpenseEntry {
   id: string;
@@ -107,31 +108,22 @@ export function ExpensesPage() {
     setIsLoading(true);
     try {
       // Fetch monthly data
-      const monthlyRes = await fetch(`/api/v1/expenses/monthly?year=${year}`);
-      const monthlyJson = await monthlyRes.json();
-      if (monthlyJson.success) {
-        setMonthlyData(monthlyJson.data);
-      }
+      const monthlyJson = await expensesApi.monthly(year);
+      setMonthlyData(monthlyJson as unknown as MonthlyResponse);
 
       // Fetch summary for current period
-      const period = selectedMonth
-        ? `&startDate=${year}-${selectedMonth}-01&endDate=${year}-${selectedMonth}-31`
-        : '&period=this_year';
-      const summaryRes = await fetch(`/api/v1/expenses/summary?${period}`);
-      const summaryJson = await summaryRes.json();
-      if (summaryJson.success) {
-        setSummaryData(summaryJson.data);
-      }
+      const summaryParams: Record<string, string> = selectedMonth
+        ? { startDate: `${year}-${selectedMonth}-01`, endDate: `${year}-${selectedMonth}-31` }
+        : { period: 'this_year' };
+      const summaryJson = await expensesApi.summary(summaryParams);
+      setSummaryData(summaryJson as unknown as SummaryResponse);
 
       // Fetch expense list
-      const listParams = selectedMonth
-        ? `startDate=${year}-${selectedMonth}-01&endDate=${year}-${selectedMonth}-31`
-        : `startDate=${year}-01-01&endDate=${year}-12-31`;
-      const listRes = await fetch(`/api/v1/expenses?${listParams}&limit=50`);
-      const listJson = await listRes.json();
-      if (listJson.success) {
-        setExpenses(listJson.data.expenses);
-      }
+      const listParams: Record<string, string> = selectedMonth
+        ? { startDate: `${year}-${selectedMonth}-01`, endDate: `${year}-${selectedMonth}-31`, limit: '50' }
+        : { startDate: `${year}-01-01`, endDate: `${year}-12-31`, limit: '50' };
+      const listJson = await expensesApi.list(listParams);
+      setExpenses((listJson as Record<string, unknown>).expenses as ExpenseEntry[]);
     } catch (err) {
       console.error('Failed to fetch expenses:', err);
     } finally {
@@ -146,26 +138,20 @@ export function ExpensesPage() {
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/v1/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newExpense,
-          amount: parseFloat(newExpense.amount),
-        }),
+      await expensesApi.create({
+        ...newExpense,
+        amount: parseFloat(newExpense.amount),
       });
-      if (res.ok) {
-        setShowAddForm(false);
-        setNewExpense({
-          date: new Date().toISOString().split('T')[0],
-          amount: '',
-          currency: 'TRY',
-          category: 'other',
-          description: '',
-          notes: '',
-        });
-        fetchData();
-      }
+      setShowAddForm(false);
+      setNewExpense({
+        date: new Date().toISOString().split('T')[0],
+        amount: '',
+        currency: 'TRY',
+        category: 'other',
+        description: '',
+        notes: '',
+      });
+      fetchData();
     } catch (err) {
       console.error('Failed to add expense:', err);
     }
@@ -174,10 +160,8 @@ export function ExpensesPage() {
   const handleDeleteExpense = async (id: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this expense?', variant: 'danger' })) return;
     try {
-      const res = await fetch(`/api/v1/expenses/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchData();
-      }
+      await expensesApi.delete(id);
+      fetchData();
     } catch (err) {
       console.error('Failed to delete expense:', err);
     }

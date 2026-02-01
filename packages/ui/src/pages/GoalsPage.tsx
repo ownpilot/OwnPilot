@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { goalsApi, apiClient } from '../api';
 import { Target, Plus, Trash2, ChevronRight, CheckCircle2, Circle, AlertTriangle, Pause } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 
@@ -28,12 +29,6 @@ interface Goal {
   updatedAt: string;
   completedAt?: string;
   steps?: GoalStep[];
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
 }
 
 const statusColors = {
@@ -67,16 +62,13 @@ export function GoalsPage() {
 
   const fetchGoals = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
       if (statusFilter !== 'all') {
-        params.append('status', statusFilter);
+        params.status = statusFilter;
       }
 
-      const response = await fetch(`/api/v1/goals?${params}`);
-      const data: ApiResponse<{ goals: Goal[] }> = await response.json();
-      if (data.success && data.data) {
-        setGoals(data.data.goals);
-      }
+      const data = await goalsApi.list(params);
+      setGoals((data as any).goals);
     } catch (err) {
       console.error('Failed to fetch goals:', err);
     } finally {
@@ -92,13 +84,8 @@ export function GoalsPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this goal?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`/api/v1/goals/${goalId}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchGoals();
-      }
+      await goalsApi.delete(goalId);
+      fetchGoals();
     } catch (err) {
       console.error('Failed to delete goal:', err);
     }
@@ -106,15 +93,8 @@ export function GoalsPage() {
 
   const handleStatusChange = async (goalId: string, status: Goal['status']) => {
     try {
-      const response = await fetch(`/api/v1/goals/${goalId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchGoals();
-      }
+      await goalsApi.update(goalId, { status });
+      fetchGoals();
     } catch (err) {
       console.error('Failed to update goal status:', err);
     }
@@ -236,12 +216,9 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
   useEffect(() => {
     if (isExpanded && steps.length === 0) {
       setLoadingSteps(true);
-      fetch(`/api/v1/goals/${goal.id}/steps`)
-        .then((res) => res.json())
+      goalsApi.steps(goal.id)
         .then((data) => {
-          if (data.success && data.data) {
-            setSteps(data.data.steps);
-          }
+          setSteps((data as any).steps);
         })
         .catch(console.error)
         .finally(() => setLoadingSteps(false));
@@ -250,17 +227,10 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
 
   const handleStepStatusChange = async (stepId: string, status: GoalStep['status']) => {
     try {
-      const response = await fetch(`/api/v1/goals/${goal.id}/steps/${stepId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setSteps((prev) =>
-          prev.map((s) => (s.id === stepId ? { ...s, status } : s))
-        );
-      }
+      await goalsApi.updateStep(goal.id, stepId, { status });
+      setSteps((prev) =>
+        prev.map((s) => (s.id === stepId ? { ...s, status } : s))
+      );
     } catch (err) {
       console.error('Failed to update step:', err);
     }
@@ -430,19 +400,12 @@ function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
         dueDate: dueDate || undefined,
       };
 
-      const url = goal ? `/api/v1/goals/${goal.id}` : '/api/v1/goals';
-      const method = goal ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        onSave();
+      if (goal) {
+        await goalsApi.update(goal.id, body);
+      } else {
+        await apiClient.post('/goals', body);
       }
+      onSave();
     } catch (err) {
       console.error('Failed to save goal:', err);
     } finally {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Wrench, Search, X, Database, Table, Bookmark, Calendar, Users, FileText, ListChecks } from './icons';
+import { toolsApi, customToolsApi, customDataApi } from '../api';
 
 // --- Types ---
 
@@ -286,36 +287,31 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
     setIsLoading(true);
     try {
       if (tab === 'tools') {
-        const [toolsRes, customRes] = await Promise.all([
-          fetch('/api/v1/tools?grouped=true'),
-          fetch('/api/v1/custom-tools?status=active'),
+        const [toolGroups, customData] = await Promise.all([
+          toolsApi.listGrouped(),
+          customToolsApi.list('active'),
         ]);
-        const toolsData = await toolsRes.json();
-        const customData = await customRes.json();
 
         const builtinTools: ResourceItem[] = [];
-        if (toolsData.data?.categories) {
-          for (const [category, catData] of Object.entries(toolsData.data.categories) as any[]) {
-            for (const t of catData.tools || []) {
-              builtinTools.push({
-                name: t.name,
-                description: t.description || '',
-                category,
-                type: 'tool',
-                parameters: t.parameters,
-              });
-            }
+        for (const group of toolGroups) {
+          for (const t of group.tools) {
+            builtinTools.push({
+              name: t.name,
+              description: t.description || '',
+              category: group.category,
+              type: 'tool',
+              parameters: t.parameters,
+            });
           }
         }
-        const customTools: ResourceItem[] = (customData.data?.tools || []).map((t: any) => ({
+        const customTools: ResourceItem[] = (customData.tools || []).map((t: any) => ({
           name: t.name, description: t.description, category: t.category || 'Custom', type: 'custom-tool' as ResourceType,
         }));
         setItems([...customTools, ...builtinTools]);
 
       } else if (tab === 'custom-data') {
-        const res = await fetch('/api/v1/custom-data/tables');
-        const data = await res.json();
-        const tables: ResourceItem[] = (data.data?.tables || data.data || []).map((t: any) => ({
+        const tables = await customDataApi.tables();
+        const tableItems: ResourceItem[] = (Array.isArray(tables) ? tables : []).map((t: any) => ({
           name: t.displayName || t.name,
           displayName: t.displayName || t.name,
           internalName: t.name,
@@ -324,7 +320,7 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
           type: 'custom-data' as ResourceType,
           recordCount: t.recordCount,
         }));
-        setItems(tables);
+        setItems(tableItems);
 
       } else if (tab === 'builtin-data') {
         setItems(BUILTIN_DATA_ITEMS);

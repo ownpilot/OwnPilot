@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDialog } from './ConfirmDialog';
 import { Check, AlertCircle, Image, Volume2, Mic, Eye } from './icons';
+import { mediaSettingsApi } from '../api';
 
 interface ProviderWithStatus {
   id: string;
@@ -43,14 +44,8 @@ export function MediaSettingsTab() {
 
   const loadSettings = async () => {
     try {
-      const res = await fetch('/api/v1/media-settings');
-      const data = await res.json();
-
-      if (data.success) {
-        setSettings(data.data);
-      } else {
-        setError(data.error || 'Failed to load media settings');
-      }
+      const data = await mediaSettingsApi.get();
+      setSettings(data as unknown as CapabilitySettings[]);
     } catch (err) {
       console.error('Failed to load media settings:', err);
       setError('Failed to load media settings');
@@ -100,6 +95,7 @@ export function MediaSettingsTab() {
     setError(null);
 
     try {
+      // TODO: migrate to mediaSettingsApi.update(capability, { provider, model }) once endpoint is added
       const res = await fetch(`/api/v1/media-settings/${capability}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -130,6 +126,7 @@ export function MediaSettingsTab() {
     setSavingCapability(capability);
 
     try {
+      // TODO: migrate to mediaSettingsApi.reset(capability) once endpoint is added
       const res = await fetch(`/api/v1/media-settings/${capability}`, {
         method: 'DELETE',
       });

@@ -17,6 +17,7 @@ import {
   Download,
   Upload,
 } from '../components/icons';
+import { profileApi } from '../api';
 
 interface ProfileData {
   userId: string;
@@ -129,27 +130,21 @@ export function ProfilePage() {
   const fetchProfile = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/v1/profile');
-      const data = await res.json();
-
-      if (data.success) {
-        setProfile(data.data);
-        // Pre-fill quick setup with existing data
-        setQuickSetup({
-          name: data.data.identity?.name || '',
-          nickname: data.data.identity?.nickname || '',
-          location: data.data.location?.home?.city || '',
-          timezone: data.data.location?.home?.timezone || defaultQuickSetup.timezone,
-          occupation: data.data.work?.occupation || '',
-          language: data.data.communication?.primaryLanguage || defaultQuickSetup.language,
-          communicationStyle: data.data.communication?.preferredStyle || 'casual',
-          autonomyLevel: data.data.aiPreferences?.autonomyLevel || 'medium',
-        });
-      } else {
-        setError(data.error?.message || 'Failed to load profile');
-      }
+      const data = await profileApi.get() as unknown as ProfileData;
+      setProfile(data);
+      // Pre-fill quick setup with existing data
+      setQuickSetup({
+        name: data.identity?.name || '',
+        nickname: data.identity?.nickname || '',
+        location: data.location?.home?.city || '',
+        timezone: data.location?.home?.timezone || defaultQuickSetup.timezone,
+        occupation: data.work?.occupation || '',
+        language: data.communication?.primaryLanguage || defaultQuickSetup.language,
+        communicationStyle: data.communication?.preferredStyle || 'casual',
+        autonomyLevel: data.aiPreferences?.autonomyLevel || 'medium',
+      });
     } catch (err) {
-      setError('Failed to connect to server');
+      setError(err instanceof Error ? err.message : 'Failed to connect to server');
     } finally {
       setIsLoading(false);
     }
@@ -160,23 +155,12 @@ export function ProfilePage() {
       setIsSaving(true);
       setSaveSuccess(false);
 
-      const res = await fetch('/api/v1/profile/quick', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(quickSetup),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        setProfile(data.data.profile);
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
-      } else {
-        setError(data.error?.message || 'Failed to save');
-      }
+      const result = await profileApi.quickSetup(quickSetup as unknown as Record<string, unknown>);
+      setProfile(result.profile as unknown as ProfileData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      setError('Failed to save profile');
+      setError(err instanceof Error ? err.message : 'Failed to save profile');
     } finally {
       setIsSaving(false);
     }
@@ -186,20 +170,9 @@ export function ProfilePage() {
     if (!newInstruction.trim()) return;
 
     try {
-      const res = await fetch('/api/v1/profile/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: 'instructions',
-          key: `instruction_${Date.now()}`,
-          value: newInstruction,
-        }),
-      });
-
-      if (res.ok) {
-        setNewInstruction('');
-        fetchProfile();
-      }
+      await profileApi.setData('instructions', `instruction_${Date.now()}`, newInstruction);
+      setNewInstruction('');
+      fetchProfile();
     } catch (err) {
       setError('Failed to add instruction');
     }
@@ -209,20 +182,9 @@ export function ProfilePage() {
     if (!newBoundary.trim()) return;
 
     try {
-      const res = await fetch('/api/v1/profile/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: 'boundaries',
-          key: `boundary_${Date.now()}`,
-          value: newBoundary,
-        }),
-      });
-
-      if (res.ok) {
-        setNewBoundary('');
-        fetchProfile();
-      }
+      await profileApi.setData('boundaries', `boundary_${Date.now()}`, newBoundary);
+      setNewBoundary('');
+      fetchProfile();
     } catch (err) {
       setError('Failed to add boundary');
     }
@@ -230,18 +192,14 @@ export function ProfilePage() {
 
   const exportProfile = async () => {
     try {
-      const res = await fetch('/api/v1/profile/export');
-      const data = await res.json();
-
-      if (data.success) {
-        const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'profile-backup.json';
-        a.click();
-        URL.revokeObjectURL(url);
-      }
+      const data = await profileApi.export();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'profile-backup.json';
+      a.click();
+      URL.revokeObjectURL(url);
     } catch (err) {
       setError('Failed to export profile');
     }
@@ -254,16 +212,8 @@ export function ProfilePage() {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-
-      const res = await fetch('/api/v1/profile/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entries: data.entries }),
-      });
-
-      if (res.ok) {
-        fetchProfile();
-      }
+      await profileApi.import(data.entries);
+      fetchProfile();
     } catch (err) {
       setError('Failed to import profile');
     }

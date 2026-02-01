@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { triggersApi, apiClient } from '../api';
 import { Zap, Plus, Trash2, Play, Pause, Clock, History } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 
@@ -46,12 +47,6 @@ interface TriggerHistoryEntry {
   durationMs: number | null;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
-
 const typeColors = {
   schedule: 'bg-blue-500/10 text-blue-500',
   event: 'bg-purple-500/10 text-purple-500',
@@ -86,16 +81,13 @@ export function TriggersPage() {
 
   const fetchTriggers = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
       if (typeFilter !== 'all') {
-        params.append('type', typeFilter);
+        params.type = typeFilter;
       }
 
-      const response = await fetch(`/api/v1/triggers?${params}`);
-      const data: ApiResponse<{ triggers: Trigger[] }> = await response.json();
-      if (data.success && data.data) {
-        setTriggers(data.data.triggers);
-      }
+      const data = await triggersApi.list(params);
+      setTriggers((data as any).triggers);
     } catch (err) {
       console.error('Failed to fetch triggers:', err);
     } finally {
@@ -109,12 +101,9 @@ export function TriggersPage() {
 
   const fetchHistory = async (triggerId: string) => {
     try {
-      const response = await fetch(`/api/v1/triggers/${triggerId}/history`);
-      const data: ApiResponse<{ history: TriggerHistoryEntry[] }> = await response.json();
-      if (data.success && data.data) {
-        setHistory(data.data.history);
-        setShowHistory(triggerId);
-      }
+      const data = await triggersApi.history(triggerId);
+      setHistory((data as any).history);
+      setShowHistory(triggerId);
     } catch (err) {
       console.error('Failed to fetch history:', err);
     }
@@ -124,13 +113,8 @@ export function TriggersPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this trigger?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`/api/v1/triggers/${triggerId}`, {
-        method: 'DELETE',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchTriggers();
-      }
+      await triggersApi.delete(triggerId);
+      fetchTriggers();
     } catch (err) {
       console.error('Failed to delete trigger:', err);
     }
@@ -138,15 +122,8 @@ export function TriggersPage() {
 
   const handleToggle = async (triggerId: string, enabled: boolean) => {
     try {
-      const response = await fetch(`/api/v1/triggers/${triggerId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled }),
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchTriggers();
-      }
+      await triggersApi.update(triggerId, { enabled });
+      fetchTriggers();
     } catch (err) {
       console.error('Failed to toggle trigger:', err);
     }
@@ -154,13 +131,8 @@ export function TriggersPage() {
 
   const handleFireNow = async (triggerId: string) => {
     try {
-      const response = await fetch(`/api/v1/triggers/${triggerId}/fire`, {
-        method: 'POST',
-      });
-      const data: ApiResponse<void> = await response.json();
-      if (data.success) {
-        fetchTriggers();
-      }
+      await triggersApi.fire(triggerId);
+      fetchTriggers();
     } catch (err) {
       console.error('Failed to fire trigger:', err);
     }
@@ -508,25 +480,15 @@ function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
         enabled: trigger?.enabled ?? true,
       };
 
-      const url = trigger ? `/api/v1/triggers/${trigger.id}` : '/api/v1/triggers';
-      const method = trigger ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        onSave();
+      if (trigger) {
+        await triggersApi.update(trigger.id, body);
       } else {
-        // Show backend validation error
-        setSaveError(data.error?.message ?? 'Failed to save trigger');
+        await apiClient.post('/triggers', body);
       }
+      onSave();
     } catch (err) {
       console.error('Failed to save trigger:', err);
-      setSaveError('Network error — could not reach server');
+      setSaveError(err instanceof Error ? err.message : 'Failed to save trigger');
     } finally {
       setIsSaving(false);
     }

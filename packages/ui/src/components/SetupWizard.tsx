@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { settingsApi } from '../api';
 
 interface SetupStep {
   id: string;
@@ -43,10 +44,9 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
 
   // Check if any provider is already configured
   useEffect(() => {
-    fetch('/api/v1/settings/providers')
-      .then(res => res.json())
+    settingsApi.getProviders()
       .then(data => {
-        if (data.success && data.data?.providers?.length > 0) {
+        if (data.providers?.length > 0) {
           // Already has providers, skip to ready
           setProviderConfigured(true);
           setStep(2);
@@ -64,21 +64,11 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
     setError(null);
 
     try {
-      const res = await fetch('/api/v1/settings/api-keys', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: selectedProvider, apiKey: apiKey.trim() }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setProviderConfigured(true);
-        setStep(2);
-      } else {
-        setError(data.error?.message || 'Failed to save API key');
-      }
-    } catch (e) {
-      setError('Connection error. Is the server running?');
+      await settingsApi.saveApiKey(selectedProvider, apiKey.trim());
+      setProviderConfigured(true);
+      setStep(2);
+    } catch (e: any) {
+      setError(e.message || 'Connection error. Is the server running?');
     } finally {
       setSaving(false);
     }

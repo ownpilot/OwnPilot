@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, RefreshCw, ShieldCheck, Shield, XCircle, CheckCircle2, Database, Upload, Download, Trash2, Wrench, Server, AlertCircle, Settings } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useTheme } from '../hooks/useTheme';
+import { systemApi } from '../api';
 
 interface SandboxStatus {
   dockerAvailable: boolean;
@@ -29,16 +30,6 @@ interface DatabaseStats {
   version: string;
 }
 
-interface HealthResponse {
-  success: boolean;
-  data: {
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    version: string;
-    uptime: number;
-    database: DatabaseStatus;
-    sandbox: SandboxStatus;
-  };
-}
 
 // Helper to format uptime
 function formatUptime(seconds: number): string {
@@ -92,30 +83,25 @@ export function SystemPage() {
   const loadSystemStatus = async () => {
     setIsLoadingSystem(true);
     try {
-      const [healthRes, dbStatusRes, statsRes] = await Promise.all([
-        fetch('/api/v1/health'),
-        fetch('/api/v1/database/status'),
-        fetch('/api/v1/database/stats').catch(() => null),
+      const [healthData, dbStatusData, statsData] = await Promise.all([
+        systemApi.health(),
+        systemApi.databaseStatus(),
+        systemApi.databaseStats().catch(() => null),
       ]);
 
-      const healthData: HealthResponse = await healthRes.json();
-      if (healthData.success && healthData.data) {
-        setSandboxStatus(healthData.data.sandbox);
-        setDatabaseStatus(healthData.data.database);
-        setSystemVersion(healthData.data.version);
-        setSystemUptime(healthData.data.uptime);
-      }
+      // healthData is already unwrapped (no envelope)
+      const health = healthData as any;
+      setSandboxStatus(health.sandbox);
+      setDatabaseStatus(health.database);
+      setSystemVersion(health.version);
+      setSystemUptime(health.uptime);
 
-      const dbStatusData = await dbStatusRes.json();
-      if (dbStatusData.success && dbStatusData.data) {
-        setBackups(dbStatusData.data.backups || []);
-      }
+      // dbStatusData is already unwrapped
+      const dbStatus = dbStatusData as any;
+      setBackups(dbStatus.backups || []);
 
-      if (statsRes) {
-        const statsData = await statsRes.json();
-        if (statsData.success && statsData.data) {
-          setDbStats(statsData.data);
-        }
+      if (statsData) {
+        setDbStats(statsData as any);
       }
     } catch (err) {
       console.error('Failed to load system status:', err);
@@ -136,39 +122,23 @@ export function SystemPage() {
     setDbOperationResult(null);
 
     try {
-      const res = await fetch(`/api/v1/database/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (!data.success) {
-        setDbOperationOutput([data.error?.message || `${operationType} failed to start`]);
-        setDbOperationResult('failure');
-        setDbOperationRunning(false);
-        return;
-      }
-
+      await systemApi.databaseOperation(endpoint, body);
       setDbOperationOutput([`${operationType} started...`]);
 
       // Poll for status
       const pollStatus = async () => {
-        const statusRes = await fetch('/api/v1/database/operation/status');
-        const statusData = await statusRes.json();
+        const statusData = await systemApi.databaseOperationStatus() as any;
 
-        if (statusData.success && statusData.data) {
-          setDbOperationOutput(statusData.data.output || []);
+        setDbOperationOutput(statusData.output || []);
 
-          if (!statusData.data.isRunning) {
-            setDbOperationResult(statusData.data.lastResult || 'failure');
-            setDbOperationRunning(false);
-            loadSystemStatus(); // Refresh
-            return;
-          }
-
-          setTimeout(pollStatus, 1000);
+        if (!statusData.isRunning) {
+          setDbOperationResult(statusData.lastResult || 'failure');
+          setDbOperationRunning(false);
+          loadSystemStatus(); // Refresh
+          return;
         }
+
+        setTimeout(pollStatus, 1000);
       };
 
       setTimeout(pollStatus, 1000);
@@ -188,15 +158,8 @@ export function SystemPage() {
     if (!await confirm({ message: `Delete backup "${filename}"?`, variant: 'danger' })) return;
 
     try {
-      const res = await fetch(`/api/v1/database/backup/${encodeURIComponent(filename)}`, {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-      if (data.success) {
-        loadSystemStatus();
-      } else {
-        await showAlert(data.error?.message || 'Failed to delete backup');
-      }
+      await systemApi.deleteBackup(filename);
+      loadSystemStatus();
     } catch (err) {
       console.error('Delete backup error:', err);
       await showAlert('Failed to delete backup');

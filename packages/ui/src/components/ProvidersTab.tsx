@@ -8,43 +8,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDialog } from './ConfirmDialog';
 import { Check, AlertCircle, Server, Edit2, Save, X, ExternalLink, Search } from './icons';
-
-interface ProviderInfo {
-  id: string;
-  name: string;
-  type: string;
-  baseUrl?: string;
-  apiKeyEnv: string;
-  docsUrl?: string;
-  isConfigured: boolean;
-  isEnabled: boolean;
-  hasOverride: boolean;
-  color?: string;
-  modelCount: number;
-  features: {
-    streaming: boolean;
-    toolUse: boolean;
-    vision: boolean;
-    jsonMode: boolean;
-    systemMessage: boolean;
-  };
-}
-
-interface UserOverride {
-  baseUrl?: string;
-  providerType?: string;
-  isEnabled: boolean;
-  apiKeyEnv?: string;
-  notes?: string;
-}
-
-interface ProvidersResponse {
-  success: boolean;
-  data: {
-    providers: ProviderInfo[];
-    total: number;
-  };
-}
+import { providersApi } from '../api';
+import type { ProviderInfo, UserOverride } from '../types';
 
 // Provider type options - must match ProviderType in configs/types.ts
 const PROVIDER_TYPES = [
@@ -80,13 +45,8 @@ export function ProvidersTab() {
   const fetchProviders = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/v1/providers');
-      const data: ProvidersResponse = await res.json();
-      if (data.success) {
-        setProviders(data.data.providers);
-      } else {
-        setError('Failed to load providers');
-      }
+      const { providers: list } = await providersApi.list();
+      setProviders(list as ProviderInfo[]);
     } catch {
       setError('Failed to load providers');
     } finally {
@@ -100,11 +60,7 @@ export function ProvidersTab() {
 
   const handleToggle = async (providerId: string, enabled: boolean) => {
     try {
-      await fetch(`/api/v1/providers/${providerId}/toggle`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled }),
-      });
+      await providersApi.toggle(providerId, enabled);
       // Update local state
       setProviders((prev) =>
         prev.map((p) => (p.id === providerId ? { ...p, isEnabled: enabled, hasOverride: true } : p))
@@ -117,19 +73,16 @@ export function ProvidersTab() {
   const handleEdit = async (providerId: string) => {
     // Fetch current config
     try {
-      const res = await fetch(`/api/v1/providers/${providerId}/config`);
-      const data = await res.json();
-      if (data.success) {
-        const override: UserOverride = data.data.userOverride || {};
-        const baseConfig = data.data.baseConfig || {};
-        setEditForm({
-          baseUrl: override.baseUrl || baseConfig.baseUrl || '',
-          providerType: override.providerType || baseConfig.type || '',
-          isEnabled: override.isEnabled !== false,
-          notes: override.notes || '',
-        });
-        setEditingProvider(providerId);
-      }
+      const data = await providersApi.getConfig(providerId);
+      const override: UserOverride = data.userOverride || ({} as UserOverride);
+      const baseConfig = data.baseConfig || {};
+      setEditForm({
+        baseUrl: override.baseUrl || (baseConfig as Record<string, string>).baseUrl || '',
+        providerType: override.providerType || (baseConfig as Record<string, string>).type || '',
+        isEnabled: override.isEnabled !== false,
+        notes: override.notes || '',
+      });
+      setEditingProvider(providerId);
     } catch {
       setError('Failed to load provider config');
     }
@@ -139,15 +92,11 @@ export function ProvidersTab() {
     if (!editingProvider) return;
     setSaving(true);
     try {
-      await fetch(`/api/v1/providers/${editingProvider}/config`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          baseUrl: editForm.baseUrl || undefined,
-          providerType: editForm.providerType || undefined,
-          isEnabled: editForm.isEnabled,
-          notes: editForm.notes || undefined,
-        }),
+      await providersApi.updateConfig(editingProvider, {
+        baseUrl: editForm.baseUrl || undefined,
+        providerType: editForm.providerType || undefined,
+        isEnabled: editForm.isEnabled,
+        notes: editForm.notes || undefined,
       });
       // Refresh providers
       await fetchProviders();
@@ -162,9 +111,7 @@ export function ProvidersTab() {
   const handleResetOverride = async (providerId: string) => {
     if (!await confirm({ message: 'Reset this provider to default settings?' })) return;
     try {
-      await fetch(`/api/v1/providers/${providerId}/config`, {
-        method: 'DELETE',
-      });
+      await providersApi.resetConfig(providerId);
       await fetchProviders();
       setEditingProvider(null);
     } catch {

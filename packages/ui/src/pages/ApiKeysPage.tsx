@@ -1,71 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Settings, Check, AlertCircle, ChevronDown, ChevronRight, Key } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
-
-interface ProviderConfig {
-  id: string;
-  name: string;
-  apiKeyEnv: string;
-  baseUrl?: string;
-  docsUrl?: string;
-  models?: { id: string; name: string }[];
-  apiKeyPlaceholder?: string;
-  color?: string;
-}
+import { settingsApi, providersApi, modelsApi, localProvidersApi } from '../api';
+import type { ProviderConfig, LocalProviderInfo, ModelInfo } from '../types';
 
 interface ProviderCategory {
   name: string;
   providers: ProviderConfig[];
 }
 
-interface LocalProviderInfo {
-  id: string;
-  name: string;
-  type: 'local';
-}
-
-interface SettingsResponse {
-  success: boolean;
-  data: {
-    configuredProviders: string[];
-    localProviders?: LocalProviderInfo[];
-    demoMode: boolean;
-    availableProviders: string[];
-    defaultProvider: string | null;
-    defaultModel: string | null;
-  };
-}
-
-interface ProvidersResponse {
-  success: boolean;
-  data: {
-    providers: ProviderConfig[];
-    total: number;
-  };
-}
-
-interface CategoriesResponse {
-  success: boolean;
-  data: {
-    categories: Record<string, string[]>;
-    uncategorized: string[];
-  };
-}
-
-interface ModelInfo {
-  id: string;
-  name: string;
-  provider: string;
-  recommended?: boolean;
-}
-
-interface ModelsResponse {
-  success: boolean;
-  data: {
-    models: ModelInfo[];
-    configuredProviders: string[];
-  };
-}
 
 // Empty fallback - API should always provide providers
 const FALLBACK_PROVIDERS: ProviderConfig[] = [];
@@ -98,52 +41,43 @@ export function ApiKeysPage() {
   const loadData = async () => {
     try {
       // Load settings, providers, categories, and models in parallel
-      const [settingsRes, providersRes, categoriesRes, modelsRes] = await Promise.all([
-        fetch('/api/v1/settings'),
-        fetch('/api/v1/providers'),
-        fetch('/api/v1/providers/categories'),
-        fetch('/api/v1/models'),
+      const [settingsData, providersData, categoriesData, modelsData] = await Promise.all([
+        settingsApi.get(),
+        providersApi.list(),
+        providersApi.categories(),
+        modelsApi.list(),
       ]);
 
-      const settingsData: SettingsResponse = await settingsRes.json();
-      if (settingsData.success) {
-        setConfiguredProviders(settingsData.data.configuredProviders);
-        setLocalProviderInfos(settingsData.data.localProviders ?? []);
-        // Set default provider from settings or first configured
-        if (settingsData.data.defaultProvider) {
-          setDefaultProvider(settingsData.data.defaultProvider);
-        } else if (settingsData.data.configuredProviders.length > 0) {
-          setDefaultProvider(settingsData.data.configuredProviders[0]);
-        }
-        if (settingsData.data.defaultModel) {
-          setDefaultModel(settingsData.data.defaultModel);
-        }
+      setConfiguredProviders(settingsData.configuredProviders);
+      setLocalProviderInfos((settingsData.localProviders ?? []) as LocalProviderInfo[]);
+      // Set default provider from settings or first configured
+      if (settingsData.defaultProvider) {
+        setDefaultProvider(settingsData.defaultProvider);
+      } else if (settingsData.configuredProviders.length > 0) {
+        setDefaultProvider(settingsData.configuredProviders[0]);
+      }
+      if (settingsData.defaultModel) {
+        setDefaultModel(settingsData.defaultModel);
       }
 
-      const providersData: ProvidersResponse = await providersRes.json();
-      if (providersData.success && providersData.data.providers.length > 0) {
-        setProviders(providersData.data.providers);
+      if (providersData.providers.length > 0) {
+        setProviders(providersData.providers as ProviderConfig[]);
       } else {
         setProviders(FALLBACK_PROVIDERS);
       }
 
-      const categoriesData: CategoriesResponse = await categoriesRes.json();
-      if (categoriesData.success) {
-        setCategories(categoriesData.data.categories);
-        setUncategorized(categoriesData.data.uncategorized);
-      }
+      setCategories(categoriesData.categories);
+      setUncategorized(categoriesData.uncategorized);
 
-      const modelsData: ModelsResponse = await modelsRes.json();
-      const allModels: ModelInfo[] = modelsData.success ? modelsData.data.models : [];
+      const allModels: ModelInfo[] = modelsData.models ?? [];
 
       // Also load local provider models
-      const localProvs = settingsData.data?.localProviders ?? [];
+      const localProvs = (settingsData.localProviders ?? []) as LocalProviderInfo[];
       for (const lp of localProvs) {
         try {
-          const lpModelsRes = await fetch(`/api/v1/local-providers/${lp.id}/models`);
-          const lpModelsData = await lpModelsRes.json();
-          if (lpModelsData.success && Array.isArray(lpModelsData.data)) {
-            for (const lm of lpModelsData.data) {
+          const lpModelsData = await localProvidersApi.models(lp.id) as unknown as Array<{ modelId: string; displayName?: string }>;
+          if (Array.isArray(lpModelsData)) {
+            for (const lm of lpModelsData) {
               allModels.push({
                 id: lm.modelId,
                 name: lm.displayName || lm.modelId,
@@ -158,8 +92,8 @@ export function ApiKeysPage() {
 
       setModels(allModels);
       // Set default model from first model of default provider if not set
-      if (!settingsData.data?.defaultModel && allModels.length > 0) {
-        const providerToUse = settingsData.data?.defaultProvider || settingsData.data?.configuredProviders?.[0];
+      if (!settingsData.defaultModel && allModels.length > 0) {
+        const providerToUse = settingsData.defaultProvider || settingsData.configuredProviders?.[0];
         if (providerToUse) {
           const firstModel = allModels.find((m) => m.provider === providerToUse);
           if (firstModel) {
@@ -191,15 +125,7 @@ export function ApiKeysPage() {
       // Send API keys to backend
       for (const [provider, apiKey] of Object.entries(apiKeys)) {
         if (apiKey && apiKey.trim()) {
-          const response = await fetch('/api/v1/settings/api-keys', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider, apiKey }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to save ${provider} API key`);
-          }
+          await settingsApi.saveApiKey(provider, apiKey);
 
           // Add to configured list if not already there
           if (!newConfigured.includes(provider)) {
@@ -229,15 +155,7 @@ export function ApiKeysPage() {
 
     // Save to backend
     try {
-      const response = await fetch('/api/v1/settings/default-provider', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: providerId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save default provider');
-      }
+      await settingsApi.setDefaultProvider(providerId);
 
       // Update default model to first model of this provider
       const providerModels = models.filter((m) => m.provider === providerId);
@@ -258,11 +176,7 @@ export function ApiKeysPage() {
 
     // Save to backend
     try {
-      await fetch('/api/v1/settings/default-model', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: modelId }),
-      });
+      await settingsApi.setDefaultModel(modelId);
     } catch (err) {
       console.error('Failed to save default model:', err);
     }
@@ -274,13 +188,7 @@ export function ApiKeysPage() {
     }
 
     try {
-      const response = await fetch(`/api/v1/settings/api-keys/${providerId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete ${providerId} API key`);
-      }
+      await settingsApi.deleteApiKey(providerId);
 
       // Remove from configured list
       setConfiguredProviders((prev) => prev.filter((p) => p !== providerId));

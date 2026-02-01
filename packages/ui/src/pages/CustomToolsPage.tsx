@@ -1,44 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Wrench, Plus, Check, X, Trash, Play, Code } from '../components/icons';
-import type { ApiResponse } from '../types';
+import { customToolsApi } from '../api';
+import type { CustomTool, ToolStats, ToolStatus, ToolPermission } from '../types';
 
-// Types
-type ToolStatus = 'active' | 'disabled' | 'pending_approval' | 'rejected';
-type ToolPermission = 'network' | 'filesystem' | 'database' | 'shell' | 'email' | 'scheduling';
-
-interface CustomTool {
-  id: string;
-  userId: string;
-  name: string;
-  description: string;
-  parameters: {
-    type: 'object';
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-  code: string;
-  category?: string;
-  status: ToolStatus;
-  permissions: ToolPermission[];
-  requiresApproval: boolean;
-  createdBy: 'user' | 'llm';
-  version: number;
-  usageCount: number;
-  lastUsedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  metadata?: Record<string, unknown>;
-}
-
-interface ToolStats {
-  total: number;
-  active: number;
-  disabled: number;
-  pendingApproval: number;
-  createdByLLM: number;
-  createdByUser: number;
-  totalUsage: number;
-}
 
 const STATUS_COLORS: Record<ToolStatus, string> = {
   active: 'bg-green-500/10 text-green-600 dark:text-green-400',
@@ -79,14 +43,8 @@ export function CustomToolsPage() {
 
   const fetchTools = async () => {
     try {
-      const url = filter === 'all'
-        ? '/api/v1/custom-tools'
-        : `/api/v1/custom-tools?status=${filter}`;
-      const response = await fetch(url);
-      const data: ApiResponse<{ tools: CustomTool[] }> = await response.json();
-      if (data.success && data.data) {
-        setTools(data.data.tools);
-      }
+      const { tools } = await customToolsApi.list(filter === 'all' ? undefined : filter);
+      setTools(tools);
     } catch (err) {
       console.error('Failed to fetch custom tools:', err);
     } finally {
@@ -96,11 +54,8 @@ export function CustomToolsPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/v1/custom-tools/stats');
-      const data: ApiResponse<ToolStats> = await response.json();
-      if (data.success && data.data) {
-        setStats(data.data);
-      }
+      const data = await customToolsApi.stats();
+      setStats(data);
     } catch (err) {
       console.error('Failed to fetch stats:', err);
     }
@@ -108,18 +63,15 @@ export function CustomToolsPage() {
 
   const handleAction = async (toolId: string, action: 'enable' | 'disable' | 'approve' | 'reject' | 'delete') => {
     try {
-      const method = action === 'delete' ? 'DELETE' : 'POST';
-      const url = action === 'delete'
-        ? `/api/v1/custom-tools/${toolId}`
-        : `/api/v1/custom-tools/${toolId}/${action}`;
-
-      const response = await fetch(url, { method });
-      if (response.ok) {
-        fetchTools();
-        fetchStats();
-        if (selectedTool?.id === toolId) {
-          setSelectedTool(null);
-        }
+      if (action === 'delete') {
+        await customToolsApi.delete(toolId);
+      } else {
+        await customToolsApi.action(toolId, action);
+      }
+      fetchTools();
+      fetchStats();
+      if (selectedTool?.id === toolId) {
+        setSelectedTool(null);
       }
     } catch (err) {
       console.error(`Failed to ${action} tool:`, err);
@@ -377,13 +329,7 @@ function ToolDetailModal({ tool, onClose, onAction, onRefresh }: ToolDetailModal
         return;
       }
 
-      const response = await fetch(`/api/v1/custom-tools/${tool.id}/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ arguments: args }),
-      });
-
-      const data = await response.json();
+      const data = await customToolsApi.execute(tool.id, args);
       setTestResult(JSON.stringify(data, null, 2));
       onRefresh();
     } catch (err) {
@@ -666,27 +612,16 @@ function CreateToolModal({ onClose, onCreated }: CreateToolModalProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/v1/custom-tools', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          description,
-          category: category || undefined,
-          parameters: parsedParams,
-          code,
-          permissions,
-          requiresApproval,
-          createdBy: 'user',
-        }),
+      await customToolsApi.create({
+        name,
+        description,
+        category: category || undefined,
+        parameters: parsedParams,
+        code,
+        permissions,
+        requiresApproval,
+        createdBy: 'user',
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error?.message || 'Failed to create tool');
-        return;
-      }
 
       onCreated();
     } catch (err) {
