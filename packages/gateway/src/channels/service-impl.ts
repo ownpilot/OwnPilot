@@ -661,8 +661,8 @@ export class ChannelServiceImpl implements IChannelService {
       const eventBus = getEventBus();
 
       // Listen for incoming messages from all channel plugins
-      const unsub = eventBus.on(ChannelEvents.MESSAGE_RECEIVED, (event: any) => {
-        const data = event.data as ChannelMessageReceivedData;
+      const unsub = eventBus.on<ChannelMessageReceivedData>(ChannelEvents.MESSAGE_RECEIVED, (event) => {
+        const data = event.data;
         // Process asynchronously - don't block the event handler
         this.processIncomingMessage(data.message).catch((error) => {
           log.error('Failed to process incoming message', { error });
