@@ -10,7 +10,7 @@ import { apiClient } from '../client';
 
 export const notesApi = {
   list: (params?: Record<string, string>) =>
-    apiClient.get<Record<string, unknown>>('/notes', { params }),
+    apiClient.get<unknown[]>('/notes', { params }),
   delete: (id: string) => apiClient.delete<void>(`/notes/${id}`),
   pin: (id: string) => apiClient.post<void>(`/notes/${id}/pin`),
 };
@@ -19,7 +19,7 @@ export const notesApi = {
 
 export const bookmarksApi = {
   list: (params?: Record<string, string>) =>
-    apiClient.get<Record<string, unknown>>('/bookmarks', { params }),
+    apiClient.get<unknown[]>('/bookmarks', { params }),
   delete: (id: string) => apiClient.delete<void>(`/bookmarks/${id}`),
   favorite: (id: string) => apiClient.post<void>(`/bookmarks/${id}/favorite`),
 };
@@ -28,7 +28,7 @@ export const bookmarksApi = {
 
 export const contactsApi = {
   list: (params?: Record<string, string>) =>
-    apiClient.get<Record<string, unknown>>('/contacts', { params }),
+    apiClient.get<unknown[]>('/contacts', { params }),
   delete: (id: string) => apiClient.delete<void>(`/contacts/${id}`),
   favorite: (id: string) => apiClient.post<void>(`/contacts/${id}/favorite`),
 };
@@ -37,7 +37,7 @@ export const contactsApi = {
 
 export const calendarApi = {
   list: (params?: Record<string, string>) =>
-    apiClient.get<Record<string, unknown>>('/calendar', { params }),
+    apiClient.get<unknown[]>('/calendar', { params }),
   delete: (id: string) => apiClient.delete<void>(`/calendar/${id}`),
 };
 
