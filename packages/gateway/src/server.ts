@@ -42,7 +42,7 @@ import { initializeFileWorkspace } from './workspace/index.js';
 import { settingsRepo, initializeSettingsRepo } from './db/repositories/settings.js';
 import { initializeDataDirectories, getDataDirectoryInfo } from './paths/index.js';
 import { autoMigrateIfNeeded } from './paths/migration.js';
-import { initializePlugins } from './plugins/index.js';
+import { initializePlugins, getDefaultPluginRegistry } from './plugins/index.js';
 import { initializeConfigServicesRepo } from './db/repositories/config-services.js';
 import { initializePluginsRepo } from './db/repositories/plugins.js';
 import { initializeLocalProvidersRepo } from './db/repositories/local-providers.js';
@@ -50,6 +50,18 @@ import { seedConfigServices } from './db/seeds/config-services-seed.js';
 import { gatewayConfigCenter } from './services/config-center-impl.js';
 import { startTriggerEngine, getTriggerEngine, initializeDefaultTriggers } from './triggers/index.js';
 import { seedExamplePlans } from './db/seeds/plans-seed.js';
+import { createChannelServiceImpl } from './channels/service-impl.js';
+import { initServiceRegistry, Services, getEventSystem } from '@ownpilot/core';
+import { createLogService } from './services/log-service-impl.js';
+import { createSessionService } from './services/session-service-impl.js';
+import { createMessageBus } from './services/message-bus-impl.js';
+import { registerPipelineMiddleware } from './services/middleware/index.js';
+import { createToolService } from './services/tool-service-impl.js';
+import { createProviderService } from './services/provider-service-impl.js';
+import { createAuditService } from './services/audit-service-impl.js';
+import { getLog } from './services/log.js';
+
+const log = getLog('Server');
 
 // Database settings keys for gateway config
 const GATEWAY_API_KEYS_KEY = 'gateway_api_keys';
@@ -103,51 +115,76 @@ function loadConfig(): Partial<GatewayConfig> {
  * Start the server
  */
 async function main() {
+  // ── ServiceRegistry ──────────────────────────────────────────────────────
+  const registry = initServiceRegistry();
+
+  // 1. Log service (first — everything else can use it)
+  const logLevel = (process.env.LOG_LEVEL ?? 'info') as 'debug' | 'info' | 'warn' | 'error';
+  const logService = createLogService({ level: logLevel });
+  registry.register(Services.Log, logService);
+  const log = logService;
+
+  // 2. Event system (register existing singleton)
+  registry.register(Services.Event, getEventSystem());
+
+  // 3. Session service (unified session management)
+  registry.register(Services.Session, createSessionService());
+
+  // 4. Message bus (unified message processing pipeline)
+  const messageBus = createMessageBus();
+  registerPipelineMiddleware(messageBus);
+  registry.register(Services.Message, messageBus);
+
+  log.info('ServiceRegistry initialized', { services: registry.list() });
+
   // Log PostgreSQL configuration
-  console.log(`[Config] Database: PostgreSQL`);
-  console.log(`[Config] POSTGRES_HOST=${process.env.POSTGRES_HOST || 'localhost'}`);
-  console.log(`[Config] POSTGRES_PORT=${process.env.POSTGRES_PORT || '5432'}`);
-  console.log(`[Config] POSTGRES_DB=${process.env.POSTGRES_DB || 'ownpilot'}`);
+  log.info('Database: PostgreSQL');
+  log.info(`POSTGRES_HOST=${process.env.POSTGRES_HOST || 'localhost'}`);
+  log.info(`POSTGRES_PORT=${process.env.POSTGRES_PORT || '5432'}`);
+  log.info(`POSTGRES_DB=${process.env.POSTGRES_DB || 'ownpilot'}`);
 
   // Initialize data directories (creates platform-specific directories)
   const dataPaths = initializeDataDirectories();
   const dataInfo = getDataDirectoryInfo();
 
-  console.log(`Data directory: ${dataInfo.root}`);
+  log.info(`Data directory: ${dataInfo.root}`);
 
   // Auto-migrate legacy data if needed
   autoMigrateIfNeeded();
 
   // Initialize PostgreSQL database adapter (REQUIRED)
-  console.log('[Startup] Initializing PostgreSQL database...');
+  log.info('Initializing PostgreSQL database...');
   try {
     const dbAdapter = await initializeAdapter();
-    console.log(`[Startup] PostgreSQL connected: ${dbAdapter.isConnected()}`);
+    log.info(`PostgreSQL connected: ${dbAdapter.isConnected()}`);
   } catch (error) {
-    console.error('[Startup] PostgreSQL connection failed:', error);
-    console.error('[Startup] Make sure PostgreSQL is running and configured correctly.');
-    console.error('[Startup] Start PostgreSQL with: docker compose -f docker-compose.db.yml up -d');
+    log.error('PostgreSQL connection failed', { error: String(error) });
+    log.error('Make sure PostgreSQL is running and configured correctly.');
+    log.error('Start PostgreSQL with: docker compose -f docker-compose.db.yml up -d');
     process.exit(1);
   }
 
   // Initialize settings repository (creates table and loads cache)
-  console.log('[Startup] Initializing settings...');
+  log.info('Initializing settings...');
   await initializeSettingsRepo();
 
   // Load saved API keys from database into environment
   loadApiKeysToEnvironment();
 
   // Initialize Config Center (centralized config management)
-  console.log('[Startup] Initializing Config Center...');
+  log.info('Initializing Config Center...');
   await initializeConfigServicesRepo();
   await seedConfigServices();
 
+  // 5. Register Config Center in registry
+  registry.register(Services.Config, gatewayConfigCenter);
+
   // Initialize Plugins repository
-  console.log('[Startup] Initializing Plugins repository...');
+  log.info('Initializing Plugins repository...');
   await initializePluginsRepo();
 
   // Initialize Local Providers repository
-  console.log('[Startup] Initializing Local Providers...');
+  log.info('Initializing Local Providers...');
   await initializeLocalProvidersRepo();
 
   // Initialize file workspace directories (for AI-generated code isolation)
@@ -160,17 +197,35 @@ async function main() {
   const host = config.host ?? '0.0.0.0';
 
   // Initialize channel adapters
-  console.log('[Startup] Initializing channel factories...');
+  log.info('Initializing channel factories...');
   await initializeChannelFactories();
-  console.log('[Startup] Channel factories initialized.');
+  log.info('Channel factories initialized.');
 
   // Initialize plugins (registers built-in plugins)
-  console.log('[Startup] Initializing plugins...');
+  log.info('Initializing plugins...');
   await initializePlugins();
-  console.log('[Startup] Plugins initialized.');
+  log.info('Plugins initialized.');
+
+  // Initialize Channel Service (unified channel access via plugin registry)
+  log.info('Initializing Channel Service...');
+  const pluginRegistry = await getDefaultPluginRegistry();
+  const channelService = createChannelServiceImpl(pluginRegistry);
+
+  // Register in ServiceRegistry (getChannelService() now delegates here)
+  registry.register(Services.Channel, channelService);
+  log.info('Channel Service initialized.');
+
+  // 7. Register Tool Service in registry (wraps ToolRegistry)
+  registry.register(Services.Tool, createToolService());
+
+  // 8. Register Provider Service in registry
+  registry.register(Services.Provider, createProviderService());
+
+  // 9. Register Audit Service in registry
+  registry.register(Services.Audit, createAuditService());
 
   // Start trigger engine (proactive automation)
-  console.log('[Startup] Starting Trigger Engine...');
+  log.info('Starting Trigger Engine...');
   try {
     const triggerEngine = startTriggerEngine({ userId: 'default' });
 
@@ -194,59 +249,58 @@ async function main() {
     // Seed default triggers (only creates if not already present)
     const triggerSeed = await initializeDefaultTriggers('default');
     if (triggerSeed.created > 0) {
-      console.log(`[Startup] Seeded ${triggerSeed.created} default triggers.`);
+      log.info(`Seeded ${triggerSeed.created} default triggers.`);
     }
 
-    console.log('[Startup] Trigger Engine started.');
+    log.info('Trigger Engine started.');
   } catch (error) {
-    console.warn('[Startup] Trigger Engine failed to start:', error);
-    console.warn('[Startup] Triggers will be available but engine is not running.');
+    log.warn('Trigger Engine failed to start', { error: String(error) });
+    log.warn('Triggers will be available but engine is not running.');
   }
 
   // Seed example plans (only creates if not already present)
   try {
     const planSeed = await seedExamplePlans('default');
     if (planSeed.created > 0) {
-      console.log(`[Startup] Seeded ${planSeed.created} example plans.`);
+      log.info(`Seeded ${planSeed.created} example plans.`);
     }
   } catch (error) {
-    console.warn('[Startup] Failed to seed example plans:', error);
+    log.warn('Failed to seed example plans', { error: String(error) });
   }
 
   // Security warnings at startup
   if (config.auth?.type === 'none' || !config.auth?.type) {
-    console.warn('\n⚠️  WARNING: Authentication is DISABLED (AUTH_TYPE=none)');
-    console.warn('   Anyone with network access can use this API.');
-    console.warn('   Set AUTH_TYPE=api-key and API_KEYS=your-secret-key for security.');
-    console.warn('   Or configure authentication in Settings > System.\n');
+    log.warn('Authentication is DISABLED (AUTH_TYPE=none)');
+    log.warn('Anyone with network access can use this API.');
+    log.warn('Set AUTH_TYPE=api-key and API_KEYS=your-secret-key for security.');
   }
   if (config.corsOrigins?.includes('*')) {
-    console.warn('⚠️  WARNING: CORS is set to wildcard (*). Any website can make API requests.');
-    console.warn('   Set CORS_ORIGINS=http://localhost:3000 to restrict access.\n');
+    log.warn('CORS is set to wildcard (*). Any website can make API requests.');
+    log.warn('Set CORS_ORIGINS=http://localhost:3000 to restrict access.');
   }
 
-  console.log(`Starting OwnPilot...`);
-  console.log(`  Port: ${port}`);
-  console.log(`  Host: ${host}`);
-  console.log(`  Auth: ${config.auth?.type ?? 'none'}`);
-  console.log(`  Rate limit: ${config.rateLimit ? `${config.rateLimit.maxRequests} req/${config.rateLimit.windowMs}ms` : 'disabled'}`);
-  console.log(`  Workspace: ${workspace.workspaceDir}`);
-  console.log(`  Settings: Stored in PostgreSQL database`);
+  log.info('Starting OwnPilot...', {
+    port,
+    host,
+    auth: config.auth?.type ?? 'none',
+    rateLimit: config.rateLimit ? `${config.rateLimit.maxRequests} req/${config.rateLimit.windowMs}ms` : 'disabled',
+    workspace: workspace.workspaceDir,
+    registeredServices: registry.list(),
+  });
 
   const server = serve({
     fetch: app.fetch,
     port,
     hostname: host,
   }, (info) => {
-    console.log(`\nServer running at http://${info.address}:${info.port}`);
-    console.log(`API documentation: http://${info.address}:${info.port}/api/v1`);
-    console.log(`Health check: http://${info.address}:${info.port}/health`);
-    console.log(`Settings UI: http://${info.address}:${info.port}/settings`);
+    log.info(`Server running at http://${info.address}:${info.port}`);
+    log.info(`API docs: http://${info.address}:${info.port}/api/v1`);
+    log.info(`Health: http://${info.address}:${info.port}/health`);
   });
 
   // Attach WebSocket gateway to HTTP server
   wsGateway.attachToServer(server as Server);
-  console.log(`WebSocket Gateway attached at ws://${host}:${port}/ws`);
+  log.info(`WebSocket Gateway attached at ws://${host}:${port}/ws`);
 }
 
 // Run server

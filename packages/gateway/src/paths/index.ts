@@ -20,6 +20,9 @@
 import { existsSync, mkdirSync, chmodSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { homedir, platform } from 'node:os';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Paths');
 
 // Application name for directory naming
 const APP_NAME = 'OwnPilot';
@@ -186,13 +189,13 @@ export function initializeDataDirectories(): DataPaths {
   for (const { path, secure } of dirsToCreate) {
     if (!existsSync(path)) {
       mkdirSync(path, { recursive: true });
-      console.log(`[DataPaths] Created directory: ${path}`);
+      log.info(`[DataPaths] Created directory: ${path}`);
 
       // Set restricted permissions for sensitive directories (Unix only)
       if (secure && platform() !== 'win32') {
         try {
           chmodSync(path, 0o700); // Owner only: rwx
-          console.log(`[DataPaths] Set restricted permissions on: ${path}`);
+          log.info(`[DataPaths] Set restricted permissions on: ${path}`);
         } catch {
           // Ignore permission errors
         }
@@ -200,7 +203,7 @@ export function initializeDataDirectories(): DataPaths {
     }
   }
 
-  console.log(`[DataPaths] Data root: ${paths.root}`);
+  log.info(`[DataPaths] Data root: ${paths.root}`);
   return paths;
 }
 
@@ -271,8 +274,8 @@ export function setDataPathEnvironment(): void {
   process.env.WORKSPACE_DIR = paths.workspace;
   process.env.DATABASE_PATH = paths.database;
 
-  console.log(`[DataPaths] Environment configured:`);
-  console.log(`  DATA_DIR=${paths.root}`);
-  console.log(`  WORKSPACE_DIR=${paths.workspace}`);
-  console.log(`  DATABASE_PATH=${paths.database}`);
+  log.info(`[DataPaths] Environment configured:`);
+  log.info(`  DATA_DIR=${paths.root}`);
+  log.info(`  WORKSPACE_DIR=${paths.workspace}`);
+  log.info(`  DATABASE_PATH=${paths.database}`);
 }

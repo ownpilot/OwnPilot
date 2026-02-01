@@ -17,6 +17,9 @@ import { getTriggerService } from '../services/trigger-service.js';
 import { getResourceRegistry } from '../services/resource-registry.js';
 import { getApprovalManager, assessRisk, type ActionCategory } from '../autonomy/index.js';
 import { getTriggerEngine } from '../triggers/engine.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Orchestrator');
 
 export interface OrchestratorOptions {
   userId: string;
@@ -323,7 +326,7 @@ export async function evaluateTriggers(
           pending.push(trigger.id); // Failed execution, mark as pending
         }
       } catch (error) {
-        console.warn(`[Orchestrator] Failed to execute trigger ${trigger.id}:`, error);
+        log.warn(`[Orchestrator] Failed to execute trigger ${trigger.id}:`, error);
         pending.push(trigger.id);
       }
     }

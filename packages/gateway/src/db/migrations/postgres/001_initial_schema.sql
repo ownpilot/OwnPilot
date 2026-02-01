@@ -1,5 +1,9 @@
 -- OwnPilot PostgreSQL Schema
--- Initial migration from SQLite
+-- Complete schema for fresh installations
+-- This file is auto-executed by Docker on first volume initialization
+
+-- Enable pgvector extension for vector similarity search
+CREATE EXTENSION IF NOT EXISTS vector;
 
 -- =====================================================
 -- CORE TABLES
@@ -17,9 +21,9 @@ CREATE TABLE IF NOT EXISTS conversations (
   system_prompt TEXT,
   message_count INTEGER NOT NULL DEFAULT 0,
   is_archived BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  metadata JSONB DEFAULT '{}'::jsonb
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  metadata JSONB DEFAULT '{}'
 );
 
 -- Messages table (chat messages)
@@ -32,18 +36,18 @@ CREATE TABLE IF NOT EXISTS messages (
   model TEXT,
   tool_calls JSONB,
   tool_call_id TEXT,
-  trace JSONB,
+  trace TEXT,
   is_error BOOLEAN NOT NULL DEFAULT FALSE,
   input_tokens INTEGER,
   output_tokens INTEGER,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- Request logs table (for debugging)
 CREATE TABLE IF NOT EXISTS request_logs (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
-  conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+  conversation_id TEXT,
   type TEXT NOT NULL CHECK(type IN ('chat', 'completion', 'embedding', 'tool', 'agent', 'other')),
   provider TEXT,
   model TEXT,
@@ -60,7 +64,7 @@ CREATE TABLE IF NOT EXISTS request_logs (
   error_stack TEXT,
   ip_address TEXT,
   user_agent TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- Channels table
@@ -69,10 +73,10 @@ CREATE TABLE IF NOT EXISTS channels (
   type TEXT NOT NULL,
   name TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'disconnected',
-  config JSONB NOT NULL DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  connected_at TIMESTAMP WITH TIME ZONE,
-  last_activity_at TIMESTAMP WITH TIME ZONE
+  config JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  connected_at TIMESTAMP,
+  last_activity_at TIMESTAMP
 );
 
 -- Channel messages (inbox)
@@ -87,8 +91,8 @@ CREATE TABLE IF NOT EXISTS channel_messages (
   content_type TEXT NOT NULL DEFAULT 'text',
   attachments JSONB,
   reply_to_id TEXT,
-  metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- Cost tracking table
@@ -96,14 +100,14 @@ CREATE TABLE IF NOT EXISTS costs (
   id TEXT PRIMARY KEY,
   provider TEXT NOT NULL,
   model TEXT NOT NULL,
-  conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+  conversation_id TEXT,
   input_tokens INTEGER NOT NULL DEFAULT 0,
   output_tokens INTEGER NOT NULL DEFAULT 0,
   total_tokens INTEGER NOT NULL DEFAULT 0,
-  input_cost DOUBLE PRECISION NOT NULL DEFAULT 0,
-  output_cost DOUBLE PRECISION NOT NULL DEFAULT 0,
-  total_cost DOUBLE PRECISION NOT NULL DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  input_cost REAL NOT NULL DEFAULT 0,
+  output_cost REAL NOT NULL DEFAULT 0,
+  total_cost REAL NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- Agent configs table
@@ -113,23 +117,22 @@ CREATE TABLE IF NOT EXISTS agents (
   system_prompt TEXT,
   provider TEXT NOT NULL,
   model TEXT NOT NULL,
-  config JSONB NOT NULL DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  config JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- Settings table (key-value store)
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- =====================================================
 -- PERSONAL DATA TABLES
 -- =====================================================
 
--- Bookmarks table
 CREATE TABLE IF NOT EXISTS bookmarks (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -138,15 +141,14 @@ CREATE TABLE IF NOT EXISTS bookmarks (
   description TEXT,
   favicon TEXT,
   category TEXT,
-  tags JSONB DEFAULT '[]'::jsonb,
+  tags JSONB DEFAULT '[]',
   is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
   visit_count INTEGER NOT NULL DEFAULT 0,
-  last_visited_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  last_visited_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Notes table
 CREATE TABLE IF NOT EXISTS notes (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -154,15 +156,14 @@ CREATE TABLE IF NOT EXISTS notes (
   content TEXT NOT NULL,
   content_type TEXT NOT NULL DEFAULT 'markdown',
   category TEXT,
-  tags JSONB DEFAULT '[]'::jsonb,
+  tags JSONB DEFAULT '[]',
   is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
   is_archived BOOLEAN NOT NULL DEFAULT FALSE,
   color TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Tasks table
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -170,43 +171,41 @@ CREATE TABLE IF NOT EXISTS tasks (
   description TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'in_progress', 'completed', 'cancelled')),
   priority TEXT NOT NULL DEFAULT 'normal' CHECK(priority IN ('low', 'normal', 'high', 'urgent')),
-  due_date TEXT,
+  due_date TIMESTAMP,
   due_time TEXT,
-  reminder_at TIMESTAMP WITH TIME ZONE,
+  reminder_at TIMESTAMP,
   category TEXT,
-  tags JSONB DEFAULT '[]'::jsonb,
+  tags JSONB DEFAULT '[]',
   parent_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
   project_id TEXT,
   recurrence TEXT,
-  completed_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  completed_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Calendar events table
 CREATE TABLE IF NOT EXISTS calendar_events (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
   title TEXT NOT NULL,
   description TEXT,
   location TEXT,
-  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
-  end_time TIMESTAMP WITH TIME ZONE,
+  start_time TIMESTAMP NOT NULL,
+  end_time TIMESTAMP,
   all_day BOOLEAN NOT NULL DEFAULT FALSE,
   timezone TEXT DEFAULT 'UTC',
   recurrence TEXT,
   reminder_minutes INTEGER,
   category TEXT,
-  tags JSONB DEFAULT '[]'::jsonb,
+  tags JSONB DEFAULT '[]',
   color TEXT,
   external_id TEXT,
   external_source TEXT,
-  attendees JSONB DEFAULT '[]'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  attendees JSONB DEFAULT '[]',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Contacts table
 CREATE TABLE IF NOT EXISTS contacts (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -221,18 +220,17 @@ CREATE TABLE IF NOT EXISTS contacts (
   address TEXT,
   notes TEXT,
   relationship TEXT,
-  tags JSONB DEFAULT '[]'::jsonb,
+  tags JSONB DEFAULT '[]',
   is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
   external_id TEXT,
   external_source TEXT,
-  social_links JSONB DEFAULT '{}'::jsonb,
-  custom_fields JSONB DEFAULT '{}'::jsonb,
-  last_contacted_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  social_links JSONB DEFAULT '{}',
+  custom_fields JSONB DEFAULT '{}',
+  last_contacted_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Projects table
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -241,65 +239,132 @@ CREATE TABLE IF NOT EXISTS projects (
   color TEXT,
   icon TEXT,
   status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'completed', 'archived')),
-  due_date TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  due_date TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Reminders table
 CREATE TABLE IF NOT EXISTS reminders (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
   title TEXT NOT NULL,
   description TEXT,
-  remind_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  remind_at TIMESTAMP NOT NULL,
   recurrence TEXT,
   is_completed BOOLEAN NOT NULL DEFAULT FALSE,
   related_type TEXT,
   related_id TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Quick captures
 CREATE TABLE IF NOT EXISTS captures (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
   content TEXT NOT NULL,
   type TEXT NOT NULL DEFAULT 'thought' CHECK(type IN ('idea', 'thought', 'todo', 'link', 'quote', 'snippet', 'question', 'other')),
-  tags JSONB DEFAULT '[]'::jsonb,
+  tags JSONB DEFAULT '[]',
   source TEXT,
   url TEXT,
   processed BOOLEAN NOT NULL DEFAULT FALSE,
   processed_as_type TEXT CHECK(processed_as_type IN ('note', 'task', 'bookmark', 'discarded') OR processed_as_type IS NULL),
   processed_as_id TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  processed_at TIMESTAMP WITH TIME ZONE
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMP
+);
+
+-- =====================================================
+-- PRODUCTIVITY PLUGIN TABLES
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS pomodoro_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  type TEXT NOT NULL CHECK(type IN ('work', 'short_break', 'long_break')),
+  status TEXT NOT NULL DEFAULT 'running' CHECK(status IN ('running', 'completed', 'interrupted')),
+  task_description TEXT,
+  duration_minutes INTEGER NOT NULL,
+  started_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMP,
+  interrupted_at TIMESTAMP,
+  interruption_reason TEXT
+);
+
+CREATE TABLE IF NOT EXISTS pomodoro_settings (
+  user_id TEXT PRIMARY KEY DEFAULT 'default',
+  work_duration INTEGER NOT NULL DEFAULT 25,
+  short_break_duration INTEGER NOT NULL DEFAULT 5,
+  long_break_duration INTEGER NOT NULL DEFAULT 15,
+  sessions_before_long_break INTEGER NOT NULL DEFAULT 4,
+  auto_start_breaks BOOLEAN NOT NULL DEFAULT FALSE,
+  auto_start_work BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS pomodoro_daily_stats (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  date TEXT NOT NULL,
+  completed_sessions INTEGER NOT NULL DEFAULT 0,
+  total_work_minutes INTEGER NOT NULL DEFAULT 0,
+  total_break_minutes INTEGER NOT NULL DEFAULT 0,
+  interruptions INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(user_id, date)
+);
+
+CREATE TABLE IF NOT EXISTS habits (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  name TEXT NOT NULL,
+  description TEXT,
+  frequency TEXT NOT NULL DEFAULT 'daily' CHECK(frequency IN ('daily', 'weekly', 'weekdays', 'custom')),
+  target_days JSONB DEFAULT '[]',
+  target_count INTEGER NOT NULL DEFAULT 1,
+  unit TEXT,
+  category TEXT,
+  color TEXT,
+  icon TEXT,
+  reminder_time TEXT,
+  is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+  streak_current INTEGER NOT NULL DEFAULT 0,
+  streak_longest INTEGER NOT NULL DEFAULT 0,
+  total_completions INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS habit_logs (
+  id TEXT PRIMARY KEY,
+  habit_id TEXT NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  date TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 1,
+  notes TEXT,
+  logged_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(habit_id, date)
 );
 
 -- =====================================================
 -- AUTONOMOUS AI TABLES
 -- =====================================================
 
--- Memories table
 CREATE TABLE IF NOT EXISTS memories (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
   type TEXT NOT NULL CHECK(type IN ('fact', 'preference', 'conversation', 'event', 'skill')),
   content TEXT NOT NULL,
-  embedding BYTEA,
+  embedding vector(1536),
   source TEXT,
   source_id TEXT,
-  importance DOUBLE PRECISION NOT NULL DEFAULT 0.5 CHECK(importance >= 0 AND importance <= 1),
-  tags JSONB DEFAULT '[]'::jsonb,
+  importance REAL NOT NULL DEFAULT 0.5 CHECK(importance >= 0 AND importance <= 1),
+  tags JSONB DEFAULT '[]',
   accessed_count INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  accessed_at TIMESTAMP WITH TIME ZONE,
-  metadata JSONB DEFAULT '{}'::jsonb
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  accessed_at TIMESTAMP,
+  metadata JSONB DEFAULT '{}'
 );
 
--- Goals table
 CREATE TABLE IF NOT EXISTS goals (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -308,15 +373,14 @@ CREATE TABLE IF NOT EXISTS goals (
   status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'paused', 'completed', 'abandoned')),
   priority INTEGER NOT NULL DEFAULT 5 CHECK(priority >= 1 AND priority <= 10),
   parent_id TEXT REFERENCES goals(id) ON DELETE SET NULL,
-  due_date TEXT,
-  progress DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK(progress >= 0 AND progress <= 100),
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  completed_at TIMESTAMP WITH TIME ZONE,
-  metadata JSONB DEFAULT '{}'::jsonb
+  due_date TIMESTAMP,
+  progress REAL NOT NULL DEFAULT 0 CHECK(progress >= 0 AND progress <= 100),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMP,
+  metadata JSONB DEFAULT '{}'
 );
 
--- Goal steps table
 CREATE TABLE IF NOT EXISTS goal_steps (
   id TEXT PRIMARY KEY,
   goal_id TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
@@ -324,42 +388,39 @@ CREATE TABLE IF NOT EXISTS goal_steps (
   description TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'in_progress', 'completed', 'blocked', 'skipped')),
   order_num INTEGER NOT NULL,
-  dependencies JSONB DEFAULT '[]'::jsonb,
+  dependencies JSONB DEFAULT '[]',
   result TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  completed_at TIMESTAMP WITH TIME ZONE
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMP
 );
 
--- Triggers table
 CREATE TABLE IF NOT EXISTS triggers (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
   name TEXT NOT NULL,
   description TEXT,
   type TEXT NOT NULL CHECK(type IN ('schedule', 'event', 'condition', 'webhook')),
-  config JSONB NOT NULL DEFAULT '{}'::jsonb,
-  action JSONB NOT NULL DEFAULT '{}'::jsonb,
+  config JSONB NOT NULL DEFAULT '{}',
+  action JSONB NOT NULL DEFAULT '{}',
   enabled BOOLEAN NOT NULL DEFAULT TRUE,
   priority INTEGER NOT NULL DEFAULT 5 CHECK(priority >= 1 AND priority <= 10),
-  last_fired TIMESTAMP WITH TIME ZONE,
-  next_fire TIMESTAMP WITH TIME ZONE,
+  last_fired TIMESTAMP,
+  next_fire TIMESTAMP,
   fire_count INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Trigger history
 CREATE TABLE IF NOT EXISTS trigger_history (
   id TEXT PRIMARY KEY,
   trigger_id TEXT NOT NULL REFERENCES triggers(id) ON DELETE CASCADE,
-  fired_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  fired_at TIMESTAMP NOT NULL DEFAULT NOW(),
   status TEXT NOT NULL CHECK(status IN ('success', 'failure', 'skipped')),
-  result JSONB,
+  result TEXT,
   error TEXT,
   duration_ms INTEGER
 );
 
--- Plans table
 CREATE TABLE IF NOT EXISTS plans (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -369,7 +430,7 @@ CREATE TABLE IF NOT EXISTS plans (
   status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'running', 'paused', 'completed', 'failed', 'cancelled')),
   current_step INTEGER NOT NULL DEFAULT 0,
   total_steps INTEGER NOT NULL DEFAULT 0,
-  progress DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK(progress >= 0 AND progress <= 100),
+  progress REAL NOT NULL DEFAULT 0 CHECK(progress >= 0 AND progress <= 100),
   priority INTEGER NOT NULL DEFAULT 5 CHECK(priority >= 1 AND priority <= 10),
   source TEXT,
   source_id TEXT,
@@ -379,16 +440,15 @@ CREATE TABLE IF NOT EXISTS plans (
   max_retries INTEGER NOT NULL DEFAULT 3,
   retry_count INTEGER NOT NULL DEFAULT 0,
   timeout_ms INTEGER,
-  checkpoint JSONB,
+  checkpoint TEXT,
   error TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  started_at TIMESTAMP WITH TIME ZONE,
-  completed_at TIMESTAMP WITH TIME ZONE,
-  metadata JSONB DEFAULT '{}'::jsonb
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP,
+  metadata JSONB DEFAULT '{}'
 );
 
--- Plan steps table
 CREATE TABLE IF NOT EXISTS plan_steps (
   id TEXT PRIMARY KEY,
   plan_id TEXT NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
@@ -396,77 +456,533 @@ CREATE TABLE IF NOT EXISTS plan_steps (
   type TEXT NOT NULL CHECK(type IN ('tool_call', 'llm_decision', 'user_input', 'condition', 'parallel', 'loop', 'sub_plan')),
   name TEXT NOT NULL,
   description TEXT,
-  config JSONB NOT NULL DEFAULT '{}'::jsonb,
+  config JSONB NOT NULL DEFAULT '{}',
   status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'running', 'completed', 'failed', 'skipped', 'blocked', 'waiting')),
-  dependencies JSONB DEFAULT '[]'::jsonb,
-  result JSONB,
+  dependencies JSONB DEFAULT '[]',
+  result TEXT,
   error TEXT,
   retry_count INTEGER NOT NULL DEFAULT 0,
   max_retries INTEGER NOT NULL DEFAULT 3,
   timeout_ms INTEGER,
-  started_at TIMESTAMP WITH TIME ZONE,
-  completed_at TIMESTAMP WITH TIME ZONE,
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP,
   duration_ms INTEGER,
-  on_success JSONB,
-  on_failure JSONB,
-  metadata JSONB DEFAULT '{}'::jsonb
+  on_success TEXT,
+  on_failure TEXT,
+  metadata JSONB DEFAULT '{}'
 );
 
--- Plan history
 CREATE TABLE IF NOT EXISTS plan_history (
   id TEXT PRIMARY KEY,
   plan_id TEXT NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
   step_id TEXT REFERENCES plan_steps(id) ON DELETE SET NULL,
   event_type TEXT NOT NULL CHECK(event_type IN ('started', 'step_started', 'step_completed', 'step_failed', 'paused', 'resumed', 'completed', 'failed', 'cancelled', 'checkpoint')),
-  details JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  details JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- =====================================================
--- CUSTOM TOOLS TABLE
+-- OAUTH INTEGRATIONS & MEDIA SETTINGS
 -- =====================================================
+
+CREATE TABLE IF NOT EXISTS oauth_integrations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  provider TEXT NOT NULL,
+  service TEXT NOT NULL,
+  access_token_encrypted TEXT NOT NULL,
+  refresh_token_encrypted TEXT,
+  token_iv TEXT NOT NULL,
+  expires_at TIMESTAMP,
+  scopes JSONB NOT NULL DEFAULT '[]',
+  email TEXT,
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'expired', 'revoked', 'error')),
+  last_sync_at TIMESTAMP,
+  error_message TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, provider, service)
+);
+
+CREATE TABLE IF NOT EXISTS media_provider_settings (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  capability TEXT NOT NULL CHECK(capability IN ('image_generation', 'vision', 'tts', 'stt', 'weather')),
+  provider TEXT NOT NULL,
+  model TEXT,
+  config JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, capability)
+);
+
+-- =====================================================
+-- USER WORKSPACE ISOLATION TABLES
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS user_workspaces (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'suspended', 'deleted')),
+  storage_path TEXT NOT NULL,
+  container_config JSONB NOT NULL DEFAULT '{}',
+  container_id TEXT,
+  container_status TEXT NOT NULL DEFAULT 'stopped' CHECK(container_status IN ('stopped', 'starting', 'running', 'stopping', 'error')),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_activity_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_containers (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL REFERENCES user_workspaces(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
+  container_id TEXT NOT NULL UNIQUE,
+  image TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'starting' CHECK(status IN ('stopped', 'starting', 'running', 'stopping', 'error')),
+  memory_mb INTEGER NOT NULL DEFAULT 512,
+  cpu_cores REAL NOT NULL DEFAULT 0.5,
+  network_policy TEXT NOT NULL DEFAULT 'none',
+  started_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_activity_at TIMESTAMP,
+  stopped_at TIMESTAMP,
+  memory_peak_mb INTEGER DEFAULT 0,
+  cpu_time_ms INTEGER DEFAULT 0,
+  network_bytes_in INTEGER DEFAULT 0,
+  network_bytes_out INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS code_executions (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL REFERENCES user_workspaces(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
+  container_id TEXT,
+  language TEXT NOT NULL CHECK(language IN ('python', 'javascript', 'shell')),
+  code_hash TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'running', 'completed', 'failed', 'timeout', 'cancelled')),
+  stdout TEXT,
+  stderr TEXT,
+  exit_code INTEGER,
+  error TEXT,
+  execution_time_ms INTEGER,
+  memory_used_mb INTEGER,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS workspace_audit (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  workspace_id TEXT,
+  action TEXT NOT NULL CHECK(action IN ('create', 'read', 'write', 'delete', 'execute', 'start', 'stop')),
+  resource_type TEXT NOT NULL CHECK(resource_type IN ('workspace', 'file', 'container', 'execution')),
+  resource TEXT,
+  success BOOLEAN NOT NULL DEFAULT TRUE,
+  error TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- =====================================================
+-- AI MODELS MANAGEMENT TABLES
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS user_model_configs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  provider_id TEXT NOT NULL,
+  model_id TEXT NOT NULL,
+  display_name TEXT,
+  capabilities JSONB NOT NULL DEFAULT '[]',
+  pricing_input REAL,
+  pricing_output REAL,
+  context_window INTEGER,
+  max_output INTEGER,
+  is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  is_custom BOOLEAN NOT NULL DEFAULT FALSE,
+  config JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, provider_id, model_id)
+);
+
+CREATE TABLE IF NOT EXISTS custom_providers (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  provider_id TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  api_base_url TEXT,
+  api_key_setting TEXT,
+  provider_type TEXT NOT NULL DEFAULT 'openai_compatible' CHECK(provider_type IN ('openai_compatible', 'custom')),
+  is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  config JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_provider_configs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  provider_id TEXT NOT NULL,
+  base_url TEXT,
+  provider_type TEXT,
+  is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  api_key_env TEXT,
+  notes TEXT,
+  config JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS custom_data (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  key TEXT NOT NULL,
+  value JSONB NOT NULL,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, key)
+);
 
 CREATE TABLE IF NOT EXISTS custom_tools (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
   name TEXT NOT NULL,
   description TEXT NOT NULL,
-  parameters JSONB NOT NULL,
+  parameters JSONB NOT NULL DEFAULT '{}',
   code TEXT NOT NULL,
   category TEXT,
-  permissions JSONB DEFAULT '[]'::jsonb,
   status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'disabled', 'pending_approval', 'rejected')),
+  permissions JSONB NOT NULL DEFAULT '[]',
   requires_approval BOOLEAN NOT NULL DEFAULT FALSE,
-  created_by TEXT NOT NULL DEFAULT 'user',
-  execution_count INTEGER NOT NULL DEFAULT 0,
-  last_executed_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  created_by TEXT NOT NULL DEFAULT 'user' CHECK(created_by IN ('user', 'llm')),
+  version INTEGER NOT NULL DEFAULT 1,
+  metadata JSONB DEFAULT '{}',
+  usage_count INTEGER NOT NULL DEFAULT 0,
+  last_used_at TIMESTAMP,
+  required_api_keys JSONB DEFAULT '[]',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, name)
+);
+
+-- =====================================================
+-- CUSTOM DATA TABLES (AI-managed dynamic schemas)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS custom_table_schemas (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  description TEXT,
+  columns JSONB NOT NULL DEFAULT '[]',
+  owner_plugin_id TEXT,
+  is_protected BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS custom_data_records (
+  id TEXT PRIMARY KEY,
+  table_id TEXT NOT NULL REFERENCES custom_table_schemas(id) ON DELETE CASCADE,
+  data JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- =====================================================
+-- CONFIG CENTER
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS config_services (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'general',
+  description TEXT,
+  docs_url TEXT,
+  config_schema JSONB NOT NULL DEFAULT '[]',
+  multi_entry BOOLEAN NOT NULL DEFAULT FALSE,
+  required_by JSONB DEFAULT '[]',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS config_entries (
+  id TEXT PRIMARY KEY,
+  service_name TEXT NOT NULL,
+  label TEXT NOT NULL DEFAULT 'Default',
+  data JSONB NOT NULL DEFAULT '{}',
+  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- =====================================================
+-- PLUGIN STATE PERSISTENCE
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS plugins (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  version TEXT NOT NULL DEFAULT '1.0.0',
+  status TEXT NOT NULL DEFAULT 'enabled'
+    CHECK(status IN ('enabled', 'disabled', 'error')),
+  settings JSONB NOT NULL DEFAULT '{}',
+  granted_permissions JSONB NOT NULL DEFAULT '[]',
+  error_message TEXT,
+  installed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- =====================================================
+-- LOCAL AI PROVIDERS
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS local_providers (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  name TEXT NOT NULL,
+  provider_type TEXT NOT NULL CHECK(provider_type IN ('lmstudio', 'ollama', 'localai', 'vllm', 'custom')),
+  base_url TEXT NOT NULL,
+  api_key TEXT,
+  is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+  discovery_endpoint TEXT,
+  last_discovered_at TIMESTAMP,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS local_models (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  local_provider_id TEXT NOT NULL REFERENCES local_providers(id) ON DELETE CASCADE,
+  model_id TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  capabilities JSONB NOT NULL DEFAULT '["chat", "streaming"]',
+  context_window INTEGER DEFAULT 32768,
+  max_output INTEGER DEFAULT 4096,
+  is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, local_provider_id, model_id)
+);
+
+-- =====================================================
+-- CHANNEL IDENTITY & AUTH TABLES
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS channel_users (
+  id TEXT PRIMARY KEY,
+  ownpilot_user_id TEXT NOT NULL DEFAULT 'default',
+  platform TEXT NOT NULL,
+  platform_user_id TEXT NOT NULL,
+  platform_username TEXT,
+  display_name TEXT,
+  avatar_url TEXT,
+  is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  verified_at TIMESTAMP,
+  verification_method TEXT,
+  is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
+  metadata JSONB DEFAULT '{}',
+  first_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(platform, platform_user_id)
+);
+
+CREATE TABLE IF NOT EXISTS channel_sessions (
+  id TEXT PRIMARY KEY,
+  channel_user_id TEXT NOT NULL REFERENCES channel_users(id) ON DELETE CASCADE,
+  channel_plugin_id TEXT NOT NULL,
+  platform_chat_id TEXT NOT NULL,
+  conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  context JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_message_at TIMESTAMP,
+  UNIQUE(channel_user_id, channel_plugin_id, platform_chat_id)
+);
+
+CREATE TABLE IF NOT EXISTS channel_verification_tokens (
+  id TEXT PRIMARY KEY,
+  ownpilot_user_id TEXT NOT NULL DEFAULT 'default',
+  token TEXT NOT NULL UNIQUE,
+  platform TEXT,
+  expires_at TIMESTAMP NOT NULL,
+  is_used BOOLEAN NOT NULL DEFAULT FALSE,
+  used_by_channel_user_id TEXT REFERENCES channel_users(id),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  used_at TIMESTAMP
 );
 
 -- =====================================================
 -- INDEXES
 -- =====================================================
 
+-- Core indexes
 CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_conversations_archived ON conversations(is_archived);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_role ON messages(role);
 CREATE INDEX IF NOT EXISTS idx_request_logs_user ON request_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_request_logs_conversation ON request_logs(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_request_logs_type ON request_logs(type);
 CREATE INDEX IF NOT EXISTS idx_request_logs_created ON request_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_request_logs_error ON request_logs(error);
+CREATE INDEX IF NOT EXISTS idx_channel_messages_channel ON channel_messages(channel_id);
+CREATE INDEX IF NOT EXISTS idx_channel_messages_created ON channel_messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_costs_provider ON costs(provider);
 CREATE INDEX IF NOT EXISTS idx_costs_created ON costs(created_at);
+CREATE INDEX IF NOT EXISTS idx_costs_conversation ON costs(conversation_id);
+
+-- Personal data indexes
+CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON bookmarks(user_id);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_category ON bookmarks(category);
+CREATE INDEX IF NOT EXISTS idx_notes_user ON notes(user_id);
+CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category);
+CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(due_date);
+CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_user ON calendar_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_start ON calendar_events(start_time);
+CREATE INDEX IF NOT EXISTS idx_contacts_user ON contacts(user_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_name ON contacts(name);
+CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders(user_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_time ON reminders(remind_at);
+CREATE INDEX IF NOT EXISTS idx_captures_user ON captures(user_id);
+CREATE INDEX IF NOT EXISTS idx_captures_processed ON captures(processed);
+CREATE INDEX IF NOT EXISTS idx_captures_type ON captures(type);
+CREATE INDEX IF NOT EXISTS idx_captures_created ON captures(created_at DESC);
+
+-- Productivity indexes
+CREATE INDEX IF NOT EXISTS idx_pomodoro_sessions_user ON pomodoro_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_pomodoro_sessions_status ON pomodoro_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_pomodoro_sessions_started ON pomodoro_sessions(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pomodoro_daily_user_date ON pomodoro_daily_stats(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_habits_user ON habits(user_id);
+CREATE INDEX IF NOT EXISTS idx_habits_archived ON habits(is_archived);
+CREATE INDEX IF NOT EXISTS idx_habits_category ON habits(category);
+CREATE INDEX IF NOT EXISTS idx_habit_logs_habit ON habit_logs(habit_id);
+CREATE INDEX IF NOT EXISTS idx_habit_logs_date ON habit_logs(date);
+CREATE INDEX IF NOT EXISTS idx_habit_logs_user_date ON habit_logs(user_id, date);
+
+-- Autonomous AI indexes
 CREATE INDEX IF NOT EXISTS idx_memories_user ON memories(user_id);
 CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type);
 CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance DESC);
+CREATE INDEX IF NOT EXISTS idx_memories_created ON memories(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_memories_accessed ON memories(accessed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_goals_user ON goals(user_id);
 CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status);
+CREATE INDEX IF NOT EXISTS idx_goals_priority ON goals(priority DESC);
+CREATE INDEX IF NOT EXISTS idx_goals_parent ON goals(parent_id);
+CREATE INDEX IF NOT EXISTS idx_goal_steps_goal ON goal_steps(goal_id);
+CREATE INDEX IF NOT EXISTS idx_goal_steps_status ON goal_steps(status);
 CREATE INDEX IF NOT EXISTS idx_triggers_user ON triggers(user_id);
+CREATE INDEX IF NOT EXISTS idx_triggers_type ON triggers(type);
 CREATE INDEX IF NOT EXISTS idx_triggers_enabled ON triggers(enabled);
+CREATE INDEX IF NOT EXISTS idx_triggers_next_fire ON triggers(next_fire);
+CREATE INDEX IF NOT EXISTS idx_trigger_history_trigger ON trigger_history(trigger_id);
+CREATE INDEX IF NOT EXISTS idx_trigger_history_fired ON trigger_history(fired_at DESC);
 CREATE INDEX IF NOT EXISTS idx_plans_user ON plans(user_id);
 CREATE INDEX IF NOT EXISTS idx_plans_status ON plans(status);
+CREATE INDEX IF NOT EXISTS idx_plans_priority ON plans(priority DESC);
+CREATE INDEX IF NOT EXISTS idx_plans_goal ON plans(goal_id);
+CREATE INDEX IF NOT EXISTS idx_plans_trigger ON plans(trigger_id);
+CREATE INDEX IF NOT EXISTS idx_plan_steps_plan ON plan_steps(plan_id);
+CREATE INDEX IF NOT EXISTS idx_plan_steps_status ON plan_steps(status);
+CREATE INDEX IF NOT EXISTS idx_plan_steps_order ON plan_steps(plan_id, order_num);
+CREATE INDEX IF NOT EXISTS idx_plan_history_plan ON plan_history(plan_id);
+CREATE INDEX IF NOT EXISTS idx_plan_history_created ON plan_history(created_at DESC);
+
+-- Workspace indexes
+CREATE INDEX IF NOT EXISTS idx_user_workspaces_user ON user_workspaces(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_workspaces_status ON user_workspaces(status);
+CREATE INDEX IF NOT EXISTS idx_user_containers_workspace ON user_containers(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_user_containers_user ON user_containers(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_containers_status ON user_containers(status);
+CREATE INDEX IF NOT EXISTS idx_code_executions_workspace ON code_executions(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_code_executions_user ON code_executions(user_id);
+CREATE INDEX IF NOT EXISTS idx_code_executions_status ON code_executions(status);
+CREATE INDEX IF NOT EXISTS idx_workspace_audit_user ON workspace_audit(user_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_audit_workspace ON workspace_audit(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_audit_created ON workspace_audit(created_at DESC);
+
+-- OAuth & Media indexes
+CREATE INDEX IF NOT EXISTS idx_oauth_integrations_user ON oauth_integrations(user_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_integrations_provider ON oauth_integrations(user_id, provider);
+CREATE INDEX IF NOT EXISTS idx_oauth_integrations_service ON oauth_integrations(user_id, provider, service);
+CREATE INDEX IF NOT EXISTS idx_oauth_integrations_status ON oauth_integrations(status);
+CREATE INDEX IF NOT EXISTS idx_media_provider_settings_user ON media_provider_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_media_provider_settings_capability ON media_provider_settings(user_id, capability);
+
+-- AI Models indexes
+CREATE INDEX IF NOT EXISTS idx_user_model_configs_user ON user_model_configs(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_model_configs_provider ON user_model_configs(user_id, provider_id);
+CREATE INDEX IF NOT EXISTS idx_user_model_configs_enabled ON user_model_configs(is_enabled);
+CREATE INDEX IF NOT EXISTS idx_custom_providers_user ON custom_providers(user_id);
+CREATE INDEX IF NOT EXISTS idx_custom_providers_enabled ON custom_providers(is_enabled);
+CREATE INDEX IF NOT EXISTS idx_user_provider_configs_user ON user_provider_configs(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_provider_configs_provider ON user_provider_configs(user_id, provider_id);
+CREATE INDEX IF NOT EXISTS idx_user_provider_configs_enabled ON user_provider_configs(is_enabled);
+
+-- Custom data & tools indexes
+CREATE INDEX IF NOT EXISTS idx_custom_data_user ON custom_data(user_id);
+CREATE INDEX IF NOT EXISTS idx_custom_data_key ON custom_data(user_id, key);
 CREATE INDEX IF NOT EXISTS idx_custom_tools_user ON custom_tools(user_id);
 CREATE INDEX IF NOT EXISTS idx_custom_tools_name ON custom_tools(user_id, name);
 CREATE INDEX IF NOT EXISTS idx_custom_tools_status ON custom_tools(status);
+CREATE INDEX IF NOT EXISTS idx_custom_tools_created_by ON custom_tools(created_by);
+CREATE INDEX IF NOT EXISTS idx_custom_tools_category ON custom_tools(category);
+CREATE INDEX IF NOT EXISTS idx_custom_table_schemas_name ON custom_table_schemas(name);
+CREATE INDEX IF NOT EXISTS idx_custom_table_schemas_owner ON custom_table_schemas(owner_plugin_id);
+CREATE INDEX IF NOT EXISTS idx_custom_table_schemas_protected ON custom_table_schemas(is_protected);
+CREATE INDEX IF NOT EXISTS idx_custom_data_records_table ON custom_data_records(table_id);
+
+-- Config Center indexes
+CREATE INDEX IF NOT EXISTS idx_config_services_name ON config_services(name);
+CREATE INDEX IF NOT EXISTS idx_config_services_category ON config_services(category);
+CREATE INDEX IF NOT EXISTS idx_config_services_active ON config_services(is_active);
+CREATE INDEX IF NOT EXISTS idx_config_entries_service ON config_entries(service_name);
+CREATE INDEX IF NOT EXISTS idx_config_entries_active ON config_entries(is_active);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_config_entries_default
+  ON config_entries(service_name) WHERE is_default = TRUE;
+
+-- Local AI Providers indexes
+CREATE INDEX IF NOT EXISTS idx_local_providers_user ON local_providers(user_id);
+CREATE INDEX IF NOT EXISTS idx_local_providers_enabled ON local_providers(is_enabled);
+CREATE INDEX IF NOT EXISTS idx_local_providers_default ON local_providers(is_default);
+CREATE INDEX IF NOT EXISTS idx_local_models_provider ON local_models(local_provider_id);
+CREATE INDEX IF NOT EXISTS idx_local_models_enabled ON local_models(is_enabled);
+
+-- Channel identity & auth indexes
+CREATE INDEX IF NOT EXISTS idx_channel_users_ownpilot ON channel_users(ownpilot_user_id);
+CREATE INDEX IF NOT EXISTS idx_channel_users_platform ON channel_users(platform, platform_user_id);
+CREATE INDEX IF NOT EXISTS idx_channel_users_verified ON channel_users(is_verified);
+CREATE INDEX IF NOT EXISTS idx_channel_sessions_user ON channel_sessions(channel_user_id);
+CREATE INDEX IF NOT EXISTS idx_channel_sessions_plugin ON channel_sessions(channel_plugin_id);
+CREATE INDEX IF NOT EXISTS idx_channel_sessions_conversation ON channel_sessions(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_channel_verification_token ON channel_verification_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_channel_verification_user ON channel_verification_tokens(ownpilot_user_id);
+CREATE INDEX IF NOT EXISTS idx_channel_verification_expires ON channel_verification_tokens(expires_at);
+
+-- pgvector: HNSW index for cosine similarity search on memories
+CREATE INDEX IF NOT EXISTS idx_memories_embedding_hnsw
+  ON memories USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 64);

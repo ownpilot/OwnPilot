@@ -11,6 +11,9 @@ import {
   AVAILABLE_PROVIDERS,
   type MediaCapability,
 } from '../db/repositories/index.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('MediaSettings');
 
 export const mediaSettingsRoutes = new Hono();
 
@@ -248,7 +251,7 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
       },
     });
   } catch (error) {
-    console.error('Failed to save media setting:', error);
+    log.error('Failed to save media setting:', error);
     return c.json({ success: false, error: 'Failed to save setting' }, 500);
   }
 });

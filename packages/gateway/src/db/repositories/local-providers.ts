@@ -11,6 +11,9 @@
 
 import { randomUUID } from 'node:crypto';
 import { BaseRepository } from './base.js';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('LocalProvidersRepo');
 
 // =============================================================================
 // ROW TYPES (database representation)
@@ -267,7 +270,7 @@ export class LocalProvidersRepository extends BaseRepository {
    */
   async getProvider(providerId: string): Promise<LocalProvider | null> {
     if (!cacheInitialized) {
-      console.warn(`[LocalProviders] Cache not initialized, returning null for: ${providerId}`);
+      log.warn(`[LocalProviders] Cache not initialized, returning null for: ${providerId}`);
       return null;
     }
     return providersCache.get(providerId) ?? null;
@@ -279,7 +282,7 @@ export class LocalProvidersRepository extends BaseRepository {
    */
   getProviderSync(providerId: string): LocalProvider | null {
     if (!cacheInitialized) {
-      console.warn(`[LocalProviders] Cache not initialized, returning null for: ${providerId}`);
+      log.warn(`[LocalProviders] Cache not initialized, returning null for: ${providerId}`);
       return null;
     }
     return providersCache.get(providerId) ?? null;
@@ -290,7 +293,7 @@ export class LocalProvidersRepository extends BaseRepository {
    */
   async getDefault(userId?: string): Promise<LocalProvider | null> {
     if (!cacheInitialized) {
-      console.warn('[LocalProviders] Cache not initialized, returning null for default');
+      log.warn('[LocalProviders] Cache not initialized, returning null for default');
       return null;
     }
     const all = Array.from(providersCache.values());

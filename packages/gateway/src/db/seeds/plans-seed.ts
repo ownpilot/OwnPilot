@@ -6,6 +6,9 @@
  */
 
 import { PlansRepository, type CreatePlanInput, type CreateStepInput } from '../repositories/plans.js';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('PlanSeed');
 
 interface ExamplePlan {
   plan: CreatePlanInput;
@@ -138,7 +141,7 @@ export async function seedExamplePlans(userId = 'default'): Promise<{
 
       created++;
     } catch (error) {
-      console.error(`[Plans Seed] Failed to create plan "${example.plan.name}":`, error);
+      log.error(`[Plans Seed] Failed to create plan "${example.plan.name}":`, error);
       skipped++;
     }
   }

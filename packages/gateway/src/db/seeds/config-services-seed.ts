@@ -15,6 +15,9 @@
 import { configServicesRepo } from '../repositories/config-services.js';
 import type { CreateConfigServiceInput } from '../repositories/config-services.js';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('ConfigSeed');
 
 // =============================================================================
 // HELPERS
@@ -256,10 +259,10 @@ export async function seedConfigServices(): Promise<number> {
       await configServicesRepo.upsert(service);
       seeded++;
     } catch (error) {
-      console.error(`[Seed] Failed to seed config service '${service.name}':`, error);
+      log.error(`[Seed] Failed to seed config service '${service.name}':`, error);
     }
   }
-  console.log(`[Seed] Seeded ${seeded} config services`);
+  log.info(`[Seed] Seeded ${seeded} config services`);
 
   // Clean up stale services that are no longer in the seed and have no dependents
   const knownNames = new Set(KNOWN_CONFIG_SERVICES.map(s => s.name));
@@ -271,12 +274,12 @@ export async function seedConfigServices(): Promise<number> {
         await configServicesRepo.delete(service.name);
         removed++;
       } catch (error) {
-        console.error(`[Seed] Failed to remove stale service '${service.name}':`, error);
+        log.error(`[Seed] Failed to remove stale service '${service.name}':`, error);
       }
     }
   }
   if (removed > 0) {
-    console.log(`[Seed] Removed ${removed} stale config services`);
+    log.info(`[Seed] Removed ${removed} stale config services`);
   }
 
   return seeded;

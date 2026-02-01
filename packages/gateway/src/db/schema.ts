@@ -4,7 +4,14 @@
  * All table definitions for the OwnPilot database
  */
 
+import { getLog } from '../services/log.js';
+
+const log = getLog('Schema');
+
 export const SCHEMA_SQL = `
+-- Enable pgvector extension for vector similarity search
+CREATE EXTENSION IF NOT EXISTS vector;
+
 -- =====================================================
 -- CORE TABLES
 -- =====================================================
@@ -47,7 +54,7 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE TABLE IF NOT EXISTS request_logs (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
-  conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+  conversation_id TEXT,
   type TEXT NOT NULL CHECK(type IN ('chat', 'completion', 'embedding', 'tool', 'agent', 'other')),
   provider TEXT,
   model TEXT,
@@ -100,7 +107,7 @@ CREATE TABLE IF NOT EXISTS costs (
   id TEXT PRIMARY KEY,
   provider TEXT NOT NULL,
   model TEXT NOT NULL,
-  conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+  conversation_id TEXT,
   input_tokens INTEGER NOT NULL DEFAULT 0,
   output_tokens INTEGER NOT NULL DEFAULT 0,
   total_tokens INTEGER NOT NULL DEFAULT 0,
@@ -367,7 +374,7 @@ CREATE TABLE IF NOT EXISTS memories (
   user_id TEXT NOT NULL DEFAULT 'default',
   type TEXT NOT NULL CHECK(type IN ('fact', 'preference', 'conversation', 'event', 'skill')),
   content TEXT NOT NULL,
-  embedding BYTEA,
+  embedding vector(1536),
   source TEXT,
   source_id TEXT,
   importance REAL NOT NULL DEFAULT 0.5 CHECK(importance >= 0 AND importance <= 1),
@@ -1048,6 +1055,111 @@ CREATE TABLE IF NOT EXISTS local_models (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, local_provider_id, model_id)
 );
+
+-- =====================================================
+-- CHANNEL IDENTITY & AUTH TABLES
+-- =====================================================
+
+-- Channel users: maps platform identities to OwnPilot user IDs
+CREATE TABLE IF NOT EXISTS channel_users (
+  id TEXT PRIMARY KEY,
+  ownpilot_user_id TEXT NOT NULL DEFAULT 'default',
+  platform TEXT NOT NULL,
+  platform_user_id TEXT NOT NULL,
+  platform_username TEXT,
+  display_name TEXT,
+  avatar_url TEXT,
+  is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  verified_at TIMESTAMP,
+  verification_method TEXT,
+  is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
+  metadata JSONB DEFAULT '{}',
+  first_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(platform, platform_user_id)
+);
+
+-- Channel sessions: per-channel conversation state
+CREATE TABLE IF NOT EXISTS channel_sessions (
+  id TEXT PRIMARY KEY,
+  channel_user_id TEXT NOT NULL REFERENCES channel_users(id) ON DELETE CASCADE,
+  channel_plugin_id TEXT NOT NULL,
+  platform_chat_id TEXT NOT NULL,
+  conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  context JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_message_at TIMESTAMP,
+  UNIQUE(channel_user_id, channel_plugin_id, platform_chat_id)
+);
+
+-- Channel verification tokens (PIN/token auth flow)
+CREATE TABLE IF NOT EXISTS channel_verification_tokens (
+  id TEXT PRIMARY KEY,
+  ownpilot_user_id TEXT NOT NULL DEFAULT 'default',
+  token TEXT NOT NULL UNIQUE,
+  platform TEXT,
+  expires_at TIMESTAMP NOT NULL,
+  is_used BOOLEAN NOT NULL DEFAULT FALSE,
+  used_by_channel_user_id TEXT REFERENCES channel_users(id),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  used_at TIMESTAMP
+);
+
+-- =====================================================
+-- DROP FK constraints on logging/tracking tables
+-- (logs should never fail due to FK violations)
+-- =====================================================
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'request_logs_conversation_id_fkey'
+      AND table_name = 'request_logs'
+  ) THEN
+    ALTER TABLE request_logs DROP CONSTRAINT request_logs_conversation_id_fkey;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'costs_conversation_id_fkey'
+      AND table_name = 'costs'
+  ) THEN
+    ALTER TABLE costs DROP CONSTRAINT costs_conversation_id_fkey;
+  END IF;
+END $$;
+
+-- =====================================================
+-- PGVECTOR: Migrate embedding column from BYTEA to vector
+-- =====================================================
+
+-- Enable pgvector extension (idempotent)
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Migrate embedding column type from BYTEA to vector(1536)
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'memories'
+      AND column_name = 'embedding'
+      AND data_type = 'bytea'
+  ) THEN
+    ALTER TABLE memories DROP COLUMN embedding;
+    ALTER TABLE memories ADD COLUMN embedding vector(1536);
+  END IF;
+END $$;
+
+-- Add vector column if it does not exist at all
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'memories'
+      AND column_name = 'embedding'
+  ) THEN
+    ALTER TABLE memories ADD COLUMN embedding vector(1536);
+  END IF;
+END $$;
 `;
 
 export const INDEXES_SQL = `
@@ -1195,25 +1307,56 @@ CREATE INDEX IF NOT EXISTS idx_local_providers_enabled ON local_providers(is_ena
 CREATE INDEX IF NOT EXISTS idx_local_providers_default ON local_providers(is_default);
 CREATE INDEX IF NOT EXISTS idx_local_models_provider ON local_models(local_provider_id);
 CREATE INDEX IF NOT EXISTS idx_local_models_enabled ON local_models(is_enabled);
+
+-- Channel identity & auth indexes
+CREATE INDEX IF NOT EXISTS idx_channel_users_ownpilot ON channel_users(ownpilot_user_id);
+CREATE INDEX IF NOT EXISTS idx_channel_users_platform ON channel_users(platform, platform_user_id);
+CREATE INDEX IF NOT EXISTS idx_channel_users_verified ON channel_users(is_verified);
+CREATE INDEX IF NOT EXISTS idx_channel_sessions_user ON channel_sessions(channel_user_id);
+CREATE INDEX IF NOT EXISTS idx_channel_sessions_plugin ON channel_sessions(channel_plugin_id);
+CREATE INDEX IF NOT EXISTS idx_channel_sessions_conversation ON channel_sessions(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_channel_verification_token ON channel_verification_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_channel_verification_user ON channel_verification_tokens(ownpilot_user_id);
+CREATE INDEX IF NOT EXISTS idx_channel_verification_expires ON channel_verification_tokens(expires_at);
+
+-- pgvector: HNSW index for cosine similarity search on memories
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'memories'
+      AND column_name = 'embedding'
+      AND udt_name = 'vector'
+  ) THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_indexes
+      WHERE tablename = 'memories'
+        AND indexname = 'idx_memories_embedding_hnsw'
+    ) THEN
+      CREATE INDEX idx_memories_embedding_hnsw
+        ON memories USING hnsw (embedding vector_cosine_ops)
+        WITH (m = 16, ef_construction = 64);
+    END IF;
+  END IF;
+END $$;
 `;
 
 /**
  * Initialize PostgreSQL schema
  */
 export async function initializeSchema(exec: (sql: string) => Promise<void>): Promise<void> {
-  console.log('[Schema] Initializing PostgreSQL schema...');
+  log.info('[Schema] Initializing PostgreSQL schema...');
 
   // Create tables
   await exec(SCHEMA_SQL);
-  console.log('[Schema] Tables created');
+  log.info('[Schema] Tables created');
 
   // Run migrations (add missing columns to existing tables)
   await exec(MIGRATIONS_SQL);
-  console.log('[Schema] Migrations applied');
+  log.info('[Schema] Migrations applied');
 
   // Create indexes
   await exec(INDEXES_SQL);
-  console.log('[Schema] Indexes created');
+  log.info('[Schema] Indexes created');
 
-  console.log('[Schema] PostgreSQL schema initialized successfully');
+  log.info('[Schema] PostgreSQL schema initialized successfully');
 }

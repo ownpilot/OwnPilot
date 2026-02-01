@@ -5,6 +5,9 @@
 import type { Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { ApiResponse } from '../types/index.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('ErrorHandler');
 
 /**
  * Error codes
@@ -100,7 +103,7 @@ export function errorHandler(err: Error, c: Context): Response {
   }
 
   // Log unexpected errors
-  console.error(`[${requestId}] Unexpected error:`, err);
+  log.error(`[${requestId}] Unexpected error:`, err);
 
   // Return generic error response
   const response: ApiResponse = {

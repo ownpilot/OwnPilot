@@ -80,8 +80,8 @@ export class MemoryService {
 
     const repo = this.getRepo(userId);
 
-    // Check for duplicates
-    const existing = await repo.findSimilar(input.content, input.type);
+    // Check for duplicates (uses embedding similarity when available)
+    const existing = await repo.findSimilar(input.content, input.type, input.embedding);
     if (existing) {
       await repo.boost(existing.id, 0.1);
       const boosted = await repo.get(existing.id);
@@ -161,6 +161,32 @@ export class MemoryService {
   ): Promise<Memory[]> {
     const repo = this.getRepo(userId);
     return repo.search(searchQuery, options);
+  }
+
+  /**
+   * Search memories using vector similarity (pgvector cosine distance).
+   * Requires a pre-computed embedding vector.
+   */
+  async searchByEmbedding(
+    userId: string,
+    embedding: number[],
+    options: {
+      type?: MemoryType;
+      limit?: number;
+      threshold?: number;
+      minImportance?: number;
+    } = {},
+  ): Promise<Array<Memory & { similarity: number }>> {
+    const repo = this.getRepo(userId);
+    return repo.searchByEmbedding(embedding, options);
+  }
+
+  /**
+   * Update the embedding for an existing memory (backfill support).
+   */
+  async updateEmbedding(userId: string, id: string, embedding: number[]): Promise<boolean> {
+    const repo = this.getRepo(userId);
+    return repo.updateEmbedding(id, embedding);
   }
 
   async getImportantMemories(

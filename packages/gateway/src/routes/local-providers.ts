@@ -8,6 +8,9 @@
 import { Hono } from 'hono';
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { discoverModels } from '../services/local-discovery.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('LocalProviders');
 
 export const localProvidersRoutes = new Hono();
 
@@ -69,7 +72,7 @@ localProvidersRoutes.get('/', async (c) => {
       data: providersWithCounts,
     });
   } catch (error) {
-    console.error('Failed to list local providers:', error);
+    log.error('Failed to list local providers:', error);
     return c.json(
       {
         success: false,
@@ -117,7 +120,7 @@ localProvidersRoutes.post('/', async (c) => {
       201
     );
   } catch (error) {
-    console.error('Failed to create local provider:', error);
+    log.error('Failed to create local provider:', error);
     return c.json(
       {
         success: false,
@@ -162,7 +165,7 @@ localProvidersRoutes.get('/:id', async (c) => {
       },
     });
   } catch (error) {
-    console.error('Failed to get local provider:', error);
+    log.error('Failed to get local provider:', error);
     return c.json(
       {
         success: false,
@@ -206,7 +209,7 @@ localProvidersRoutes.put('/:id', async (c) => {
       data: updated,
     });
   } catch (error) {
-    console.error('Failed to update local provider:', error);
+    log.error('Failed to update local provider:', error);
     return c.json(
       {
         success: false,
@@ -241,7 +244,7 @@ localProvidersRoutes.delete('/:id', async (c) => {
       message: 'Local provider deleted',
     });
   } catch (error) {
-    console.error('Failed to delete local provider:', error);
+    log.error('Failed to delete local provider:', error);
     return c.json(
       {
         success: false,
@@ -290,7 +293,7 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
       message: `Local provider ${enabled ? 'enabled' : 'disabled'}`,
     });
   } catch (error) {
-    console.error('Failed to toggle local provider:', error);
+    log.error('Failed to toggle local provider:', error);
     return c.json(
       {
         success: false,
@@ -316,7 +319,7 @@ localProvidersRoutes.patch('/:id/set-default', async (c) => {
       message: 'Default local provider updated',
     });
   } catch (error) {
-    console.error('Failed to set default local provider:', error);
+    log.error('Failed to set default local provider:', error);
     return c.json(
       {
         success: false,
@@ -403,7 +406,7 @@ localProvidersRoutes.post('/:id/discover', async (c) => {
       },
     });
   } catch (error) {
-    console.error('Failed to discover models:', error);
+    log.error('Failed to discover models:', error);
     return c.json(
       {
         success: false,
@@ -429,7 +432,7 @@ localProvidersRoutes.get('/:id/models', async (c) => {
       data: models,
     });
   } catch (error) {
-    console.error('Failed to list local provider models:', error);
+    log.error('Failed to list local provider models:', error);
     return c.json(
       {
         success: false,
@@ -488,7 +491,7 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
       enabled,
     });
   } catch (error) {
-    console.error('Failed to toggle model:', error);
+    log.error('Failed to toggle model:', error);
     return c.json(
       {
         success: false,

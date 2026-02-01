@@ -23,7 +23,7 @@ export interface Memory {
   userId: string;
   type: MemoryType;
   content: string;
-  embedding?: Buffer;
+  embedding?: number[];
   source?: string;
   sourceId?: string;
   importance: number;
@@ -38,7 +38,7 @@ export interface Memory {
 export interface CreateMemoryInput {
   type: MemoryType;
   content: string;
-  embedding?: Buffer;
+  embedding?: number[];
   source?: string;
   sourceId?: string;
   importance?: number;
@@ -67,7 +67,7 @@ interface MemoryRow {
   user_id: string;
   type: string;
   content: string;
-  embedding: Buffer | null;
+  embedding: number[] | string | null;
   source: string | null;
   source_id: string | null;
   importance: number;
@@ -92,13 +92,28 @@ function parseJsonField<T>(value: unknown, defaultValue: T): T {
   return defaultValue;
 }
 
+function parseEmbedding(value: number[] | string | null): number[] | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (Array.isArray(value)) return value;
+  // pgvector may return string format "[0.1,0.2,...]" if types not registered
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
 function rowToMemory(row: MemoryRow): Memory {
   return {
     id: row.id,
     userId: row.user_id,
     type: row.type as MemoryType,
     content: row.content,
-    embedding: row.embedding ?? undefined,
+    embedding: parseEmbedding(row.embedding),
     source: row.source ?? undefined,
     sourceId: row.source_id ?? undefined,
     importance: row.importance,
@@ -143,7 +158,7 @@ export class MemoriesRepository extends BaseRepository {
         this.userId,
         input.type,
         input.content,
-        input.embedding ?? null,
+        input.embedding ? JSON.stringify(input.embedding) : null,
         input.source ?? null,
         input.sourceId ?? null,
         input.importance ?? 0.5,
@@ -503,11 +518,90 @@ export class MemoriesRepository extends BaseRepository {
   }
 
   /**
-   * Check if similar memory exists (deduplication)
+   * Search memories by embedding similarity using pgvector cosine distance.
+   * Returns memories ordered by similarity (closest first).
    */
-  async findSimilar(content: string, type?: MemoryType): Promise<Memory | null> {
-    // Simple text-based similarity for now
-    // In the future, this could use embedding similarity
+  async searchByEmbedding(
+    embedding: number[],
+    options: {
+      type?: MemoryType;
+      limit?: number;
+      threshold?: number;
+      minImportance?: number;
+    } = {}
+  ): Promise<Array<Memory & { similarity: number }>> {
+    const limit = options.limit ?? 10;
+    const threshold = options.threshold ?? 0.0;
+
+    const conditions: string[] = ['user_id = $1', 'embedding IS NOT NULL'];
+    const params: unknown[] = [this.userId];
+    let paramIndex = 2;
+
+    // Embedding parameter for distance calculation
+    const embeddingParamIdx = paramIndex++;
+    params.push(JSON.stringify(embedding));
+
+    if (options.type) {
+      conditions.push(`type = $${paramIndex}`);
+      params.push(options.type);
+      paramIndex++;
+    }
+
+    if (options.minImportance !== undefined) {
+      conditions.push(`importance >= $${paramIndex}`);
+      params.push(options.minImportance);
+      paramIndex++;
+    }
+
+    if (threshold > 0) {
+      conditions.push(`(1 - (embedding <=> $${embeddingParamIdx}::vector)) >= $${paramIndex}`);
+      params.push(threshold);
+      paramIndex++;
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    const sql = `
+      SELECT *,
+        1 - (embedding <=> $${embeddingParamIdx}::vector) AS similarity
+      FROM memories
+      WHERE ${whereClause}
+      ORDER BY embedding <=> $${embeddingParamIdx}::vector ASC
+      LIMIT $${paramIndex}
+    `;
+    params.push(limit);
+
+    const rows = await this.query<MemoryRow & { similarity: number }>(sql, params);
+    return rows.map(row => ({
+      ...rowToMemory(row),
+      similarity: Number(row.similarity),
+    }));
+  }
+
+  /**
+   * Check if similar memory exists (deduplication).
+   * Uses embedding similarity when an embedding is provided,
+   * falls back to exact text match otherwise.
+   */
+  async findSimilar(
+    content: string,
+    type?: MemoryType,
+    embedding?: number[],
+    similarityThreshold = 0.95
+  ): Promise<Memory | null> {
+    // If embedding is provided, try vector similarity first
+    if (embedding && embedding.length > 0) {
+      const results = await this.searchByEmbedding(embedding, {
+        type,
+        limit: 1,
+        threshold: similarityThreshold,
+      });
+      if (results.length > 0) {
+        return results[0]!;
+      }
+    }
+
+    // Fallback: exact text match
     let sql = `
       SELECT * FROM memories
       WHERE user_id = $1
@@ -524,6 +618,18 @@ export class MemoriesRepository extends BaseRepository {
 
     const row = await this.queryOne<MemoryRow>(sql, params);
     return row ? rowToMemory(row) : null;
+  }
+
+  /**
+   * Update the embedding vector for an existing memory (backfill support)
+   */
+  async updateEmbedding(id: string, embedding: number[]): Promise<boolean> {
+    const result = await this.execute(
+      `UPDATE memories SET embedding = $1::vector, updated_at = $2
+       WHERE id = $3 AND user_id = $4`,
+      [JSON.stringify(embedding), new Date().toISOString(), id, this.userId]
+    );
+    return result.changes > 0;
   }
 
   /**

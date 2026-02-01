@@ -1,17 +1,39 @@
 /**
  * Session Manager
  *
- * Manages WebSocket client sessions
+ * Manages WebSocket client sessions.
+ * Delegates session lifecycle to ISessionService (when available)
+ * while keeping WebSocket-specific state (sockets, broadcast, WS channel subscriptions).
  */
 
 import type { WebSocket } from 'ws';
 import type { Session, WSMessage, ServerEvents } from './types.js';
+import {
+  hasServiceRegistry,
+  getServiceRegistry,
+  Services,
+  type ISessionService,
+} from '@ownpilot/core';
 
 /**
  * Extended session with WebSocket reference
  */
 interface ManagedSession extends Session {
   socket: WebSocket;
+}
+
+/**
+ * Try to get ISessionService from the registry (returns null if unavailable).
+ */
+function tryGetSessionService(): ISessionService | null {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(Services.Session);
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
@@ -22,11 +44,22 @@ export class SessionManager {
   private socketToSession = new WeakMap<WebSocket, string>();
 
   /**
-   * Create a new session for a WebSocket connection
+   * Create a new session for a WebSocket connection.
+   * Also registers in ISessionService (source: 'web') if available.
    */
   create(socket: WebSocket, userId?: string): Session {
-    const id = crypto.randomUUID();
-    const now = new Date();
+    const svc = tryGetSessionService();
+    let id: string;
+    let now: Date;
+
+    if (svc) {
+      const unified = svc.create({ userId: userId ?? 'default', source: 'web' });
+      id = unified.id;
+      now = unified.createdAt;
+    } else {
+      id = crypto.randomUUID();
+      now = new Date();
+    }
 
     const session: ManagedSession = {
       id,
@@ -68,6 +101,7 @@ export class SessionManager {
     if (session) {
       (session as { lastActivityAt: Date }).lastActivityAt = new Date();
     }
+    tryGetSessionService()?.touch(sessionId);
   }
 
   /**
@@ -101,16 +135,19 @@ export class SessionManager {
     if (session) {
       (session.metadata as Record<string, unknown>)[key] = value;
     }
+    tryGetSessionService()?.setMetadata(sessionId, key, value);
   }
 
   /**
-   * Remove a session
+   * Remove a session. Also closes it in ISessionService.
    */
   remove(sessionId: string): boolean {
     const session = this.sessions.get(sessionId);
     if (session) {
       this.socketToSession.delete(session.socket);
-      return this.sessions.delete(sessionId);
+      this.sessions.delete(sessionId);
+      tryGetSessionService()?.close(sessionId);
+      return true;
     }
     return false;
   }
@@ -227,11 +264,13 @@ export class SessionManager {
   cleanup(maxIdleMs: number): number {
     const now = Date.now();
     let removed = 0;
+    const svc = tryGetSessionService();
 
     for (const [id, session] of this.sessions) {
       if (now - session.lastActivityAt.getTime() > maxIdleMs) {
         session.socket.close(4000, 'Session timeout');
         this.sessions.delete(id);
+        svc?.close(id);
         removed++;
       }
     }

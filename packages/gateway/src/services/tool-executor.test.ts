@@ -17,6 +17,9 @@ const mockToolRegistry = {
   execute: vi.fn(),
   setApiKeyCenter: vi.fn(),
   registerProvider: vi.fn(),
+  setConfigRegistrationHandler: vi.fn(),
+  use: vi.fn(),
+  registerPluginTools: vi.fn(),
 };
 
 vi.mock('@ownpilot/core', async () => {

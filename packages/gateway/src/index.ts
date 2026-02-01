@@ -59,8 +59,9 @@ export {
   stopScheduler,
 } from './scheduler/index.js';
 
-// Channels
+// Channels (new plugin-based + backward-compat bridge)
 export { initializeChannelFactories, channelManager } from './channels/manager.js';
+export { createChannelServiceImpl, getChannelServiceImpl } from './channels/service-impl.js';
 
 // Settings (database-driven)
 export {
@@ -99,6 +100,13 @@ export {
   type DataDirType,
   type WorkspaceSubdir,
 } from './paths/index.js';
+
+// Services (gateway implementations)
+export { createLogService, LogService, type LogServiceOptions } from './services/log-service-impl.js';
+export { createSessionService, SessionService } from './services/session-service-impl.js';
+export { createMessageBus, MessageBus } from './services/message-bus-impl.js';
+export { createToolService, ToolService } from './services/tool-service-impl.js';
+export { createProviderService, ProviderService } from './services/provider-service-impl.js';
 
 // Data Migration
 export {

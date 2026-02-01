@@ -9,6 +9,9 @@ import type { ToolRegistry, ToolExecutor } from '@ownpilot/core';
 import { GMAIL_TOOL_EXECUTORS } from './gmail-tool-executors.js';
 import { MEDIA_TOOL_EXECUTORS } from './media-tool-executors.js';
 import { oauthIntegrationsRepo, mediaSettingsRepo } from '../db/repositories/index.js';
+import { getLog } from './log.js';
+
+const log = getLog('ToolOverrides');
 
 /**
  * Check if Gmail integration is configured for a user
@@ -49,7 +52,7 @@ export async function registerGmailToolOverrides(registry: ToolRegistry, userId 
 
       if (registry.updateExecutor(toolName, wrappedExecutor)) {
         count++;
-        console.log(`[tool-overrides] Gmail executor registered: ${toolName}`);
+        log.info(`[tool-overrides] Gmail executor registered: ${toolName}`);
       }
     }
   }
@@ -67,7 +70,7 @@ export async function registerMediaToolOverrides(registry: ToolRegistry): Promis
     if (registry.has(toolName)) {
       if (registry.updateExecutor(toolName, executor)) {
         count++;
-        console.log(`[tool-overrides] Media executor registered: ${toolName}`);
+        log.info(`[tool-overrides] Media executor registered: ${toolName}`);
       }
     }
   }
@@ -94,20 +97,20 @@ export async function initializeToolOverrides(registry: ToolRegistry, userId = '
   try {
     results.gmail = await registerGmailToolOverrides(registry, userId);
   } catch (error) {
-    console.error('[tool-overrides] Failed to register Gmail overrides:', error);
+    log.error('[tool-overrides] Failed to register Gmail overrides:', error);
   }
 
   // Media overrides (always register - they check settings at runtime)
   try {
     results.media = await registerMediaToolOverrides(registry);
   } catch (error) {
-    console.error('[tool-overrides] Failed to register Media overrides:', error);
+    log.error('[tool-overrides] Failed to register Media overrides:', error);
   }
 
   results.total = results.gmail + results.media;
 
   if (results.total > 0) {
-    console.log(`[tool-overrides] Registered ${results.total} tool overrides (Gmail: ${results.gmail}, Media: ${results.media})`);
+    log.info(`[tool-overrides] Registered ${results.total} tool overrides (Gmail: ${results.gmail}, Media: ${results.media})`);
   }
 
   return results;

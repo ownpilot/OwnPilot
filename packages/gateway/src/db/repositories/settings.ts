@@ -5,6 +5,9 @@
  */
 
 import { BaseRepository, ensureTable } from './base.js';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('SettingsRepo');
 
 export interface Setting {
   key: string;
@@ -61,7 +64,7 @@ export class SettingsRepository extends BaseRepository {
    */
   get<T = unknown>(key: string): T | null {
     if (!cacheInitialized) {
-      console.warn(`[Settings] Cache not initialized, returning null for key: ${key}`);
+      log.warn(`[Settings] Cache not initialized, returning null for key: ${key}`);
       return null;
     }
     return (settingsCache.get(key) as T) ?? null;

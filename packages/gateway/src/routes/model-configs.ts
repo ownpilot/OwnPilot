@@ -27,6 +27,9 @@ import {
   type AggregatorProvider,
 } from '@ownpilot/core';
 import { hasApiKey, getApiKey } from './settings.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('ModelConfigs');
 
 export const modelConfigsRoutes = new Hono();
 
@@ -390,7 +393,7 @@ modelConfigsRoutes.post('/', async (c) => {
       data: config,
     });
   } catch (error) {
-    console.error('Failed to create model:', error);
+    log.error('Failed to create model:', error);
     return c.json({ success: false, error: 'Failed to create model' }, 500);
   }
 });
@@ -549,7 +552,7 @@ modelConfigsRoutes.post('/providers', async (c) => {
       data: provider,
     });
   } catch (error) {
-    console.error('Failed to create provider:', error);
+    log.error('Failed to create provider:', error);
     return c.json({ success: false, error: 'Failed to create provider' }, 500);
   }
 });
@@ -598,7 +601,7 @@ modelConfigsRoutes.put('/providers/:id', async (c) => {
       data: provider,
     });
   } catch (error) {
-    console.error('Failed to update provider:', error);
+    log.error('Failed to update provider:', error);
     return c.json({ success: false, error: 'Failed to update provider' }, 500);
   }
 });
@@ -688,7 +691,7 @@ modelConfigsRoutes.patch('/providers/:id/toggle', async (c) => {
       enabled: body.enabled,
     });
   } catch (error) {
-    console.error('Failed to toggle provider:', error);
+    log.error('Failed to toggle provider:', error);
     return c.json({ success: false, error: 'Failed to toggle provider' }, 500);
   }
 });
@@ -976,7 +979,7 @@ modelConfigsRoutes.post('/sync', async (c) => {
       note: 'User disabled models are preserved in database, not affected by sync.',
     });
   } catch (error) {
-    console.error('Sync failed:', error);
+    log.error('Sync failed:', error);
     return c.json({ success: false, error: 'Sync failed' }, 500);
   }
 });
@@ -1008,7 +1011,7 @@ modelConfigsRoutes.post('/sync/apply', async (c) => {
       },
     });
   } catch (error) {
-    console.error('Sync apply failed:', error);
+    log.error('Sync apply failed:', error);
     return c.json({ success: false, error: 'Sync apply failed: ' + String(error) }, 500);
   }
 });
@@ -1077,7 +1080,7 @@ modelConfigsRoutes.post('/sync/reset', async (c) => {
       },
     });
   } catch (error) {
-    console.error('Full reset failed:', error);
+    log.error('Full reset failed:', error);
     return c.json({ success: false, error: 'Full reset failed: ' + String(error) }, 500);
   }
 });
@@ -1132,7 +1135,7 @@ modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
       },
     });
   } catch (error) {
-    console.error('Delete provider failed:', error);
+    log.error('Delete provider failed:', error);
     return c.json({ success: false, error: 'Delete provider failed: ' + String(error) }, 500);
   }
 });
@@ -1245,7 +1248,7 @@ modelConfigsRoutes.put('/:provider/:model', async (c) => {
       data: config,
     });
   } catch (error) {
-    console.error('Failed to update model:', error);
+    log.error('Failed to update model:', error);
     return c.json({ success: false, error: 'Failed to update model' }, 500);
   }
 });
@@ -1318,7 +1321,7 @@ modelConfigsRoutes.patch('/:provider/:model/toggle', async (c) => {
       enabled: body.enabled,
     });
   } catch (error) {
-    console.error('Failed to toggle model:', error);
+    log.error('Failed to toggle model:', error);
     return c.json({ success: false, error: 'Failed to toggle model' }, 500);
   }
 });

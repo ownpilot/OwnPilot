@@ -8,6 +8,9 @@
 import { existsSync, copyFileSync, mkdirSync, readdirSync, statSync, renameSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { getDataPaths, getLegacyDataPath, hasLegacyData, initializeDataDirectories } from './index.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Migration');
 
 export interface MigrationResult {
   success: boolean;
@@ -90,11 +93,11 @@ export function migrateData(options: { backup?: boolean } = {}): MigrationResult
   };
 
   if (!existsSync(legacyPath)) {
-    console.log('[Migration] No legacy data found, skipping migration');
+    log.info('[Migration] No legacy data found, skipping migration');
     return result;
   }
 
-  console.log(`[Migration] Starting migration from ${legacyPath} to ${paths.root}`);
+  log.info(`[Migration] Starting migration from ${legacyPath} to ${paths.root}`);
 
   // Files to migrate
   const filesToMigrate = [
@@ -128,18 +131,18 @@ export function migrateData(options: { backup?: boolean } = {}): MigrationResult
 
       // Don't overwrite existing files
       if (existsSync(dest)) {
-        console.log(`[Migration] Skipping ${src} (already exists at destination)`);
+        log.info(`[Migration] Skipping ${src} (already exists at destination)`);
         continue;
       }
 
       // Copy file
       copyFileSync(srcPath, dest);
       result.migratedFiles.push(src);
-      console.log(`[Migration] Migrated: ${src}`);
+      log.info(`[Migration] Migrated: ${src}`);
     } catch (error) {
       const errMsg = `Failed to migrate ${src}: ${error instanceof Error ? error.message : String(error)}`;
       result.errors.push(errMsg);
-      console.error(`[Migration] ${errMsg}`);
+      log.error(`[Migration] ${errMsg}`);
     }
   }
 
@@ -160,11 +163,11 @@ export function migrateData(options: { backup?: boolean } = {}): MigrationResult
       // Copy directory contents
       copyDirectoryContents(srcPath, dest);
       result.migratedFiles.push(`${src}/`);
-      console.log(`[Migration] Migrated directory: ${src}/`);
+      log.info(`[Migration] Migrated directory: ${src}/`);
     } catch (error) {
       const errMsg = `Failed to migrate ${src}/: ${error instanceof Error ? error.message : String(error)}`;
       result.errors.push(errMsg);
-      console.error(`[Migration] ${errMsg}`);
+      log.error(`[Migration] ${errMsg}`);
     }
   }
 
@@ -172,12 +175,12 @@ export function migrateData(options: { backup?: boolean } = {}): MigrationResult
     result.success = false;
   }
 
-  console.log(`[Migration] Complete. Migrated ${result.migratedFiles.length} items, ${result.errors.length} errors`);
+  log.info(`[Migration] Complete. Migrated ${result.migratedFiles.length} items, ${result.errors.length} errors`);
 
   if (result.migratedFiles.length > 0) {
-    console.log(`[Migration] IMPORTANT: You can now safely delete the legacy data directory:`);
-    console.log(`[Migration]   ${legacyPath}`);
-    console.log(`[Migration] Your data is now stored at: ${paths.root}`);
+    log.info(`[Migration] IMPORTANT: You can now safely delete the legacy data directory:`);
+    log.info(`[Migration]   ${legacyPath}`);
+    log.info(`[Migration] Your data is now stored at: ${paths.root}`);
   }
 
   return result;
@@ -215,6 +218,6 @@ export function autoMigrateIfNeeded(): MigrationResult | null {
     return null;
   }
 
-  console.log('[Migration] Legacy data detected, starting automatic migration...');
+  log.info('[Migration] Legacy data detected, starting automatic migration...');
   return migrateData();
 }

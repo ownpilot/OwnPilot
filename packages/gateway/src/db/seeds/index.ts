@@ -6,6 +6,9 @@
 
 import { agentsRepo } from '../repositories/index.js';
 import { getDefaultAgents } from './default-agents.js';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('DbSeeds');
 
 /**
  * Seed default agents if none exist
@@ -20,7 +23,7 @@ export async function seedDefaultAgents(): Promise<number> {
   // Load agents from JSON file
   const defaultAgents = getDefaultAgents();
   if (defaultAgents.length === 0) {
-    console.warn('No default agents found in JSON file');
+    log.warn('No default agents found in JSON file');
     return 0;
   }
 
@@ -37,12 +40,12 @@ export async function seedDefaultAgents(): Promise<number> {
       });
       seeded++;
     } catch (error) {
-      console.error(`Failed to seed agent ${agent.id}:`, error);
+      log.error(`Failed to seed agent ${agent.id}:`, error);
     }
   }
 
   if (seeded > 0) {
-    console.log(`Seeded ${seeded} default agents`);
+    log.info(`Seeded ${seeded} default agents`);
   }
 
   return seeded;

@@ -8,6 +8,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('AgentSeed');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,7 +66,7 @@ interface AgentsJson {
 export function loadDefaultAgents(): AgentSeed[] {
   try {
     if (!fs.existsSync(DATA_FILE)) {
-      console.warn(`Default agents file not found: ${DATA_FILE}`);
+      log.warn(`Default agents file not found: ${DATA_FILE}`);
       return [];
     }
 
@@ -83,7 +86,7 @@ export function loadDefaultAgents(): AgentSeed[] {
       },
     }));
   } catch (error) {
-    console.error('Failed to load default agents:', error);
+    log.error('Failed to load default agents:', error);
     return [];
   }
 }

@@ -9,6 +9,9 @@ import { Hono } from 'hono';
 import { google } from 'googleapis';
 import { settingsRepo, oauthIntegrationsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Auth');
 
 export const authRoutes = new Hono();
 
@@ -160,7 +163,7 @@ authRoutes.post('/config/google', async (c) => {
       message: 'Google OAuth configuration saved',
     });
   } catch (error) {
-    console.error('Failed to save Google OAuth config:', error);
+    log.error('Failed to save Google OAuth config:', error);
     return c.json({ success: false, error: 'Failed to save configuration' }, 500);
   }
 });
@@ -247,7 +250,7 @@ authRoutes.get('/google/callback', async (c) => {
 
   // Handle OAuth errors
   if (error) {
-    console.error('Google OAuth error:', error, errorDescription);
+    log.error('Google OAuth error', { error, errorDescription });
     const returnUrl = `/settings?oauth_error=${encodeURIComponent(error)}`;
     return c.redirect(returnUrl);
   }
@@ -327,7 +330,7 @@ authRoutes.get('/google/callback', async (c) => {
     const separator = returnUrl.includes('?') ? '&' : '?';
     return c.redirect(`${returnUrl}${separator}oauth_success=${state.service}`);
   } catch (err) {
-    console.error('Google OAuth callback error:', err);
+    log.error('Google OAuth callback error:', err);
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     const returnUrl = state.returnUrl || '/settings';
     return c.redirect(`${returnUrl}?oauth_error=${encodeURIComponent(errorMessage)}`);
@@ -369,7 +372,7 @@ authRoutes.post('/google/revoke', async (c) => {
         }
       } catch (revokeError) {
         // Log but don't fail - token might already be revoked
-        console.warn('Failed to revoke Google token:', revokeError);
+        log.warn('Failed to revoke Google token:', revokeError);
       }
     }
 
@@ -381,7 +384,7 @@ authRoutes.post('/google/revoke', async (c) => {
       message: `${integration.service} disconnected successfully`,
     });
   } catch (error) {
-    console.error('Failed to revoke OAuth:', error);
+    log.error('Failed to revoke OAuth:', error);
     return c.json({ success: false, error: 'Failed to disconnect' }, 500);
   }
 });
@@ -449,7 +452,7 @@ authRoutes.post('/google/refresh', async (c) => {
         : undefined,
     });
   } catch (error) {
-    console.error('Failed to refresh token:', error);
+    log.error('Failed to refresh token:', error);
 
     // Mark integration as expired if refresh fails
     const body = await c.req.json<{ integrationId: string }>().catch(() => ({ integrationId: '' }));

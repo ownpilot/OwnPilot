@@ -1,10 +1,12 @@
 /**
- * Channel Adapters Module
+ * Channels Module
  *
- * Multi-channel communication adapters
+ * Unified channel system using plugin architecture.
+ * Re-exports the bridge for backward compatibility.
  */
 
-export * from './types.js';
-export * from './base-adapter.js';
-export * from './manager.js';
-export * from './adapters/index.js';
+// New: Plugin-based channel service
+export { ChannelServiceImpl, createChannelServiceImpl, getChannelServiceImpl } from './service-impl.js';
+
+// Bridge: backward-compatible channelManager (delegates to IChannelService)
+export { channelManager, initializeChannelFactories } from './manager.js';

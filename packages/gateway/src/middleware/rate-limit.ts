@@ -6,6 +6,9 @@
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import type { RateLimitConfig } from '../types/index.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('RateLimit');
 
 interface RateLimitEntry {
   count: number;
@@ -115,7 +118,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
       // Log warning (first time only)
       if (!entry.warned) {
         entry.warned = true;
-        console.warn(`[RateLimit] User ${key} is using burst allowance`);
+        log.warn(`[RateLimit] User ${key} is using burst allowance`);
       }
 
       // Continue in soft mode or burst mode
@@ -131,7 +134,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
       if (config.softLimit) {
         c.header('X-RateLimit-SoftLimit', 'true');
         c.header('X-RateLimit-Warning', 'Rate limit exceeded, but soft limit is enabled');
-        console.warn(`[RateLimit] Soft limit exceeded for ${key}: ${entry.count} requests`);
+        log.warn(`[RateLimit] Soft limit exceeded for ${key}: ${entry.count} requests`);
         await next();
         return;
       }

@@ -4,6 +4,10 @@
  * Abstract interface for database operations supporting both SQLite and PostgreSQL
  */
 
+import { getLog } from '../../services/log.js';
+
+const log = getLog('DbAdapter');
+
 export type DatabaseType = 'sqlite' | 'postgres';
 
 /**
@@ -138,7 +142,7 @@ export function getDatabaseConfig(): DatabaseConfig {
 
   // Warn in production if using default credentials
   if (isProduction && !hasExplicitConfig) {
-    console.warn(
+    log.warn(
       '[Database] WARNING: Running in production without explicit database credentials. ' +
       'Set DATABASE_URL or POSTGRES_* environment variables.'
     );

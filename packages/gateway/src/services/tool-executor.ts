@@ -36,6 +36,9 @@ import {
   getCustomToolDynamicRegistry,
   setSharedRegistryForCustomTools,
 } from '../routes/custom-tools.js';
+import { getLog } from './log.js';
+
+const log = getLog('ToolExecutor');
 
 // ============================================================================
 // Types
@@ -113,8 +116,10 @@ function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
   getDefaultPluginRegistry()
     .then((pluginRegistry) => {
       // Register tools from all currently enabled plugins
+      // Skip core-category plugins — their tools are registered synchronously
+      // by registerAllTools() + registerCoreTools() above.
       for (const plugin of pluginRegistry.getEnabled()) {
-        if (plugin.tools.size > 0) {
+        if (plugin.tools.size > 0 && plugin.manifest.category !== 'core') {
           registry.registerPluginTools(createPluginId(plugin.manifest.id), plugin.tools);
         }
       }
@@ -125,7 +130,7 @@ function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
         const pluginId = createPluginId(event.pluginId);
         if (event.newStatus === 'enabled') {
           const plugin = pluginRegistry.get(event.pluginId);
-          if (plugin && plugin.tools.size > 0) {
+          if (plugin && plugin.tools.size > 0 && plugin.manifest.category !== 'core') {
             registry.registerPluginTools(createPluginId(plugin.manifest.id), plugin.tools);
           }
         } else if (event.newStatus === 'disabled') {
@@ -185,7 +190,7 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
       }
 
       if (tools.length > 0) {
-        console.log(`[tool-executor] Synced ${tools.length} custom tool(s) into shared registry`);
+        log.info(`[tool-executor] Synced ${tools.length} custom tool(s) into shared registry`);
       }
     })
     .catch(() => {
@@ -195,7 +200,8 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
 
 /**
  * Execute a tool by name with arguments.
- * All tools (core, gateway, plugin, custom) are in the shared registry.
+ * First checks the shared ToolRegistry, then falls back to PluginRegistry
+ * (in case plugin tools haven't been synced yet due to async initialization).
  * Returns a standardized result object.
  */
 export async function executeTool(
@@ -205,45 +211,78 @@ export async function executeTool(
 ): Promise<ToolExecutionResult> {
   const tools = getSharedToolRegistry(userId);
 
-  if (!tools.has(toolName)) {
-    return {
-      success: false,
-      error: `Tool '${toolName}' not found`,
-    };
-  }
+  // Try shared registry first
+  if (tools.has(toolName)) {
+    try {
+      const result = await tools.execute(toolName, args, {
+        conversationId: 'system-execution',
+      });
 
-  try {
-    const result = await tools.execute(toolName, args, {
-      conversationId: 'system-execution',
-    });
+      if (result.ok) {
+        const value = result.value;
+        return {
+          success: !value.isError,
+          result: value.content,
+          error: value.isError ? String(value.content) : undefined,
+        };
+      }
 
-    if (result.ok) {
-      const value = result.value;
       return {
-        success: !value.isError,
-        result: value.content,
-        error: value.isError ? String(value.content) : undefined,
+        success: false,
+        error: result.error.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Tool execution failed',
       };
     }
-
-    return {
-      success: false,
-      error: result.error.message,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Tool execution failed',
-    };
   }
+
+  // Fallback: check plugin registry (covers the async sync race window)
+  try {
+    const pluginRegistry = await getDefaultPluginRegistry();
+    const pluginTool = pluginRegistry.getTool(toolName);
+    if (pluginTool != null) {
+      try {
+        const pluginResult = await pluginTool.executor(args, { callId: 'fallback', conversationId: 'system-execution' });
+        const content = typeof pluginResult.content === 'string' ? pluginResult.content : String(pluginResult.content);
+        return {
+          success: !pluginResult.isError,
+          result: content,
+          error: pluginResult.isError ? content : undefined,
+        };
+      } catch (execError) {
+        return {
+          success: false,
+          error: execError instanceof Error ? execError.message : 'Plugin tool execution failed',
+        };
+      }
+    }
+  } catch {
+    // Ignore plugin registry lookup errors — fall through to not-found
+  }
+
+  return {
+    success: false,
+    error: `Tool '${toolName}' not found in shared registry or plugins`,
+  };
 }
 
 /**
- * Check if a tool exists in the shared registry.
+ * Check if a tool exists in the shared registry or plugin registry.
  */
 export async function hasTool(toolName: string): Promise<boolean> {
   const tools = getSharedToolRegistry();
-  return tools.has(toolName);
+  if (tools.has(toolName)) return true;
+
+  // Fallback: check plugin registry
+  try {
+    const pluginRegistry = await getDefaultPluginRegistry();
+    return pluginRegistry.getTool(toolName) != null;
+  } catch {
+    return false;
+  }
 }
 
 /**

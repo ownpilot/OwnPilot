@@ -20,6 +20,9 @@ import { getGoalService, type GoalService } from '../services/goal-service.js';
 import { getMemoryService, type MemoryService } from '../services/memory-service.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
 import { getNextRunTime, matchesCron } from '@ownpilot/core';
+import { getLog } from '../services/log.js';
+
+const log = getLog('TriggerEngine');
 
 // ============================================================================
 // Types
@@ -91,7 +94,7 @@ export class TriggerEngine {
    */
   setChatHandler(handler: ChatHandler): void {
     this.chatHandler = handler;
-    console.log('[TriggerEngine] Chat handler registered');
+    log.info('Chat handler registered');
   }
 
   // ==========================================================================
@@ -105,23 +108,23 @@ export class TriggerEngine {
     if (this.running || !this.config.enabled) return;
 
     this.running = true;
-    console.log('[TriggerEngine] Starting...');
+    log.info('Starting...');
 
     // Start polling for schedule triggers
     this.pollTimer = setInterval(() => {
-      this.processScheduleTriggers().catch(console.error);
+      this.processScheduleTriggers().catch((err) => log.error('Schedule trigger poll failed', { error: err }));
     }, this.config.pollIntervalMs);
 
     // Start checking conditions
     this.conditionTimer = setInterval(() => {
-      this.processConditionTriggers().catch(console.error);
+      this.processConditionTriggers().catch((err) => log.error('Condition trigger check failed', { error: err }));
     }, this.config.conditionCheckIntervalMs);
 
     // Run initial checks
-    this.processScheduleTriggers().catch(console.error);
-    this.processConditionTriggers().catch(console.error);
+    this.processScheduleTriggers().catch((err) => log.error('Initial schedule trigger poll failed', { error: err }));
+    this.processConditionTriggers().catch((err) => log.error('Initial condition trigger check failed', { error: err }));
 
-    console.log('[TriggerEngine] Started');
+    log.info('Started');
   }
 
   /**
@@ -142,7 +145,7 @@ export class TriggerEngine {
       this.conditionTimer = null;
     }
 
-    console.log('[TriggerEngine] Stopped');
+    log.info('Stopped');
   }
 
   /**
@@ -173,7 +176,7 @@ export class TriggerEngine {
     // Notification action
     this.registerActionHandler('notification', async (payload) => {
       const message = payload.message as string;
-      console.log(`[TriggerEngine] Notification: ${message}`);
+      log.info('Notification', { message });
       return { success: true, message: 'Notification sent', data: { message } };
     });
 
@@ -226,7 +229,7 @@ export class TriggerEngine {
       }
 
       // Fallback: log the message (chat handler not yet initialized)
-      console.log(`[TriggerEngine] Chat action (no handler): ${message}`);
+      log.info('Chat action (no handler)', { message });
       return {
         success: true,
         message: 'Chat action logged (agent not initialized yet)',
@@ -248,7 +251,7 @@ export class TriggerEngine {
         return { success: false, error: `Tool '${toolName}' not found` };
       }
 
-      console.log(`[TriggerEngine] Executing tool: ${toolName}`);
+      log.info('Executing tool', { toolName });
       const result = await executeTool(toolName, toolArgs, this.config.userId);
 
       return {
@@ -289,7 +292,7 @@ export class TriggerEngine {
       try {
         handler(event);
       } catch (error) {
-        console.error(`[TriggerEngine] Event handler error:`, error);
+        log.error('Event handler error', { error });
       }
     }
 
@@ -453,22 +456,22 @@ export class TriggerEngine {
         const nextFire = this.calculateNextFire(config);
         await this.triggerService.markFired(this.config.userId, trigger.id, nextFire ?? undefined);
         if (nextFire) {
-          console.log(`[TriggerEngine] Next fire for "${trigger.name}": ${nextFire}`);
+          log.info('Next fire scheduled', { trigger: trigger.name, nextFire });
         } else {
-          console.warn(`[TriggerEngine] WARNING: Trigger "${trigger.name}" has no next fire time — will not auto-fire again`);
+          log.warn('Trigger has no next fire time — will not auto-fire again', { trigger: trigger.name });
         }
       } else {
         await this.triggerService.markFired(this.config.userId, trigger.id);
       }
 
-      console.log(`[TriggerEngine] Executed trigger: ${trigger.name} (${durationMs}ms)`);
+      log.info('Executed trigger', { trigger: trigger.name, durationMs });
     } catch (error) {
       const durationMs = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       // Log failure
       await this.triggerService.logExecution(this.config.userId, trigger.id, 'failure', undefined, errorMessage, durationMs);
-      console.error(`[TriggerEngine] Trigger failed: ${trigger.name}`, error);
+      log.error('Trigger failed', { trigger: trigger.name, error });
     }
   }
 
@@ -477,17 +480,17 @@ export class TriggerEngine {
    */
   private calculateNextFire(config: ScheduleConfig): string | null {
     if (!config.cron) {
-      console.warn('[TriggerEngine] calculateNextFire called with empty cron');
+      log.warn('calculateNextFire called with empty cron');
       return null;
     }
     try {
       const nextRun = getNextRunTime(config.cron);
       if (!nextRun) {
-        console.warn(`[TriggerEngine] No next fire time for cron "${config.cron}" — trigger will not reschedule`);
+        log.warn('No next fire time for cron — trigger will not reschedule', { cron: config.cron });
       }
       return nextRun ? nextRun.toISOString() : null;
     } catch (error) {
-      console.error(`[TriggerEngine] Failed to parse cron "${config.cron}":`, error);
+      log.error('Failed to parse cron', { cron: config.cron, error });
       return null;
     }
   }

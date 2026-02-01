@@ -49,6 +49,7 @@ import {
   expensesRoutes,
   configServicesRoutes,
   localProvidersRoutes,
+  channelAuthRoutes,
 } from './routes/index.js';
 import { debugRoutes } from './routes/debug.js';
 
@@ -131,6 +132,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   app.route('/api/v1/tools', toolsRoutes);
   app.route('/api/v1/settings', settingsRoutes);
   app.route('/api/v1/channels', channelRoutes);
+  app.route('/api/v1/channels/auth', channelAuthRoutes);
   app.route('/api/v1/costs', costRoutes);
   app.route('/api/v1/models', modelsRoutes);
   app.route('/api/v1/providers', providersRoutes);
@@ -225,6 +227,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         tools: '/api/v1/tools',
         settings: '/api/v1/settings',
         channels: '/api/v1/channels',
+        channelAuth: '/api/v1/channels/auth',
         costs: '/api/v1/costs',
         models: '/api/v1/models',
         providers: '/api/v1/providers',

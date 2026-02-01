@@ -21,6 +21,9 @@ import type { NotificationRequest } from '@ownpilot/core';
 import { channelManager } from '../channels/manager.js';
 import { getOrCreateDefaultAgent } from '../routes/agents.js';
 import { getDataPaths } from '../paths/index.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Scheduler');
 
 // Singleton scheduler instance
 let schedulerInstance: Scheduler | null = null;
@@ -167,7 +170,7 @@ async function handleSchedulerNotification(
   const channels = task.notifyChannels ?? notification.channels ?? [];
 
   if (channels.length === 0) {
-    console.log('[Scheduler] No notification channels configured for task:', task.name);
+    log.info('[Scheduler] No notification channels configured for task:', task.name);
     return;
   }
 
@@ -192,16 +195,16 @@ async function handleSchedulerNotification(
       if (targetChannel) {
         // For Telegram, we need a chat ID - this would typically come from user preferences
         // For now, we'll log that we need this configuration
-        console.log(`[Scheduler] Would send notification to ${targetChannel.type}:${targetChannel.id}`);
-        console.log(`[Scheduler] Message: ${message}`);
+        log.info(`[Scheduler] Would send notification to ${targetChannel.type}:${targetChannel.id}`);
+        log.info(`[Scheduler] Message: ${message}`);
 
         // TODO: Store user's preferred chat IDs and send there
         // await channelManager.send(targetChannel.id, { content: message, channelId: userChatId });
       } else {
-        console.warn(`[Scheduler] Channel not found or not connected: ${channelId}`);
+        log.warn(`[Scheduler] Channel not found or not connected: ${channelId}`);
       }
     } catch (error) {
-      console.error(`[Scheduler] Failed to send notification to ${channelId}:`, error);
+      log.error(`[Scheduler] Failed to send notification to ${channelId}:`, error);
     }
   }
 }
@@ -237,7 +240,7 @@ export async function initializeScheduler(): Promise<Scheduler> {
   await schedulerInstance.initialize();
   schedulerInstance.start();
 
-  console.log('[Scheduler] Initialized and started');
+  log.info('[Scheduler] Initialized and started');
   return schedulerInstance;
 }
 
@@ -261,6 +264,6 @@ export function getNotificationBridge(): SchedulerNotificationBridge | null {
 export function stopScheduler(): void {
   if (schedulerInstance) {
     schedulerInstance.stop();
-    console.log('[Scheduler] Stopped');
+    log.info('[Scheduler] Stopped');
   }
 }

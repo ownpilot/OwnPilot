@@ -10,6 +10,9 @@
  */
 
 import { BaseRepository } from './base.js';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('PluginsRepo');
 
 // =============================================================================
 // ROW TYPES (database representation)
@@ -144,7 +147,7 @@ export class PluginsRepository extends BaseRepository {
    */
   getById(id: string): PluginRecord | null {
     if (!cacheInitialized) {
-      console.warn(`[Plugins] Cache not initialized, returning null for: ${id}`);
+      log.warn(`[Plugins] Cache not initialized, returning null for: ${id}`);
       return null;
     }
     return pluginsCache.get(id) ?? null;
@@ -155,7 +158,7 @@ export class PluginsRepository extends BaseRepository {
    */
   getAll(): PluginRecord[] {
     if (!cacheInitialized) {
-      console.warn('[Plugins] Cache not initialized, returning empty list');
+      log.warn('[Plugins] Cache not initialized, returning empty list');
       return [];
     }
     return Array.from(pluginsCache.values());

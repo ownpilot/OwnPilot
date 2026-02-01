@@ -41,3 +41,4 @@ export { databaseRoutes } from './database.js';
 export { expensesRoutes } from './expenses.js';
 export { configServicesRoutes } from './config-services.js';
 export { localProvidersRoutes } from './local-providers.js';
+export { channelAuthRoutes } from './channel-auth.js';

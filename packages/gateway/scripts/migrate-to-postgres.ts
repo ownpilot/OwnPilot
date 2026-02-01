@@ -385,9 +385,10 @@ class Migrator {
         continue;
       }
 
-      // Handle BLOB (embedding)
-      if (col === 'embedding' && value instanceof Buffer) {
-        converted[col] = value;
+      // Handle embedding: old BYTEA/BLOB data is not compatible with vector type
+      // Set to null during migration; embeddings will be regenerated
+      if (col === 'embedding') {
+        converted[col] = null;
         continue;
       }
 

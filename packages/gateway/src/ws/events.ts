@@ -1,19 +1,42 @@
 /**
  * Gateway Event System
  *
- * Type-safe event emitter for gateway events
+ * Backed by unified EventSystem from @ownpilot/core.
+ * GatewayEventEmitter wraps a ScopedBus with 'gateway' prefix.
+ * ClientEventHandler wraps HookBus with 'client:' prefix.
+ *
+ * ServerEvents colon keys (channel:connected) are converted to dots
+ * so they flow through the global bus as gateway.channel.connected.
  */
 
+import {
+  getEventSystem,
+  type IScopedBus,
+  type IHookBus,
+  type TypedEvent,
+} from '@ownpilot/core';
 import type { ServerEvents, ClientEvents } from './types.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('WSEvents');
 
 type EventHandler<T = unknown> = (data: T) => void | Promise<void>;
-type ClientEventHandler_Fn<T = unknown> = (data: T, sessionId?: string) => void | Promise<void>;
+
+/** Convert colon-separated keys to dot-separated for the unified bus */
+function toDot(key: string): string {
+  return key.replace(/:/g, '.');
+}
 
 /**
- * Type-safe event emitter
+ * Type-safe event emitter backed by ScopedBus.
+ * Emitting 'channel:connected' flows to global bus as 'gateway.channel.connected'.
  */
 export class GatewayEventEmitter {
-  private handlers = new Map<string, Set<EventHandler>>();
+  private bus: IScopedBus;
+
+  constructor() {
+    this.bus = getEventSystem().scoped('gateway', 'gateway');
+  }
 
   /**
    * Subscribe to a server event
@@ -22,33 +45,14 @@ export class GatewayEventEmitter {
     event: K,
     handler: EventHandler<ServerEvents[K]>
   ): () => void {
-    if (!this.handlers.has(event)) {
-      this.handlers.set(event, new Set());
-    }
-
-    const handlers = this.handlers.get(event)!;
-    handlers.add(handler as EventHandler);
-
-    // Return unsubscribe function
-    return () => {
-      handlers.delete(handler as EventHandler);
-    };
+    return this.bus.on(toDot(event), (e: TypedEvent) => handler(e.data as ServerEvents[K]));
   }
 
   /**
    * Subscribe to any event (for logging/debugging)
    */
   onAny(handler: (event: string, data: unknown) => void): () => void {
-    const wrappedHandler = handler as EventHandler;
-    if (!this.handlers.has('*')) {
-      this.handlers.set('*', new Set());
-    }
-
-    this.handlers.get('*')!.add(wrappedHandler);
-
-    return () => {
-      this.handlers.get('*')?.delete(wrappedHandler);
-    };
+    return this.bus.onAll((e: TypedEvent) => handler(e.type, e.data));
   }
 
   /**
@@ -58,67 +62,62 @@ export class GatewayEventEmitter {
     event: K,
     data: ServerEvents[K]
   ): Promise<void> {
-    // Call specific handlers
-    const handlers = this.handlers.get(event);
-    if (handlers) {
-      for (const handler of handlers) {
-        try {
-          await handler(data);
-        } catch (error) {
-          console.error(`Error in event handler for ${event}:`, error);
-        }
-      }
-    }
-
-    // Call wildcard handlers
-    const wildcardHandlers = this.handlers.get('*');
-    if (wildcardHandlers) {
-      for (const handler of wildcardHandlers) {
-        try {
-          await (handler as (event: string, data: unknown) => void)(event, data);
-        } catch (error) {
-          console.error(`Error in wildcard handler for ${event}:`, error);
-        }
-      }
-    }
+    this.bus.emit(toDot(event), data);
   }
 
   /**
    * Remove all handlers for an event
+   * @deprecated Prefer unsubscribe functions returned by on()
    */
-  off<K extends keyof ServerEvents>(event: K): void {
-    this.handlers.delete(event);
+  off<K extends keyof ServerEvents>(_event: K): void {
+    // ScopedBus uses unsubscribe pattern; this is a no-op for backward compat
+    log.warn('[GatewayEvents] off() is deprecated. Use the unsubscribe function returned by on() instead.');
   }
 
   /**
    * Remove all handlers
+   * @deprecated Use individual unsubscribe functions instead
    */
   removeAllListeners(): void {
-    this.handlers.clear();
+    log.warn('[GatewayEvents] removeAllListeners() is deprecated. Use individual unsubscribe functions instead.');
   }
 
   /**
    * Get handler count for an event
+   * @deprecated No longer supported in unified event system
    */
-  listenerCount<K extends keyof ServerEvents>(event: K): number {
-    return this.handlers.get(event)?.size ?? 0;
+  listenerCount<K extends keyof ServerEvents>(_event: K): number {
+    return 0;
   }
 }
 
 /**
- * Client event handler registry
+ * Client event handler registry backed by HookBus.
+ * Each client event is registered as a hook (client:chat.send, client:channel.connect, etc.)
  */
 export class ClientEventHandler {
-  private handlers = new Map<string, ClientEventHandler_Fn>();
+  private hookBus: IHookBus;
+  private registeredEvents = new Set<string>();
+  private unsubs: (() => void)[] = [];
+
+  constructor() {
+    this.hookBus = getEventSystem().hooks;
+  }
 
   /**
    * Register a handler for a client event
    */
   handle<K extends keyof ClientEvents>(
     event: K,
-    handler: ClientEventHandler_Fn<ClientEvents[K]>
+    handler: (data: ClientEvents[K], sessionId?: string) => void | Promise<void>
   ): void {
-    this.handlers.set(event, handler as ClientEventHandler_Fn);
+    const hookName = `client:${toDot(event)}`;
+    this.registeredEvents.add(event);
+    const unsub = this.hookBus.tapAny(hookName, async (ctx) => {
+      const { sessionId, ...data } = ctx.data as Record<string, unknown>;
+      await handler(data as ClientEvents[K], sessionId as string | undefined);
+    });
+    this.unsubs.push(unsub);
   }
 
   /**
@@ -129,19 +128,27 @@ export class ClientEventHandler {
     data: ClientEvents[K],
     sessionId?: string
   ): Promise<void> {
-    const handler = this.handlers.get(event);
-    if (handler) {
-      await handler(data, sessionId);
-    } else {
-      console.warn(`No handler registered for client event: ${event}`);
-    }
+    const hookName = `client:${toDot(event)}`;
+    const payload = { ...data, sessionId } as Record<string, unknown>;
+    await this.hookBus.callAny(hookName, payload);
   }
 
   /**
    * Check if a handler exists
    */
   has<K extends keyof ClientEvents>(event: K): boolean {
-    return this.handlers.has(event);
+    return this.registeredEvents.has(event);
+  }
+
+  /**
+   * Cleanup all registered handlers
+   */
+  clear(): void {
+    for (const unsub of this.unsubs) {
+      unsub();
+    }
+    this.unsubs = [];
+    this.registeredEvents.clear();
   }
 }
 

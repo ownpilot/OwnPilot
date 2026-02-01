@@ -17,6 +17,9 @@ import type {
   ConfigServiceDefinition,
   ConfigEntry,
 } from '@ownpilot/core';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('ConfigServicesRepo');
 
 // =============================================================================
 // ROW TYPES (database representation)
@@ -229,7 +232,7 @@ export class ConfigServicesRepository extends BaseRepository {
    */
   getByName(name: string): ConfigServiceDefinition | null {
     if (!cacheInitialized) {
-      console.warn(`[ConfigServices] Cache not initialized, returning null for: ${name}`);
+      log.warn(`[ConfigServices] Cache not initialized, returning null for: ${name}`);
       return null;
     }
     return servicesCache.get(name) ?? null;

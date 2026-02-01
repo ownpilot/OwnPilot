@@ -17,6 +17,9 @@ import type { ConfigFieldDefinition } from '@ownpilot/core';
 import type { ApiResponse } from '../types/index.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Plugins');
 
 export const pluginsRoutes = new Hono();
 
@@ -454,7 +457,7 @@ pluginsRoutes.put('/:id/settings', async (c) => {
     try {
       await plugin.lifecycle.onConfigChange(mergedSettings);
     } catch (err) {
-      console.error(`[Plugins] onConfigChange hook failed for ${id}:`, err);
+      log.error(`onConfigChange hook failed for ${id}:`, err);
     }
   }
 
