@@ -15,6 +15,7 @@ import {
   createRateLimitMiddleware,
   errorHandler,
   notFoundHandler,
+  auditMiddleware,
 } from './middleware/index.js';
 import {
   healthRoutes,
@@ -123,6 +124,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   if (fullConfig.auth && fullConfig.auth.type !== 'none') {
     app.use('/api/v1/*', createAuthMiddleware(fullConfig.auth));
   }
+
+  // Audit logging (fire-and-forget, logs method/path/status/duration)
+  app.use('/api/*', auditMiddleware);
 
   // Mount routes
   app.route('/health', healthRoutes);

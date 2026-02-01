@@ -11,3 +11,4 @@ export {
   stopAllRateLimiters,
 } from './rate-limit.js';
 export { errorHandler, notFoundHandler, ErrorCodes } from './error-handler.js';
+export { auditMiddleware } from './audit.js';
