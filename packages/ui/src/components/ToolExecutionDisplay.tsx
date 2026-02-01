@@ -15,7 +15,8 @@ import { CodeBlock } from './CodeBlock';
 interface ToolCall {
   id: string;
   name: string;
-  arguments: Record<string, any>;
+  arguments: Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic tool output (string | object)
   result?: any;
   status?: 'pending' | 'running' | 'success' | 'error';
   duration?: number;
@@ -157,6 +158,7 @@ function ToolCallCard({ toolCall, onRerun }: ToolCallCardProps) {
 }
 
 interface ToolResultDisplayProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic tool output (string | object)
   result: any;
   toolName: string;
 }

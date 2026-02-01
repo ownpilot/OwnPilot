@@ -68,7 +68,7 @@ export function GoalsPage() {
       }
 
       const data = await goalsApi.list(params);
-      setGoals((data as any).goals);
+      setGoals(data.goals as Goal[]);
     } catch (err) {
       console.error('Failed to fetch goals:', err);
     } finally {
@@ -218,7 +218,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
       setLoadingSteps(true);
       goalsApi.steps(goal.id)
         .then((data) => {
-          setSteps((data as any).steps);
+          setSteps(data.steps as GoalStep[]);
         })
         .catch(console.error)
         .finally(() => setLoadingSteps(false));

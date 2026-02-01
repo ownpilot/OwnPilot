@@ -113,7 +113,7 @@ export function PlansPage() {
   const fetchPlanHistory = async (planId: string) => {
     try {
       const data = await plansApi.history(planId);
-      setPlanHistory((data as any).history);
+      setPlanHistory(data.history as PlanHistoryEntry[]);
       setHistoryPlanId(planId);
     } catch (err) {
       console.error('Failed to fetch plan history:', err);
@@ -128,7 +128,7 @@ export function PlansPage() {
       }
 
       const data = await plansApi.list(params);
-      setPlans((data as any).plans);
+      setPlans(data.plans as Plan[]);
     } catch (err) {
       console.error('Failed to fetch plans:', err);
     } finally {
@@ -342,7 +342,7 @@ function PlanItem({
       setLoadingSteps(true);
       plansApi.steps(plan.id)
         .then((data) => {
-          setSteps((data as any).steps);
+          setSteps(data.steps as PlanStep[]);
         })
         .catch(console.error)
         .finally(() => setLoadingSteps(false));
@@ -355,7 +355,7 @@ function PlanItem({
       const interval = setInterval(() => {
         plansApi.steps(plan.id)
           .then((data) => {
-            setSteps((data as any).steps);
+            setSteps(data.steps as PlanStep[]);
           })
           .catch(console.error);
       }, 2000);

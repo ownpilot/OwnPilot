@@ -42,7 +42,7 @@ interface ToolPickerProps {
 
 // --- Tab definitions ---
 
-const TABS: { id: TabId; label: string; icon: React.ComponentType<any> }[] = [
+const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'tools', label: 'Tools', icon: Wrench },
   { id: 'custom-data', label: 'Custom Data', icon: Table },
   { id: 'builtin-data', label: 'Built-in Data', icon: Database },

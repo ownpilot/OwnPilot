@@ -49,7 +49,7 @@ export function MemoriesPage() {
       }
 
       const data = await memoriesApi.list(params);
-      setMemories((data as any).memories);
+      setMemories(data.memories as Memory[]);
     } catch (err) {
       console.error('Failed to fetch memories:', err);
     } finally {

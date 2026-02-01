@@ -89,19 +89,15 @@ export function SystemPage() {
         systemApi.databaseStats().catch(() => null),
       ]);
 
-      // healthData is already unwrapped (no envelope)
-      const health = healthData as any;
-      setSandboxStatus(health.sandbox);
-      setDatabaseStatus(health.database);
-      setSystemVersion(health.version);
-      setSystemUptime(health.uptime);
+      setSandboxStatus((healthData.sandbox as unknown as SandboxStatus) ?? null);
+      setDatabaseStatus((healthData.database as unknown as DatabaseStatus) ?? null);
+      setSystemVersion(healthData.version);
+      setSystemUptime(healthData.uptime);
 
-      // dbStatusData is already unwrapped
-      const dbStatus = dbStatusData as any;
-      setBackups(dbStatus.backups || []);
+      setBackups((dbStatusData.backups as unknown as BackupInfo[]) || []);
 
       if (statsData) {
-        setDbStats(statsData as any);
+        setDbStats(statsData as unknown as DatabaseStats);
       }
     } catch (err) {
       console.error('Failed to load system status:', err);
@@ -127,12 +123,12 @@ export function SystemPage() {
 
       // Poll for status
       const pollStatus = async () => {
-        const statusData = await systemApi.databaseOperationStatus() as any;
+        const statusData = await systemApi.databaseOperationStatus();
 
         setDbOperationOutput(statusData.output || []);
 
         if (!statusData.isRunning) {
-          setDbOperationResult(statusData.lastResult || 'failure');
+          setDbOperationResult((statusData.lastResult as 'success' | 'failure') || 'failure');
           setDbOperationRunning(false);
           loadSystemStatus(); // Refresh
           return;
