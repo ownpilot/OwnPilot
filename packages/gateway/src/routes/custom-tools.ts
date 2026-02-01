@@ -25,6 +25,7 @@ import {
   registerToolConfigRequirements,
   unregisterDependencies,
 } from '../services/api-service-registrar.js';
+import { getUserId } from './helpers.js';
 
 export const customToolsRoutes = new Hono();
 
@@ -36,13 +37,6 @@ const dynamicRegistry = createDynamicToolRegistry(ALL_TOOLS);
  */
 export function getCustomToolDynamicRegistry() {
   return dynamicRegistry;
-}
-
-/**
- * Helper to get userId from context
- */
-function getUserId(c: any): string {
-  return c.get('userId') ?? 'default';
 }
 
 // Reference to shared registry — set by tool-executor.ts during initialization

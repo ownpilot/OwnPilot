@@ -28,6 +28,7 @@ import {
 } from '@ownpilot/core';
 import { hasApiKey, getApiKey } from './settings.js';
 import { getLog } from '../services/log.js';
+import { getUserId } from './helpers.js';
 
 const log = getLog('ModelConfigs');
 
@@ -72,10 +73,6 @@ interface MergedProvider {
 // =============================================================================
 // Helper Functions
 // =============================================================================
-
-function getUserId(c: { req: { query: (key: string) => string | undefined } }): string {
-  return c.req.query('userId') || 'default';
-}
 
 /**
  * Check if a provider has an API key configured (in database or environment)
@@ -1032,7 +1029,8 @@ modelConfigsRoutes.post('/sync/reset', async (c) => {
     const { fileURLToPath } = await import('url');
 
     // 1. Clear database records first
-    const dbResult = await modelConfigsRepo.fullReset('default');
+    const userId = getUserId(c);
+    const dbResult = await modelConfigsRepo.fullReset(userId);
 
     // 2. Delete all JSON config files
     const __filename = fileURLToPath(import.meta.url);
