@@ -27,15 +27,25 @@ export const autonomyApi = {
 
 export const systemApi = {
   health: () =>
-    apiClient.get<{ status: string; version: string; uptime: number; checks: Array<Record<string, unknown>> }>(
-      '/health',
+    apiClient.get<{
+      status: string;
+      version: string;
+      uptime: number;
+      checks: Array<Record<string, unknown>>;
+      sandbox?: Record<string, unknown>;
+      database?: Record<string, unknown>;
+    }>('/health'),
+  databaseStatus: () =>
+    apiClient.get<{ backups: Array<Record<string, unknown>>; [key: string]: unknown }>(
+      '/database/status',
     ),
-  databaseStatus: () => apiClient.get<Record<string, unknown>>('/database/status'),
   databaseStats: () => apiClient.get<Record<string, unknown>>('/database/stats'),
   databaseOperation: (endpoint: string, body?: Record<string, unknown>) =>
     apiClient.post<Record<string, unknown>>(`/database/${endpoint}`, body),
   databaseOperationStatus: () =>
-    apiClient.get<Record<string, unknown>>('/database/operation/status'),
+    apiClient.get<{ output: string[]; isRunning: boolean; lastResult?: string }>(
+      '/database/operation/status',
+    ),
   deleteBackup: (filename: string) =>
     apiClient.delete<void>(`/database/backup/${filename}`),
 };
@@ -68,7 +78,8 @@ export const pluginsApi = {
 // ---- Workspaces ----
 
 export const workspacesApi = {
-  list: () => apiClient.get<Array<Record<string, unknown>>>('/workspaces'),
+  list: () =>
+    apiClient.get<{ workspaces: Array<Record<string, unknown>> }>('/workspaces'),
   create: (name: string) =>
     apiClient.post<Record<string, unknown>>('/workspaces', { name }),
   delete: (id: string) => apiClient.delete<void>(`/workspaces/${id}`),
@@ -107,7 +118,10 @@ export const customDataApi = {
 export const dashboardApi = {
   data: () => apiClient.get<Record<string, unknown>>('/dashboard/data'),
   briefing: (options?: RequestOptions) =>
-    apiClient.get<Record<string, unknown>>('/dashboard/briefing', options),
+    apiClient.get<{ aiBriefing?: Record<string, unknown>; error?: string }>(
+      '/dashboard/briefing',
+      options,
+    ),
   /** Returns raw Response for SSE stream parsing */
   briefingStream: (options?: StreamOptions) =>
     apiClient.stream('/dashboard/briefing/stream', {}, options),

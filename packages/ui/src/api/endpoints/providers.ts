@@ -28,5 +28,7 @@ export const providersApi = {
     apiClient.patch<void>(`/providers/${id}/toggle`, { enabled }),
   resetConfig: (id: string) => apiClient.delete<void>(`/providers/${id}/config`),
   models: (id: string) =>
-    apiClient.get<Record<string, unknown>>(`/providers/${id}/models`),
+    apiClient.get<{ models: Array<{ id: string; name: string }>; providerName?: string }>(
+      `/providers/${id}/models`,
+    ),
 };

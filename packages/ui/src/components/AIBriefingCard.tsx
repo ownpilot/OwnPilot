@@ -90,12 +90,12 @@ export function AIBriefingCard() {
         const modelPromises = configuredProviders.map(async (provider) => {
           try {
             const modelsData = await providersApi.models(provider.id);
-            const models = (modelsData as any).models;
+            const { models } = modelsData;
             if (models) {
               // Take first 5 models per provider for briefing dropdown
-              return models.slice(0, 5).map((model: { id: string; name: string }) => ({
+              return models.slice(0, 5).map((model) => ({
                 provider: provider.id,
-                providerName: (modelsData as any).providerName || provider.name,
+                providerName: modelsData.providerName || provider.name,
                 model: model.id,
                 modelName: model.name,
               }));
@@ -217,10 +217,10 @@ export function AIBriefingCard() {
           params: { provider: selectedModel.provider, model: selectedModel.model },
         });
 
-        if ((data as any).aiBriefing) {
-          setBriefing((data as any).aiBriefing);
-        } else if ((data as any).error) {
-          setError((data as any).error);
+        if (data.aiBriefing) {
+          setBriefing(data.aiBriefing as unknown as AIBriefing);
+        } else if (data.error) {
+          setError(data.error);
         }
       }
     } catch (err) {

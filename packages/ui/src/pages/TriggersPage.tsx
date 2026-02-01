@@ -87,7 +87,7 @@ export function TriggersPage() {
       }
 
       const data = await triggersApi.list(params);
-      setTriggers((data as any).triggers);
+      setTriggers(data.triggers as Trigger[]);
     } catch (err) {
       console.error('Failed to fetch triggers:', err);
     } finally {
@@ -102,7 +102,7 @@ export function TriggersPage() {
   const fetchHistory = async (triggerId: string) => {
     try {
       const data = await triggersApi.history(triggerId);
-      setHistory((data as any).history);
+      setHistory(data.history as TriggerHistoryEntry[]);
       setShowHistory(triggerId);
     } catch (err) {
       console.error('Failed to fetch history:', err);

@@ -61,12 +61,12 @@ export const calendarApi = {
 
 export const goalsApi = {
   list: (params?: Record<string, string>) =>
-    apiClient.get<Record<string, unknown>>('/goals', { params }),
+    apiClient.get<{ goals: unknown[] }>('/goals', { params }),
   delete: (id: string) => apiClient.delete<void>(`/goals/${id}`),
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.patch<Record<string, unknown>>(`/goals/${id}`, data),
   steps: (id: string) =>
-    apiClient.get<Record<string, unknown>>(`/goals/${id}/steps`),
+    apiClient.get<{ steps: unknown[] }>(`/goals/${id}/steps`),
   updateStep: (goalId: string, stepId: string, data: Record<string, unknown>) =>
     apiClient.patch<Record<string, unknown>>(`/goals/${goalId}/steps/${stepId}`, data),
 };
@@ -75,7 +75,7 @@ export const goalsApi = {
 
 export const memoriesApi = {
   list: (params?: Record<string, string>) =>
-    apiClient.get<Record<string, unknown>>('/memories', { params }),
+    apiClient.get<{ memories: unknown[] }>('/memories', { params }),
   delete: (id: string) => apiClient.delete<void>(`/memories/${id}`),
 };
 
@@ -83,16 +83,16 @@ export const memoriesApi = {
 
 export const plansApi = {
   list: (params?: Record<string, string>) =>
-    apiClient.get<Record<string, unknown>>('/plans', { params }),
+    apiClient.get<{ plans: unknown[] }>('/plans', { params }),
   delete: (id: string) => apiClient.delete<void>(`/plans/${id}`),
   action: (id: string, endpoint: string) =>
     apiClient.post<Record<string, unknown>>(`/plans/${id}/${endpoint}`),
   rollback: (id: string) =>
     apiClient.post<Record<string, unknown>>(`/plans/${id}/rollback`),
   history: (id: string) =>
-    apiClient.get<Record<string, unknown>>(`/plans/${id}/history`),
+    apiClient.get<{ history: unknown[] }>(`/plans/${id}/history`),
   steps: (id: string) =>
-    apiClient.get<Record<string, unknown>>(`/plans/${id}/steps`),
+    apiClient.get<{ steps: unknown[] }>(`/plans/${id}/steps`),
   addStep: (id: string, data: Record<string, unknown>) =>
     apiClient.post<Record<string, unknown>>(`/plans/${id}/steps`, data),
 };
@@ -101,9 +101,9 @@ export const plansApi = {
 
 export const triggersApi = {
   list: (params?: Record<string, string>) =>
-    apiClient.get<Record<string, unknown>>('/triggers', { params }),
+    apiClient.get<{ triggers: unknown[] }>('/triggers', { params }),
   history: (id: string) =>
-    apiClient.get<Record<string, unknown>>(`/triggers/${id}/history`),
+    apiClient.get<{ history: unknown[] }>(`/triggers/${id}/history`),
   delete: (id: string) => apiClient.delete<void>(`/triggers/${id}`),
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.patch<Record<string, unknown>>(`/triggers/${id}`, data),

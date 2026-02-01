@@ -42,8 +42,8 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
   const fetchWorkspaces = async () => {
     try {
       const data = await workspacesApi.list();
-      const list = (data as any).workspaces ?? data;
-      setWorkspaces(Array.isArray(list) ? list : []);
+      const list = data.workspaces as unknown as WorkspaceInfo[];
+      setWorkspaces(list ?? []);
       // Auto-select first workspace if none selected
       if (!selectedWorkspaceId && Array.isArray(list) && list.length > 0) {
         onWorkspaceChange(list[0].id);
@@ -63,7 +63,7 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
     if (!newWorkspaceName.trim()) return;
     setIsCreating(true);
     try {
-      const created = await workspacesApi.create(newWorkspaceName.trim()) as any;
+      const created = await workspacesApi.create(newWorkspaceName.trim()) as unknown as WorkspaceInfo;
       setWorkspaces([created, ...workspaces]);
       onWorkspaceChange(created.id);
       setShowCreateModal(false);
