@@ -17,6 +17,9 @@ import {
   type AIProvider,
   type BudgetConfig,
 } from '@ownpilot/core';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Costs');
 
 export const costRoutes = new Hono();
 
@@ -28,7 +31,11 @@ const budgetManager = new BudgetManager(usageTracker);
 
 // Initialize tracker
 (async () => {
-  await usageTracker.initialize();
+  try {
+    await usageTracker.initialize();
+  } catch (error) {
+    log.error('Failed to initialize usage tracker', { error });
+  }
 })();
 
 /**

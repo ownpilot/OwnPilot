@@ -8,6 +8,9 @@
 
 import type { WebSocket } from 'ws';
 import type { Session, WSMessage, ServerEvents } from './types.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('SessionManager');
 import {
   hasServiceRegistry,
   getServiceRegistry,
@@ -268,9 +271,17 @@ export class SessionManager {
 
     for (const [id, session] of this.sessions) {
       if (now - session.lastActivityAt.getTime() > maxIdleMs) {
-        session.socket.close(4000, 'Session timeout');
+        try {
+          session.socket.close(4000, 'Session timeout');
+        } catch {
+          // Socket may already be closed — continue cleanup
+        }
         this.sessions.delete(id);
-        svc?.close(id);
+        try {
+          svc?.close(id);
+        } catch (error) {
+          log.debug('Session service close failed', { sessionId: id, error });
+        }
         removed++;
       }
     }

@@ -1319,6 +1319,8 @@ chatRoutes.post('/', async (c) => {
         log.info(`${pending.length} triggers pending/failed`);
       }
     }
+  }).catch((error) => {
+    log.error('Post-chat processing failed', { error: error instanceof Error ? error.message : error });
   });
 
   // Build trace info for response with enhanced debug data
