@@ -193,13 +193,15 @@ async function handleSchedulerNotification(
       }
 
       if (targetChannel) {
-        // For Telegram, we need a chat ID - this would typically come from user preferences
-        // For now, we'll log that we need this configuration
-        log.info(`[Scheduler] Would send notification to ${targetChannel.type}:${targetChannel.id}`);
-        log.info(`[Scheduler] Message: ${message}`);
-
-        // TODO: Store user's preferred chat IDs and send there
-        // await channelManager.send(targetChannel.id, { content: message, channelId: userChatId });
+        try {
+          await channelManager.send(targetChannel.id, {
+            content: message,
+            channelId: targetChannel.id,
+          });
+          log.info(`[Scheduler] Notification sent to ${targetChannel.type}:${targetChannel.id}`);
+        } catch (sendError) {
+          log.warn(`[Scheduler] Failed to send to ${targetChannel.type}:${targetChannel.id}`, sendError);
+        }
       } else {
         log.warn(`[Scheduler] Channel not found or not connected: ${channelId}`);
       }
