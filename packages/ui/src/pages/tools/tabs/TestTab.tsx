@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ToolItem, ToolParams, ToolParamProperty } from '../types';
-import { API_BASE } from '../constants';
+import { toolsApi } from '../../../api';
 
 interface TestTabProps {
   tool: ToolItem;
@@ -57,12 +57,7 @@ export function TestTab({ tool }: TestTabProps) {
     setTestResult(null);
     try {
       const args = buildArgsFromForm();
-      const response = await fetch(`${API_BASE}/${tool.name}/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ arguments: args }),
-      });
-      const data = await response.json();
+      const data = await toolsApi.execute(tool.name, args);
       setTestResult(JSON.stringify(data, null, 2));
     } catch (err) {
       setTestResult(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);

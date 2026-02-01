@@ -291,21 +291,10 @@ function NoteModal({ note, onClose, onSave }: NoteModalProps) {
         category: category.trim() || undefined,
       };
 
-      const url = note ? `/api/v1/notes/${note.id}` : '/api/v1/notes';
-      const method = note ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        onSave();
-      }
-    } catch (err) {
-      console.error('Failed to save note:', err);
+      note ? await notesApi.update(note.id, body) : await notesApi.create(body);
+      onSave();
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsSaving(false);
     }

@@ -161,6 +161,50 @@ export const fileWorkspacesApi = {
     apiClient.post<void>('/file-workspaces/cleanup', { maxAgeDays }),
 };
 
+// ---- Config Services ----
+
+export const configServicesApi = {
+  list: () =>
+    apiClient.get<{ services: Array<Record<string, unknown>>; count: number }>('/config-services'),
+  stats: () => apiClient.get<Record<string, unknown>>('/config-services/stats'),
+  categories: () =>
+    apiClient.get<{ categories: string[] }>('/config-services/categories'),
+  createEntry: (serviceName: string, body: Record<string, unknown>) =>
+    apiClient.post<Record<string, unknown>>(`/config-services/${serviceName}/entries`, body),
+  updateEntry: (serviceName: string, entryId: string, body: Record<string, unknown>) =>
+    apiClient.put<Record<string, unknown>>(
+      `/config-services/${serviceName}/entries/${entryId}`,
+      body,
+    ),
+  deleteEntry: (serviceName: string, entryId: string) =>
+    apiClient.delete<void>(`/config-services/${serviceName}/entries/${entryId}`),
+  setDefault: (serviceName: string, entryId: string) =>
+    apiClient.put<void>(`/config-services/${serviceName}/entries/${entryId}/default`),
+};
+
+// ---- Channels ----
+
+export const channelsApi = {
+  list: () =>
+    apiClient.get<{
+      channels: Array<Record<string, unknown>>;
+      summary: { total: number; connected: number; disconnected: number };
+      availableTypes: string[];
+    }>('/channels'),
+  create: (body: { id: string; type: string; name: string; config: Record<string, unknown> }) =>
+    apiClient.post<Record<string, unknown>>('/channels', body),
+  send: (channelId: string, body: Record<string, unknown>) =>
+    apiClient.post<Record<string, unknown>>(`/channels/${channelId}/send`, body),
+  inbox: (params?: { limit?: number; channelType?: string }) =>
+    apiClient.get<{
+      messages: Array<Record<string, unknown>>;
+      total: number;
+      unreadCount: number;
+    }>('/channels/messages/inbox', { params: params as Record<string, string> }),
+  markRead: (messageId: string) =>
+    apiClient.post<void>(`/channels/messages/${messageId}/read`),
+};
+
 // ---- Expenses ----
 
 export const expensesApi = {

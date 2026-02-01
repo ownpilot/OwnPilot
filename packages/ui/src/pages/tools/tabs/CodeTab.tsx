@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CodeBlock } from '../../../components/CodeBlock';
 import type { ToolItem } from '../types';
-import { API_BASE } from '../constants';
+import { toolsApi } from '../../../api';
 
 interface CodeTabProps {
   tool: ToolItem;
@@ -19,13 +19,12 @@ export function CodeTab({ tool }: CodeTabProps) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/${tool.name}/source`);
-        const data = await res.json();
+        const data = await toolsApi.source(tool.name);
         if (cancelled) return;
-        if (data.success && data.data?.source) {
-          setSourceCode(data.data.source);
+        if (data.source) {
+          setSourceCode(data.source);
         } else {
-          setError(data.error?.message || 'Source code not available for this tool.');
+          setError('Source code not available for this tool.');
         }
       } catch {
         if (!cancelled) setError('Failed to load source code.');

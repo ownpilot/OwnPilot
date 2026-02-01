@@ -318,21 +318,13 @@ function ContactModal({ contact, onClose, onSave }: ContactModalProps) {
         isFavorite,
       };
 
-      const url = contact ? `/api/v1/contacts/${contact.id}` : '/api/v1/contacts';
-      const method = contact ? 'PATCH' : 'POST';
+      contact
+        ? await contactsApi.update(contact.id, body)
+        : await contactsApi.create(body);
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        onSave();
-      }
-    } catch (err) {
-      console.error('Failed to save contact:', err);
+      onSave();
+    } catch {
+      // handled by typed API client
     } finally {
       setIsSaving(false);
     }

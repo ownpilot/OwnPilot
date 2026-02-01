@@ -22,6 +22,8 @@ export {
   pluginsApi,
   workspacesApi,
   customDataApi,
+  configServicesApi,
+  channelsApi,
   dashboardApi,
   mediaSettingsApi,
   modelConfigsApi,

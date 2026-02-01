@@ -279,21 +279,10 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
         category: category.trim() || undefined,
       };
 
-      const url = task ? `/api/v1/tasks/${task.id}` : '/api/v1/tasks';
-      const method = task ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        onSave();
-      }
-    } catch (err) {
-      console.error('Failed to save task:', err);
+      task ? await tasksApi.update(task.id, body) : await tasksApi.create(body);
+      onSave();
+    } catch {
+      // Task save failed — handled silently
     } finally {
       setIsSaving(false);
     }

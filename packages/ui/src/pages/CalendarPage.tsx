@@ -306,21 +306,12 @@ function EventModal({ event, defaultDate, onClose, onSave }: EventModalProps) {
         color,
       };
 
-      const url = event ? `/api/v1/calendar/${event.id}` : '/api/v1/calendar';
-      const method = event ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        onSave();
-      }
-    } catch (err) {
-      console.error('Failed to save event:', err);
+      event
+        ? await calendarApi.update(event.id, body)
+        : await calendarApi.create(body);
+      onSave();
+    } catch {
+      // Error is handled by the global API client error callback
     } finally {
       setIsSaving(false);
     }

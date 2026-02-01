@@ -7,8 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Inbox, Telegram, Discord, Slack, Globe, RefreshCw, Send, Check, X, Plus, Loader, ChevronRight, AlertCircle, Zap } from '../components/icons';
-
-const API_BASE = '/api/v1';
+import { channelsApi } from '../api';
 
 // Message type from channels API
 interface ChannelMessage {
@@ -39,28 +38,7 @@ interface Channel {
   };
 }
 
-// API response types
-interface ChannelsResponse {
-  success: boolean;
-  data: {
-    channels: Channel[];
-    summary: {
-      total: number;
-      connected: number;
-      disconnected: number;
-    };
-    availableTypes: string[];
-  };
-}
-
-interface InboxResponse {
-  success: boolean;
-  data: {
-    messages: ChannelMessage[];
-    total: number;
-    unreadCount: number;
-  };
-}
+// API response types removed — typed API client handles envelope unwrapping
 
 // Channel type config
 interface ChannelTypeInfo {
@@ -368,22 +346,12 @@ function AddChannelModal({
         }
       }
 
-      const response = await fetch(`${API_BASE}/channels`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: `${selectedType.id}-${Date.now()}`,
-          type: selectedType.id,
-          name: formData.name,
-          config: processedConfig,
-        }),
+      await channelsApi.create({
+        id: `${selectedType.id}-${Date.now()}`,
+        type: selectedType.id,
+        name: formData.name,
+        config: processedConfig,
       });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error?.message ?? 'Failed to create channel');
-      }
 
       onCreated();
       onClose();
@@ -582,19 +550,9 @@ export function InboxPage() {
     setTestResult(null);
 
     try {
-      const response = await fetch(`${API_BASE}/channels/${channel.id}/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: `Test message from OwnPilot at ${new Date().toLocaleTimeString()}`,
-        }),
+      await channelsApi.send(channel.id, {
+        content: `Test message from OwnPilot at ${new Date().toLocaleTimeString()}`,
       });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error?.message ?? 'Failed to send test message');
-      }
 
       setTestResult({
         channelId: channel.id,
@@ -617,15 +575,9 @@ export function InboxPage() {
   // Fetch channels from API
   const fetchChannels = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE}/channels`);
-      if (!response.ok) throw new Error('Failed to fetch channels');
-
-      const data: ChannelsResponse = await response.json();
-      if (data.success) {
-        setChannels(data.data.channels);
-      }
-    } catch (err) {
-      console.error('Error fetching channels:', err);
+      const data = await channelsApi.list();
+      setChannels(data.channels as unknown as Channel[]);
+    } catch {
       setError('Failed to load channels');
     }
   }, []);
@@ -633,21 +585,13 @@ export function InboxPage() {
   // Fetch inbox messages from API
   const fetchInbox = useCallback(async (channelType?: string) => {
     try {
-      let url = `${API_BASE}/channels/messages/inbox?limit=100`;
-      if (channelType) {
-        url += `&channelType=${channelType}`;
-      }
-
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch messages');
-
-      const data: InboxResponse = await response.json();
-      if (data.success) {
-        setMessages(data.data.messages);
-        setUnreadCount(data.data.unreadCount);
-      }
-    } catch (err) {
-      console.error('Error fetching inbox:', err);
+      const data = await channelsApi.inbox({
+        limit: 100,
+        ...(channelType && { channelType }),
+      });
+      setMessages(data.messages as unknown as ChannelMessage[]);
+      setUnreadCount(data.unreadCount);
+    } catch {
       setError('Failed to load messages');
     }
   }, []);
@@ -685,18 +629,13 @@ export function InboxPage() {
   // Mark message as read
   const markAsRead = useCallback(async (messageId: string) => {
     try {
-      const response = await fetch(`${API_BASE}/channels/messages/${messageId}/read`, {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        setMessages(prev => prev.map(m =>
-          m.id === messageId ? { ...m, read: true } : m
-        ));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-    } catch (err) {
-      console.error('Error marking message as read:', err);
+      await channelsApi.markRead(messageId);
+      setMessages(prev => prev.map(m =>
+        m.id === messageId ? { ...m, read: true } : m
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch {
+      // Non-critical — optimistic update not reverted
     }
   }, []);
 
@@ -712,17 +651,11 @@ export function InboxPage() {
         selectedMessage.channelType === 'telegram' ? selectedMessage.sender.id : undefined
       );
 
-      const response = await fetch(`${API_BASE}/channels/${selectedMessage.channelId}/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: replyContent,
-          replyToId: selectedMessage.id,
-          ...(chatId && { chatId }),
-        }),
+      await channelsApi.send(selectedMessage.channelId, {
+        content: replyContent,
+        replyToId: selectedMessage.id,
+        ...(chatId && { chatId }),
       });
-
-      if (!response.ok) throw new Error('Failed to send reply');
 
       // Clear reply state
       setReplyContent('');

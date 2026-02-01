@@ -11,6 +11,10 @@ import { apiClient } from '../client';
 export const notesApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<unknown[]>('/notes', { params }),
+  create: (body: Record<string, unknown>) =>
+    apiClient.post<Record<string, unknown>>('/notes', body),
+  update: (id: string, body: Record<string, unknown>) =>
+    apiClient.patch<Record<string, unknown>>(`/notes/${id}`, body),
   delete: (id: string) => apiClient.delete<void>(`/notes/${id}`),
   pin: (id: string) => apiClient.post<void>(`/notes/${id}/pin`),
 };
@@ -20,6 +24,10 @@ export const notesApi = {
 export const bookmarksApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<unknown[]>('/bookmarks', { params }),
+  create: (body: Record<string, unknown>) =>
+    apiClient.post<Record<string, unknown>>('/bookmarks', body),
+  update: (id: string, body: Record<string, unknown>) =>
+    apiClient.patch<Record<string, unknown>>(`/bookmarks/${id}`, body),
   delete: (id: string) => apiClient.delete<void>(`/bookmarks/${id}`),
   favorite: (id: string) => apiClient.post<void>(`/bookmarks/${id}/favorite`),
 };
@@ -29,6 +37,10 @@ export const bookmarksApi = {
 export const contactsApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<unknown[]>('/contacts', { params }),
+  create: (body: Record<string, unknown>) =>
+    apiClient.post<Record<string, unknown>>('/contacts', body),
+  update: (id: string, body: Record<string, unknown>) =>
+    apiClient.patch<Record<string, unknown>>(`/contacts/${id}`, body),
   delete: (id: string) => apiClient.delete<void>(`/contacts/${id}`),
   favorite: (id: string) => apiClient.post<void>(`/contacts/${id}/favorite`),
 };
@@ -38,6 +50,10 @@ export const contactsApi = {
 export const calendarApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<unknown[]>('/calendar', { params }),
+  create: (body: Record<string, unknown>) =>
+    apiClient.post<Record<string, unknown>>('/calendar', body),
+  update: (id: string, body: Record<string, unknown>) =>
+    apiClient.patch<Record<string, unknown>>(`/calendar/${id}`, body),
   delete: (id: string) => apiClient.delete<void>(`/calendar/${id}`),
 };
 

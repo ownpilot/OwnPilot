@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { Cpu, Check, AlertCircle, ExternalLink, Zap, Eye, Code, MessageSquare } from '../components/icons';
+import { modelsApi, providersApi } from '../api';
 
 interface ModelInfo {
   id: string;
@@ -20,15 +21,6 @@ interface ModelInfo {
   recommended?: boolean;
 }
 
-interface ModelsResponse {
-  success: boolean;
-  data: {
-    models: ModelInfo[];
-    configuredProviders: string[];
-    availableProviders: string[];
-  };
-}
-
 interface ProviderInfo {
   id: string;
   name: string;
@@ -36,13 +28,6 @@ interface ProviderInfo {
   color: string;
   isConfigured: boolean;
   configSource?: 'database' | 'environment' | null;
-}
-
-interface ProvidersResponse {
-  success: boolean;
-  data: {
-    providers: ProviderInfo[];
-  };
 }
 
 const CAPABILITY_ICONS: Record<string, { icon: typeof Zap; label: string }> = {
@@ -82,30 +67,20 @@ export function ModelsPage() {
     try {
       setIsLoading(true);
 
-      // Fetch models and providers in parallel
-      const [modelsRes, providersRes] = await Promise.all([
-        fetch('/api/v1/models'),
-        fetch('/api/v1/providers'),
+      const [modelsData, providersData] = await Promise.all([
+        modelsApi.list(),
+        providersApi.list(),
       ]);
 
-      const modelsData: ModelsResponse = await modelsRes.json();
-      const providersData: ProvidersResponse = await providersRes.json();
+      setModels(modelsData.models as ModelInfo[]);
+      setConfiguredProviders(modelsData.configuredProviders);
 
-      if (modelsData.success) {
-        setModels(modelsData.data.models);
-        setConfiguredProviders(modelsData.data.configuredProviders);
+      const infoMap: Record<string, ProviderInfo> = {};
+      for (const provider of providersData.providers) {
+        infoMap[provider.id] = provider as ProviderInfo;
       }
-
-      if (providersData.success) {
-        // Build a lookup map for provider info
-        const infoMap: Record<string, ProviderInfo> = {};
-        for (const provider of providersData.data.providers) {
-          infoMap[provider.id] = provider;
-        }
-        setProviderInfo(infoMap);
-      }
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
+      setProviderInfo(infoMap);
+    } catch {
       setError('Failed to load models');
     } finally {
       setIsLoading(false);
