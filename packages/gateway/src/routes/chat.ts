@@ -43,6 +43,7 @@ import { getOrCreateSessionWorkspace, getSessionWorkspace } from '../workspace/f
 import { parseLimit, parseOffset } from '../utils/index.js';
 import { getCustomDataService } from '../services/custom-data-service.js';
 import { getLog } from '../services/log.js';
+import { getUserId } from './helpers.js';
 
 const log = getLog('Chat');
 
@@ -1006,7 +1007,7 @@ chatRoutes.post('/', async (c) => {
   const startTime = performance.now();
   const requestId = c.get('requestId') ?? crypto.randomUUID();
   const agentId = body.agentId ?? `chat-${provider}`;
-  const userId = 'default'; // TODO: Get from auth context
+  const userId = getUserId(c);
   const workspaceId = body.workspaceId ?? null;
 
   // ── MessageBus Pipeline Path ──────────────────────────────────────────────
@@ -1639,7 +1640,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
  * List all conversations (with pagination)
  */
 chatRoutes.get('/history', async (c) => {
-  const userId = 'default'; // TODO: Get from auth context
+  const userId = getUserId(c);
   const limit = parseLimit(c.req.query('limit'), 50);
   const offset = parseOffset(c.req.query('offset'));
   const search = c.req.query('search');
@@ -1688,7 +1689,7 @@ chatRoutes.get('/history', async (c) => {
  */
 chatRoutes.get('/history/:id', async (c) => {
   const id = c.req.param('id');
-  const userId = 'default'; // TODO: Get from auth context
+  const userId = getUserId(c);
 
   const chatRepo = new ChatRepository(userId);
   const data = await chatRepo.getConversationWithMessages(id);
@@ -1740,7 +1741,7 @@ chatRoutes.get('/history/:id', async (c) => {
  */
 chatRoutes.delete('/history/:id', async (c) => {
   const id = c.req.param('id');
-  const userId = 'default'; // TODO: Get from auth context
+  const userId = getUserId(c);
 
   const chatRepo = new ChatRepository(userId);
   const deleted = await chatRepo.deleteConversation(id);
@@ -1768,7 +1769,7 @@ chatRoutes.delete('/history/:id', async (c) => {
  */
 chatRoutes.patch('/history/:id/archive', async (c) => {
   const id = c.req.param('id');
-  const userId = 'default'; // TODO: Get from auth context
+  const userId = getUserId(c);
   const body = await c.req.json<{ archived: boolean }>();
 
   const chatRepo = new ChatRepository(userId);
@@ -1800,7 +1801,7 @@ chatRoutes.patch('/history/:id/archive', async (c) => {
  * Get request logs
  */
 chatRoutes.get('/logs', async (c) => {
-  const userId = 'default'; // TODO: Get from auth context
+  const userId = getUserId(c);
   const limit = parseLimit(c.req.query('limit'), 100);
   const offset = parseOffset(c.req.query('offset'));
   const type = c.req.query('type') as 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other' | undefined;
@@ -1849,7 +1850,7 @@ chatRoutes.get('/logs', async (c) => {
  * Get log statistics
  */
 chatRoutes.get('/logs/stats', async (c) => {
-  const userId = 'default'; // TODO: Get from auth context
+  const userId = getUserId(c);
   const days = parseInt(c.req.query('days') ?? '7');
 
   const startDate = new Date();
@@ -1875,7 +1876,7 @@ chatRoutes.get('/logs/stats', async (c) => {
  */
 chatRoutes.get('/logs/:id', async (c) => {
   const id = c.req.param('id');
-  const userId = 'default'; // TODO: Get from auth context
+  const userId = getUserId(c);
 
   const logsRepo = new LogsRepository(userId);
   const log = await logsRepo.getLog(id);
@@ -1905,7 +1906,7 @@ chatRoutes.get('/logs/:id', async (c) => {
  * - olderThanDays=N: Clear logs older than N days (default: 30)
  */
 chatRoutes.delete('/logs', async (c) => {
-  const userId = 'default'; // TODO: Get from auth context
+  const userId = getUserId(c);
   const clearAll = c.req.query('all') === 'true';
   const days = parseInt(c.req.query('olderThanDays') ?? '30');
 

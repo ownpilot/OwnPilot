@@ -34,7 +34,7 @@ export const auditMiddleware: MiddlewareHandler = async (c, next) => {
   if (path === '/health' || path.startsWith('/api/v1/health')) return;
 
   audit.logAudit({
-    userId: 'default',
+    userId: c.get('userId') ?? 'default',
     action: `${method} ${path}`,
     resource: 'api',
     resourceId: path,

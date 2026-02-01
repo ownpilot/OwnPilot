@@ -11,6 +11,7 @@ import type { ApiResponse } from '../types/index.js';
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
+import { getUserId } from './helpers.js';
 
 const app = new Hono();
 
@@ -163,7 +164,7 @@ function getProviderIds(): string[] {
  * GET /providers - List all available providers
  */
 app.get('/', async (c) => {
-  const userId = 'default';
+  const userId = getUserId(c);
   const providerIds = getProviderIds();
 
   // Get all user overrides at once for efficiency
@@ -288,7 +289,7 @@ app.get('/categories', (c) => {
  */
 app.get('/:id', async (c) => {
   const id = c.req.param('id');
-  const userId = 'default';
+  const userId = getUserId(c);
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -387,7 +388,7 @@ app.get('/:id/models', (c) => {
  */
 app.get('/:id/config', async (c) => {
   const id = c.req.param('id');
-  const userId = 'default';
+  const userId = getUserId(c);
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -448,7 +449,7 @@ app.get('/:id/config', async (c) => {
  */
 app.put('/:id/config', async (c) => {
   const id = c.req.param('id');
-  const userId = 'default';
+  const userId = getUserId(c);
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -516,7 +517,7 @@ app.put('/:id/config', async (c) => {
  */
 app.delete('/:id/config', async (c) => {
   const id = c.req.param('id');
-  const userId = 'default';
+  const userId = getUserId(c);
 
   const deleted = await modelConfigsRepo.deleteUserProviderConfig(userId, id);
 
@@ -540,7 +541,7 @@ app.delete('/:id/config', async (c) => {
  */
 app.patch('/:id/toggle', async (c) => {
   const id = c.req.param('id');
-  const userId = 'default';
+  const userId = getUserId(c);
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -607,7 +608,7 @@ app.patch('/:id/toggle', async (c) => {
  * GET /providers/overrides - Get all user provider overrides
  */
 app.get('/overrides/all', async (c) => {
-  const userId = 'default';
+  const userId = getUserId(c);
   const overrides = await modelConfigsRepo.listUserProviderConfigs(userId);
 
   const response: ApiResponse = {

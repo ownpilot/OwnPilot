@@ -10,6 +10,7 @@ import { google } from 'googleapis';
 import { settingsRepo, oauthIntegrationsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
 import { getLog } from '../services/log.js';
+import { getUserId } from './helpers.js';
 
 const log = getLog('Auth');
 
@@ -188,7 +189,7 @@ authRoutes.delete('/config/google', async (c) => {
 authRoutes.get('/google/start', async (c) => {
   const service = (c.req.query('service') || 'gmail') as OAuthService;
   const returnUrl = c.req.query('returnUrl') || '/settings';
-  const userId = c.req.query('userId') || 'default';
+  const userId = getUserId(c);
 
   // Validate service
   if (!['gmail', 'calendar', 'drive'].includes(service)) {

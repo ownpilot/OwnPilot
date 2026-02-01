@@ -8,13 +8,12 @@ import { Hono } from 'hono';
 import type { ApiResponse } from '../types/index.js';
 import { DashboardService, briefingCache, type DailyBriefingData, type AIBriefing } from '../services/dashboard.js';
 import { getLog } from '../services/log.js';
+import { getUserId } from './helpers.js';
 
 const log = getLog('Dashboard');
 
 export const dashboardRoutes = new Hono();
 
-// Default user ID (TODO: get from auth)
-const getUserId = () => 'default';
 
 /**
  * GET /briefing - Get the daily briefing with AI summary
@@ -26,7 +25,7 @@ const getUserId = () => 'default';
  * - model: string - Override AI model (default: gpt-4o-mini)
  */
 dashboardRoutes.get('/briefing', async (c) => {
-  const userId = getUserId();
+  const userId = getUserId(c);
   const forceRefresh = c.req.query('refresh') === 'true';
   const aiOnly = c.req.query('aiOnly') === 'true';
   const provider = c.req.query('provider');
@@ -88,7 +87,7 @@ dashboardRoutes.get('/briefing', async (c) => {
  * GET /data - Get raw briefing data without AI summary
  */
 dashboardRoutes.get('/data', async (c) => {
-  const userId = getUserId();
+  const userId = getUserId(c);
   const service = new DashboardService(userId);
 
   try {
@@ -127,7 +126,7 @@ dashboardRoutes.get('/data', async (c) => {
  * POST /briefing/refresh - Force refresh the AI briefing
  */
 dashboardRoutes.post('/briefing/refresh', async (c) => {
-  const userId = getUserId();
+  const userId = getUserId(c);
   const body = await c.req.json<{ provider?: string; model?: string }>().catch(() => ({ provider: undefined, model: undefined }));
 
   const service = new DashboardService(userId);
@@ -179,7 +178,7 @@ dashboardRoutes.post('/briefing/refresh', async (c) => {
  * GET /timeline - Get today's timeline view
  */
 dashboardRoutes.get('/timeline', async (c) => {
-  const userId = getUserId();
+  const userId = getUserId(c);
   const service = new DashboardService(userId);
 
   try {
@@ -277,7 +276,7 @@ dashboardRoutes.get('/timeline', async (c) => {
  * - model: string - AI model (default: gpt-4o-mini)
  */
 dashboardRoutes.get('/briefing/stream', async (c) => {
-  const userId = getUserId();
+  const userId = getUserId(c);
   const provider = c.req.query('provider') ?? 'openai';
   const model = c.req.query('model') ?? 'gpt-4o-mini';
 
@@ -342,7 +341,7 @@ dashboardRoutes.get('/briefing/stream', async (c) => {
  * DELETE /briefing/cache - Clear the briefing cache
  */
 dashboardRoutes.delete('/briefing/cache', async (c) => {
-  const userId = getUserId();
+  const userId = getUserId(c);
   briefingCache.invalidate(userId);
 
   const response: ApiResponse<{ cleared: boolean }> = {

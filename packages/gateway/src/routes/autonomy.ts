@@ -15,6 +15,7 @@ import {
   type ActionCategory,
   type ApprovalDecision,
 } from '../autonomy/index.js';
+import { getUserId } from './helpers.js';
 
 export const autonomyRoutes = new Hono();
 
@@ -26,7 +27,7 @@ export const autonomyRoutes = new Hono();
  * GET /autonomy/config - Get autonomy configuration
  */
 autonomyRoutes.get('/config', (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const manager = getApprovalManager();
   const config = manager.getUserConfig(userId);
 
@@ -49,7 +50,7 @@ autonomyRoutes.get('/config', (c) => {
  * PATCH /autonomy/config - Update autonomy configuration
  */
 autonomyRoutes.patch('/config', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const rawBody = await c.req.json();
 
   // Validate config update body
@@ -75,7 +76,7 @@ autonomyRoutes.patch('/config', async (c) => {
  * POST /autonomy/config/reset - Reset to default configuration
  */
 autonomyRoutes.post('/config/reset', (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const manager = getApprovalManager();
 
   // Reset by setting empty config (will use defaults)
@@ -121,7 +122,7 @@ autonomyRoutes.get('/levels', (c) => {
  * POST /autonomy/level - Set autonomy level
  */
 autonomyRoutes.post('/level', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const body = await c.req.json<{ level: number }>();
 
   if (body.level === undefined || body.level < 0 || body.level > 4) {
@@ -161,7 +162,7 @@ autonomyRoutes.post('/level', async (c) => {
  * POST /autonomy/assess - Assess risk for an action
  */
 autonomyRoutes.post('/assess', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const body = await c.req.json<{
     category: ActionCategory;
     actionType: string;
@@ -212,7 +213,7 @@ autonomyRoutes.post('/assess', async (c) => {
  * GET /autonomy/approvals - Get pending approvals
  */
 autonomyRoutes.get('/approvals', (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const manager = getApprovalManager();
   const pending = manager.getPendingActions(userId);
 
@@ -231,7 +232,7 @@ autonomyRoutes.get('/approvals', (c) => {
  * POST /autonomy/approvals/request - Request approval for an action
  */
 autonomyRoutes.post('/approvals/request', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const body = await c.req.json<{
     category: ActionCategory;
     actionType: string;
@@ -498,7 +499,7 @@ autonomyRoutes.delete('/approvals/:id', (c) => {
  * POST /autonomy/tools/allow - Add tool to allowed list
  */
 autonomyRoutes.post('/tools/allow', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const body = await c.req.json<{ tool: string }>();
 
   if (!body.tool) {
@@ -540,7 +541,7 @@ autonomyRoutes.post('/tools/allow', async (c) => {
  * POST /autonomy/tools/block - Add tool to blocked list
  */
 autonomyRoutes.post('/tools/block', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const body = await c.req.json<{ tool: string }>();
 
   if (!body.tool) {
@@ -582,7 +583,7 @@ autonomyRoutes.post('/tools/block', async (c) => {
  * DELETE /autonomy/tools/:tool - Remove tool from allowed/blocked lists
  */
 autonomyRoutes.delete('/tools/:tool', (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const tool = c.req.param('tool');
 
   const manager = getApprovalManager();
@@ -611,7 +612,7 @@ autonomyRoutes.delete('/tools/:tool', (c) => {
  * DELETE /autonomy/remembered - Clear remembered decisions
  */
 autonomyRoutes.delete('/remembered', (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const manager = getApprovalManager();
   const cleared = manager.clearRememberedDecisions(userId);
 
@@ -634,7 +635,7 @@ autonomyRoutes.delete('/remembered', (c) => {
  * GET /autonomy/budget - Get budget status
  */
 autonomyRoutes.get('/budget', (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const manager = getApprovalManager();
   const config = manager.getUserConfig(userId);
 
@@ -656,7 +657,7 @@ autonomyRoutes.get('/budget', (c) => {
  * PATCH /autonomy/budget - Update budget settings
  */
 autonomyRoutes.patch('/budget', async (c) => {
-  const userId = c.req.query('userId') ?? 'default';
+  const userId = getUserId(c);
   const rawBody = await c.req.json();
 
   // Validate budget update body

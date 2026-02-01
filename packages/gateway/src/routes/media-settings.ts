@@ -12,6 +12,7 @@ import {
   type MediaCapability,
 } from '../db/repositories/index.js';
 import { getLog } from '../services/log.js';
+import { getUserId } from './helpers.js';
 
 const log = getLog('MediaSettings');
 
@@ -110,7 +111,7 @@ function getProvidersWithStatus(capability: MediaCapability): ProviderWithStatus
  * Get all media settings
  */
 mediaSettingsRoutes.get('/', async (c) => {
-  const userId = c.req.query('userId') || 'default';
+  const userId = getUserId(c);
 
   const capabilities: MediaCapability[] = ['image_generation', 'vision', 'tts', 'stt'];
 
@@ -141,7 +142,7 @@ mediaSettingsRoutes.get('/', async (c) => {
  */
 mediaSettingsRoutes.get('/:capability', async (c) => {
   const capability = c.req.param('capability') as MediaCapability;
-  const userId = c.req.query('userId') || 'default';
+  const userId = getUserId(c);
 
   // Validate capability
   if (!CAPABILITY_META[capability]) {
@@ -170,7 +171,7 @@ mediaSettingsRoutes.get('/:capability', async (c) => {
  */
 mediaSettingsRoutes.post('/:capability', async (c) => {
   const capability = c.req.param('capability') as MediaCapability;
-  const userId = c.req.query('userId') || 'default';
+  const userId = getUserId(c);
 
   // Validate capability
   if (!CAPABILITY_META[capability]) {
@@ -261,7 +262,7 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
  */
 mediaSettingsRoutes.delete('/:capability', async (c) => {
   const capability = c.req.param('capability') as MediaCapability;
-  const userId = c.req.query('userId') || 'default';
+  const userId = getUserId(c);
 
   // Validate capability
   if (!CAPABILITY_META[capability]) {
@@ -302,7 +303,7 @@ mediaSettingsRoutes.get('/providers/all', async (c) => {
  * Check which capabilities are configured
  */
 mediaSettingsRoutes.get('/status/summary', async (c) => {
-  const userId = c.req.query('userId') || 'default';
+  const userId = getUserId(c);
   const capabilities: MediaCapability[] = ['image_generation', 'vision', 'tts', 'stt'];
 
   const status = await Promise.all(

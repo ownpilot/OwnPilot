@@ -18,6 +18,7 @@ import {
 } from '@ownpilot/core';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
+import { getUserId } from './helpers.js';
 
 const app = new Hono();
 
@@ -67,7 +68,7 @@ function convertToModelInfo(providerId: string): ModelInfo[] {
  */
 app.get('/', async (c) => {
   const enabledOnly = c.req.query('enabledOnly') !== 'false';
-  const userId = 'default';
+  const userId = getUserId(c);
 
   const allModels: ModelInfo[] = [];
   const configuredProviders: string[] = [];

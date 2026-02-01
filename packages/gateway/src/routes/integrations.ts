@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 import { oauthIntegrationsRepo, settingsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
 import { getLog } from '../services/log.js';
+import { getUserId } from './helpers.js';
 
 const log = getLog('Integrations');
 
@@ -101,7 +102,7 @@ integrationsRoutes.get('/available', async (c) => {
  * List user's connected integrations
  */
 integrationsRoutes.get('/', async (c) => {
-  const userId = c.req.query('userId') || 'default';
+  const userId = getUserId(c);
 
   const integrations = await oauthIntegrationsRepo.listByUser(userId);
 
@@ -163,7 +164,7 @@ integrationsRoutes.get('/:id', async (c) => {
 integrationsRoutes.get('/status/:provider/:service', async (c) => {
   const provider = c.req.param('provider') as OAuthProvider;
   const service = c.req.param('service') as OAuthService;
-  const userId = c.req.query('userId') || 'default';
+  const userId = getUserId(c);
 
   const isConnected = await oauthIntegrationsRepo.isConnected(userId, provider, service);
   const integration = await oauthIntegrationsRepo.getByUserProviderService(userId, provider, service);
@@ -288,7 +289,7 @@ integrationsRoutes.post('/:id/sync', async (c) => {
  * Get integration health/status summary
  */
 integrationsRoutes.get('/health/summary', async (c) => {
-  const userId = c.req.query('userId') || 'default';
+  const userId = getUserId(c);
   const integrations = await oauthIntegrationsRepo.listByUser(userId);
 
   const summary = {
