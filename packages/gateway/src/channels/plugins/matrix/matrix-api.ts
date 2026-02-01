@@ -164,7 +164,9 @@ export class MatrixChannelAPI implements ChannelPluginAPI {
     if (!this.client) return;
     await this.client
       .sendTyping(platformChatId, true, 5000)
-      .catch(() => {});
+      .catch((err: unknown) => {
+        log.debug('[Matrix] Typing indicator failed', { roomId: platformChatId, error: err });
+      });
   }
 
   async editMessage(platformMessageId: string, newText: string): Promise<void> {

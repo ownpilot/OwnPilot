@@ -1411,7 +1411,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
             try {
               lock = await client.getMailboxLock(folder);
             } catch (lockErr) {
-              await client.logout().catch(() => {});
+              await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
               const msg = lockErr instanceof Error ? lockErr.message : String(lockErr);
               return { content: { error: `Failed to open folder "${folder}": ${msg}` }, isError: true };
             }
@@ -1450,7 +1450,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
                 if (attempt < maxRetries && /timeout|reset|closed|ECONNRESET/i.test(msg)) {
                   lastError = fetchErr;
                   lock.release();
-                  await client.logout().catch(() => {});
+                  await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
                   continue;
                 }
                 return { content: { error: `IMAP FETCH failed for "${folder}": ${msg}` }, isError: true };
@@ -1467,7 +1467,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
               };
             } finally {
               lock.release();
-              await client.logout().catch(() => {});
+              await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
             }
           } catch (error) {
             lastError = error;
@@ -1537,7 +1537,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
             try {
               lock = await client.getMailboxLock(folder);
             } catch (lockErr) {
-              await client.logout().catch(() => {});
+              await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
               const msg = lockErr instanceof Error ? lockErr.message : String(lockErr);
               return { content: { error: `Failed to open folder "${folder}": ${msg}` }, isError: true };
             }
@@ -1565,7 +1565,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
                 if (attempt < maxRetries && /timeout|reset|closed|ECONNRESET/i.test(msg)) {
                   lastError = fetchErr;
                   lock.release();
-                  await client.logout().catch(() => {});
+                  await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
                   continue;
                 }
                 return { content: { error: `IMAP FETCH failed for UID ${uid} in "${folder}": ${msg}. The email may have been deleted or moved.` }, isError: true };
@@ -1661,7 +1661,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
               };
             } finally {
               lock.release();
-              await client.logout().catch(() => {});
+              await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
             }
           } catch (error) {
             lastError = error;
@@ -1731,7 +1731,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
             try {
               lock = await client.getMailboxLock(folder);
             } catch (lockErr) {
-              await client.logout().catch(() => {});
+              await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
               const msg = lockErr instanceof Error ? lockErr.message : String(lockErr);
               return { content: { error: `Failed to open folder "${folder}": ${msg}` }, isError: true };
             }
@@ -1750,7 +1750,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
                 if (attempt < maxRetries && /timeout|reset|closed|ECONNRESET/i.test(msg)) {
                   lastError = searchErr;
                   lock.release();
-                  await client.logout().catch(() => {});
+                  await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
                   continue;
                 }
                 return { content: { error: `IMAP SEARCH failed in "${folder}": ${msg}` }, isError: true };
@@ -1789,7 +1789,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
               };
             } finally {
               lock.release();
-              await client.logout().catch(() => {});
+              await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
             }
           } catch (error) {
             lastError = error;
@@ -1857,7 +1857,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
             try {
               lock = await client.getMailboxLock(folder);
             } catch (lockErr) {
-              await client.logout().catch(() => {});
+              await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
               const msg = lockErr instanceof Error ? lockErr.message : String(lockErr);
               return { content: { error: `Failed to open folder "${folder}": ${msg}` }, isError: true };
             }
@@ -1888,7 +1888,7 @@ function buildEmailAssistantPlugin(): BuiltinPluginEntry {
               }
             } finally {
               lock.release();
-              await client.logout().catch(() => {});
+              await client.logout().catch((err: unknown) => { log.debug('IMAP logout cleanup failed', { error: err }); });
             }
           } catch (error) {
             lastError = error;

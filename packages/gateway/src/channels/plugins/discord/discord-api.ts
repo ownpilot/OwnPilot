@@ -199,7 +199,9 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
         method: 'POST',
         headers: { Authorization: `Bot ${this.config.bot_token}` },
       }
-    ).catch(() => {});
+    ).catch((err: unknown) => {
+      log.debug('[Discord] Typing indicator failed', { chatId: platformChatId, error: err });
+    });
   }
 
   async editMessage(platformMessageId: string, newText: string): Promise<void> {

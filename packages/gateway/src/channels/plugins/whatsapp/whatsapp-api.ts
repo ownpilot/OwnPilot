@@ -179,7 +179,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     const jid = platformChatId.includes('@')
       ? platformChatId
       : `${platformChatId}@s.whatsapp.net`;
-    await this.socket.sendPresenceUpdate('composing', jid).catch(() => {});
+    await this.socket.sendPresenceUpdate('composing', jid).catch((err: unknown) => {
+      log.debug('[WhatsApp] Typing indicator failed', { jid, error: err });
+    });
   }
 
   // --------------------------------------------------------------------------

@@ -168,7 +168,9 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
 
   async sendTyping(platformChatId: string): Promise<void> {
     if (!this.bot) return;
-    await this.bot.api.sendChatAction(platformChatId, 'typing').catch(() => {});
+    await this.bot.api.sendChatAction(platformChatId, 'typing').catch((err: unknown) => {
+      log.debug('[Telegram] Typing indicator failed', { chatId: platformChatId, error: err });
+    });
   }
 
   async editMessage(platformMessageId: string, newText: string): Promise<void> {

@@ -305,4 +305,7 @@ async function main() {
 }
 
 // Run server
-main().catch(console.error);
+main().catch((err) => {
+  log.error('Fatal: server startup failed', { error: err instanceof Error ? err.message : err, stack: err instanceof Error ? err.stack : undefined });
+  process.exit(1);
+});

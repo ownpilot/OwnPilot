@@ -467,9 +467,11 @@ export class ChannelServiceImpl implements IChannelService {
       const api = this.getChannel(message.channelPluginId);
       if (!api) return;
 
-      // Send typing indicator
+      // Send typing indicator (best-effort)
       if (api.sendTyping) {
-        await api.sendTyping(message.platformChatId).catch(() => {});
+        await api.sendTyping(message.platformChatId).catch((err) => {
+          log.debug('Typing indicator failed', { plugin: message.channelPluginId, error: err });
+        });
       }
 
       let responseText: string;
