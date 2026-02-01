@@ -110,6 +110,7 @@ export class ChannelServiceImpl implements IChannelService {
   private readonly messagesRepo: ChannelMessagesRepository;
   private readonly verificationService: ChannelVerificationService;
   private readonly pluginRegistry: PluginRegistry;
+  private unsubscribes: Array<() => void> = [];
 
   constructor(
     pluginRegistry: PluginRegistry,
@@ -660,19 +661,31 @@ export class ChannelServiceImpl implements IChannelService {
       const eventBus = getEventBus();
 
       // Listen for incoming messages from all channel plugins
-      eventBus.on(ChannelEvents.MESSAGE_RECEIVED, (event: any) => {
+      const unsub = eventBus.on(ChannelEvents.MESSAGE_RECEIVED, (event: any) => {
         const data = event.data as ChannelMessageReceivedData;
         // Process asynchronously - don't block the event handler
         this.processIncomingMessage(data.message).catch((error) => {
           log.error('Failed to process incoming message', { error });
         });
       });
+      this.unsubscribes.push(unsub);
 
       log.info('Subscribed to channel events');
     } catch {
       // EventBus not initialized yet - will be wired later
       log.info('EventBus not ready, events will be subscribed later');
     }
+  }
+
+  /**
+   * Dispose event listeners. Call during shutdown to prevent leaks.
+   */
+  dispose(): void {
+    for (const unsub of this.unsubscribes) {
+      unsub();
+    }
+    this.unsubscribes = [];
+    log.info('ChannelService disposed');
   }
 }
 
