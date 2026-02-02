@@ -225,17 +225,7 @@ databaseRoutes.get('/status', async (c) => {
  */
 databaseRoutes.post('/backup', async (c) => {
   if (operationStatus.isRunning) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.OPERATION_IN_PROGRESS,
-        message: `A ${operationStatus.operation} operation is already in progress`,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 409);
+    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
   }
 
   const config = getDatabaseConfig();
@@ -250,17 +240,7 @@ databaseRoutes.post('/backup', async (c) => {
   }
 
   if (!connected) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.POSTGRES_NOT_CONNECTED,
-        message: 'PostgreSQL is not connected.',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 400);
+    return apiError(c, { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected.' }, 400);
   }
 
   const body: { format?: 'sql' | 'custom' } = await c.req.json().catch(() => ({}));
@@ -333,18 +313,11 @@ databaseRoutes.post('/backup', async (c) => {
     log.error(`Error: ${err.message}`);
   });
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       message: 'Backup started',
       filename,
       format,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  }, 202);
+    }, 202);
 });
 
 /**
@@ -352,50 +325,20 @@ databaseRoutes.post('/backup', async (c) => {
  */
 databaseRoutes.post('/restore', async (c) => {
   if (operationStatus.isRunning) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.OPERATION_IN_PROGRESS,
-        message: `A ${operationStatus.operation} operation is already in progress`,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 409);
+    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
   }
 
   const body: { filename: string } = await c.req.json().catch(() => ({ filename: '' }));
 
   if (!body.filename) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.MISSING_FILENAME,
-        message: 'Backup filename is required',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 400);
+    return apiError(c, { code: ERROR_CODES.MISSING_FILENAME, message: 'Backup filename is required' }, 400);
   }
 
   const config = getDatabaseConfig();
   const backupPath = join(getBackupDir(), basename(body.filename)); // Sanitize path
 
   if (!existsSync(backupPath)) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.BACKUP_NOT_FOUND,
-        message: `Backup file not found: ${body.filename}`,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.BACKUP_NOT_FOUND, message: `Backup file not found: ${body.filename}` }, 404);
   }
 
   operationStatus = {
@@ -465,17 +408,10 @@ databaseRoutes.post('/restore', async (c) => {
     log.error(`Error: ${err.message}`);
   });
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       message: 'Restore started',
       filename: body.filename,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  }, 202);
+    }, 202);
 });
 
 /**
@@ -486,41 +422,14 @@ databaseRoutes.delete('/backup/:filename', (c) => {
   const backupPath = join(getBackupDir(), basename(filename)); // Sanitize path
 
   if (!existsSync(backupPath)) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.BACKUP_NOT_FOUND,
-        message: `Backup file not found: ${filename}`,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.BACKUP_NOT_FOUND, message: `Backup file not found: ${filename}` }, 404);
   }
 
   try {
     unlinkSync(backupPath);
-    return c.json({
-      success: true,
-      data: { message: `Deleted backup: ${filename}` },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    });
+    return apiResponse(c, { message: `Deleted backup: ${filename}` });
   } catch (err) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.DELETE_FAILED,
-        message: err instanceof Error ? err.message : 'Failed to delete backup',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: err instanceof Error ? err.message : 'Failed to delete backup' }, 500);
   }
 });
 
@@ -529,17 +438,7 @@ databaseRoutes.delete('/backup/:filename', (c) => {
  */
 databaseRoutes.post('/maintenance', async (c) => {
   if (operationStatus.isRunning) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.OPERATION_IN_PROGRESS,
-        message: `A ${operationStatus.operation} operation is already in progress`,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 409);
+    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
   }
 
   const body: { type?: 'vacuum' | 'analyze' | 'full' } = await c.req.json().catch(() => ({}));
@@ -599,30 +498,13 @@ databaseRoutes.post('/maintenance', async (c) => {
       }
     })();
 
-    return c.json({
-      success: true,
-      data: {
+    return apiResponse(c, {
         message: `Maintenance started: ${maintenanceType}`,
         type: maintenanceType,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 202);
+      }, 202);
 
   } catch {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.POSTGRES_NOT_CONNECTED,
-        message: 'PostgreSQL is not connected.',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 400);
+    return apiError(c, { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected.' }, 400);
   }
 });
 
@@ -674,9 +556,7 @@ databaseRoutes.get('/stats', async (c) => {
       'SELECT version()'
     );
 
-    return c.json({
-      success: true,
-      data: {
+    return apiResponse(c, {
         database: {
           size: sizeResult?.size || 'unknown',
           sizeBytes: parseInt(sizeResult?.raw_size || '0', 10),
@@ -691,25 +571,10 @@ databaseRoutes.get('/stats', async (c) => {
           max: parseInt(connInfo?.max_connections || '100', 10),
         },
         version: versionResult?.version || 'unknown',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    });
+      });
 
   } catch {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.STATS_FAILED,
-        message: 'Failed to get database statistics. Is PostgreSQL connected?',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.STATS_FAILED, message: 'Failed to get database statistics. Is PostgreSQL connected?' }, 500);
   }
 });
 
@@ -717,14 +582,7 @@ databaseRoutes.get('/stats', async (c) => {
  * Get operation status
  */
 databaseRoutes.get('/operation/status', (c) => {
-  return c.json({
-    success: true,
-    data: operationStatus,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  });
+  return apiResponse(c, operationStatus);
 });
 
 // ============================================================================
@@ -756,17 +614,7 @@ databaseRoutes.get('/export', async (c) => {
       }
     }
     if (tables.length === 0) {
-      return c.json({
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_TABLES,
-          message: `No valid tables specified. Skipped: ${skippedTables.join(', ')}`,
-        },
-        meta: {
-          requestId: c.get('requestId') ?? 'unknown',
-          timestamp: new Date().toISOString(),
-        },
-      }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_TABLES, message: `No valid tables specified. Skipped: ${skippedTables.join(', ')}` }, 400);
     }
 
     const exportData: Record<string, unknown[]> = {};
@@ -820,17 +668,7 @@ databaseRoutes.get('/export', async (c) => {
     return c.body(JSON.stringify(exportPayload, null, 2));
 
   } catch (err) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.EXPORT_FAILED,
-        message: err instanceof Error ? err.message : 'Export failed',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.EXPORT_FAILED, message: err instanceof Error ? err.message : 'Export failed' }, 500);
   }
 });
 
@@ -997,31 +835,14 @@ databaseRoutes.post('/import', async (c) => {
       }
     })();
 
-    return c.json({
-      success: true,
-      data: {
+    return apiResponse(c, {
         message: 'Import started',
         tables: tablesToImport,
         options,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 202);
+      }, 202);
 
   } catch (err) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.IMPORT_FAILED,
-        message: err instanceof Error ? err.message : 'Import failed',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.IMPORT_FAILED, message: err instanceof Error ? err.message : 'Import failed' }, 500);
   }
 });
 
@@ -1079,33 +900,16 @@ databaseRoutes.post('/export/save', async (c) => {
 
     writeFileSync(filepath, JSON.stringify(exportPayload, null, 2), 'utf-8');
 
-    return c.json({
-      success: true,
-      data: {
+    return apiResponse(c, {
         message: 'Export saved successfully',
         filename,
         path: filepath,
         tableCount: exportPayload.tableCount,
         totalRows: exportPayload.totalRows,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    });
+      });
 
   } catch (err) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.EXPORT_SAVE_FAILED,
-        message: err instanceof Error ? err.message : 'Export save failed',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.EXPORT_SAVE_FAILED, message: err instanceof Error ? err.message : 'Export save failed' }, 500);
   }
 });
 
@@ -1115,17 +919,7 @@ databaseRoutes.post('/export/save', async (c) => {
  */
 databaseRoutes.post('/migrate-schema', async (c) => {
   if (operationStatus.isRunning) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.OPERATION_IN_PROGRESS,
-        message: `A ${operationStatus.operation} operation is already in progress`,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 409);
+    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
   }
 
   try {
@@ -1153,17 +947,10 @@ databaseRoutes.post('/migrate-schema', async (c) => {
     operationStatus.isRunning = false;
     operationStatus.lastResult = 'success';
 
-    return c.json({
-      success: true,
-      data: {
+    return apiResponse(c, {
         message: 'Schema migrations completed successfully',
         output: operationStatus.output,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    });
+      });
 
   } catch (err) {
     operationStatus.isRunning = false;
@@ -1171,17 +958,7 @@ databaseRoutes.post('/migrate-schema', async (c) => {
     operationStatus.lastError = err instanceof Error ? err.message : 'Migration failed';
     operationStatus.output?.push(`Migration failed: ${operationStatus.lastError}`);
 
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.MIGRATION_FAILED,
-        message: err instanceof Error ? err.message : 'Schema migration failed',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.MIGRATION_FAILED, message: err instanceof Error ? err.message : 'Schema migration failed' }, 500);
   }
 });
 
@@ -1190,17 +967,7 @@ databaseRoutes.post('/migrate-schema', async (c) => {
  */
 databaseRoutes.post('/migrate', async (c) => {
   if (operationStatus.isRunning) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.OPERATION_IN_PROGRESS,
-        message: `A ${operationStatus.operation} operation is already in progress`,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 409);
+    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
   }
 
   const body: {
@@ -1219,33 +986,13 @@ databaseRoutes.post('/migrate', async (c) => {
   }
 
   if (!connected) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.POSTGRES_NOT_CONNECTED,
-        message: 'PostgreSQL is not connected. Check your database configuration.',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 400);
+    return apiError(c, { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected. Check your database configuration.' }, 400);
   }
 
   // Check SQLite database exists
   const sqlitePath = getDatabasePath();
   if (!existsSync(sqlitePath)) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.NO_LEGACY_DATA,
-        message: 'No legacy SQLite data found to migrate.',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 400);
+    return apiError(c, { code: ERROR_CODES.NO_LEGACY_DATA, message: 'No legacy SQLite data found to migrate.' }, 400);
   }
 
   operationStatus = {
@@ -1305,9 +1052,7 @@ databaseRoutes.post('/migrate', async (c) => {
     log.error(`Error: ${err.message}`);
   });
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       message: body.dryRun
         ? 'Migration dry-run started'
         : 'Migration started',
@@ -1317,10 +1062,5 @@ databaseRoutes.post('/migrate', async (c) => {
         truncate: body.truncate ?? false,
         skipSchema: body.skipSchema ?? false,
       },
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  }, 202);
+    }, 202);
 });
