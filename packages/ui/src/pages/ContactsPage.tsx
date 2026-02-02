@@ -43,8 +43,8 @@ export function ContactsPage() {
 
       const data = await contactsApi.list(params);
       setContacts(data as Contact[]);
-    } catch (err) {
-      console.error('Failed to fetch contacts:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -60,8 +60,8 @@ export function ContactsPage() {
     try {
       await contactsApi.delete(contactId);
       fetchContacts();
-    } catch (err) {
-      console.error('Failed to delete contact:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -69,8 +69,8 @@ export function ContactsPage() {
     try {
       await contactsApi.favorite(contact.id);
       fetchContacts();
-    } catch (err) {
-      console.error('Failed to update contact:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

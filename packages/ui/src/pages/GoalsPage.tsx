@@ -69,8 +69,8 @@ export function GoalsPage() {
 
       const data = await goalsApi.list(params);
       setGoals(data.goals as Goal[]);
-    } catch (err) {
-      console.error('Failed to fetch goals:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -86,8 +86,8 @@ export function GoalsPage() {
     try {
       await goalsApi.delete(goalId);
       fetchGoals();
-    } catch (err) {
-      console.error('Failed to delete goal:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -95,8 +95,8 @@ export function GoalsPage() {
     try {
       await goalsApi.update(goalId, { status });
       fetchGoals();
-    } catch (err) {
-      console.error('Failed to update goal status:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -220,7 +220,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
         .then((data) => {
           setSteps(data.steps as GoalStep[]);
         })
-        .catch(console.error)
+        .catch(() => { /* API client handles error */ })
         .finally(() => setLoadingSteps(false));
     }
   }, [isExpanded, goal.id, steps.length]);
@@ -231,8 +231,8 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
       setSteps((prev) =>
         prev.map((s) => (s.id === stepId ? { ...s, status } : s))
       );
-    } catch (err) {
-      console.error('Failed to update step:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -406,8 +406,8 @@ function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
         await apiClient.post('/goals', body);
       }
       onSave();
-    } catch (err) {
-      console.error('Failed to save goal:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsSaving(false);
     }

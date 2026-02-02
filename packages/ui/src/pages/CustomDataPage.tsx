@@ -50,8 +50,8 @@ export function CustomDataPage() {
     try {
       const data = await customDataApi.tables();
       setTables(data as unknown as CustomTable[]);
-    } catch (err) {
-      console.error('Failed to fetch tables:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -71,8 +71,8 @@ export function CustomDataPage() {
         setRecords(result.records);
         setTotalRecords(result.total);
       }
-    } catch (err) {
-      console.error('Failed to fetch records:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoadingRecords(false);
     }
@@ -106,8 +106,8 @@ export function CustomDataPage() {
         setRecords([]);
       }
       fetchTables();
-    } catch (err) {
-      console.error('Failed to delete table:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -121,8 +121,8 @@ export function CustomDataPage() {
       if (selectedTable) {
         fetchRecords(selectedTable.id, searchQuery || undefined);
       }
-    } catch (err) {
-      console.error('Failed to delete record:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -450,8 +450,8 @@ function CreateTableModal({ onClose, onSave }: CreateTableModalProps) {
         })),
       });
       onSave();
-    } catch (err) {
-      console.error('Failed to create table:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsSaving(false);
     }
@@ -622,8 +622,8 @@ function RecordModal({ table, record, onClose, onSave }: RecordModalProps) {
         await customDataApi.createRecord(table.id, data);
       }
       onSave();
-    } catch (err) {
-      console.error('Failed to save record:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsSaving(false);
     }

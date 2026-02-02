@@ -30,8 +30,8 @@ export function TasksPage() {
     try {
       const data = await tasksApi.list(filter === 'pending' ? { status: ['pending', 'in_progress'] } : filter === 'completed' ? { status: ['completed'] } : undefined);
       setTasks(data);
-    } catch (err) {
-      console.error('Failed to fetch tasks:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -45,8 +45,8 @@ export function TasksPage() {
     try {
       await tasksApi.complete(taskId);
       fetchTasks();
-    } catch (err) {
-      console.error('Failed to complete task:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -56,8 +56,8 @@ export function TasksPage() {
     try {
       await tasksApi.delete(taskId);
       fetchTasks();
-    } catch (err) {
-      console.error('Failed to delete task:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

@@ -124,8 +124,8 @@ export function ExpensesPage() {
         : { startDate: `${year}-01-01`, endDate: `${year}-12-31`, limit: '50' };
       const listJson = await expensesApi.list(listParams);
       setExpenses((listJson as Record<string, unknown>).expenses as ExpenseEntry[]);
-    } catch (err) {
-      console.error('Failed to fetch expenses:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -152,8 +152,8 @@ export function ExpensesPage() {
         notes: '',
       });
       fetchData();
-    } catch (err) {
-      console.error('Failed to add expense:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -162,8 +162,8 @@ export function ExpensesPage() {
     try {
       await expensesApi.delete(id);
       fetchData();
-    } catch (err) {
-      console.error('Failed to delete expense:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

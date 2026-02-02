@@ -64,8 +64,8 @@ export function ChatPage() {
       setProviderNames(namesMap);
       setModels(modelsData.models);
       setConfiguredProviders(modelsData.configuredProviders);
-    } catch (err) {
-      console.error('Failed to fetch models:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoadingModels(false);
     }
@@ -168,8 +168,8 @@ export function ChatPage() {
           setModel(firstModel.id);
         }
       }
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoadingModels(false);
     }

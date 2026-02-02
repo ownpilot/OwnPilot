@@ -46,8 +46,7 @@ export function MediaSettingsTab() {
     try {
       const data = await mediaSettingsApi.get();
       setSettings(data as unknown as CapabilitySettings[]);
-    } catch (err) {
-      console.error('Failed to load media settings:', err);
+    } catch {
       setError('Failed to load media settings');
     } finally {
       setIsLoading(false);

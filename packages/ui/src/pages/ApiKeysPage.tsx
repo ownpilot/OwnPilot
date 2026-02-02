@@ -101,8 +101,7 @@ export function ApiKeysPage() {
           }
         }
       }
-    } catch (err) {
-      console.error('Failed to load data:', err);
+    } catch {
       setProviders(FALLBACK_PROVIDERS);
       setError('Failed to load provider list. Using defaults.');
     } finally {
@@ -143,7 +142,6 @@ export function ApiKeysPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      console.error('Failed to save settings:', err);
       setError(err instanceof Error ? err.message : 'Failed to save settings');
     } finally {
       setIsSaving(false);
@@ -165,8 +163,7 @@ export function ApiKeysPage() {
         setDefaultModel(newModel);
         await handleDefaultModelChange(newModel);
       }
-    } catch (err) {
-      console.error('Failed to save default provider:', err);
+    } catch {
       setError('Failed to save default provider');
     }
   };
@@ -177,8 +174,8 @@ export function ApiKeysPage() {
     // Save to backend
     try {
       await settingsApi.setDefaultModel(modelId);
-    } catch (err) {
-      console.error('Failed to save default model:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -211,7 +208,6 @@ export function ApiKeysPage() {
         }
       }
     } catch (err) {
-      console.error('Failed to delete API key:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete API key');
     }
   };

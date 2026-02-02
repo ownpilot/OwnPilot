@@ -37,8 +37,7 @@ export function IntegrationsTab() {
       ]);
       setIntegrations(integrationsList);
       setAvailable(availableList);
-    } catch (err) {
-      console.error('Failed to load integrations:', err);
+    } catch {
       setError('Failed to load integrations');
     } finally {
       setIsLoading(false);
@@ -49,8 +48,8 @@ export function IntegrationsTab() {
     try {
       const data = await authApi.status();
       setConfigStatus(data.google);
-    } catch (err) {
-      console.error('Failed to check OAuth status:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

@@ -18,8 +18,8 @@ export function ToolsPage() {
       try {
         const data = await toolsApi.listGrouped();
         setGroupedTools(data as unknown as GroupedTools);
-      } catch (err) {
-        console.error('Failed to fetch tools:', err);
+      } catch {
+        // API client handles error reporting
       } finally {
         setIsLoading(false);
       }

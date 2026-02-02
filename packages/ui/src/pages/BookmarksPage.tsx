@@ -36,8 +36,8 @@ export function BookmarksPage() {
 
       const data = await bookmarksApi.list(params);
       setBookmarks(data as BookmarkItem[]);
-    } catch (err) {
-      console.error('Failed to fetch bookmarks:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -53,8 +53,8 @@ export function BookmarksPage() {
     try {
       await bookmarksApi.delete(bookmarkId);
       fetchBookmarks();
-    } catch (err) {
-      console.error('Failed to delete bookmark:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -62,8 +62,8 @@ export function BookmarksPage() {
     try {
       await bookmarksApi.favorite(bookmark.id);
       fetchBookmarks();
-    } catch (err) {
-      console.error('Failed to update bookmark:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

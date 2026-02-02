@@ -99,8 +99,8 @@ export function SystemPage() {
       if (statsData) {
         setDbStats(statsData as unknown as DatabaseStats);
       }
-    } catch (err) {
-      console.error('Failed to load system status:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoadingSystem(false);
     }
@@ -138,8 +138,7 @@ export function SystemPage() {
       };
 
       setTimeout(pollStatus, 1000);
-    } catch (err) {
-      console.error(`${operationType} error:`, err);
+    } catch {
       setDbOperationOutput([`Failed to start ${operationType.toLowerCase()}`]);
       setDbOperationResult('failure');
       setDbOperationRunning(false);
@@ -156,8 +155,7 @@ export function SystemPage() {
     try {
       await systemApi.deleteBackup(filename);
       loadSystemStatus();
-    } catch (err) {
-      console.error('Delete backup error:', err);
+    } catch {
       await showAlert('Failed to delete backup');
     }
   };

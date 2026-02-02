@@ -115,8 +115,8 @@ export function PlansPage() {
       const data = await plansApi.history(planId);
       setPlanHistory(data.history as PlanHistoryEntry[]);
       setHistoryPlanId(planId);
-    } catch (err) {
-      console.error('Failed to fetch plan history:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -129,8 +129,8 @@ export function PlansPage() {
 
       const data = await plansApi.list(params);
       setPlans(data.plans as Plan[]);
-    } catch (err) {
-      console.error('Failed to fetch plans:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -156,8 +156,8 @@ export function PlansPage() {
     try {
       await plansApi.delete(planId);
       fetchPlans();
-    } catch (err) {
-      console.error('Failed to delete plan:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -167,8 +167,8 @@ export function PlansPage() {
       const endpoint = action === 'start' ? 'execute' : action;
       await plansApi.action(planId, endpoint);
       fetchPlans();
-    } catch (err) {
-      console.error(`Failed to ${action} plan:`, err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -178,8 +178,8 @@ export function PlansPage() {
     try {
       await plansApi.rollback(planId);
       fetchPlans();
-    } catch (err) {
-      console.error('Failed to rollback plan:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -344,7 +344,7 @@ function PlanItem({
         .then((data) => {
           setSteps(data.steps as PlanStep[]);
         })
-        .catch(console.error)
+        .catch(() => { /* API client handles error */ })
         .finally(() => setLoadingSteps(false));
     }
   }, [isExpanded, plan.id, steps.length]);
@@ -357,7 +357,7 @@ function PlanItem({
           .then((data) => {
             setSteps(data.steps as PlanStep[]);
           })
-          .catch(console.error);
+          .catch(() => { /* API client handles error */ });
       }, 2000);
       return () => clearInterval(interval);
     }
@@ -760,8 +760,8 @@ if (plan) {
         await apiClient.post('/plans', body);
       }
       onSave();
-    } catch (err) {
-      console.error('Failed to save plan:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsSaving(false);
     }
@@ -888,8 +888,8 @@ await plansApi.addStep(planId, {
           config,
         });
       onAdded();
-    } catch (err) {
-      console.error('Failed to add step:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsSaving(false);
     }

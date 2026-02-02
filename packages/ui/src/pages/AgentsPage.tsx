@@ -34,8 +34,8 @@ export function AgentsPage() {
     try {
       const data = await agentsApi.list();
       setAgents(data);
-    } catch (err) {
-      console.error('Failed to fetch agents:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -50,8 +50,8 @@ export function AgentsPage() {
       if (selectedAgent?.id === id) {
         setSelectedAgent(null);
       }
-    } catch (err) {
-      console.error('Failed to delete agent:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -289,8 +289,8 @@ function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) {
       // Set default model
       const recommended = data.models.find((m) => m.recommended);
       if (recommended) setSelectedModel(recommended);
-    } catch (err) {
-      console.error('Failed to fetch models:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -298,8 +298,8 @@ function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) {
     try {
       const data = await toolsApi.list();
       setTools(data);
-    } catch (err) {
-      console.error('Failed to fetch tools:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -672,8 +672,7 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
       setTemperature(agent.config?.temperature || 0.7);
       setMaxTurns(agent.config?.maxTurns || 50);
       setMaxToolCalls(agent.config?.maxToolCalls || 200);
-    } catch (err) {
-      console.error('Failed to fetch agent detail:', err);
+    } catch {
       setError('Failed to load agent details');
     }
   };
@@ -683,8 +682,8 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
       const data = await modelsApi.list();
       setModels(data.models);
       setConfiguredProviders(data.configuredProviders);
-    } catch (err) {
-      console.error('Failed to fetch models:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -692,8 +691,8 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
     try {
       const data = await toolsApi.list();
       setTools(data);
-    } catch (err) {
-      console.error('Failed to fetch tools:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

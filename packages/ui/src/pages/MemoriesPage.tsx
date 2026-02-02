@@ -50,8 +50,8 @@ export function MemoriesPage() {
 
       const data = await memoriesApi.list(params);
       setMemories(data.memories as Memory[]);
-    } catch (err) {
-      console.error('Failed to fetch memories:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -67,8 +67,8 @@ export function MemoriesPage() {
     try {
       await memoriesApi.delete(memoryId);
       fetchMemories();
-    } catch (err) {
-      console.error('Failed to delete memory:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -280,8 +280,8 @@ function MemoryModal({ memory, onClose, onSave }: MemoryModalProps) {
         await apiClient.post('/memories', body);
       }
       onSave();
-    } catch (err) {
-      console.error('Failed to save memory:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsSaving(false);
     }

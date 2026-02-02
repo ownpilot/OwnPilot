@@ -107,8 +107,8 @@ export function PluginsPage() {
       const data = await pluginsApi.list();
       const result = data as unknown as { plugins: PluginInfo[] };
       setPlugins(result.plugins);
-    } catch (err) {
-      console.error('Failed to fetch plugins:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -118,8 +118,8 @@ export function PluginsPage() {
     try {
       const data = await pluginsApi.stats();
       setStats(data as unknown as PluginStats);
-    } catch (err) {
-      console.error('Failed to fetch plugin stats:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -129,8 +129,8 @@ export function PluginsPage() {
       await apiClient.post<void>(`/plugins/${plugin.id}/${action}`);
       fetchPlugins();
       fetchStats();
-    } catch (err) {
-      console.error(`Failed to ${action} plugin:`, err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

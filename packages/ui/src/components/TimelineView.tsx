@@ -69,8 +69,7 @@ export function TimelineView() {
       const data = await dashboardApi.data() as unknown as DailyBriefingData;
       const timelineItems = buildTimelineItems(data);
       setItems(timelineItems);
-    } catch (err) {
-      console.error('Failed to fetch timeline data:', err);
+    } catch {
       setError('Failed to load timeline');
     } finally {
       setIsLoading(false);

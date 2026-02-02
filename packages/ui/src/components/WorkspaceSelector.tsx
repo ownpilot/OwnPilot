@@ -48,8 +48,8 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
       if (!selectedWorkspaceId && Array.isArray(list) && list.length > 0) {
         onWorkspaceChange(list[0].id);
       }
-    } catch (err) {
-      console.error('Failed to fetch workspaces:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -69,8 +69,8 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
       setShowCreateModal(false);
       setNewWorkspaceName('');
       setNewWorkspaceDesc('');
-    } catch (err) {
-      console.error('Failed to create workspace:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsCreating(false);
     }
@@ -84,8 +84,8 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
       if (selectedWorkspaceId === id) {
         onWorkspaceChange(remaining.length > 0 ? remaining[0].id : null);
       }
-    } catch (err) {
-      console.error('Failed to delete workspace:', err);
+    } catch {
+      // API client handles error reporting
     }
     setDeleteConfirm(null);
   };

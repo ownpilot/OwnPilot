@@ -88,8 +88,8 @@ export function TriggersPage() {
 
       const data = await triggersApi.list(params);
       setTriggers(data.triggers as Trigger[]);
-    } catch (err) {
-      console.error('Failed to fetch triggers:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -104,8 +104,8 @@ export function TriggersPage() {
       const data = await triggersApi.history(triggerId);
       setHistory(data.history as TriggerHistoryEntry[]);
       setShowHistory(triggerId);
-    } catch (err) {
-      console.error('Failed to fetch history:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -115,8 +115,8 @@ export function TriggersPage() {
     try {
       await triggersApi.delete(triggerId);
       fetchTriggers();
-    } catch (err) {
-      console.error('Failed to delete trigger:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -124,8 +124,8 @@ export function TriggersPage() {
     try {
       await triggersApi.update(triggerId, { enabled });
       fetchTriggers();
-    } catch (err) {
-      console.error('Failed to toggle trigger:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -133,8 +133,8 @@ export function TriggersPage() {
     try {
       await triggersApi.fire(triggerId);
       fetchTriggers();
-    } catch (err) {
-      console.error('Failed to fire trigger:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -487,7 +487,6 @@ function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
       }
       onSave();
     } catch (err) {
-      console.error('Failed to save trigger:', err);
       setSaveError(err instanceof Error ? err.message : 'Failed to save trigger');
     } finally {
       setIsSaving(false);

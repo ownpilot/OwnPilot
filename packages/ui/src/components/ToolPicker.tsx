@@ -332,8 +332,7 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
       } else if (tab === 'builtin-data') {
         setItems(BUILTIN_DATA_ITEMS);
       }
-    } catch (error) {
-      console.error('Failed to fetch resources:', error);
+    } catch {
       setItems([]);
     } finally {
       setIsLoading(false);

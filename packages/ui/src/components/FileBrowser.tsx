@@ -70,8 +70,8 @@ export function FileBrowser({ initialPath = '~', onFileSelect, onFileOpen }: Fil
         setFileContent(result.content as string);
         onFileOpen?.(file, result.content as string);
       }
-    } catch (err) {
-      console.error('Failed to read file:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }

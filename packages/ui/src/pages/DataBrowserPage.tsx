@@ -125,8 +125,8 @@ export function DataBrowserPage() {
       if (data.success && data.data) {
         setRecords(data.data);
       }
-    } catch (err) {
-      console.error('Failed to fetch records:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -153,8 +153,8 @@ export function DataBrowserPage() {
       if (data.success) {
         fetchRecords();
       }
-    } catch (err) {
-      console.error('Failed to delete record:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -431,8 +431,8 @@ function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalP
       if (data.success) {
         onSave();
       }
-    } catch (err) {
-      console.error('Failed to save record:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsSaving(false);
     }

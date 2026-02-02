@@ -45,8 +45,8 @@ export function CustomToolsPage() {
     try {
       const { tools } = await customToolsApi.list(filter === 'all' ? undefined : filter);
       setTools(tools);
-    } catch (err) {
-      console.error('Failed to fetch custom tools:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -56,8 +56,8 @@ export function CustomToolsPage() {
     try {
       const data = await customToolsApi.stats();
       setStats(data);
-    } catch (err) {
-      console.error('Failed to fetch stats:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -73,8 +73,8 @@ export function CustomToolsPage() {
       if (selectedTool?.id === toolId) {
         setSelectedTool(null);
       }
-    } catch (err) {
-      console.error(`Failed to ${action} tool:`, err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

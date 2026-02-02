@@ -663,8 +663,7 @@ export function InboxPage() {
 
       // Refresh messages
       await fetchInbox();
-    } catch (err) {
-      console.error('Error sending reply:', err);
+    } catch {
       setError('Failed to send reply');
     } finally {
       setIsLoading(false);

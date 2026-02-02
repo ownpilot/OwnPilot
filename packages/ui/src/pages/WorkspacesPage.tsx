@@ -98,8 +98,8 @@ export function WorkspacesPage() {
         totalSize,
         totalFiles,
       });
-    } catch (err) {
-      console.error('Failed to fetch workspaces:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -112,8 +112,8 @@ export function WorkspacesPage() {
       const filesData = data as unknown as { path: string; files: WorkspaceFile[]; count: number };
       setWorkspaceFiles(filesData.files);
       setCurrentPath(path);
-    } catch (err) {
-      console.error('Failed to fetch workspace files:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoadingFiles(false);
     }
@@ -140,8 +140,8 @@ export function WorkspacesPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (err) {
-      console.error('Failed to download workspace:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -153,8 +153,8 @@ export function WorkspacesPage() {
         setWorkspaceFiles([]);
       }
       fetchWorkspaces();
-    } catch (err) {
-      console.error('Failed to delete workspace:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setDeleteConfirm(null);
     }
@@ -164,8 +164,8 @@ export function WorkspacesPage() {
     try {
       await fileWorkspacesApi.cleanup(7);
       fetchWorkspaces();
-    } catch (err) {
-      console.error('Failed to cleanup workspaces:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

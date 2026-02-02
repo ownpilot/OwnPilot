@@ -49,8 +49,8 @@ export function CalendarPage() {
 
       const data = await calendarApi.list(params);
       setEvents(data as CalendarEvent[]);
-    } catch (err) {
-      console.error('Failed to fetch events:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -66,8 +66,8 @@ export function CalendarPage() {
     try {
       await calendarApi.delete(eventId);
       fetchEvents();
-    } catch (err) {
-      console.error('Failed to delete event:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

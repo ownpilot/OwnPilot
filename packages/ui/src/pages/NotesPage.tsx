@@ -35,8 +35,8 @@ export function NotesPage() {
 
       const data = await notesApi.list(params);
       setNotes(data as Note[]);
-    } catch (err) {
-      console.error('Failed to fetch notes:', err);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -55,8 +55,8 @@ export function NotesPage() {
       if (selectedNote?.id === noteId) {
         setSelectedNote(null);
       }
-    } catch (err) {
-      console.error('Failed to delete note:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -64,8 +64,8 @@ export function NotesPage() {
     try {
       await notesApi.pin(note.id);
       fetchNotes();
-    } catch (err) {
-      console.error('Failed to toggle pin:', err);
+    } catch {
+      // API client handles error reporting
     }
   };
 

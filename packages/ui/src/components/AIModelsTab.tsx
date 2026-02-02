@@ -336,8 +336,7 @@ export function AIModelsTab() {
       setCapabilities(capsData as unknown as CapabilityDef[]);
       setLocalProviders(localData as unknown as LocalProvider[]);
       setLocalTemplates(templatesData as unknown as LocalProviderTemplate[]);
-    } catch (err) {
-      console.error('Failed to load model configs:', err);
+    } catch {
       setError('Failed to load model configurations');
     } finally {
       setIsLoading(false);

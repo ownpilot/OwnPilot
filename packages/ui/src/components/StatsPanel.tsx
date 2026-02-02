@@ -101,8 +101,8 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
       if (results[3].status === 'fulfilled') {
         setModelCount(results[3].value.models?.length ?? 0);
       }
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
+    } catch {
+      // API client handles error reporting
     } finally {
       setIsLoading(false);
     }

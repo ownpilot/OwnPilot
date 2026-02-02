@@ -82,8 +82,8 @@ export function AutonomyPage() {
       const { config: cfg, levels: lvls } = data as { config: AutonomyConfig; levels: AutonomyLevel[] };
       setConfig(cfg);
       setLevels(lvls);
-    } catch (err) {
-      console.error("Failed to fetch config:", err);
+    } catch {
+      // API client handles error reporting
     }
   }, []);
 
@@ -91,8 +91,8 @@ export function AutonomyPage() {
     try {
       const data = await autonomyApi.getApprovals();
       setPendingApprovals(data as unknown as PendingApproval[]);
-    } catch (err) {
-      console.error("Failed to fetch approvals:", err);
+    } catch {
+      // API client handles error reporting
     }
   }, []);
 
@@ -109,8 +109,8 @@ export function AutonomyPage() {
     try {
       await autonomyApi.setLevel(String(level));
       fetchConfig();
-    } catch (err) {
-      console.error("Failed to update level:", err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -118,8 +118,8 @@ export function AutonomyPage() {
     try {
       await autonomyApi.updateBudget(updates as Record<string, unknown>);
       fetchConfig();
-    } catch (err) {
-      console.error("Failed to update budget:", err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -134,8 +134,8 @@ export function AutonomyPage() {
       fetchConfig();
       if (type === "allow") setNewAllowedTool("");
       else setNewBlockedTool("");
-    } catch (err) {
-      console.error("Failed to add tool:", err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -143,8 +143,8 @@ export function AutonomyPage() {
     try {
       await autonomyApi.removeTool(tool);
       fetchConfig();
-    } catch (err) {
-      console.error("Failed to remove tool:", err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -152,8 +152,8 @@ export function AutonomyPage() {
     try {
       await autonomyApi.resolveApproval(actionId, decision);
       fetchPendingApprovals();
-    } catch (err) {
-      console.error("Failed to process approval:", err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
@@ -162,8 +162,8 @@ export function AutonomyPage() {
     try {
       await autonomyApi.resetConfig();
       fetchConfig();
-    } catch (err) {
-      console.error("Failed to reset config:", err);
+    } catch {
+      // API client handles error reporting
     }
   };
 
