@@ -7,11 +7,10 @@
 
 import { Hono } from 'hono';
 import { loadProviderConfig, PROVIDER_IDS } from '@ownpilot/core';
-import type { ApiResponse } from '../types/index.js';
+import { apiResponse, apiError, getUserId } from './helpers.js';
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
-import { getUserId } from './helpers.js';
 
 const app = new Hono();
 
@@ -242,20 +241,11 @@ app.get('/', async (c) => {
     });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       providers,
       categories: PROVIDER_CATEGORIES,
       total: providers.length,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -269,19 +259,10 @@ app.get('/categories', (c) => {
   const allProviderIds = getProviderIds();
   const uncategorized = allProviderIds.filter(id => !allCategorizedIds.has(id));
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       categories: PROVIDER_CATEGORIES,
       uncategorized,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -293,16 +274,7 @@ app.get('/:id', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'PROVIDER_NOT_FOUND',
-          message: `Provider '${id}' not found`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'PROVIDER_NOT_FOUND', message: `Provider '${id}' not found` }, 404);
   }
 
   // Get UI metadata
@@ -311,9 +283,7 @@ app.get('/:id', async (c) => {
   // Get user override if exists
   const override = await modelConfigsRepo.getUserProviderConfig(userId, id);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       ...config,
       // Effective type (user override > base config)
       type: override?.providerType || config.type,
@@ -336,14 +306,7 @@ app.get('/:id', async (c) => {
       // UI metadata
       color: uiMeta.color,
       apiKeyPlaceholder: uiMeta.apiKeyPlaceholder,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -354,33 +317,15 @@ app.get('/:id/models', (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'PROVIDER_NOT_FOUND',
-          message: `Provider '${id}' not found`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'PROVIDER_NOT_FOUND', message: `Provider '${id}' not found` }, 404);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       provider: config.id,
       providerName: config.name,
       models: config.models,
       isConfigured: hasApiKey(config.id),
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -392,24 +337,13 @@ app.get('/:id/config', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'PROVIDER_NOT_FOUND',
-          message: `Provider '${id}' not found`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'PROVIDER_NOT_FOUND', message: `Provider '${id}' not found` }, 404);
   }
 
   // Get user override
   const userConfig = await modelConfigsRepo.getUserProviderConfig(userId, id);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       providerId: id,
       // Base config (from JSON)
       baseConfig: {
@@ -434,14 +368,7 @@ app.get('/:id/config', async (c) => {
         apiKeyEnv: userConfig?.apiKeyEnv || config.apiKeyEnv,
         isEnabled: userConfig?.isEnabled !== false,
       },
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -453,16 +380,7 @@ app.put('/:id/config', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'PROVIDER_NOT_FOUND',
-          message: `Provider '${id}' not found`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'PROVIDER_NOT_FOUND', message: `Provider '${id}' not found` }, 404);
   }
 
   try {
@@ -479,9 +397,7 @@ app.put('/:id/config', async (c) => {
       notes,
     });
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         providerId: id,
         userOverride: {
           baseUrl: updated.baseUrl,
@@ -490,25 +406,9 @@ app.put('/:id/config', async (c) => {
           apiKeyEnv: updated.apiKeyEnv,
           notes: updated.notes,
         },
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'UPDATE_FAILED',
-          message: error instanceof Error ? error.message : 'Failed to update provider config',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'UPDATE_FAILED', message: error instanceof Error ? error.message : 'Failed to update provider config' }, 500);
   }
 });
 
@@ -521,19 +421,10 @@ app.delete('/:id/config', async (c) => {
 
   const deleted = await modelConfigsRepo.deleteUserProviderConfig(userId, id);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       providerId: id,
       deleted,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -545,16 +436,7 @@ app.patch('/:id/toggle', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'PROVIDER_NOT_FOUND',
-          message: `Provider '${id}' not found`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'PROVIDER_NOT_FOUND', message: `Provider '${id}' not found` }, 404);
   }
 
   try {
@@ -562,45 +444,18 @@ app.patch('/:id/toggle', async (c) => {
     const { enabled } = body;
 
     if (typeof enabled !== 'boolean') {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'INVALID_REQUEST',
-            message: 'enabled must be a boolean',
-          },
-        },
-        400
-      );
+      return apiError(c, { code: 'INVALID_REQUEST', message: 'enabled must be a boolean' }, 400);
     }
 
     await modelConfigsRepo.toggleUserProviderConfig(userId, id, enabled);
     const userConfig = await modelConfigsRepo.getUserProviderConfig(userId, id);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         providerId: id,
         isEnabled: userConfig?.isEnabled ?? true,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'TOGGLE_FAILED',
-          message: error instanceof Error ? error.message : 'Failed to toggle provider',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'TOGGLE_FAILED', message: error instanceof Error ? error.message : 'Failed to toggle provider' }, 500);
   }
 });
 
@@ -611,9 +466,7 @@ app.get('/overrides/all', async (c) => {
   const userId = getUserId(c);
   const overrides = await modelConfigsRepo.listUserProviderConfigs(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       overrides: overrides.map((o) => ({
         providerId: o.providerId,
         baseUrl: o.baseUrl,
@@ -623,14 +476,7 @@ app.get('/overrides/all', async (c) => {
         notes: o.notes,
       })),
       total: overrides.length,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 export const providersRoutes = app;
