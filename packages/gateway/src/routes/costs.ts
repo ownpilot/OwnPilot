@@ -486,14 +486,11 @@ costRoutes.get('/export', async (c) => {
     return c.body(exportData);
   }
 
-  return c.json({
-    success: true,
-    data: JSON.parse(exportData),
+  return apiResponse(c, { data: JSON.parse(exportData),
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  });
+    }, });
 });
 
 /**

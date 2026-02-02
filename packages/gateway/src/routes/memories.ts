@@ -59,14 +59,11 @@ memoriesRoutes.post('/', async (c) => {
     const { memory, deduplicated } = await service.rememberMemory(userId, body);
 
     if (deduplicated) {
-      return c.json({
-        success: true,
-        data: {
+      return apiResponse(c, { data: {
           memory,
           message: 'Similar memory exists, boosted importance instead.',
           deduplicated: true,
-        },
-      });
+        }, });
     }
 
     return apiResponse(c, {

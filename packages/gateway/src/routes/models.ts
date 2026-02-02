@@ -134,10 +134,7 @@ app.get('/catalog/all', async (c) => {
     catalog[config.id] = convertToModelInfo(config.id);
   }
 
-  return c.json({
-    success: true,
-    data: catalog,
-  });
+  return apiResponse(c, catalog);
 });
 
 /**

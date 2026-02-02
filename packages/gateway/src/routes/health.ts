@@ -7,7 +7,7 @@ import { VERSION, getSandboxStatus, resetSandboxCache, ensureImage } from '@ownp
 import type { HealthResponse, HealthCheck } from '../types/index.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
-import { apiResponse } from './helpers.js'
+import { apiResponse, apiError } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 const startTime = Date.now();
@@ -111,17 +111,7 @@ healthRoutes.get('/sandbox', async (c) => {
 
     return apiResponse(c, status);
   } catch (error) {
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.SANDBOX_CHECK_FAILED,
-        message: error instanceof Error ? error.message : 'Failed to check sandbox status',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.SANDBOX_CHECK_FAILED, message: error instanceof Error ? error.message : 'Failed to check sandbox status' }, 500);
   }
 });
 
