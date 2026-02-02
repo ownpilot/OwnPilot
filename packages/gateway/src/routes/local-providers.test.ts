@@ -97,9 +97,9 @@ describe('Local Providers Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(json.data.length).toBeGreaterThanOrEqual(4);
-      expect(json.data.find((t: { id: string }) => t.id === 'ollama')).toBeDefined();
-      expect(json.data.find((t: { id: string }) => t.id === 'lmstudio')).toBeDefined();
+      expect(json.data.data.length).toBeGreaterThanOrEqual(4);
+      expect(json.data.data.find((t: { id: string }) => t.id === 'ollama')).toBeDefined();
+      expect(json.data.data.find((t: { id: string }) => t.id === 'lmstudio')).toBeDefined();
     });
   });
 
@@ -114,7 +114,7 @@ describe('Local Providers Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(json.data).toHaveLength(0);
+      expect(json.data.data).toHaveLength(0);
     });
 
     it('returns providers with model counts', async () => {
@@ -127,8 +127,8 @@ describe('Local Providers Routes', () => {
       const res = await app.request('/local-providers');
       const json = await res.json();
 
-      expect(json.data).toHaveLength(1);
-      expect(json.data[0].modelCount).toBe(2);
+      expect(json.data.data).toHaveLength(1);
+      expect(json.data.data[0].modelCount).toBe(2);
     });
   });
 
@@ -175,7 +175,7 @@ describe('Local Providers Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.models).toHaveLength(1);
+      expect(json.data.data.models).toHaveLength(1);
     });
 
     it('returns 404 when not found', async () => {
@@ -249,7 +249,7 @@ describe('Local Providers Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.message).toContain('disabled');
+      expect(json.data.message).toContain('disabled');
     });
 
     it('returns 400 for non-boolean enabled', async () => {
@@ -307,9 +307,9 @@ describe('Local Providers Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.totalModels).toBe(2);
-      expect(json.data.newModels).toBe(2);
-      expect(json.data.existingModels).toBe(0);
+      expect(json.data.data.totalModels).toBe(2);
+      expect(json.data.data.newModels).toBe(2);
+      expect(json.data.data.existingModels).toBe(0);
       expect(mockLocalProvidersRepo.updateDiscoveredAt).toHaveBeenCalled();
     });
 
@@ -355,7 +355,7 @@ describe('Local Providers Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data).toHaveLength(1);
+      expect(json.data.data).toHaveLength(1);
     });
   });
 
