@@ -114,9 +114,9 @@ describe('Integrations Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       // 3 available integrations: gmail, calendar, drive
-      expect(json.data).toHaveLength(3);
-      expect(json.data[0].name).toBe('Gmail');
-      expect(json.data[0].isConfigured).toBe(true);
+      expect(json.data.data).toHaveLength(3);
+      expect(json.data.data[0].name).toBe('Gmail');
+      expect(json.data.data[0].isConfigured).toBe(true);
     });
 
     it('shows unconfigured when credentials missing', async () => {
@@ -125,7 +125,7 @@ describe('Integrations Routes', () => {
       const res = await app.request('/integrations/available');
       const json = await res.json();
 
-      expect(json.data.every((i: { isConfigured: boolean }) => !i.isConfigured)).toBe(true);
+      expect(json.data.data.every((i: { isConfigured: boolean }) => !i.isConfigured)).toBe(true);
     });
   });
 
@@ -139,13 +139,13 @@ describe('Integrations Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data).toHaveLength(2);
+      expect(json.data.data).toHaveLength(2);
       // Tokens should NOT be exposed
-      expect(json.data[0].accessToken).toBeUndefined();
-      expect(json.data[0].refreshToken).toBeUndefined();
+      expect(json.data.data[0].accessToken).toBeUndefined();
+      expect(json.data.data[0].refreshToken).toBeUndefined();
       // Metadata should be present
-      expect(json.data[0].email).toBe('user@gmail.com');
-      expect(json.data[0].status).toBe('active');
+      expect(json.data.data[0].email).toBe('user@gmail.com');
+      expect(json.data.data[0].status).toBe('active');
     });
   });
 
@@ -159,10 +159,10 @@ describe('Integrations Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.id).toBe('int_001');
-      expect(json.data.service).toBe('gmail');
-      expect(json.data.accessToken).toBeUndefined();
-      expect(json.data.refreshToken).toBeUndefined();
+      expect(json.data.data.id).toBe('int_001');
+      expect(json.data.data.service).toBe('gmail');
+      expect(json.data.data.accessToken).toBeUndefined();
+      expect(json.data.data.refreshToken).toBeUndefined();
     });
 
     it('returns 404 for unknown integration', async () => {
@@ -182,8 +182,8 @@ describe('Integrations Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.isConnected).toBe(true);
-      expect(json.data.email).toBe('user@gmail.com');
+      expect(json.data.data.isConnected).toBe(true);
+      expect(json.data.data.email).toBe('user@gmail.com');
     });
 
     it('shows disconnected when not connected', async () => {
@@ -193,7 +193,7 @@ describe('Integrations Routes', () => {
       const res = await app.request('/integrations/status/google/calendar');
       const json = await res.json();
 
-      expect(json.data.isConnected).toBe(false);
+      expect(json.data.data.isConnected).toBe(false);
     });
   });
 
@@ -207,7 +207,7 @@ describe('Integrations Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.message).toContain('disconnected');
+      expect(json.data.message).toContain('disconnected');
       expect(mockOauthIntegrationsRepo.delete).toHaveBeenCalledWith('int_001');
     });
 
@@ -236,7 +236,7 @@ describe('Integrations Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error).toContain('refresh token');
+      expect(json.error.message).toContain('refresh token');
     });
   });
 
@@ -250,10 +250,10 @@ describe('Integrations Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.summary.total).toBe(2);
-      expect(json.data.summary.active).toBe(1);
-      expect(json.data.summary.expired).toBe(1);
-      expect(json.data.integrations).toHaveLength(2);
+      expect(json.data.data.summary.total).toBe(2);
+      expect(json.data.data.summary.active).toBe(1);
+      expect(json.data.data.summary.expired).toBe(1);
+      expect(json.data.data.integrations).toHaveLength(2);
     });
 
     it('returns empty summary when no integrations', async () => {
@@ -262,8 +262,8 @@ describe('Integrations Routes', () => {
       const res = await app.request('/integrations/health/summary');
       const json = await res.json();
 
-      expect(json.data.summary.total).toBe(0);
-      expect(json.data.integrations).toHaveLength(0);
+      expect(json.data.data.summary.total).toBe(0);
+      expect(json.data.data.integrations).toHaveLength(0);
     });
   });
 });
