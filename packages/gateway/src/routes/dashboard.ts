@@ -5,10 +5,9 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
 import { DashboardService, briefingCache, type DailyBriefingData, type AIBriefing } from '../services/dashboard.js';
 import { getLog } from '../services/log.js';
-import { getUserId } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js';
 
 const log = getLog('Dashboard');
 
@@ -52,22 +51,13 @@ dashboardRoutes.get('/briefing', async (c) => {
       aiError = error instanceof Error ? error.message : 'AI briefing generation failed';
     }
 
-    const response: ApiResponse<{ data?: DailyBriefingData; aiBriefing: AIBriefing | null; cached?: boolean; aiError?: string }> = {
-      success: true,
-      data: aiOnly
-        ? { aiBriefing, cached: aiBriefing?.cached ?? false, aiError }
-        : { data, aiBriefing, cached: aiBriefing?.cached ?? false, aiError },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, aiOnly
+      ? { aiBriefing, cached: aiBriefing?.cached ?? false, aiError }
+      : { data, aiBriefing, cached: aiBriefing?.cached ?? false, aiError });
   } catch (error) {
     log.error('Failed to generate briefing:', error);
 
-    const response: ApiResponse = {
+    return c.json({
       success: false,
       error: {
         code: 'BRIEFING_FAILED',
@@ -77,9 +67,7 @@ dashboardRoutes.get('/briefing', async (c) => {
         requestId: c.get('requestId') ?? 'unknown',
         timestamp: new Date().toISOString(),
       },
-    };
-
-    return c.json(response, 500);
+    }, 500);
   }
 });
 
@@ -93,20 +81,11 @@ dashboardRoutes.get('/data', async (c) => {
   try {
     const data = await service.aggregateDailyData();
 
-    const response: ApiResponse<DailyBriefingData> = {
-      success: true,
-      data,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, data);
   } catch (error) {
     log.error('Failed to aggregate data:', error);
 
-    const response: ApiResponse = {
+    return c.json({
       success: false,
       error: {
         code: 'DATA_AGGREGATION_FAILED',
@@ -116,9 +95,7 @@ dashboardRoutes.get('/data', async (c) => {
         requestId: c.get('requestId') ?? 'unknown',
         timestamp: new Date().toISOString(),
       },
-    };
-
-    return c.json(response, 500);
+    }, 500);
   }
 });
 
@@ -145,20 +122,11 @@ dashboardRoutes.post('/briefing/refresh', async (c) => {
       model: body.model,
     });
 
-    const response: ApiResponse<{ aiBriefing: AIBriefing; refreshed: boolean }> = {
-      success: true,
-      data: { aiBriefing, refreshed: true },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, { aiBriefing, refreshed: true });
   } catch (error) {
     log.error('Failed to refresh briefing:', error);
 
-    const response: ApiResponse = {
+    return c.json({
       success: false,
       error: {
         code: 'REFRESH_FAILED',
@@ -168,9 +136,7 @@ dashboardRoutes.post('/briefing/refresh', async (c) => {
         requestId: c.get('requestId') ?? 'unknown',
         timestamp: new Date().toISOString(),
       },
-    };
-
-    return c.json(response, 500);
+    }, 500);
   }
 });
 
@@ -239,20 +205,11 @@ dashboardRoutes.get('/timeline', async (c) => {
     // Sort by time
     timeline.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
-    const response: ApiResponse<{ timeline: TimelineItem[]; date: string }> = {
-      success: true,
-      data: { timeline, date: today },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, { timeline, date: today });
   } catch (error) {
     log.error('Failed to generate timeline:', error);
 
-    const response: ApiResponse = {
+    return c.json({
       success: false,
       error: {
         code: 'TIMELINE_FAILED',
@@ -262,9 +219,7 @@ dashboardRoutes.get('/timeline', async (c) => {
         requestId: c.get('requestId') ?? 'unknown',
         timestamp: new Date().toISOString(),
       },
-    };
-
-    return c.json(response, 500);
+    }, 500);
   }
 });
 
@@ -344,14 +299,5 @@ dashboardRoutes.delete('/briefing/cache', async (c) => {
   const userId = getUserId(c);
   briefingCache.invalidate(userId);
 
-  const response: ApiResponse<{ cleared: boolean }> = {
-    success: true,
-    data: { cleared: true },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { cleared: true });
 });
