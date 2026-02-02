@@ -10,8 +10,8 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import type { CreateConfigServiceInput, UpdateConfigServiceInput, CreateConfigEntryInput, UpdateConfigEntryInput } from '../db/repositories/config-services.js';
-import type { ApiResponse } from '../types/index.js';
 import type { ConfigServiceDefinition, ConfigEntry, ConfigFieldDefinition } from '@ownpilot/core';
+import { apiResponse } from './helpers.js';
 
 export const configServicesRoutes = new Hono();
 
@@ -102,19 +102,10 @@ configServicesRoutes.get('/', async (c) => {
   const category = c.req.query('category');
   const services = configServicesRepo.list(category ?? undefined);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       services: services.map(sanitizeService),
       count: services.length,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -123,16 +114,7 @@ configServicesRoutes.get('/', async (c) => {
 configServicesRoutes.get('/stats', async (c) => {
   const stats = await configServicesRepo.getStats();
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats);
 });
 
 /**
@@ -142,16 +124,7 @@ configServicesRoutes.get('/categories', async (c) => {
   const services = configServicesRepo.list();
   const categories = [...new Set(services.map(s => s.category))].sort();
 
-  const response: ApiResponse = {
-    success: true,
-    data: { categories },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { categories });
 });
 
 /**
@@ -163,19 +136,10 @@ configServicesRoutes.get('/needed', async (c) => {
     s => s.requiredBy.length > 0 && !configServicesRepo.isAvailable(s.name),
   );
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       services: needed.map(sanitizeService),
       count: needed.length,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -188,16 +152,7 @@ configServicesRoutes.get('/:name', async (c) => {
     throw new HTTPException(404, { message: `Config service not found: ${name}` });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: sanitizeService(service),
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, sanitizeService(service));
 });
 
 /**
@@ -229,16 +184,7 @@ configServicesRoutes.post('/', async (c) => {
 
   const service = await configServicesRepo.create(body);
 
-  const response: ApiResponse = {
-    success: true,
-    data: sanitizeService(service),
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response, 201);
+  return apiResponse(c, sanitizeService(service));
 });
 
 /**
@@ -253,16 +199,7 @@ configServicesRoutes.put('/:name', async (c) => {
     throw new HTTPException(404, { message: `Config service not found: ${name}` });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: sanitizeService(updated),
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, sanitizeService(updated));
 });
 
 /**
@@ -276,16 +213,7 @@ configServicesRoutes.delete('/:name', async (c) => {
     throw new HTTPException(404, { message: `Config service not found: ${name}` });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { deleted: true });
 });
 
 // =============================================================================
@@ -304,19 +232,10 @@ configServicesRoutes.get('/:name/entries', async (c) => {
 
   const entries = configServicesRepo.getEntries(name);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       entries: entries.map(e => sanitizeEntry(e, service.configSchema)),
       count: entries.length,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -332,16 +251,7 @@ configServicesRoutes.post('/:name/entries', async (c) => {
   const body = await c.req.json<CreateConfigEntryInput>();
   const entry = await configServicesRepo.createEntry(name, body);
 
-  const response: ApiResponse = {
-    success: true,
-    data: sanitizeEntry(entry, service.configSchema),
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response, 201);
+  return apiResponse(c, sanitizeEntry(entry, service.configSchema));
 });
 
 /**
@@ -384,16 +294,7 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
     throw new HTTPException(404, { message: `Config entry not found: ${entryId}` });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: sanitizeEntry(updated, service.configSchema),
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, sanitizeEntry(updated, service.configSchema));
 });
 
 /**
@@ -413,16 +314,7 @@ configServicesRoutes.delete('/:name/entries/:entryId', async (c) => {
     throw new HTTPException(404, { message: `Config entry not found: ${entryId}` });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { deleted: true });
 });
 
 /**
@@ -450,16 +342,7 @@ configServicesRoutes.put('/:name/entries/:entryId/default', async (c) => {
   const updatedEntries = configServicesRepo.getEntries(name);
   const updatedEntry = updatedEntries.find(e => e.id === entryId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: updatedEntry
+  return apiResponse(c, updatedEntry
       ? sanitizeEntry(updatedEntry, service.configSchema)
-      : { id: entryId, isDefault: true },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+      : { id: entryId, isDefault: true });
 });
