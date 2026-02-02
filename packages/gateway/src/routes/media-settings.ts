@@ -12,7 +12,7 @@ import {
   type MediaCapability,
 } from '../db/repositories/index.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiError } from './helpers.js'
+import { getUserId, apiResponse, apiError } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('MediaSettings');
@@ -132,10 +132,7 @@ mediaSettingsRoutes.get('/', async (c) => {
     })
   );
 
-  return c.json({
-    success: true,
-    data: settings,
-  });
+  return apiResponse(c, { data: settings, });
 });
 
 /**
@@ -153,9 +150,7 @@ mediaSettingsRoutes.get('/:capability', async (c) => {
   const current = await mediaSettingsRepo.getEffective(userId, capability);
   const availableProviders = getProvidersWithStatus(capability);
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, { data: {
       capability,
       name: CAPABILITY_META[capability].name,
       description: CAPABILITY_META[capability].description,
@@ -163,8 +158,7 @@ mediaSettingsRoutes.get('/:capability', async (c) => {
       currentModel: current?.model || null,
       config: current?.config || null,
       availableProviders,
-    },
-  });
+    }, });
 });
 
 /**
@@ -243,15 +237,12 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
       config: body.config,
     });
 
-    return c.json({
-      success: true,
-      message: `${CAPABILITY_META[capability].name} provider set to ${body.provider}`,
+    return apiResponse(c, { message: `${CAPABILITY_META[capability].name} provider set to ${body.provider}`,
       data: {
         capability,
         provider: body.provider,
         model: body.model,
-      },
-    });
+      }, });
   } catch (error) {
     log.error('Failed to save media setting:', error);
     return apiError(c, 'Failed to save setting', 500);
@@ -272,10 +263,7 @@ mediaSettingsRoutes.delete('/:capability', async (c) => {
 
   await mediaSettingsRepo.delete(userId, capability);
 
-  return c.json({
-    success: true,
-    message: `${CAPABILITY_META[capability].name} reset to default`,
-  });
+  return apiResponse(c, { message: `${CAPABILITY_META[capability].name} reset to default`, });
 });
 
 /**
@@ -294,10 +282,7 @@ mediaSettingsRoutes.get('/providers/all', async (c) => {
     allProviders[capability] = getProvidersWithStatus(capability);
   }
 
-  return c.json({
-    success: true,
-    data: allProviders,
-  });
+  return apiResponse(c, { data: allProviders, });
 });
 
 /**
@@ -329,11 +314,8 @@ mediaSettingsRoutes.get('/status/summary', async (c) => {
     unconfigured: status.filter((s) => !s.isConfigured).length,
   };
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, { data: {
       summary,
       capabilities: status,
-    },
-  });
+    }, });
 });
