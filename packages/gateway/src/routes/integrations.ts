@@ -8,7 +8,7 @@ import { Hono } from 'hono';
 import { oauthIntegrationsRepo, settingsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiError } from './helpers.js'
+import { getUserId, apiResponse, apiError } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('Integrations');
@@ -93,10 +93,7 @@ integrationsRoutes.get('/available', async (c) => {
     })
   );
 
-  return c.json({
-    success: true,
-    data: integrations,
-  });
+  return apiResponse(c, { data: integrations, });
 });
 
 /**
@@ -121,10 +118,7 @@ integrationsRoutes.get('/', async (c) => {
     updatedAt: integration.updatedAt,
   }));
 
-  return c.json({
-    success: true,
-    data: safeIntegrations,
-  });
+  return apiResponse(c, { data: safeIntegrations, });
 });
 
 /**
@@ -153,10 +147,7 @@ integrationsRoutes.get('/:id', async (c) => {
     updatedAt: integration.updatedAt,
   };
 
-  return c.json({
-    success: true,
-    data: safeIntegration,
-  });
+  return apiResponse(c, { data: safeIntegration, });
 });
 
 /**
@@ -170,15 +161,12 @@ integrationsRoutes.get('/status/:provider/:service', async (c) => {
   const isConnected = await oauthIntegrationsRepo.isConnected(userId, provider, service);
   const integration = await oauthIntegrationsRepo.getByUserProviderService(userId, provider, service);
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, { data: {
       isConnected,
       status: integration?.status,
       email: integration?.email,
       lastSyncAt: integration?.lastSyncAt,
-    },
-  });
+    }, });
 });
 
 /**
@@ -216,10 +204,7 @@ integrationsRoutes.delete('/:id', async (c) => {
   // Delete from database
   await oauthIntegrationsRepo.delete(id);
 
-  return c.json({
-    success: true,
-    message: `${integration.service} disconnected successfully`,
-  });
+  return apiResponse(c, { message: `${integration.service} disconnected successfully`, });
 });
 
 /**
@@ -269,13 +254,10 @@ integrationsRoutes.post('/:id/sync', async (c) => {
         expiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : undefined,
       });
 
-      return c.json({
-        success: true,
-        message: 'Integration synced successfully',
+      return apiResponse(c, { message: 'Integration synced successfully',
         expiresAt: credentials.expiry_date
           ? new Date(credentials.expiry_date).toISOString()
-          : undefined,
-      });
+          : undefined, });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sync failed';
       await oauthIntegrationsRepo.updateStatus(id, 'error', errorMessage);
@@ -307,11 +289,8 @@ integrationsRoutes.get('/health/summary', async (c) => {
     email: i.email,
   }));
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, { data: {
       summary,
       integrations: details,
-    },
-  });
+    }, });
 });
