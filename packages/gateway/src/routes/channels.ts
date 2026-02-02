@@ -6,9 +6,9 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
 import { getChannelService } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
+import { apiResponse } from './helpers.js';
 
 export const channelRoutes = new Hono();
 
@@ -56,15 +56,11 @@ channelRoutes.get('/messages/inbox', (c) => {
   );
   allMessages = allMessages.slice(0, limit);
 
-  return c.json({
-    success: true,
-    data: {
-      messages: allMessages,
-      total: allMessages.length,
-      unreadCount: allMessages.filter((m) => !m.read).length,
-    },
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  } satisfies ApiResponse);
+  return apiResponse(c, {
+    messages: allMessages,
+    total: allMessages.length,
+    unreadCount: allMessages.filter((m) => !m.read).length,
+  });
 });
 
 /**
@@ -76,11 +72,7 @@ channelRoutes.post('/messages/:messageId/read', (c) => {
     const msg = messages.find((m) => m.id === messageId);
     if (msg) {
       msg.read = true;
-      return c.json({
-        success: true,
-        data: { messageId, read: true },
-        meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-      } satisfies ApiResponse);
+      return apiResponse(c, { messageId, read: true });
     }
   }
   return c.json({ success: false, error: { code: 'NOT_FOUND', message: `Message ${messageId} not found` } }, 404);
@@ -98,17 +90,13 @@ channelRoutes.get('/status', (c) => {
     byPlatform[ch.platform] = (byPlatform[ch.platform] ?? 0) + 1;
   }
 
-  return c.json({
-    success: true,
-    data: {
-      total: channels.length,
-      connected: channels.filter((c) => c.status === 'connected').length,
-      disconnected: channels.filter((c) => c.status === 'disconnected').length,
-      error: channels.filter((c) => c.status === 'error').length,
-      byPlatform,
-    },
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  } satisfies ApiResponse);
+  return apiResponse(c, {
+    total: channels.length,
+    connected: channels.filter((c) => c.status === 'connected').length,
+    disconnected: channels.filter((c) => c.status === 'disconnected').length,
+    error: channels.filter((c) => c.status === 'error').length,
+    byPlatform,
+  });
 });
 
 /**
@@ -118,31 +106,27 @@ channelRoutes.get('/', (c) => {
   const service = getChannelService();
   const channels = service.listChannels();
 
-  return c.json({
-    success: true,
-    data: {
-      channels: channels.map((ch) => ({
-        id: ch.pluginId,
-        platform: ch.platform,
-        name: ch.name,
-        status: ch.status,
-        icon: ch.icon,
-      })),
-      summary: {
-        total: channels.length,
-        connected: channels.filter((c) => c.status === 'connected').length,
-      },
-      availablePlatforms: [
-        'telegram',
-        'whatsapp',
-        'discord',
-        'slack',
-        'line',
-        'matrix',
-      ],
+  return apiResponse(c, {
+    channels: channels.map((ch) => ({
+      id: ch.pluginId,
+      platform: ch.platform,
+      name: ch.name,
+      status: ch.status,
+      icon: ch.icon,
+    })),
+    summary: {
+      total: channels.length,
+      connected: channels.filter((c) => c.status === 'connected').length,
     },
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  } satisfies ApiResponse);
+    availablePlatforms: [
+      'telegram',
+      'whatsapp',
+      'discord',
+      'slack',
+      'line',
+      'matrix',
+    ],
+  });
 });
 
 /**
@@ -153,11 +137,7 @@ channelRoutes.post('/:id/connect', async (c) => {
   try {
     const service = getChannelService();
     await service.connect(pluginId);
-    return c.json({
-      success: true,
-      data: { pluginId, status: 'connected' },
-      meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-    } satisfies ApiResponse);
+    return apiResponse(c, { pluginId, status: 'connected' });
   } catch (error) {
     return c.json(
       {
@@ -180,11 +160,7 @@ channelRoutes.post('/:id/disconnect', async (c) => {
   try {
     const service = getChannelService();
     await service.disconnect(pluginId);
-    return c.json({
-      success: true,
-      data: { pluginId, status: 'disconnected' },
-      meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-    } satisfies ApiResponse);
+    return apiResponse(c, { pluginId, status: 'disconnected' });
   } catch (error) {
     return c.json(
       {
@@ -214,15 +190,11 @@ channelRoutes.get('/:id', (c) => {
     );
   }
 
-  return c.json({
-    success: true,
-    data: {
-      id: pluginId,
-      platform: api.getPlatform(),
-      status: api.getStatus(),
-    },
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  } satisfies ApiResponse);
+  return apiResponse(c, {
+    id: pluginId,
+    platform: api.getPlatform(),
+    status: api.getStatus(),
+  });
 });
 
 /**
@@ -260,11 +232,7 @@ channelRoutes.post('/:id/send', async (c) => {
       replyToId: body.replyToId,
     });
 
-    return c.json({
-      success: true,
-      data: { messageId, pluginId, chatId: body.chatId },
-      meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-    } satisfies ApiResponse);
+    return apiResponse(c, { messageId, pluginId, chatId: body.chatId });
   } catch (error) {
     return c.json(
       {
@@ -291,11 +259,7 @@ channelRoutes.get('/:id/messages', async (c) => {
     const messagesRepo = new ChannelMessagesRepository();
     const messages = await messagesRepo.getByChannel(channelId, limit, offset);
 
-    return c.json({
-      success: true,
-      data: { messages, count: messages.length, limit, offset },
-      meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-    } satisfies ApiResponse);
+    return apiResponse(c, { messages, count: messages.length, limit, offset });
   } catch (error) {
     return c.json(
       {
