@@ -5,7 +5,6 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
 import {
   UsageTracker,
   BudgetManager,
@@ -18,6 +17,7 @@ import {
   type BudgetConfig,
 } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
+import { apiResponse } from './helpers.js';
 
 const log = getLog('Costs');
 
@@ -75,9 +75,7 @@ costRoutes.get('/', async (c) => {
   const summary = await usageTracker.getSummary(startDate, endDate, userId);
   const budgetStatus = await budgetManager.getStatus();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       period,
       userId: userId ?? 'all',
       summary: {
@@ -98,14 +96,7 @@ costRoutes.get('/', async (c) => {
         monthly: budgetStatus.monthly,
         alerts: budgetStatus.alerts,
       },
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -125,9 +116,7 @@ costRoutes.get('/usage', async (c) => {
   monthlyStart.setHours(0, 0, 0, 0);
   const monthlySummary = await usageTracker.getSummary(monthlyStart, new Date(), userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       daily: {
         totalTokens: dailySummary.totalInputTokens + dailySummary.totalOutputTokens,
         totalInputTokens: dailySummary.totalInputTokens,
@@ -144,14 +133,7 @@ costRoutes.get('/usage', async (c) => {
         totalCostFormatted: formatCost(monthlySummary.totalCost),
         totalRequests: monthlySummary.totalRequests,
       },
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -195,9 +177,7 @@ costRoutes.get('/breakdown', async (c) => {
   byProvider.sort((a, b) => b.cost - a.cost);
   byModel.sort((a, b) => b.cost - a.cost);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       period,
       userId: userId ?? 'all',
       totalCost: summary.totalCost,
@@ -212,14 +192,7 @@ costRoutes.get('/breakdown', async (c) => {
         inputTokens: d.inputTokens,
         outputTokens: d.outputTokens,
       })),
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -234,9 +207,7 @@ costRoutes.get('/models', (c) => {
     models = models.filter((m) => m.provider === provider);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       models: models.map((m) => ({
         provider: m.provider,
         modelId: m.modelId,
@@ -250,14 +221,7 @@ costRoutes.get('/models', (c) => {
         updatedAt: m.updatedAt,
       })),
       providers: [...new Set(MODEL_PRICING.map((m) => m.provider))],
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -296,9 +260,7 @@ costRoutes.post('/estimate', async (c) => {
       body.outputTokens ?? 500
     );
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         provider: estimate.provider,
         model: estimate.model,
         estimatedInputTokens: estimate.estimatedInputTokens,
@@ -306,14 +268,7 @@ costRoutes.post('/estimate', async (c) => {
         estimatedCost: estimate.estimatedCost,
         estimatedCostFormatted: formatCost(estimate.estimatedCost),
         note: 'This is an estimate. Actual costs may vary.',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
@@ -334,18 +289,9 @@ costRoutes.post('/estimate', async (c) => {
 costRoutes.get('/budget', async (c) => {
   const status = await budgetManager.getStatus();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       status,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -373,19 +319,10 @@ costRoutes.post('/budget', async (c) => {
 
     const status = await budgetManager.getStatus();
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         message: 'Budget configured successfully',
         status,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
@@ -424,9 +361,7 @@ costRoutes.get('/history', async (c) => {
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, limit);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       records: limitedRecords.map((r) => ({
         ...r,
         costFormatted: formatCost(r.cost),
@@ -434,14 +369,7 @@ costRoutes.get('/history', async (c) => {
       total: records.length,
       limit,
       days,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -456,21 +384,12 @@ costRoutes.get('/expensive', async (c) => {
 
   const records = await usageTracker.getMostExpensiveRequests(limit, startDate);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       records: records.map((r) => ({
         ...r,
         costFormatted: formatCost(r.cost),
       })),
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -525,9 +444,7 @@ costRoutes.post('/record', async (c) => {
     // Check budget
     const budgetStatus = await budgetManager.getStatus();
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         recordId: record.id,
         cost: record.cost,
         costFormatted: formatCost(record.cost),
@@ -535,14 +452,7 @@ costRoutes.post('/record', async (c) => {
           daily: budgetStatus.daily,
           alerts: budgetStatus.alerts,
         },
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
