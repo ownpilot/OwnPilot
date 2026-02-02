@@ -5,7 +5,6 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
 import {
   type PlanStatus,
   type CreatePlanInput,
@@ -245,7 +244,7 @@ plansRoutes.post('/:id/execute', async (c) => {
     const executor = getPlanExecutor({ userId });
     const result = await executor.execute(id);
 
-    const response: ApiResponse = {
+    return c.json({
       success: result.status === 'completed',
       data: {
         result,
@@ -259,9 +258,11 @@ plansRoutes.post('/:id/execute', async (c) => {
             message: result.error,
           }
         : undefined,
-    };
-
-    return c.json(response, result.status === 'completed' ? 200 : 500);
+      meta: {
+        requestId: c.get('requestId') ?? 'unknown',
+        timestamp: new Date().toISOString(),
+      },
+    }, result.status === 'completed' ? 200 : 500);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return c.json(
@@ -303,15 +304,17 @@ plansRoutes.post('/:id/pause', async (c) => {
   const executor = getPlanExecutor({ userId });
   const paused = await executor.pause(id);
 
-  const response: ApiResponse = {
+  return c.json({
     success: paused,
     data: {
       paused,
       message: paused ? 'Plan paused.' : 'Plan was not running.',
     },
-  };
-
-  return c.json(response);
+    meta: {
+      requestId: c.get('requestId') ?? 'unknown',
+      timestamp: new Date().toISOString(),
+    },
+  });
 });
 
 /**
@@ -354,15 +357,17 @@ plansRoutes.post('/:id/resume', async (c) => {
     const executor = getPlanExecutor({ userId });
     const result = await executor.resume(id);
 
-    const response: ApiResponse = {
+    return c.json({
       success: result.status === 'completed',
       data: {
         result,
         message: 'Plan resumed.',
       },
-    };
-
-    return c.json(response);
+      meta: {
+        requestId: c.get('requestId') ?? 'unknown',
+        timestamp: new Date().toISOString(),
+      },
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return c.json(
@@ -482,7 +487,7 @@ plansRoutes.post('/:id/start', async (c) => {
     const executor = getPlanExecutor({ userId });
     const result = await executor.execute(id);
 
-    const response: ApiResponse = {
+    return c.json({
       success: result.status === 'completed',
       data: {
         result,
@@ -496,9 +501,11 @@ plansRoutes.post('/:id/start', async (c) => {
             message: result.error,
           }
         : undefined,
-    };
-
-    return c.json(response, result.status === 'completed' ? 200 : 500);
+      meta: {
+        requestId: c.get('requestId') ?? 'unknown',
+        timestamp: new Date().toISOString(),
+      },
+    }, result.status === 'completed' ? 200 : 500);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return c.json(

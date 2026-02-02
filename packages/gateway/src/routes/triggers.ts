@@ -5,7 +5,6 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
 import {
   type TriggerType,
   type CreateTriggerInput,
@@ -318,7 +317,7 @@ triggersRoutes.post('/:id/fire', async (c) => {
   const engine = getTriggerEngine({ userId });
   const result = await engine.fireTrigger(id);
 
-  const response: ApiResponse = {
+  return c.json({
     success: result.success,
     data: {
       result,
@@ -330,9 +329,11 @@ triggersRoutes.post('/:id/fire', async (c) => {
           message: result.error,
         }
       : undefined,
-  };
-
-  return c.json(response, result.success ? 200 : 500);
+    meta: {
+      requestId: c.get('requestId') ?? 'unknown',
+      timestamp: new Date().toISOString(),
+    },
+  }, result.success ? 200 : 500);
 });
 
 /**
