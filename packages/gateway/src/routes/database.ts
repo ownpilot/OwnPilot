@@ -10,7 +10,7 @@ import { HTTPException } from 'hono/http-exception';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
-import type { ApiResponse } from '../types/index.js';
+import { apiResponse } from './helpers.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
@@ -203,29 +203,20 @@ databaseRoutes.get('/status', async (c) => {
     // Backup directory doesn't exist or can't be read
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      type: 'postgres',
-      connected,
-      host: config.postgresHost,
-      port: config.postgresPort,
-      database: config.postgresDatabase,
-      stats,
-      backups,
-      legacyData: hasLegacyData ? {
-        path: sqlitePath,
-        migratable: true,
-      } : null,
-      operation: operationStatus,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    type: 'postgres',
+    connected,
+    host: config.postgresHost,
+    port: config.postgresPort,
+    database: config.postgresDatabase,
+    stats,
+    backups,
+    legacyData: hasLegacyData ? {
+      path: sqlitePath,
+      migratable: true,
+    } : null,
+    operation: operationStatus,
+  });
 });
 
 /**
