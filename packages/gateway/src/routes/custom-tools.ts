@@ -19,13 +19,12 @@ import {
   type DynamicToolDefinition,
   type ToolDefinition,
 } from '@ownpilot/core';
-import type { ApiResponse } from '../types/index.js';
 import { invalidateAgentCache } from './agents.js';
 import {
   registerToolConfigRequirements,
   unregisterDependencies,
 } from '../services/api-service-registrar.js';
-import { getUserId } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js';
 
 export const customToolsRoutes = new Hono();
 
@@ -150,16 +149,11 @@ customToolsRoutes.get('/stats', async (c) => {
   const repo = createCustomToolsRepo(getUserId(c));
   const stats = await repo.getStats();
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
+  return apiResponse(c, stats,
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -176,19 +170,14 @@ customToolsRoutes.get('/', async (c) => {
 
   const tools = await repo.list({ status, category, createdBy, limit, offset });
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       tools,
       count: tools.length,
     },
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -198,19 +187,14 @@ customToolsRoutes.get('/pending', async (c) => {
   const repo = createCustomToolsRepo(getUserId(c));
   const tools = await repo.getPendingApproval();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       tools,
       count: tools.length,
     },
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -227,16 +211,11 @@ customToolsRoutes.get('/:id', async (c) => {
     });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: tool,
+  return apiResponse(c, tool,
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -311,16 +290,11 @@ customToolsRoutes.post('/', async (c) => {
   // Invalidate agent cache so new tool is available
   invalidateAgentCache();
 
-  const response: ApiResponse = {
-    success: true,
-    data: tool,
+  return apiResponse(c, tool,
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response, 201);
+    });
 });
 
 /**
@@ -391,16 +365,11 @@ customToolsRoutes.patch('/:id', async (c) => {
   // Invalidate agent cache so tool changes take effect
   invalidateAgentCache();
 
-  const response: ApiResponse = {
-    success: true,
-    data: tool,
+  return apiResponse(c, tool,
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -432,16 +401,11 @@ customToolsRoutes.delete('/:id', async (c) => {
   // Invalidate agent cache so tool removal takes effect
   invalidateAgentCache();
 
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
+  return apiResponse(c, { deleted: true },
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 // =============================================================================
@@ -467,16 +431,11 @@ customToolsRoutes.post('/:id/enable', async (c) => {
   // Invalidate agent cache so enabled tool becomes available
   invalidateAgentCache();
 
-  const response: ApiResponse = {
-    success: true,
-    data: tool,
+  return apiResponse(c, tool,
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -498,16 +457,11 @@ customToolsRoutes.post('/:id/disable', async (c) => {
   // Invalidate agent cache so disabled tool is removed
   invalidateAgentCache();
 
-  const response: ApiResponse = {
-    success: true,
-    data: tool,
+  return apiResponse(c, tool,
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -537,16 +491,11 @@ customToolsRoutes.post('/:id/approve', async (c) => {
     invalidateAgentCache();
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: approved,
+  return apiResponse(c, approved,
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -571,16 +520,11 @@ customToolsRoutes.post('/:id/reject', async (c) => {
 
   const rejected = await repo.reject(id);
 
-  const response: ApiResponse = {
-    success: true,
-    data: rejected,
+  return apiResponse(c, rejected,
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 // =============================================================================
@@ -626,9 +570,7 @@ customToolsRoutes.post('/:id/execute', async (c) => {
   // Record usage
   await repo.recordUsage(id);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       tool: tool.name,
       result: result.content,
       isError: result.isError,
@@ -638,10 +580,7 @@ customToolsRoutes.post('/:id/execute', async (c) => {
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -708,9 +647,7 @@ customToolsRoutes.post('/test', async (c) => {
   );
   const duration = Date.now() - startTime;
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       tool: body.name,
       result: result.content,
       isError: result.isError,
@@ -721,10 +658,7 @@ customToolsRoutes.post('/test', async (c) => {
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -743,19 +677,14 @@ customToolsRoutes.get('/active/definitions', async (c) => {
     requiresConfirmation: tool.requiresApproval,
   }));
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       tools: definitions,
       count: definitions.length,
     },
     meta: {
       requestId: c.get('requestId') ?? 'unknown',
       timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 // =============================================================================
