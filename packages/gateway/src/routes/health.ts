@@ -4,9 +4,10 @@
 
 import { Hono } from 'hono';
 import { VERSION, getSandboxStatus, resetSandboxCache, ensureImage } from '@ownpilot/core';
-import type { HealthResponse, HealthCheck, ApiResponse } from '../types/index.js';
+import type { HealthResponse, HealthCheck } from '../types/index.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
+import { apiResponse } from './helpers.js';
 
 const startTime = Date.now();
 
@@ -67,40 +68,19 @@ healthRoutes.get('/', async (c) => {
   const hasWarnings = checks.some((check) => check.status === 'warn');
   const hasFails = checks.some((check) => check.status === 'fail');
 
-  const response: ApiResponse<HealthResponse & {
-    database: {
-      type: 'postgres';
-      connected: boolean;
-      host?: string;
-    };
+  return apiResponse(c, {
+    status: hasFails ? 'degraded' : allPassing ? 'healthy' : hasWarnings ? 'degraded' : 'unhealthy',
+    version: VERSION,
+    uptime,
+    checks,
+    database: databaseStatus,
     sandbox: {
-      dockerAvailable: boolean;
-      dockerVersion: string | null;
-      codeExecutionEnabled: boolean;
-      securityMode: string;
-    };
-  }> = {
-    success: true,
-    data: {
-      status: hasFails ? 'degraded' : allPassing ? 'healthy' : hasWarnings ? 'degraded' : 'unhealthy',
-      version: VERSION,
-      uptime,
-      checks,
-      database: databaseStatus,
-      sandbox: {
-        dockerAvailable: sandboxStatus?.dockerAvailable ?? false,
-        dockerVersion: sandboxStatus?.dockerVersion ?? null,
-        codeExecutionEnabled: sandboxStatus?.dockerAvailable ?? false,
-        securityMode: sandboxStatus?.relaxedSecurityRequired ? 'relaxed' : 'strict',
-      },
+      dockerAvailable: sandboxStatus?.dockerAvailable ?? false,
+      dockerVersion: sandboxStatus?.dockerVersion ?? null,
+      codeExecutionEnabled: sandboxStatus?.dockerAvailable ?? false,
+      securityMode: sandboxStatus?.relaxedSecurityRequired ? 'relaxed' : 'strict',
     },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  });
 });
 
 /**
@@ -128,16 +108,7 @@ healthRoutes.get('/sandbox', async (c) => {
   try {
     const status = await getSandboxStatus(refresh);
 
-    const response: ApiResponse<typeof status> = {
-      success: true,
-      data: status,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, status);
   } catch (error) {
     return c.json({
       success: false,
@@ -159,13 +130,8 @@ healthRoutes.get('/sandbox', async (c) => {
 healthRoutes.post('/sandbox/reset', (c) => {
   resetSandboxCache();
 
-  return c.json({
-    success: true,
-    data: { message: 'Sandbox cache reset. Next execution will re-detect Docker capabilities.' },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
+  return apiResponse(c, {
+    message: 'Sandbox cache reset. Next execution will re-detect Docker capabilities.',
   });
 });
 
@@ -193,12 +159,5 @@ healthRoutes.post('/sandbox/pull-images', async (c) => {
     }
   }
 
-  return c.json({
-    success: true,
-    data: { images: results },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  });
+  return apiResponse(c, { images: results });
 });
