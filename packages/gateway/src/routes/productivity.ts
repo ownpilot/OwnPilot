@@ -22,7 +22,7 @@ import {
   type ProcessCaptureInput,
   type CaptureType,
 } from '../db/repositories/captures.js';
-import { apiResponse, getUserId } from './helpers.js'
+import { apiResponse, apiError, getUserId } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 export const productivityRoutes = new Hono();
@@ -57,10 +57,7 @@ pomodoroRoutes.post('/session/start', async (c) => {
   const body = await c.req.json<CreateSessionInput>();
 
   if (!body.type || !body.durationMinutes) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.INVALID_REQUEST, message: 'type and durationMinutes are required' },
-    }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'type and durationMinutes are required' }, 400);
   }
 
   const repo = getPomodoroRepo(userId);
@@ -68,10 +65,7 @@ pomodoroRoutes.post('/session/start', async (c) => {
   // Check for active session
   const active = await repo.getActiveSession();
   if (active) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.SESSION_ACTIVE, message: 'A session is already running' },
-    }, 400);
+    return apiError(c, { code: ERROR_CODES.SESSION_ACTIVE, message: 'A session is already running' }, 400);
   }
 
   const session = await repo.startSession(body);
@@ -90,10 +84,7 @@ pomodoroRoutes.post('/session/:id/complete', async (c) => {
   const session = await repo.completeSession(id);
 
   if (!session) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' }, 404);
   }
 
   return apiResponse(c, { session, message: 'Session completed!' });
@@ -111,10 +102,7 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
   const session = await repo.interruptSession(id, body.reason);
 
   if (!session) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' }, 404);
   }
 
   return apiResponse(c, { session, message: 'Session interrupted.' });
@@ -215,10 +203,7 @@ habitsRoutes.post('/', async (c) => {
   const body = await c.req.json<CreateHabitInput>();
 
   if (!body.name) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.INVALID_REQUEST, message: 'name is required' },
-    }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'name is required' }, 400);
   }
 
   const repo = getHabitsRepo(userId);
@@ -260,10 +245,7 @@ habitsRoutes.get('/:id', async (c) => {
   const stats = await repo.getHabitStats(id);
 
   if (!stats) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
   }
 
   return apiResponse(c, stats);
@@ -281,10 +263,7 @@ habitsRoutes.patch('/:id', async (c) => {
   const habit = await repo.update(id, body);
 
   if (!habit) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
   }
 
   return apiResponse(c, habit);
@@ -301,10 +280,7 @@ habitsRoutes.delete('/:id', async (c) => {
   const deleted = await repo.delete(id);
 
   if (!deleted) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
   }
 
   return apiResponse(c, { message: 'Habit deleted.' });
@@ -321,10 +297,7 @@ habitsRoutes.post('/:id/archive', async (c) => {
   const habit = await repo.archive(id);
 
   if (!habit) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
   }
 
   return apiResponse(c, { habit, message: 'Habit archived.' });
@@ -342,10 +315,7 @@ habitsRoutes.post('/:id/log', async (c) => {
   const log = await repo.logHabit(id, body);
 
   if (!log) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
   }
 
   // Get updated habit stats
@@ -411,10 +381,7 @@ capturesRoutes.post('/', async (c) => {
   const body = await c.req.json<CreateCaptureInput>();
 
   if (!body.content) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.INVALID_REQUEST, message: 'content is required' },
-    }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'content is required' }, 400);
   }
 
   const repo = getCapturesRepo(userId);
@@ -478,10 +445,7 @@ capturesRoutes.get('/:id', async (c) => {
   const capture = await repo.get(id);
 
   if (!capture) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' }, 404);
   }
 
   return apiResponse(c, capture);
@@ -496,20 +460,14 @@ capturesRoutes.post('/:id/process', async (c) => {
   const body = await c.req.json<ProcessCaptureInput>();
 
   if (!body.processedAsType) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.INVALID_REQUEST, message: 'processedAsType is required' },
-    }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'processedAsType is required' }, 400);
   }
 
   const repo = getCapturesRepo(userId);
   const capture = await repo.process(id, body);
 
   if (!capture) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' }, 404);
   }
 
   return apiResponse(c, {
@@ -531,10 +489,7 @@ capturesRoutes.delete('/:id', async (c) => {
   const deleted = await repo.delete(id);
 
   if (!deleted) {
-    return c.json({
-      success: false,
-      error: { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' },
-    }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' }, 404);
   }
 
   return apiResponse(c, { message: 'Capture deleted.' });
