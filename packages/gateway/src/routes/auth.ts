@@ -10,7 +10,7 @@ import { google } from 'googleapis';
 import { settingsRepo, oauthIntegrationsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiError } from './helpers.js'
+import { getUserId, apiResponse, apiError } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('Auth');
@@ -127,15 +127,12 @@ async function retrieveOAuthState(stateToken: string): Promise<OAuthState | null
 authRoutes.get('/status', (c) => {
   const googleConfig = getGoogleOAuthConfig();
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, { data: {
       google: {
         configured: !!googleConfig,
         redirectUri: googleConfig?.redirectUri,
       },
-    },
-  });
+    }, });
 });
 
 /**
@@ -160,10 +157,7 @@ authRoutes.post('/config/google', async (c) => {
       await settingsRepo.set('google_oauth_redirect_uri', body.redirectUri);
     }
 
-    return c.json({
-      success: true,
-      message: 'Google OAuth configuration saved',
-    });
+    return apiResponse(c, { message: 'Google OAuth configuration saved', });
   } catch (error) {
     log.error('Failed to save Google OAuth config:', error);
     return apiError(c, 'Failed to save configuration', 500);
@@ -178,10 +172,7 @@ authRoutes.delete('/config/google', async (c) => {
   await settingsRepo.delete('google_oauth_client_secret');
   await settingsRepo.delete('google_oauth_redirect_uri');
 
-  return c.json({
-    success: true,
-    message: 'Google OAuth configuration removed',
-  });
+  return apiResponse(c, { message: 'Google OAuth configuration removed', });
 });
 
 /**
@@ -381,10 +372,7 @@ authRoutes.post('/google/revoke', async (c) => {
     // Delete from database
     await oauthIntegrationsRepo.delete(integrationId);
 
-    return c.json({
-      success: true,
-      message: `${integration.service} disconnected successfully`,
-    });
+    return apiResponse(c, { message: `${integration.service} disconnected successfully`, });
   } catch (error) {
     log.error('Failed to revoke OAuth:', error);
     return apiError(c, 'Failed to disconnect', 500);
@@ -446,13 +434,10 @@ authRoutes.post('/google/refresh', async (c) => {
       expiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : undefined,
     });
 
-    return c.json({
-      success: true,
-      message: 'Token refreshed successfully',
+    return apiResponse(c, { message: 'Token refreshed successfully',
       expiresAt: credentials.expiry_date
         ? new Date(credentials.expiry_date).toISOString()
-        : undefined,
-    });
+        : undefined, });
   } catch (error) {
     log.error('Failed to refresh token:', error);
 
