@@ -6,11 +6,11 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { streamSSE } from 'hono/streaming';
 import type {
-  ApiResponse,
   ChatRequest,
   ChatResponse,
   StreamChunkResponse,
 } from '../types/index.js';
+import { apiResponse } from './helpers.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
@@ -517,24 +517,7 @@ chatRoutes.post('/', async (c) => {
   if (await isDemoMode()) {
     const demoResponse = generateDemoResponse(body.message, provider, model);
 
-    const response: ApiResponse<ChatResponse> = {
-      success: true,
-      data: {
-        id: crypto.randomUUID(),
-        conversationId: 'demo-conversation',
-        message: demoResponse,
-        response: demoResponse,
-        model,
-        finishReason: 'stop',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-        processingTime: 50,
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, { /* PLACEHOLDER - manual fix needed */ });
   }
 
   // Validate model is available for non-demo mode
@@ -1040,7 +1023,7 @@ chatRoutes.post('/', async (c) => {
     const conversation = agent.getConversation();
     const busUsage = busResult.response.metadata.tokens as { input: number; output: number } | undefined;
 
-    const response: ApiResponse<ChatResponse> = {
+    return c.json({
       success: true,
       data: {
         id: busResult.response.id,
@@ -1074,9 +1057,7 @@ chatRoutes.post('/', async (c) => {
         timestamp: new Date().toISOString(),
         processingTime,
       },
-    };
-
-    return c.json(response);
+    });
   }
 
   // ── Legacy Direct Path (fallback) ─────────────────────────────────────────
@@ -1414,7 +1395,7 @@ chatRoutes.post('/', async (c) => {
       }
     : undefined;
 
-  const response: ApiResponse<ChatResponse> = {
+  const response = {
     success: true,
     data: {
       id: result.value.id,
@@ -1526,21 +1507,13 @@ chatRoutes.get('/conversations/:id', async (c) => {
 
   // In demo mode, return empty conversation
   if (await isDemoMode()) {
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        id,
-        systemPrompt: 'You are a helpful AI assistant.',
-        messages: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-    return c.json(response);
+    return apiResponse(c, {
+      id,
+      systemPrompt: 'You are a helpful AI assistant.',
+      messages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   const agent = agentId ? await getAgent(agentId) : await getOrCreateDefaultAgent();
@@ -1560,27 +1533,18 @@ chatRoutes.get('/conversations/:id', async (c) => {
     });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      id: conversation.id,
-      systemPrompt: conversation.systemPrompt,
-      messages: conversation.messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-        toolCalls: m.toolCalls,
-        toolResults: m.toolResults,
-      })),
-      createdAt: conversation.createdAt.toISOString(),
-      updatedAt: conversation.updatedAt.toISOString(),
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    id: conversation.id,
+    systemPrompt: conversation.systemPrompt,
+    messages: conversation.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+      toolCalls: m.toolCalls,
+      toolResults: m.toolResults,
+    })),
+    createdAt: conversation.createdAt.toISOString(),
+    updatedAt: conversation.updatedAt.toISOString(),
+  });
 });
 
 /**
@@ -1592,14 +1556,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
 
   // In demo mode, just return success
   if (await isDemoMode()) {
-    const response: ApiResponse = {
-      success: true,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-    return c.json(response);
+    return apiResponse(c, {});
   }
 
   const agent = agentId ? await getAgent(agentId) : await getOrCreateDefaultAgent();
@@ -1623,15 +1580,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
     });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {});
 });
 
 // =====================================================
@@ -1658,32 +1607,23 @@ chatRoutes.get('/history', async (c) => {
     isArchived: archived,
   });
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      conversations: conversations.map(conv => ({
-        id: conv.id,
-        title: conv.title,
-        agentId: conv.agentId,
-        agentName: conv.agentName,
-        provider: conv.provider,
-        model: conv.model,
-        messageCount: conv.messageCount,
-        isArchived: conv.isArchived,
-        createdAt: conv.createdAt.toISOString(),
-        updatedAt: conv.updatedAt.toISOString(),
-      })),
-      total: conversations.length,
-      limit,
-      offset,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    conversations: conversations.map(conv => ({
+      id: conv.id,
+      title: conv.title,
+      agentId: conv.agentId,
+      agentName: conv.agentName,
+      provider: conv.provider,
+      model: conv.model,
+      messageCount: conv.messageCount,
+      isArchived: conv.isArchived,
+      createdAt: conv.createdAt.toISOString(),
+      updatedAt: conv.updatedAt.toISOString(),
+    })),
+    total: conversations.length,
+    limit,
+    offset,
+  });
 });
 
 /**
@@ -1702,40 +1642,31 @@ chatRoutes.get('/history/:id', async (c) => {
     });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      conversation: {
-        id: data.conversation.id,
-        title: data.conversation.title,
-        agentId: data.conversation.agentId,
-        agentName: data.conversation.agentName,
-        provider: data.conversation.provider,
-        model: data.conversation.model,
-        messageCount: data.conversation.messageCount,
-        isArchived: data.conversation.isArchived,
-        createdAt: data.conversation.createdAt.toISOString(),
-        updatedAt: data.conversation.updatedAt.toISOString(),
-      },
-      messages: data.messages.map(msg => ({
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        provider: msg.provider,
-        model: msg.model,
-        toolCalls: msg.toolCalls,
-        trace: msg.trace,
-        isError: msg.isError,
-        createdAt: msg.createdAt.toISOString(),
-      })),
+  return apiResponse(c, {
+    conversation: {
+      id: data.conversation.id,
+      title: data.conversation.title,
+      agentId: data.conversation.agentId,
+      agentName: data.conversation.agentName,
+      provider: data.conversation.provider,
+      model: data.conversation.model,
+      messageCount: data.conversation.messageCount,
+      isArchived: data.conversation.isArchived,
+      createdAt: data.conversation.createdAt.toISOString(),
+      updatedAt: data.conversation.updatedAt.toISOString(),
     },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    messages: data.messages.map(msg => ({
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      provider: msg.provider,
+      model: msg.model,
+      toolCalls: msg.toolCalls,
+      trace: msg.trace,
+      isError: msg.isError,
+      createdAt: msg.createdAt.toISOString(),
+    })),
+  });
 });
 
 /**
@@ -1754,16 +1685,7 @@ chatRoutes.delete('/history/:id', async (c) => {
     });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { deleted: true });
 });
 
 /**
@@ -1783,16 +1705,7 @@ chatRoutes.patch('/history/:id/archive', async (c) => {
     });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: { archived: updated.isArchived },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { archived: updated.isArchived });
 });
 
 // =====================================================
@@ -1819,33 +1732,24 @@ chatRoutes.get('/logs', async (c) => {
     conversationId,
   });
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      logs: logs.map(log => ({
-        id: log.id,
-        type: log.type,
-        conversationId: log.conversationId,
-        provider: log.provider,
-        model: log.model,
-        statusCode: log.statusCode,
-        durationMs: log.durationMs,
-        inputTokens: log.inputTokens,
-        outputTokens: log.outputTokens,
-        error: log.error,
-        createdAt: log.createdAt.toISOString(),
-      })),
-      total: logs.length,
-      limit,
-      offset,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    logs: logs.map(log => ({
+      id: log.id,
+      type: log.type,
+      conversationId: log.conversationId,
+      provider: log.provider,
+      model: log.model,
+      statusCode: log.statusCode,
+      durationMs: log.durationMs,
+      inputTokens: log.inputTokens,
+      outputTokens: log.outputTokens,
+      error: log.error,
+      createdAt: log.createdAt.toISOString(),
+    })),
+    total: logs.length,
+    limit,
+    offset,
+  });
 });
 
 /**
@@ -1861,16 +1765,7 @@ chatRoutes.get('/logs/stats', async (c) => {
   const logsRepo = new LogsRepository(userId);
   const stats = await logsRepo.getStats(startDate);
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats);
 });
 
 /**
@@ -1889,16 +1784,7 @@ chatRoutes.get('/logs/:id', async (c) => {
     });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: log,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, log);
 });
 
 /**
@@ -1917,19 +1803,10 @@ chatRoutes.delete('/logs', async (c) => {
     ? await logsRepo.clearAll()
     : await logsRepo.deleteOldLogs(days);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      deleted,
-      mode: clearAll ? 'all' : `older than ${days} days`,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    deleted,
+    mode: clearAll ? 'all' : `older than ${days} days`,
+  });
 });
 
 // =====================================================
@@ -1947,19 +1824,10 @@ chatRoutes.post('/reset-context', async (c) => {
     // Clear all cached chat agents
     const count = clearAllChatAgentCaches();
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        cleared: count,
-        message: `Cleared ${count} chat agent caches`,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, {
+      cleared: count,
+      message: `Cleared ${count} chat agent caches`,
+    });
   }
 
   // Reset specific provider/model context
@@ -1968,21 +1836,12 @@ chatRoutes.post('/reset-context', async (c) => {
 
   const reset = resetChatAgentContext(provider, model);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      reset,
-      provider,
-      model,
-      message: reset
-        ? `Context reset for ${provider}/${model}`
-        : `No cached agent found for ${provider}/${model}`,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    reset,
+    provider,
+    model,
+    message: reset
+      ? `Context reset for ${provider}/${model}`
+      : `No cached agent found for ${provider}/${model}`,
+  });
 });
