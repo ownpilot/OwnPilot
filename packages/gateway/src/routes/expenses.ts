@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { ApiResponse } from '../types/index.js';
+import { apiResponse, apiError } from './helpers.js';
 
 // =============================================================================
 // Types
@@ -146,22 +146,13 @@ expensesRoutes.get('/', async (c) => {
   const total = expenses.length;
   const paginatedExpenses = expenses.slice(offset, offset + limit);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       expenses: paginatedExpenses,
       total,
       limit,
       offset,
       categories: db.categories,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -248,9 +239,7 @@ expensesRoutes.get('/summary', async (c) => {
   const uniqueDays = new Set(expenses.map((e) => e.date)).size || 1;
   const dailyAverage = grandTotal / uniqueDays;
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       period: {
         name: period,
         startDate,
@@ -266,14 +255,7 @@ expensesRoutes.get('/summary', async (c) => {
         biggestExpenses,
       },
       categories: db.categories,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -335,22 +317,13 @@ expensesRoutes.get('/monthly', async (c) => {
 
   const yearTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       year,
       months: chartData,
       yearTotal: Math.round(yearTotal * 100) / 100,
       expenseCount: expenses.length,
       categories: db.categories,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -387,16 +360,7 @@ expensesRoutes.post('/', async (c) => {
   db.expenses.push(expense);
   await saveExpenseDb(db);
 
-  const response: ApiResponse = {
-    success: true,
-    data: expense,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response, 201);
+  return apiResponse(c, expense, 201);
 });
 
 /**
@@ -410,13 +374,7 @@ expensesRoutes.put('/:id', async (c) => {
   const index = db.expenses.findIndex((e) => e.id === id);
 
   if (index === -1) {
-    return c.json(
-      {
-        success: false,
-        error: { code: 'NOT_FOUND', message: `Expense not found: ${id}` },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Expense not found: ${id}` }, 404);
   }
 
   const existing = db.expenses[index]!;
@@ -430,16 +388,7 @@ expensesRoutes.put('/:id', async (c) => {
   db.expenses[index] = updated;
   await saveExpenseDb(db);
 
-  const response: ApiResponse = {
-    success: true,
-    data: updated,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, updated);
 });
 
 /**
@@ -452,26 +401,11 @@ expensesRoutes.delete('/:id', async (c) => {
   const index = db.expenses.findIndex((e) => e.id === id);
 
   if (index === -1) {
-    return c.json(
-      {
-        success: false,
-        error: { code: 'NOT_FOUND', message: `Expense not found: ${id}` },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Expense not found: ${id}` }, 404);
   }
 
   const deleted = db.expenses.splice(index, 1)[0];
   await saveExpenseDb(db);
 
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { deleted });
 });
