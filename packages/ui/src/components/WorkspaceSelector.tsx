@@ -1,20 +1,7 @@
 import { useState, useEffect } from 'react';
 import { HardDrive, Plus, Trash2, Download, Folder, FolderOpen, RefreshCw } from './icons';
 import { workspacesApi, apiClient } from '../api';
-
-interface WorkspaceInfo {
-  id: string;
-  name: string;
-  description?: string;
-  status: string;
-  containerStatus: string;
-  createdAt: string;
-  updatedAt: string;
-  storageUsage?: {
-    usedBytes: number;
-    fileCount: number;
-  };
-}
+import type { WorkspaceSelectorInfo } from '../api';
 
 interface WorkspaceSelectorProps {
   selectedWorkspaceId: string | null;
@@ -30,7 +17,7 @@ function formatBytes(bytes: number): string {
 }
 
 export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: WorkspaceSelectorProps) {
-  const [workspaces, setWorkspaces] = useState<WorkspaceInfo[]>([]);
+  const [workspaces, setWorkspaces] = useState<WorkspaceSelectorInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -42,7 +29,7 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
   const fetchWorkspaces = async () => {
     try {
       const data = await workspacesApi.list();
-      const list = data.workspaces as unknown as WorkspaceInfo[];
+      const list = data.workspaces;
       setWorkspaces(list ?? []);
       // Auto-select first workspace if none selected
       if (!selectedWorkspaceId && Array.isArray(list) && list.length > 0) {
@@ -63,7 +50,7 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
     if (!newWorkspaceName.trim()) return;
     setIsCreating(true);
     try {
-      const created = await workspacesApi.create(newWorkspaceName.trim()) as unknown as WorkspaceInfo;
+      const created = await workspacesApi.create(newWorkspaceName.trim());
       setWorkspaces([created, ...workspaces]);
       onWorkspaceChange(created.id);
       setShowCreateModal(false);

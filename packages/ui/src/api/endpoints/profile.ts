@@ -3,11 +3,12 @@
  */
 
 import { apiClient } from '../client';
+import type { ProfileData } from '../types';
 
 export const profileApi = {
-  get: () => apiClient.get<Record<string, unknown>>('/profile'),
+  get: () => apiClient.get<ProfileData>('/profile'),
   quickSetup: (data: Record<string, unknown>) =>
-    apiClient.post<{ profile: Record<string, unknown> }>('/profile/quick', data),
+    apiClient.post<{ profile: ProfileData }>('/profile/quick', data),
   setData: (category: string, key: string, value: unknown) =>
     apiClient.post<void>('/profile/data', { category, key, value }),
   export: () =>

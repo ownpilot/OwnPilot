@@ -7,13 +7,6 @@ import { toolsApi, customToolsApi, customDataApi } from '../api';
 export type ResourceType = 'tool' | 'custom-tool' | 'custom-data' | 'builtin-data';
 type TabId = 'tools' | 'custom-data' | 'builtin-data';
 
-interface CustomDataTable {
-  name: string;
-  displayName?: string;
-  description?: string;
-  recordCount?: number;
-}
-
 export interface ResourceAttachment {
   name: string;
   displayName?: string;
@@ -318,7 +311,7 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
 
       } else if (tab === 'custom-data') {
         const tables = await customDataApi.tables();
-        const tableItems: ResourceItem[] = ((Array.isArray(tables) ? tables : []) as unknown as CustomDataTable[]).map((t) => ({
+        const tableItems: ResourceItem[] = (Array.isArray(tables) ? tables : []).map((t) => ({
           name: t.displayName || t.name,
           displayName: t.displayName || t.name,
           internalName: t.name,

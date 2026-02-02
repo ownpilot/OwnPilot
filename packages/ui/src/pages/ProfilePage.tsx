@@ -18,67 +18,7 @@ import {
   Upload,
 } from '../components/icons';
 import { profileApi } from '../api';
-
-interface ProfileData {
-  userId: string;
-  identity: {
-    name?: string;
-    nickname?: string;
-    age?: number;
-    birthday?: string;
-    gender?: string;
-    nationality?: string;
-    languages?: string[];
-  };
-  location: {
-    home?: { city?: string; country?: string; timezone?: string };
-    work?: { city?: string; company?: string };
-    current?: string;
-  };
-  lifestyle: {
-    wakeUpTime?: string;
-    sleepTime?: string;
-    workHours?: string;
-    eatingHabits?: {
-      favoriteFoods?: string[];
-      dislikedFoods?: string[];
-      dietaryRestrictions?: string[];
-      allergies?: string[];
-    };
-    hobbies?: string[];
-  };
-  communication: {
-    preferredStyle?: 'formal' | 'casual' | 'mixed';
-    verbosity?: 'concise' | 'detailed' | 'mixed';
-    primaryLanguage?: string;
-    emoji?: boolean;
-    humor?: boolean;
-  };
-  work: {
-    occupation?: string;
-    company?: string;
-    role?: string;
-    skills?: string[];
-  };
-  goals: {
-    shortTerm?: string[];
-    mediumTerm?: string[];
-    longTerm?: string[];
-  };
-  aiPreferences: {
-    autonomyLevel?: 'none' | 'low' | 'medium' | 'high' | 'full';
-    proactivity?: boolean;
-    reminders?: boolean;
-    suggestions?: boolean;
-    boundaries?: string[];
-    customInstructions?: string[];
-  };
-  meta: {
-    completeness: number;
-    lastUpdated: string;
-    totalEntries: number;
-  };
-}
+import type { ProfileData } from '../api';
 
 interface QuickSetupData {
   name: string;
@@ -130,7 +70,7 @@ export function ProfilePage() {
   const fetchProfile = async () => {
     try {
       setIsLoading(true);
-      const data = await profileApi.get() as unknown as ProfileData;
+      const data = await profileApi.get();
       setProfile(data);
       // Pre-fill quick setup with existing data
       setQuickSetup({
@@ -156,7 +96,7 @@ export function ProfilePage() {
       setSaveSuccess(false);
 
       const result = await profileApi.quickSetup(quickSetup as unknown as Record<string, unknown>);
-      setProfile(result.profile as unknown as ProfileData);
+      setProfile(result.profile);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
@@ -327,13 +267,13 @@ export function ProfilePage() {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-text-muted dark:text-dark-text-muted">Profile completeness</span>
                   <span className="text-text-primary dark:text-dark-text-primary font-medium">
-                    {profile.meta.completeness}%
+                    {profile.meta?.completeness ?? 0}%
                   </span>
                 </div>
                 <div className="h-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary transition-all"
-                    style={{ width: `${profile.meta.completeness}%` }}
+                    style={{ width: `${profile.meta?.completeness ?? 0}%` }}
                   />
                 </div>
               </div>
@@ -378,7 +318,7 @@ export function ProfilePage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-border dark:border-dark-border text-center">
-                <div className="text-2xl font-bold text-primary">{profile.meta.totalEntries}</div>
+                <div className="text-2xl font-bold text-primary">{profile.meta?.totalEntries ?? 0}</div>
                 <div className="text-sm text-text-muted dark:text-dark-text-muted">Data entries</div>
               </div>
               <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-border dark:border-dark-border text-center">

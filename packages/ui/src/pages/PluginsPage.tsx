@@ -2,63 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Puzzle, Power, Wrench, Shield, Lock, Check, X, RefreshCw, Settings, Globe, AlertTriangle, Database } from '../components/icons';
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
 import { pluginsApi, apiClient } from '../api';
+import type { PluginInfo, PluginStats } from '../api';
 
-interface ConfigFieldDefinition {
-  name: string;
-  label: string;
-  type: 'string' | 'secret' | 'url' | 'number' | 'boolean' | 'select' | 'json';
-  required?: boolean;
-  defaultValue?: unknown;
-  envVar?: string;
-  placeholder?: string;
-  description?: string;
-  options?: Array<{ value: string; label: string }>;
-  order?: number;
-}
 
-interface PluginInfo {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  author?: {
-    name: string;
-    email?: string;
-    url?: string;
-  };
-  status: 'installed' | 'enabled' | 'disabled' | 'error' | 'updating';
-  capabilities: string[];
-  permissions: string[];
-  grantedPermissions: string[];
-  toolCount: number;
-  tools: string[];
-  handlerCount: number;
-  icon?: string;
-  docs?: string;
-  installedAt: string;
-  updatedAt: string;
-  category?: string;
-  pluginConfigSchema?: ConfigFieldDefinition[];
-  settings?: Record<string, unknown>;
-  hasSettings: boolean;
-  requiredServices?: Array<{
-    name: string;
-    displayName: string;
-    isConfigured: boolean;
-  }>;
-  hasUnconfiguredServices: boolean;
-}
 
-interface PluginStats {
-  total: number;
-  enabled: number;
-  disabled: number;
-  error: number;
-  totalTools: number;
-  totalHandlers: number;
-  byCapability: Record<string, number>;
-  byPermission: Record<string, number>;
-}
 
 const CAPABILITY_LABELS: Record<string, { label: string; color: string }> = {
   tools: { label: 'Tools', color: 'bg-blue-500/20 text-blue-600 dark:text-blue-400' },
@@ -105,7 +52,7 @@ export function PluginsPage() {
   const fetchPlugins = async () => {
     try {
       const data = await pluginsApi.list();
-      const result = data as unknown as { plugins: PluginInfo[] };
+      const result = data as { plugins: PluginInfo[] };
       setPlugins(result.plugins);
     } catch {
       // API client handles error reporting
@@ -117,7 +64,7 @@ export function PluginsPage() {
   const fetchStats = async () => {
     try {
       const data = await pluginsApi.stats();
-      setStats(data as unknown as PluginStats);
+      setStats(data);
     } catch {
       // API client handles error reporting
     }
@@ -350,7 +297,7 @@ function PluginCard({ plugin, onToggle, onClick }: PluginCardProps) {
           {plugin.permissions.length > 0 && (
             <span className="flex items-center gap-1">
               <Lock className="w-3 h-3" />
-              {plugin.grantedPermissions.length}/{plugin.permissions.length}
+              {(plugin.grantedPermissions?.length ?? 0)}/{plugin.permissions.length}
             </span>
           )}
         </div>
@@ -609,7 +556,7 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
                   </h4>
                   <div className="space-y-2">
                     {plugin.permissions.map((perm) => {
-                      const isGranted = plugin.grantedPermissions.includes(perm);
+                      const isGranted = (plugin.grantedPermissions ?? []).includes(perm);
                       return (
                         <div
                           key={perm}
@@ -651,7 +598,7 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
                   <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
                     <span className="text-text-muted dark:text-dark-text-muted">Updated</span>
                     <p className="text-text-primary dark:text-dark-text-primary">
-                      {new Date(plugin.updatedAt).toLocaleDateString()}
+                      {new Date(plugin.updatedAt ?? plugin.installedAt).toLocaleDateString()}
                     </p>
                   </div>
                   {plugin.author?.email && (

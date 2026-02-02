@@ -7,6 +7,7 @@ import {
   AlertTriangle,
 } from './icons';
 import { dashboardApi } from '../api';
+import type { DailyBriefingData } from '../api';
 
 interface TimelineItem {
   id: string;
@@ -17,42 +18,6 @@ interface TimelineItem {
   priority?: 'high' | 'medium' | 'low';
   status?: string;
   isPast: boolean;
-}
-
-interface DailyBriefingData {
-  tasks: {
-    dueToday: Array<{
-      id: string;
-      title: string;
-      dueDate?: string;
-      priority: string;
-      status: string;
-    }>;
-    overdue: Array<{
-      id: string;
-      title: string;
-      dueDate?: string;
-      priority: string;
-      status: string;
-    }>;
-  };
-  calendar: {
-    todayEvents: Array<{
-      id: string;
-      title: string;
-      startTime: string;
-      endTime?: string;
-      description?: string;
-    }>;
-  };
-  triggers: {
-    scheduledToday: Array<{
-      id: string;
-      name: string;
-      nextFire?: string;
-      description?: string;
-    }>;
-  };
 }
 
 export function TimelineView() {
@@ -66,7 +31,7 @@ export function TimelineView() {
 
   const fetchTimelineData = async () => {
     try {
-      const data = await dashboardApi.data() as unknown as DailyBriefingData;
+      const data = await dashboardApi.data();
       const timelineItems = buildTimelineItems(data);
       setItems(timelineItems);
     } catch {

@@ -1,0 +1,643 @@
+/**
+ * API Response Types
+ *
+ * Shared type definitions for API endpoint responses.
+ * These match the shapes returned by the gateway API and
+ * are used by both endpoint definitions and consuming pages/components.
+ */
+
+// ---- Autonomy ----
+
+export interface PendingApproval {
+  id: string;
+  userId: string;
+  category: string;
+  type: string;
+  description: string;
+  params: Record<string, unknown>;
+  risk: {
+    level: string;
+    score: number;
+    factors: string[];
+  };
+  status: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+// ---- System / Health / Database ----
+
+export interface SandboxStatus {
+  dockerAvailable: boolean;
+  dockerVersion: string | null;
+  codeExecutionEnabled: boolean;
+  securityMode: 'strict' | 'relaxed';
+}
+
+export interface DatabaseStatus {
+  type: 'postgres';
+  connected: boolean;
+  host?: string;
+}
+
+export interface BackupInfo {
+  name: string;
+  size: number;
+  created: string;
+}
+
+export interface DatabaseStats {
+  database: { size: string; sizeBytes: number };
+  tables: { name: string; rowCount: number; size: string }[];
+  connections: { active: number; max: number };
+  version: string;
+}
+
+// ---- Debug / Logs ----
+
+export interface DebugLogEntry {
+  timestamp: string;
+  type: 'request' | 'response' | 'tool_call' | 'tool_result' | 'error' | 'retry';
+  provider?: string;
+  model?: string;
+  data: Record<string, unknown>;
+  duration?: number;
+}
+
+export interface DebugInfo {
+  enabled: boolean;
+  entries: DebugLogEntry[];
+  summary: {
+    requests: number;
+    responses: number;
+    toolCalls: number;
+    errors: number;
+    retries: number;
+  };
+}
+
+export interface RequestLog {
+  id: string;
+  type: 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other';
+  conversationId: string | null;
+  provider: string | null;
+  model: string | null;
+  statusCode: number | null;
+  durationMs: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  error: string | null;
+  createdAt: string;
+}
+
+export interface LogDetail extends RequestLog {
+  userId: string;
+  endpoint: string | null;
+  method: string;
+  requestBody: Record<string, unknown> | null;
+  responseBody: Record<string, unknown> | null;
+  totalTokens: number | null;
+  errorStack: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+}
+
+export interface LogStats {
+  totalRequests: number;
+  errorCount: number;
+  successCount: number;
+  avgDurationMs: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  byProvider: Record<string, number>;
+  byType: Record<string, number>;
+}
+
+// ---- Plugins ----
+
+export interface ConfigFieldDefinition {
+  name: string;
+  label: string;
+  type: 'string' | 'secret' | 'url' | 'number' | 'boolean' | 'select' | 'json';
+  required?: boolean;
+  defaultValue?: unknown;
+  envVar?: string;
+  placeholder?: string;
+  description?: string;
+  options?: Array<{ value: string; label: string }>;
+  order?: number;
+}
+
+export interface PluginInfo {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  icon?: string;
+  author?: {
+    name: string;
+    email?: string;
+    url?: string;
+  };
+  status: 'installed' | 'enabled' | 'disabled' | 'error' | 'updating';
+  category?: string;
+  capabilities: string[];
+  permissions: string[];
+  grantedPermissions?: string[];
+  tools: string[];
+  toolCount?: number;
+  handlers: string[];
+  error?: string;
+  installedAt: string;
+  updatedAt?: string;
+  docs?: string;
+  hasSettings?: boolean;
+  hasUnconfiguredServices?: boolean;
+  settings?: Record<string, unknown>;
+  configSchema?: ConfigFieldDefinition[];
+  pluginConfigSchema?: ConfigFieldDefinition[];
+  configValues?: Record<string, unknown>;
+  services?: Array<{
+    serviceName: string;
+    displayName: string;
+    isConfigured: boolean;
+  }>;
+  requiredServices?: Array<{
+    name: string;
+    displayName: string;
+    isConfigured: boolean;
+  }>;
+}
+
+export interface PluginStats {
+  total: number;
+  enabled: number;
+  disabled: number;
+  error: number;
+  totalTools: number;
+  totalHandlers: number;
+  byCapability: Record<string, number>;
+  byPermission: Record<string, number>;
+}
+
+// ---- Config Services ----
+
+export interface RequiredByEntry {
+  type: 'tool' | 'plugin';
+  name: string;
+  id: string;
+}
+
+export interface ConfigEntryView {
+  id: string;
+  serviceName: string;
+  label: string;
+  data: Record<string, unknown>;
+  isDefault: boolean;
+  isActive: boolean;
+  hasSecrets: boolean;
+  secretFields: string[];
+}
+
+export interface ConfigServiceView {
+  id: string;
+  name: string;
+  displayName: string;
+  category: string;
+  description: string | null;
+  docsUrl: string | null;
+  configSchema: ConfigFieldDefinition[];
+  multiEntry: boolean;
+  requiredBy: RequiredByEntry[];
+  isActive: boolean;
+  isConfigured: boolean;
+  entryCount: number;
+  entries: ConfigEntryView[];
+}
+
+export interface ConfigServiceStats {
+  total: number;
+  configured: number;
+  active: number;
+  categories: string[];
+  neededByTools: number;
+  neededButUnconfigured: number;
+}
+
+// ---- Workspaces (workspace selector) ----
+
+export interface WorkspaceSelectorInfo {
+  id: string;
+  name: string;
+  description?: string;
+  status: string;
+  containerStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  storageUsage?: {
+    usedBytes: number;
+    fileCount: number;
+  };
+}
+
+// ---- File Workspaces (workspaces page) ----
+
+export interface FileWorkspaceInfo {
+  id: string;
+  name: string;
+  path: string;
+  createdAt: string;
+  updatedAt: string;
+  agentId?: string;
+  sessionId?: string;
+  description?: string;
+  tags?: string[];
+  size?: number;
+  fileCount?: number;
+}
+
+export interface WorkspaceFile {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  size: number;
+  modifiedAt: string;
+}
+
+// ---- Custom Data ----
+
+export interface ColumnDefinition {
+  name: string;
+  type: 'text' | 'number' | 'boolean' | 'date' | 'datetime' | 'json';
+  required?: boolean;
+  description?: string;
+}
+
+export interface CustomTable {
+  id: string;
+  name: string;
+  displayName: string;
+  description?: string;
+  columns: ColumnDefinition[];
+  recordCount?: number;
+  ownerPluginId?: string;
+  isProtected?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomRecord {
+  id: string;
+  tableId: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---- Channels ----
+
+export interface Channel {
+  id: string;
+  type: string;
+  name: string;
+  status: 'connected' | 'disconnected' | 'connecting' | 'error';
+  botInfo?: {
+    username: string;
+    firstName: string;
+  };
+}
+
+export interface ChannelMessage {
+  id: string;
+  channelId: string;
+  channelType: 'telegram' | 'discord' | 'slack' | 'matrix' | 'webchat' | 'whatsapp' | 'signal';
+  sender: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+  content: string;
+  timestamp: string;
+  isRead: boolean;
+  read: boolean;
+  replied: boolean;
+  direction: 'incoming' | 'outgoing';
+  replyTo?: string;
+  metadata?: Record<string, unknown>;
+}
+
+// ---- Expenses ----
+
+export interface ExpenseEntry {
+  id: string;
+  date: string;
+  amount: number;
+  currency: string;
+  category: string;
+  description: string;
+  paymentMethod?: string;
+  tags?: string[];
+  source: string;
+  notes?: string;
+}
+
+export interface ExpenseMonthData {
+  month: string;
+  monthNum: string;
+  total: number;
+  count: number;
+  byCategory: Record<string, number>;
+}
+
+export interface ExpenseCategoryInfo {
+  budget?: number;
+  color?: string;
+}
+
+export interface ExpenseMonthlyResponse {
+  year: number;
+  months: ExpenseMonthData[];
+  yearTotal: number;
+  expenseCount: number;
+  categories: Record<string, ExpenseCategoryInfo>;
+}
+
+export interface ExpenseSummaryResponse {
+  period: {
+    name: string;
+    startDate: string;
+    endDate: string;
+  };
+  summary: {
+    totalExpenses: number;
+    grandTotal: number;
+    dailyAverage: number;
+    totalByCurrency: Record<string, number>;
+    totalByCategory: Record<string, number>;
+    topCategories: Array<{
+      category: string;
+      amount: number;
+      percentage: number;
+      color: string;
+    }>;
+    biggestExpenses: ExpenseEntry[];
+  };
+  categories: Record<string, ExpenseCategoryInfo>;
+}
+
+// ---- Costs ----
+
+export interface CostSummary {
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCost: number;
+  totalCostFormatted: string;
+  averageLatencyMs: number;
+  periodStart: string;
+  periodEnd: string;
+}
+
+export interface BudgetPeriod {
+  spent: number;
+  limit?: number;
+  percentage: number;
+  remaining?: number;
+}
+
+export interface BudgetStatus {
+  daily: BudgetPeriod;
+  weekly: BudgetPeriod;
+  monthly: BudgetPeriod;
+  alerts: Array<{
+    type: string;
+    threshold: number;
+    currentSpend: number;
+    limit: number;
+    timestamp: string;
+  }>;
+}
+
+export interface ProviderBreakdown {
+  provider: string;
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+  cost: number;
+  costFormatted: string;
+  percentOfTotal: number;
+}
+
+export interface DailyUsage {
+  date: string;
+  requests: number;
+  cost: number;
+  costFormatted: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+// ---- Dashboard ----
+
+export interface AIBriefing {
+  id: string;
+  summary: string;
+  priorities: string[];
+  insights: string[];
+  suggestedFocusAreas: string[];
+  generatedAt: string;
+  expiresAt: string;
+  modelUsed: string;
+  cached: boolean;
+}
+
+export interface DailyBriefingData {
+  tasks: {
+    dueToday: Array<{
+      id: string;
+      title: string;
+      dueDate?: string;
+      priority: string;
+      status: string;
+    }>;
+    overdue: Array<{
+      id: string;
+      title: string;
+      dueDate?: string;
+      priority: string;
+      status: string;
+    }>;
+  };
+  calendar: {
+    todayEvents: Array<{
+      id: string;
+      title: string;
+      startTime: string;
+      endTime?: string;
+      description?: string;
+    }>;
+  };
+  triggers: {
+    scheduledToday: Array<{
+      id: string;
+      name: string;
+      nextFire?: string;
+      description?: string;
+    }>;
+  };
+}
+
+// ---- Media Settings ----
+
+export interface ProviderWithStatus {
+  id: string;
+  name: string;
+  models: string[];
+  voices?: string[];
+  isConfigured: boolean;
+  apiKeyName: string;
+}
+
+export interface CapabilitySettings {
+  capability: string;
+  name: string;
+  description: string;
+  currentProvider: string | null;
+  currentModel: string | null;
+  availableProviders: ProviderWithStatus[];
+}
+
+// ---- Model Configs / AI Models ----
+
+export type ModelCapability =
+  | 'chat'
+  | 'code'
+  | 'vision'
+  | 'function_calling'
+  | 'json_mode'
+  | 'streaming'
+  | 'embeddings'
+  | 'image_generation'
+  | 'audio'
+  | 'reasoning';
+
+export interface MergedModel {
+  providerId: string;
+  providerName: string;
+  modelId: string;
+  displayName: string;
+  capabilities: ModelCapability[];
+  pricingInput?: number;
+  pricingOutput?: number;
+  pricingPerRequest?: number;
+  contextWindow?: number;
+  maxOutput?: number;
+  isEnabled: boolean;
+  isCustom: boolean;
+  hasOverride: boolean;
+  isConfigured: boolean;
+  source: 'builtin' | 'aggregator' | 'custom' | 'local';
+}
+
+export interface AvailableProvider {
+  id: string;
+  name: string;
+  type: 'builtin' | 'aggregator';
+  description?: string;
+  apiBase?: string;
+  apiKeyEnv: string;
+  docsUrl?: string;
+  modelCount: number;
+  isEnabled: boolean;
+  isConfigured: boolean;
+}
+
+export interface LocalProvider {
+  id: string;
+  name: string;
+  providerType: string;
+  baseUrl: string;
+  isEnabled: boolean;
+  isDefault: boolean;
+  modelCount: number;
+  lastDiscoveredAt?: string;
+}
+
+export interface LocalProviderTemplate {
+  id: string;
+  name: string;
+  providerType: string;
+  baseUrl: string;
+  discoveryEndpoint: string;
+  description: string;
+}
+
+export interface CapabilityDef {
+  id: ModelCapability;
+  name: string;
+  description: string;
+}
+
+// ---- Profile ----
+
+export interface ProfileData {
+  userId: string;
+  identity: {
+    name?: string;
+    nickname?: string;
+    age?: number;
+    birthday?: string;
+    gender?: string;
+    nationality?: string;
+    languages?: string[];
+  };
+  location: {
+    home?: { city?: string; country?: string; timezone?: string };
+    work?: { city?: string; company?: string };
+    current?: string;
+  };
+  lifestyle: {
+    wakeUpTime?: string;
+    sleepTime?: string;
+    workHours?: string;
+    eatingHabits?: {
+      favoriteFoods?: string[];
+      dislikedFoods?: string[];
+      dietaryRestrictions?: string[];
+      allergies?: string[];
+    };
+    hobbies?: string[];
+  };
+  communication: {
+    preferredStyle?: 'formal' | 'casual' | 'mixed';
+    verbosity?: 'concise' | 'detailed' | 'mixed';
+    primaryLanguage?: string;
+  };
+  work: {
+    occupation?: string;
+    industry?: string;
+    skills?: string[];
+    tools?: string[];
+  };
+  preferences: {
+    customInstructions?: string[];
+    boundaries?: string[];
+    goals?: string[];
+  };
+  aiPreferences?: {
+    autonomyLevel?: 'none' | 'low' | 'medium' | 'high' | 'full';
+    customInstructions?: string[];
+    boundaries?: string[];
+  };
+  meta?: {
+    completeness?: number;
+    totalEntries?: number;
+  };
+  goals?: {
+    shortTerm?: string[];
+    mediumTerm?: string[];
+    longTerm?: string[];
+  };
+}

@@ -18,65 +18,8 @@ import {
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
 import { useDialog } from '../components/ConfirmDialog';
 import { configServicesApi } from '../api';
+import type { ConfigEntryView, ConfigServiceView, ConfigServiceStats } from '../api';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface ConfigFieldDefinition {
-  name: string;
-  label: string;
-  type: 'string' | 'secret' | 'url' | 'number' | 'boolean' | 'select' | 'json';
-  required?: boolean;
-  defaultValue?: unknown;
-  envVar?: string;
-  placeholder?: string;
-  description?: string;
-  options?: Array<{ value: string; label: string }>;
-  order?: number;
-}
-
-interface RequiredByEntry {
-  type: 'tool' | 'plugin';
-  name: string;
-  id: string;
-}
-
-interface ConfigEntryView {
-  id: string;
-  serviceName: string;
-  label: string;
-  data: Record<string, unknown>;
-  isDefault: boolean;
-  isActive: boolean;
-  hasSecrets: boolean;
-  secretFields: string[];
-}
-
-interface ConfigServiceView {
-  id: string;
-  name: string;
-  displayName: string;
-  category: string;
-  description: string | null;
-  docsUrl: string | null;
-  configSchema: ConfigFieldDefinition[];
-  multiEntry: boolean;
-  requiredBy: RequiredByEntry[];
-  isActive: boolean;
-  entryCount: number;
-  isConfigured: boolean;
-  entries: ConfigEntryView[];
-}
-
-interface Stats {
-  total: number;
-  configured: number;
-  active: number;
-  categories: string[];
-  neededByTools: number;
-  neededButUnconfigured: number;
-}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -116,7 +59,7 @@ export function ConfigCenterPage() {
 
   // Data state
   const [services, setServices] = useState<ConfigServiceView[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<ConfigServiceStats | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
 
   // UI state
@@ -147,7 +90,7 @@ export function ConfigCenterPage() {
   const fetchServices = useCallback(async () => {
     try {
       const data = await configServicesApi.list();
-      setServices(data.services as unknown as ConfigServiceView[]);
+      setServices(data.services);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load services');
     }
@@ -156,7 +99,7 @@ export function ConfigCenterPage() {
   const fetchStats = useCallback(async () => {
     try {
       const data = await configServicesApi.stats();
-      setStats(data as unknown as Stats);
+      setStats(data);
     } catch {
       // Stats are non-critical
     }
@@ -360,7 +303,7 @@ export function ConfigCenterPage() {
       // Re-fetch the service to get its updated entries
       try {
         const svcData = await configServicesApi.list();
-        const updatedService = (svcData.services as unknown as ConfigServiceView[]).find(
+        const updatedService = svcData.services.find(
           (s) => s.name === editingService.name,
         );
         if (updatedService) {
@@ -423,7 +366,7 @@ export function ConfigCenterPage() {
       // Refresh modal
       try {
         const svcData = await configServicesApi.list();
-        const updatedService = (svcData.services as unknown as ConfigServiceView[]).find(
+        const updatedService = svcData.services.find(
           (s) => s.name === editingService.name,
         );
         if (updatedService) {
@@ -476,7 +419,7 @@ export function ConfigCenterPage() {
 
       try {
         const svcData = await configServicesApi.list();
-        const updatedService = (svcData.services as unknown as ConfigServiceView[]).find(
+        const updatedService = svcData.services.find(
           (s) => s.name === editingService.name,
         );
         if (updatedService) {

@@ -14,6 +14,7 @@ import {
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { autonomyApi } from '../api';
+import type { PendingApproval } from '../api';
 
 interface AutonomyLevel {
   level: number;
@@ -34,23 +35,6 @@ interface AutonomyConfig {
   auditEnabled: boolean;
 }
 
-interface PendingApproval {
-  id: string;
-  userId: string;
-  category: string;
-  type: string;
-  description: string;
-  params: Record<string, unknown>;
-  risk: {
-    level: string;
-    score: number;
-    factors: string[];
-    requiresApproval: boolean;
-  };
-  requestedAt: string;
-  expiresAt: string;
-  status: string;
-}
 
 const levelColors = [
   'bg-red-500',
@@ -90,7 +74,7 @@ export function AutonomyPage() {
   const fetchPendingApprovals = useCallback(async () => {
     try {
       const data = await autonomyApi.getApprovals();
-      setPendingApprovals(data as unknown as PendingApproval[]);
+      setPendingApprovals(data);
     } catch {
       // API client handles error reporting
     }

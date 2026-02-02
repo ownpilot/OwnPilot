@@ -2,24 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDialog } from './ConfirmDialog';
 import { Check, AlertCircle, Image, Volume2, Mic, Eye } from './icons';
 import { mediaSettingsApi } from '../api';
-
-interface ProviderWithStatus {
-  id: string;
-  name: string;
-  models: string[];
-  voices?: string[];
-  isConfigured: boolean;
-  apiKeyName: string;
-}
-
-interface CapabilitySettings {
-  capability: string;
-  name: string;
-  description: string;
-  currentProvider: string | null;
-  currentModel: string | null;
-  availableProviders: ProviderWithStatus[];
-}
+import type { CapabilitySettings } from '../api';
 
 type MediaCapability = 'image_generation' | 'vision' | 'tts' | 'stt';
 
@@ -45,7 +28,7 @@ export function MediaSettingsTab() {
   const loadSettings = async () => {
     try {
       const data = await mediaSettingsApi.get();
-      setSettings(data as unknown as CapabilitySettings[]);
+      setSettings(data);
     } catch {
       setError('Failed to load media settings');
     } finally {

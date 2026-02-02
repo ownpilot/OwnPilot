@@ -3,32 +3,11 @@ import { Container, RefreshCw, ShieldCheck, Shield, XCircle, CheckCircle2, Datab
 import { useDialog } from '../components/ConfirmDialog';
 import { useTheme } from '../hooks/useTheme';
 import { systemApi } from '../api';
+import type { SandboxStatus, DatabaseStatus, BackupInfo, DatabaseStats } from '../api';
 
-interface SandboxStatus {
-  dockerAvailable: boolean;
-  dockerVersion: string | null;
-  codeExecutionEnabled: boolean;
-  securityMode: 'strict' | 'relaxed';
-}
 
-interface DatabaseStatus {
-  type: 'postgres';
-  connected: boolean;
-  host?: string;
-}
 
-interface BackupInfo {
-  name: string;
-  size: number;
-  created: string;
-}
 
-interface DatabaseStats {
-  database: { size: string; sizeBytes: number };
-  tables: { name: string; rowCount: number; size: string }[];
-  connections: { active: number; max: number };
-  version: string;
-}
 
 
 // Helper to format uptime
@@ -89,15 +68,15 @@ export function SystemPage() {
         systemApi.databaseStats().catch(() => null),
       ]);
 
-      setSandboxStatus((healthData.sandbox as unknown as SandboxStatus) ?? null);
-      setDatabaseStatus((healthData.database as unknown as DatabaseStatus) ?? null);
+      setSandboxStatus(healthData.sandbox ?? null);
+      setDatabaseStatus(healthData.database ?? null);
       setSystemVersion(healthData.version);
       setSystemUptime(healthData.uptime);
 
-      setBackups((dbStatusData.backups as unknown as BackupInfo[]) || []);
+      setBackups(dbStatusData.backups || []);
 
       if (statsData) {
-        setDbStats(statsData as unknown as DatabaseStats);
+        setDbStats(statsData);
       }
     } catch {
       // API client handles error reporting

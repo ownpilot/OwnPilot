@@ -13,28 +13,8 @@ import {
   ChevronDown,
 } from '../components/icons';
 import { fileWorkspacesApi } from '../api';
+import type { FileWorkspaceInfo, WorkspaceFile } from '../api';
 
-interface WorkspaceInfo {
-  id: string;
-  name: string;
-  path: string;
-  createdAt: string;
-  updatedAt: string;
-  agentId?: string;
-  sessionId?: string;
-  description?: string;
-  tags?: string[];
-  size?: number;
-  fileCount?: number;
-}
-
-interface WorkspaceFile {
-  name: string;
-  path: string;
-  isDirectory: boolean;
-  size: number;
-  modifiedAt: string;
-}
 
 interface WorkspaceStats {
   total: number;
@@ -70,10 +50,10 @@ function formatDate(dateStr: string): string {
 }
 
 export function WorkspacesPage() {
-  const [workspaces, setWorkspaces] = useState<WorkspaceInfo[]>([]);
+  const [workspaces, setWorkspaces] = useState<FileWorkspaceInfo[]>([]);
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<WorkspaceInfo | null>(null);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<FileWorkspaceInfo | null>(null);
   const [workspaceFiles, setWorkspaceFiles] = useState<WorkspaceFile[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [currentPath, setCurrentPath] = useState('');
@@ -88,7 +68,7 @@ export function WorkspacesPage() {
     setIsLoading(true);
     try {
       const data = await fileWorkspacesApi.list();
-      const workspaceList = (data as unknown as { workspaces: WorkspaceInfo[]; count: number });
+      const workspaceList = data;
       setWorkspaces(workspaceList.workspaces);
       // Calculate stats
       const totalSize = workspaceList.workspaces.reduce((acc, w) => acc + (w.size || 0), 0);
@@ -109,7 +89,7 @@ export function WorkspacesPage() {
     setIsLoadingFiles(true);
     try {
       const data = await fileWorkspacesApi.files(workspaceId, path || undefined);
-      const filesData = data as unknown as { path: string; files: WorkspaceFile[]; count: number };
+      const filesData = data;
       setWorkspaceFiles(filesData.files);
       setCurrentPath(path);
     } catch {
@@ -119,7 +99,7 @@ export function WorkspacesPage() {
     }
   };
 
-  const handleSelectWorkspace = (workspace: WorkspaceInfo) => {
+  const handleSelectWorkspace = (workspace: FileWorkspaceInfo) => {
     setSelectedWorkspace(workspace);
     setCurrentPath('');
     setExpandedFolders(new Set());
