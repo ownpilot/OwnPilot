@@ -14,7 +14,7 @@ import {
   type PluginStatus,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
-import type { ApiResponse } from '../types/index.js';
+import { apiResponse } from './helpers.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
@@ -127,16 +127,7 @@ pluginsRoutes.get('/', async (c) => {
     filtered = filtered.filter((p) => p.manifest.capabilities.includes(capability));
   }
 
-  const response: ApiResponse<PluginInfo[]> = {
-    success: true,
-    data: filtered.map(toPluginInfo),
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, filtered.map(toPluginInfo));
 });
 
 /**
@@ -167,16 +158,7 @@ pluginsRoutes.get('/stats', async (c) => {
     }
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats);
 });
 
 /**
@@ -186,21 +168,12 @@ pluginsRoutes.get('/tools', async (c) => {
   const registry = await getRegistry();
   const tools = registry.getAllTools();
 
-  const response: ApiResponse = {
-    success: true,
-    data: tools.map((t) => ({
-      pluginId: t.pluginId,
-      name: t.definition.name,
-      description: t.definition.description,
-      parameters: t.definition.parameters,
-    })),
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, tools.map((t) => ({
+    pluginId: t.pluginId,
+    name: t.definition.name,
+    description: t.definition.description,
+    parameters: t.definition.parameters,
+  })));
 });
 
 /**
@@ -231,22 +204,13 @@ pluginsRoutes.get('/:id', async (c) => {
     priority: h.priority,
   }));
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      ...toPluginInfo(plugin),
-      toolsDetailed,
-      handlersInfo,
-      config: plugin.config.settings,
-      configSchema: plugin.manifest.configSchema,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    ...toPluginInfo(plugin),
+    toolsDetailed,
+    handlersInfo,
+    config: plugin.config.settings,
+    configSchema: plugin.manifest.configSchema,
+  });
 });
 
 /**
@@ -268,19 +232,10 @@ pluginsRoutes.post('/:id/enable', async (c) => {
 
   const plugin = registry.get(id)!;
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: `Plugin ${plugin.manifest.name} enabled`,
-      plugin: toPluginInfo(plugin),
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: `Plugin ${plugin.manifest.name} enabled`,
+    plugin: toPluginInfo(plugin),
+  });
 });
 
 /**
@@ -302,19 +257,10 @@ pluginsRoutes.post('/:id/disable', async (c) => {
 
   const plugin = registry.get(id)!;
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: `Plugin ${plugin.manifest.name} disabled`,
-      plugin: toPluginInfo(plugin),
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: `Plugin ${plugin.manifest.name} disabled`,
+    plugin: toPluginInfo(plugin),
+  });
 });
 
 /**
@@ -342,19 +288,10 @@ pluginsRoutes.put('/:id/config', async (c) => {
     await plugin.lifecycle.onConfigChange(plugin.config.settings);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: 'Configuration updated',
-      settings: plugin.config.settings,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: 'Configuration updated',
+    settings: plugin.config.settings,
+  });
 });
 
 /**
@@ -387,19 +324,10 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
 
   await pluginsRepo.updatePermissions(id, body.permissions);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: 'Permissions updated',
-      grantedPermissions: plugin.config.grantedPermissions,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: 'Permissions updated',
+    grantedPermissions: plugin.config.grantedPermissions,
+  });
 });
 
 /**
@@ -522,19 +450,10 @@ pluginsRoutes.delete('/:id', async (c) => {
   const name = plugin.manifest.name;
   const success = await registry.unregister(id);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: `Plugin ${name} uninstalled`,
-      uninstalled: success,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: `Plugin ${name} uninstalled`,
+    uninstalled: success,
+  });
 });
 
 /**
@@ -551,16 +470,7 @@ pluginsRoutes.get('/meta/capabilities', (c) => {
     integrations: 'External service integrations',
   };
 
-  const response: ApiResponse = {
-    success: true,
-    data: capabilities,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, capabilities);
 });
 
 /**
@@ -579,14 +489,5 @@ pluginsRoutes.get('/meta/permissions', (c) => {
     storage: 'Use plugin storage',
   };
 
-  const response: ApiResponse = {
-    success: true,
-    data: permissions,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, permissions);
 });
