@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
+import { apiResponse, apiError } from './helpers.js';
 import { settingsRepo, localProvidersRepo } from '../db/repositories/index.js';
 import {
   getAvailableProviders,
@@ -55,23 +55,14 @@ settingsRoutes.get('/', async (c) => {
   // Available providers from config
   const availableProviders = getAvailableProviders();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       configuredProviders: allConfiguredProviders,
       localProviders: enabledLocalProviders,
       demoMode: allConfiguredProviders.length === 0,
       defaultProvider: defaultProvider ?? null,
       defaultModel: defaultModel ?? null,
       availableProviders,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -81,9 +72,7 @@ settingsRoutes.get('/data-info', async (c) => {
   const dataInfo = getDataDirectoryInfo();
   const migrationStatus = getMigrationStatus();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       dataDirectory: dataInfo.root,
       database: dataInfo.database,
       workspace: dataInfo.workspace,
@@ -95,14 +84,7 @@ settingsRoutes.get('/data-info', async (c) => {
         legacyPath: migrationStatus.legacyPath,
         legacyFiles: migrationStatus.legacyFiles,
       },
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -112,32 +94,14 @@ settingsRoutes.post('/default-provider', async (c) => {
   const body = await c.req.json<{ provider: string }>();
 
   if (!body.provider) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'Provider is required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'INVALID_REQUEST', message: 'Provider is required' }, 400);
   }
 
   await settingsRepo.set(DEFAULT_PROVIDER_KEY, body.provider);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       defaultProvider: body.provider,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -147,32 +111,14 @@ settingsRoutes.post('/default-model', async (c) => {
   const body = await c.req.json<{ model: string }>();
 
   if (!body.model) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'Model is required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'INVALID_REQUEST', message: 'Model is required' }, 400);
   }
 
   await settingsRepo.set(DEFAULT_MODEL_KEY, body.model);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       defaultModel: body.model,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -182,16 +128,7 @@ settingsRoutes.post('/api-keys', async (c) => {
   const body = await c.req.json<{ provider: string; apiKey: string }>();
 
   if (!body.provider || !body.apiKey) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'Provider and apiKey are required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'INVALID_REQUEST', message: 'Provider and apiKey are required' }, 400);
   }
 
   // Store API key in database
@@ -206,19 +143,10 @@ settingsRoutes.post('/api-keys', async (c) => {
     process.env[envVarName] = body.apiKey;
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       provider: body.provider,
       configured: true,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -238,19 +166,10 @@ settingsRoutes.delete('/api-keys/:provider', async (c) => {
     delete process.env[envVarName];
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       provider,
       configured: false,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -451,9 +370,7 @@ settingsRoutes.get('/sandbox', async (c) => {
     const settings = await getSandboxSettings();
     const dockerAvailable = await isDockerAvailable();
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         settings,
         dockerAvailable,
         status: {
@@ -465,25 +382,9 @@ settingsRoutes.get('/sandbox', async (c) => {
               ? 'Sandbox is enabled and ready.'
               : 'Sandbox is disabled. Enable it to use isolated user workspaces.',
         },
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'SANDBOX_SETTINGS_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get sandbox settings',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'SANDBOX_SETTINGS_ERROR', message: error instanceof Error ? error.message : 'Failed to get sandbox settings' }, 500);
   }
 });
 
@@ -518,58 +419,22 @@ settingsRoutes.post('/sandbox', async (c) => {
 
         // Validation
         if (key === 'enabled' && typeof value !== 'boolean') {
-          return c.json(
-            {
-              success: false,
-              error: {
-                code: 'INVALID_VALUE',
-                message: `${key} must be a boolean`,
-              },
-            },
-            400
-          );
+          return apiError(c, { code: 'INVALID_VALUE', message: `${key} must be a boolean` }, 400);
         }
 
         if (
           ['defaultMemoryMB', 'defaultCpuCores', 'defaultTimeoutMs', 'maxWorkspacesPerUser', 'maxStoragePerUserGB'].includes(key) &&
           typeof value !== 'number'
         ) {
-          return c.json(
-            {
-              success: false,
-              error: {
-                code: 'INVALID_VALUE',
-                message: `${key} must be a number`,
-              },
-            },
-            400
-          );
+          return apiError(c, { code: 'INVALID_VALUE', message: `${key} must be a number` }, 400);
         }
 
         if (key === 'defaultNetwork' && !['none', 'restricted', 'egress', 'full'].includes(value as string)) {
-          return c.json(
-            {
-              success: false,
-              error: {
-                code: 'INVALID_VALUE',
-                message: `${key} must be one of: none, restricted, egress, full`,
-              },
-            },
-            400
-          );
+          return apiError(c, { code: 'INVALID_VALUE', message: `${key} must be one of: none, restricted, egress, full` }, 400);
         }
 
         if (key === 'allowedImages' && !Array.isArray(value)) {
-          return c.json(
-            {
-              success: false,
-              error: {
-                code: 'INVALID_VALUE',
-                message: `${key} must be an array of strings`,
-              },
-            },
-            400
-          );
+          return apiError(c, { code: 'INVALID_VALUE', message: `${key} must be an array of strings` }, 400);
         }
 
         await setSandboxSetting(key, value as SandboxSettings[typeof key]);
@@ -579,30 +444,12 @@ settingsRoutes.post('/sandbox', async (c) => {
 
     const newSettings = await getSandboxSettings();
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         updated,
         settings: newSettings,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'SANDBOX_SETTINGS_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to update sandbox settings',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'SANDBOX_SETTINGS_ERROR', message: error instanceof Error ? error.message : 'Failed to update sandbox settings' }, 500);
   }
 });
 
@@ -614,44 +461,17 @@ settingsRoutes.post('/sandbox/enable', async (c) => {
     const dockerAvailable = await isDockerAvailable();
 
     if (!dockerAvailable) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'DOCKER_UNAVAILABLE',
-            message: 'Cannot enable sandbox: Docker is not available. Please install and start Docker first.',
-          },
-        },
-        400
-      );
+      return apiError(c, { code: 'DOCKER_UNAVAILABLE', message: 'Cannot enable sandbox: Docker is not available. Please install and start Docker first.' }, 400);
     }
 
     await setSandboxSetting('enabled', true);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         enabled: true,
         message: 'Sandbox has been enabled.',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'SANDBOX_ENABLE_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to enable sandbox',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'SANDBOX_ENABLE_ERROR', message: error instanceof Error ? error.message : 'Failed to enable sandbox' }, 500);
   }
 });
 
@@ -662,29 +482,11 @@ settingsRoutes.post('/sandbox/disable', async (c) => {
   try {
     await setSandboxSetting('enabled', false);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         enabled: false,
         message: 'Sandbox has been disabled.',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'SANDBOX_DISABLE_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to disable sandbox',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'SANDBOX_DISABLE_ERROR', message: error instanceof Error ? error.message : 'Failed to disable sandbox' }, 500);
   }
 });
