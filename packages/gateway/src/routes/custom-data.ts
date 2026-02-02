@@ -8,7 +8,7 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
+import { apiResponse } from './helpers.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { getCustomDataService, CustomDataServiceError } from '../services/custom-data-service.js';
 
@@ -25,12 +25,7 @@ customDataRoutes.get('/tables', async (c) => {
   const service = getCustomDataService();
   const tables = await service.listTablesWithStats();
 
-  const response: ApiResponse = {
-    success: true,
-    data: tables,
-  };
-
-  return c.json(response);
+  return apiResponse(c, tables);
 });
 
 /**
@@ -41,12 +36,7 @@ customDataRoutes.get('/tables/by-plugin/:pluginId', async (c) => {
   const service = getCustomDataService();
   const tables = await service.listTablesWithStats({ pluginId });
 
-  const response: ApiResponse = {
-    success: true,
-    data: tables,
-  };
-
-  return c.json(response);
+  return apiResponse(c, tables);
 });
 
 /**
@@ -69,12 +59,7 @@ customDataRoutes.post('/tables', async (c) => {
       body.description,
     );
 
-    const response: ApiResponse = {
-      success: true,
-      data: table,
-    };
-
-    return c.json(response, 201);
+    return apiResponse(c, table);
   } catch (err) {
     if (err instanceof CustomDataServiceError && err.code === 'VALIDATION_ERROR') {
       return c.json(
@@ -124,15 +109,10 @@ customDataRoutes.get('/tables/:table', async (c) => {
 
   const stats = await service.getTableStats(tableId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       ...table,
       stats,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -162,12 +142,7 @@ customDataRoutes.put('/tables/:table', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: updated,
-  };
-
-  return c.json(response);
+  return apiResponse(c, updated);
 });
 
 /**
@@ -194,12 +169,7 @@ customDataRoutes.delete('/tables/:table', async (c) => {
       );
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: { deleted: true },
-    };
-
-    return c.json(response);
+    return apiResponse(c, { deleted: true });
   } catch (err) {
     if (err instanceof CustomDataServiceError && err.code === 'PROTECTED') {
       return c.json(
@@ -243,18 +213,13 @@ customDataRoutes.get('/tables/:table/records', async (c) => {
     const service = getCustomDataService();
     const { records, total } = await service.listRecords(tableId, { limit, offset, filter });
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         records,
         total,
         limit,
         offset,
         hasMore: offset + records.length < total,
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (err) {
     return c.json(
       {
@@ -293,12 +258,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
     const service = getCustomDataService();
     const record = await service.addRecord(tableId, body.data);
 
-    const response: ApiResponse = {
-      success: true,
-      data: record,
-    };
-
-    return c.json(response, 201);
+    return apiResponse(c, record);
   } catch (err) {
     return c.json(
       {
@@ -338,12 +298,7 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
     const service = getCustomDataService();
     const records = await service.searchRecords(tableId, query, { limit });
 
-    const response: ApiResponse = {
-      success: true,
-      data: records,
-    };
-
-    return c.json(response);
+    return apiResponse(c, records);
   } catch (err) {
     return c.json(
       {
@@ -379,12 +334,7 @@ customDataRoutes.get('/records/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: record,
-  };
-
-  return c.json(response);
+  return apiResponse(c, record);
 });
 
 /**
@@ -424,12 +374,7 @@ customDataRoutes.put('/records/:id', async (c) => {
       );
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: updated,
-    };
-
-    return c.json(response);
+    return apiResponse(c, updated);
   } catch (err) {
     return c.json(
       {
@@ -465,12 +410,7 @@ customDataRoutes.delete('/records/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { deleted: true });
 });
 
 // ============================================================================
