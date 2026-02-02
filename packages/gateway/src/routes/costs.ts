@@ -17,7 +17,7 @@ import {
   type BudgetConfig,
 } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
-import { apiResponse } from './helpers.js'
+import { apiResponse, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('Costs');
@@ -342,8 +342,8 @@ costRoutes.post('/budget', async (c) => {
  * GET /costs/history - Get usage history records
  */
 costRoutes.get('/history', async (c) => {
-  const limit = parseInt(c.req.query('limit') ?? '100', 10);
-  const days = parseInt(c.req.query('days') ?? '30', 10);
+  const limit = getIntParam(c, 'limit', 100, 1, 1000);
+  const days = getIntParam(c, 'days', 30, 1, 365);
   const userId = c.req.query('userId');
   const provider = c.req.query('provider') as AIProvider | undefined;
   const model = c.req.query('model');
@@ -377,8 +377,8 @@ costRoutes.get('/history', async (c) => {
  * GET /costs/expensive - Get most expensive requests
  */
 costRoutes.get('/expensive', async (c) => {
-  const limit = parseInt(c.req.query('limit') ?? '10', 10);
-  const days = parseInt(c.req.query('days') ?? '30', 10);
+  const limit = getIntParam(c, 'limit', 10, 1, 100);
+  const days = getIntParam(c, 'days', 30, 1, 365);
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);

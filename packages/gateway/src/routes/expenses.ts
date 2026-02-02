@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js';
 
 // =============================================================================
 // Types
@@ -115,8 +115,8 @@ expensesRoutes.get('/', async (c) => {
   const endDate = c.req.query('endDate');
   const category = c.req.query('category') as ExpenseCategory | undefined;
   const search = c.req.query('search');
-  const limit = parseInt(c.req.query('limit') ?? '100', 10);
-  const offset = parseInt(c.req.query('offset') ?? '0', 10);
+  const limit = getIntParam(c, 'limit', 100, 1, 1000);
+  const offset = getIntParam(c, 'offset', 0, 0);
 
   let expenses = [...db.expenses];
 
