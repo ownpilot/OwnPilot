@@ -275,7 +275,7 @@ customToolsRoutes.post('/', async (c) => {
   // Invalidate agent cache so new tool is available
   invalidateAgentCache();
 
-  return apiResponse(c, tool);
+  return apiResponse(c, tool, 201);
 });
 
 /**
