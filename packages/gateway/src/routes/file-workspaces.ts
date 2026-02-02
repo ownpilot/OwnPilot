@@ -10,8 +10,7 @@ import { createReadStream, existsSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 import type { ApiResponse } from '../types/index.js';
-import { apiError } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
 import {
   listSessionWorkspaces,
   getSessionWorkspace,
@@ -35,19 +34,10 @@ app.get('/', async (c) => {
   try {
     const workspaces = listSessionWorkspaces();
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        workspaces,
-        count: workspaces.length,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, {
+      workspaces,
+      count: workspaces.length,
+    });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.WORKSPACE_LIST_ERROR, message: error instanceof Error ? error.message : 'Failed to list workspaces' }, 500);
   }
@@ -68,16 +58,7 @@ app.post('/', async (c) => {
       tags: body.tags,
     });
 
-    const response: ApiResponse = {
-      success: true,
-      data: workspace,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response, 201);
+    return apiResponse(c, workspace, 201);
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.WORKSPACE_CREATE_ERROR, message: error instanceof Error ? error.message : 'Failed to create workspace' }, 500);
   }
@@ -96,16 +77,7 @@ app.get('/:id', async (c) => {
       return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: workspace,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, workspace);
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.WORKSPACE_FETCH_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch workspace' }, 500);
   }
@@ -124,16 +96,7 @@ app.delete('/:id', async (c) => {
       return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: { deleted: true },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, { deleted: true });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.WORKSPACE_DELETE_ERROR, message: error instanceof Error ? error.message : 'Failed to delete workspace' }, 500);
   }
@@ -155,20 +118,11 @@ app.get('/:id/files', async (c) => {
 
     const files = getSessionWorkspaceFiles(workspaceId, path);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         path,
         files,
         count: files.length,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.FILE_LIST_ERROR, message: error instanceof Error ? error.message : 'Failed to list files' }, 500);
   }
@@ -208,20 +162,11 @@ app.get('/:id/file/*', async (c) => {
     }
 
     // Return as JSON with content
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         path: filePath,
         content: content.toString('utf-8'),
         size: content.length,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     if (error instanceof Error && error.message.includes('traversal')) {
       return c.json(
@@ -262,19 +207,10 @@ app.put('/:id/file/*', async (c) => {
 
     writeSessionWorkspaceFile(workspaceId, filePath, content);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         path: filePath,
         written: true,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     if (error instanceof Error && error.message.includes('traversal')) {
       return c.json(
@@ -312,19 +248,10 @@ app.delete('/:id/file/*', async (c) => {
       return apiError(c, { code: ERROR_CODES.FILE_NOT_FOUND, message: 'File not found' }, 404);
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         path: filePath,
         deleted: true,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     if (error instanceof Error && error.message.includes('traversal')) {
       return c.json(
@@ -391,16 +318,7 @@ app.post('/cleanup', async (c) => {
 
     const result = cleanupSessionWorkspaces(maxAgeDays);
 
-    const response: ApiResponse = {
-      success: true,
-      data: result,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, result);
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.CLEANUP_ERROR, message: error instanceof Error ? error.message : 'Failed to cleanup workspaces' }, 500);
   }
@@ -417,16 +335,7 @@ app.post('/session/:sessionId', async (c) => {
 
     const workspace = getOrCreateSessionWorkspace(sessionId, body.agentId);
 
-    const response: ApiResponse = {
-      success: true,
-      data: workspace,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, workspace);
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.WORKSPACE_ERROR, message: error instanceof Error ? error.message : 'Failed to get or create workspace' }, 500);
   }
