@@ -8,7 +8,7 @@
 import { Hono } from 'hono';
 import { getChannelService } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
-import { apiResponse, apiError } from './helpers.js'
+import { apiResponse, apiError, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 export const channelRoutes = new Hono();
@@ -34,7 +34,7 @@ const messageStore: Map<
 channelRoutes.get('/messages/inbox', (c) => {
   const filter = c.req.query('filter') ?? 'all';
   const platform = c.req.query('platform');
-  const limit = parseInt(c.req.query('limit') ?? '50', 10);
+  const limit = getIntParam(c, 'limit', 50, 1, 200);
 
   let allMessages: (typeof messageStore extends Map<string, infer T> ? T : never) = [];
 
@@ -253,7 +253,7 @@ channelRoutes.post('/:id/send', async (c) => {
  */
 channelRoutes.get('/:id/messages', async (c) => {
   const channelId = c.req.param('id');
-  const limit = parseInt(c.req.query('limit') ?? '50', 10);
+  const limit = getIntParam(c, 'limit', 50, 1, 200);
   const offset = parseInt(c.req.query('offset') ?? '0', 10);
 
   try {
