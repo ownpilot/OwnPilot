@@ -12,7 +12,7 @@ import {
   type MediaCapability,
 } from '../db/repositories/index.js';
 import { getLog } from '../services/log.js';
-import { getUserId } from './helpers.js';
+import { getUserId, apiError } from './helpers.js';
 
 const log = getLog('MediaSettings');
 
@@ -146,7 +146,7 @@ mediaSettingsRoutes.get('/:capability', async (c) => {
 
   // Validate capability
   if (!CAPABILITY_META[capability]) {
-    return c.json({ success: false, error: `Invalid capability: ${capability}` }, 400);
+    return apiError(c, `Invalid capability: ${capability}`, 400);
   }
 
   const current = await mediaSettingsRepo.getEffective(userId, capability);
@@ -175,7 +175,7 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
 
   // Validate capability
   if (!CAPABILITY_META[capability]) {
-    return c.json({ success: false, error: `Invalid capability: ${capability}` }, 400);
+    return apiError(c, `Invalid capability: ${capability}`, 400);
   }
 
   try {
@@ -186,7 +186,7 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
     }>();
 
     if (!body.provider) {
-      return c.json({ success: false, error: 'Provider is required' }, 400);
+      return apiError(c, 'Provider is required', 400);
     }
 
     // Validate provider exists for this capability
@@ -253,7 +253,7 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
     });
   } catch (error) {
     log.error('Failed to save media setting:', error);
-    return c.json({ success: false, error: 'Failed to save setting' }, 500);
+    return apiError(c, 'Failed to save setting', 500);
   }
 });
 
@@ -266,7 +266,7 @@ mediaSettingsRoutes.delete('/:capability', async (c) => {
 
   // Validate capability
   if (!CAPABILITY_META[capability]) {
-    return c.json({ success: false, error: `Invalid capability: ${capability}` }, 400);
+    return apiError(c, `Invalid capability: ${capability}`, 400);
   }
 
   await mediaSettingsRepo.delete(userId, capability);
