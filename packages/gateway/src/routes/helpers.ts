@@ -7,6 +7,10 @@
 import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { ApiResponse } from '../types/index.js';
+import { ERROR_CODES, type ErrorCode } from './error-codes.js';
+
+// Re-export error codes for convenience
+export { ERROR_CODES, type ErrorCode };
 
 /**
  * Extract the authenticated user ID from a Hono context.
@@ -44,13 +48,26 @@ export function apiResponse<T>(c: Context, data: T, status?: ContentfulStatusCod
  *
  * Replaces inconsistent error patterns with a standardized format:
  *   return c.json({ success: false, error: { code, message } }, status);
+ *
+ * @param c - Hono context
+ * @param error - Error string (uses ERROR_CODES.ERROR) or error object with code and message
+ * @param status - HTTP status code (default 400)
+ *
+ * @example
+ * // Simple string error
+ * return apiError(c, 'Invalid input', 400);
+ *
+ * // Structured error with code
+ * return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Resource not found' }, 404);
  */
 export function apiError(
   c: Context,
-  error: string | { code: string; message: string },
+  error: string | { code: ErrorCode | string; message: string },
   status: ContentfulStatusCode = 400
 ) {
-  const errorObj = typeof error === 'string' ? { code: 'ERROR', message: error } : error;
+  const errorObj = typeof error === 'string'
+    ? { code: ERROR_CODES.ERROR, message: error }
+    : error;
   const response = {
     success: false,
     error: errorObj,
