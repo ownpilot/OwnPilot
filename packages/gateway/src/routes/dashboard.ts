@@ -58,17 +58,7 @@ dashboardRoutes.get('/briefing', async (c) => {
   } catch (error) {
     log.error('Failed to generate briefing:', error);
 
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.BRIEFING_FAILED,
-        message: error instanceof Error ? error.message : 'Failed to generate briefing',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.BRIEFING_FAILED, message: error instanceof Error ? error.message : 'Failed to generate briefing' }, 500);
   }
 });
 
@@ -86,17 +76,7 @@ dashboardRoutes.get('/data', async (c) => {
   } catch (error) {
     log.error('Failed to aggregate data:', error);
 
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.DATA_AGGREGATION_FAILED,
-        message: error instanceof Error ? error.message : 'Failed to aggregate data',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.DATA_AGGREGATION_FAILED, message: error instanceof Error ? error.message : 'Failed to aggregate data' }, 500);
   }
 });
 
@@ -127,17 +107,7 @@ dashboardRoutes.post('/briefing/refresh', async (c) => {
   } catch (error) {
     log.error('Failed to refresh briefing:', error);
 
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.REFRESH_FAILED,
-        message: error instanceof Error ? error.message : 'Failed to refresh briefing',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.REFRESH_FAILED, message: error instanceof Error ? error.message : 'Failed to refresh briefing' }, 500);
   }
 });
 
@@ -210,17 +180,7 @@ dashboardRoutes.get('/timeline', async (c) => {
   } catch (error) {
     log.error('Failed to generate timeline:', error);
 
-    return c.json({
-      success: false,
-      error: {
-        code: ERROR_CODES.TIMELINE_FAILED,
-        message: error instanceof Error ? error.message : 'Failed to generate timeline',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, 500);
+    return apiError(c, { code: ERROR_CODES.TIMELINE_FAILED, message: error instanceof Error ? error.message : 'Failed to generate timeline' }, 500);
   }
 });
 
