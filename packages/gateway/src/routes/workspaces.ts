@@ -19,7 +19,7 @@ import {
   DEFAULT_CONTAINER_CONFIG,
   StorageSecurityError,
 } from '@ownpilot/core';
-import { apiResponse } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js';
 
 const app = new Hono();
 
