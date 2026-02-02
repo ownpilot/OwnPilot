@@ -8,6 +8,7 @@
 import { Hono } from 'hono';
 import { getAuditLogger } from '../audit/index.js';
 import type { AuditSeverity } from '@ownpilot/core';
+import { apiResponse, apiError } from './helpers.js';
 
 const app = new Hono();
 
@@ -57,25 +58,16 @@ app.get('/', async (c) => {
   });
 
   if (!result.ok) {
-    return c.json({
-      success: false,
-      error: {
-        code: 'AUDIT_QUERY_ERROR',
-        message: result.error.message,
-      },
-    }, 500);
+    return apiError(c, { code: 'AUDIT_QUERY_ERROR', message: result.error.message }, 500);
   }
 
   const stats = logger.getStats();
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       events: result.value,
       count: result.value.length,
       total: stats.eventCount,
-    },
-  });
+    });
 });
 
 /**
@@ -88,13 +80,10 @@ app.get('/stats', async (c) => {
   const stats = logger.getStats();
   const eventCount = await logger.countEvents();
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       eventCount,
       lastChecksum: stats.lastChecksum,
-    },
-  });
+    });
 });
 
 /**
@@ -112,22 +101,13 @@ app.get('/tools', async (c) => {
   });
 
   if (!result.ok) {
-    return c.json({
-      success: false,
-      error: {
-        code: 'AUDIT_QUERY_ERROR',
-        message: result.error.message,
-      },
-    }, 500);
+    return apiError(c, { code: 'AUDIT_QUERY_ERROR', message: result.error.message }, 500);
   }
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       events: result.value,
       count: result.value.length,
-    },
-  });
+    });
 });
 
 /**
@@ -145,22 +125,13 @@ app.get('/sessions', async (c) => {
   });
 
   if (!result.ok) {
-    return c.json({
-      success: false,
-      error: {
-        code: 'AUDIT_QUERY_ERROR',
-        message: result.error.message,
-      },
-    }, 500);
+    return apiError(c, { code: 'AUDIT_QUERY_ERROR', message: result.error.message }, 500);
   }
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       events: result.value,
       count: result.value.length,
-    },
-  });
+    });
 });
 
 /**
@@ -178,22 +149,13 @@ app.get('/errors', async (c) => {
   });
 
   if (!result.ok) {
-    return c.json({
-      success: false,
-      error: {
-        code: 'AUDIT_QUERY_ERROR',
-        message: result.error.message,
-      },
-    }, 500);
+    return apiError(c, { code: 'AUDIT_QUERY_ERROR', message: result.error.message }, 500);
   }
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       events: result.value,
       count: result.value.length,
-    },
-  });
+    });
 });
 
 /**
@@ -210,23 +172,14 @@ app.get('/request/:requestId', async (c) => {
   });
 
   if (!result.ok) {
-    return c.json({
-      success: false,
-      error: {
-        code: 'AUDIT_QUERY_ERROR',
-        message: result.error.message,
-      },
-    }, 500);
+    return apiError(c, { code: 'AUDIT_QUERY_ERROR', message: result.error.message }, 500);
   }
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       requestId,
       events: result.value,
       count: result.value.length,
-    },
-  });
+    });
 });
 
 export const auditRoutes = app;
