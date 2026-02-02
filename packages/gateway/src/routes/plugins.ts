@@ -128,16 +128,7 @@ pluginsRoutes.get('/', async (c) => {
     filtered = filtered.filter((p) => p.manifest.capabilities.includes(capability));
   }
 
-  const response: ApiResponse<PluginInfo[]> = {
-    success: true,
-    data: filtered.map(toPluginInfo),
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, filtered.map(toPluginInfo));
 });
 
 /**
@@ -178,21 +169,12 @@ pluginsRoutes.get('/tools', async (c) => {
   const registry = await getRegistry();
   const tools = registry.getAllTools();
 
-  const response: ApiResponse = {
-    success: true,
-    data: tools.map((t) => ({
-      pluginId: t.pluginId,
-      name: t.definition.name,
-      description: t.definition.description,
-      parameters: t.definition.parameters,
-    })),
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, tools.map((t) => ({
+    pluginId: t.pluginId,
+    name: t.definition.name,
+    description: t.definition.description,
+    parameters: t.definition.parameters,
+  })));
 });
 
 /**
@@ -223,22 +205,13 @@ pluginsRoutes.get('/:id', async (c) => {
     priority: h.priority,
   }));
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      ...toPluginInfo(plugin),
-      toolsDetailed,
-      handlersInfo,
-      config: plugin.config.settings,
-      configSchema: plugin.manifest.configSchema,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    ...toPluginInfo(plugin),
+    toolsDetailed,
+    handlersInfo,
+    config: plugin.config.settings,
+    configSchema: plugin.manifest.configSchema,
+  });
 });
 
 /**
@@ -260,19 +233,10 @@ pluginsRoutes.post('/:id/enable', async (c) => {
 
   const plugin = registry.get(id)!;
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: `Plugin ${plugin.manifest.name} enabled`,
-      plugin: toPluginInfo(plugin),
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: `Plugin ${plugin.manifest.name} enabled`,
+    plugin: toPluginInfo(plugin),
+  });
 });
 
 /**
@@ -294,19 +258,10 @@ pluginsRoutes.post('/:id/disable', async (c) => {
 
   const plugin = registry.get(id)!;
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: `Plugin ${plugin.manifest.name} disabled`,
-      plugin: toPluginInfo(plugin),
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: `Plugin ${plugin.manifest.name} disabled`,
+    plugin: toPluginInfo(plugin),
+  });
 });
 
 /**
@@ -334,19 +289,10 @@ pluginsRoutes.put('/:id/config', async (c) => {
     await plugin.lifecycle.onConfigChange(plugin.config.settings);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: 'Configuration updated',
-      settings: plugin.config.settings,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: 'Configuration updated',
+    settings: plugin.config.settings,
+  });
 });
 
 /**
@@ -379,19 +325,10 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
 
   await pluginsRepo.updatePermissions(id, body.permissions);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: 'Permissions updated',
-      grantedPermissions: plugin.config.grantedPermissions,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: 'Permissions updated',
+    grantedPermissions: plugin.config.grantedPermissions,
+  });
 });
 
 /**
@@ -406,12 +343,12 @@ pluginsRoutes.get('/:id/settings', async (c) => {
     return apiError(c, { code: 'NOT_FOUND', message: `Plugin not found: ${id}` }, 404);
   }
 
-  return apiResponse(c, { data: {
-      pluginId: id,
-      pluginConfigSchema: plugin.manifest.pluginConfigSchema ?? [],
-      settings: plugin.config.settings ?? {},
-      defaultConfig: plugin.manifest.defaultConfig ?? {},
-    }, });
+  return apiResponse(c, {
+    pluginId: id,
+    pluginConfigSchema: plugin.manifest.pluginConfigSchema ?? [],
+    settings: plugin.config.settings ?? {},
+    defaultConfig: plugin.manifest.defaultConfig ?? {},
+  });
 });
 
 /**
@@ -450,7 +387,7 @@ pluginsRoutes.put('/:id/settings', async (c) => {
     }
   }
 
-  return apiResponse(c, { data: { settings: mergedSettings }, });
+  return apiResponse(c, { settings: mergedSettings });
 });
 
 /**
@@ -480,12 +417,12 @@ pluginsRoutes.get('/:id/required-services', async (c) => {
     };
   });
 
-  return apiResponse(c, { data: {
-      pluginId: id,
-      pluginName: plugin.manifest.name,
-      services: requiredServices,
-      allConfigured: requiredServices.every(s => s.isConfigured),
-    }, });
+  return apiResponse(c, {
+    pluginId: id,
+    pluginName: plugin.manifest.name,
+    services: requiredServices,
+    allConfigured: requiredServices.every(s => s.isConfigured),
+  });
 });
 
 /**
@@ -505,19 +442,10 @@ pluginsRoutes.delete('/:id', async (c) => {
   const name = plugin.manifest.name;
   const success = await registry.unregister(id);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: `Plugin ${name} uninstalled`,
-      uninstalled: success,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: `Plugin ${name} uninstalled`,
+    uninstalled: success,
+  });
 });
 
 /**
@@ -534,16 +462,7 @@ pluginsRoutes.get('/meta/capabilities', (c) => {
     integrations: 'External service integrations',
   };
 
-  const response: ApiResponse = {
-    success: true,
-    data: capabilities,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, capabilities);
 });
 
 /**
@@ -562,14 +481,5 @@ pluginsRoutes.get('/meta/permissions', (c) => {
     storage: 'Use plugin storage',
   };
 
-  const response: ApiResponse = {
-    success: true,
-    data: permissions,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, permissions);
 });

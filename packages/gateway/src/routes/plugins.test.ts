@@ -340,9 +340,9 @@ describe('Plugins Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.data.pluginId).toBe('plugin-test');
-      expect(json.data.data.pluginConfigSchema).toHaveLength(1);
-      expect(json.data.data.settings.apiUrl).toBe('http://localhost:3000');
+      expect(json.data.pluginId).toBe('plugin-test');
+      expect(json.data.pluginConfigSchema).toHaveLength(1);
+      expect(json.data.settings.apiUrl).toBe('http://localhost:3000');
     });
 
     it('returns 404 for unknown plugin', async () => {
@@ -385,11 +385,11 @@ describe('Plugins Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.data.pluginId).toBe('plugin-test');
-      expect(json.data.data.services).toHaveLength(1);
-      expect(json.data.data.services[0].name).toBe('gmail');
-      expect(json.data.data.services[0].isConfigured).toBe(false);
-      expect(json.data.data.allConfigured).toBe(false);
+      expect(json.data.pluginId).toBe('plugin-test');
+      expect(json.data.services).toHaveLength(1);
+      expect(json.data.services[0].name).toBe('gmail');
+      expect(json.data.services[0].isConfigured).toBe(false);
+      expect(json.data.allConfigured).toBe(false);
     });
 
     it('shows configured when entries exist', async () => {
@@ -399,8 +399,8 @@ describe('Plugins Routes', () => {
       const res = await app.request('/plugins/plugin-test/required-services');
       const json = await res.json();
 
-      expect(json.data.data.services[0].isConfigured).toBe(true);
-      expect(json.data.data.allConfigured).toBe(true);
+      expect(json.data.services[0].isConfigured).toBe(true);
+      expect(json.data.allConfigured).toBe(true);
     });
   });
 
