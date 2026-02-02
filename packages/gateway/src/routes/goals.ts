@@ -8,7 +8,6 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
 import type {
   GoalStatus,
   StepStatus,
@@ -17,7 +16,7 @@ import type {
   CreateStepInput,
 } from '../db/repositories/goals.js';
 import { getGoalService, GoalServiceError } from '../services/goal-service.js';
-import { getUserId } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js';
 
 export const goalsRoutes = new Hono();
 
@@ -42,15 +41,10 @@ goalsRoutes.get('/', async (c) => {
     orderBy: 'priority',
   });
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       goals,
       total: goals.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -64,15 +58,10 @@ goalsRoutes.post('/', async (c) => {
     const service = getGoalService();
     const goal = await service.createGoal(userId, body);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         goal,
         message: 'Goal created successfully.',
-      },
-    };
-
-    return c.json(response, 201);
+      }, 201);
   } catch (err) {
     if (err instanceof GoalServiceError && err.code === 'VALIDATION_ERROR') {
       return c.json(
@@ -98,12 +87,7 @@ goalsRoutes.get('/stats', async (c) => {
   const service = getGoalService();
   const stats = await service.getStats(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats);
 });
 
 /**
@@ -116,15 +100,10 @@ goalsRoutes.get('/next-actions', async (c) => {
   const service = getGoalService();
   const actions = await service.getNextActions(userId, limit);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       actions,
       count: actions.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -137,15 +116,10 @@ goalsRoutes.get('/upcoming', async (c) => {
   const service = getGoalService();
   const goals = await service.getUpcoming(userId, days);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       goals,
       count: goals.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -171,12 +145,7 @@ goalsRoutes.get('/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: goalWithSteps,
-  };
-
-  return c.json(response);
+  return apiResponse(c, goalWithSteps);
 });
 
 /**
@@ -203,12 +172,7 @@ goalsRoutes.patch('/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: updated,
-  };
-
-  return c.json(response);
+  return apiResponse(c, updated);
 });
 
 /**
@@ -234,14 +198,9 @@ goalsRoutes.delete('/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       message: 'Goal deleted successfully.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 // ============================================================================
@@ -266,16 +225,11 @@ goalsRoutes.post('/:id/steps', async (c) => {
     // Use decomposeGoal which validates goal exists and recalculates progress
     const createdSteps = await service.decomposeGoal(userId, goalId, validSteps);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         steps: createdSteps,
         count: createdSteps.length,
         message: `Added ${createdSteps.length} step(s) to goal.`,
-      },
-    };
-
-    return c.json(response, 201);
+      }, 201);
   } catch (err) {
     if (err instanceof GoalServiceError) {
       const status = err.code === 'NOT_FOUND' ? 404 : 400;
@@ -304,15 +258,10 @@ goalsRoutes.get('/:id/steps', async (c) => {
   const service = getGoalService();
   const steps = await service.getSteps(userId, goalId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       steps,
       count: steps.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -345,12 +294,7 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: updated,
-  };
-
-  return c.json(response);
+  return apiResponse(c, updated);
 });
 
 /**
@@ -378,15 +322,10 @@ goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       step: updated,
       message: 'Step completed successfully.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -413,14 +352,9 @@ goalsRoutes.delete('/:goalId/steps/:stepId', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       message: 'Step deleted successfully.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 // ============================================================================

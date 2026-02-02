@@ -11,7 +11,6 @@
 
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import type { ApiResponse } from '../types/index.js';
 import {
   TasksRepository,
   BookmarksRepository,
@@ -34,7 +33,7 @@ import {
   type UpdateContactInput,
   type ContactQuery,
 } from '../db/repositories/index.js';
-import { getUserId } from './helpers.js';
+import { apiResponse, getUserId } from './helpers.js';
 
 export const personalDataRoutes = new Hono();
 
@@ -57,57 +56,32 @@ tasksRoutes.get('/', async (c) => {
   };
 
   const tasks = await repo.list(query);
-  const response: ApiResponse = {
-    success: true,
-    data: tasks,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, tasks);
 });
 
 tasksRoutes.get('/today', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const tasks = await repo.getDueToday();
-  const response: ApiResponse = {
-    success: true,
-    data: tasks,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, tasks);
 });
 
 tasksRoutes.get('/overdue', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const tasks = await repo.getOverdue();
-  const response: ApiResponse = {
-    success: true,
-    data: tasks,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, tasks);
 });
 
 tasksRoutes.get('/upcoming', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const days = c.req.query('days') ? parseInt(c.req.query('days')!) : 7;
   const tasks = await repo.getUpcoming(days);
-  const response: ApiResponse = {
-    success: true,
-    data: tasks,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, tasks);
 });
 
 tasksRoutes.get('/categories', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const categories = await repo.getCategories();
-  const response: ApiResponse = {
-    success: true,
-    data: categories,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, categories);
 });
 
 tasksRoutes.get('/:id', async (c) => {
@@ -116,24 +90,14 @@ tasksRoutes.get('/:id', async (c) => {
   if (!task) {
     throw new HTTPException(404, { message: 'Task not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: task,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, task);
 });
 
 tasksRoutes.post('/', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const body = await c.req.json<CreateTaskInput>();
   const task = await repo.create(body);
-  const response: ApiResponse = {
-    success: true,
-    data: task,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response, 201);
+  return apiResponse(c, task, 201);
 });
 
 tasksRoutes.patch('/:id', async (c) => {
@@ -143,12 +107,7 @@ tasksRoutes.patch('/:id', async (c) => {
   if (!task) {
     throw new HTTPException(404, { message: 'Task not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: task,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, task);
 });
 
 tasksRoutes.post('/:id/complete', async (c) => {
@@ -157,12 +116,7 @@ tasksRoutes.post('/:id/complete', async (c) => {
   if (!task) {
     throw new HTTPException(404, { message: 'Task not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: task,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, task);
 });
 
 tasksRoutes.delete('/:id', async (c) => {
@@ -171,12 +125,7 @@ tasksRoutes.delete('/:id', async (c) => {
   if (!deleted) {
     throw new HTTPException(404, { message: 'Task not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, { deleted: true });
 });
 
 // =====================================================
@@ -196,46 +145,26 @@ bookmarksRoutes.get('/', async (c) => {
   };
 
   const bookmarks = await repo.list(query);
-  const response: ApiResponse = {
-    success: true,
-    data: bookmarks,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, bookmarks);
 });
 
 bookmarksRoutes.get('/favorites', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
   const bookmarks = await repo.getFavorites();
-  const response: ApiResponse = {
-    success: true,
-    data: bookmarks,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, bookmarks);
 });
 
 bookmarksRoutes.get('/recent', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
   const limit = c.req.query('limit') ? parseInt(c.req.query('limit')!) : 10;
   const bookmarks = await repo.getRecent(limit);
-  const response: ApiResponse = {
-    success: true,
-    data: bookmarks,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, bookmarks);
 });
 
 bookmarksRoutes.get('/categories', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
   const categories = await repo.getCategories();
-  const response: ApiResponse = {
-    success: true,
-    data: categories,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, categories);
 });
 
 bookmarksRoutes.get('/:id', async (c) => {
@@ -244,24 +173,14 @@ bookmarksRoutes.get('/:id', async (c) => {
   if (!bookmark) {
     throw new HTTPException(404, { message: 'Bookmark not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: bookmark,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, bookmark);
 });
 
 bookmarksRoutes.post('/', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
   const body = await c.req.json<CreateBookmarkInput>();
   const bookmark = await repo.create(body);
-  const response: ApiResponse = {
-    success: true,
-    data: bookmark,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response, 201);
+  return apiResponse(c, bookmark, 201);
 });
 
 bookmarksRoutes.patch('/:id', async (c) => {
@@ -271,12 +190,7 @@ bookmarksRoutes.patch('/:id', async (c) => {
   if (!bookmark) {
     throw new HTTPException(404, { message: 'Bookmark not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: bookmark,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, bookmark);
 });
 
 bookmarksRoutes.post('/:id/favorite', async (c) => {
@@ -285,12 +199,7 @@ bookmarksRoutes.post('/:id/favorite', async (c) => {
   if (!bookmark) {
     throw new HTTPException(404, { message: 'Bookmark not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: bookmark,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, bookmark);
 });
 
 bookmarksRoutes.delete('/:id', async (c) => {
@@ -299,12 +208,7 @@ bookmarksRoutes.delete('/:id', async (c) => {
   if (!deleted) {
     throw new HTTPException(404, { message: 'Bookmark not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, { deleted: true });
 });
 
 // =====================================================
@@ -325,45 +229,25 @@ notesRoutes.get('/', async (c) => {
   };
 
   const notes = await repo.list(query);
-  const response: ApiResponse = {
-    success: true,
-    data: notes,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, notes);
 });
 
 notesRoutes.get('/pinned', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const notes = await repo.getPinned();
-  const response: ApiResponse = {
-    success: true,
-    data: notes,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, notes);
 });
 
 notesRoutes.get('/archived', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const notes = await repo.getArchived();
-  const response: ApiResponse = {
-    success: true,
-    data: notes,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, notes);
 });
 
 notesRoutes.get('/categories', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const categories = await repo.getCategories();
-  const response: ApiResponse = {
-    success: true,
-    data: categories,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, categories);
 });
 
 notesRoutes.get('/:id', async (c) => {
@@ -372,24 +256,14 @@ notesRoutes.get('/:id', async (c) => {
   if (!note) {
     throw new HTTPException(404, { message: 'Note not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: note,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, note);
 });
 
 notesRoutes.post('/', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const body = await c.req.json<CreateNoteInput>();
   const note = await repo.create(body);
-  const response: ApiResponse = {
-    success: true,
-    data: note,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response, 201);
+  return apiResponse(c, note, 201);
 });
 
 notesRoutes.patch('/:id', async (c) => {
@@ -399,12 +273,7 @@ notesRoutes.patch('/:id', async (c) => {
   if (!note) {
     throw new HTTPException(404, { message: 'Note not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: note,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, note);
 });
 
 notesRoutes.post('/:id/pin', async (c) => {
@@ -413,12 +282,7 @@ notesRoutes.post('/:id/pin', async (c) => {
   if (!note) {
     throw new HTTPException(404, { message: 'Note not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: note,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, note);
 });
 
 notesRoutes.post('/:id/archive', async (c) => {
@@ -427,12 +291,7 @@ notesRoutes.post('/:id/archive', async (c) => {
   if (!note) {
     throw new HTTPException(404, { message: 'Note not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: note,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, note);
 });
 
 notesRoutes.post('/:id/unarchive', async (c) => {
@@ -441,12 +300,7 @@ notesRoutes.post('/:id/unarchive', async (c) => {
   if (!note) {
     throw new HTTPException(404, { message: 'Note not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: note,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, note);
 });
 
 notesRoutes.delete('/:id', async (c) => {
@@ -455,12 +309,7 @@ notesRoutes.delete('/:id', async (c) => {
   if (!deleted) {
     throw new HTTPException(404, { message: 'Note not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, { deleted: true });
 });
 
 // =====================================================
@@ -481,46 +330,26 @@ calendarRoutes.get('/', async (c) => {
   };
 
   const events = await repo.list(query);
-  const response: ApiResponse = {
-    success: true,
-    data: events,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, events);
 });
 
 calendarRoutes.get('/today', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
   const events = await repo.getToday();
-  const response: ApiResponse = {
-    success: true,
-    data: events,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, events);
 });
 
 calendarRoutes.get('/upcoming', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
   const days = c.req.query('days') ? parseInt(c.req.query('days')!) : 7;
   const events = await repo.getUpcoming(days);
-  const response: ApiResponse = {
-    success: true,
-    data: events,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, events);
 });
 
 calendarRoutes.get('/categories', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
   const categories = await repo.getCategories();
-  const response: ApiResponse = {
-    success: true,
-    data: categories,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, categories);
 });
 
 calendarRoutes.get('/:id', async (c) => {
@@ -529,24 +358,14 @@ calendarRoutes.get('/:id', async (c) => {
   if (!event) {
     throw new HTTPException(404, { message: 'Event not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: event,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, event);
 });
 
 calendarRoutes.post('/', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
   const body = await c.req.json<CreateEventInput>();
   const event = await repo.create(body);
-  const response: ApiResponse = {
-    success: true,
-    data: event,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response, 201);
+  return apiResponse(c, event, 201);
 });
 
 calendarRoutes.patch('/:id', async (c) => {
@@ -556,12 +375,7 @@ calendarRoutes.patch('/:id', async (c) => {
   if (!event) {
     throw new HTTPException(404, { message: 'Event not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: event,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, event);
 });
 
 calendarRoutes.delete('/:id', async (c) => {
@@ -570,12 +384,7 @@ calendarRoutes.delete('/:id', async (c) => {
   if (!deleted) {
     throw new HTTPException(404, { message: 'Event not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, { deleted: true });
 });
 
 // =====================================================
@@ -596,69 +405,39 @@ contactsRoutes.get('/', async (c) => {
   };
 
   const contacts = await repo.list(query);
-  const response: ApiResponse = {
-    success: true,
-    data: contacts,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, contacts);
 });
 
 contactsRoutes.get('/favorites', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const contacts = await repo.getFavorites();
-  const response: ApiResponse = {
-    success: true,
-    data: contacts,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, contacts);
 });
 
 contactsRoutes.get('/recent', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const limit = c.req.query('limit') ? parseInt(c.req.query('limit')!) : 10;
   const contacts = await repo.getRecentlyContacted(limit);
-  const response: ApiResponse = {
-    success: true,
-    data: contacts,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, contacts);
 });
 
 contactsRoutes.get('/birthdays', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const days = c.req.query('days') ? parseInt(c.req.query('days')!) : 30;
   const contacts = await repo.getUpcomingBirthdays(days);
-  const response: ApiResponse = {
-    success: true,
-    data: contacts,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, contacts);
 });
 
 contactsRoutes.get('/relationships', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const relationships = await repo.getRelationships();
-  const response: ApiResponse = {
-    success: true,
-    data: relationships,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, relationships);
 });
 
 contactsRoutes.get('/companies', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const companies = await repo.getCompanies();
-  const response: ApiResponse = {
-    success: true,
-    data: companies,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, companies);
 });
 
 contactsRoutes.get('/:id', async (c) => {
@@ -667,24 +446,14 @@ contactsRoutes.get('/:id', async (c) => {
   if (!contact) {
     throw new HTTPException(404, { message: 'Contact not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: contact,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, contact);
 });
 
 contactsRoutes.post('/', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const body = await c.req.json<CreateContactInput>();
   const contact = await repo.create(body);
-  const response: ApiResponse = {
-    success: true,
-    data: contact,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response, 201);
+  return apiResponse(c, contact, 201);
 });
 
 contactsRoutes.patch('/:id', async (c) => {
@@ -694,12 +463,7 @@ contactsRoutes.patch('/:id', async (c) => {
   if (!contact) {
     throw new HTTPException(404, { message: 'Contact not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: contact,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, contact);
 });
 
 contactsRoutes.post('/:id/favorite', async (c) => {
@@ -708,12 +472,7 @@ contactsRoutes.post('/:id/favorite', async (c) => {
   if (!contact) {
     throw new HTTPException(404, { message: 'Contact not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: contact,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, contact);
 });
 
 contactsRoutes.delete('/:id', async (c) => {
@@ -722,12 +481,7 @@ contactsRoutes.delete('/:id', async (c) => {
   if (!deleted) {
     throw new HTTPException(404, { message: 'Contact not found' });
   }
-  const response: ApiResponse = {
-    success: true,
-    data: { deleted: true },
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, { deleted: true });
 });
 
 // =====================================================
@@ -809,10 +563,5 @@ personalDataRoutes.get('/summary', async (c) => {
     },
   };
 
-  const response: ApiResponse = {
-    success: true,
-    data: summary,
-    meta: { requestId: c.get('requestId') ?? 'unknown', timestamp: new Date().toISOString() },
-  };
-  return c.json(response);
+  return apiResponse(c, summary);
 });
