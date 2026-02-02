@@ -9,8 +9,7 @@ import { Hono } from 'hono';
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { discoverModels } from '../services/local-discovery.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiError } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { getUserId, apiResponse, apiError } from './helpers.js';
 
 const log = getLog('LocalProviders');
 
@@ -36,10 +35,7 @@ const LOCAL_PROVIDER_TEMPLATES = [
  * GET /templates - Get available local provider templates
  */
 localProvidersRoutes.get('/templates', (c) => {
-  return c.json({
-    success: true,
-    data: LOCAL_PROVIDER_TEMPLATES,
-  });
+  return apiResponse(c, { data: LOCAL_PROVIDER_TEMPLATES, });
 });
 
 /**
@@ -61,10 +57,7 @@ localProvidersRoutes.get('/', async (c) => {
       })
     );
 
-    return c.json({
-      success: true,
-      data: providersWithCounts,
-    });
+    return apiResponse(c, { data: providersWithCounts, });
   } catch (error) {
     log.error('Failed to list local providers:', error);
     return apiError(c, error instanceof Error ? error.message : 'Failed to list local providers', 500);
@@ -127,13 +120,10 @@ localProvidersRoutes.get('/:id', async (c) => {
 
     const models = await localProvidersRepo.listModels(userId, id);
 
-    return c.json({
-      success: true,
-      data: {
+    return apiResponse(c, { data: {
         ...provider,
         models,
-      },
-    });
+      }, });
   } catch (error) {
     log.error('Failed to get local provider:', error);
     return apiError(c, error instanceof Error ? error.message : 'Failed to get local provider', 500);
@@ -162,10 +152,7 @@ localProvidersRoutes.put('/:id', async (c) => {
       return apiError(c, 'Local provider not found', 404);
     }
 
-    return c.json({
-      success: true,
-      data: updated,
-    });
+    return apiResponse(c, { data: updated, });
   } catch (error) {
     log.error('Failed to update local provider:', error);
     return apiError(c, error instanceof Error ? error.message : 'Failed to update local provider', 500);
@@ -185,10 +172,7 @@ localProvidersRoutes.delete('/:id', async (c) => {
       return apiError(c, 'Local provider not found', 404);
     }
 
-    return c.json({
-      success: true,
-      message: 'Local provider deleted',
-    });
+    return apiResponse(c, { message: 'Local provider deleted', });
   } catch (error) {
     log.error('Failed to delete local provider:', error);
     return apiError(c, error instanceof Error ? error.message : 'Failed to delete local provider', 500);
@@ -215,11 +199,8 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
       return apiError(c, 'Local provider not found', 404);
     }
 
-    return c.json({
-      success: true,
-      data: updated,
-      message: `Local provider ${enabled ? 'enabled' : 'disabled'}`,
-    });
+    return apiResponse(c, { data: updated,
+      message: `Local provider ${enabled ? 'enabled' : 'disabled'}`, });
   } catch (error) {
     log.error('Failed to toggle local provider:', error);
     return apiError(c, error instanceof Error ? error.message : 'Failed to toggle local provider', 500);
@@ -236,10 +217,7 @@ localProvidersRoutes.patch('/:id/set-default', async (c) => {
   try {
     await localProvidersRepo.setDefault(userId, id);
 
-    return c.json({
-      success: true,
-      message: 'Default local provider updated',
-    });
+    return apiResponse(c, { message: 'Default local provider updated', });
   } catch (error) {
     log.error('Failed to set default local provider:', error);
     return apiError(c, error instanceof Error ? error.message : 'Failed to set default local provider', 500);
@@ -305,16 +283,13 @@ localProvidersRoutes.post('/:id/discover', async (c) => {
     // Update the provider's last discovery timestamp
     await localProvidersRepo.updateDiscoveredAt(id);
 
-    return c.json({
-      success: true,
-      data: {
+    return apiResponse(c, { data: {
         sourceUrl: result.sourceUrl,
         totalModels: discovered.length,
         newModels: newCount,
         existingModels: existingCount,
         models: discovered,
-      },
-    });
+      }, });
   } catch (error) {
     log.error('Failed to discover models:', error);
     return apiError(c, error instanceof Error ? error.message : 'Failed to discover models', 500);
@@ -331,10 +306,7 @@ localProvidersRoutes.get('/:id/models', async (c) => {
   try {
     const models = await localProvidersRepo.listModels(userId, id);
 
-    return c.json({
-      success: true,
-      data: models,
-    });
+    return apiResponse(c, { data: models, });
   } catch (error) {
     log.error('Failed to list local provider models:', error);
     return apiError(c, error instanceof Error ? error.message : 'Failed to list models', 500);
@@ -371,11 +343,8 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
 
     await localProvidersRepo.toggleModel(model.id, enabled);
 
-    return c.json({
-      success: true,
-      message: `Model ${enabled ? 'enabled' : 'disabled'}`,
-      enabled,
-    });
+    return apiResponse(c, { message: `Model ${enabled ? 'enabled' : 'disabled'}`,
+      enabled, });
   } catch (error) {
     log.error('Failed to toggle model:', error);
     return apiError(c, error instanceof Error ? error.message : 'Failed to toggle model', 500);
