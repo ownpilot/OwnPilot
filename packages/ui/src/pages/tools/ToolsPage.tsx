@@ -17,7 +17,7 @@ export function ToolsPage() {
     const fetchTools = async () => {
       try {
         const data = await toolsApi.listGrouped();
-        setGroupedTools(data as unknown as GroupedTools);
+        setGroupedTools(data);
       } catch {
         // API client handles error reporting
       } finally {

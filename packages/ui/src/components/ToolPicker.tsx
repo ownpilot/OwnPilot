@@ -287,18 +287,18 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
     setIsLoading(true);
     try {
       if (tab === 'tools') {
-        const [toolGroups, customData] = await Promise.all([
+        const [toolGroupsResponse, customData] = await Promise.all([
           toolsApi.listGrouped(),
           customToolsApi.list('active'),
         ]);
 
         const builtinTools: ResourceItem[] = [];
-        for (const group of toolGroups) {
+        for (const [category, group] of Object.entries(toolGroupsResponse.categories)) {
           for (const t of group.tools) {
             builtinTools.push({
               name: t.name,
               description: t.description || '',
-              category: group.category,
+              category,
               type: 'tool',
               parameters: t.parameters,
             });
