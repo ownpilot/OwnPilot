@@ -8,7 +8,7 @@
 import { Hono } from 'hono';
 import { getAuditLogger } from '../audit/index.js';
 import type { AuditSeverity } from '@ownpilot/core';
-import { apiResponse, apiError } from './helpers.js'
+import { apiResponse, apiError, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 const app = new Hono();
@@ -53,8 +53,8 @@ app.get('/', async (c) => {
     from: from ? new Date(from) : undefined,
     to: to ? new Date(to) : undefined,
     correlationId: c.req.query('correlationId'),
-    limit: parseInt(c.req.query('limit') ?? '100', 10),
-    offset: parseInt(c.req.query('offset') ?? '0', 10),
+    limit: getIntParam(c, 'limit', 100, 1, 1000),
+    offset: getIntParam(c, 'offset', 0, 0),
     order: c.req.query('order') as 'asc' | 'desc' | undefined,
   });
 
@@ -96,8 +96,8 @@ app.get('/tools', async (c) => {
 
   const result = await logger.query({
     types: ['tool.execute', 'tool.success', 'tool.error'],
-    limit: parseInt(c.req.query('limit') ?? '50', 10),
-    offset: parseInt(c.req.query('offset') ?? '0', 10),
+    limit: getIntParam(c, 'limit', 50, 1, 1000),
+    offset: getIntParam(c, 'offset', 0, 0),
     order: 'desc',
   });
 
@@ -120,8 +120,8 @@ app.get('/sessions', async (c) => {
 
   const result = await logger.query({
     types: ['session.create', 'session.destroy', 'message.receive', 'message.send', 'system.error'],
-    limit: parseInt(c.req.query('limit') ?? '50', 10),
-    offset: parseInt(c.req.query('offset') ?? '0', 10),
+    limit: getIntParam(c, 'limit', 50, 1, 1000),
+    offset: getIntParam(c, 'offset', 0, 0),
     order: 'desc',
   });
 
@@ -144,8 +144,8 @@ app.get('/errors', async (c) => {
 
   const result = await logger.query({
     minSeverity: 'error',
-    limit: parseInt(c.req.query('limit') ?? '50', 10),
-    offset: parseInt(c.req.query('offset') ?? '0', 10),
+    limit: getIntParam(c, 'limit', 50, 1, 1000),
+    offset: getIntParam(c, 'offset', 0, 0),
     order: 'desc',
   });
 

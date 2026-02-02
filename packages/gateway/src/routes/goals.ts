@@ -16,7 +16,7 @@ import type {
   CreateStepInput,
 } from '../db/repositories/goals.js';
 import { getGoalService, GoalServiceError } from '../services/goal-service.js';
-import { getUserId, apiResponse, apiError } from './helpers.js'
+import { getUserId, apiResponse, apiError, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 import { getLog } from '../services/log.js';
 
@@ -33,7 +33,7 @@ export const goalsRoutes = new Hono();
 goalsRoutes.get('/', async (c) => {
   const userId = getUserId(c);
   const status = c.req.query('status') as GoalStatus | undefined;
-  const limit = parseInt(c.req.query('limit') ?? '20', 10);
+  const limit = getIntParam(c, 'limit', 20, 1, 100);
   const parentId = c.req.query('parentId');
 
   const service = getGoalService();
@@ -92,7 +92,7 @@ goalsRoutes.get('/stats', async (c) => {
  */
 goalsRoutes.get('/next-actions', async (c) => {
   const userId = getUserId(c);
-  const limit = parseInt(c.req.query('limit') ?? '5', 10);
+  const limit = getIntParam(c, 'limit', 5, 1, 20);
 
   const service = getGoalService();
   const actions = await service.getNextActions(userId, limit);
