@@ -149,11 +149,7 @@ customToolsRoutes.get('/stats', async (c) => {
   const repo = createCustomToolsRepo(getUserId(c));
   const stats = await repo.getStats();
 
-  return apiResponse(c, stats,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    });
+  return apiResponse(c, stats);
 });
 
 /**
@@ -173,10 +169,6 @@ customToolsRoutes.get('/', async (c) => {
   return apiResponse(c, {
       tools,
       count: tools.length,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
     });
 });
 
@@ -190,10 +182,6 @@ customToolsRoutes.get('/pending', async (c) => {
   return apiResponse(c, {
       tools,
       count: tools.length,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
     });
 });
 
@@ -211,11 +199,7 @@ customToolsRoutes.get('/:id', async (c) => {
     });
   }
 
-  return apiResponse(c, tool,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    });
+  return apiResponse(c, tool);
 });
 
 /**
@@ -290,11 +274,7 @@ customToolsRoutes.post('/', async (c) => {
   // Invalidate agent cache so new tool is available
   invalidateAgentCache();
 
-  return apiResponse(c, tool,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    });
+  return apiResponse(c, tool);
 });
 
 /**
@@ -365,11 +345,7 @@ customToolsRoutes.patch('/:id', async (c) => {
   // Invalidate agent cache so tool changes take effect
   invalidateAgentCache();
 
-  return apiResponse(c, tool,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    });
+  return apiResponse(c, tool);
 });
 
 /**
@@ -401,11 +377,7 @@ customToolsRoutes.delete('/:id', async (c) => {
   // Invalidate agent cache so tool removal takes effect
   invalidateAgentCache();
 
-  return apiResponse(c, { deleted: true },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    });
+  return apiResponse(c, { deleted: true });
 });
 
 // =============================================================================
@@ -431,11 +403,7 @@ customToolsRoutes.post('/:id/enable', async (c) => {
   // Invalidate agent cache so enabled tool becomes available
   invalidateAgentCache();
 
-  return apiResponse(c, tool,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    });
+  return apiResponse(c, tool);
 });
 
 /**
@@ -457,11 +425,7 @@ customToolsRoutes.post('/:id/disable', async (c) => {
   // Invalidate agent cache so disabled tool is removed
   invalidateAgentCache();
 
-  return apiResponse(c, tool,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    });
+  return apiResponse(c, tool);
 });
 
 /**
@@ -491,11 +455,7 @@ customToolsRoutes.post('/:id/approve', async (c) => {
     invalidateAgentCache();
   }
 
-  return apiResponse(c, approved,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    });
+  return apiResponse(c, approved);
 });
 
 /**
@@ -520,11 +480,7 @@ customToolsRoutes.post('/:id/reject', async (c) => {
 
   const rejected = await repo.reject(id);
 
-  return apiResponse(c, rejected,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    });
+  return apiResponse(c, rejected);
 });
 
 // =============================================================================
@@ -576,10 +532,6 @@ customToolsRoutes.post('/:id/execute', async (c) => {
       isError: result.isError,
       duration,
       metadata: result.metadata,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
     });
 });
 
@@ -654,10 +606,6 @@ customToolsRoutes.post('/test', async (c) => {
       duration,
       metadata: result.metadata,
       testMode: true,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
     });
 });
 
@@ -680,10 +628,6 @@ customToolsRoutes.get('/active/definitions', async (c) => {
   return apiResponse(c, {
       tools: definitions,
       count: definitions.length,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
     });
 });
 
