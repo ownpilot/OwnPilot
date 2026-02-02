@@ -184,7 +184,7 @@ plansRoutes.post('/:id/execute', async (c) => {
   }
 
   if (plan.status === 'running') {
-    return apiError(c, { code: 'ALREADY_RUNNING', message: 'Plan is already running' }, 400);
+    return apiError(c, { code: ERROR_CODES.ALREADY_RUNNING, message: 'Plan is already running' }, 400);
   }
 
   try {
@@ -270,7 +270,7 @@ plansRoutes.post('/:id/resume', async (c) => {
   }
 
   if (plan.status !== 'paused') {
-    return apiError(c, { code: 'NOT_PAUSED', message: 'Plan is not paused' }, 400);
+    return apiError(c, { code: ERROR_CODES.NOT_PAUSED, message: 'Plan is not paused' }, 400);
   }
 
   try {
@@ -294,7 +294,7 @@ plansRoutes.post('/:id/resume', async (c) => {
       {
         success: false,
         error: {
-          code: 'RESUME_ERROR',
+          code: ERROR_CODES.RESUME_ERROR,
           message: errorMessage,
         },
       },
@@ -364,7 +364,7 @@ plansRoutes.post('/:id/start', async (c) => {
   }
 
   if (plan.status === 'running') {
-    return apiError(c, { code: 'ALREADY_RUNNING', message: 'Plan is already running' }, 400);
+    return apiError(c, { code: ERROR_CODES.ALREADY_RUNNING, message: 'Plan is already running' }, 400);
   }
 
   try {
@@ -420,7 +420,7 @@ plansRoutes.post('/:id/rollback', async (c) => {
   }
 
   if (!plan.checkpoint) {
-    return apiError(c, { code: 'NO_CHECKPOINT', message: 'No checkpoint available for rollback' }, 400);
+    return apiError(c, { code: ERROR_CODES.NO_CHECKPOINT, message: 'No checkpoint available for rollback' }, 400);
   }
 
   try {
@@ -450,7 +450,7 @@ plansRoutes.post('/:id/rollback', async (c) => {
       {
         success: false,
         error: {
-          code: 'ROLLBACK_ERROR',
+          code: ERROR_CODES.ROLLBACK_ERROR,
           message: errorMessage,
         },
       },
@@ -512,7 +512,7 @@ plansRoutes.post('/:id/steps', async (c) => {
       {
         success: false,
         error: {
-          code: 'ADD_STEP_ERROR',
+          code: ERROR_CODES.ADD_STEP_ERROR,
           message: errorMessage,
         },
       },

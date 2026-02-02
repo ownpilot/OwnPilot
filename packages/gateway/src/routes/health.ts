@@ -114,7 +114,7 @@ healthRoutes.get('/sandbox', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'SANDBOX_CHECK_FAILED',
+        code: ERROR_CODES.SANDBOX_CHECK_FAILED,
         message: error instanceof Error ? error.message : 'Failed to check sandbox status',
       },
       meta: {

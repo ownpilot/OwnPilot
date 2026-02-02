@@ -371,7 +371,7 @@ databaseRoutes.post('/restore', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'MISSING_FILENAME',
+        code: ERROR_CODES.MISSING_FILENAME,
         message: 'Backup filename is required',
       },
       meta: {
@@ -388,7 +388,7 @@ databaseRoutes.post('/restore', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'BACKUP_NOT_FOUND',
+        code: ERROR_CODES.BACKUP_NOT_FOUND,
         message: `Backup file not found: ${body.filename}`,
       },
       meta: {
@@ -489,7 +489,7 @@ databaseRoutes.delete('/backup/:filename', (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'BACKUP_NOT_FOUND',
+        code: ERROR_CODES.BACKUP_NOT_FOUND,
         message: `Backup file not found: ${filename}`,
       },
       meta: {
@@ -513,7 +513,7 @@ databaseRoutes.delete('/backup/:filename', (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'DELETE_FAILED',
+        code: ERROR_CODES.DELETE_FAILED,
         message: err instanceof Error ? err.message : 'Failed to delete backup',
       },
       meta: {
@@ -702,7 +702,7 @@ databaseRoutes.get('/stats', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'STATS_FAILED',
+        code: ERROR_CODES.STATS_FAILED,
         message: 'Failed to get database statistics. Is PostgreSQL connected?',
       },
       meta: {
@@ -759,7 +759,7 @@ databaseRoutes.get('/export', async (c) => {
       return c.json({
         success: false,
         error: {
-          code: 'INVALID_TABLES',
+          code: ERROR_CODES.INVALID_TABLES,
           message: `No valid tables specified. Skipped: ${skippedTables.join(', ')}`,
         },
         meta: {
@@ -823,7 +823,7 @@ databaseRoutes.get('/export', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'EXPORT_FAILED',
+        code: ERROR_CODES.EXPORT_FAILED,
         message: err instanceof Error ? err.message : 'Export failed',
       },
       meta: {
@@ -862,7 +862,7 @@ databaseRoutes.post('/import', async (c) => {
     }>();
 
     if (!body.data?.tables) {
-      return apiError(c, { code: 'INVALID_IMPORT_DATA', message: 'Import data must contain a "tables" object' }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_IMPORT_DATA, message: 'Import data must contain a "tables" object' }, 400);
     }
 
     const options = body.options || {};
@@ -880,7 +880,7 @@ databaseRoutes.post('/import', async (c) => {
     }
 
     if (tablesToImport.length === 0) {
-      return apiError(c, { code: 'INVALID_TABLES', message: `No valid tables to import. Skipped: ${skippedImportTables.join(', ')}` }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_TABLES, message: `No valid tables to import. Skipped: ${skippedImportTables.join(', ')}` }, 400);
     }
 
     operationStatus = {
@@ -1014,7 +1014,7 @@ databaseRoutes.post('/import', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'IMPORT_FAILED',
+        code: ERROR_CODES.IMPORT_FAILED,
         message: err instanceof Error ? err.message : 'Import failed',
       },
       meta: {
@@ -1098,7 +1098,7 @@ databaseRoutes.post('/export/save', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'EXPORT_SAVE_FAILED',
+        code: ERROR_CODES.EXPORT_SAVE_FAILED,
         message: err instanceof Error ? err.message : 'Export save failed',
       },
       meta: {
@@ -1174,7 +1174,7 @@ databaseRoutes.post('/migrate-schema', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'MIGRATION_FAILED',
+        code: ERROR_CODES.MIGRATION_FAILED,
         message: err instanceof Error ? err.message : 'Schema migration failed',
       },
       meta: {
@@ -1238,7 +1238,7 @@ databaseRoutes.post('/migrate', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'NO_LEGACY_DATA',
+        code: ERROR_CODES.NO_LEGACY_DATA,
         message: 'No legacy SQLite data found to migrate.',
       },
       meta: {

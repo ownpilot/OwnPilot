@@ -94,7 +94,7 @@ triggersRoutes.post('/', async (c) => {
       {
         success: false,
         error: {
-          code: 'CREATE_FAILED',
+          code: ERROR_CODES.CREATE_FAILED,
           message,
         },
       },

@@ -409,7 +409,7 @@ app.put('/:id/config', async (c) => {
         },
       });
   } catch (error) {
-    return apiError(c, { code: 'UPDATE_FAILED', message: error instanceof Error ? error.message : 'Failed to update provider config' }, 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: error instanceof Error ? error.message : 'Failed to update provider config' }, 500);
   }
 });
 
@@ -456,7 +456,7 @@ app.patch('/:id/toggle', async (c) => {
         isEnabled: userConfig?.isEnabled ?? true,
       });
   } catch (error) {
-    return apiError(c, { code: 'TOGGLE_FAILED', message: error instanceof Error ? error.message : 'Failed to toggle provider' }, 500);
+    return apiError(c, { code: ERROR_CODES.TOGGLE_FAILED, message: error instanceof Error ? error.message : 'Failed to toggle provider' }, 500);
   }
 });
 

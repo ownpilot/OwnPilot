@@ -49,7 +49,7 @@ app.get('/', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return apiError(c, { code: 'WORKSPACE_LIST_ERROR', message: error instanceof Error ? error.message : 'Failed to list workspaces' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_LIST_ERROR, message: error instanceof Error ? error.message : 'Failed to list workspaces' }, 500);
   }
 });
 
@@ -79,7 +79,7 @@ app.post('/', async (c) => {
 
     return c.json(response, 201);
   } catch (error) {
-    return apiError(c, { code: 'WORKSPACE_CREATE_ERROR', message: error instanceof Error ? error.message : 'Failed to create workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_CREATE_ERROR, message: error instanceof Error ? error.message : 'Failed to create workspace' }, 500);
   }
 });
 
@@ -107,7 +107,7 @@ app.get('/:id', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return apiError(c, { code: 'WORKSPACE_FETCH_ERROR', message: error instanceof Error ? error.message : 'Failed to fetch workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_FETCH_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch workspace' }, 500);
   }
 });
 
@@ -135,7 +135,7 @@ app.delete('/:id', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return apiError(c, { code: 'WORKSPACE_DELETE_ERROR', message: error instanceof Error ? error.message : 'Failed to delete workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_DELETE_ERROR, message: error instanceof Error ? error.message : 'Failed to delete workspace' }, 500);
   }
 });
 
@@ -170,7 +170,7 @@ app.get('/:id/files', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return apiError(c, { code: 'FILE_LIST_ERROR', message: error instanceof Error ? error.message : 'Failed to list files' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_LIST_ERROR, message: error instanceof Error ? error.message : 'Failed to list files' }, 500);
   }
 });
 
@@ -192,7 +192,7 @@ app.get('/:id/file/*', async (c) => {
     const content = readSessionWorkspaceFile(workspaceId, filePath);
 
     if (content === null) {
-      return apiError(c, { code: 'FILE_NOT_FOUND', message: 'File not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.FILE_NOT_FOUND, message: 'File not found' }, 404);
     }
 
     // If download requested, return as binary
@@ -235,7 +235,7 @@ app.get('/:id/file/*', async (c) => {
         403
       );
     }
-    return apiError(c, { code: 'FILE_READ_ERROR', message: error instanceof Error ? error.message : 'Failed to read file' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_READ_ERROR, message: error instanceof Error ? error.message : 'Failed to read file' }, 500);
   }
 });
 
@@ -288,7 +288,7 @@ app.put('/:id/file/*', async (c) => {
         403
       );
     }
-    return apiError(c, { code: 'FILE_WRITE_ERROR', message: error instanceof Error ? error.message : 'Failed to write file' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_WRITE_ERROR, message: error instanceof Error ? error.message : 'Failed to write file' }, 500);
   }
 });
 
@@ -309,7 +309,7 @@ app.delete('/:id/file/*', async (c) => {
     const deleted = deleteSessionWorkspaceFile(workspaceId, filePath);
 
     if (!deleted) {
-      return apiError(c, { code: 'FILE_NOT_FOUND', message: 'File not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.FILE_NOT_FOUND, message: 'File not found' }, 404);
     }
 
     const response: ApiResponse = {
@@ -338,7 +338,7 @@ app.delete('/:id/file/*', async (c) => {
         403
       );
     }
-    return apiError(c, { code: 'FILE_DELETE_ERROR', message: error instanceof Error ? error.message : 'Failed to delete file' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_DELETE_ERROR, message: error instanceof Error ? error.message : 'Failed to delete file' }, 500);
   }
 });
 
@@ -377,7 +377,7 @@ app.get('/:id/download', async (c) => {
       },
     });
   } catch (error) {
-    return apiError(c, { code: 'DOWNLOAD_ERROR', message: error instanceof Error ? error.message : 'Failed to download workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.DOWNLOAD_ERROR, message: error instanceof Error ? error.message : 'Failed to download workspace' }, 500);
   }
 });
 
@@ -402,7 +402,7 @@ app.post('/cleanup', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return apiError(c, { code: 'CLEANUP_ERROR', message: error instanceof Error ? error.message : 'Failed to cleanup workspaces' }, 500);
+    return apiError(c, { code: ERROR_CODES.CLEANUP_ERROR, message: error instanceof Error ? error.message : 'Failed to cleanup workspaces' }, 500);
   }
 });
 
@@ -428,7 +428,7 @@ app.post('/session/:sessionId', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return apiError(c, { code: 'WORKSPACE_ERROR', message: error instanceof Error ? error.message : 'Failed to get or create workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_ERROR, message: error instanceof Error ? error.message : 'Failed to get or create workspace' }, 500);
   }
 });
 

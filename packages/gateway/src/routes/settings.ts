@@ -385,7 +385,7 @@ settingsRoutes.get('/sandbox', async (c) => {
         },
       });
   } catch (error) {
-    return apiError(c, { code: 'SANDBOX_SETTINGS_ERROR', message: error instanceof Error ? error.message : 'Failed to get sandbox settings' }, 500);
+    return apiError(c, { code: ERROR_CODES.SANDBOX_SETTINGS_ERROR, message: error instanceof Error ? error.message : 'Failed to get sandbox settings' }, 500);
   }
 });
 
@@ -450,7 +450,7 @@ settingsRoutes.post('/sandbox', async (c) => {
         settings: newSettings,
       });
   } catch (error) {
-    return apiError(c, { code: 'SANDBOX_SETTINGS_ERROR', message: error instanceof Error ? error.message : 'Failed to update sandbox settings' }, 500);
+    return apiError(c, { code: ERROR_CODES.SANDBOX_SETTINGS_ERROR, message: error instanceof Error ? error.message : 'Failed to update sandbox settings' }, 500);
   }
 });
 
@@ -462,7 +462,7 @@ settingsRoutes.post('/sandbox/enable', async (c) => {
     const dockerAvailable = await isDockerAvailable();
 
     if (!dockerAvailable) {
-      return apiError(c, { code: 'DOCKER_UNAVAILABLE', message: 'Cannot enable sandbox: Docker is not available. Please install and start Docker first.' }, 400);
+      return apiError(c, { code: ERROR_CODES.DOCKER_UNAVAILABLE, message: 'Cannot enable sandbox: Docker is not available. Please install and start Docker first.' }, 400);
     }
 
     await setSandboxSetting('enabled', true);
@@ -472,7 +472,7 @@ settingsRoutes.post('/sandbox/enable', async (c) => {
         message: 'Sandbox has been enabled.',
       });
   } catch (error) {
-    return apiError(c, { code: 'SANDBOX_ENABLE_ERROR', message: error instanceof Error ? error.message : 'Failed to enable sandbox' }, 500);
+    return apiError(c, { code: ERROR_CODES.SANDBOX_ENABLE_ERROR, message: error instanceof Error ? error.message : 'Failed to enable sandbox' }, 500);
   }
 });
 
@@ -488,6 +488,6 @@ settingsRoutes.post('/sandbox/disable', async (c) => {
         message: 'Sandbox has been disabled.',
       });
   } catch (error) {
-    return apiError(c, { code: 'SANDBOX_DISABLE_ERROR', message: error instanceof Error ? error.message : 'Failed to disable sandbox' }, 500);
+    return apiError(c, { code: ERROR_CODES.SANDBOX_DISABLE_ERROR, message: error instanceof Error ? error.message : 'Failed to disable sandbox' }, 500);
   }
 });

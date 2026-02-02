@@ -65,7 +65,7 @@ app.get('/', async (c) => {
         count: workspaces.length,
       });
   } catch (error) {
-    return apiError(c, { code: 'WORKSPACE_LIST_ERROR', message: error instanceof Error ? error.message : 'Failed to list workspaces' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_LIST_ERROR, message: error instanceof Error ? error.message : 'Failed to list workspaces' }, 500);
   }
 });
 
@@ -88,7 +88,7 @@ app.post('/', async (c) => {
 
     const maxWorkspaces = 5; // Could be from settings
     if (existingCount >= maxWorkspaces) {
-      return apiError(c, { code: 'WORKSPACE_LIMIT_EXCEEDED', message: `Maximum ${maxWorkspaces} workspaces allowed` }, 400);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_LIMIT_EXCEEDED, message: `Maximum ${maxWorkspaces} workspaces allowed` }, 400);
     }
 
     // Create workspace storage
@@ -124,7 +124,7 @@ app.post('/', async (c) => {
       }, 201);
   } catch (error) {
     await repo.logAudit('create', 'workspace', undefined, false, error instanceof Error ? error.message : 'Unknown error');
-    return apiError(c, { code: 'WORKSPACE_CREATE_ERROR', message: error instanceof Error ? error.message : 'Failed to create workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_CREATE_ERROR, message: error instanceof Error ? error.message : 'Failed to create workspace' }, 500);
   }
 });
 
@@ -162,7 +162,7 @@ app.get('/:id', async (c) => {
         storageUsage,
       });
   } catch (error) {
-    return apiError(c, { code: 'WORKSPACE_FETCH_ERROR', message: error instanceof Error ? error.message : 'Failed to fetch workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_FETCH_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch workspace' }, 500);
   }
 });
 
@@ -205,7 +205,7 @@ app.patch('/:id', async (c) => {
 
     return apiResponse(c, { updated: true });
   } catch (error) {
-    return apiError(c, { code: 'WORKSPACE_UPDATE_ERROR', message: error instanceof Error ? error.message : 'Failed to update workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_UPDATE_ERROR, message: error instanceof Error ? error.message : 'Failed to update workspace' }, 500);
   }
 });
 
@@ -242,7 +242,7 @@ app.delete('/:id', async (c) => {
 
     return apiResponse(c, { deleted: true });
   } catch (error) {
-    return apiError(c, { code: 'WORKSPACE_DELETE_ERROR', message: error instanceof Error ? error.message : 'Failed to delete workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_DELETE_ERROR, message: error instanceof Error ? error.message : 'Failed to delete workspace' }, 500);
   }
 });
 
@@ -280,7 +280,7 @@ app.get('/:id/files', async (c) => {
     if (error instanceof StorageSecurityError) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: 'FILE_LIST_ERROR', message: error instanceof Error ? error.message : 'Failed to list files' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_LIST_ERROR, message: error instanceof Error ? error.message : 'Failed to list files' }, 500);
   }
 });
 
@@ -317,7 +317,7 @@ app.get('/:id/files/*', async (c) => {
     if (error instanceof StorageSecurityError) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: 'FILE_READ_ERROR', message: error instanceof Error ? error.message : 'Failed to read file' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_READ_ERROR, message: error instanceof Error ? error.message : 'Failed to read file' }, 500);
   }
 });
 
@@ -360,7 +360,7 @@ app.put('/:id/files/*', async (c) => {
       await repo.logAudit('write', 'file', filePath, false, error.message);
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: 'FILE_WRITE_ERROR', message: error instanceof Error ? error.message : 'Failed to write file' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_WRITE_ERROR, message: error instanceof Error ? error.message : 'Failed to write file' }, 500);
   }
 });
 
@@ -394,7 +394,7 @@ app.delete('/:id/files/*', async (c) => {
     if (error instanceof StorageSecurityError) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: 'FILE_DELETE_ERROR', message: error instanceof Error ? error.message : 'Failed to delete file' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_DELETE_ERROR, message: error instanceof Error ? error.message : 'Failed to delete file' }, 500);
   }
 });
 
@@ -422,7 +422,7 @@ app.get('/:id/download', async (c) => {
     const files = await storage.listFiles(`${userId}/${workspaceId}`, '.', true);
 
     if (files.length === 0) {
-      return apiError(c, { code: 'WORKSPACE_EMPTY', message: 'Workspace has no files to download' }, 400);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_EMPTY, message: 'Workspace has no files to download' }, 400);
     }
 
     // Create a simple JSON manifest of files (since we can't create ZIP in pure Node without deps)
@@ -459,7 +459,7 @@ app.get('/:id/download', async (c) => {
       totalFiles: fileContents.length,
     });
   } catch (error) {
-    return apiError(c, { code: 'DOWNLOAD_ERROR', message: error instanceof Error ? error.message : 'Failed to download workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.DOWNLOAD_ERROR, message: error instanceof Error ? error.message : 'Failed to download workspace' }, 500);
   }
 });
 
@@ -509,7 +509,7 @@ app.get('/:id/stats', async (c) => {
         executionCount,
       });
   } catch (error) {
-    return apiError(c, { code: 'STATS_ERROR', message: error instanceof Error ? error.message : 'Failed to get workspace stats' }, 500);
+    return apiError(c, { code: ERROR_CODES.STATS_ERROR, message: error instanceof Error ? error.message : 'Failed to get workspace stats' }, 500);
   }
 });
 
@@ -536,7 +536,7 @@ app.post('/:id/execute', async (c) => {
     // Check if Docker is available
     const dockerAvailable = await isDockerAvailable();
     if (!dockerAvailable) {
-      return apiError(c, { code: 'DOCKER_UNAVAILABLE', message: 'Docker is not available. Please ensure Docker is installed and running.' }, 503);
+      return apiError(c, { code: ERROR_CODES.DOCKER_UNAVAILABLE, message: 'Docker is not available. Please ensure Docker is installed and running.' }, 503);
     }
 
     const body = (await c.req.json()) as ExecuteCodeRequest;
@@ -547,7 +547,7 @@ app.post('/:id/execute', async (c) => {
 
     const validLanguages: ExecutionLanguage[] = ['python', 'javascript', 'shell'];
     if (!validLanguages.includes(body.language)) {
-      return apiError(c, { code: 'INVALID_LANGUAGE', message: `Unsupported language. Supported: ${validLanguages.join(', ')}` }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_LANGUAGE, message: `Unsupported language. Supported: ${validLanguages.join(', ')}` }, 400);
     }
 
     const orchestrator = getOrchestrator();
@@ -650,7 +650,7 @@ app.get('/:id/executions', async (c) => {
         count: executions.length,
       });
   } catch (error) {
-    return apiError(c, { code: 'EXECUTIONS_LIST_ERROR', message: error instanceof Error ? error.message : 'Failed to list executions' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXECUTIONS_LIST_ERROR, message: error instanceof Error ? error.message : 'Failed to list executions' }, 500);
   }
 });
 
@@ -709,7 +709,7 @@ app.post('/:id/container/start', async (c) => {
         status: 'running',
       });
   } catch (error) {
-    return apiError(c, { code: 'CONTAINER_START_ERROR', message: error instanceof Error ? error.message : 'Failed to start container' }, 500);
+    return apiError(c, { code: ERROR_CODES.CONTAINER_START_ERROR, message: error instanceof Error ? error.message : 'Failed to start container' }, 500);
   }
 });
 
@@ -742,7 +742,7 @@ app.post('/:id/container/stop', async (c) => {
         status: 'stopped',
       });
   } catch (error) {
-    return apiError(c, { code: 'CONTAINER_STOP_ERROR', message: error instanceof Error ? error.message : 'Failed to stop container' }, 500);
+    return apiError(c, { code: ERROR_CODES.CONTAINER_STOP_ERROR, message: error instanceof Error ? error.message : 'Failed to stop container' }, 500);
   }
 });
 
@@ -781,7 +781,7 @@ app.get('/:id/container/status', async (c) => {
         resourceUsage,
       });
   } catch (error) {
-    return apiError(c, { code: 'CONTAINER_STATUS_ERROR', message: error instanceof Error ? error.message : 'Failed to get container status' }, 500);
+    return apiError(c, { code: ERROR_CODES.CONTAINER_STATUS_ERROR, message: error instanceof Error ? error.message : 'Failed to get container status' }, 500);
   }
 });
 
@@ -811,7 +811,7 @@ app.get('/:id/container/logs', async (c) => {
         logs,
       });
   } catch (error) {
-    return apiError(c, { code: 'CONTAINER_LOGS_ERROR', message: error instanceof Error ? error.message : 'Failed to get container logs' }, 500);
+    return apiError(c, { code: ERROR_CODES.CONTAINER_LOGS_ERROR, message: error instanceof Error ? error.message : 'Failed to get container logs' }, 500);
   }
 });
 
@@ -840,7 +840,7 @@ app.get('/system/status', async (c) => {
         })),
       });
   } catch (error) {
-    return apiError(c, { code: 'SYSTEM_STATUS_ERROR', message: error instanceof Error ? error.message : 'Failed to get system status' }, 500);
+    return apiError(c, { code: ERROR_CODES.SYSTEM_STATUS_ERROR, message: error instanceof Error ? error.message : 'Failed to get system status' }, 500);
   }
 });
 

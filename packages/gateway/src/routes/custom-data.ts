@@ -65,7 +65,7 @@ customDataRoutes.post('/tables', async (c) => {
     if (err instanceof CustomDataServiceError && err.code === 'VALIDATION_ERROR') {
       return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: err.message }, 400);
     }
-    return apiError(c, { code: 'CREATE_FAILED', message: err instanceof Error ? err.message : 'Failed to create table' }, 400);
+    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: err instanceof Error ? err.message : 'Failed to create table' }, 400);
   }
 });
 
@@ -128,7 +128,7 @@ customDataRoutes.delete('/tables/:table', async (c) => {
     return apiResponse(c, { deleted: true });
   } catch (err) {
     if (err instanceof CustomDataServiceError && err.code === 'PROTECTED') {
-      return apiError(c, { code: 'PROTECTED', message: err.message }, 403);
+      return apiError(c, { code: ERROR_CODES.PROTECTED, message: err.message }, 403);
     }
     throw err;
   }
@@ -168,7 +168,7 @@ customDataRoutes.get('/tables/:table/records', async (c) => {
         hasMore: offset + records.length < total,
       });
   } catch (err) {
-    return apiError(c, { code: 'LIST_FAILED', message: err instanceof Error ? err.message : 'Failed to list records' }, 400);
+    return apiError(c, { code: ERROR_CODES.LIST_FAILED, message: err instanceof Error ? err.message : 'Failed to list records' }, 400);
   }
 });
 
@@ -198,7 +198,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
 
     return apiResponse(c, record);
   } catch (err) {
-    return apiError(c, { code: 'ADD_FAILED', message: err instanceof Error ? err.message : 'Failed to add record' }, 400);
+    return apiError(c, { code: ERROR_CODES.ADD_FAILED, message: err instanceof Error ? err.message : 'Failed to add record' }, 400);
   }
 });
 
@@ -229,7 +229,7 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
 
     return apiResponse(c, records);
   } catch (err) {
-    return apiError(c, { code: 'SEARCH_FAILED', message: err instanceof Error ? err.message : 'Failed to search records' }, 400);
+    return apiError(c, { code: ERROR_CODES.SEARCH_FAILED, message: err instanceof Error ? err.message : 'Failed to search records' }, 400);
   }
 });
 
@@ -278,7 +278,7 @@ customDataRoutes.put('/records/:id', async (c) => {
 
     return apiResponse(c, updated);
   } catch (err) {
-    return apiError(c, { code: 'UPDATE_FAILED', message: err instanceof Error ? err.message : 'Failed to update record' }, 400);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: err instanceof Error ? err.message : 'Failed to update record' }, 400);
   }
 });
 

@@ -153,7 +153,7 @@ app.get('/sync/providers', async (c) => {
       });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return apiError(c, { code: 'FETCH_ERROR', message: `Failed to fetch providers: ${message}` }, 500);
+    return apiError(c, { code: ERROR_CODES.FETCH_ERROR, message: `Failed to fetch providers: ${message}` }, 500);
   }
 });
 
@@ -188,7 +188,7 @@ app.post('/sync', async (c) => {
       });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return apiError(c, { code: 'SYNC_ERROR', message: `Failed to sync providers: ${message}` }, 500);
+    return apiError(c, { code: ERROR_CODES.SYNC_ERROR, message: `Failed to sync providers: ${message}` }, 500);
   }
 });
 
@@ -200,7 +200,7 @@ app.get('/:provider', async (c) => {
 
   const config = getProviderConfig(provider);
   if (!config) {
-    return apiError(c, { code: 'UNKNOWN_PROVIDER', message: `Unknown provider: ${provider}` }, 404);
+    return apiError(c, { code: ERROR_CODES.UNKNOWN_PROVIDER, message: `Unknown provider: ${provider}` }, 404);
   }
 
   const models = convertToModelInfo(provider);

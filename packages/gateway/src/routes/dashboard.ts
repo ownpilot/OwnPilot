@@ -61,7 +61,7 @@ dashboardRoutes.get('/briefing', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'BRIEFING_FAILED',
+        code: ERROR_CODES.BRIEFING_FAILED,
         message: error instanceof Error ? error.message : 'Failed to generate briefing',
       },
       meta: {
@@ -89,7 +89,7 @@ dashboardRoutes.get('/data', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'DATA_AGGREGATION_FAILED',
+        code: ERROR_CODES.DATA_AGGREGATION_FAILED,
         message: error instanceof Error ? error.message : 'Failed to aggregate data',
       },
       meta: {
@@ -130,7 +130,7 @@ dashboardRoutes.post('/briefing/refresh', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'REFRESH_FAILED',
+        code: ERROR_CODES.REFRESH_FAILED,
         message: error instanceof Error ? error.message : 'Failed to refresh briefing',
       },
       meta: {
@@ -213,7 +213,7 @@ dashboardRoutes.get('/timeline', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'TIMELINE_FAILED',
+        code: ERROR_CODES.TIMELINE_FAILED,
         message: error instanceof Error ? error.message : 'Failed to generate timeline',
       },
       meta: {

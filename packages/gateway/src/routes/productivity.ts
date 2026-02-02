@@ -70,7 +70,7 @@ pomodoroRoutes.post('/session/start', async (c) => {
   if (active) {
     return c.json({
       success: false,
-      error: { code: 'SESSION_ACTIVE', message: 'A session is already running' },
+      error: { code: ERROR_CODES.SESSION_ACTIVE, message: 'A session is already running' },
     }, 400);
   }
 

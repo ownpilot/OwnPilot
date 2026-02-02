@@ -108,7 +108,7 @@ autonomyRoutes.post('/level', async (c) => {
       {
         success: false,
         error: {
-          code: 'INVALID_LEVEL',
+          code: ERROR_CODES.INVALID_LEVEL,
           message: 'Level must be between 0 and 4',
         },
       },
@@ -248,7 +248,7 @@ autonomyRoutes.post('/approvals/request', async (c) => {
       {
         success: false,
         error: {
-          code: 'APPROVAL_ERROR',
+          code: ERROR_CODES.APPROVAL_ERROR,
           message: errorMessage,
         },
       },
@@ -293,7 +293,7 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
       {
         success: false,
         error: {
-          code: 'INVALID_DECISION',
+          code: ERROR_CODES.INVALID_DECISION,
           message: 'decision must be "approve", "reject", or "modify"',
         },
       },

@@ -144,7 +144,7 @@ channelRoutes.post('/:id/connect', async (c) => {
       {
         success: false,
         error: {
-          code: 'CONNECTION_FAILED',
+          code: ERROR_CODES.CONNECTION_FAILED,
           message: error instanceof Error ? error.message : 'Failed to connect channel',
         },
       },
@@ -167,7 +167,7 @@ channelRoutes.post('/:id/disconnect', async (c) => {
       {
         success: false,
         error: {
-          code: 'DISCONNECT_FAILED',
+          code: ERROR_CODES.DISCONNECT_FAILED,
           message: error instanceof Error ? error.message : 'Failed to disconnect channel',
         },
       },
@@ -239,7 +239,7 @@ channelRoutes.post('/:id/send', async (c) => {
       {
         success: false,
         error: {
-          code: 'SEND_FAILED',
+          code: ERROR_CODES.SEND_FAILED,
           message: error instanceof Error ? error.message : 'Failed to send message',
         },
       },
@@ -266,7 +266,7 @@ channelRoutes.get('/:id/messages', async (c) => {
       {
         success: false,
         error: {
-          code: 'FETCH_FAILED',
+          code: ERROR_CODES.FETCH_FAILED,
           message: error instanceof Error ? error.message : 'Failed to fetch messages',
         },
       },

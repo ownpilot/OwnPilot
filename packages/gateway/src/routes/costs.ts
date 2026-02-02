@@ -275,7 +275,7 @@ costRoutes.post('/estimate', async (c) => {
       {
         success: false,
         error: {
-          code: 'ESTIMATION_FAILED',
+          code: ERROR_CODES.ESTIMATION_FAILED,
           message: error instanceof Error ? error.message : 'Failed to estimate cost',
         },
       },
@@ -329,7 +329,7 @@ costRoutes.post('/budget', async (c) => {
       {
         success: false,
         error: {
-          code: 'BUDGET_FAILED',
+          code: ERROR_CODES.BUDGET_FAILED,
           message: error instanceof Error ? error.message : 'Failed to set budget',
         },
       },
@@ -459,7 +459,7 @@ costRoutes.post('/record', async (c) => {
       {
         success: false,
         error: {
-          code: 'RECORD_FAILED',
+          code: ERROR_CODES.RECORD_FAILED,
           message: error instanceof Error ? error.message : 'Failed to record usage',
         },
       },
