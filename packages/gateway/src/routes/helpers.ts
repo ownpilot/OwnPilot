@@ -25,6 +25,60 @@ export function getUserId(c: Context): string {
 }
 
 /**
+ * Parse pagination parameters from query string with defaults.
+ *
+ * Replaces repeated pattern:
+ *   const limit = parseInt(c.req.query('limit') ?? '20', 10);
+ *   const offset = parseInt(c.req.query('offset') ?? '0', 10);
+ *
+ * @param c - Hono context
+ * @param defaultLimit - Default limit value (default: 20)
+ * @param maxLimit - Maximum allowed limit (default: 100)
+ * @returns Object with limit and offset
+ */
+export function getPaginationParams(
+  c: Context,
+  defaultLimit: number = 20,
+  maxLimit: number = 100
+): { limit: number; offset: number } {
+  const limit = Math.min(
+    Math.max(1, parseInt(c.req.query('limit') ?? String(defaultLimit), 10)),
+    maxLimit
+  );
+  const offset = Math.max(0, parseInt(c.req.query('offset') ?? '0', 10));
+
+  return { limit, offset };
+}
+
+/**
+ * Parse integer query parameter with default and optional min/max bounds.
+ *
+ * Replaces repeated pattern:
+ *   const days = parseInt(c.req.query('days') ?? '30', 10);
+ *
+ * @param c - Hono context
+ * @param name - Query parameter name
+ * @param defaultValue - Default value if parameter is missing
+ * @param min - Minimum allowed value (optional)
+ * @param max - Maximum allowed value (optional)
+ * @returns Parsed and bounded integer
+ */
+export function getIntParam(
+  c: Context,
+  name: string,
+  defaultValue: number,
+  min?: number,
+  max?: number
+): number {
+  let value = parseInt(c.req.query(name) ?? String(defaultValue), 10);
+
+  if (min !== undefined) value = Math.max(min, value);
+  if (max !== undefined) value = Math.min(max, value);
+
+  return value;
+}
+
+/**
  * Build and return a success API response with standard meta envelope.
  *
  * Replaces the repeated pattern:
