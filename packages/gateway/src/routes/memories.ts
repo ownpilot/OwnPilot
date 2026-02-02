@@ -13,7 +13,7 @@ import type {
   CreateMemoryInput,
 } from '../db/repositories/memories.js';
 import { getMemoryService, MemoryServiceError } from '../services/memory-service.js';
-import { getUserId, apiResponse } from './helpers.js'
+import { getUserId, apiResponse, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 export const memoriesRoutes = new Hono();
@@ -28,7 +28,7 @@ export const memoriesRoutes = new Hono();
 memoriesRoutes.get('/', async (c) => {
   const userId = getUserId(c);
   const type = c.req.query('type') as MemoryType | undefined;
-  const limit = parseInt(c.req.query('limit') ?? '20', 10);
+  const limit = getIntParam(c, 'limit', 20, 1, 100);
   const minImportance = c.req.query('minImportance')
     ? parseFloat(c.req.query('minImportance')!)
     : undefined;
@@ -94,7 +94,7 @@ memoriesRoutes.get('/search', async (c) => {
   const userId = getUserId(c);
   const query = c.req.query('q') ?? '';
   const type = c.req.query('type') as MemoryType | undefined;
-  const limit = parseInt(c.req.query('limit') ?? '20', 10);
+  const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   if (!query) {
     return c.json(
