@@ -28,7 +28,7 @@ import {
 } from '@ownpilot/core';
 import { hasApiKey, getApiKey } from './settings.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiError } from './helpers.js'
+import { getUserId, apiResponse, apiError } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('ModelConfigs');
@@ -359,11 +359,8 @@ modelConfigsRoutes.get('/', async (c) => {
     models = models.filter((m) => m.isEnabled);
   }
 
-  return c.json({
-    success: true,
-    data: models,
-    count: models.length,
-  });
+  return apiResponse(c, { data: models,
+    count: models.length, });
 });
 
 /**
@@ -385,11 +382,8 @@ modelConfigsRoutes.post('/', async (c) => {
       isCustom: true,
     });
 
-    return c.json({
-      success: true,
-      message: 'Model created',
-      data: config,
-    });
+    return apiResponse(c, { message: 'Model created',
+      data: config, });
   } catch (error) {
     log.error('Failed to create model:', error);
     return apiError(c, 'Failed to create model', 500);
@@ -413,11 +407,8 @@ modelConfigsRoutes.get('/providers/list', async (c) => {
     providers = providers.filter((p) => p.type === type);
   }
 
-  return c.json({
-    success: true,
-    data: providers,
-    count: providers.length,
-  });
+  return apiResponse(c, { data: providers,
+    count: providers.length, });
 });
 
 /**
@@ -490,15 +481,12 @@ modelConfigsRoutes.get('/providers/available', async (c) => {
     return a.name.localeCompare(b.name);
   });
 
-  return c.json({
-    success: true,
-    data: available,
+  return apiResponse(c, { data: available,
     counts: {
       total: available.length,
       enabled: available.filter((p) => p.isEnabled).length,
       configured: available.filter((p) => p.isConfigured).length,
-    },
-  });
+    }, });
 });
 
 /**
@@ -517,13 +505,10 @@ modelConfigsRoutes.get('/providers/:id', async (c) => {
   // Get models for this provider
   const models = (await getMergedModels(userId)).filter((m) => m.providerId === providerId);
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, { data: {
       ...provider,
       models,
-    },
-  });
+    }, });
 });
 
 /**
@@ -544,11 +529,8 @@ modelConfigsRoutes.post('/providers', async (c) => {
       userId,
     });
 
-    return c.json({
-      success: true,
-      message: 'Provider created',
-      data: provider,
-    });
+    return apiResponse(c, { message: 'Provider created',
+      data: provider, });
   } catch (error) {
     log.error('Failed to create provider:', error);
     return apiError(c, 'Failed to create provider', 500);
@@ -581,11 +563,8 @@ modelConfigsRoutes.put('/providers/:id', async (c) => {
           config: body.config,
         });
 
-        return c.json({
-          success: true,
-          message: 'Provider configured',
-          data: provider,
-        });
+        return apiResponse(c, { message: 'Provider configured',
+          data: provider, });
       }
 
       return apiError(c, 'Provider not found', 404);
@@ -593,11 +572,8 @@ modelConfigsRoutes.put('/providers/:id', async (c) => {
 
     const provider = await modelConfigsRepo.updateProvider(userId, providerId, body);
 
-    return c.json({
-      success: true,
-      message: 'Provider updated',
-      data: provider,
-    });
+    return apiResponse(c, { message: 'Provider updated',
+      data: provider, });
   } catch (error) {
     log.error('Failed to update provider:', error);
     return apiError(c, 'Failed to update provider', 500);
@@ -623,10 +599,7 @@ modelConfigsRoutes.delete('/providers/:id', async (c) => {
     return apiError(c, 'Provider not found', 404);
   }
 
-  return c.json({
-    success: true,
-    message: 'Provider deleted',
-  });
+  return apiResponse(c, { message: 'Provider deleted', });
 });
 
 /**
@@ -658,11 +631,8 @@ modelConfigsRoutes.patch('/providers/:id/toggle', async (c) => {
         isEnabled: body.enabled,
       });
 
-      return c.json({
-        success: true,
-        message: `Provider ${body.enabled ? 'enabled' : 'disabled'}`,
-        enabled: body.enabled,
-      });
+      return apiResponse(c, { message: `Provider ${body.enabled ? 'enabled' : 'disabled'}`,
+        enabled: body.enabled, });
     }
 
     // For aggregators, create config entry if doesn't exist
@@ -683,11 +653,8 @@ modelConfigsRoutes.patch('/providers/:id/toggle', async (c) => {
       }
     }
 
-    return c.json({
-      success: true,
-      message: `Provider ${body.enabled ? 'enabled' : 'disabled'}`,
-      enabled: body.enabled,
-    });
+    return apiResponse(c, { message: `Provider ${body.enabled ? 'enabled' : 'disabled'}`,
+      enabled: body.enabled, });
   } catch (error) {
     log.error('Failed to toggle provider:', error);
     return apiError(c, 'Failed to toggle provider', 500);
@@ -859,9 +826,7 @@ modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
       discovered.push({ modelId: model.id, displayName, isNew });
     }
 
-    return c.json({
-      success: true,
-      message: `Discovered ${discovered.length} models from ${providerName}`,
+    return apiResponse(c, { message: `Discovered ${discovered.length} models from ${providerName}`,
       data: {
         provider: providerId,
         providerName,
@@ -869,8 +834,7 @@ modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
         models: discovered,
         newModels: discovered.filter((m) => m.isNew).length,
         existingModels: discovered.filter((m) => !m.isNew).length,
-      },
-    });
+      }, });
   } catch (error) {
     return apiError(c, `Models fetched but failed to save: ${error instanceof Error ? error.message : String(error)}`, 500);
   }
@@ -959,17 +923,14 @@ modelConfigsRoutes.post('/sync', async (c) => {
 
     // Note: Actual file regeneration should be done via CLI script
     // This endpoint just reports what would change
-    return c.json({
-      success: true,
-      message: 'Sync check complete. Run `npx tsx scripts/generate-provider-configs.ts` to apply changes.',
+    return apiResponse(c, { message: 'Sync check complete. Run `npx tsx scripts/generate-provider-configs.ts` to apply changes.',
       stats: {
         providers: Object.keys(data).length,
         totalModels,
         newModels,
         updatedPricing,
       },
-      note: 'User disabled models are preserved in database, not affected by sync.',
-    });
+      note: 'User disabled models are preserved in database, not affected by sync.', });
   } catch (error) {
     log.error('Sync failed:', error);
     return apiError(c, 'Sync failed', 500);
@@ -991,17 +952,14 @@ modelConfigsRoutes.post('/sync/apply', async (c) => {
     // Clear the provider config cache so new configs are loaded
     clearConfigCache();
 
-    return c.json({
-      success: true,
-      message: `Synced ${result.synced.length} providers from models.dev`,
+    return apiResponse(c, { message: `Synced ${result.synced.length} providers from models.dev`,
       stats: {
         providers: result.synced.length,
         failed: result.failed.length,
         total: result.total,
         syncedProviders: result.synced,
         failedProviders: result.failed,
-      },
-    });
+      }, });
   } catch (error) {
     log.error('Sync apply failed:', error);
     return apiError(c, 'Sync apply failed: ' + String(error), 500);
@@ -1056,9 +1014,7 @@ modelConfigsRoutes.post('/sync/reset', async (c) => {
     // 4. Clear all caches
     clearConfigCache();
 
-    return c.json({
-      success: true,
-      message: `FULL RESET complete! Cleared ${deletedFiles.length} config files, ${dbResult.providerConfigs} provider overrides, ${dbResult.modelConfigs} model configs, ${dbResult.customProviders} custom providers. Synced ${syncResult.synced.length} providers fresh from models.dev`,
+    return apiResponse(c, { message: `FULL RESET complete! Cleared ${deletedFiles.length} config files, ${dbResult.providerConfigs} provider overrides, ${dbResult.modelConfigs} model configs, ${dbResult.customProviders} custom providers. Synced ${syncResult.synced.length} providers fresh from models.dev`,
       stats: {
         deletedFiles: deletedFiles.length,
         deletedFilesList: deletedFiles,
@@ -1070,8 +1026,7 @@ modelConfigsRoutes.post('/sync/reset', async (c) => {
         synced: syncResult.synced.length,
         syncedProviders: syncResult.synced,
         failed: syncResult.failed,
-      },
-    });
+      }, });
   } catch (error) {
     log.error('Full reset failed:', error);
     return apiError(c, 'Full reset failed: ' + String(error), 500);
@@ -1112,9 +1067,7 @@ modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
     // Clear cache
     clearConfigCache();
 
-    return c.json({
-      success: true,
-      message: resync
+    return apiResponse(c, { message: resync
         ? `Deleted and resynced provider '${providerId}'`
         : `Deleted provider '${providerId}'`,
       data: {
@@ -1122,8 +1075,7 @@ modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
         deleted: true,
         resynced: resync,
         syncResult,
-      },
-    });
+      }, });
   } catch (error) {
     log.error('Delete provider failed:', error);
     return apiError(c, 'Delete provider failed: ' + String(error), 500);
@@ -1155,10 +1107,7 @@ modelConfigsRoutes.get('/capabilities/list', async (c) => {
     { id: 'reasoning', name: 'Reasoning', description: 'Chain of thought (o1-style)' },
   ];
 
-  return c.json({
-    success: true,
-    data: capabilities,
-  });
+  return apiResponse(c, { data: capabilities, });
 });
 
 // =============================================================================
@@ -1174,11 +1123,8 @@ modelConfigsRoutes.get('/:provider', async (c) => {
 
   const models = (await getMergedModels(userId)).filter((m) => m.providerId === providerId);
 
-  return c.json({
-    success: true,
-    data: models,
-    count: models.length,
-  });
+  return apiResponse(c, { data: models,
+    count: models.length, });
 });
 
 /**
@@ -1197,10 +1143,7 @@ modelConfigsRoutes.get('/:provider/:model', async (c) => {
     return apiError(c, 'Model not found', 404);
   }
 
-  return c.json({
-    success: true,
-    data: model,
-  });
+  return apiResponse(c, { data: model, });
 });
 
 /**
@@ -1232,11 +1175,8 @@ modelConfigsRoutes.put('/:provider/:model', async (c) => {
       isCustom: existingModel.isCustom,
     });
 
-    return c.json({
-      success: true,
-      message: 'Model updated',
-      data: config,
-    });
+    return apiResponse(c, { message: 'Model updated',
+      data: config, });
   } catch (error) {
     log.error('Failed to update model:', error);
     return apiError(c, 'Failed to update model', 500);
@@ -1265,11 +1205,8 @@ modelConfigsRoutes.delete('/:provider/:model', async (c) => {
 
   const deleted = await modelConfigsRepo.deleteModel(userId, providerId, modelId);
 
-  return c.json({
-    success: true,
-    message: existingModel.isCustom ? 'Custom model deleted' : 'Override removed',
-    deleted,
-  });
+  return apiResponse(c, { message: existingModel.isCustom ? 'Custom model deleted' : 'Override removed',
+    deleted, });
 });
 
 /**
@@ -1305,11 +1242,8 @@ modelConfigsRoutes.patch('/:provider/:model/toggle', async (c) => {
       isCustom: existingModel.isCustom,
     });
 
-    return c.json({
-      success: true,
-      message: `Model ${body.enabled ? 'enabled' : 'disabled'}`,
-      enabled: body.enabled,
-    });
+    return apiResponse(c, { message: `Model ${body.enabled ? 'enabled' : 'disabled'}`,
+      enabled: body.enabled, });
   } catch (error) {
     log.error('Failed to toggle model:', error);
     return apiError(c, 'Failed to toggle model', 500);
