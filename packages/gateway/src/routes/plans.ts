@@ -13,7 +13,7 @@ import {
 } from '../db/repositories/plans.js';
 import { getPlanService } from '../services/plan-service.js';
 import { getPlanExecutor } from '../plans/index.js';
-import { getUserId, apiResponse, apiError } from './helpers.js'
+import { getUserId, apiResponse, apiError, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 import { getLog } from '../services/log.js';
 
@@ -32,8 +32,8 @@ plansRoutes.get('/', async (c) => {
   const status = c.req.query('status') as PlanStatus | undefined;
   const goalId = c.req.query('goalId');
   const triggerId = c.req.query('triggerId');
-  const limit = parseInt(c.req.query('limit') ?? '20', 10);
-  const offset = parseInt(c.req.query('offset') ?? '0', 10);
+  const limit = getIntParam(c, 'limit', 20, 1, 100);
+  const offset = getIntParam(c, 'offset', 0, 0);
 
   const service = getPlanService();
   const plans = await service.listPlans(userId, { status, goalId, triggerId, limit, offset });
@@ -576,7 +576,7 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
 plansRoutes.get('/:id/history', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const limit = parseInt(c.req.query('limit') ?? '50', 10);
+  const limit = getIntParam(c, 'limit', 50, 1, 200);
 
   const service = getPlanService();
   const plan = await service.getPlan(userId, id);
