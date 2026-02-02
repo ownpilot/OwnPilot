@@ -56,12 +56,12 @@ import {
   traceDbRead,
 } from '../tracing/index.js';
 import type {
-  ApiResponse,
   CreateAgentRequest,
   UpdateAgentRequest,
   AgentInfo,
   AgentDetail,
 } from '../types/index.js';
+import { apiResponse } from './helpers.js';
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
 import { getMemoryService } from '../services/memory-service.js';
 import { getGoalService } from '../services/goal-service.js';
@@ -1123,16 +1123,7 @@ agentRoutes.get('/', async (c) => {
     };
   });
 
-  const response: ApiResponse<AgentInfo[]> = {
-    success: true,
-    data: agentList,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, agentList);
 });
 
 /**
@@ -1181,23 +1172,14 @@ agentRoutes.post('/', async (c) => {
   const configuredToolGroups = (config.toolGroups as string[] | undefined);
   const tools = resolveToolGroups(configuredToolGroups, configuredTools);
 
-  const response: ApiResponse<AgentInfo> = {
-    success: true,
-    data: {
-      id: record.id,
-      name: record.name,
-      provider: record.provider,
-      model: record.model,
-      tools,
-      createdAt: record.createdAt.toISOString(),
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response, 201);
+  return apiResponse(c, {
+    id: record.id,
+    name: record.name,
+    provider: record.provider,
+    model: record.model,
+    tools,
+    createdAt: record.createdAt.toISOString(),
+  }, 201);
 });
 
 /**
@@ -1235,33 +1217,24 @@ agentRoutes.get('/:id', async (c) => {
     // Use resolved tools from config
   }
 
-  const response: ApiResponse<AgentDetail> = {
-    success: true,
-    data: {
-      id: record.id,
-      name: record.name,
-      provider: record.provider,
-      model: record.model,
-      systemPrompt: record.systemPrompt ?? '',
-      tools,
-      config: {
-        maxTokens: (record.config.maxTokens as number) ?? 4096,
-        temperature: (record.config.temperature as number) ?? 0.7,
-        maxTurns: (record.config.maxTurns as number) ?? 25,
-        maxToolCalls: (record.config.maxToolCalls as number) ?? 200,
-        tools: configuredTools,
-        toolGroups: configuredToolGroups,
-      },
-      createdAt: record.createdAt.toISOString(),
-      updatedAt: record.updatedAt.toISOString(),
+  return apiResponse(c, {
+    id: record.id,
+    name: record.name,
+    provider: record.provider,
+    model: record.model,
+    systemPrompt: record.systemPrompt ?? '',
+    tools,
+    config: {
+      maxTokens: (record.config.maxTokens as number) ?? 4096,
+      temperature: (record.config.temperature as number) ?? 0.7,
+      maxTurns: (record.config.maxTurns as number) ?? 25,
+      maxToolCalls: (record.config.maxToolCalls as number) ?? 200,
+      tools: configuredTools,
+      toolGroups: configuredToolGroups,
     },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    createdAt: record.createdAt.toISOString(),
+    updatedAt: record.updatedAt.toISOString(),
+  });
 });
 
 /**
@@ -1328,33 +1301,24 @@ agentRoutes.patch('/:id', async (c) => {
   const configuredToolGroups = (newConfig.toolGroups as string[] | undefined);
   const tools = resolveToolGroups(configuredToolGroups, configuredTools);
 
-  const response: ApiResponse<AgentDetail> = {
-    success: true,
-    data: {
-      id: updated.id,
-      name: updated.name,
-      provider: updated.provider,
-      model: updated.model,
-      systemPrompt: updated.systemPrompt ?? '',
-      tools,
-      config: {
-        maxTokens: (newConfig.maxTokens as number) ?? 4096,
-        temperature: (newConfig.temperature as number) ?? 0.7,
-        maxTurns: (newConfig.maxTurns as number) ?? 25,
-        maxToolCalls: (newConfig.maxToolCalls as number) ?? 200,
-        tools: configuredTools,
-        toolGroups: configuredToolGroups,
-      },
-      createdAt: updated.createdAt.toISOString(),
-      updatedAt: updated.updatedAt.toISOString(),
+  return apiResponse(c, {
+    id: updated.id,
+    name: updated.name,
+    provider: updated.provider,
+    model: updated.model,
+    systemPrompt: updated.systemPrompt ?? '',
+    tools,
+    config: {
+      maxTokens: (newConfig.maxTokens as number) ?? 4096,
+      temperature: (newConfig.temperature as number) ?? 0.7,
+      maxTurns: (newConfig.maxTurns as number) ?? 25,
+      maxToolCalls: (newConfig.maxToolCalls as number) ?? 200,
+      tools: configuredTools,
+      toolGroups: configuredToolGroups,
     },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+    createdAt: updated.createdAt.toISOString(),
+    updatedAt: updated.updatedAt.toISOString(),
+  });
 });
 
 /**
@@ -1375,15 +1339,7 @@ agentRoutes.delete('/:id', async (c) => {
   agentCache.delete(id);
   agentConfigCache.delete(id);
 
-  const response: ApiResponse = {
-    success: true,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {});
 });
 
 /**
@@ -1402,18 +1358,9 @@ agentRoutes.post('/:id/reset', async (c) => {
   const agent = await getOrCreateAgentInstance(record);
   const conversation = agent.reset();
 
-  const response: ApiResponse<{ conversationId: string }> = {
-    success: true,
-    data: {
-      conversationId: conversation.id,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    conversationId: conversation.id,
+  });
 });
 
 /**
@@ -1461,21 +1408,12 @@ agentRoutes.post('/resync', async (c) => {
     }
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      updated,
-      created,
-      total: defaultAgents.length,
-      errors: errors.length > 0 ? errors : undefined,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    updated,
+    created,
+    total: defaultAgents.length,
+    errors: errors.length > 0 ? errors : undefined,
+  });
 });
 
 /**
