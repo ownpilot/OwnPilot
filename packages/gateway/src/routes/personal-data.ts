@@ -33,7 +33,7 @@ import {
   type UpdateContactInput,
   type ContactQuery,
 } from '../db/repositories/index.js';
-import { apiResponse, getUserId } from './helpers.js'
+import { apiResponse, getUserId, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 export const personalDataRoutes = new Hono();
@@ -157,7 +157,7 @@ bookmarksRoutes.get('/favorites', async (c) => {
 
 bookmarksRoutes.get('/recent', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
-  const limit = c.req.query('limit') ? parseInt(c.req.query('limit')!) : 10;
+  const limit = getIntParam(c, 'limit', 10, 1, 50);
   const bookmarks = await repo.getRecent(limit);
   return apiResponse(c, bookmarks);
 });
