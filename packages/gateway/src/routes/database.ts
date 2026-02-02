@@ -10,7 +10,8 @@ import { HTTPException } from 'hono/http-exception';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
-import { apiResponse, apiError } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
@@ -227,7 +228,7 @@ databaseRoutes.post('/backup', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'OPERATION_IN_PROGRESS',
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
         message: `A ${operationStatus.operation} operation is already in progress`,
       },
       meta: {
@@ -252,7 +253,7 @@ databaseRoutes.post('/backup', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'POSTGRES_NOT_CONNECTED',
+        code: ERROR_CODES.POSTGRES_NOT_CONNECTED,
         message: 'PostgreSQL is not connected.',
       },
       meta: {
@@ -354,7 +355,7 @@ databaseRoutes.post('/restore', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'OPERATION_IN_PROGRESS',
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
         message: `A ${operationStatus.operation} operation is already in progress`,
       },
       meta: {
@@ -531,7 +532,7 @@ databaseRoutes.post('/maintenance', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'OPERATION_IN_PROGRESS',
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
         message: `A ${operationStatus.operation} operation is already in progress`,
       },
       meta: {
@@ -614,7 +615,7 @@ databaseRoutes.post('/maintenance', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'POSTGRES_NOT_CONNECTED',
+        code: ERROR_CODES.POSTGRES_NOT_CONNECTED,
         message: 'PostgreSQL is not connected.',
       },
       meta: {
@@ -838,7 +839,7 @@ databaseRoutes.get('/export', async (c) => {
  */
 databaseRoutes.post('/import', async (c) => {
   if (operationStatus.isRunning) {
-    return apiError(c, { code: 'OPERATION_IN_PROGRESS', message: `A ${operationStatus.operation} operation is already in progress` }, 409);
+    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
   }
 
   try {
@@ -1117,7 +1118,7 @@ databaseRoutes.post('/migrate-schema', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'OPERATION_IN_PROGRESS',
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
         message: `A ${operationStatus.operation} operation is already in progress`,
       },
       meta: {
@@ -1192,7 +1193,7 @@ databaseRoutes.post('/migrate', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'OPERATION_IN_PROGRESS',
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
         message: `A ${operationStatus.operation} operation is already in progress`,
       },
       meta: {
@@ -1221,7 +1222,7 @@ databaseRoutes.post('/migrate', async (c) => {
     return c.json({
       success: false,
       error: {
-        code: 'POSTGRES_NOT_CONNECTED',
+        code: ERROR_CODES.POSTGRES_NOT_CONNECTED,
         message: 'PostgreSQL is not connected. Check your database configuration.',
       },
       meta: {

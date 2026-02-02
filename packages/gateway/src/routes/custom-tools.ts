@@ -24,7 +24,8 @@ import {
   registerToolConfigRequirements,
   unregisterDependencies,
 } from '../services/api-service-registrar.js';
-import { getUserId, apiResponse, apiError } from './helpers.js';
+import { getUserId, apiResponse, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 export const customToolsRoutes = new Hono();
 

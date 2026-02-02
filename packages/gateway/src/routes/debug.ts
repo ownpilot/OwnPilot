@@ -6,7 +6,8 @@ import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import { getDebugInfo, debugLog } from '@ownpilot/core';
-import { apiResponse } from './helpers.js';
+import { apiResponse } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 export const debugRoutes = new Hono();
 

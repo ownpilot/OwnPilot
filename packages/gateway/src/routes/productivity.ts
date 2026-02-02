@@ -22,7 +22,8 @@ import {
   type ProcessCaptureInput,
   type CaptureType,
 } from '../db/repositories/captures.js';
-import { apiResponse, getUserId } from './helpers.js';
+import { apiResponse, getUserId } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 export const productivityRoutes = new Hono();
 
@@ -58,7 +59,7 @@ pomodoroRoutes.post('/session/start', async (c) => {
   if (!body.type || !body.durationMinutes) {
     return c.json({
       success: false,
-      error: { code: 'INVALID_REQUEST', message: 'type and durationMinutes are required' },
+      error: { code: ERROR_CODES.INVALID_REQUEST, message: 'type and durationMinutes are required' },
     }, 400);
   }
 
@@ -91,7 +92,7 @@ pomodoroRoutes.post('/session/:id/complete', async (c) => {
   if (!session) {
     return c.json({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Session not found or not running' },
+      error: { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' },
     }, 404);
   }
 
@@ -112,7 +113,7 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
   if (!session) {
     return c.json({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Session not found or not running' },
+      error: { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' },
     }, 404);
   }
 
@@ -216,7 +217,7 @@ habitsRoutes.post('/', async (c) => {
   if (!body.name) {
     return c.json({
       success: false,
-      error: { code: 'INVALID_REQUEST', message: 'name is required' },
+      error: { code: ERROR_CODES.INVALID_REQUEST, message: 'name is required' },
     }, 400);
   }
 
@@ -261,7 +262,7 @@ habitsRoutes.get('/:id', async (c) => {
   if (!stats) {
     return c.json({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Habit not found' },
+      error: { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' },
     }, 404);
   }
 
@@ -282,7 +283,7 @@ habitsRoutes.patch('/:id', async (c) => {
   if (!habit) {
     return c.json({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Habit not found' },
+      error: { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' },
     }, 404);
   }
 
@@ -302,7 +303,7 @@ habitsRoutes.delete('/:id', async (c) => {
   if (!deleted) {
     return c.json({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Habit not found' },
+      error: { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' },
     }, 404);
   }
 
@@ -322,7 +323,7 @@ habitsRoutes.post('/:id/archive', async (c) => {
   if (!habit) {
     return c.json({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Habit not found' },
+      error: { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' },
     }, 404);
   }
 
@@ -343,7 +344,7 @@ habitsRoutes.post('/:id/log', async (c) => {
   if (!log) {
     return c.json({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Habit not found' },
+      error: { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' },
     }, 404);
   }
 
@@ -412,7 +413,7 @@ capturesRoutes.post('/', async (c) => {
   if (!body.content) {
     return c.json({
       success: false,
-      error: { code: 'INVALID_REQUEST', message: 'content is required' },
+      error: { code: ERROR_CODES.INVALID_REQUEST, message: 'content is required' },
     }, 400);
   }
 
@@ -479,7 +480,7 @@ capturesRoutes.get('/:id', async (c) => {
   if (!capture) {
     return c.json({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Capture not found' },
+      error: { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' },
     }, 404);
   }
 
@@ -497,7 +498,7 @@ capturesRoutes.post('/:id/process', async (c) => {
   if (!body.processedAsType) {
     return c.json({
       success: false,
-      error: { code: 'INVALID_REQUEST', message: 'processedAsType is required' },
+      error: { code: ERROR_CODES.INVALID_REQUEST, message: 'processedAsType is required' },
     }, 400);
   }
 
@@ -507,7 +508,7 @@ capturesRoutes.post('/:id/process', async (c) => {
   if (!capture) {
     return c.json({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Capture not found' },
+      error: { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' },
     }, 404);
   }
 
@@ -532,7 +533,7 @@ capturesRoutes.delete('/:id', async (c) => {
   if (!deleted) {
     return c.json({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Capture not found' },
+      error: { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' },
     }, 404);
   }
 

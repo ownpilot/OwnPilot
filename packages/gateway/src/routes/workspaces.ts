@@ -19,7 +19,8 @@ import {
   DEFAULT_CONTAINER_CONFIG,
   StorageSecurityError,
 } from '@ownpilot/core';
-import { apiResponse, apiError } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 const app = new Hono();
 
@@ -79,7 +80,7 @@ app.post('/', async (c) => {
     const body = (await c.req.json()) as CreateWorkspaceRequest;
 
     if (!body.name) {
-      return apiError(c, { code: 'INVALID_INPUT', message: 'Workspace name is required' }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace name is required' }, 400);
     }
 
     // Check workspace limit
@@ -139,7 +140,7 @@ app.get('/:id', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     // Get storage usage
@@ -180,7 +181,7 @@ app.patch('/:id', async (c) => {
     const existing = await repo.get(workspaceId);
 
     if (!existing) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     // Build update input
@@ -221,7 +222,7 @@ app.delete('/:id', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     // Stop container if running
@@ -264,7 +265,7 @@ app.get('/:id/files', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const storage = getWorkspaceStorage();
@@ -277,7 +278,7 @@ app.get('/:id/files', async (c) => {
       });
   } catch (error) {
     if (error instanceof StorageSecurityError) {
-      return apiError(c, { code: 'ACCESS_DENIED', message: error.message }, 403);
+      return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
     return apiError(c, { code: 'FILE_LIST_ERROR', message: error instanceof Error ? error.message : 'Failed to list files' }, 500);
   }
@@ -297,7 +298,7 @@ app.get('/:id/files/*', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const storage = getWorkspaceStorage();
@@ -314,7 +315,7 @@ app.get('/:id/files/*', async (c) => {
       });
   } catch (error) {
     if (error instanceof StorageSecurityError) {
-      return apiError(c, { code: 'ACCESS_DENIED', message: error.message }, 403);
+      return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
     return apiError(c, { code: 'FILE_READ_ERROR', message: error instanceof Error ? error.message : 'Failed to read file' }, 500);
   }
@@ -334,14 +335,14 @@ app.put('/:id/files/*', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const body = await c.req.json();
     const { content } = body;
 
     if (content === undefined) {
-      return apiError(c, { code: 'INVALID_INPUT', message: 'Content is required' }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Content is required' }, 400);
     }
 
     const storage = getWorkspaceStorage();
@@ -357,7 +358,7 @@ app.put('/:id/files/*', async (c) => {
     const repo = new WorkspacesRepository(userId);
     if (error instanceof StorageSecurityError) {
       await repo.logAudit('write', 'file', filePath, false, error.message);
-      return apiError(c, { code: 'ACCESS_DENIED', message: error.message }, 403);
+      return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
     return apiError(c, { code: 'FILE_WRITE_ERROR', message: error instanceof Error ? error.message : 'Failed to write file' }, 500);
   }
@@ -377,7 +378,7 @@ app.delete('/:id/files/*', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const storage = getWorkspaceStorage();
@@ -391,7 +392,7 @@ app.delete('/:id/files/*', async (c) => {
       });
   } catch (error) {
     if (error instanceof StorageSecurityError) {
-      return apiError(c, { code: 'ACCESS_DENIED', message: error.message }, 403);
+      return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
     return apiError(c, { code: 'FILE_DELETE_ERROR', message: error instanceof Error ? error.message : 'Failed to delete file' }, 500);
   }
@@ -414,7 +415,7 @@ app.get('/:id/download', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const storage = getWorkspaceStorage();
@@ -475,7 +476,7 @@ app.get('/:id/stats', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const storage = getWorkspaceStorage();
@@ -529,7 +530,7 @@ app.post('/:id/execute', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     // Check if Docker is available
@@ -541,7 +542,7 @@ app.post('/:id/execute', async (c) => {
     const body = (await c.req.json()) as ExecuteCodeRequest;
 
     if (!body.code || !body.language) {
-      return apiError(c, { code: 'INVALID_INPUT', message: 'Code and language are required' }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Code and language are required' }, 400);
     }
 
     const validLanguages: ExecutionLanguage[] = ['python', 'javascript', 'shell'];
@@ -609,7 +610,7 @@ app.post('/:id/execute', async (c) => {
       });
   } catch (error) {
     await repo.logAudit('execute', 'execution', undefined, false, error instanceof Error ? error.message : 'Unknown error');
-    return apiError(c, { code: 'EXECUTION_ERROR', message: error instanceof Error ? error.message : 'Failed to execute code' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Failed to execute code' }, 500);
   }
 });
 
@@ -627,7 +628,7 @@ app.get('/:id/executions', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const executions = await repo.listExecutions(workspaceId, limit);
@@ -669,7 +670,7 @@ app.post('/:id/container/start', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     // Check if already running
@@ -724,7 +725,7 @@ app.post('/:id/container/stop', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     if (workspace.containerId) {
@@ -757,7 +758,7 @@ app.get('/:id/container/status', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     let status = workspace.containerStatus;
@@ -797,7 +798,7 @@ app.get('/:id/container/logs', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     let logs = '';

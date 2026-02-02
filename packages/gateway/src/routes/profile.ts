@@ -6,7 +6,8 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 import {
   getPersonalMemoryStore,
   getMemoryInjector,
@@ -76,7 +77,7 @@ app.post('/data', async (c) => {
     const { category, key, value, data, confidence, source, sensitive } = body;
 
     if (!category || !key || value === undefined) {
-      return apiError(c, { code: 'INVALID_INPUT', message: 'category, key, and value are required' }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'category, key, and value are required' }, 400);
     }
 
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
@@ -105,7 +106,7 @@ app.delete('/data', async (c) => {
     const { category, key } = body;
 
     if (!category || !key) {
-      return apiError(c, { code: 'INVALID_INPUT', message: 'category and key are required' }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'category and key are required' }, 400);
     }
 
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
@@ -127,7 +128,7 @@ app.get('/search', async (c) => {
   const categoriesParam = c.req.query('categories');
 
   if (!query) {
-    return apiError(c, { code: 'INVALID_INPUT', message: 'Query parameter "q" is required' }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Query parameter "q" is required' }, 400);
   }
 
   try {
@@ -156,7 +157,7 @@ app.post('/import', async (c) => {
     const { entries } = body;
 
     if (!Array.isArray(entries)) {
-      return apiError(c, { code: 'INVALID_INPUT', message: 'entries array is required' }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'entries array is required' }, 400);
     }
 
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);

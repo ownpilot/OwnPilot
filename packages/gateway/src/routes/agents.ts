@@ -61,7 +61,8 @@ import type {
   AgentInfo,
   AgentDetail,
 } from '../types/index.js';
-import { apiResponse } from './helpers.js';
+import { apiResponse } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
 import { getMemoryService } from '../services/memory-service.js';
 import { getGoalService } from '../services/goal-service.js';

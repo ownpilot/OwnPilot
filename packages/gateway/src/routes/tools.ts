@@ -19,7 +19,8 @@ import {
   type ToolDefinition,
 } from '@ownpilot/core';
 import type { ToolInfo } from '../types/index.js';
-import { apiResponse } from './helpers.js';
+import { apiResponse } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 import { getAgent } from './agents.js';
 import { initializeToolOverrides } from '../services/tool-overrides.js';
 import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-center-impl.js';

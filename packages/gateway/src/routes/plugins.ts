@@ -14,7 +14,8 @@ import {
   type PluginStatus,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse, apiError } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
@@ -339,7 +340,7 @@ pluginsRoutes.get('/:id/settings', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   return c.json({
@@ -362,12 +363,12 @@ pluginsRoutes.put('/:id/settings', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   const body = await c.req.json<{ settings: Record<string, unknown> }>();
   if (!body.settings || typeof body.settings !== 'object') {
-    return apiError(c, { code: 'INVALID_INPUT', message: 'settings object required' }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'settings object required' }, 400);
   }
 
   // Merge with existing settings
@@ -404,7 +405,7 @@ pluginsRoutes.get('/:id/required-services', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   const requiredServices = (plugin.manifest.requiredServices ?? []).map(svc => {

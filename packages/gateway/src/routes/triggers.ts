@@ -13,7 +13,8 @@ import {
 import { getTriggerService } from '../services/trigger-service.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression } from '@ownpilot/core';
-import { getUserId, apiResponse } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 export const triggersRoutes = new Hono();
 
@@ -60,7 +61,7 @@ triggersRoutes.post('/', async (c) => {
         {
           success: false,
           error: {
-            code: 'INVALID_CRON',
+            code: ERROR_CODES.INVALID_CRON,
             message: 'Schedule triggers require a cron expression in config.cron',
           },
         },
@@ -73,7 +74,7 @@ triggersRoutes.post('/', async (c) => {
         {
           success: false,
           error: {
-            code: 'INVALID_CRON',
+            code: ERROR_CODES.INVALID_CRON,
             message: validation.error!,
           },
         },
@@ -164,7 +165,7 @@ triggersRoutes.get('/:id', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Trigger not found: ${id}`,
         },
       },
@@ -203,7 +204,7 @@ triggersRoutes.patch('/:id', async (c) => {
             {
               success: false,
               error: {
-                code: 'INVALID_CRON',
+                code: ERROR_CODES.INVALID_CRON,
                 message: validation.error!,
               },
             },
@@ -221,7 +222,7 @@ triggersRoutes.patch('/:id', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Trigger not found: ${id}`,
         },
       },
@@ -247,7 +248,7 @@ triggersRoutes.post('/:id/enable', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Trigger not found: ${id}`,
         },
       },
@@ -276,7 +277,7 @@ triggersRoutes.post('/:id/disable', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Trigger not found: ${id}`,
         },
       },
@@ -305,7 +306,7 @@ triggersRoutes.post('/:id/fire', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Trigger not found: ${id}`,
         },
       },
@@ -325,7 +326,7 @@ triggersRoutes.post('/:id/fire', async (c) => {
     },
     error: result.error
       ? {
-          code: 'EXECUTION_ERROR',
+          code: ERROR_CODES.EXECUTION_ERROR,
           message: result.error,
         }
       : undefined,
@@ -351,7 +352,7 @@ triggersRoutes.delete('/:id', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Trigger not found: ${id}`,
         },
       },
@@ -380,7 +381,7 @@ triggersRoutes.get('/:id/history', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Trigger not found: ${id}`,
         },
       },

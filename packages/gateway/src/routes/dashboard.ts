@@ -7,7 +7,8 @@
 import { Hono } from 'hono';
 import { DashboardService, briefingCache, type DailyBriefingData, type AIBriefing } from '../services/dashboard.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('Dashboard');
 

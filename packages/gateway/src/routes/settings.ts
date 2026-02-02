@@ -6,7 +6,8 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 import { settingsRepo, localProvidersRepo } from '../db/repositories/index.js';
 import {
   getAvailableProviders,
@@ -94,7 +95,7 @@ settingsRoutes.post('/default-provider', async (c) => {
   const body = await c.req.json<{ provider: string }>();
 
   if (!body.provider) {
-    return apiError(c, { code: 'INVALID_REQUEST', message: 'Provider is required' }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Provider is required' }, 400);
   }
 
   await settingsRepo.set(DEFAULT_PROVIDER_KEY, body.provider);
@@ -111,7 +112,7 @@ settingsRoutes.post('/default-model', async (c) => {
   const body = await c.req.json<{ model: string }>();
 
   if (!body.model) {
-    return apiError(c, { code: 'INVALID_REQUEST', message: 'Model is required' }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Model is required' }, 400);
   }
 
   await settingsRepo.set(DEFAULT_MODEL_KEY, body.model);
@@ -128,7 +129,7 @@ settingsRoutes.post('/api-keys', async (c) => {
   const body = await c.req.json<{ provider: string; apiKey: string }>();
 
   if (!body.provider || !body.apiKey) {
-    return apiError(c, { code: 'INVALID_REQUEST', message: 'Provider and apiKey are required' }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Provider and apiKey are required' }, 400);
   }
 
   // Store API key in database
@@ -419,22 +420,22 @@ settingsRoutes.post('/sandbox', async (c) => {
 
         // Validation
         if (key === 'enabled' && typeof value !== 'boolean') {
-          return apiError(c, { code: 'INVALID_VALUE', message: `${key} must be a boolean` }, 400);
+          return apiError(c, { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be a boolean` }, 400);
         }
 
         if (
           ['defaultMemoryMB', 'defaultCpuCores', 'defaultTimeoutMs', 'maxWorkspacesPerUser', 'maxStoragePerUserGB'].includes(key) &&
           typeof value !== 'number'
         ) {
-          return apiError(c, { code: 'INVALID_VALUE', message: `${key} must be a number` }, 400);
+          return apiError(c, { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be a number` }, 400);
         }
 
         if (key === 'defaultNetwork' && !['none', 'restricted', 'egress', 'full'].includes(value as string)) {
-          return apiError(c, { code: 'INVALID_VALUE', message: `${key} must be one of: none, restricted, egress, full` }, 400);
+          return apiError(c, { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be one of: none, restricted, egress, full` }, 400);
         }
 
         if (key === 'allowedImages' && !Array.isArray(value)) {
-          return apiError(c, { code: 'INVALID_VALUE', message: `${key} must be an array of strings` }, 400);
+          return apiError(c, { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be an array of strings` }, 400);
         }
 
         await setSandboxSetting(key, value as SandboxSettings[typeof key]);

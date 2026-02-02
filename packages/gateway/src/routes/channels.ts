@@ -8,7 +8,8 @@
 import { Hono } from 'hono';
 import { getChannelService } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
-import { apiResponse, apiError } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 export const channelRoutes = new Hono();
 
@@ -75,7 +76,7 @@ channelRoutes.post('/messages/:messageId/read', (c) => {
       return apiResponse(c, { messageId, read: true });
     }
   }
-  return apiError(c, { code: 'NOT_FOUND', message: `Message ${messageId} not found` }, 404);
+  return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Message ${messageId} not found` }, 404);
 });
 
 /**
@@ -185,7 +186,7 @@ channelRoutes.get('/:id', (c) => {
 
   if (!api) {
     return c.json(
-      { success: false, error: { code: 'NOT_FOUND', message: `Channel ${pluginId} not found` } },
+      { success: false, error: { code: ERROR_CODES.NOT_FOUND, message: `Channel ${pluginId} not found` } },
       404
     );
   }
@@ -207,7 +208,7 @@ channelRoutes.post('/:id/send', async (c) => {
 
   if (!api) {
     return c.json(
-      { success: false, error: { code: 'NOT_FOUND', message: `Channel ${pluginId} not found` } },
+      { success: false, error: { code: ERROR_CODES.NOT_FOUND, message: `Channel ${pluginId} not found` } },
       404
     );
   }
@@ -221,7 +222,7 @@ channelRoutes.post('/:id/send', async (c) => {
 
     if (!body.text || !body.chatId) {
       return c.json(
-        { success: false, error: { code: 'INVALID_REQUEST', message: 'text and chatId are required' } },
+        { success: false, error: { code: ERROR_CODES.INVALID_REQUEST, message: 'text and chatId are required' } },
         400
       );
     }

@@ -14,7 +14,8 @@ import {
   type ActionCategory,
   type ApprovalDecision,
 } from '../autonomy/index.js';
-import { getUserId, apiResponse } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 export const autonomyRoutes = new Hono();
 
@@ -147,7 +148,7 @@ autonomyRoutes.post('/assess', async (c) => {
       {
         success: false,
         error: {
-          code: 'INVALID_REQUEST',
+          code: ERROR_CODES.INVALID_REQUEST,
           message: 'category and actionType are required',
         },
       },
@@ -208,7 +209,7 @@ autonomyRoutes.post('/approvals/request', async (c) => {
       {
         success: false,
         error: {
-          code: 'INVALID_REQUEST',
+          code: ERROR_CODES.INVALID_REQUEST,
           message: 'category, actionType, and description are required',
         },
       },
@@ -269,7 +270,7 @@ autonomyRoutes.get('/approvals/:id', (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Pending action not found: ${id}`,
         },
       },
@@ -311,7 +312,7 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Pending action not found: ${id}`,
         },
       },
@@ -345,7 +346,7 @@ autonomyRoutes.post('/approvals/:id/approve', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Pending action not found: ${id}`,
         },
       },
@@ -379,7 +380,7 @@ autonomyRoutes.post('/approvals/:id/reject', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Pending action not found: ${id}`,
         },
       },
@@ -406,7 +407,7 @@ autonomyRoutes.delete('/approvals/:id', (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Pending action not found or already processed: ${id}`,
         },
       },
@@ -435,7 +436,7 @@ autonomyRoutes.post('/tools/allow', async (c) => {
       {
         success: false,
         error: {
-          code: 'INVALID_REQUEST',
+          code: ERROR_CODES.INVALID_REQUEST,
           message: 'tool is required',
         },
       },
@@ -472,7 +473,7 @@ autonomyRoutes.post('/tools/block', async (c) => {
       {
         success: false,
         error: {
-          code: 'INVALID_REQUEST',
+          code: ERROR_CODES.INVALID_REQUEST,
           message: 'tool is required',
         },
       },

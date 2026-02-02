@@ -8,7 +8,8 @@
 import { Hono } from 'hono';
 import { getAuditLogger } from '../audit/index.js';
 import type { AuditSeverity } from '@ownpilot/core';
-import { apiResponse, apiError } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 const app = new Hono();
 
@@ -58,7 +59,7 @@ app.get('/', async (c) => {
   });
 
   if (!result.ok) {
-    return apiError(c, { code: 'AUDIT_QUERY_ERROR', message: result.error.message }, 500);
+    return apiError(c, { code: ERROR_CODES.AUDIT_QUERY_ERROR, message: result.error.message }, 500);
   }
 
   const stats = logger.getStats();
@@ -101,7 +102,7 @@ app.get('/tools', async (c) => {
   });
 
   if (!result.ok) {
-    return apiError(c, { code: 'AUDIT_QUERY_ERROR', message: result.error.message }, 500);
+    return apiError(c, { code: ERROR_CODES.AUDIT_QUERY_ERROR, message: result.error.message }, 500);
   }
 
   return apiResponse(c, {
@@ -125,7 +126,7 @@ app.get('/sessions', async (c) => {
   });
 
   if (!result.ok) {
-    return apiError(c, { code: 'AUDIT_QUERY_ERROR', message: result.error.message }, 500);
+    return apiError(c, { code: ERROR_CODES.AUDIT_QUERY_ERROR, message: result.error.message }, 500);
   }
 
   return apiResponse(c, {
@@ -149,7 +150,7 @@ app.get('/errors', async (c) => {
   });
 
   if (!result.ok) {
-    return apiError(c, { code: 'AUDIT_QUERY_ERROR', message: result.error.message }, 500);
+    return apiError(c, { code: ERROR_CODES.AUDIT_QUERY_ERROR, message: result.error.message }, 500);
   }
 
   return apiResponse(c, {
@@ -172,7 +173,7 @@ app.get('/request/:requestId', async (c) => {
   });
 
   if (!result.ok) {
-    return apiError(c, { code: 'AUDIT_QUERY_ERROR', message: result.error.message }, 500);
+    return apiError(c, { code: ERROR_CODES.AUDIT_QUERY_ERROR, message: result.error.message }, 500);
   }
 
   return apiResponse(c, {
