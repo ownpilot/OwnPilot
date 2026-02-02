@@ -10,7 +10,7 @@ import { HTTPException } from 'hono/http-exception';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
-import { apiResponse } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
@@ -838,13 +838,7 @@ databaseRoutes.get('/export', async (c) => {
  */
 databaseRoutes.post('/import', async (c) => {
   if (operationStatus.isRunning) {
-    return c.json({
-      success: false,
-      error: {
-        code: 'OPERATION_IN_PROGRESS',
-        message: `A ${operationStatus.operation} operation is already in progress`,
-      },
-    }, 409);
+    return apiError(c, { code: 'OPERATION_IN_PROGRESS', message: `A ${operationStatus.operation} operation is already in progress` }, 409);
   }
 
   try {
@@ -867,13 +861,7 @@ databaseRoutes.post('/import', async (c) => {
     }>();
 
     if (!body.data?.tables) {
-      return c.json({
-        success: false,
-        error: {
-          code: 'INVALID_IMPORT_DATA',
-          message: 'Import data must contain a "tables" object',
-        },
-      }, 400);
+      return apiError(c, { code: 'INVALID_IMPORT_DATA', message: 'Import data must contain a "tables" object' }, 400);
     }
 
     const options = body.options || {};
@@ -891,13 +879,7 @@ databaseRoutes.post('/import', async (c) => {
     }
 
     if (tablesToImport.length === 0) {
-      return c.json({
-        success: false,
-        error: {
-          code: 'INVALID_TABLES',
-          message: `No valid tables to import. Skipped: ${skippedImportTables.join(', ')}`,
-        },
-      }, 400);
+      return apiError(c, { code: 'INVALID_TABLES', message: `No valid tables to import. Skipped: ${skippedImportTables.join(', ')}` }, 400);
     }
 
     operationStatus = {

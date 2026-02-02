@@ -13,7 +13,7 @@ import {
 } from '../db/repositories/plans.js';
 import { getPlanService } from '../services/plan-service.js';
 import { getPlanExecutor } from '../plans/index.js';
-import { getUserId, apiResponse } from './helpers.js';
+import { getUserId, apiResponse, apiError } from './helpers.js';
 
 export const plansRoutes = new Hono();
 
@@ -51,16 +51,7 @@ plansRoutes.post('/', async (c) => {
   const body = await c.req.json<CreatePlanInput>();
 
   if (!body.name || !body.goal) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'name and goal are required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'INVALID_REQUEST', message: 'name and goal are required' }, 400);
   }
 
   const service = getPlanService();
@@ -122,16 +113,7 @@ plansRoutes.get('/:id', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   // Get steps and history
@@ -157,16 +139,7 @@ plansRoutes.patch('/:id', async (c) => {
   const updated = await service.updatePlan(userId, id, body);
 
   if (!updated) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -183,16 +156,7 @@ plansRoutes.delete('/:id', async (c) => {
   const deleted = await service.deletePlan(userId, id);
 
   if (!deleted) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -215,29 +179,11 @@ plansRoutes.post('/:id/execute', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   if (plan.status === 'running') {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'ALREADY_RUNNING',
-          message: 'Plan is already running',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'ALREADY_RUNNING', message: 'Plan is already running' }, 400);
   }
 
   try {
@@ -289,16 +235,7 @@ plansRoutes.post('/:id/pause', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   const executor = getPlanExecutor({ userId });
@@ -328,29 +265,11 @@ plansRoutes.post('/:id/resume', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   if (plan.status !== 'paused') {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_PAUSED',
-          message: 'Plan is not paused',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'NOT_PAUSED', message: 'Plan is not paused' }, 400);
   }
 
   try {
@@ -394,16 +313,7 @@ plansRoutes.post('/:id/abort', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   const executor = getPlanExecutor({ userId });
@@ -427,16 +337,7 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   const executor = getPlanExecutor({ userId });
@@ -458,29 +359,11 @@ plansRoutes.post('/:id/start', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   if (plan.status === 'running') {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'ALREADY_RUNNING',
-          message: 'Plan is already running',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'ALREADY_RUNNING', message: 'Plan is already running' }, 400);
   }
 
   try {
@@ -532,29 +415,11 @@ plansRoutes.post('/:id/rollback', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   if (!plan.checkpoint) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NO_CHECKPOINT',
-          message: 'No checkpoint available for rollback',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'NO_CHECKPOINT', message: 'No checkpoint available for rollback' }, 400);
   }
 
   try {
@@ -608,16 +473,7 @@ plansRoutes.get('/:id/steps', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   const steps = await service.getSteps(userId, id);
@@ -638,16 +494,7 @@ plansRoutes.post('/:id/steps', async (c) => {
   const body = await c.req.json<CreateStepInput>();
 
   if (!body.type || !body.name || body.orderNum === undefined) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'type, name, and orderNum are required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'INVALID_REQUEST', message: 'type, name, and orderNum are required' }, 400);
   }
 
   try {
@@ -684,16 +531,7 @@ plansRoutes.get('/:id/steps/:stepId', async (c) => {
   const step = await service.getStep(userId, stepId);
 
   if (!step) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Step not found: ${stepId}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Step not found: ${stepId}` }, 404);
   }
 
   return apiResponse(c, step);
@@ -715,16 +553,7 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
   const updated = await service.updateStep(userId, stepId, body);
 
   if (!updated) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Step not found: ${stepId}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Step not found: ${stepId}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -746,16 +575,7 @@ plansRoutes.get('/:id/history', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Plan not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Plan not found: ${id}` }, 404);
   }
 
   const history = await service.getHistory(userId, id, limit);

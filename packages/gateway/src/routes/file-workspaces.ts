@@ -10,6 +10,7 @@ import { createReadStream, existsSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 import type { ApiResponse } from '../types/index.js';
+import { apiError } from './helpers.js';
 import {
   listSessionWorkspaces,
   getSessionWorkspace,
@@ -47,16 +48,7 @@ app.get('/', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'WORKSPACE_LIST_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to list workspaces',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'WORKSPACE_LIST_ERROR', message: error instanceof Error ? error.message : 'Failed to list workspaces' }, 500);
   }
 });
 
@@ -86,16 +78,7 @@ app.post('/', async (c) => {
 
     return c.json(response, 201);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'WORKSPACE_CREATE_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to create workspace',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'WORKSPACE_CREATE_ERROR', message: error instanceof Error ? error.message : 'Failed to create workspace' }, 500);
   }
 });
 
@@ -109,16 +92,7 @@ app.get('/:id', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'WORKSPACE_NOT_FOUND',
-            message: 'Workspace not found',
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
     }
 
     const response: ApiResponse = {
@@ -132,16 +106,7 @@ app.get('/:id', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'WORKSPACE_FETCH_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to fetch workspace',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'WORKSPACE_FETCH_ERROR', message: error instanceof Error ? error.message : 'Failed to fetch workspace' }, 500);
   }
 });
 
@@ -155,16 +120,7 @@ app.delete('/:id', async (c) => {
     const deleted = deleteSessionWorkspace(workspaceId);
 
     if (!deleted) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'WORKSPACE_NOT_FOUND',
-            message: 'Workspace not found',
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
     }
 
     const response: ApiResponse = {
@@ -178,16 +134,7 @@ app.delete('/:id', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'WORKSPACE_DELETE_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to delete workspace',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'WORKSPACE_DELETE_ERROR', message: error instanceof Error ? error.message : 'Failed to delete workspace' }, 500);
   }
 });
 
@@ -202,16 +149,7 @@ app.get('/:id/files', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'WORKSPACE_NOT_FOUND',
-            message: 'Workspace not found',
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
     }
 
     const files = getSessionWorkspaceFiles(workspaceId, path);
@@ -231,16 +169,7 @@ app.get('/:id/files', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'FILE_LIST_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to list files',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'FILE_LIST_ERROR', message: error instanceof Error ? error.message : 'Failed to list files' }, 500);
   }
 });
 
@@ -256,31 +185,13 @@ app.get('/:id/file/*', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'WORKSPACE_NOT_FOUND',
-            message: 'Workspace not found',
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
     }
 
     const content = readSessionWorkspaceFile(workspaceId, filePath);
 
     if (content === null) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'FILE_NOT_FOUND',
-            message: 'File not found',
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'FILE_NOT_FOUND', message: 'File not found' }, 404);
     }
 
     // If download requested, return as binary
@@ -323,16 +234,7 @@ app.get('/:id/file/*', async (c) => {
         403
       );
     }
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'FILE_READ_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to read file',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'FILE_READ_ERROR', message: error instanceof Error ? error.message : 'Failed to read file' }, 500);
   }
 });
 
@@ -347,32 +249,14 @@ app.put('/:id/file/*', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'WORKSPACE_NOT_FOUND',
-            message: 'Workspace not found',
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
     }
 
     const body = await c.req.json();
     const { content } = body;
 
     if (content === undefined) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'INVALID_INPUT',
-            message: 'Content is required',
-          },
-        },
-        400
-      );
+      return apiError(c, { code: 'INVALID_INPUT', message: 'Content is required' }, 400);
     }
 
     writeSessionWorkspaceFile(workspaceId, filePath, content);
@@ -403,16 +287,7 @@ app.put('/:id/file/*', async (c) => {
         403
       );
     }
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'FILE_WRITE_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to write file',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'FILE_WRITE_ERROR', message: error instanceof Error ? error.message : 'Failed to write file' }, 500);
   }
 });
 
@@ -427,31 +302,13 @@ app.delete('/:id/file/*', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'WORKSPACE_NOT_FOUND',
-            message: 'Workspace not found',
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
     }
 
     const deleted = deleteSessionWorkspaceFile(workspaceId, filePath);
 
     if (!deleted) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'FILE_NOT_FOUND',
-            message: 'File not found',
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'FILE_NOT_FOUND', message: 'File not found' }, 404);
     }
 
     const response: ApiResponse = {
@@ -480,16 +337,7 @@ app.delete('/:id/file/*', async (c) => {
         403
       );
     }
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'FILE_DELETE_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to delete file',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'FILE_DELETE_ERROR', message: error instanceof Error ? error.message : 'Failed to delete file' }, 500);
   }
 });
 
@@ -503,16 +351,7 @@ app.get('/:id/download', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'WORKSPACE_NOT_FOUND',
-            message: 'Workspace not found',
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
     }
 
     // Create zip file
@@ -537,16 +376,7 @@ app.get('/:id/download', async (c) => {
       },
     });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'DOWNLOAD_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to download workspace',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'DOWNLOAD_ERROR', message: error instanceof Error ? error.message : 'Failed to download workspace' }, 500);
   }
 });
 
@@ -571,16 +401,7 @@ app.post('/cleanup', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'CLEANUP_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to cleanup workspaces',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'CLEANUP_ERROR', message: error instanceof Error ? error.message : 'Failed to cleanup workspaces' }, 500);
   }
 });
 
@@ -606,16 +427,7 @@ app.post('/session/:sessionId', async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'WORKSPACE_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get or create workspace',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'WORKSPACE_ERROR', message: error instanceof Error ? error.message : 'Failed to get or create workspace' }, 500);
   }
 });
 
