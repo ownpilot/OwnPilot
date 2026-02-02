@@ -8,7 +8,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError } from './helpers.js'
+import { apiResponse, apiError, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { getCustomDataService, CustomDataServiceError } from '../services/custom-data-service.js';
@@ -143,8 +143,8 @@ customDataRoutes.delete('/tables/:table', async (c) => {
  */
 customDataRoutes.get('/tables/:table/records', async (c) => {
   const tableId = c.req.param('table');
-  const limit = parseInt(c.req.query('limit') ?? '50');
-  const offset = parseInt(c.req.query('offset') ?? '0');
+  const limit = getIntParam(c, 'limit', 50, 1, 1000);
+  const offset = getIntParam(c, 'offset', 0, 0);
   const filterParam = c.req.query('filter');
 
   let filter: Record<string, unknown> | undefined;
@@ -208,7 +208,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
 customDataRoutes.get('/tables/:table/search', async (c) => {
   const tableId = c.req.param('table');
   const query = c.req.query('q') ?? '';
-  const limit = parseInt(c.req.query('limit') ?? '20');
+  const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   if (!query) {
     return c.json(
