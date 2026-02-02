@@ -938,7 +938,49 @@ function buildCalculatorPlugin(): BuiltinPluginEntry {
       },
       async (params) => {
         try {
-          const expr = String(params.expression)
+          const input = String(params.expression).trim();
+
+          // Security: Length limit
+          if (input.length > 500) {
+            return {
+              content: { error: 'Expression too long (max 500 characters)' },
+              isError: true,
+            };
+          }
+
+          // Security: Whitelist allowed characters (math expression only)
+          const allowedPattern = /^[\d\s+\-*/().,^a-z]*$/i;
+          if (!allowedPattern.test(input)) {
+            return {
+              content: { error: 'Invalid characters in expression. Only numbers, operators, and math functions allowed.' },
+              isError: true,
+            };
+          }
+
+          // Security: Block dangerous patterns
+          const dangerousPatterns = [
+            /import/i,
+            /require/i,
+            /eval/i,
+            /function/i,
+            /constructor/i,
+            /prototype/i,
+            /__proto__/i,
+            /process/i,
+            /global/i,
+            /this/i,
+          ];
+
+          for (const pattern of dangerousPatterns) {
+            if (pattern.test(input)) {
+              return {
+                content: { error: 'Forbidden pattern detected in expression' },
+                isError: true,
+              };
+            }
+          }
+
+          const expr = input
             .replace(/\^/g, '**')
             .replace(/sqrt\(/g, 'Math.sqrt(')
             .replace(/sin\(/g, 'Math.sin(')
@@ -952,16 +994,28 @@ function buildCalculatorPlugin(): BuiltinPluginEntry {
             .replace(/round\(/g, 'Math.round(')
             .replace(/pi/gi, 'Math.PI')
             .replace(/\be\b/g, 'Math.E');
+
           const result = new Function(`"use strict"; return (${expr})`)();
+
+          // Security: Validate result is a number
+          if (typeof result !== 'number' || !Number.isFinite(result)) {
+            return {
+              content: { error: 'Expression must evaluate to a finite number' },
+              isError: true,
+            };
+          }
+
           return {
             content: {
               expression: params.expression,
               result,
             },
           };
-        } catch {
+        } catch (err) {
           return {
-            content: { error: 'Invalid expression' },
+            content: {
+              error: err instanceof Error ? `Invalid expression: ${err.message}` : 'Invalid expression'
+            },
             isError: true,
           };
         }
