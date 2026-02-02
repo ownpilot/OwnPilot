@@ -6,7 +6,6 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
 import { WorkspacesRepository } from '../db/repositories/workspaces.js';
 import {
   getOrchestrator,
@@ -20,6 +19,7 @@ import {
   DEFAULT_CONTAINER_CONFIG,
   StorageSecurityError,
 } from '@ownpilot/core';
+import { apiResponse } from './helpers.js';
 
 const app = new Hono();
 
@@ -47,9 +47,7 @@ app.get('/', async (c) => {
   try {
     const workspaces = await repo.list();
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         workspaces: workspaces.map((w) => ({
           id: w.id,
           userId: w.userId,
@@ -64,14 +62,7 @@ app.get('/', async (c) => {
           updatedAt: w.updatedAt.toISOString(),
         })),
         count: workspaces.length,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
@@ -146,9 +137,7 @@ app.post('/', async (c) => {
 
     await repo.logAudit('create', 'workspace', workspace.id);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         id: workspace.id,
         userId: workspace.userId,
         name: workspace.name,
@@ -158,14 +147,7 @@ app.post('/', async (c) => {
         containerConfig: workspace.containerConfig,
         containerStatus: workspace.containerStatus,
         createdAt: workspace.createdAt.toISOString(),
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response, 201);
+      }, 201);
   } catch (error) {
     await repo.logAudit('create', 'workspace', undefined, false, error instanceof Error ? error.message : 'Unknown error');
     return c.json(
@@ -209,9 +191,7 @@ app.get('/:id', async (c) => {
     const storage = getWorkspaceStorage();
     const storageUsage = await storage.getStorageUsage(`${userId}/${workspaceId}`);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         id: workspace.id,
         userId: workspace.userId,
         name: workspace.name,
@@ -224,14 +204,7 @@ app.get('/:id', async (c) => {
         createdAt: workspace.createdAt.toISOString(),
         updatedAt: workspace.updatedAt.toISOString(),
         storageUsage,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
@@ -292,16 +265,7 @@ app.patch('/:id', async (c) => {
 
     await repo.logAudit('write', 'workspace', workspaceId);
 
-    const response: ApiResponse = {
-      success: true,
-      data: { updated: true },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, { updated: true });
   } catch (error) {
     return c.json(
       {
@@ -356,16 +320,7 @@ app.delete('/:id', async (c) => {
 
     await repo.logAudit('delete', 'workspace', workspaceId);
 
-    const response: ApiResponse = {
-      success: true,
-      data: { deleted: true },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, { deleted: true });
   } catch (error) {
     return c.json(
       {
@@ -414,20 +369,11 @@ app.get('/:id/files', async (c) => {
     const storage = getWorkspaceStorage();
     const files = await storage.listFiles(`${userId}/${workspaceId}`, path, recursive);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         path,
         files,
         count: files.length,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     if (error instanceof StorageSecurityError) {
       return c.json(
@@ -486,21 +432,12 @@ app.get('/:id/files/*', async (c) => {
 
     await repo.logAudit('read', 'file', filePath);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         path: filePath,
         content,
         size: fileInfo.size,
         modifiedAt: fileInfo.modifiedAt,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     if (error instanceof StorageSecurityError) {
       return c.json(
@@ -574,19 +511,10 @@ app.put('/:id/files/*', async (c) => {
 
     await repo.logAudit('write', 'file', filePath);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         path: filePath,
         written: true,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     const repo = new WorkspacesRepository(userId);
     if (error instanceof StorageSecurityError) {
@@ -646,19 +574,10 @@ app.delete('/:id/files/*', async (c) => {
 
     await repo.logAudit('delete', 'file', filePath);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         path: filePath,
         deleted: true,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     if (error instanceof StorageSecurityError) {
       return c.json(
@@ -824,22 +743,13 @@ app.get('/:id/stats', async (c) => {
     // Get execution count
     const executionCount = await repo.countExecutions(workspaceId);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         fileCount: totalFiles,
         directoryCount: totalDirectories,
         storageUsage,
         fileTypes,
         executionCount,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
@@ -977,23 +887,14 @@ app.post('/:id/execute', async (c) => {
 
     await repo.logAudit('execute', 'execution', `${body.language}:${execution.codeHash.substring(0, 8)}`);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         executionId: execution.id,
         status: result.status,
         stdout: result.stdout,
         stderr: result.stderr,
         exitCode: result.exitCode,
         executionTimeMs: result.executionTimeMs,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     await repo.logAudit('execute', 'execution', undefined, false, error instanceof Error ? error.message : 'Unknown error');
     return c.json(
@@ -1037,9 +938,7 @@ app.get('/:id/executions', async (c) => {
 
     const executions = await repo.listExecutions(workspaceId, limit);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         executions: executions.map((e) => ({
           id: e.id,
           workspaceId: e.workspaceId,
@@ -1054,14 +953,7 @@ app.get('/:id/executions', async (c) => {
           createdAt: e.createdAt.toISOString(),
         })),
         count: executions.length,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
@@ -1135,19 +1027,10 @@ app.post('/:id/container/start', async (c) => {
 
     await repo.logAudit('start', 'container', workspaceId);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         containerId,
         status: 'running',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
@@ -1196,18 +1079,9 @@ app.post('/:id/container/stop', async (c) => {
 
     await repo.logAudit('stop', 'container', workspaceId);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         status: 'stopped',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
@@ -1260,20 +1134,11 @@ app.get('/:id/container/status', async (c) => {
       }
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         containerId: workspace.containerId,
         status,
         resourceUsage,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
@@ -1319,18 +1184,9 @@ app.get('/:id/container/logs', async (c) => {
       logs = await orchestrator.getContainerLogs(workspace.containerId, tail);
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         logs,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {
@@ -1358,9 +1214,7 @@ app.get('/system/status', async (c) => {
     const orchestrator = getOrchestrator();
     const activeContainers = orchestrator.getActiveContainers();
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         dockerAvailable,
         activeContainers: activeContainers.length,
         containers: activeContainers.map((c) => ({
@@ -1370,14 +1224,7 @@ app.get('/system/status', async (c) => {
           startedAt: c.startedAt,
           lastActivityAt: c.lastActivityAt,
         })),
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     return c.json(
       {

@@ -5,7 +5,6 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
 import {
   PomodoroRepository,
   type CreateSessionInput,
@@ -23,7 +22,7 @@ import {
   type ProcessCaptureInput,
   type CaptureType,
 } from '../db/repositories/captures.js';
-import { getUserId } from './helpers.js';
+import { apiResponse, getUserId } from './helpers.js';
 
 export const productivityRoutes = new Hono();
 
@@ -46,12 +45,7 @@ pomodoroRoutes.get('/session', async (c) => {
   const repo = getPomodoroRepo(userId);
   const session = await repo.getActiveSession();
 
-  const response: ApiResponse = {
-    success: true,
-    data: { session },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { session });
 });
 
 /**
@@ -81,12 +75,7 @@ pomodoroRoutes.post('/session/start', async (c) => {
 
   const session = await repo.startSession(body);
 
-  const response: ApiResponse = {
-    success: true,
-    data: { session, message: `${body.type} session started!` },
-  };
-
-  return c.json(response, 201);
+  return apiResponse(c, { session, message: `${body.type} session started!` }, 201);
 });
 
 /**
@@ -106,12 +95,7 @@ pomodoroRoutes.post('/session/:id/complete', async (c) => {
     }, 404);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: { session, message: 'Session completed!' },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { session, message: 'Session completed!' });
 });
 
 /**
@@ -132,12 +116,7 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
     }, 404);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: { session, message: 'Session interrupted.' },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { session, message: 'Session interrupted.' });
 });
 
 /**
@@ -151,12 +130,7 @@ pomodoroRoutes.get('/sessions', async (c) => {
   const repo = getPomodoroRepo(userId);
   const sessions = await repo.listSessions({ type, limit });
 
-  const response: ApiResponse = {
-    success: true,
-    data: { sessions, count: sessions.length },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { sessions, count: sessions.length });
 });
 
 /**
@@ -167,12 +141,7 @@ pomodoroRoutes.get('/settings', async (c) => {
   const repo = getPomodoroRepo(userId);
   const settings = await repo.getSettings();
 
-  const response: ApiResponse = {
-    success: true,
-    data: settings,
-  };
-
-  return c.json(response);
+  return apiResponse(c, settings);
 });
 
 /**
@@ -185,12 +154,7 @@ pomodoroRoutes.patch('/settings', async (c) => {
   const repo = getPomodoroRepo(userId);
   const settings = await repo.updateSettings(body);
 
-  const response: ApiResponse = {
-    success: true,
-    data: settings,
-  };
-
-  return c.json(response);
+  return apiResponse(c, settings);
 });
 
 /**
@@ -202,12 +166,7 @@ pomodoroRoutes.get('/stats', async (c) => {
   const stats = await repo.getTotalStats();
   const today = await repo.getDailyStats();
 
-  const response: ApiResponse = {
-    success: true,
-    data: { ...stats, today },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { ...stats, today });
 });
 
 /**
@@ -220,12 +179,7 @@ pomodoroRoutes.get('/stats/daily/:date', async (c) => {
   const repo = getPomodoroRepo(userId);
   const stats = await repo.getDailyStats(date);
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats ?? { date, completedSessions: 0, totalWorkMinutes: 0, totalBreakMinutes: 0, interruptions: 0 },
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats ?? { date, completedSessions: 0, totalWorkMinutes: 0, totalBreakMinutes: 0, interruptions: 0 });
 });
 
 // =============================================================================
@@ -249,12 +203,7 @@ habitsRoutes.get('/', async (c) => {
   const repo = getHabitsRepo(userId);
   const habits = await repo.list({ category: category ?? undefined, isArchived });
 
-  const response: ApiResponse = {
-    success: true,
-    data: { habits, count: habits.length },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { habits, count: habits.length });
 });
 
 /**
@@ -274,12 +223,7 @@ habitsRoutes.post('/', async (c) => {
   const repo = getHabitsRepo(userId);
   const habit = await repo.create(body);
 
-  const response: ApiResponse = {
-    success: true,
-    data: { habit, message: 'Habit created!' },
-  };
-
-  return c.json(response, 201);
+  return apiResponse(c, { habit, message: 'Habit created!' }, 201);
 });
 
 /**
@@ -290,12 +234,7 @@ habitsRoutes.get('/today', async (c) => {
   const repo = getHabitsRepo(userId);
   const progress = await repo.getTodayProgress();
 
-  const response: ApiResponse = {
-    success: true,
-    data: progress,
-  };
-
-  return c.json(response);
+  return apiResponse(c, progress);
 });
 
 /**
@@ -306,12 +245,7 @@ habitsRoutes.get('/categories', async (c) => {
   const repo = getHabitsRepo(userId);
   const categories = await repo.getCategories();
 
-  const response: ApiResponse = {
-    success: true,
-    data: { categories },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { categories });
 });
 
 /**
@@ -331,12 +265,7 @@ habitsRoutes.get('/:id', async (c) => {
     }, 404);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats);
 });
 
 /**
@@ -357,12 +286,7 @@ habitsRoutes.patch('/:id', async (c) => {
     }, 404);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: habit,
-  };
-
-  return c.json(response);
+  return apiResponse(c, habit);
 });
 
 /**
@@ -382,12 +306,7 @@ habitsRoutes.delete('/:id', async (c) => {
     }, 404);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: { message: 'Habit deleted.' },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { message: 'Habit deleted.' });
 });
 
 /**
@@ -407,12 +326,7 @@ habitsRoutes.post('/:id/archive', async (c) => {
     }, 404);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: { habit, message: 'Habit archived.' },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { habit, message: 'Habit archived.' });
 });
 
 /**
@@ -436,12 +350,7 @@ habitsRoutes.post('/:id/log', async (c) => {
   // Get updated habit stats
   const habit = await repo.get(id);
 
-  const response: ApiResponse = {
-    success: true,
-    data: { log, habit, message: 'Habit logged!' },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { log, habit, message: 'Habit logged!' });
 });
 
 /**
@@ -457,12 +366,7 @@ habitsRoutes.get('/:id/logs', async (c) => {
   const repo = getHabitsRepo(userId);
   const logs = await repo.getLogs(id, { startDate: startDate ?? undefined, endDate: endDate ?? undefined, limit });
 
-  const response: ApiResponse = {
-    success: true,
-    data: { logs, count: logs.length },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { logs, count: logs.length });
 });
 
 // =============================================================================
@@ -495,12 +399,7 @@ capturesRoutes.get('/', async (c) => {
     offset,
   });
 
-  const response: ApiResponse = {
-    success: true,
-    data: { captures, count: captures.length, limit, offset },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { captures, count: captures.length, limit, offset });
 });
 
 /**
@@ -521,16 +420,11 @@ capturesRoutes.post('/', async (c) => {
   const capture = await repo.create(body);
   const inboxCount = await repo.getInboxCount();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       capture,
       inboxCount,
       message: 'Captured!',
-    },
-  };
-
-  return c.json(response, 201);
+    }, 201);
 });
 
 /**
@@ -550,9 +444,7 @@ capturesRoutes.get('/inbox', async (c) => {
     byType[cap.type] = (byType[cap.type] || 0) + 1;
   });
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       inbox: captures,
       count: captures.length,
       totalUnprocessed,
@@ -560,10 +452,7 @@ capturesRoutes.get('/inbox', async (c) => {
       message: captures.length === 0
         ? 'Inbox is empty! Great job processing your captures.'
         : `${totalUnprocessed} items need processing`,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -574,12 +463,7 @@ capturesRoutes.get('/stats', async (c) => {
   const repo = getCapturesRepo(userId);
   const stats = await repo.getStats();
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats);
 });
 
 /**
@@ -599,12 +483,7 @@ capturesRoutes.get('/:id', async (c) => {
     }, 404);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: capture,
-  };
-
-  return c.json(response);
+  return apiResponse(c, capture);
 });
 
 /**
@@ -632,17 +511,12 @@ capturesRoutes.post('/:id/process', async (c) => {
     }, 404);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       capture,
       message: body.processedAsType === 'discarded'
         ? 'Capture discarded.'
         : `Capture marked as ${body.processedAsType}.`,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -662,12 +536,7 @@ capturesRoutes.delete('/:id', async (c) => {
     }, 404);
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: { message: 'Capture deleted.' },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { message: 'Capture deleted.' });
 });
 
 // =============================================================================

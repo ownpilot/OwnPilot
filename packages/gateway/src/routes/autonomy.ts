@@ -5,7 +5,6 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
 import {
   getApprovalManager,
   assessRisk,
@@ -15,7 +14,7 @@ import {
   type ActionCategory,
   type ApprovalDecision,
 } from '../autonomy/index.js';
-import { getUserId } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js';
 
 export const autonomyRoutes = new Hono();
 
@@ -31,19 +30,14 @@ autonomyRoutes.get('/config', (c) => {
   const manager = getApprovalManager();
   const config = manager.getUserConfig(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      config,
-      levels: Object.entries(AUTONOMY_LEVEL_NAMES).map(([level, name]) => ({
-        level: parseInt(level, 10),
-        name,
-        description: AUTONOMY_LEVEL_DESCRIPTIONS[parseInt(level, 10) as AutonomyLevel],
-      })),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    config,
+    levels: Object.entries(AUTONOMY_LEVEL_NAMES).map(([level, name]) => ({
+      level: parseInt(level, 10),
+      name,
+      description: AUTONOMY_LEVEL_DESCRIPTIONS[parseInt(level, 10) as AutonomyLevel],
+    })),
+  });
 });
 
 /**
@@ -61,15 +55,10 @@ autonomyRoutes.patch('/config', async (c) => {
   manager.setUserConfig(userId, body);
   const config = manager.getUserConfig(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      config,
-      message: 'Autonomy configuration updated.',
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    config,
+    message: 'Autonomy configuration updated.',
+  });
 });
 
 /**
@@ -83,15 +72,10 @@ autonomyRoutes.post('/config/reset', (c) => {
   manager.setUserConfig(userId, {});
   const config = manager.getUserConfig(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      config,
-      message: 'Autonomy configuration reset to defaults.',
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    config,
+    message: 'Autonomy configuration reset to defaults.',
+  });
 });
 
 // ============================================================================
@@ -108,14 +92,7 @@ autonomyRoutes.get('/levels', (c) => {
     description: AUTONOMY_LEVEL_DESCRIPTIONS[parseInt(level, 10) as AutonomyLevel],
   }));
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      levels,
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { levels });
 });
 
 /**
@@ -142,16 +119,11 @@ autonomyRoutes.post('/level', async (c) => {
   manager.setUserConfig(userId, { level: body.level });
   const config = manager.getUserConfig(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      level: config.level,
-      levelName: AUTONOMY_LEVEL_NAMES[config.level],
-      message: `Autonomy level set to ${AUTONOMY_LEVEL_NAMES[config.level]}.`,
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    level: config.level,
+    levelName: AUTONOMY_LEVEL_NAMES[config.level],
+    message: `Autonomy level set to ${AUTONOMY_LEVEL_NAMES[config.level]}.`,
+  });
 });
 
 // ============================================================================
@@ -193,16 +165,11 @@ autonomyRoutes.post('/assess', async (c) => {
     config
   );
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      risk,
-      autonomyLevel: config.level,
-      autonomyLevelName: AUTONOMY_LEVEL_NAMES[config.level],
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    risk,
+    autonomyLevel: config.level,
+    autonomyLevelName: AUTONOMY_LEVEL_NAMES[config.level],
+  });
 });
 
 // ============================================================================
@@ -217,15 +184,10 @@ autonomyRoutes.get('/approvals', (c) => {
   const manager = getApprovalManager();
   const pending = manager.getPendingActions(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      pending,
-      count: pending.length,
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    pending,
+    count: pending.length,
+  });
 });
 
 /**
@@ -267,27 +229,18 @@ autonomyRoutes.post('/approvals/request', async (c) => {
 
     if (!request) {
       // Auto-approved
-      const response: ApiResponse = {
-        success: true,
-        data: {
-          approved: true,
-          autoApproved: true,
-          message: 'Action automatically approved based on autonomy settings.',
-        },
-      };
-      return c.json(response);
+      return apiResponse(c, {
+        approved: true,
+        autoApproved: true,
+        message: 'Action automatically approved based on autonomy settings.',
+      });
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        approved: false,
-        request,
-        message: 'Action requires approval.',
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, {
+      approved: false,
+      request,
+      message: 'Action requires approval.',
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return c.json(
@@ -324,12 +277,7 @@ autonomyRoutes.get('/approvals/:id', (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: action,
-  };
-
-  return c.json(response);
+  return apiResponse(c, action);
 });
 
 /**
@@ -371,15 +319,10 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      action,
-      message: `Action ${body.decision}${body.decision === 'approve' ? 'd' : 'ed'}.`,
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    action,
+    message: `Action ${body.decision}${body.decision === 'approve' ? 'd' : 'ed'}.`,
+  });
 });
 
 /**
@@ -410,15 +353,10 @@ autonomyRoutes.post('/approvals/:id/approve', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      action,
-      message: 'Action approved.',
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    action,
+    message: 'Action approved.',
+  });
 });
 
 /**
@@ -449,15 +387,10 @@ autonomyRoutes.post('/approvals/:id/reject', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      action,
-      message: 'Action rejected.',
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    action,
+    message: 'Action rejected.',
+  });
 });
 
 /**
@@ -481,14 +414,9 @@ autonomyRoutes.delete('/approvals/:id', (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: 'Pending action cancelled.',
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: 'Pending action cancelled.',
+  });
 });
 
 // ============================================================================
@@ -526,15 +454,10 @@ autonomyRoutes.post('/tools/allow', async (c) => {
 
   manager.setUserConfig(userId, config);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      allowedTools: config.allowedTools,
-      message: `Tool "${body.tool}" added to allowed list.`,
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    allowedTools: config.allowedTools,
+    message: `Tool "${body.tool}" added to allowed list.`,
+  });
 });
 
 /**
@@ -568,15 +491,10 @@ autonomyRoutes.post('/tools/block', async (c) => {
 
   manager.setUserConfig(userId, config);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      blockedTools: config.blockedTools,
-      message: `Tool "${body.tool}" added to blocked list.`,
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    blockedTools: config.blockedTools,
+    message: `Tool "${body.tool}" added to blocked list.`,
+  });
 });
 
 /**
@@ -594,14 +512,9 @@ autonomyRoutes.delete('/tools/:tool', (c) => {
 
   manager.setUserConfig(userId, config);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: `Tool "${tool}" removed from allowed/blocked lists.`,
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: `Tool "${tool}" removed from allowed/blocked lists.`,
+  });
 });
 
 // ============================================================================
@@ -616,15 +529,10 @@ autonomyRoutes.delete('/remembered', (c) => {
   const manager = getApprovalManager();
   const cleared = manager.clearRememberedDecisions(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      cleared,
-      message: `Cleared ${cleared} remembered decisions.`,
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    cleared,
+    message: `Cleared ${cleared} remembered decisions.`,
+  });
 });
 
 // ============================================================================
@@ -639,18 +547,13 @@ autonomyRoutes.get('/budget', (c) => {
   const manager = getApprovalManager();
   const config = manager.getUserConfig(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      dailyBudget: config.dailyBudget,
-      dailySpend: config.dailySpend,
-      remaining: config.dailyBudget - config.dailySpend,
-      resetAt: config.budgetResetAt,
-      maxCostPerAction: config.maxCostPerAction,
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    dailyBudget: config.dailyBudget,
+    dailySpend: config.dailySpend,
+    remaining: config.dailyBudget - config.dailySpend,
+    resetAt: config.budgetResetAt,
+    maxCostPerAction: config.maxCostPerAction,
+  });
 });
 
 /**
@@ -677,14 +580,9 @@ autonomyRoutes.patch('/budget', async (c) => {
   manager.setUserConfig(userId, updates);
   const config = manager.getUserConfig(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      dailyBudget: config.dailyBudget,
-      maxCostPerAction: config.maxCostPerAction,
-      message: 'Budget settings updated.',
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    dailyBudget: config.dailyBudget,
+    maxCostPerAction: config.maxCostPerAction,
+    message: 'Budget settings updated.',
+  });
 });

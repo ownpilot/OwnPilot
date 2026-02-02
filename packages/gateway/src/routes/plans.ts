@@ -14,7 +14,7 @@ import {
 } from '../db/repositories/plans.js';
 import { getPlanService } from '../services/plan-service.js';
 import { getPlanExecutor } from '../plans/index.js';
-import { getUserId } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js';
 
 export const plansRoutes = new Hono();
 
@@ -36,17 +36,12 @@ plansRoutes.get('/', async (c) => {
   const service = getPlanService();
   const plans = await service.listPlans(userId, { status, goalId, triggerId, limit, offset });
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       plans,
       total: plans.length,
       limit,
       offset,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -72,15 +67,10 @@ plansRoutes.post('/', async (c) => {
   const service = getPlanService();
   const plan = await service.createPlan(userId, body);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       plan,
       message: 'Plan created successfully.',
-    },
-  };
-
-  return c.json(response, 201);
+    }, 201);
 });
 
 /**
@@ -91,12 +81,7 @@ plansRoutes.get('/stats', async (c) => {
   const service = getPlanService();
   const stats = await service.getStats(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats);
 });
 
 /**
@@ -107,15 +92,10 @@ plansRoutes.get('/active', async (c) => {
   const service = getPlanService();
   const plans = await service.getActive(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       plans,
       count: plans.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -126,15 +106,10 @@ plansRoutes.get('/pending', async (c) => {
   const service = getPlanService();
   const plans = await service.getPending(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       plans,
       count: plans.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -164,16 +139,11 @@ plansRoutes.get('/:id', async (c) => {
   const steps = await service.getSteps(userId, id);
   const history = await service.getHistory(userId, id, 20);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       ...plan,
       steps,
       recentHistory: history,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -200,12 +170,7 @@ plansRoutes.patch('/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: updated,
-  };
-
-  return c.json(response);
+  return apiResponse(c, updated);
 });
 
 /**
@@ -231,14 +196,9 @@ plansRoutes.delete('/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       message: 'Plan deleted successfully.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 // ============================================================================
@@ -444,15 +404,10 @@ plansRoutes.post('/:id/abort', async (c) => {
   const executor = getPlanExecutor({ userId });
   const aborted = await executor.abort(id);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       aborted,
       message: aborted ? 'Plan aborted.' : 'Plan was not running.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -482,14 +437,9 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
   const executor = getPlanExecutor({ userId });
   executor.checkpoint(id, body.data);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       message: 'Checkpoint created.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -617,15 +567,10 @@ plansRoutes.post('/:id/rollback', async (c) => {
     await service.recalculateProgress(userId, id);
     await service.logEvent(userId, id, 'rollback', undefined, { checkpoint: checkpointData });
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         message: 'Plan rolled back to last checkpoint.',
         checkpoint: checkpointData,
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return c.json(
@@ -670,16 +615,11 @@ plansRoutes.get('/:id/steps', async (c) => {
 
   const steps = await service.getSteps(userId, id);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       planId: id,
       steps,
       count: steps.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -707,15 +647,10 @@ plansRoutes.post('/:id/steps', async (c) => {
     const service = getPlanService();
     const step = await service.addStep(userId, id, body);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         step,
         message: 'Step added successfully.',
-      },
-    };
-
-    return c.json(response, 201);
+      }, 201);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return c.json(
@@ -754,12 +689,7 @@ plansRoutes.get('/:id/steps/:stepId', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: step,
-  };
-
-  return c.json(response);
+  return apiResponse(c, step);
 });
 
 /**
@@ -790,12 +720,7 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: updated,
-  };
-
-  return c.json(response);
+  return apiResponse(c, updated);
 });
 
 // ============================================================================
@@ -828,16 +753,11 @@ plansRoutes.get('/:id/history', async (c) => {
 
   const history = await service.getHistory(userId, id, limit);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       planId: id,
       history,
       count: history.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 // ============================================================================
@@ -851,12 +771,7 @@ plansRoutes.get('/executor/status', (c) => {
   const userId = getUserId(c);
   const executor = getPlanExecutor({ userId });
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       runningPlans: executor.getRunningPlans(),
-    },
-  };
-
-  return c.json(response);
+    });
 });

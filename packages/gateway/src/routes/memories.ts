@@ -8,13 +8,12 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
 import type {
   MemoryType,
   CreateMemoryInput,
 } from '../db/repositories/memories.js';
 import { getMemoryService, MemoryServiceError } from '../services/memory-service.js';
-import { getUserId } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js';
 
 export const memoriesRoutes = new Hono();
 
@@ -41,15 +40,10 @@ memoriesRoutes.get('/', async (c) => {
     orderBy: 'importance',
   });
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       memories,
       total: await service.countMemories(userId, type),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -74,15 +68,10 @@ memoriesRoutes.post('/', async (c) => {
       });
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         memory,
         message: 'Memory created successfully.',
-      },
-    };
-
-    return c.json(response, 201);
+      }, 201);
   } catch (err) {
     if (err instanceof MemoryServiceError && err.code === 'VALIDATION_ERROR') {
       return c.json(
@@ -125,16 +114,11 @@ memoriesRoutes.get('/search', async (c) => {
   const service = getMemoryService();
   const memories = await service.searchMemories(userId, query, { type, limit });
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       query,
       memories,
       count: memories.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -145,12 +129,7 @@ memoriesRoutes.get('/stats', async (c) => {
   const service = getMemoryService();
   const stats = await service.getStats(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats);
 });
 
 /**
@@ -176,12 +155,7 @@ memoriesRoutes.get('/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: memory,
-  };
-
-  return c.json(response);
+  return apiResponse(c, memory);
 });
 
 /**
@@ -212,12 +186,7 @@ memoriesRoutes.patch('/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: updated,
-  };
-
-  return c.json(response);
+  return apiResponse(c, updated);
 });
 
 /**
@@ -245,15 +214,10 @@ memoriesRoutes.post('/:id/boost', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       memory: boosted,
       message: `Memory importance boosted by ${amount}`,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -279,14 +243,9 @@ memoriesRoutes.delete('/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       message: 'Memory deleted successfully.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -302,15 +261,10 @@ memoriesRoutes.post('/decay', async (c) => {
   const service = getMemoryService();
   const affected = await service.decayMemories(userId, body);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       affectedCount: affected,
       message: `Decayed ${affected} memories.`,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -326,15 +280,10 @@ memoriesRoutes.post('/cleanup', async (c) => {
   const service = getMemoryService();
   const deleted = await service.cleanupMemories(userId, body);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       deletedCount: deleted,
       message: `Cleaned up ${deleted} low-importance memories.`,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 // ============================================================================

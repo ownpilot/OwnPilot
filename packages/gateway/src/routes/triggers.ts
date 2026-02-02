@@ -14,7 +14,7 @@ import {
 import { getTriggerService } from '../services/trigger-service.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression } from '@ownpilot/core';
-import { getUserId } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js';
 
 export const triggersRoutes = new Hono();
 
@@ -38,15 +38,10 @@ triggersRoutes.get('/', async (c) => {
     limit,
   });
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       triggers,
       total: triggers.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -107,15 +102,10 @@ triggersRoutes.post('/', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       trigger,
       message: 'Trigger created successfully.',
-    },
-  };
-
-  return c.json(response, 201);
+    }, 201);
 });
 
 /**
@@ -126,12 +116,7 @@ triggersRoutes.get('/stats', async (c) => {
   const service = getTriggerService();
   const stats = await service.getStats(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats);
 });
 
 /**
@@ -144,15 +129,10 @@ triggersRoutes.get('/history', async (c) => {
   const service = getTriggerService();
   const history = await service.getRecentHistory(userId, limit);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       history,
       count: history.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -164,15 +144,10 @@ triggersRoutes.get('/due', async (c) => {
   const service = getTriggerService();
   const triggers = await service.getDueTriggers(userId);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       triggers,
       count: triggers.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -201,15 +176,10 @@ triggersRoutes.get('/:id', async (c) => {
   // Get recent history for this trigger
   const history = await service.getHistoryForTrigger(userId, id, 10);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       ...trigger,
       recentHistory: history,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -260,12 +230,7 @@ triggersRoutes.patch('/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: updated,
-  };
-
-  return c.json(response);
+  return apiResponse(c, updated);
 });
 
 /**
@@ -291,15 +256,10 @@ triggersRoutes.post('/:id/enable', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       trigger: updated,
       message: 'Trigger enabled.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -325,15 +285,10 @@ triggersRoutes.post('/:id/disable', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       trigger: updated,
       message: 'Trigger disabled.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -403,14 +358,9 @@ triggersRoutes.delete('/:id', async (c) => {
     );
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       message: 'Trigger deleted successfully.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -439,17 +389,12 @@ triggersRoutes.get('/:id/history', async (c) => {
 
   const history = await service.getHistoryForTrigger(userId, id, limit);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       triggerId: id,
       triggerName: trigger.name,
       history,
       count: history.length,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -462,15 +407,10 @@ triggersRoutes.post('/cleanup', async (c) => {
   const service = getTriggerService();
   const deleted = await service.cleanupHistory(userId, body.maxAgeDays ?? 30);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       deletedCount: deleted,
       message: `Cleaned up ${deleted} old history entries.`,
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 // ============================================================================
@@ -483,14 +423,9 @@ triggersRoutes.post('/cleanup', async (c) => {
 triggersRoutes.get('/engine/status', (c) => {
   const engine = getTriggerEngine();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       running: engine.isRunning(),
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -500,15 +435,10 @@ triggersRoutes.post('/engine/start', (c) => {
   const engine = getTriggerEngine();
   engine.start();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       running: engine.isRunning(),
       message: 'Trigger engine started.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
 
 /**
@@ -518,13 +448,8 @@ triggersRoutes.post('/engine/stop', (c) => {
   const engine = getTriggerEngine();
   engine.stop();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
+  return apiResponse(c, {
       running: engine.isRunning(),
       message: 'Trigger engine stopped.',
-    },
-  };
-
-  return c.json(response);
+    });
 });
