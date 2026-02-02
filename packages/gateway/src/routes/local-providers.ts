@@ -9,7 +9,7 @@ import { Hono } from 'hono';
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { discoverModels } from '../services/local-discovery.js';
 import { getLog } from '../services/log.js';
-import { getUserId } from './helpers.js';
+import { getUserId, apiError } from './helpers.js';
 
 const log = getLog('LocalProviders');
 
@@ -66,13 +66,7 @@ localProvidersRoutes.get('/', async (c) => {
     });
   } catch (error) {
     log.error('Failed to list local providers:', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to list local providers',
-      },
-      500
-    );
+    return apiError(c, error instanceof Error ? error.message : 'Failed to list local providers', 500);
   }
 });
 
@@ -87,13 +81,7 @@ localProvidersRoutes.post('/', async (c) => {
     const { name, providerType, baseUrl, apiKey, discoveryEndpoint } = body;
 
     if (!name || !providerType || !baseUrl) {
-      return c.json(
-        {
-          success: false,
-          error: 'name, providerType, and baseUrl are required',
-        },
-        400
-      );
+      return apiError(c, 'name, providerType, and baseUrl are required', 400);
     }
 
     const provider = await localProvidersRepo.createProvider({
@@ -114,13 +102,7 @@ localProvidersRoutes.post('/', async (c) => {
     );
   } catch (error) {
     log.error('Failed to create local provider:', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to create local provider',
-      },
-      500
-    );
+    return apiError(c, error instanceof Error ? error.message : 'Failed to create local provider', 500);
   }
 });
 
@@ -139,13 +121,7 @@ localProvidersRoutes.get('/:id', async (c) => {
     const provider = await localProvidersRepo.getProvider(id);
 
     if (!provider) {
-      return c.json(
-        {
-          success: false,
-          error: 'Local provider not found',
-        },
-        404
-      );
+      return apiError(c, 'Local provider not found', 404);
     }
 
     const models = await localProvidersRepo.listModels(userId, id);
@@ -159,13 +135,7 @@ localProvidersRoutes.get('/:id', async (c) => {
     });
   } catch (error) {
     log.error('Failed to get local provider:', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to get local provider',
-      },
-      500
-    );
+    return apiError(c, error instanceof Error ? error.message : 'Failed to get local provider', 500);
   }
 });
 
@@ -188,13 +158,7 @@ localProvidersRoutes.put('/:id', async (c) => {
     });
 
     if (!updated) {
-      return c.json(
-        {
-          success: false,
-          error: 'Local provider not found',
-        },
-        404
-      );
+      return apiError(c, 'Local provider not found', 404);
     }
 
     return c.json({
@@ -203,13 +167,7 @@ localProvidersRoutes.put('/:id', async (c) => {
     });
   } catch (error) {
     log.error('Failed to update local provider:', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to update local provider',
-      },
-      500
-    );
+    return apiError(c, error instanceof Error ? error.message : 'Failed to update local provider', 500);
   }
 });
 
@@ -223,13 +181,7 @@ localProvidersRoutes.delete('/:id', async (c) => {
     const deleted = await localProvidersRepo.deleteProvider(id);
 
     if (!deleted) {
-      return c.json(
-        {
-          success: false,
-          error: 'Local provider not found',
-        },
-        404
-      );
+      return apiError(c, 'Local provider not found', 404);
     }
 
     return c.json({
@@ -238,13 +190,7 @@ localProvidersRoutes.delete('/:id', async (c) => {
     });
   } catch (error) {
     log.error('Failed to delete local provider:', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to delete local provider',
-      },
-      500
-    );
+    return apiError(c, error instanceof Error ? error.message : 'Failed to delete local provider', 500);
   }
 });
 
@@ -259,25 +205,13 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
     const { enabled } = body;
 
     if (typeof enabled !== 'boolean') {
-      return c.json(
-        {
-          success: false,
-          error: 'enabled field is required and must be a boolean',
-        },
-        400
-      );
+      return apiError(c, 'enabled field is required and must be a boolean', 400);
     }
 
     const updated = await localProvidersRepo.updateProvider(id, { isEnabled: enabled });
 
     if (!updated) {
-      return c.json(
-        {
-          success: false,
-          error: 'Local provider not found',
-        },
-        404
-      );
+      return apiError(c, 'Local provider not found', 404);
     }
 
     return c.json({
@@ -287,13 +221,7 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
     });
   } catch (error) {
     log.error('Failed to toggle local provider:', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to toggle local provider',
-      },
-      500
-    );
+    return apiError(c, error instanceof Error ? error.message : 'Failed to toggle local provider', 500);
   }
 });
 
@@ -313,13 +241,7 @@ localProvidersRoutes.patch('/:id/set-default', async (c) => {
     });
   } catch (error) {
     log.error('Failed to set default local provider:', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to set default local provider',
-      },
-      500
-    );
+    return apiError(c, error instanceof Error ? error.message : 'Failed to set default local provider', 500);
   }
 });
 
@@ -337,13 +259,7 @@ localProvidersRoutes.post('/:id/discover', async (c) => {
     const provider = await localProvidersRepo.getProvider(id);
 
     if (!provider) {
-      return c.json(
-        {
-          success: false,
-          error: 'Local provider not found',
-        },
-        404
-      );
+      return apiError(c, 'Local provider not found', 404);
     }
 
     const result = await discoverModels(provider);
@@ -400,13 +316,7 @@ localProvidersRoutes.post('/:id/discover', async (c) => {
     });
   } catch (error) {
     log.error('Failed to discover models:', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to discover models',
-      },
-      500
-    );
+    return apiError(c, error instanceof Error ? error.message : 'Failed to discover models', 500);
   }
 });
 
@@ -426,13 +336,7 @@ localProvidersRoutes.get('/:id/models', async (c) => {
     });
   } catch (error) {
     log.error('Failed to list local provider models:', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to list models',
-      },
-      500
-    );
+    return apiError(c, error instanceof Error ? error.message : 'Failed to list models', 500);
   }
 });
 
@@ -452,13 +356,7 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
     const { enabled } = body;
 
     if (typeof enabled !== 'boolean') {
-      return c.json(
-        {
-          success: false,
-          error: 'enabled field is required and must be a boolean',
-        },
-        400
-      );
+      return apiError(c, 'enabled field is required and must be a boolean', 400);
     }
 
     // Find the model by provider ID + logical modelId to get its DB record id
@@ -467,13 +365,7 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
     const model = models.find((m) => m.modelId === modelId);
 
     if (!model) {
-      return c.json(
-        {
-          success: false,
-          error: 'Model not found',
-        },
-        404
-      );
+      return apiError(c, 'Model not found', 404);
     }
 
     await localProvidersRepo.toggleModel(model.id, enabled);
@@ -485,12 +377,6 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
     });
   } catch (error) {
     log.error('Failed to toggle model:', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to toggle model',
-      },
-      500
-    );
+    return apiError(c, error instanceof Error ? error.message : 'Failed to toggle model', 500);
   }
 });
