@@ -60,7 +60,7 @@ customDataRoutes.post('/tables', async (c) => {
       body.description,
     );
 
-    return apiResponse(c, table);
+    return apiResponse(c, table, 201);
   } catch (err) {
     if (err instanceof CustomDataServiceError && err.code === 'VALIDATION_ERROR') {
       return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: err.message }, 400);
@@ -196,7 +196,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
     const service = getCustomDataService();
     const record = await service.addRecord(tableId, body.data);
 
-    return apiResponse(c, record);
+    return apiResponse(c, record, 201);
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.ADD_FAILED, message: err instanceof Error ? err.message : 'Failed to add record' }, 400);
   }
