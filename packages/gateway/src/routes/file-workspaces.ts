@@ -169,16 +169,7 @@ app.get('/:id/file/*', async (c) => {
       });
   } catch (error) {
     if (error instanceof Error && error.message.includes('traversal')) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ERROR_CODES.ACCESS_DENIED,
-            message: error.message,
-          },
-        },
-        403
-      );
+      return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
     return apiError(c, { code: ERROR_CODES.FILE_READ_ERROR, message: error instanceof Error ? error.message : 'Failed to read file' }, 500);
   }
@@ -213,16 +204,7 @@ app.put('/:id/file/*', async (c) => {
       });
   } catch (error) {
     if (error instanceof Error && error.message.includes('traversal')) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ERROR_CODES.ACCESS_DENIED,
-            message: error.message,
-          },
-        },
-        403
-      );
+      return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
     return apiError(c, { code: ERROR_CODES.FILE_WRITE_ERROR, message: error instanceof Error ? error.message : 'Failed to write file' }, 500);
   }
@@ -254,16 +236,7 @@ app.delete('/:id/file/*', async (c) => {
       });
   } catch (error) {
     if (error instanceof Error && error.message.includes('traversal')) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ERROR_CODES.ACCESS_DENIED,
-            message: error.message,
-          },
-        },
-        403
-      );
+      return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
     return apiError(c, { code: ERROR_CODES.FILE_DELETE_ERROR, message: error instanceof Error ? error.message : 'Failed to delete file' }, 500);
   }
