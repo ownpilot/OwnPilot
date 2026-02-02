@@ -168,16 +168,7 @@ pluginsRoutes.get('/stats', async (c) => {
     }
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: stats,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, stats);
 });
 
 /**
