@@ -8,7 +8,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { getCustomDataService, CustomDataServiceError } from '../services/custom-data-service.js';
 
@@ -62,27 +62,9 @@ customDataRoutes.post('/tables', async (c) => {
     return apiResponse(c, table);
   } catch (err) {
     if (err instanceof CustomDataServiceError && err.code === 'VALIDATION_ERROR') {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'INVALID_REQUEST',
-            message: err.message,
-          },
-        },
-        400
-      );
+      return apiError(c, { code: 'INVALID_REQUEST', message: err.message }, 400);
     }
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'CREATE_FAILED',
-          message: err instanceof Error ? err.message : 'Failed to create table',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'CREATE_FAILED', message: err instanceof Error ? err.message : 'Failed to create table' }, 400);
   }
 });
 
@@ -95,16 +77,7 @@ customDataRoutes.get('/tables/:table', async (c) => {
 
   const table = await service.getTable(tableId);
   if (!table) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Table not found: ${tableId}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Table not found: ${tableId}` }, 404);
   }
 
   const stats = await service.getTableStats(tableId);
@@ -130,16 +103,7 @@ customDataRoutes.put('/tables/:table', async (c) => {
   const updated = await service.updateTable(tableId, body);
 
   if (!updated) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Table not found: ${tableId}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Table not found: ${tableId}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -157,31 +121,13 @@ customDataRoutes.delete('/tables/:table', async (c) => {
     const deleted = await service.deleteTable(tableId);
 
     if (!deleted) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'NOT_FOUND',
-            message: `Table not found: ${tableId}`,
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'NOT_FOUND', message: `Table not found: ${tableId}` }, 404);
     }
 
     return apiResponse(c, { deleted: true });
   } catch (err) {
     if (err instanceof CustomDataServiceError && err.code === 'PROTECTED') {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'PROTECTED',
-            message: err.message,
-          },
-        },
-        403
-      );
+      return apiError(c, { code: 'PROTECTED', message: err.message }, 403);
     }
     throw err;
   }
@@ -221,16 +167,7 @@ customDataRoutes.get('/tables/:table/records', async (c) => {
         hasMore: offset + records.length < total,
       });
   } catch (err) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'LIST_FAILED',
-          message: err instanceof Error ? err.message : 'Failed to list records',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'LIST_FAILED', message: err instanceof Error ? err.message : 'Failed to list records' }, 400);
   }
 });
 
@@ -260,16 +197,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
 
     return apiResponse(c, record);
   } catch (err) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'ADD_FAILED',
-          message: err instanceof Error ? err.message : 'Failed to add record',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'ADD_FAILED', message: err instanceof Error ? err.message : 'Failed to add record' }, 400);
   }
 });
 
@@ -300,16 +228,7 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
 
     return apiResponse(c, records);
   } catch (err) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'SEARCH_FAILED',
-          message: err instanceof Error ? err.message : 'Failed to search records',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'SEARCH_FAILED', message: err instanceof Error ? err.message : 'Failed to search records' }, 400);
   }
 });
 
@@ -322,16 +241,7 @@ customDataRoutes.get('/records/:id', async (c) => {
 
   const record = await service.getRecord(recordId);
   if (!record) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Record not found: ${recordId}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Record not found: ${recordId}` }, 404);
   }
 
   return apiResponse(c, record);
@@ -362,30 +272,12 @@ customDataRoutes.put('/records/:id', async (c) => {
     const updated = await service.updateRecord(recordId, body.data);
 
     if (!updated) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'NOT_FOUND',
-            message: `Record not found: ${recordId}`,
-          },
-        },
-        404
-      );
+      return apiError(c, { code: 'NOT_FOUND', message: `Record not found: ${recordId}` }, 404);
     }
 
     return apiResponse(c, updated);
   } catch (err) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'UPDATE_FAILED',
-          message: err instanceof Error ? err.message : 'Failed to update record',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'UPDATE_FAILED', message: err instanceof Error ? err.message : 'Failed to update record' }, 400);
   }
 });
 
@@ -398,16 +290,7 @@ customDataRoutes.delete('/records/:id', async (c) => {
 
   const deleted = await service.deleteRecord(recordId);
   if (!deleted) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Record not found: ${recordId}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'NOT_FOUND', message: `Record not found: ${recordId}` }, 404);
   }
 
   return apiResponse(c, { deleted: true });
