@@ -13,7 +13,7 @@ import {
 import { getTriggerService } from '../services/trigger-service.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression } from '@ownpilot/core';
-import { getUserId, apiResponse } from './helpers.js'
+import { getUserId, apiResponse, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 export const triggersRoutes = new Hono();
@@ -29,7 +29,7 @@ triggersRoutes.get('/', async (c) => {
   const userId = getUserId(c);
   const type = c.req.query('type') as TriggerType | undefined;
   const enabled = c.req.query('enabled');
-  const limit = parseInt(c.req.query('limit') ?? '20', 10);
+  const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   const service = getTriggerService();
   const triggers = await service.listTriggers(userId, {
@@ -124,7 +124,7 @@ triggersRoutes.get('/stats', async (c) => {
  */
 triggersRoutes.get('/history', async (c) => {
   const userId = getUserId(c);
-  const limit = parseInt(c.req.query('limit') ?? '50', 10);
+  const limit = getIntParam(c, 'limit', 50, 1, 200);
 
   const service = getTriggerService();
   const history = await service.getRecentHistory(userId, limit);
@@ -371,7 +371,7 @@ triggersRoutes.delete('/:id', async (c) => {
 triggersRoutes.get('/:id/history', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const limit = parseInt(c.req.query('limit') ?? '20', 10);
+  const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   const service = getTriggerService();
   const trigger = await service.getTrigger(userId, id);

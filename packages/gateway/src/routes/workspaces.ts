@@ -19,7 +19,7 @@ import {
   DEFAULT_CONTAINER_CONFIG,
   StorageSecurityError,
 } from '@ownpilot/core';
-import { apiResponse, apiError } from './helpers.js';
+import { apiResponse, apiError, getIntParam } from './helpers.js';
 
 const app = new Hono();
 
@@ -619,7 +619,7 @@ app.post('/:id/execute', async (c) => {
 app.get('/:id/executions', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const limit = parseInt(c.req.query('limit') || '50');
+  const limit = getIntParam(c, 'limit', 50, 1, 200);
   const repo = new WorkspacesRepository(userId);
 
   try {
