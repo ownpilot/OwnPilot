@@ -59,7 +59,7 @@ export const readPdfExecutor: ToolExecutor = async (params, context): Promise<To
 
     // Use pdf-parse library if available, otherwise basic extraction
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let pdfParse: any;
+    let pdfParse: any = null; // Optional dependency - dynamically imported
     try {
       pdfParse = (await import(/* webpackIgnore: true */ 'pdf-parse' as string)).default;
     } catch {
@@ -210,7 +210,7 @@ export const createPdfExecutor: ToolExecutor = async (params, context): Promise<
 
     // Try to use pdfkit if available
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let PDFDocument: any;
+    let PDFDocument: any = null; // Optional dependency - dynamically imported
     try {
       PDFDocument = (await import(/* webpackIgnore: true */ 'pdfkit' as string)).default;
     } catch {
@@ -357,7 +357,7 @@ export const pdfInfoExecutor: ToolExecutor = async (params, context): Promise<To
 
     // Try to use pdf-parse for metadata
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let pdfParse: any;
+    let pdfParse: any = null; // Optional dependency - dynamically imported
     try {
       pdfParse = (await import(/* webpackIgnore: true */ 'pdf-parse' as string)).default;
     } catch {

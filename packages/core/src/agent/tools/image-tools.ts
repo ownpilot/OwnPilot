@@ -498,7 +498,7 @@ export const resizeImageExecutor: ToolExecutor = async (params, context): Promis
 
     // Try to use sharp if available
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let sharp: any;
+    let sharp: any = null; // Optional dependency - dynamically imported
     try {
       sharp = (await import(/* webpackIgnore: true */ 'sharp' as string)).default;
     } catch {

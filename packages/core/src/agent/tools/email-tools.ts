@@ -126,7 +126,7 @@ export const sendEmailExecutor: ToolExecutor = async (params, context): Promise<
 
   // Try to use nodemailer if available
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let nodemailer: any;
+  let nodemailer: any = null; // Optional dependency - dynamically imported
   try {
     nodemailer = await import(/* webpackIgnore: true */ 'nodemailer' as string);
   } catch {
