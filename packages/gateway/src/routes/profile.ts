@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import type { ApiResponse } from '../types/index.js';
+import { apiResponse, apiError } from './helpers.js';
 import {
   getPersonalMemoryStore,
   getMemoryInjector,
@@ -27,27 +27,9 @@ app.get('/', async (c) => {
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
     const profile = await store.getProfile();
 
-    const response: ApiResponse = {
-      success: true,
-      data: profile,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, profile);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'PROFILE_FETCH_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to fetch profile',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'PROFILE_FETCH_ERROR', message: error instanceof Error ? error.message : 'Failed to fetch profile' }, 500);
   }
 });
 
@@ -59,27 +41,9 @@ app.get('/summary', async (c) => {
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
     const summary = await store.getProfileSummary();
 
-    const response: ApiResponse = {
-      success: true,
-      data: { summary },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, { summary });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'SUMMARY_FETCH_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to fetch summary',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'SUMMARY_FETCH_ERROR', message: error instanceof Error ? error.message : 'Failed to fetch summary' }, 500);
   }
 });
 
@@ -93,31 +57,13 @@ app.get('/category/:category', async (c) => {
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
     const entries = await store.getCategory(category);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         category,
         entries,
         count: entries.length,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'CATEGORY_FETCH_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to fetch category',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'CATEGORY_FETCH_ERROR', message: error instanceof Error ? error.message : 'Failed to fetch category' }, 500);
   }
 });
 
@@ -130,16 +76,7 @@ app.post('/data', async (c) => {
     const { category, key, value, data, confidence, source, sensitive } = body;
 
     if (!category || !key || value === undefined) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'INVALID_INPUT',
-            message: 'category, key, and value are required',
-          },
-        },
-        400
-      );
+      return apiError(c, { code: 'INVALID_INPUT', message: 'category, key, and value are required' }, 400);
     }
 
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
@@ -153,27 +90,9 @@ app.post('/data', async (c) => {
     // Invalidate prompt cache so next AI call sees updated profile
     getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
 
-    const response: ApiResponse = {
-      success: true,
-      data: entry,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response, 201);
+    return apiResponse(c, entry, 201);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'DATA_SET_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to set data',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'DATA_SET_ERROR', message: error instanceof Error ? error.message : 'Failed to set data' }, 500);
   }
 });
 
@@ -186,16 +105,7 @@ app.delete('/data', async (c) => {
     const { category, key } = body;
 
     if (!category || !key) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'INVALID_INPUT',
-            message: 'category and key are required',
-          },
-        },
-        400
-      );
+      return apiError(c, { code: 'INVALID_INPUT', message: 'category and key are required' }, 400);
     }
 
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
@@ -203,27 +113,9 @@ app.delete('/data', async (c) => {
 
     getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
 
-    const response: ApiResponse = {
-      success: true,
-      data: { deleted },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, { deleted });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'DATA_DELETE_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to delete data',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'DATA_DELETE_ERROR', message: error instanceof Error ? error.message : 'Failed to delete data' }, 500);
   }
 });
 
@@ -235,16 +127,7 @@ app.get('/search', async (c) => {
   const categoriesParam = c.req.query('categories');
 
   if (!query) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'INVALID_INPUT',
-          message: 'Query parameter "q" is required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: 'INVALID_INPUT', message: 'Query parameter "q" is required' }, 400);
   }
 
   try {
@@ -254,31 +137,13 @@ app.get('/search', async (c) => {
       : undefined;
     const results = await store.search(query, categories);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         query,
         results,
         count: results.length,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'SEARCH_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to search',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'SEARCH_ERROR', message: error instanceof Error ? error.message : 'Failed to search' }, 500);
   }
 });
 
@@ -291,16 +156,7 @@ app.post('/import', async (c) => {
     const { entries } = body;
 
     if (!Array.isArray(entries)) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'INVALID_INPUT',
-            message: 'entries array is required',
-          },
-        },
-        400
-      );
+      return apiError(c, { code: 'INVALID_INPUT', message: 'entries array is required' }, 400);
     }
 
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
@@ -308,30 +164,12 @@ app.post('/import', async (c) => {
 
     getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         imported,
         message: `Successfully imported ${imported} entries`,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response, 201);
+      }, 201);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'IMPORT_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to import',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'IMPORT_ERROR', message: error instanceof Error ? error.message : 'Failed to import' }, 500);
   }
 });
 
@@ -343,31 +181,13 @@ app.get('/export', async (c) => {
     const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
     const data = await store.exportData();
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         entries: data,
         count: data.length,
         exportedAt: new Date().toISOString(),
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'EXPORT_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to export',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'EXPORT_ERROR', message: error instanceof Error ? error.message : 'Failed to export' }, 500);
   }
 });
 
@@ -430,30 +250,12 @@ app.post('/quick', async (c) => {
     // Get updated profile
     const profile = await store.getProfile();
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
+    return apiResponse(c, {
         updated: count,
         profile,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+      });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'QUICK_SETUP_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to setup profile',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'QUICK_SETUP_ERROR', message: error instanceof Error ? error.message : 'Failed to setup profile' }, 500);
   }
 });
 
@@ -534,16 +336,7 @@ app.get('/categories', (c) => {
     },
   };
 
-  const response: ApiResponse = {
-    success: true,
-    data: categories,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, categories);
 });
 
 export const profileRoutes = app;
