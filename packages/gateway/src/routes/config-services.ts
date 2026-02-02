@@ -185,7 +185,7 @@ configServicesRoutes.post('/', async (c) => {
 
   const service = await configServicesRepo.create(body);
 
-  return apiResponse(c, sanitizeService(service));
+  return apiResponse(c, sanitizeService(service), 201);
 });
 
 /**
@@ -252,7 +252,7 @@ configServicesRoutes.post('/:name/entries', async (c) => {
   const body = await c.req.json<CreateConfigEntryInput>();
   const entry = await configServicesRepo.createEntry(name, body);
 
-  return apiResponse(c, sanitizeEntry(entry, service.configSchema));
+  return apiResponse(c, sanitizeEntry(entry, service.configSchema), 201);
 });
 
 /**
