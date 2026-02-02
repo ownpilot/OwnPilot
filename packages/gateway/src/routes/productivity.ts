@@ -22,7 +22,7 @@ import {
   type ProcessCaptureInput,
   type CaptureType,
 } from '../db/repositories/captures.js';
-import { apiResponse, apiError, getUserId } from './helpers.js'
+import { apiResponse, apiError, getUserId, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 export const productivityRoutes = new Hono();
@@ -114,7 +114,7 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
 pomodoroRoutes.get('/sessions', async (c) => {
   const userId = getUserId(c);
   const type = c.req.query('type') as SessionType | undefined;
-  const limit = parseInt(c.req.query('limit') ?? '20', 10);
+  const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   const repo = getPomodoroRepo(userId);
   const sessions = await repo.listSessions({ type, limit });
@@ -332,7 +332,7 @@ habitsRoutes.get('/:id/logs', async (c) => {
   const id = c.req.param('id');
   const startDate = c.req.query('startDate');
   const endDate = c.req.query('endDate');
-  const limit = parseInt(c.req.query('limit') ?? '30', 10);
+  const limit = getIntParam(c, 'limit', 30, 1, 100);
 
   const repo = getHabitsRepo(userId);
   const logs = await repo.getLogs(id, { startDate: startDate ?? undefined, endDate: endDate ?? undefined, limit });
@@ -358,8 +358,8 @@ capturesRoutes.get('/', async (c) => {
   const type = c.req.query('type') as CaptureType | undefined;
   const tag = c.req.query('tag');
   const processed = c.req.query('processed');
-  const limit = parseInt(c.req.query('limit') ?? '20', 10);
-  const offset = parseInt(c.req.query('offset') ?? '0', 10);
+  const limit = getIntParam(c, 'limit', 20, 1, 100);
+  const offset = getIntParam(c, 'offset', 0, 0);
 
   const repo = getCapturesRepo(userId);
   const captures = await repo.list({
@@ -400,7 +400,7 @@ capturesRoutes.post('/', async (c) => {
  */
 capturesRoutes.get('/inbox', async (c) => {
   const userId = getUserId(c);
-  const limit = parseInt(c.req.query('limit') ?? '10', 10);
+  const limit = getIntParam(c, 'limit', 10, 1, 50);
 
   const repo = getCapturesRepo(userId);
   const captures = await repo.getInbox(limit);
