@@ -8,7 +8,7 @@
 import { Hono } from 'hono';
 import { getChannelService } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
-import { apiResponse } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js';
 
 export const channelRoutes = new Hono();
 
@@ -75,7 +75,7 @@ channelRoutes.post('/messages/:messageId/read', (c) => {
       return apiResponse(c, { messageId, read: true });
     }
   }
-  return c.json({ success: false, error: { code: 'NOT_FOUND', message: `Message ${messageId} not found` } }, 404);
+  return apiError(c, { code: 'NOT_FOUND', message: `Message ${messageId} not found` }, 404);
 });
 
 /**

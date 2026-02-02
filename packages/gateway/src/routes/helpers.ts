@@ -38,3 +38,26 @@ export function apiResponse<T>(c: Context, data: T, status?: ContentfulStatusCod
   };
   return status ? c.json(response, status) : c.json(response);
 }
+
+/**
+ * Build and return an error API response with standard meta envelope.
+ *
+ * Replaces inconsistent error patterns with a standardized format:
+ *   return c.json({ success: false, error: { code, message } }, status);
+ */
+export function apiError(
+  c: Context,
+  error: string | { code: string; message: string },
+  status: ContentfulStatusCode = 400
+) {
+  const errorObj = typeof error === 'string' ? { code: 'ERROR', message: error } : error;
+  const response = {
+    success: false,
+    error: errorObj,
+    meta: {
+      requestId: c.get('requestId') ?? 'unknown',
+      timestamp: new Date().toISOString(),
+    },
+  };
+  return c.json(response, status);
+}
