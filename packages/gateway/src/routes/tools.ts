@@ -18,7 +18,8 @@ import {
   getDefaultPluginRegistry,
   type ToolDefinition,
 } from '@ownpilot/core';
-import type { ApiResponse, ToolInfo } from '../types/index.js';
+import type { ToolInfo } from '../types/index.js';
+import { apiResponse } from './helpers.js';
 import { getAgent } from './agents.js';
 import { initializeToolOverrides } from '../services/tool-overrides.js';
 import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-center-impl.js';
@@ -171,16 +172,7 @@ toolsRoutes.get('/meta/categories', async (c) => {
     categories[tool.category]!.count++;
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: categories,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, categories);
 });
 
 /**
@@ -208,20 +200,11 @@ toolsRoutes.get('/meta/grouped', async (c) => {
     });
   }
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      categories: byCategory,
-      totalTools: tools.length,
-      totalCategories: Object.keys(byCategory).length,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    categories: byCategory,
+    totalTools: tools.length,
+    totalCategories: Object.keys(byCategory).length,
+  });
 });
 
 /**
@@ -276,31 +259,13 @@ toolsRoutes.get('/', async (c) => {
       byCategory[category]!.tools.push(tool);
     }
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        categories: byCategory,
-        totalTools: tools.length,
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    return c.json(response);
+    return apiResponse(c, {
+      categories: byCategory,
+      totalTools: tools.length,
+    });
   }
 
-  const response: ApiResponse<typeof tools> = {
-    success: true,
-    data: tools,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, tools);
 });
 
 /**
@@ -330,16 +295,7 @@ toolsRoutes.get('/:name/source', async (c) => {
     throw new HTTPException(404, { message: `Tool not found: ${name}` });
   }
 
-  const response: ApiResponse<{ name: string; source: string }> = {
-    success: true,
-    data: { name, source },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, { name, source });
 });
 
 /**
@@ -371,21 +327,12 @@ toolsRoutes.get('/:name', async (c) => {
     });
   }
 
-  const response: ApiResponse<ToolInfo> = {
-    success: true,
-    data: {
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.parameters,
-      category: tool.category,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.parameters,
+    category: tool.category,
+  });
 });
 
 /**
@@ -399,21 +346,12 @@ toolsRoutes.post('/:name/execute', async (c) => {
   const result = await resolveAndExecuteTool(name, body.arguments ?? {}, 'direct-execution');
   const duration = Date.now() - startTime;
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      tool: name,
-      result: result.content,
-      isError: result.isError,
-      duration,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    tool: name,
+    result: result.content,
+    isError: result.isError,
+    duration,
+  });
 });
 
 /**
@@ -530,21 +468,12 @@ toolsRoutes.post('/batch', async (c) => {
 
   const totalDuration = Date.now() - startTime;
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      results,
-      totalDuration,
-      successCount: results.filter((r) => r.success).length,
-      failureCount: results.filter((r) => !r.success).length,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    results,
+    totalDuration,
+    successCount: results.filter((r) => r.success).length,
+    failureCount: results.filter((r) => !r.success).length,
+  });
 });
 
 /**
