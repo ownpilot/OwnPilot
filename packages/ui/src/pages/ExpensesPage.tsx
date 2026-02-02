@@ -12,63 +12,12 @@ import {
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { expensesApi } from '../api';
+import type {
+  ExpenseEntry,
+  ExpenseMonthlyResponse as MonthlyResponse,
+  ExpenseSummaryResponse as SummaryResponse,
+} from '../api';
 
-interface ExpenseEntry {
-  id: string;
-  date: string;
-  amount: number;
-  currency: string;
-  category: string;
-  description: string;
-  paymentMethod?: string;
-  tags?: string[];
-  source: string;
-  notes?: string;
-}
-
-interface CategoryInfo {
-  budget?: number;
-  color?: string;
-}
-
-interface MonthData {
-  month: string;
-  monthNum: string;
-  total: number;
-  count: number;
-  byCategory: Record<string, number>;
-}
-
-interface MonthlyResponse {
-  year: number;
-  months: MonthData[];
-  yearTotal: number;
-  expenseCount: number;
-  categories: Record<string, CategoryInfo>;
-}
-
-interface SummaryResponse {
-  period: {
-    name: string;
-    startDate: string;
-    endDate: string;
-  };
-  summary: {
-    totalExpenses: number;
-    grandTotal: number;
-    dailyAverage: number;
-    totalByCurrency: Record<string, number>;
-    totalByCategory: Record<string, number>;
-    topCategories: Array<{
-      category: string;
-      amount: number;
-      percentage: number;
-      color: string;
-    }>;
-    biggestExpenses: ExpenseEntry[];
-  };
-  categories: Record<string, CategoryInfo>;
-}
 
 const CATEGORY_LABELS: Record<string, string> = {
   food: 'Food',
@@ -109,14 +58,14 @@ export function ExpensesPage() {
     try {
       // Fetch monthly data
       const monthlyJson = await expensesApi.monthly(year);
-      setMonthlyData(monthlyJson as unknown as MonthlyResponse);
+      setMonthlyData(monthlyJson);
 
       // Fetch summary for current period
       const summaryParams: Record<string, string> = selectedMonth
         ? { startDate: `${year}-${selectedMonth}-01`, endDate: `${year}-${selectedMonth}-31` }
         : { period: 'this_year' };
       const summaryJson = await expensesApi.summary(summaryParams);
-      setSummaryData(summaryJson as unknown as SummaryResponse);
+      setSummaryData(summaryJson);
 
       // Fetch expense list
       const listParams: Record<string, string> = selectedMonth

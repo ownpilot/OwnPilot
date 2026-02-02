@@ -2,35 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Database, Plus, Trash2, Search, Table, ChevronRight, Edit3, Lock } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { customDataApi } from '../api';
-
-interface ColumnDefinition {
-  name: string;
-  type: 'text' | 'number' | 'boolean' | 'date' | 'datetime' | 'json';
-  required?: boolean;
-  description?: string;
-}
-
-interface CustomTable {
-  id: string;
-  name: string;
-  displayName: string;
-  description?: string;
-  columns: ColumnDefinition[];
-  recordCount?: number;
-  ownerPluginId?: string;
-  isProtected?: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface CustomRecord {
-  id: string;
-  tableId: string;
-  data: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-}
-
+import type { ColumnDefinition, CustomTable, CustomRecord } from '../api';
 
 
 export function CustomDataPage() {
@@ -49,7 +21,7 @@ export function CustomDataPage() {
   const fetchTables = useCallback(async () => {
     try {
       const data = await customDataApi.tables();
-      setTables(data as unknown as CustomTable[]);
+      setTables(data);
     } catch {
       // API client handles error reporting
     } finally {
@@ -62,12 +34,12 @@ export function CustomDataPage() {
     try {
       if (search) {
         const data = await customDataApi.search(tableId, search);
-        const results = data as unknown as CustomRecord[];
+        const results = data;
         setRecords(results);
         setTotalRecords(results.length);
       } else {
         const data = await customDataApi.records(tableId, 100);
-        const result = data as unknown as { records: CustomRecord[]; total: number };
+        const result = data;
         setRecords(result.records);
         setTotalRecords(result.total);
       }

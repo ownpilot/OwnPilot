@@ -11,19 +11,8 @@ import {
   Settings,
 } from './icons';
 import { providersApi, dashboardApi } from '../api';
+import type { AIBriefing } from '../api';
 import type { ProviderInfo } from '../types';
-
-interface AIBriefing {
-  id: string;
-  summary: string;
-  priorities: string[];
-  insights: string[];
-  suggestedFocusAreas: string[];
-  generatedAt: string;
-  expiresAt: string;
-  modelUsed: string;
-  cached: boolean;
-}
 
 interface ProviderModel {
   provider: string;
@@ -218,7 +207,7 @@ export function AIBriefingCard() {
         });
 
         if (data.aiBriefing) {
-          setBriefing(data.aiBriefing as unknown as AIBriefing);
+          setBriefing(data.aiBriefing ?? null);
         } else if (data.error) {
           setError(data.error);
         }

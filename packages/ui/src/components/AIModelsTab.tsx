@@ -25,79 +25,7 @@ import {
   X,
 } from './icons';
 import { apiClient, modelConfigsApi, localProvidersApi } from '../api';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-type ModelCapability =
-  | 'chat'
-  | 'code'
-  | 'vision'
-  | 'function_calling'
-  | 'json_mode'
-  | 'streaming'
-  | 'embeddings'
-  | 'image_generation'
-  | 'audio'
-  | 'reasoning';
-
-interface MergedModel {
-  providerId: string;
-  providerName: string;
-  modelId: string;
-  displayName: string;
-  capabilities: ModelCapability[];
-  pricingInput?: number;
-  pricingOutput?: number;
-  pricingPerRequest?: number;
-  contextWindow?: number;
-  maxOutput?: number;
-  isEnabled: boolean;
-  isCustom: boolean;
-  hasOverride: boolean;
-  isConfigured: boolean; // API key is set for this provider
-  source: 'builtin' | 'aggregator' | 'custom' | 'local';
-}
-
-interface AvailableProvider {
-  id: string;
-  name: string;
-  type: 'builtin' | 'aggregator';
-  description?: string;
-  apiBase?: string;
-  apiKeyEnv: string;
-  docsUrl?: string;
-  modelCount: number;
-  isEnabled: boolean;
-  isConfigured: boolean; // API key is set
-}
-
-interface LocalProvider {
-  id: string;
-  name: string;
-  providerType: string;
-  baseUrl: string;
-  isEnabled: boolean;
-  isDefault: boolean;
-  modelCount: number;
-  lastDiscoveredAt?: string;
-}
-
-interface LocalProviderTemplate {
-  id: string;
-  name: string;
-  providerType: string;
-  baseUrl: string;
-  discoveryEndpoint: string;
-  description: string;
-}
-
-interface CapabilityDef {
-  id: ModelCapability;
-  name: string;
-  description: string;
-}
+import type { ModelCapability, MergedModel, AvailableProvider, CapabilityDef, LocalProvider, LocalProviderTemplate } from '../api';
 
 // ============================================================================
 // Constants
@@ -331,11 +259,11 @@ export function AIModelsTab() {
         localProvidersApi.templates(),
       ]);
 
-      setModels(modelsData as unknown as MergedModel[]);
-      setAvailableProviders(providersData as unknown as AvailableProvider[]);
-      setCapabilities(capsData as unknown as CapabilityDef[]);
-      setLocalProviders(localData as unknown as LocalProvider[]);
-      setLocalTemplates(templatesData as unknown as LocalProviderTemplate[]);
+      setModels(modelsData);
+      setAvailableProviders(providersData);
+      setCapabilities(capsData);
+      setLocalProviders(localData);
+      setLocalTemplates(templatesData);
     } catch {
       setError('Failed to load model configurations');
     } finally {

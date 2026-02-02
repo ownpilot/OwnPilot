@@ -1,57 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { costsApi } from '../api';
+import type { CostSummary, BudgetStatus, ProviderBreakdown, DailyUsage } from '../api';
 
-interface CostSummary {
-  totalRequests: number;
-  successfulRequests: number;
-  failedRequests: number;
-  totalInputTokens: number;
-  totalOutputTokens: number;
-  totalCost: number;
-  totalCostFormatted: string;
-  averageLatencyMs: number;
-  periodStart: string;
-  periodEnd: string;
-}
 
-interface BudgetPeriod {
-  spent: number;
-  limit?: number;
-  percentage: number;
-  remaining?: number;
-}
 
-interface BudgetStatus {
-  daily: BudgetPeriod;
-  weekly: BudgetPeriod;
-  monthly: BudgetPeriod;
-  alerts: Array<{
-    type: string;
-    threshold: number;
-    currentSpend: number;
-    limit: number;
-    timestamp: string;
-  }>;
-}
 
-interface ProviderBreakdown {
-  provider: string;
-  requests: number;
-  inputTokens: number;
-  outputTokens: number;
-  cost: number;
-  costFormatted: string;
-  percentOfTotal: number;
-}
 
-interface DailyUsage {
-  date: string;
-  requests: number;
-  cost: number;
-  costFormatted: string;
-  inputTokens: number;
-  outputTokens: number;
-}
 
 type Period = 'day' | 'week' | 'month' | 'year';
 
@@ -80,14 +34,14 @@ export function CostsPage() {
     try {
       // Fetch summary
       const summaryData = await costsApi.getSummary(period);
-      setSummary(summaryData.summary as unknown as CostSummary);
-      setBudget(summaryData.budget as unknown as BudgetStatus);
+      setSummary(summaryData.summary);
+      setBudget(summaryData.budget);
 
       // Fetch breakdown
       const breakdownData = await costsApi.getBreakdown(period);
       setBreakdown({
-        byProvider: breakdownData.byProvider as unknown as ProviderBreakdown[],
-        daily: breakdownData.daily as unknown as DailyUsage[],
+        byProvider: breakdownData.byProvider,
+        daily: breakdownData.daily,
       });
     } catch {
       setError('Failed to fetch cost data');
@@ -109,7 +63,7 @@ export function CostsPage() {
       if (monthlyLimit) body.monthlyLimit = parseFloat(monthlyLimit);
 
       const data = await costsApi.setBudget(body);
-      setBudget(data.status as unknown as BudgetStatus);
+      setBudget(data.status);
     } catch {
       setError('Failed to save budget');
     } finally {

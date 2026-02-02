@@ -8,37 +8,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Inbox, Telegram, Discord, Slack, Globe, RefreshCw, Send, Check, X, Plus, Loader, ChevronRight, AlertCircle, Zap } from '../components/icons';
 import { channelsApi } from '../api';
+import type { Channel, ChannelMessage } from '../api';
 
-// Message type from channels API
-interface ChannelMessage {
-  id: string;
-  channelId: string;
-  channelType: 'telegram' | 'discord' | 'slack' | 'matrix' | 'webchat' | 'whatsapp' | 'signal';
-  sender: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-  content: string;
-  timestamp: string;
-  read: boolean;
-  replied: boolean;
-  metadata?: Record<string, unknown>;
-}
-
-// Channel info from API
-interface Channel {
-  id: string;
-  type: string;
-  name: string;
-  status: 'connected' | 'disconnected' | 'connecting' | 'error';
-  botInfo?: {
-    username: string;
-    firstName: string;
-  };
-}
-
-// API response types removed — typed API client handles envelope unwrapping
 
 // Channel type config
 interface ChannelTypeInfo {
@@ -576,7 +547,7 @@ export function InboxPage() {
   const fetchChannels = useCallback(async () => {
     try {
       const data = await channelsApi.list();
-      setChannels(data.channels as unknown as Channel[]);
+      setChannels(data.channels);
     } catch {
       setError('Failed to load channels');
     }
@@ -589,7 +560,7 @@ export function InboxPage() {
         limit: 100,
         ...(channelType && { channelType }),
       });
-      setMessages(data.messages as unknown as ChannelMessage[]);
+      setMessages(data.messages);
       setUnreadCount(data.unreadCount);
     } catch {
       setError('Failed to load messages');

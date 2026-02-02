@@ -6,12 +6,43 @@
 
 import { apiClient } from '../client';
 import type { RequestOptions, StreamOptions } from '../client';
+import type {
+  PendingApproval,
+  SandboxStatus,
+  DatabaseStatus,
+  BackupInfo,
+  DatabaseStats,
+  DebugInfo,
+  LogDetail,
+  PluginInfo,
+  PluginStats,
+  ConfigServiceView,
+  ConfigServiceStats,
+  WorkspaceSelectorInfo,
+  CustomTable,
+  CustomRecord,
+  Channel,
+  ChannelMessage,
+  AIBriefing,
+  DailyBriefingData,
+  CapabilitySettings,
+  MergedModel,
+  AvailableProvider,
+  CapabilityDef,
+  LocalProvider,
+  LocalProviderTemplate,
+  FileWorkspaceInfo,
+  WorkspaceFile,
+  ExpenseMonthlyResponse,
+  ExpenseSummaryResponse,
+  ColumnDefinition,
+} from '../types';
 
 // ---- Autonomy ----
 
 export const autonomyApi = {
   getConfig: () => apiClient.get<Record<string, unknown>>('/autonomy/config'),
-  getApprovals: () => apiClient.get<Array<Record<string, unknown>>>('/autonomy/approvals'),
+  getApprovals: () => apiClient.get<PendingApproval[]>('/autonomy/approvals'),
   setLevel: (level: string) => apiClient.post<void>('/autonomy/level', { level }),
   updateBudget: (budget: Record<string, unknown>) =>
     apiClient.patch<void>('/autonomy/budget', budget),
@@ -32,14 +63,12 @@ export const systemApi = {
       version: string;
       uptime: number;
       checks: Array<Record<string, unknown>>;
-      sandbox?: Record<string, unknown>;
-      database?: Record<string, unknown>;
+      sandbox?: SandboxStatus;
+      database?: DatabaseStatus;
     }>('/health'),
   databaseStatus: () =>
-    apiClient.get<{ backups: Array<Record<string, unknown>>; [key: string]: unknown }>(
-      '/database/status',
-    ),
-  databaseStats: () => apiClient.get<Record<string, unknown>>('/database/stats'),
+    apiClient.get<{ backups: BackupInfo[] }>('/database/status'),
+  databaseStats: () => apiClient.get<DatabaseStats>('/database/stats'),
   databaseOperation: (endpoint: string, body?: Record<string, unknown>) =>
     apiClient.post<Record<string, unknown>>(`/database/${endpoint}`, body),
   databaseOperationStatus: () =>
@@ -54,12 +83,12 @@ export const systemApi = {
 
 export const debugApi = {
   get: (count?: number) =>
-    apiClient.get<{ enabled: boolean; entries: Array<Record<string, unknown>>; summary: Record<string, number> }>(
+    apiClient.get<DebugInfo>(
       '/debug',
       { params: count ? { count: String(count) } : undefined },
     ),
   clear: () => apiClient.delete<void>('/debug'),
-  getLogs: (id: string) => apiClient.get<Record<string, unknown>>(`/chat/logs/${id}`),
+  getLogs: (id: string) => apiClient.get<LogDetail>(`/chat/logs/${id}`),
   deleteLogs: (params: { olderThanDays?: number; all?: boolean }) => {
     const p: Record<string, string> = {};
     if (params.olderThanDays !== undefined) p.olderThanDays = String(params.olderThanDays);
@@ -71,44 +100,45 @@ export const debugApi = {
 // ---- Plugins ----
 
 export const pluginsApi = {
-  list: () => apiClient.get<{ plugins: Array<Record<string, unknown>> }>('/plugins'),
-  stats: () => apiClient.get<Record<string, unknown>>('/plugins/stats'),
+  list: () => apiClient.get<{ plugins: PluginInfo[] }>('/plugins'),
+  stats: () => apiClient.get<PluginStats>('/plugins/stats'),
 };
 
 // ---- Workspaces ----
 
 export const workspacesApi = {
   list: () =>
-    apiClient.get<{ workspaces: Array<Record<string, unknown>> }>('/workspaces'),
+    apiClient.get<{ workspaces: WorkspaceSelectorInfo[] }>('/workspaces'),
   create: (name: string) =>
-    apiClient.post<Record<string, unknown>>('/workspaces', { name }),
+    apiClient.post<WorkspaceSelectorInfo>('/workspaces', { name }),
   delete: (id: string) => apiClient.delete<void>(`/workspaces/${id}`),
 };
 
 // ---- Custom Data ----
 
 export const customDataApi = {
-  tables: () => apiClient.get<Array<Record<string, unknown>>>('/custom-data/tables'),
+  tables: () => apiClient.get<CustomTable[]>('/custom-data/tables'),
   search: (tableId: string, query: string) =>
-    apiClient.get<Array<Record<string, unknown>>>(`/custom-data/tables/${tableId}/search`, {
+    apiClient.get<CustomRecord[]>(`/custom-data/tables/${tableId}/search`, {
       params: { q: query },
     }),
   records: (tableId: string, limit?: number) =>
-    apiClient.get<Array<Record<string, unknown>>>(`/custom-data/tables/${tableId}/records`, {
-      params: limit ? { limit: String(limit) } : undefined,
-    }),
+    apiClient.get<{ records: CustomRecord[]; total: number }>(
+      `/custom-data/tables/${tableId}/records`,
+      { params: limit ? { limit: String(limit) } : undefined },
+    ),
   createTable: (table: {
     name: string;
     displayName: string;
     description?: string;
-    columns: Array<Record<string, unknown>>;
-  }) => apiClient.post<Record<string, unknown>>('/custom-data/tables', table),
+    columns: ColumnDefinition[];
+  }) => apiClient.post<CustomTable>('/custom-data/tables', table),
   deleteTable: (tableId: string) =>
     apiClient.delete<void>(`/custom-data/tables/${tableId}`),
   createRecord: (tableId: string, data: Record<string, unknown>) =>
-    apiClient.post<Record<string, unknown>>(`/custom-data/tables/${tableId}/records`, { data }),
+    apiClient.post<CustomRecord>(`/custom-data/tables/${tableId}/records`, { data }),
   updateRecord: (recordId: string, data: Record<string, unknown>) =>
-    apiClient.put<Record<string, unknown>>(`/custom-data/records/${recordId}`, { data }),
+    apiClient.put<CustomRecord>(`/custom-data/records/${recordId}`, { data }),
   deleteRecord: (recordId: string) =>
     apiClient.delete<void>(`/custom-data/records/${recordId}`),
 };
@@ -116,9 +146,9 @@ export const customDataApi = {
 // ---- Dashboard ----
 
 export const dashboardApi = {
-  data: () => apiClient.get<Record<string, unknown>>('/dashboard/data'),
+  data: () => apiClient.get<DailyBriefingData>('/dashboard/data'),
   briefing: (options?: RequestOptions) =>
-    apiClient.get<{ aiBriefing?: Record<string, unknown>; error?: string }>(
+    apiClient.get<{ aiBriefing?: AIBriefing; error?: string }>(
       '/dashboard/briefing',
       options,
     ),
@@ -130,7 +160,7 @@ export const dashboardApi = {
 // ---- Media Settings ----
 
 export const mediaSettingsApi = {
-  get: () => apiClient.get<Record<string, unknown>>('/media-settings'),
+  get: () => apiClient.get<CapabilitySettings[]>('/media-settings'),
   update: (capability: string, data: Record<string, unknown>) =>
     apiClient.post<Record<string, unknown>>(`/media-settings/${capability}`, data),
   reset: (capability: string) =>
@@ -140,11 +170,11 @@ export const mediaSettingsApi = {
 // ---- Model Configs ----
 
 export const modelConfigsApi = {
-  list: () => apiClient.get<Record<string, unknown>>('/model-configs'),
+  list: () => apiClient.get<MergedModel[]>('/model-configs'),
   availableProviders: () =>
-    apiClient.get<Record<string, unknown>>('/model-configs/providers/available'),
+    apiClient.get<AvailableProvider[]>('/model-configs/providers/available'),
   capabilities: () =>
-    apiClient.get<Record<string, unknown>>('/model-configs/capabilities/list'),
+    apiClient.get<CapabilityDef[]>('/model-configs/capabilities/list'),
   syncApply: () => apiClient.post<Record<string, unknown>>('/model-configs/sync/apply'),
   syncReset: () => apiClient.post<Record<string, unknown>>('/model-configs/sync/reset'),
 };
@@ -152,22 +182,24 @@ export const modelConfigsApi = {
 // ---- Local Providers ----
 
 export const localProvidersApi = {
-  list: () => apiClient.get<Array<Record<string, unknown>>>('/local-providers'),
-  templates: () => apiClient.get<Array<Record<string, unknown>>>('/local-providers/templates'),
+  list: () => apiClient.get<LocalProvider[]>('/local-providers'),
+  templates: () => apiClient.get<LocalProviderTemplate[]>('/local-providers/templates'),
   create: (data: { providerName: string; url: string; apiKey?: string }) =>
     apiClient.post<Record<string, unknown>>('/local-providers', data),
   models: (id: string) =>
-    apiClient.get<Record<string, unknown>>(`/local-providers/${id}/models`),
+    apiClient.get<Array<{ modelId: string; displayName?: string }>>(`/local-providers/${id}/models`),
 };
 
 // ---- File Workspaces ----
 
 export const fileWorkspacesApi = {
-  list: () => apiClient.get<Array<Record<string, unknown>>>('/file-workspaces'),
+  list: () =>
+    apiClient.get<{ workspaces: FileWorkspaceInfo[]; count: number }>('/file-workspaces'),
   files: (id: string, path?: string) =>
-    apiClient.get<Record<string, unknown>>(`/file-workspaces/${id}/files`, {
-      params: path ? { path } : undefined,
-    }),
+    apiClient.get<{ path: string; files: WorkspaceFile[]; count: number }>(
+      `/file-workspaces/${id}/files`,
+      { params: path ? { path } : undefined },
+    ),
   /** Returns URL for browser download (not an API call) */
   downloadUrl: (id: string) => `/api/v1/file-workspaces/${id}/download`,
   delete: (id: string) => apiClient.delete<void>(`/file-workspaces/${id}`),
@@ -179,8 +211,8 @@ export const fileWorkspacesApi = {
 
 export const configServicesApi = {
   list: () =>
-    apiClient.get<{ services: Array<Record<string, unknown>>; count: number }>('/config-services'),
-  stats: () => apiClient.get<Record<string, unknown>>('/config-services/stats'),
+    apiClient.get<{ services: ConfigServiceView[]; count: number }>('/config-services'),
+  stats: () => apiClient.get<ConfigServiceStats>('/config-services/stats'),
   categories: () =>
     apiClient.get<{ categories: string[] }>('/config-services/categories'),
   createEntry: (serviceName: string, body: Record<string, unknown>) =>
@@ -201,7 +233,7 @@ export const configServicesApi = {
 export const channelsApi = {
   list: () =>
     apiClient.get<{
-      channels: Array<Record<string, unknown>>;
+      channels: Channel[];
       summary: { total: number; connected: number; disconnected: number };
       availableTypes: string[];
     }>('/channels'),
@@ -211,7 +243,7 @@ export const channelsApi = {
     apiClient.post<Record<string, unknown>>(`/channels/${channelId}/send`, body),
   inbox: (params?: { limit?: number; channelType?: string }) =>
     apiClient.get<{
-      messages: Array<Record<string, unknown>>;
+      messages: ChannelMessage[];
       total: number;
       unreadCount: number;
     }>('/channels/messages/inbox', { params: params as Record<string, string> }),
@@ -223,9 +255,9 @@ export const channelsApi = {
 
 export const expensesApi = {
   monthly: (year: number) =>
-    apiClient.get<Record<string, unknown>>(`/expenses/monthly`, { params: { year } }),
+    apiClient.get<ExpenseMonthlyResponse>(`/expenses/monthly`, { params: { year } }),
   summary: (params: Record<string, string>) =>
-    apiClient.get<Record<string, unknown>>(`/expenses/summary`, { params }),
+    apiClient.get<ExpenseSummaryResponse>(`/expenses/summary`, { params }),
   list: (params: Record<string, string>) =>
     apiClient.get<Record<string, unknown>>(`/expenses`, { params }),
   create: (expense: {

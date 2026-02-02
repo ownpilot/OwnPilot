@@ -1,65 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDialog } from '../components/ConfirmDialog';
 import { debugApi, apiClient } from '../api';
+import type { DebugInfo, DebugLogEntry, LogDetail, RequestLog, LogStats } from '../api';
 
-interface RequestLog {
-  id: string;
-  type: 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other';
-  conversationId: string | null;
-  provider: string | null;
-  model: string | null;
-  statusCode: number | null;
-  durationMs: number | null;
-  inputTokens: number | null;
-  outputTokens: number | null;
-  error: string | null;
-  createdAt: string;
-}
 
-interface LogDetail extends RequestLog {
-  userId: string;
-  endpoint: string | null;
-  method: string;
-  requestBody: Record<string, unknown> | null;
-  responseBody: Record<string, unknown> | null;
-  totalTokens: number | null;
-  errorStack: string | null;
-  ipAddress: string | null;
-  userAgent: string | null;
-}
 
-interface LogStats {
-  totalRequests: number;
-  errorCount: number;
-  successCount: number;
-  avgDurationMs: number;
-  totalInputTokens: number;
-  totalOutputTokens: number;
-  byProvider: Record<string, number>;
-  byType: Record<string, number>;
-}
 
-// Debug log types from core
-interface DebugLogEntry {
-  timestamp: string;
-  type: 'request' | 'response' | 'tool_call' | 'tool_result' | 'error' | 'retry';
-  provider?: string;
-  model?: string;
-  data: Record<string, unknown>;
-  duration?: number;
-}
 
-interface DebugInfo {
-  enabled: boolean;
-  entries: DebugLogEntry[];
-  summary: {
-    requests: number;
-    responses: number;
-    toolCalls: number;
-    errors: number;
-    retries: number;
-  };
-}
 
 type FilterType = 'all' | 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other';
 type ErrorFilter = 'all' | 'errors' | 'success';
@@ -118,7 +65,7 @@ export function LogsPage() {
     setDebugLoading(true);
     try {
       const data = await debugApi.get(100);
-      setDebugInfo(data as unknown as DebugInfo);
+      setDebugInfo(data);
     } catch {
       // Ignore debug errors
     } finally {
@@ -129,7 +76,7 @@ export function LogsPage() {
   const fetchLogDetail = async (id: string) => {
     try {
       const data = await debugApi.getLogs(id);
-      setSelectedLog(data as unknown as LogDetail);
+      setSelectedLog(data);
     } catch {
       // Ignore detail errors
     }

@@ -75,7 +75,7 @@ export function ApiKeysPage() {
       const localProvs = (settingsData.localProviders ?? []) as LocalProviderInfo[];
       for (const lp of localProvs) {
         try {
-          const lpModelsData = await localProvidersApi.models(lp.id) as unknown as Array<{ modelId: string; displayName?: string }>;
+          const lpModelsData = await localProvidersApi.models(lp.id);
           if (Array.isArray(lpModelsData)) {
             for (const lm of lpModelsData) {
               allModels.push({
