@@ -8,7 +8,8 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { getCustomDataService, CustomDataServiceError } from '../services/custom-data-service.js';
 
@@ -62,7 +63,7 @@ customDataRoutes.post('/tables', async (c) => {
     return apiResponse(c, table);
   } catch (err) {
     if (err instanceof CustomDataServiceError && err.code === 'VALIDATION_ERROR') {
-      return apiError(c, { code: 'INVALID_REQUEST', message: err.message }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: err.message }, 400);
     }
     return apiError(c, { code: 'CREATE_FAILED', message: err instanceof Error ? err.message : 'Failed to create table' }, 400);
   }
@@ -77,7 +78,7 @@ customDataRoutes.get('/tables/:table', async (c) => {
 
   const table = await service.getTable(tableId);
   if (!table) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Table not found: ${tableId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${tableId}` }, 404);
   }
 
   const stats = await service.getTableStats(tableId);
@@ -103,7 +104,7 @@ customDataRoutes.put('/tables/:table', async (c) => {
   const updated = await service.updateTable(tableId, body);
 
   if (!updated) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Table not found: ${tableId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${tableId}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -121,7 +122,7 @@ customDataRoutes.delete('/tables/:table', async (c) => {
     const deleted = await service.deleteTable(tableId);
 
     if (!deleted) {
-      return apiError(c, { code: 'NOT_FOUND', message: `Table not found: ${tableId}` }, 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${tableId}` }, 404);
     }
 
     return apiResponse(c, { deleted: true });
@@ -183,7 +184,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
       {
         success: false,
         error: {
-          code: 'INVALID_REQUEST',
+          code: ERROR_CODES.INVALID_REQUEST,
           message: 'data is required',
         },
       },
@@ -214,7 +215,7 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
       {
         success: false,
         error: {
-          code: 'INVALID_REQUEST',
+          code: ERROR_CODES.INVALID_REQUEST,
           message: 'Search query (q) is required',
         },
       },
@@ -241,7 +242,7 @@ customDataRoutes.get('/records/:id', async (c) => {
 
   const record = await service.getRecord(recordId);
   if (!record) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Record not found: ${recordId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${recordId}` }, 404);
   }
 
   return apiResponse(c, record);
@@ -259,7 +260,7 @@ customDataRoutes.put('/records/:id', async (c) => {
       {
         success: false,
         error: {
-          code: 'INVALID_REQUEST',
+          code: ERROR_CODES.INVALID_REQUEST,
           message: 'data is required',
         },
       },
@@ -272,7 +273,7 @@ customDataRoutes.put('/records/:id', async (c) => {
     const updated = await service.updateRecord(recordId, body.data);
 
     if (!updated) {
-      return apiError(c, { code: 'NOT_FOUND', message: `Record not found: ${recordId}` }, 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${recordId}` }, 404);
     }
 
     return apiResponse(c, updated);
@@ -290,7 +291,7 @@ customDataRoutes.delete('/records/:id', async (c) => {
 
   const deleted = await service.deleteRecord(recordId);
   if (!deleted) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Record not found: ${recordId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${recordId}` }, 404);
   }
 
   return apiResponse(c, { deleted: true });

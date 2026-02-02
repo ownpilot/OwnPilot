@@ -10,7 +10,7 @@ import type {
   ChatResponse,
   StreamChunkResponse,
 } from '../types/index.js';
-import { apiResponse } from './helpers.js';
+import { apiResponse, getUserId, ERROR_CODES } from './helpers.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
@@ -43,7 +43,6 @@ import { getOrCreateSessionWorkspace, getSessionWorkspace } from '../workspace/f
 import { parseLimit, parseOffset } from '../utils/index.js';
 import { getCustomDataService } from '../services/custom-data-service.js';
 import { getLog } from '../services/log.js';
-import { getUserId } from './helpers.js';
 
 const log = getLog('Chat');
 

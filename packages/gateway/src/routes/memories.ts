@@ -13,7 +13,8 @@ import type {
   CreateMemoryInput,
 } from '../db/repositories/memories.js';
 import { getMemoryService, MemoryServiceError } from '../services/memory-service.js';
-import { getUserId, apiResponse } from './helpers.js';
+import { getUserId, apiResponse } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 export const memoriesRoutes = new Hono();
 
@@ -78,7 +79,7 @@ memoriesRoutes.post('/', async (c) => {
         {
           success: false,
           error: {
-            code: 'INVALID_REQUEST',
+            code: ERROR_CODES.INVALID_REQUEST,
             message: err.message,
           },
         },
@@ -103,7 +104,7 @@ memoriesRoutes.get('/search', async (c) => {
       {
         success: false,
         error: {
-          code: 'INVALID_REQUEST',
+          code: ERROR_CODES.INVALID_REQUEST,
           message: 'query (q) parameter is required',
         },
       },
@@ -147,7 +148,7 @@ memoriesRoutes.get('/:id', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Memory not found: ${id}`,
         },
       },
@@ -178,7 +179,7 @@ memoriesRoutes.patch('/:id', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Memory not found: ${id}`,
         },
       },
@@ -206,7 +207,7 @@ memoriesRoutes.post('/:id/boost', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Memory not found: ${id}`,
         },
       },
@@ -235,7 +236,7 @@ memoriesRoutes.delete('/:id', async (c) => {
       {
         success: false,
         error: {
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: `Memory not found: ${id}`,
         },
       },

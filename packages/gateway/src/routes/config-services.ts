@@ -11,7 +11,8 @@ import { HTTPException } from 'hono/http-exception';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import type { CreateConfigServiceInput, UpdateConfigServiceInput, CreateConfigEntryInput, UpdateConfigEntryInput } from '../db/repositories/config-services.js';
 import type { ConfigServiceDefinition, ConfigEntry, ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse } from './helpers.js';
+import { apiResponse } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 export const configServicesRoutes = new Hono();
 

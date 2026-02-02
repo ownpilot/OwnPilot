@@ -10,7 +10,8 @@ import { createReadStream, existsSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 import type { ApiResponse } from '../types/index.js';
-import { apiError } from './helpers.js';
+import { apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 import {
   listSessionWorkspaces,
   getSessionWorkspace,
@@ -92,7 +93,7 @@ app.get('/:id', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const response: ApiResponse = {
@@ -120,7 +121,7 @@ app.delete('/:id', async (c) => {
     const deleted = deleteSessionWorkspace(workspaceId);
 
     if (!deleted) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const response: ApiResponse = {
@@ -149,7 +150,7 @@ app.get('/:id/files', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const files = getSessionWorkspaceFiles(workspaceId, path);
@@ -185,7 +186,7 @@ app.get('/:id/file/*', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const content = readSessionWorkspaceFile(workspaceId, filePath);
@@ -227,7 +228,7 @@ app.get('/:id/file/*', async (c) => {
         {
           success: false,
           error: {
-            code: 'ACCESS_DENIED',
+            code: ERROR_CODES.ACCESS_DENIED,
             message: error.message,
           },
         },
@@ -249,14 +250,14 @@ app.put('/:id/file/*', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const body = await c.req.json();
     const { content } = body;
 
     if (content === undefined) {
-      return apiError(c, { code: 'INVALID_INPUT', message: 'Content is required' }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Content is required' }, 400);
     }
 
     writeSessionWorkspaceFile(workspaceId, filePath, content);
@@ -280,7 +281,7 @@ app.put('/:id/file/*', async (c) => {
         {
           success: false,
           error: {
-            code: 'ACCESS_DENIED',
+            code: ERROR_CODES.ACCESS_DENIED,
             message: error.message,
           },
         },
@@ -302,7 +303,7 @@ app.delete('/:id/file/*', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     const deleted = deleteSessionWorkspaceFile(workspaceId, filePath);
@@ -330,7 +331,7 @@ app.delete('/:id/file/*', async (c) => {
         {
           success: false,
           error: {
-            code: 'ACCESS_DENIED',
+            code: ERROR_CODES.ACCESS_DENIED,
             message: error.message,
           },
         },
@@ -351,7 +352,7 @@ app.get('/:id/download', async (c) => {
     const workspace = getSessionWorkspace(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' }, 404);
+      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
     // Create zip file

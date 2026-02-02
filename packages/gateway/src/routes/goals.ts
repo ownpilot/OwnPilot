@@ -16,7 +16,8 @@ import type {
   CreateStepInput,
 } from '../db/repositories/goals.js';
 import { getGoalService, GoalServiceError } from '../services/goal-service.js';
-import { getUserId, apiResponse, apiError } from './helpers.js';
+import { getUserId, apiResponse, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 export const goalsRoutes = new Hono();
 
@@ -64,7 +65,7 @@ goalsRoutes.post('/', async (c) => {
       }, 201);
   } catch (err) {
     if (err instanceof GoalServiceError && err.code === 'VALIDATION_ERROR') {
-      return apiError(c, { code: 'INVALID_REQUEST', message: err.message }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: err.message }, 400);
     }
     throw err;
   }
@@ -124,7 +125,7 @@ goalsRoutes.get('/:id', async (c) => {
   const goalWithSteps = await service.getGoalWithSteps(userId, id);
 
   if (!goalWithSteps) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Goal not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${id}` }, 404);
   }
 
   return apiResponse(c, goalWithSteps);
@@ -142,7 +143,7 @@ goalsRoutes.patch('/:id', async (c) => {
   const updated = await service.updateGoal(userId, id, body);
 
   if (!updated) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Goal not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${id}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -159,7 +160,7 @@ goalsRoutes.delete('/:id', async (c) => {
   const deleted = await service.deleteGoal(userId, id);
 
   if (!deleted) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Goal not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -246,7 +247,7 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
   const updated = await service.updateStep(userId, stepId, body);
 
   if (!updated) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Step not found: ${stepId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${stepId}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -265,7 +266,7 @@ goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
   const updated = await service.completeStep(userId, stepId, body.result);
 
   if (!updated) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Step not found: ${stepId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${stepId}` }, 404);
   }
 
   return apiResponse(c, {
@@ -286,7 +287,7 @@ goalsRoutes.delete('/:goalId/steps/:stepId', async (c) => {
   const deleted = await service.deleteStep(userId, stepId);
 
   if (!deleted) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Step not found: ${stepId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${stepId}` }, 404);
   }
 
   return apiResponse(c, {

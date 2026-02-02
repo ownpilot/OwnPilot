@@ -9,7 +9,8 @@ import { Hono } from 'hono';
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { discoverModels } from '../services/local-discovery.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiError } from './helpers.js';
+import { getUserId, apiError } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('LocalProviders');
 

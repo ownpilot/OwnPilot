@@ -33,7 +33,8 @@ import {
   type UpdateContactInput,
   type ContactQuery,
 } from '../db/repositories/index.js';
-import { apiResponse, getUserId } from './helpers.js';
+import { apiResponse, getUserId } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 export const personalDataRoutes = new Hono();
 

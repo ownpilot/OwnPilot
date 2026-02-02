@@ -7,7 +7,8 @@
 
 import { Hono } from 'hono';
 import { loadProviderConfig, PROVIDER_IDS } from '@ownpilot/core';
-import { apiResponse, apiError, getUserId } from './helpers.js';
+import { apiResponse, apiError, getUserId } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
@@ -274,7 +275,7 @@ app.get('/:id', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return apiError(c, { code: 'PROVIDER_NOT_FOUND', message: `Provider '${id}' not found` }, 404);
+    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` }, 404);
   }
 
   // Get UI metadata
@@ -317,7 +318,7 @@ app.get('/:id/models', (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return apiError(c, { code: 'PROVIDER_NOT_FOUND', message: `Provider '${id}' not found` }, 404);
+    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` }, 404);
   }
 
   return apiResponse(c, {
@@ -337,7 +338,7 @@ app.get('/:id/config', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return apiError(c, { code: 'PROVIDER_NOT_FOUND', message: `Provider '${id}' not found` }, 404);
+    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` }, 404);
   }
 
   // Get user override
@@ -380,7 +381,7 @@ app.put('/:id/config', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return apiError(c, { code: 'PROVIDER_NOT_FOUND', message: `Provider '${id}' not found` }, 404);
+    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` }, 404);
   }
 
   try {
@@ -436,7 +437,7 @@ app.patch('/:id/toggle', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return apiError(c, { code: 'PROVIDER_NOT_FOUND', message: `Provider '${id}' not found` }, 404);
+    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` }, 404);
   }
 
   try {
@@ -444,7 +445,7 @@ app.patch('/:id/toggle', async (c) => {
     const { enabled } = body;
 
     if (typeof enabled !== 'boolean') {
-      return apiError(c, { code: 'INVALID_REQUEST', message: 'enabled must be a boolean' }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'enabled must be a boolean' }, 400);
     }
 
     await modelConfigsRepo.toggleUserProviderConfig(userId, id, enabled);

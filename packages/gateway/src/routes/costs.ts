@@ -17,7 +17,8 @@ import {
   type BudgetConfig,
 } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
-import { apiResponse } from './helpers.js';
+import { apiResponse } from './helpers.js'
+import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('Costs');
 
@@ -242,7 +243,7 @@ costRoutes.post('/estimate', async (c) => {
         {
           success: false,
           error: {
-            code: 'INVALID_REQUEST',
+            code: ERROR_CODES.INVALID_REQUEST,
             message: 'provider and model are required',
           },
         },
@@ -417,7 +418,7 @@ costRoutes.post('/record', async (c) => {
         {
           success: false,
           error: {
-            code: 'INVALID_REQUEST',
+            code: ERROR_CODES.INVALID_REQUEST,
             message: 'provider, model, and userId are required',
           },
         },
