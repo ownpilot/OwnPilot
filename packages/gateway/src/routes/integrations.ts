@@ -8,7 +8,7 @@ import { Hono } from 'hono';
 import { oauthIntegrationsRepo, settingsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
 import { getLog } from '../services/log.js';
-import { getUserId } from './helpers.js';
+import { getUserId, apiError } from './helpers.js';
 
 const log = getLog('Integrations');
 
@@ -135,7 +135,7 @@ integrationsRoutes.get('/:id', async (c) => {
   const integration = await oauthIntegrationsRepo.getById(id);
 
   if (!integration) {
-    return c.json({ success: false, error: 'Integration not found' }, 404);
+    return apiError(c, 'Integration not found', 404);
   }
 
   // Don't expose tokens
@@ -189,7 +189,7 @@ integrationsRoutes.delete('/:id', async (c) => {
   const integration = await oauthIntegrationsRepo.getById(id);
 
   if (!integration) {
-    return c.json({ success: false, error: 'Integration not found' }, 404);
+    return apiError(c, 'Integration not found', 404);
   }
 
   // For Google integrations, try to revoke the token
@@ -230,7 +230,7 @@ integrationsRoutes.post('/:id/sync', async (c) => {
   const integration = await oauthIntegrationsRepo.getById(id);
 
   if (!integration) {
-    return c.json({ success: false, error: 'Integration not found' }, 404);
+    return apiError(c, 'Integration not found', 404);
   }
 
   // Get tokens
@@ -238,7 +238,7 @@ integrationsRoutes.post('/:id/sync', async (c) => {
 
   if (!tokens?.refreshToken) {
     await oauthIntegrationsRepo.updateStatus(id, 'expired', 'No refresh token available');
-    return c.json({ success: false, error: 'No refresh token available' }, 400);
+    return apiError(c, 'No refresh token available', 400);
   }
 
   // Refresh token for Google integrations
@@ -249,7 +249,7 @@ integrationsRoutes.post('/:id/sync', async (c) => {
       const clientSecret = await settingsRepo.get<string>('google_oauth_client_secret');
 
       if (!clientId || !clientSecret) {
-        return c.json({ success: false, error: 'OAuth not configured' }, 400);
+        return apiError(c, 'OAuth not configured', 400);
       }
 
       const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
@@ -278,11 +278,11 @@ integrationsRoutes.post('/:id/sync', async (c) => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sync failed';
       await oauthIntegrationsRepo.updateStatus(id, 'error', errorMessage);
-      return c.json({ success: false, error: errorMessage }, 500);
+      return apiError(c, errorMessage, 500);
     }
   }
 
-  return c.json({ success: false, error: 'Sync not supported for this provider' }, 400);
+  return apiError(c, 'Sync not supported for this provider', 400);
 });
 
 /**
