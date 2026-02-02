@@ -6,7 +6,7 @@ import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import { getDebugInfo, debugLog } from '@ownpilot/core';
-import type { ApiResponse } from '../types/index.js';
+import { apiResponse } from './helpers.js';
 
 export const debugRoutes = new Hono();
 
@@ -35,20 +35,11 @@ debugRoutes.get('/', async (c) => {
   const count = parseInt(c.req.query('count') ?? '50', 10);
   const debugInfo = getDebugInfo();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      enabled: debugInfo.enabled,
-      summary: debugInfo.summary,
-      entries: debugInfo.entries.slice(-count),
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    enabled: debugInfo.enabled,
+    summary: debugInfo.summary,
+    entries: debugInfo.entries.slice(-count),
+  });
 });
 
 /**
@@ -58,19 +49,10 @@ debugRoutes.get('/recent', async (c) => {
   const count = parseInt(c.req.query('count') ?? '10', 10);
   const entries = debugLog.getRecent(count);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      count: entries.length,
-      entries,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    count: entries.length,
+    entries,
+  });
 });
 
 /**
@@ -79,18 +61,9 @@ debugRoutes.get('/recent', async (c) => {
 debugRoutes.delete('/', async (c) => {
   debugLog.clear();
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      message: 'Debug log cleared',
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    message: 'Debug log cleared',
+  });
 });
 
 /**
@@ -102,19 +75,10 @@ debugRoutes.post('/toggle', async (c) => {
 
   debugLog.setEnabled(enabled);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      enabled: debugLog.isEnabled(),
-      message: enabled ? 'Debug logging enabled' : 'Debug logging disabled',
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    enabled: debugLog.isEnabled(),
+    message: enabled ? 'Debug logging enabled' : 'Debug logging disabled',
+  });
 });
 
 /**
@@ -127,19 +91,10 @@ debugRoutes.get('/errors', async (c) => {
     .filter(e => e.type === 'error' || e.type === 'retry')
     .slice(-count);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      count: errors.length,
-      entries: errors,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    count: errors.length,
+    entries: errors,
+  });
 });
 
 /**
@@ -152,19 +107,10 @@ debugRoutes.get('/requests', async (c) => {
     .filter(e => e.type === 'request' || e.type === 'response')
     .slice(-count);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      count: requests.length,
-      entries: requests,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    count: requests.length,
+    entries: requests,
+  });
 });
 
 /**
@@ -177,19 +123,10 @@ debugRoutes.get('/tools', async (c) => {
     .filter(e => e.type === 'tool_call' || e.type === 'tool_result')
     .slice(-count);
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      count: toolCalls.length,
-      entries: toolCalls,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    count: toolCalls.length,
+    entries: toolCalls,
+  });
 });
 
 /**
@@ -217,18 +154,9 @@ debugRoutes.get('/sandbox', async (c) => {
     timedOut: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.timedOut === true).length,
   };
 
-  const response: ApiResponse = {
-    success: true,
-    data: {
-      count: sandboxExecutions.length,
-      stats,
-      entries: sandboxExecutions,
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  return c.json(response);
+  return apiResponse(c, {
+    count: sandboxExecutions.length,
+    stats,
+    entries: sandboxExecutions,
+  });
 });
