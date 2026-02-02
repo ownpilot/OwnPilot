@@ -18,7 +18,7 @@ import {
 } from '@ownpilot/core';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
-import { getUserId } from './helpers.js';
+import { getUserId, apiResponse, apiError } from './helpers.js';
 
 const app = new Hono();
 
@@ -114,14 +114,11 @@ app.get('/', async (c) => {
     }
   }
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       models: allModels,
       configuredProviders,
       availableProviders,
-    },
-  });
+    });
 });
 
 /**
@@ -148,26 +145,14 @@ app.get('/catalog/all', async (c) => {
 app.get('/sync/providers', async (c) => {
   try {
     const providers = await listModelsDevProviders();
-    return c.json({
-      success: true,
-      data: {
+    return apiResponse(c, {
         providers,
         total: providers.length,
         source: 'https://models.dev/api.json',
-      },
-    });
+      });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'FETCH_ERROR',
-          message: `Failed to fetch providers: ${message}`,
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'FETCH_ERROR', message: `Failed to fetch providers: ${message}` }, 500);
   }
 });
 
@@ -193,28 +178,16 @@ app.post('/sync', async (c) => {
 
     const total = 'total' in result ? result.total : result.synced.length + result.failed.length;
 
-    return c.json({
-      success: true,
-      data: {
+    return apiResponse(c, {
         synced: result.synced,
         failed: result.failed,
         notFound: 'notFound' in result ? result.notFound : undefined,
         total,
         message: `Synced ${result.synced.length} provider(s) from models.dev`,
-      },
-    });
+      });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'SYNC_ERROR',
-          message: `Failed to sync providers: ${message}`,
-        },
-      },
-      500
-    );
+    return apiError(c, { code: 'SYNC_ERROR', message: `Failed to sync providers: ${message}` }, 500);
   }
 });
 
@@ -226,24 +199,13 @@ app.get('/:provider', async (c) => {
 
   const config = getProviderConfig(provider);
   if (!config) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'UNKNOWN_PROVIDER',
-          message: `Unknown provider: ${provider}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: 'UNKNOWN_PROVIDER', message: `Unknown provider: ${provider}` }, 404);
   }
 
   const models = convertToModelInfo(provider);
   const isConfigured = hasApiKey(provider);
 
-  return c.json({
-    success: true,
-    data: {
+  return apiResponse(c, {
       provider,
       models,
       isConfigured,
@@ -251,8 +213,7 @@ app.get('/:provider', async (c) => {
       features: config.features,
       baseUrl: config.baseUrl,
       docsUrl: config.docsUrl,
-    },
-  });
+    });
 });
 
 export const modelsRoutes = app;
