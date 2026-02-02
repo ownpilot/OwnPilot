@@ -18,7 +18,9 @@ import type {
 import { getGoalService, GoalServiceError } from '../services/goal-service.js';
 import { getUserId, apiResponse, apiError } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
+import { getLog } from '../services/log.js';
 
+const log = getLog('Goals');
 export const goalsRoutes = new Hono();
 
 // ============================================================================
@@ -59,14 +61,17 @@ goalsRoutes.post('/', async (c) => {
     const service = getGoalService();
     const goal = await service.createGoal(userId, body);
 
+    log.info('Goal created', { userId, goalId: goal.id, title: goal.title, priority: goal.priority });
     return apiResponse(c, {
         goal,
         message: 'Goal created successfully.',
       }, 201);
   } catch (err) {
     if (err instanceof GoalServiceError && err.code === 'VALIDATION_ERROR') {
+      log.warn('Goal validation error', { userId, error: err.message });
       return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: err.message }, 400);
     }
+    log.error('Goal creation error', { userId, error: err instanceof Error ? err.message : 'Unknown error' });
     throw err;
   }
 });

@@ -15,7 +15,9 @@ import { getPlanService } from '../services/plan-service.js';
 import { getPlanExecutor } from '../plans/index.js';
 import { getUserId, apiResponse, apiError } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
+import { getLog } from '../services/log.js';
 
+const log = getLog('Plans');
 export const plansRoutes = new Hono();
 
 // ============================================================================
@@ -188,9 +190,11 @@ plansRoutes.post('/:id/execute', async (c) => {
   }
 
   try {
+    log.info('Plan execution started', { userId, planId: id, name: plan.name });
     const executor = getPlanExecutor({ userId });
     const result = await executor.execute(id);
 
+    log.info('Plan execution completed', { userId, planId: id, status: result.status, completedSteps: result.completedSteps });
     return c.json({
       success: result.status === 'completed',
       data: {
@@ -368,9 +372,11 @@ plansRoutes.post('/:id/start', async (c) => {
   }
 
   try {
+    log.info('Plan execution started', { userId, planId: id, name: plan.name });
     const executor = getPlanExecutor({ userId });
     const result = await executor.execute(id);
 
+    log.info('Plan execution completed', { userId, planId: id, status: result.status, completedSteps: result.completedSteps });
     return c.json({
       success: result.status === 'completed',
       data: {

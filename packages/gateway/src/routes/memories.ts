@@ -15,7 +15,9 @@ import type {
 import { getMemoryService, MemoryServiceError } from '../services/memory-service.js';
 import { getUserId, apiResponse, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
+import { getLog } from '../services/log.js';
 
+const log = getLog('Memories');
 export const memoriesRoutes = new Hono();
 
 // ============================================================================
@@ -59,6 +61,7 @@ memoriesRoutes.post('/', async (c) => {
     const { memory, deduplicated } = await service.rememberMemory(userId, body);
 
     if (deduplicated) {
+      log.info('Memory deduplicated', { userId, memoryId: memory.id, type: memory.type });
       return apiResponse(c, { data: {
           memory,
           message: 'Similar memory exists, boosted importance instead.',
@@ -66,12 +69,14 @@ memoriesRoutes.post('/', async (c) => {
         }, });
     }
 
+    log.info('Memory created', { userId, memoryId: memory.id, type: memory.type, importance: memory.importance });
     return apiResponse(c, {
         memory,
         message: 'Memory created successfully.',
       }, 201);
   } catch (err) {
     if (err instanceof MemoryServiceError && err.code === 'VALIDATION_ERROR') {
+      log.warn('Memory validation error', { userId, error: err.message });
       return c.json(
         {
           success: false,
@@ -83,6 +88,7 @@ memoriesRoutes.post('/', async (c) => {
         400
       );
     }
+    log.error('Memory creation error', { userId, error: err instanceof Error ? err.message : 'Unknown error' });
     throw err;
   }
 });
@@ -112,6 +118,7 @@ memoriesRoutes.get('/search', async (c) => {
   const service = getMemoryService();
   const memories = await service.searchMemories(userId, query, { type, limit });
 
+  log.info('Memory search', { userId, query, type, resultsCount: memories.length });
   return apiResponse(c, {
       query,
       memories,
@@ -229,6 +236,7 @@ memoriesRoutes.delete('/:id', async (c) => {
   const deleted = await service.deleteMemory(userId, id);
 
   if (!deleted) {
+    log.warn('Memory not found for deletion', { userId, memoryId: id });
     return c.json(
       {
         success: false,
@@ -241,6 +249,7 @@ memoriesRoutes.delete('/:id', async (c) => {
     );
   }
 
+  log.info('Memory deleted', { userId, memoryId: id });
   return apiResponse(c, {
       message: 'Memory deleted successfully.',
     });
