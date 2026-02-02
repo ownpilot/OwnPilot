@@ -14,7 +14,8 @@ import {
   type PluginStatus,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse } from './helpers.js';
+import { apiResponse, apiError } from './helpers.js';
+import type { ApiResponse } from '../types/index.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
