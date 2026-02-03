@@ -284,7 +284,7 @@ export function DataBrowserPage() {
       </div>
 
       {/* Table Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading..." />
         ) : records.length === 0 ? (

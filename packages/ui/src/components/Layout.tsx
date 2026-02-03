@@ -145,10 +145,10 @@ function NavItemLink({ item, compact = false, badge }: { item: NavItem; compact?
       to={item.to}
       end={item.to === '/'}
       className={({ isActive }) =>
-        `flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors text-sm ${
+        `flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-sm ${
           isActive
-            ? 'bg-primary text-white'
-            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+            ? 'bg-primary text-white shadow-sm'
+            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5'
         } ${compact ? 'pl-8' : ''}`
       }
     >

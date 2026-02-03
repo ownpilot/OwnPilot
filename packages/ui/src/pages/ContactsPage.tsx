@@ -145,7 +145,7 @@ export function ContactsPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading contacts..." />
         ) : contacts.length === 0 ? (
@@ -215,7 +215,7 @@ function ContactItem({ contact, onEdit, onDelete, onToggleFavorite }: ContactIte
     : (nameParts[0]?.[0] ?? '?').toUpperCase();
 
   return (
-    <div className="flex items-center gap-3 p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg hover:border-primary transition-colors">
+    <div className="card-elevated card-hover flex items-center gap-3 p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">
       {/* Avatar */}
       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
         {initials}

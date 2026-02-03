@@ -148,7 +148,7 @@ export function GoalsPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading goals..." />
         ) : goals.length === 0 ? (
@@ -232,7 +232,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
   };
 
   return (
-    <div className="bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg overflow-hidden">
+    <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg overflow-hidden">
       <div className="flex items-start gap-3 p-4">
         <button
           onClick={onToggle}

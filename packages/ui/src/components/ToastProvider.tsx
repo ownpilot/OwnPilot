@@ -34,6 +34,8 @@ interface Toast {
   message: string;
   /** Auto-dismiss duration in ms. 0 = persistent. Default 5000. */
   duration: number;
+  /** Whether the toast is currently animating out */
+  exiting?: boolean;
 }
 
 interface ToastContextValue {
@@ -121,7 +123,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       className={`flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg
         ${colors.bg} ${colors.border}
         bg-bg-primary/95 dark:bg-dark-bg-secondary/95 backdrop-blur-sm
-        animate-[slideIn_0.2s_ease-out]
+        ${toast.exiting ? 'animate-slide-out' : 'animate-[slideIn_0.2s_ease-out]'}
         max-w-sm w-full`}
       role="alert"
     >
@@ -157,7 +159,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    // Mark as exiting first for slide-out animation
+    setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
+    // Remove from DOM after animation completes
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 300);
   }, []);
 
   const addToast = useCallback(

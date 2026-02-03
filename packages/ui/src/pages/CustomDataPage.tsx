@@ -226,7 +226,7 @@ export function CustomDataPage() {
               </div>
 
               {/* Records Table */}
-              <div className="flex-1 overflow-auto p-6">
+              <div className="flex-1 overflow-auto p-6 animate-fade-in-up">
                 {isLoadingRecords ? (
                   <LoadingSpinner message="Loading records..." />
                 ) : records.length === 0 ? (

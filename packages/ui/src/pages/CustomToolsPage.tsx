@@ -168,7 +168,7 @@ export function CustomToolsPage() {
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading custom tools..." />
         ) : filteredTools.length === 0 ? (

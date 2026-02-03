@@ -155,7 +155,7 @@ export function BookmarksPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading bookmarks..." />
         ) : bookmarks.length === 0 ? (
@@ -218,7 +218,7 @@ function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite }: Bookmark
   };
 
   return (
-    <div className="flex flex-col p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg hover:border-primary transition-colors">
+    <div className="card-elevated card-hover flex flex-col p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">
       <div className="flex items-start gap-3 flex-1">
         {/* Favicon */}
         <div className="w-8 h-8 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary flex items-center justify-center flex-shrink-0">

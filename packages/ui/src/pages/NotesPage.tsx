@@ -116,7 +116,7 @@ export function NotesPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading notes..." />
         ) : notes.length === 0 ? (
@@ -209,7 +209,7 @@ function NoteCard({ note, onClick, onTogglePin, onDelete }: NoteCardProps) {
   return (
     <div
       style={colorStyles}
-      className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg hover:border-primary transition-colors cursor-pointer"
+      className="card-elevated card-hover p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg cursor-pointer"
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2">

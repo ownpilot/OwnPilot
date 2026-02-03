@@ -109,7 +109,7 @@ export function TasksPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading tasks..." />
         ) : tasks.length === 0 ? (
@@ -170,7 +170,7 @@ function TaskItem({ task, onComplete, onEdit, onDelete }: TaskItemProps) {
 
   return (
     <div
-      className={`flex items-start gap-3 p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg hover:border-primary transition-colors ${
+      className={`card-elevated card-hover flex items-start gap-3 p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg ${
         isCompleted ? 'opacity-60' : ''
       }`}
     >
