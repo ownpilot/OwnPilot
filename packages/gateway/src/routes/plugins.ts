@@ -5,11 +5,13 @@
 
 import { Hono } from 'hono';
 import {
-  getDefaultPluginRegistry,
+  getServiceRegistry,
+  Services,
   type Plugin,
   type PluginCapability,
   type PluginPermission,
   type PluginStatus,
+  type IPluginService,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
 import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
@@ -21,14 +23,8 @@ const log = getLog('Plugins');
 
 export const pluginsRoutes = new Hono();
 
-// Plugin registry singleton
-let pluginRegistry: Awaited<ReturnType<typeof getDefaultPluginRegistry>> | undefined;
-
-async function getRegistry() {
-  if (!pluginRegistry) {
-    pluginRegistry = await getDefaultPluginRegistry();
-  }
-  return pluginRegistry;
+function getPluginService(): IPluginService {
+  return getServiceRegistry().get(Services.Plugin);
 }
 
 /**
@@ -107,7 +103,7 @@ function toPluginInfo(plugin: Plugin): PluginInfo {
  * List all plugins
  */
 pluginsRoutes.get('/', async (c) => {
-  const registry = await getRegistry();
+  const registry = getPluginService();
   const plugins = registry.getAll();
 
   const status = c.req.query('status') as PluginStatus | undefined;
@@ -132,7 +128,7 @@ pluginsRoutes.get('/', async (c) => {
  * Get plugins statistics
  */
 pluginsRoutes.get('/stats', async (c) => {
-  const registry = await getRegistry();
+  const registry = getPluginService();
   const plugins = registry.getAll();
 
   const stats = {
@@ -163,7 +159,7 @@ pluginsRoutes.get('/stats', async (c) => {
  * Get all tools from enabled plugins
  */
 pluginsRoutes.get('/tools', async (c) => {
-  const registry = await getRegistry();
+  const registry = getPluginService();
   const tools = registry.getAllTools();
 
   return apiResponse(c, tools.map((t) => ({
@@ -179,7 +175,7 @@ pluginsRoutes.get('/tools', async (c) => {
  */
 pluginsRoutes.get('/:id', async (c) => {
   const id = c.req.param('id');
-  const registry = await getRegistry();
+  const registry = getPluginService();
   const plugin = registry.get(id);
 
   if (!plugin) {
@@ -214,7 +210,7 @@ pluginsRoutes.get('/:id', async (c) => {
  */
 pluginsRoutes.post('/:id/enable', async (c) => {
   const id = c.req.param('id');
-  const registry = await getRegistry();
+  const registry = getPluginService();
 
   const success = await registry.enable(id);
 
@@ -237,7 +233,7 @@ pluginsRoutes.post('/:id/enable', async (c) => {
  */
 pluginsRoutes.post('/:id/disable', async (c) => {
   const id = c.req.param('id');
-  const registry = await getRegistry();
+  const registry = getPluginService();
 
   const success = await registry.disable(id);
 
@@ -260,7 +256,7 @@ pluginsRoutes.post('/:id/disable', async (c) => {
  */
 pluginsRoutes.put('/:id/config', async (c) => {
   const id = c.req.param('id');
-  const registry = await getRegistry();
+  const registry = getPluginService();
   const plugin = registry.get(id);
 
   if (!plugin) {
@@ -289,7 +285,7 @@ pluginsRoutes.put('/:id/config', async (c) => {
  */
 pluginsRoutes.post('/:id/permissions', async (c) => {
   const id = c.req.param('id');
-  const registry = await getRegistry();
+  const registry = getPluginService();
   const plugin = registry.get(id);
 
   if (!plugin) {
@@ -321,7 +317,7 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
  */
 pluginsRoutes.get('/:id/settings', async (c) => {
   const id = c.req.param('id');
-  const registry = await getRegistry();
+  const registry = getPluginService();
   const plugin = registry.get(id);
 
   if (!plugin) {
@@ -341,7 +337,7 @@ pluginsRoutes.get('/:id/settings', async (c) => {
  */
 pluginsRoutes.put('/:id/settings', async (c) => {
   const id = c.req.param('id');
-  const registry = await getRegistry();
+  const registry = getPluginService();
   const plugin = registry.get(id);
 
   if (!plugin) {
@@ -380,7 +376,7 @@ pluginsRoutes.put('/:id/settings', async (c) => {
  */
 pluginsRoutes.get('/:id/required-services', async (c) => {
   const id = c.req.param('id');
-  const registry = await getRegistry();
+  const registry = getPluginService();
   const plugin = registry.get(id);
 
   if (!plugin) {
@@ -415,7 +411,7 @@ pluginsRoutes.get('/:id/required-services', async (c) => {
  */
 pluginsRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
-  const registry = await getRegistry();
+  const registry = getPluginService();
   const plugin = registry.get(id);
 
   if (!plugin) {

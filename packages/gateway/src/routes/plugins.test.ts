@@ -79,7 +79,16 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
-    getDefaultPluginRegistry: vi.fn(async () => mockPluginRegistry),
+    getServiceRegistry: vi.fn(() => ({
+      get: vi.fn((token: { name: string }) => {
+        if (token.name === 'plugin') return mockPluginRegistry;
+        return undefined;
+      }),
+    })),
+    Services: {
+      ...(original['Services'] as Record<string, unknown>),
+      Plugin: { name: 'plugin' },
+    },
   };
 });
 

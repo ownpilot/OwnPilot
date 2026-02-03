@@ -13,7 +13,8 @@ import {
   CUSTOM_DATA_TOOLS,
   PERSONAL_DATA_TOOLS,
   TOOL_GROUPS,
-  getDefaultPluginRegistry,
+  getServiceRegistry,
+  Services,
   type ToolDefinition,
 } from '@ownpilot/core';
 import type { ToolInfo } from '../types/index.js';
@@ -135,12 +136,12 @@ async function getAllTools(): Promise<Array<ToolDefinition & { category: string;
     });
   }
 
-  // Fallback: also check plugin registry for tools not yet in shared registry
+  // Fallback: also check plugin service for tools not yet in shared registry
   // (e.g. if plugins initialized after registry was created)
   try {
-    const pluginRegistry = await getDefaultPluginRegistry();
+    const pluginService = getServiceRegistry().get(Services.Plugin);
     const seen = new Set(allTools.map(t => t.name));
-    const pluginTools = pluginRegistry.getAllTools();
+    const pluginTools = pluginService.getAllTools();
     for (const { definition } of pluginTools) {
       if (!seen.has(definition.name)) {
         allTools.push({ ...definition, category: 'plugins', source: 'plugin' });
@@ -148,7 +149,7 @@ async function getAllTools(): Promise<Array<ToolDefinition & { category: string;
       }
     }
   } catch {
-    // Plugins not initialized yet
+    // Plugin service not initialized yet
   }
 
   return allTools;
@@ -277,11 +278,15 @@ toolsRoutes.get('/:name/source', async (c) => {
   if (registered) {
     fallbackToString = () => registered.executor.toString();
   } else {
-    // Check plugin registry for plugin-provided tools
-    const pluginRegistry = await getDefaultPluginRegistry();
-    const pluginTool = pluginRegistry.getTool(name);
-    if (pluginTool) {
-      fallbackToString = () => pluginTool.executor.toString();
+    // Check plugin service for plugin-provided tools
+    try {
+      const pluginService = getServiceRegistry().get(Services.Plugin);
+      const pluginTool = pluginService.getTool(name);
+      if (pluginTool) {
+        fallbackToString = () => pluginTool.executor.toString();
+      }
+    } catch {
+      // Plugin service not initialized yet
     }
   }
 
