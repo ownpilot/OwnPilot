@@ -6,12 +6,10 @@
 
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
-import { HTTPException } from 'hono/http-exception';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
-import { apiResponse, apiError } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
@@ -104,26 +102,21 @@ const ADMIN_EXEMPT_PATHS = ['/status', '/stats', '/operation/status'];
 const requireDatabaseAdmin = createMiddleware(async (c, next) => {
   const path = new URL(c.req.url).pathname.replace(/.*\/database/, '');
   if (ADMIN_EXEMPT_PATHS.some(p => path === p || path.startsWith(p))) {
-    await next();
-    return;
+    return next();
   }
 
   const adminKey = process.env.ADMIN_API_KEY;
   if (!adminKey) {
     // If ADMIN_API_KEY is not configured, block all admin operations
-    throw new HTTPException(503, {
-      message: 'Database admin operations require ADMIN_API_KEY to be configured',
-    });
+    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Database admin operations require ADMIN_API_KEY to be configured' }, 503);
   }
 
   const providedKey = c.req.header('X-Admin-Key');
   if (!providedKey || providedKey !== adminKey) {
-    throw new HTTPException(403, {
-      message: 'Valid X-Admin-Key header required for database admin operations',
-    });
+    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Valid X-Admin-Key header required for database admin operations' }, 403);
   }
 
-  await next();
+  return next();
 });
 
 databaseRoutes.use('*', requireDatabaseAdmin);
