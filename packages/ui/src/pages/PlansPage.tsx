@@ -235,7 +235,7 @@ export function PlansPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading plans..." />
         ) : plans.length === 0 ? (
@@ -360,7 +360,7 @@ function PlanItem({
   }, [plan.status, plan.id, isExpanded]);
 
   return (
-    <div className="bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg overflow-hidden">
+    <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg overflow-hidden">
       <div className="flex items-start gap-3 p-4">
         <button
           onClick={onToggle}

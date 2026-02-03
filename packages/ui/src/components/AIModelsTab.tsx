@@ -58,10 +58,10 @@ const CAPABILITY_LABELS: Record<ModelCapability, string> = {
 };
 
 const SOURCE_COLORS: Record<string, string> = {
-  builtin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  aggregator: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  custom: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  local: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  builtin: 'bg-primary/10 text-primary',
+  aggregator: 'bg-purple-500/10 text-purple-500',
+  custom: 'bg-warning/10 text-warning',
+  local: 'bg-success/10 text-success',
 };
 
 // ============================================================================
@@ -121,7 +121,7 @@ function ModelCard({
 }) {
   return (
     <div
-      className={`p-4 rounded-lg border transition-all ${
+      className={`card-elevated card-hover p-4 rounded-lg border transition-all ${
         model.isEnabled && model.isConfigured
           ? 'border-success/30 bg-bg-primary dark:bg-dark-bg-primary'
           : model.isEnabled
@@ -147,7 +147,7 @@ function ModelCard({
               {model.source}
             </span>
             {model.hasOverride && !model.isCustom && (
-              <span className="px-1.5 py-0.5 text-xs rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+              <span className="px-1.5 py-0.5 text-xs rounded bg-warning/10 text-warning">
                 modified
               </span>
             )}
@@ -563,13 +563,13 @@ export function AIModelsTab() {
       )}
 
       {/* Local AI Providers Section */}
-      <div className="border border-emerald-200 dark:border-emerald-800/50 rounded-xl overflow-hidden">
+      <div className="border border-success/30 rounded-xl overflow-hidden">
         <button
           onClick={() => setShowLocalSection(!showLocalSection)}
-          className="w-full flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+          className="w-full flex items-center justify-between p-4 bg-success/5 hover:bg-success/10 transition-colors"
         >
           <div className="flex items-center gap-2">
-            <Server className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <Server className="w-5 h-5 text-success" />
             <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">Local AI Providers</h3>
             <span className="text-xs text-text-muted dark:text-dark-text-muted">
               {localProviders.length} provider{localProviders.length !== 1 ? 's' : ''}
@@ -578,7 +578,7 @@ export function AIModelsTab() {
           <div className="flex items-center gap-2">
             <button
               onClick={(e) => { e.stopPropagation(); setShowAddLocalDialog(true); }}
-              className="px-2.5 py-1 text-xs rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center gap-1"
+              className="px-2.5 py-1 text-xs rounded-lg bg-success text-white hover:bg-success/90 transition-colors flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" /> Add
             </button>
@@ -596,7 +596,7 @@ export function AIModelsTab() {
                 </p>
                 <button
                   onClick={() => setShowAddLocalDialog(true)}
-                  className="text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                  className="text-sm text-success hover:text-success/80"
                 >
                   Add LM Studio, Ollama, or other local AI
                 </button>
@@ -606,9 +606,9 @@ export function AIModelsTab() {
                 {localProviders.map((lp) => (
                   <div
                     key={lp.id}
-                    className={`p-3 rounded-lg border transition-all ${
+                    className={`card-elevated p-3 rounded-lg border transition-all ${
                       lp.isEnabled
-                        ? 'border-emerald-200 dark:border-emerald-800/50 bg-bg-primary dark:bg-dark-bg-primary'
+                        ? 'border-success/30 bg-bg-primary dark:bg-dark-bg-primary'
                         : 'border-border/50 dark:border-dark-border/50 bg-bg-secondary/50 dark:bg-dark-bg-secondary/50 opacity-60'
                     }`}
                   >
@@ -616,7 +616,7 @@ export function AIModelsTab() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <h5 className="font-medium text-text-primary dark:text-dark-text-primary truncate">{lp.name}</h5>
-                          <span className="px-1.5 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 flex-shrink-0">
+                          <span className="px-1.5 py-0.5 text-xs rounded bg-success/10 text-success flex-shrink-0">
                             {lp.providerType}
                           </span>
                           {lp.isDefault && (
@@ -643,7 +643,7 @@ export function AIModelsTab() {
                         <button
                           onClick={() => handleLocalDiscover(lp.id)}
                           disabled={discoveringLocal === lp.id}
-                          className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted hover:text-emerald-600 transition-colors disabled:opacity-50"
+                          className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted hover:text-success transition-colors disabled:opacity-50"
                           title="Discover models"
                         >
                           <Search className={`w-3.5 h-3.5 ${discoveringLocal === lp.id ? 'animate-pulse' : ''}`} />
@@ -802,7 +802,7 @@ export function AIModelsTab() {
           <button
             onClick={handleResetSync}
             disabled={isSyncing}
-            className="px-3 py-2 text-sm rounded-lg border transition-colors flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50"
+            className="px-3 py-2 text-sm rounded-lg border transition-colors flex items-center gap-1.5 bg-error/5 border-error/30 text-error hover:bg-error/10 disabled:opacity-50"
             title="Delete all synced configs and resync fresh from models.dev"
           >
             <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
@@ -824,7 +824,7 @@ export function AIModelsTab() {
             <button
               onClick={() => handleDiscoverModels(discoverProvider)}
               disabled={isDiscovering || !discoverProvider}
-              className="px-3 py-2 text-sm rounded-lg border transition-colors flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 whitespace-nowrap"
+              className="px-3 py-2 text-sm rounded-lg border transition-colors flex items-center gap-1.5 bg-primary/5 border-primary/30 text-primary hover:bg-primary/10 disabled:opacity-50 whitespace-nowrap"
               title="Fetch models from provider's /v1/models endpoint (LM Studio, Ollama, etc.)"
             >
               <Search className={`w-4 h-4 ${isDiscovering ? 'animate-pulse' : ''}`} />
@@ -850,7 +850,7 @@ export function AIModelsTab() {
             {availableProviders.map((provider) => (
               <div
                 key={provider.id}
-                className={`p-3 rounded-lg border ${
+                className={`card-elevated p-3 rounded-lg border ${
                   provider.isConfigured
                     ? 'border-success/30 bg-success/5'
                     : 'border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary'
@@ -864,8 +864,8 @@ export function AIModelsTab() {
                       </h5>
                       <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
                         provider.type === 'aggregator'
-                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                          ? 'bg-purple-500/10 text-purple-500'
+                          : 'bg-primary/10 text-primary'
                       }`}>
                         {provider.type}
                       </span>
@@ -1197,10 +1197,10 @@ function AddLocalProviderDialog({
                 <button
                   key={t.id}
                   onClick={() => handleSelect(t)}
-                  className="p-4 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary hover:border-emerald-400 dark:hover:border-emerald-600 transition-colors text-left"
+                  className="p-4 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary hover:border-success transition-colors text-left"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Server className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <Server className="w-4 h-4 text-success" />
                     <h5 className="font-medium text-text-primary dark:text-dark-text-primary">{t.name}</h5>
                   </div>
                   <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2">{t.description}</p>
@@ -1213,8 +1213,8 @@ function AddLocalProviderDialog({
           ) : (
             <>
               {/* Selected template config */}
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50">
-                <Server className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-success/5 border border-success/30">
+                <Server className="w-4 h-4 text-success" />
                 <span className="font-medium text-text-primary dark:text-dark-text-primary">{selectedTemplate.name}</span>
                 <button
                   onClick={() => setSelectedTemplate(null)}
@@ -1234,7 +1234,7 @@ function AddLocalProviderDialog({
                   value={customUrl}
                   onChange={(e) => setCustomUrl(e.target.value)}
                   placeholder={selectedTemplate.baseUrl}
-                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-success/50"
                 />
               </div>
 
@@ -1248,7 +1248,7 @@ function AddLocalProviderDialog({
                   value={customApiKey}
                   onChange={(e) => setCustomApiKey(e.target.value)}
                   placeholder="Leave empty if not required"
-                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-success/50"
                 />
               </div>
             </>
@@ -1265,7 +1265,7 @@ function AddLocalProviderDialog({
             </button>
             <button
               onClick={() => onAdd(selectedTemplate, customUrl, customApiKey)}
-              className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
+              className="px-4 py-2 text-sm bg-success text-white rounded-lg hover:bg-success/90 transition-colors flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               Add & Discover

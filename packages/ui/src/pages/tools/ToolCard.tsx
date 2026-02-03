@@ -10,7 +10,7 @@ export function ToolCard({ tool, onClick }: ToolCardProps) {
   return (
     <button
       onClick={onClick}
-      className="p-3 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg text-left hover:border-primary transition-colors"
+      className="card-elevated p-3 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg text-left hover:border-primary transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5"
     >
       <div className="flex items-start gap-2">
         <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">

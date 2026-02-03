@@ -146,7 +146,7 @@ export function MemoriesPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading memories..." />
         ) : memories.length === 0 ? (
@@ -199,7 +199,7 @@ interface MemoryItemProps {
 function MemoryItem({ memory, onEdit, onDelete }: MemoryItemProps) {
   return (
     <div
-      className="flex items-start gap-3 p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg hover:border-primary transition-colors cursor-pointer"
+      className="card-elevated card-hover flex items-start gap-3 p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg cursor-pointer"
       onClick={onEdit}
     >
       <Brain className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />

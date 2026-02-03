@@ -145,7 +145,7 @@ export function DashboardPage() {
             <Link
               key={stat.label}
               to={stat.link}
-              className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl hover:border-primary transition-colors"
+              className="card-elevated card-hover p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl"
             >
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
@@ -172,7 +172,7 @@ export function DashboardPage() {
           {/* Quick Actions & Goals */}
           <div className="space-y-6">
             {/* Quick Actions */}
-            <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
+            <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
               <h3 className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-4">
                 Quick Actions
               </h3>
@@ -217,7 +217,7 @@ export function DashboardPage() {
 
             {/* Task Progress (moved here) */}
             {summary && summary.tasks.total > 0 && (
-              <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
+              <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-success" />
@@ -255,7 +255,7 @@ export function DashboardPage() {
 
         {/* Upcoming Events */}
         {summary && summary.calendar.upcoming > 0 && (
-          <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
+          <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2">
                 <Clock className="w-4 h-4 text-primary" />

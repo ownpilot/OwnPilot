@@ -37,17 +37,17 @@ interface AutonomyConfig {
 
 
 const levelColors = [
-  'bg-red-500',
-  'bg-orange-500',
-  'bg-yellow-500',
-  'bg-green-500',
-  'bg-blue-500',
+  'bg-error',
+  'bg-warning',
+  'bg-warning',
+  'bg-success',
+  'bg-primary',
 ];
 
 const riskColors = {
   low: 'text-success',
   medium: 'text-warning',
-  high: 'text-orange-500',
+  high: 'text-warning',
   critical: 'text-error',
 };
 

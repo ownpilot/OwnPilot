@@ -440,7 +440,7 @@ export function ChatPage() {
                       <button
                         key={item.label}
                         onClick={() => sendMessage(item.prompt)}
-                        className="px-3 py-1.5 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-500 hover:text-white transition-colors"
+                        className="px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-full hover:bg-primary hover:text-white transition-colors"
                       >
                         {item.label}
                       </button>
@@ -460,7 +460,7 @@ export function ChatPage() {
                       <button
                         key={item.label}
                         onClick={() => sendMessage(item.prompt)}
-                        className="px-3 py-1.5 text-sm bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full hover:bg-emerald-500 hover:text-white transition-colors"
+                        className="px-3 py-1.5 text-sm bg-success/10 text-success rounded-full hover:bg-success hover:text-white transition-colors"
                       >
                         {item.label}
                       </button>
@@ -488,19 +488,19 @@ export function ChatPage() {
                       <div key={idx} className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted">
                         {event.type === 'status' && (
                           <>
-                            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                            <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                             <span>{event.message}</span>
                           </>
                         )}
                         {event.type === 'tool_start' && (
                           <>
-                            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                            <span className="w-2 h-2 bg-warning rounded-full animate-pulse" />
                             <span>🔧 Running <strong>{event.tool?.name}</strong>...</span>
                           </>
                         )}
                         {event.type === 'tool_end' && (
                           <>
-                            <span className={`w-2 h-2 ${event.result?.success ? 'bg-green-500' : 'bg-red-500'} rounded-full`} />
+                            <span className={`w-2 h-2 ${event.result?.success ? 'bg-success' : 'bg-error'} rounded-full`} />
                             <span>
                               {event.result?.success ? '✓' : '✗'} {event.tool?.name}
                               <span className="opacity-60 ml-1">({event.result?.durationMs}ms)</span>

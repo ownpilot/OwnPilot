@@ -98,7 +98,7 @@ export function ToolsPage() {
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading tools..." />
         ) : !groupedTools || filteredTotal === 0 ? (

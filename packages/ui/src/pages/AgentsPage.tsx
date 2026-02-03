@@ -93,7 +93,7 @@ export function AgentsPage() {
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
           <LoadingSpinner message="Loading agents..." />
         ) : agents.length === 0 ? (
@@ -173,10 +173,10 @@ function AgentCard({ agent, onDelete, onSelect, onChat, onConfigure, isSelected 
   return (
     <div
       onClick={onSelect}
-      className={`p-4 bg-bg-secondary dark:bg-dark-bg-secondary border rounded-xl cursor-pointer transition-all ${
+      className={`card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border rounded-xl cursor-pointer transition-all ${
         isSelected
           ? 'border-primary ring-2 ring-primary/20'
-          : 'border-border dark:border-dark-border hover:border-primary/50'
+          : 'border-border dark:border-dark-border card-hover'
       }`}
     >
       <div className="flex items-start justify-between mb-3">
