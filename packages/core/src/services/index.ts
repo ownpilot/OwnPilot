@@ -146,6 +146,15 @@ export type {
   UpdateStepInput as UpdatePlanStepInput,
 } from './plan-service.js';
 
+// Resource Service
+export type {
+  IResourceService,
+  ResourceOwnerType,
+  ResourceCapabilities,
+  ResourceTypeDefinition,
+  ResourceSummaryEntry,
+} from './resource-service.js';
+
 // Config Center
 export * from './config-center.js';
 

@@ -27,6 +27,7 @@ import type { IWorkspaceService } from './workspace-service.js';
 import type { IGoalService } from './goal-service.js';
 import type { ITriggerService } from './trigger-service.js';
 import type { IPlanService } from './plan-service.js';
+import type { IResourceService } from './resource-service.js';
 
 /**
  * All service tokens.
@@ -79,4 +80,7 @@ export const Services = {
 
   /** Autonomous plan execution */
   Plan: new ServiceToken<IPlanService>('plan'),
+
+  /** Resource type registry (metadata for tools & audit) */
+  Resource: new ServiceToken<IResourceService>('resource'),
 } as const;
