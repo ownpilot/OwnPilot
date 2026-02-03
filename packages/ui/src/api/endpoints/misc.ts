@@ -161,7 +161,8 @@ export const dashboardApi = {
 // ---- Media Settings ----
 
 export const mediaSettingsApi = {
-  get: () => apiClient.get<CapabilitySettings[]>('/media-settings'),
+  get: () =>
+    apiClient.get<{ data: CapabilitySettings[] }>('/media-settings').then((r) => r.data ?? []),
   update: (capability: string, data: Record<string, unknown>) =>
     apiClient.post<Record<string, unknown>>(`/media-settings/${capability}`, data),
   reset: (capability: string) =>
