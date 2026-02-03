@@ -50,6 +50,9 @@ data/
 *.sqlite
 *.sqlite3
 
+# Claude Code (local settings only)
+.claude/settings.local.json
+
 # Misc
 *.bak
 *.tmp
