@@ -47,7 +47,11 @@
       }
     }
   },
-  "files": ["dist", "data", "README.md"],
+  "files": [
+    "dist",
+    "data",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -67,7 +71,7 @@
     "@types/node": "^22.19.7",
     "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^9.17.0",
-    "rimraf": "^6.0.1",
+    "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.19.1",
     "vitest": "^2.1.9"
@@ -81,7 +85,15 @@
     "directory": "packages/core"
   },
   "homepage": "https://ownpilot.com",
-  "keywords": ["ai", "gateway", "security", "privacy", "encryption", "audit", "plugin"],
+  "keywords": [
+    "ai",
+    "gateway",
+    "security",
+    "privacy",
+    "encryption",
+    "audit",
+    "plugin"
+  ],
   "author": "OwnPilot",
   "license": "MIT"
 }

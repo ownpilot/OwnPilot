@@ -27,9 +27,15 @@
     "grammy": "^1.39.3"
   },
   "devDependencies": {
-    "rimraf": "^6.0.1",
+    "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
     "vitest": "^2.1.9"
   },
-  "keywords": ["telegram", "bot", "channels", "ai", "gateway"]
+  "keywords": [
+    "telegram",
+    "bot",
+    "channels",
+    "ai",
+    "gateway"
+  ]
 }

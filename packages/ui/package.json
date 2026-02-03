@@ -28,10 +28,10 @@
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
-    "rimraf": "^6.0.1",
+    "rimraf": "^6.1.2",
     "tailwindcss": "^4.0.6",
     "typescript": "^5.9.3",
-    "vite": "^6.0.11",
+    "vite": "^6.4.1",
     "vitest": "^2.1.9"
   }
 }

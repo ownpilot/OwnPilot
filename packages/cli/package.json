@@ -24,16 +24,22 @@
   "dependencies": {
     "@hono/node-server": "^1.14.1",
     "@inquirer/prompts": "^7.0.0",
+    "@ownpilot/channels": "workspace:*",
     "@ownpilot/core": "workspace:*",
     "@ownpilot/gateway": "workspace:*",
-    "@ownpilot/channels": "workspace:*",
     "commander": "^13.1.0",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {
-    "rimraf": "^6.0.1",
+    "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
     "vitest": "^2.1.9"
   },
-  "keywords": ["cli", "ai", "gateway", "openai", "anthropic"]
+  "keywords": [
+    "cli",
+    "ai",
+    "gateway",
+    "openai",
+    "anthropic"
+  ]
 }
