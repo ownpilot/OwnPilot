@@ -35,10 +35,6 @@ vi.mock('../db/repositories/index.js', () => ({
   LogsRepository: vi.fn(() => mockLogsRepo),
 }));
 
-vi.mock('../db/connection.js', () => ({
-  getDatabase: vi.fn(),
-}));
-
 const mockAgent = {
   getMemory: vi.fn(() => ({
     get: vi.fn(),

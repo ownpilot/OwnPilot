@@ -530,17 +530,3 @@ export function createDataStores(userId = 'default') {
     contacts: new ContactStore(userId),
   };
 }
-
-// Backwards compatibility aliases (deprecated)
-/** @deprecated Use BookmarkStore instead */
-export const SQLiteBookmarkStore = BookmarkStore;
-/** @deprecated Use NoteStore instead */
-export const SQLiteNoteStore = NoteStore;
-/** @deprecated Use TaskStore instead */
-export const SQLiteTaskStore = TaskStore;
-/** @deprecated Use CalendarStore instead */
-export const SQLiteCalendarStore = CalendarStore;
-/** @deprecated Use ContactStore instead */
-export const SQLiteContactStore = ContactStore;
-/** @deprecated Use createDataStores instead */
-export const createSQLiteDataStores = createDataStores;

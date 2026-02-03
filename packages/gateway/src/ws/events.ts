@@ -65,30 +65,6 @@ export class GatewayEventEmitter {
     this.bus.emit(toDot(event), data);
   }
 
-  /**
-   * Remove all handlers for an event
-   * @deprecated Prefer unsubscribe functions returned by on()
-   */
-  off<K extends keyof ServerEvents>(_event: K): void {
-    // ScopedBus uses unsubscribe pattern; this is a no-op for backward compat
-    log.warn('[GatewayEvents] off() is deprecated. Use the unsubscribe function returned by on() instead.');
-  }
-
-  /**
-   * Remove all handlers
-   * @deprecated Use individual unsubscribe functions instead
-   */
-  removeAllListeners(): void {
-    log.warn('[GatewayEvents] removeAllListeners() is deprecated. Use individual unsubscribe functions instead.');
-  }
-
-  /**
-   * Get handler count for an event
-   * @deprecated No longer supported in unified event system
-   */
-  listenerCount<K extends keyof ServerEvents>(_event: K): number {
-    return 0;
-  }
 }
 
 /**

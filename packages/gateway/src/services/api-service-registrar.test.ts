@@ -1,5 +1,5 @@
 /**
- * API Service Registrar Tests
+ * Config Service Registrar Tests
  *
  * Tests registration and unregistration of config service dependencies
  * for tools and plugins.
@@ -26,8 +26,7 @@ vi.mock('../db/repositories/config-services.js', () => ({
 }));
 
 import {
-  registerToolApiDependencies,
-  registerPluginApiDependencies,
+  registerToolConfigRequirements,
   unregisterDependencies,
 } from './api-service-registrar.js';
 
@@ -35,18 +34,18 @@ import {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('API Service Registrar', () => {
+describe('Config Service Registrar', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   // ========================================================================
-  // registerToolApiDependencies
+  // registerToolConfigRequirements (tool source)
   // ========================================================================
 
-  describe('registerToolApiDependencies', () => {
+  describe('registerToolConfigRequirements (tool)', () => {
     it('upserts service and adds tool as required_by', async () => {
-      await registerToolApiDependencies('tool-1', 'my_tool', [
+      await registerToolConfigRequirements('my_tool', 'tool-1', 'custom', [
         { name: 'openai', displayName: 'OpenAI', category: 'ai', description: 'OpenAI API' },
       ]);
 
@@ -68,7 +67,7 @@ describe('API Service Registrar', () => {
     });
 
     it('handles multiple dependencies', async () => {
-      await registerToolApiDependencies('tool-1', 'translate_tool', [
+      await registerToolConfigRequirements('translate_tool', 'tool-1', 'custom', [
         { name: 'deepl', category: 'translation' },
         { name: 'google_translate', category: 'translation' },
       ]);
@@ -78,7 +77,7 @@ describe('API Service Registrar', () => {
     });
 
     it('defaults displayName to name', async () => {
-      await registerToolApiDependencies('tool-1', 'my_tool', [
+      await registerToolConfigRequirements('my_tool', 'tool-1', 'custom', [
         { name: 'custom_api' },
       ]);
 
@@ -88,7 +87,7 @@ describe('API Service Registrar', () => {
     });
 
     it('defaults category to "general"', async () => {
-      await registerToolApiDependencies('tool-1', 'my_tool', [
+      await registerToolConfigRequirements('my_tool', 'tool-1', 'custom', [
         { name: 'some_api' },
       ]);
 
@@ -97,12 +96,12 @@ describe('API Service Registrar', () => {
       );
     });
 
-    it('passes through multiEntry and configSchema from RequiredConfigInput', async () => {
+    it('passes through multiEntry and configSchema', async () => {
       const schema = [
         { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true },
       ];
 
-      await registerToolApiDependencies('tool-1', 'my_tool', [
+      await registerToolConfigRequirements('my_tool', 'tool-1', 'custom', [
         { name: 'my_service', multiEntry: true, configSchema: schema },
       ]);
 
@@ -113,28 +112,15 @@ describe('API Service Registrar', () => {
         }),
       );
     });
-
-    it('sets multiEntry/configSchema to undefined for legacy RequiredKeyInput', async () => {
-      await registerToolApiDependencies('tool-1', 'my_tool', [
-        { name: 'legacy_api', envVarName: 'LEGACY_API_KEY' } as unknown as Parameters<typeof registerToolApiDependencies>[2][number],
-      ]);
-
-      expect(mockConfigServicesRepo.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          multiEntry: undefined,
-          configSchema: undefined,
-        }),
-      );
-    });
   });
 
   // ========================================================================
-  // registerPluginApiDependencies
+  // registerToolConfigRequirements (plugin source)
   // ========================================================================
 
-  describe('registerPluginApiDependencies', () => {
+  describe('registerToolConfigRequirements (plugin)', () => {
     it('upserts service and adds plugin as required_by', async () => {
-      await registerPluginApiDependencies('plugin-1', 'weather_plugin', [
+      await registerToolConfigRequirements('weather_plugin', 'plugin-1', 'plugin', [
         { name: 'openweathermap', category: 'weather', docsUrl: 'https://openweathermap.org/api' },
       ]);
 
@@ -154,7 +140,7 @@ describe('API Service Registrar', () => {
     });
 
     it('handles multiple plugin dependencies', async () => {
-      await registerPluginApiDependencies('plugin-1', 'smart_plugin', [
+      await registerToolConfigRequirements('smart_plugin', 'plugin-1', 'plugin', [
         { name: 'openai' },
         { name: 'tavily' },
         { name: 'deepl' },
