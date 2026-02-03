@@ -15,7 +15,7 @@ const mockToolRegistry = {
   unregister: vi.fn(() => false),
   getDefinitions: vi.fn(() => []),
   getDefinition: vi.fn(),
-  setApiKeyCenter: vi.fn(),
+  setConfigCenter: vi.fn(),
   updateExecutor: vi.fn(),
   execute: vi.fn(),
 };

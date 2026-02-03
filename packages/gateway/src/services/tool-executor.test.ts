@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockToolRegistry = {
   has: vi.fn(),
   execute: vi.fn(),
-  setApiKeyCenter: vi.fn(),
+  setConfigCenter: vi.fn(),
   registerProvider: vi.fn(),
   setConfigRegistrationHandler: vi.fn(),
   use: vi.fn(),
@@ -105,10 +105,10 @@ describe('Tool Executor', () => {
       expect(registerCoreTools).toHaveBeenCalledWith(mockToolRegistry);
     });
 
-    it('sets the API key center', () => {
+    it('sets the config center', () => {
       getSharedToolRegistry('user-1');
 
-      expect(mockToolRegistry.setApiKeyCenter).toHaveBeenCalledWith({ mocked: true });
+      expect(mockToolRegistry.setConfigCenter).toHaveBeenCalledWith({ mocked: true });
     });
 
     it('registers all 6 gateway tool providers', () => {

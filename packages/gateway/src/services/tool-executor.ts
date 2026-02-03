@@ -86,7 +86,7 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   // Duplicates are safely ignored by ToolRegistry
   registerCoreTools(tools);
 
-  tools.setApiKeyCenter(gatewayConfigCenter);
+  tools.setConfigCenter(gatewayConfigCenter);
 
   // Register gateway tool providers (source: 'gateway')
   tools.registerProvider(createMemoryToolProvider(userId));

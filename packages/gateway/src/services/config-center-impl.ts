@@ -4,7 +4,7 @@
  * Implements the ConfigCenter interface from core,
  * backed by the config_services PostgreSQL tables with in-memory cache.
  *
- * Replaces (and re-exports for backward compat) the legacy GatewayApiKeyCenter.
+ * Backed by the config_services PostgreSQL tables with in-memory cache.
  */
 
 import type {

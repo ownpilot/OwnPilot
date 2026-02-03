@@ -180,7 +180,7 @@ vi.mock('@ownpilot/core', () => ({
     register: vi.fn(),
     has: vi.fn(),
     getDefinitions: vi.fn(() => []),
-    setApiKeyCenter: vi.fn(),
+    setConfigCenter: vi.fn(),
   })),
   registerAllTools: vi.fn(),
   registerCoreTools: vi.fn(),

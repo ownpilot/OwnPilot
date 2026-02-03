@@ -691,7 +691,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Create tool registry with ALL tools (not just core)
   const tools = new ToolRegistry();
   registerAllTools(tools);
-  tools.setApiKeyCenter(gatewayConfigCenter);
+  tools.setConfigCenter(gatewayConfigCenter);
 
   // Register all gateway domain tools (memory, goals, etc.) with tracing
   const userId = 'default';
@@ -1505,7 +1505,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   // Create tools registry with ALL tools
   const tools = new ToolRegistry();
   registerAllTools(tools);
-  tools.setApiKeyCenter(gatewayConfigCenter);
+  tools.setConfigCenter(gatewayConfigCenter);
 
   // Register all gateway domain tools (memory, goals, etc.) without tracing
   const userId = 'default';
