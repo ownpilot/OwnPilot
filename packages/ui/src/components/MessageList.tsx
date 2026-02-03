@@ -85,7 +85,7 @@ function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
 
       // Add the code block
       const language = match[1] || 'plaintext';
-      const code = match[2].trim();
+      const code = (match[2] ?? '').trim();
       parts.push(
         <div key={key++} className="my-3">
           <CodeBlock
@@ -171,7 +171,7 @@ function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
         elements.push(remaining);
         break;
       } else if (nextSpecial === 0) {
-        elements.push(remaining[0]);
+        elements.push(remaining[0]!);
         remaining = remaining.slice(1);
       } else {
         elements.push(remaining.slice(0, nextSpecial));

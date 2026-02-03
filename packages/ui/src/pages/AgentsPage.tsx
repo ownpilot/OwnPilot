@@ -985,7 +985,7 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
               <button
                 onClick={() => {
                   const currentIndex = steps.indexOf(step);
-                  if (currentIndex > 0) setStep(steps[currentIndex - 1]);
+                  if (currentIndex > 0) setStep(steps[currentIndex - 1]!);
                 }}
                 className="px-4 py-2 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
               >
@@ -1004,7 +1004,7 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
               <button
                 onClick={() => {
                   const currentIndex = steps.indexOf(step);
-                  if (currentIndex < steps.length - 1) setStep(steps[currentIndex + 1]);
+                  if (currentIndex < steps.length - 1) setStep(steps[currentIndex + 1]!);
                 }}
                 disabled={step === 'info' && !name.trim()}
                 className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

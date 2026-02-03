@@ -54,7 +54,7 @@ export function ApiKeysPage() {
       if (settingsData.defaultProvider) {
         setDefaultProvider(settingsData.defaultProvider);
       } else if (settingsData.configuredProviders.length > 0) {
-        setDefaultProvider(settingsData.configuredProviders[0]);
+        setDefaultProvider(settingsData.configuredProviders[0]!);
       }
       if (settingsData.defaultModel) {
         setDefaultModel(settingsData.defaultModel);
@@ -159,7 +159,7 @@ export function ApiKeysPage() {
       const providerModels = models.filter((m) => m.provider === providerId);
       if (providerModels.length > 0) {
         const recommended = providerModels.find((m) => m.recommended);
-        const newModel = recommended?.id ?? providerModels[0].id;
+        const newModel = recommended?.id ?? providerModels[0]!.id;
         setDefaultModel(newModel);
         await handleDefaultModelChange(newModel);
       }
@@ -201,7 +201,7 @@ export function ApiKeysPage() {
       if (defaultProvider === providerId) {
         const remaining = configuredProviders.filter((p) => p !== providerId);
         if (remaining.length > 0) {
-          await handleDefaultProviderChange(remaining[0]);
+          await handleDefaultProviderChange(remaining[0]!);
         } else {
           setDefaultProvider('');
           setDefaultModel('');
@@ -320,7 +320,7 @@ export function ApiKeysPage() {
 
   const renderProviderCard = (provider: ProviderConfig) => {
     const isConfigured = configuredProviders.includes(provider.id);
-    const hasNewValue = apiKeys[provider.id] && apiKeys[provider.id].trim();
+    const hasNewValue = apiKeys[provider.id] && apiKeys[provider.id]!.trim();
 
     return (
       <div

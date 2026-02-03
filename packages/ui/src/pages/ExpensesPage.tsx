@@ -47,7 +47,7 @@ export function ExpensesPage() {
 
   // New expense form state
   const [newExpense, setNewExpense] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0]!,
     amount: '',
     currency: 'TRY',
     category: 'other',
@@ -96,7 +96,7 @@ export function ExpensesPage() {
       toast.success('Expense added');
       setShowAddForm(false);
       setNewExpense({
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0]!,
         amount: '',
         currency: 'TRY',
         category: 'other',

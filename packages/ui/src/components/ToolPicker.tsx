@@ -464,7 +464,7 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                     <div className="px-2 py-1 text-xs font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wider">
                       {category}
                     </div>
-                    {groupedItems[category].map((item) => (
+                    {groupedItems[category]!.map((item) => (
                       <button
                         key={`${item.type}-${item.internalName || item.name}`}
                         type="button"

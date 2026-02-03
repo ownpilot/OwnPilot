@@ -109,7 +109,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     if (isRetry) {
       setMessages((prev) => {
         // Remove the last message if it's an error
-        if (prev.length > 0 && prev[prev.length - 1].isError) {
+        if (prev.length > 0 && prev[prev.length - 1]!.isError) {
           return prev.slice(0, -1);
         }
         return prev;

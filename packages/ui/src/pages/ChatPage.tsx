@@ -112,7 +112,7 @@ export function ChatPage() {
                 modelsData.configuredProviders.includes(settingsData.defaultProvider)) {
               agentProvider = settingsData.defaultProvider;
             } else if (modelsData.configuredProviders.length > 0) {
-              agentProvider = modelsData.configuredProviders[0];
+              agentProvider = modelsData.configuredProviders[0]!;
             }
           }
 
@@ -161,7 +161,7 @@ export function ChatPage() {
 
       // Fallback to first configured provider
       if (modelsData.configuredProviders.length > 0) {
-        const firstProvider = modelsData.configuredProviders[0];
+        const firstProvider = modelsData.configuredProviders[0]!;
         const firstModel = modelsData.models.find((m) => m.provider === firstProvider);
         if (firstModel && !modelsData.configuredProviders.includes(provider)) {
           setProvider(firstProvider);
@@ -185,7 +185,7 @@ export function ChatPage() {
     // Only include models from configured providers
     if (!configuredProviders.includes(m.provider)) return acc;
     if (!acc[m.provider]) acc[m.provider] = [];
-    acc[m.provider].push(m);
+    acc[m.provider]!.push(m);
     return acc;
   }, {});
 
@@ -195,7 +195,7 @@ export function ChatPage() {
     const providerModels = modelsByProvider[newProvider];
     if (providerModels && providerModels.length > 0) {
       const recommended = providerModels.find((m) => m.recommended);
-      setModel(recommended?.id ?? providerModels[0].id);
+      setModel(recommended?.id ?? providerModels[0]!.id);
     }
     setShowProviderMenu(false);
     // Keep agent context - just update the provider/model being used

@@ -33,7 +33,7 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
       setWorkspaces(list ?? []);
       // Auto-select first workspace if none selected
       if (!selectedWorkspaceId && Array.isArray(list) && list.length > 0) {
-        onWorkspaceChange(list[0].id);
+        onWorkspaceChange(list[0]!.id);
       }
     } catch {
       // API client handles error reporting
@@ -69,7 +69,7 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
       const remaining = workspaces.filter(w => w.id !== id);
       setWorkspaces(remaining);
       if (selectedWorkspaceId === id) {
-        onWorkspaceChange(remaining.length > 0 ? remaining[0].id : null);
+        onWorkspaceChange(remaining.length > 0 ? remaining[0]!.id : null);
       }
     } catch {
       // API client handles error reporting

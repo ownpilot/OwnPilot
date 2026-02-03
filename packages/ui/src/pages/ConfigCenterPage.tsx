@@ -47,7 +47,7 @@ function hashString(str: string): number {
 }
 
 function getCategoryColor(category: string): string {
-  return CATEGORY_PALETTE[hashString(category) % CATEGORY_PALETTE.length];
+  return CATEGORY_PALETTE[hashString(category) % CATEGORY_PALETTE.length]!;
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +186,7 @@ export function ConfigCenterPage() {
       if (service.entries.length > 0) {
         // Load the default entry, or the first one
         const defaultEntry =
-          service.entries.find((e) => e.isDefault) ?? service.entries[0];
+          service.entries.find((e) => e.isDefault) ?? service.entries[0]!;
         loadEntryIntoForm(defaultEntry);
       } else {
         // No entries yet -- prepare a blank "new entry" form
@@ -374,7 +374,7 @@ export function ConfigCenterPage() {
           if (updatedService.entries.length > 0) {
             const next =
               updatedService.entries.find((e) => e.isDefault) ??
-              updatedService.entries[0];
+              updatedService.entries[0]!;
             loadEntryIntoForm(next);
           } else {
             startNewEntry();

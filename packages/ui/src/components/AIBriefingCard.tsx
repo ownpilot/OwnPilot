@@ -110,18 +110,18 @@ export function AIBriefingCard() {
                 m => m.provider === parsed.provider && m.model === parsed.model
               );
               if (!found && models.length > 0) {
-                setSelectedModel(models[0]);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(models[0]));
+                setSelectedModel(models[0]!);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(models[0]!));
               }
             } catch {
               // Invalid saved data, use first model
-              setSelectedModel(models[0]);
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(models[0]));
+              setSelectedModel(models[0]!);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(models[0]!));
             }
           } else {
             // No saved preference, use first available
-            setSelectedModel(models[0]);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(models[0]));
+            setSelectedModel(models[0]!);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(models[0]!));
           }
         }
       } catch {
@@ -357,7 +357,7 @@ export function AIBriefingCard() {
         models: [],
       };
     }
-    acc[model.provider].models.push(model);
+    acc[model.provider]!.models.push(model);
     return acc;
   }, {} as Record<string, { name: string; models: ProviderModel[] }>);
 
