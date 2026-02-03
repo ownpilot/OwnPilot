@@ -371,7 +371,7 @@ modelConfigsRoutes.post('/', async (c) => {
     const body = await c.req.json<CreateModelConfigInput>();
 
     if (!body.providerId || !body.modelId) {
-      return apiError(c, 'Provider ID and Model ID are required', 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Provider ID and Model ID are required' }, 400);
     }
 
     const config = await modelConfigsRepo.upsertModel({
@@ -384,7 +384,7 @@ modelConfigsRoutes.post('/', async (c) => {
       data: config, });
   } catch (error) {
     log.error('Failed to create model:', error);
-    return apiError(c, 'Failed to create model', 500);
+    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: 'Failed to create model' }, 500);
   }
 });
 
@@ -497,7 +497,7 @@ modelConfigsRoutes.get('/providers/:id', async (c) => {
   const provider = (await getMergedProviders(userId)).find((p) => p.id === providerId);
 
   if (!provider) {
-    return apiError(c, 'Provider not found', 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Provider not found' }, 404);
   }
 
   // Get models for this provider
@@ -519,7 +519,7 @@ modelConfigsRoutes.post('/providers', async (c) => {
     const body = await c.req.json<CreateProviderInput>();
 
     if (!body.providerId || !body.displayName) {
-      return apiError(c, 'Provider ID and display name are required', 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Provider ID and display name are required' }, 400);
     }
 
     const provider = await modelConfigsRepo.upsertProvider({
@@ -531,7 +531,7 @@ modelConfigsRoutes.post('/providers', async (c) => {
       data: provider, });
   } catch (error) {
     log.error('Failed to create provider:', error);
-    return apiError(c, 'Failed to create provider', 500);
+    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: 'Failed to create provider' }, 500);
   }
 });
 
@@ -565,7 +565,7 @@ modelConfigsRoutes.put('/providers/:id', async (c) => {
           data: provider, });
       }
 
-      return apiError(c, 'Provider not found', 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Provider not found' }, 404);
     }
 
     const provider = await modelConfigsRepo.updateProvider(userId, providerId, body);
@@ -574,7 +574,7 @@ modelConfigsRoutes.put('/providers/:id', async (c) => {
       data: provider, });
   } catch (error) {
     log.error('Failed to update provider:', error);
-    return apiError(c, 'Failed to update provider', 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: 'Failed to update provider' }, 500);
   }
 });
 
@@ -588,13 +588,13 @@ modelConfigsRoutes.delete('/providers/:id', async (c) => {
   // Can't delete built-in providers
   const builtinProvider = getProviderConfig(providerId);
   if (builtinProvider) {
-    return apiError(c, 'Cannot delete built-in provider', 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Cannot delete built-in provider' }, 400);
   }
 
   const deleted = await modelConfigsRepo.deleteProvider(userId, providerId);
 
   if (!deleted) {
-    return apiError(c, 'Provider not found', 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Provider not found' }, 404);
   }
 
   return apiResponse(c, { message: 'Provider deleted', });
@@ -612,7 +612,7 @@ modelConfigsRoutes.patch('/providers/:id/toggle', async (c) => {
     const body = await c.req.json<{ enabled: boolean }>();
 
     if (typeof body.enabled !== 'boolean') {
-      return apiError(c, 'enabled field required (boolean)', 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'enabled field required (boolean)' }, 400);
     }
 
     // Check if it's a builtin provider from models.dev
@@ -647,7 +647,7 @@ modelConfigsRoutes.patch('/providers/:id/toggle', async (c) => {
     } else {
       const toggled = await modelConfigsRepo.toggleProvider(userId, providerId, body.enabled);
       if (!toggled) {
-        return apiError(c, 'Provider not found', 404);
+        return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Provider not found' }, 404);
       }
     }
 
@@ -655,7 +655,7 @@ modelConfigsRoutes.patch('/providers/:id/toggle', async (c) => {
       enabled: body.enabled, });
   } catch (error) {
     log.error('Failed to toggle provider:', error);
-    return apiError(c, 'Failed to toggle provider', 500);
+    return apiError(c, { code: ERROR_CODES.TOGGLE_FAILED, message: 'Failed to toggle provider' }, 500);
   }
 });
 
@@ -702,7 +702,7 @@ modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
   }
 
   if (!baseUrl) {
-    return apiError(c, `Provider "${providerId}" has no base URL configured. Set a base URL first.`, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Provider "${providerId}" has no base URL configured. Set a base URL first.` }, 400);
   }
 
   // Resolve API key for authentication (some local providers require it)
@@ -830,7 +830,7 @@ modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
         existingModels: discovered.filter((m) => !m.isNew).length,
       }, });
   } catch (error) {
-    return apiError(c, `Models fetched but failed to save: ${error instanceof Error ? error.message : String(error)}`, 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: `Models fetched but failed to save: ${error instanceof Error ? error.message : String(error)}` }, 500);
   }
 });
 
@@ -872,7 +872,7 @@ modelConfigsRoutes.post('/sync', async (c) => {
     // Fetch models.dev API
     const response = await fetch(MODELS_DEV_API_URL);
     if (!response.ok) {
-      return apiError(c, `Failed to fetch models.dev: ${response.status}`, 500);
+      return apiError(c, { code: ERROR_CODES.FETCH_FAILED, message: `Failed to fetch models.dev: ${response.status}` }, 500);
     }
 
     const data = await response.json() as Record<string, ModelsDevProvider>;
@@ -927,7 +927,7 @@ modelConfigsRoutes.post('/sync', async (c) => {
       note: 'User disabled models are preserved in database, not affected by sync.', });
   } catch (error) {
     log.error('Sync failed:', error);
-    return apiError(c, 'Sync failed', 500);
+    return apiError(c, { code: ERROR_CODES.SYNC_ERROR, message: 'Sync failed' }, 500);
   }
 });
 
@@ -956,7 +956,7 @@ modelConfigsRoutes.post('/sync/apply', async (c) => {
       }, });
   } catch (error) {
     log.error('Sync apply failed:', error);
-    return apiError(c, 'Sync apply failed: ' + String(error), 500);
+    return apiError(c, { code: ERROR_CODES.SYNC_ERROR, message: 'Sync apply failed: ' + String(error) }, 500);
   }
 });
 
@@ -1023,7 +1023,7 @@ modelConfigsRoutes.post('/sync/reset', async (c) => {
       }, });
   } catch (error) {
     log.error('Full reset failed:', error);
-    return apiError(c, 'Full reset failed: ' + String(error), 500);
+    return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: 'Full reset failed: ' + String(error) }, 500);
   }
 });
 
@@ -1044,7 +1044,7 @@ modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
     const configPath = path.join(__dirname, '..', '..', '..', 'core', 'src', 'agent', 'providers', 'configs', `${providerId}.json`);
 
     if (!fs.existsSync(configPath)) {
-      return apiError(c, `Provider config '${providerId}' not found`, 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Provider config '${providerId}' not found` }, 404);
     }
 
     // Delete the config file
@@ -1072,7 +1072,7 @@ modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
       }, });
   } catch (error) {
     log.error('Delete provider failed:', error);
-    return apiError(c, 'Delete provider failed: ' + String(error), 500);
+    return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: 'Delete provider failed: ' + String(error) }, 500);
   }
 });
 
@@ -1134,7 +1134,7 @@ modelConfigsRoutes.get('/:provider/:model', async (c) => {
   );
 
   if (!model) {
-    return apiError(c, 'Model not found', 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Model not found' }, 404);
   }
 
   return apiResponse(c, { data: model, });
@@ -1157,7 +1157,7 @@ modelConfigsRoutes.put('/:provider/:model', async (c) => {
     );
 
     if (!existingModel) {
-      return apiError(c, 'Model not found', 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Model not found' }, 404);
     }
 
     // Create or update override
@@ -1173,7 +1173,7 @@ modelConfigsRoutes.put('/:provider/:model', async (c) => {
       data: config, });
   } catch (error) {
     log.error('Failed to update model:', error);
-    return apiError(c, 'Failed to update model', 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: 'Failed to update model' }, 500);
   }
 });
 
@@ -1190,11 +1190,11 @@ modelConfigsRoutes.delete('/:provider/:model', async (c) => {
   );
 
   if (!existingModel) {
-    return apiError(c, 'Model not found', 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Model not found' }, 404);
   }
 
   if (!existingModel.isCustom && !existingModel.hasOverride) {
-    return apiError(c, 'Cannot delete built-in model without override', 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Cannot delete built-in model without override' }, 400);
   }
 
   const deleted = await modelConfigsRepo.deleteModel(userId, providerId, modelId);
@@ -1215,7 +1215,7 @@ modelConfigsRoutes.patch('/:provider/:model/toggle', async (c) => {
     const body = await c.req.json<{ enabled: boolean }>();
 
     if (typeof body.enabled !== 'boolean') {
-      return apiError(c, 'enabled field required (boolean)', 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'enabled field required (boolean)' }, 400);
     }
 
     // Check if model exists
@@ -1224,7 +1224,7 @@ modelConfigsRoutes.patch('/:provider/:model/toggle', async (c) => {
     );
 
     if (!existingModel) {
-      return apiError(c, 'Model not found', 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Model not found' }, 404);
     }
 
     // Create config entry if it doesn't exist, then toggle
@@ -1240,6 +1240,6 @@ modelConfigsRoutes.patch('/:provider/:model/toggle', async (c) => {
       enabled: body.enabled, });
   } catch (error) {
     log.error('Failed to toggle model:', error);
-    return apiError(c, 'Failed to toggle model', 500);
+    return apiError(c, { code: ERROR_CODES.TOGGLE_FAILED, message: 'Failed to toggle model' }, 500);
   }
 });
