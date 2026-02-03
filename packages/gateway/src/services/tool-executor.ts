@@ -20,7 +20,7 @@ import {
   createPluginId,
 } from '@ownpilot/core';
 import type { ToolDefinition, ToolContext } from '@ownpilot/core';
-import { gatewayConfigCenter as gatewayApiKeyCenter } from './config-center-impl.js';
+import { gatewayConfigCenter } from './config-center-impl.js';
 import { getDefaultPluginRegistry } from '../plugins/index.js';
 import { registerToolConfigRequirements } from './api-service-registrar.js';
 import {
@@ -86,7 +86,7 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   // Duplicates are safely ignored by ToolRegistry
   registerCoreTools(tools);
 
-  tools.setApiKeyCenter(gatewayApiKeyCenter);
+  tools.setApiKeyCenter(gatewayConfigCenter);
 
   // Register gateway tool providers (source: 'gateway')
   tools.registerProvider(createMemoryToolProvider(userId));

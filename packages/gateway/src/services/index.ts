@@ -21,7 +21,6 @@ export { MessageBus, createMessageBus } from './message-bus-impl.js';
 export {
   GatewayConfigCenter,
   gatewayConfigCenter,
-  gatewayApiKeyCenter,
 } from './config-center-impl.js';
 
 // Tool Service

@@ -114,7 +114,6 @@ export {
   // Config Center
   GatewayConfigCenter,
   gatewayConfigCenter,
-  gatewayApiKeyCenter,
   // Tool
   ToolService,
   createToolService,
