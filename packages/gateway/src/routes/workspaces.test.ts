@@ -683,8 +683,8 @@ describe('Workspaces Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.data.data.containerId).toBe('existing-container');
-      expect(data.data.data.status).toBe('running');
+      expect(data.data.containerId).toBe('existing-container');
+      expect(data.data.status).toBe('running');
       expect(mockOrchestrator.createContainer).not.toHaveBeenCalled();
     });
 
