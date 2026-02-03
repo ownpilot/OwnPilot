@@ -313,9 +313,9 @@ export function DataBrowserPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {records.map((record, idx) => (
+                  {records.map((record) => (
                     <tr
-                      key={(record.id as string) || idx}
+                      key={record.id as string}
                       className="border-b border-border dark:border-dark-border last:border-b-0 hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50"
                     >
                       {config.columns.map((col) => (

@@ -4,7 +4,7 @@
  * Create and manage AI agents with provider/model selection
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash, Bot, Settings, MessageSquare, Play } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
@@ -325,11 +325,11 @@ function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) {
   };
 
   // Group models by provider
-  const modelsByProvider = models.reduce<Record<string, ModelInfo[]>>((acc, model) => {
+  const modelsByProvider = useMemo(() => models.reduce<Record<string, ModelInfo[]>>((acc, model) => {
     if (!acc[model.provider]) acc[model.provider] = [];
     acc[model.provider]!.push(model);
     return acc;
-  }, {});
+  }, {}), [models]);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -732,11 +732,11 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
   };
 
   // Group models by provider
-  const modelsByProvider = models.reduce<Record<string, ModelInfo[]>>((acc, model) => {
+  const modelsByProvider = useMemo(() => models.reduce<Record<string, ModelInfo[]>>((acc, model) => {
     if (!acc[model.provider]) acc[model.provider] = [];
     acc[model.provider]!.push(model);
     return acc;
-  }, {});
+  }, {}), [models]);
 
   const steps = ['info', 'model', 'tools', 'config'] as const;
 
