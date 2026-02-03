@@ -24,6 +24,9 @@ import type { IPluginService } from './plugin-service.js';
 import type { IMemoryService } from './memory-service-interface.js';
 import type { IDatabaseService } from './database-service.js';
 import type { IWorkspaceService } from './workspace-service.js';
+import type { IGoalService } from './goal-service.js';
+import type { ITriggerService } from './trigger-service.js';
+import type { IPlanService } from './plan-service.js';
 
 /**
  * All service tokens.
@@ -67,4 +70,13 @@ export const Services = {
 
   /** Workspace management */
   Workspace: new ServiceToken<IWorkspaceService>('workspace'),
+
+  /** Goal tracking and decomposition */
+  Goal: new ServiceToken<IGoalService>('goal'),
+
+  /** Proactive trigger management */
+  Trigger: new ServiceToken<ITriggerService>('trigger'),
+
+  /** Autonomous plan execution */
+  Plan: new ServiceToken<IPlanService>('plan'),
 } as const;

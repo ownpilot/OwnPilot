@@ -63,6 +63,9 @@ import { createDatabaseServiceImpl } from './services/database-service-impl.js';
 import { createPluginService } from './services/plugin-service-impl.js';
 import { createMemoryServiceImpl } from './services/memory-service-impl.js';
 import { createWorkspaceServiceImpl } from './services/workspace-service-impl.js';
+import { createGoalServiceImpl } from './services/goal-service-impl.js';
+import { createTriggerServiceImpl } from './services/trigger-service-impl.js';
+import { createPlanServiceImpl } from './services/plan-service-impl.js';
 import { getLog } from './services/log.js';
 
 const log = getLog('Server');
@@ -229,16 +232,25 @@ async function main() {
   // 8. Register Memory Service (wraps MemoryService)
   registry.register(Services.Memory, createMemoryServiceImpl());
 
-  // 9. Register Tool Service in registry (wraps ToolRegistry)
+  // 9. Register Goal Service (wraps GoalService)
+  registry.register(Services.Goal, createGoalServiceImpl());
+
+  // 10. Register Trigger Service (wraps TriggerService)
+  registry.register(Services.Trigger, createTriggerServiceImpl());
+
+  // 11. Register Plan Service (wraps PlanService)
+  registry.register(Services.Plan, createPlanServiceImpl());
+
+  // 12. Register Tool Service in registry (wraps ToolRegistry)
   registry.register(Services.Tool, createToolService());
 
-  // 8. Register Provider Service in registry
+  // 13. Register Provider Service in registry
   registry.register(Services.Provider, createProviderService());
 
-  // 11. Register Audit Service in registry
+  // 14. Register Audit Service in registry
   registry.register(Services.Audit, createAuditService());
 
-  // 12. Register Workspace Service (wraps WorkspaceManager)
+  // 15. Register Workspace Service (wraps WorkspaceManager)
   registry.register(Services.Workspace, createWorkspaceServiceImpl());
 
   // Start trigger engine (proactive automation)

@@ -90,6 +90,62 @@ export type {
   WorkspaceAgentInput,
 } from './workspace-service.js';
 
+// Goal Service
+export type {
+  IGoalService,
+  GoalStatus,
+  StepStatus as GoalStepStatus,
+  Goal as ServiceGoal,
+  GoalStep as ServiceGoalStep,
+  GoalWithSteps as ServiceGoalWithSteps,
+  GoalNextAction,
+  GoalStats as GoalServiceStats,
+  GoalQuery,
+  CreateGoalInput,
+  UpdateGoalInput,
+  CreateStepInput as CreateGoalStepInput,
+  UpdateStepInput as UpdateGoalStepInput,
+  DecomposeStepInput as GoalDecomposeInput,
+} from './goal-service.js';
+
+// Trigger Service
+export type {
+  ITriggerService,
+  TriggerType,
+  TriggerStatus as TriggerExecutionStatus,
+  Trigger as ServiceTrigger,
+  TriggerHistory as ServiceTriggerHistory,
+  TriggerStats as TriggerServiceStats,
+  TriggerConfig,
+  ScheduleConfig,
+  EventConfig,
+  ConditionConfig,
+  WebhookConfig,
+  TriggerAction,
+  TriggerQuery,
+  CreateTriggerInput,
+  UpdateTriggerInput,
+} from './trigger-service.js';
+
+// Plan Service
+export type {
+  IPlanService,
+  PlanStatus,
+  StepType as PlanStepType,
+  StepStatus as PlanStepStatus,
+  PlanEventType,
+  Plan as ServicePlan,
+  PlanStep as ServicePlanStep,
+  PlanHistory as ServicePlanHistory,
+  StepConfig as PlanStepConfig,
+  PlanWithSteps as ServicePlanWithSteps,
+  PlanStats as PlanServiceStats,
+  CreatePlanInput,
+  UpdatePlanInput,
+  CreateStepInput as CreatePlanStepInput,
+  UpdateStepInput as UpdatePlanStepInput,
+} from './plan-service.js';
+
 // Config Center
 export * from './config-center.js';
 
