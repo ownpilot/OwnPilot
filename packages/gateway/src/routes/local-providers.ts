@@ -87,13 +87,7 @@ localProvidersRoutes.post('/', async (c) => {
       discoveryEndpoint,
     });
 
-    return c.json(
-      {
-        success: true,
-        data: provider,
-      },
-      201
-    );
+    return apiResponse(c, provider, 201);
   } catch (error) {
     log.error('Failed to create local provider:', error);
     return apiError(c, error instanceof Error ? error.message : 'Failed to create local provider', 500);

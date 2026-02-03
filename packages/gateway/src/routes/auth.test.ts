@@ -286,8 +286,7 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.success).toBe(false);
-      // Note: This endpoint uses inline c.json() instead of apiError helper
-      expect(data.error).toContain('not configured');
+      expect(data.error.message).toContain('not configured');
     });
 
     it('should include return URL in state', async () => {

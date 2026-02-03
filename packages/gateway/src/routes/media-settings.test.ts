@@ -215,7 +215,7 @@ describe('Media Settings Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error).toContain('Invalid provider');
+      expect(json.error.message).toContain('Invalid provider');
     });
 
     it('returns 400 when provider not configured', async () => {
@@ -229,7 +229,7 @@ describe('Media Settings Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error).toContain('not configured');
+      expect(json.error.message).toContain('not configured');
     });
 
     it('returns 400 for invalid model', async () => {
@@ -241,7 +241,7 @@ describe('Media Settings Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error).toContain('Invalid model');
+      expect(json.error.message).toContain('Invalid model');
     });
   });
 

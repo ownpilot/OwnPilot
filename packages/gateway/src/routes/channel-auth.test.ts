@@ -86,9 +86,9 @@ describe('Channel Auth Routes', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
-      expect(data.token).toBe('ABC123');
-      expect(data.expiresAt).toBe('2024-06-01T12:00:00.000Z');
-      expect(data.instructions).toContain('/connect ABC123');
+      expect(data.data.token).toBe('ABC123');
+      expect(data.data.expiresAt).toBe('2024-06-01T12:00:00.000Z');
+      expect(data.data.instructions).toContain('/connect ABC123');
     });
 
     it('should use defaults when optional fields are omitted', async () => {
@@ -105,7 +105,7 @@ describe('Channel Auth Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.token).toBe('XYZ789');
+      expect(data.data.token).toBe('XYZ789');
       expect(mockVerificationService.generateToken).toHaveBeenCalledWith(
         'default',
         expect.objectContaining({ platform: undefined })
@@ -124,13 +124,13 @@ describe('Channel Auth Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.platform).toBe('telegram');
-      expect(data.platformUserId).toBe('tg-12345');
-      expect(data.isVerified).toBe(true);
-      expect(data.user).not.toBeNull();
-      expect(data.user.id).toBe('user-1');
-      expect(data.user.displayName).toBe('Test User');
-      expect(data.user.verificationMethod).toBe('pin');
+      expect(data.data.platform).toBe('telegram');
+      expect(data.data.platformUserId).toBe('tg-12345');
+      expect(data.data.isVerified).toBe(true);
+      expect(data.data.user).not.toBeNull();
+      expect(data.data.user.id).toBe('user-1');
+      expect(data.data.user.displayName).toBe('Test User');
+      expect(data.data.user.verificationMethod).toBe('pin');
     });
 
     it('should return unverified status with null user', async () => {
@@ -141,10 +141,10 @@ describe('Channel Auth Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.platform).toBe('discord');
-      expect(data.platformUserId).toBe('disc-999');
-      expect(data.isVerified).toBe(false);
-      expect(data.user).toBeNull();
+      expect(data.data.platform).toBe('discord');
+      expect(data.data.platformUserId).toBe('disc-999');
+      expect(data.data.isVerified).toBe(false);
+      expect(data.data.user).toBeNull();
     });
   });
 
@@ -173,7 +173,7 @@ describe('Channel Auth Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.success).toBe(false);
+      expect(data.data.blocked).toBe(false);
     });
   });
 
@@ -204,10 +204,10 @@ describe('Channel Auth Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.users).toEqual([]);
-      expect(data.count).toBe(0);
-      expect(data.limit).toBe(100);
-      expect(data.offset).toBe(0);
+      expect(data.data.users).toEqual([]);
+      expect(data.data.count).toBe(0);
+      expect(data.data.limit).toBe(100);
+      expect(data.data.offset).toBe(0);
     });
 
     it('should return users with details', async () => {
@@ -220,12 +220,12 @@ describe('Channel Auth Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.users).toHaveLength(2);
-      expect(data.users[0].id).toBe('user-1');
-      expect(data.users[0].displayName).toBe('Test User');
-      expect(data.users[0].isBlocked).toBe(false);
-      expect(data.users[1].isBlocked).toBe(true);
-      expect(data.count).toBe(2);
+      expect(data.data.users).toHaveLength(2);
+      expect(data.data.users[0].id).toBe('user-1');
+      expect(data.data.users[0].displayName).toBe('Test User');
+      expect(data.data.users[0].isBlocked).toBe(false);
+      expect(data.data.users[1].isBlocked).toBe(true);
+      expect(data.data.count).toBe(2);
     });
 
     it('should pass filter params', async () => {

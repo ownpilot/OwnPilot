@@ -11,7 +11,7 @@ import { google } from 'googleapis';
 import { settingsRepo, oauthIntegrationsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js'
 
 const log = getLog('Auth');
 
@@ -191,14 +191,7 @@ authRoutes.get('/google/start', async (c) => {
   // Get OAuth configuration
   const config = getGoogleOAuthConfig();
   if (!config) {
-    return c.json(
-      {
-        success: false,
-        error: 'Google OAuth not configured',
-        hint: 'Configure Google OAuth in Settings > Integrations first',
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Google OAuth not configured. Configure Google OAuth in Settings > Integrations first' }, 400);
   }
 
   // Create OAuth client

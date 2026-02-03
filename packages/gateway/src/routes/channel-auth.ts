@@ -8,7 +8,7 @@
 import { Hono } from 'hono';
 import { getChannelVerificationService } from '../channels/auth/verification.js';
 import { channelUsersRepo } from '../db/repositories/channel-users.js';
-import { getPaginationParams } from './helpers.js';
+import { getPaginationParams, apiResponse } from './helpers.js';
 
 export const channelAuthRoutes = new Hono();
 
@@ -31,8 +31,7 @@ channelAuthRoutes.post('/generate-token', async (c) => {
     type: body.type,
   });
 
-  return c.json({
-    success: true,
+  return apiResponse(c, {
     token: result.token,
     expiresAt: result.expiresAt.toISOString(),
     instructions: `Send "/connect ${result.token}" to the bot on your messaging platform to verify your identity.`,
@@ -50,7 +49,7 @@ channelAuthRoutes.get('/status/:platform/:platformUserId', async (c) => {
 
   const user = await channelUsersRepo.findByPlatform(platform, platformUserId);
 
-  return c.json({
+  return apiResponse(c, {
     platform,
     platformUserId,
     isVerified: verified,
@@ -77,7 +76,7 @@ channelAuthRoutes.post('/block/:platform/:platformUserId', async (c) => {
   const service = getChannelVerificationService();
   const blocked = await service.blockUser(platform, platformUserId);
 
-  return c.json({ success: blocked });
+  return apiResponse(c, { blocked });
 });
 
 /**
@@ -89,7 +88,7 @@ channelAuthRoutes.post('/unblock/:platform/:platformUserId', async (c) => {
   const service = getChannelVerificationService();
   const unblocked = await service.unblockUser(platform, platformUserId);
 
-  return c.json({ success: unblocked });
+  return apiResponse(c, { unblocked });
 });
 
 /**
@@ -108,7 +107,7 @@ channelAuthRoutes.get('/users', async (c) => {
     offset,
   });
 
-  return c.json({
+  return apiResponse(c, {
     users: users.map((u) => ({
       id: u.id,
       ownpilotUserId: u.ownpilotUserId,
