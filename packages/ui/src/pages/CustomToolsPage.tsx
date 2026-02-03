@@ -75,7 +75,7 @@ export function CustomToolsPage() {
         await customToolsApi.action(toolId, action);
       }
       const labels: Record<string, string> = { enable: 'Tool enabled', disable: 'Tool disabled', approve: 'Tool approved', reject: 'Tool rejected', delete: 'Tool deleted' };
-      toast.success(labels[action]);
+      toast.success(labels[action]!);
       fetchTools();
       fetchStats();
       if (selectedTool?.id === toolId) {

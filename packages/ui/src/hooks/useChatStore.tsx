@@ -111,7 +111,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         currentMessages = prev;
 
         // If this is a retry, remove the last error message
-        if (isRetry && prev.length > 0 && prev[prev.length - 1].isError) {
+        if (isRetry && prev.length > 0 && prev[prev.length - 1]!.isError) {
           return prev.slice(0, -1);
         }
 
