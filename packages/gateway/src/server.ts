@@ -66,6 +66,7 @@ import { createWorkspaceServiceImpl } from './services/workspace-service-impl.js
 import { createGoalServiceImpl } from './services/goal-service-impl.js';
 import { createTriggerServiceImpl } from './services/trigger-service-impl.js';
 import { createPlanServiceImpl } from './services/plan-service-impl.js';
+import { createResourceServiceImpl } from './services/resource-service-impl.js';
 import { getLog } from './services/log.js';
 
 const log = getLog('Server');
@@ -188,6 +189,9 @@ async function main() {
 
   // 6. Register Database Service (wraps CustomDataService)
   registry.register(Services.Database, createDatabaseServiceImpl());
+
+  // 6b. Register Resource Service (wraps ResourceRegistry)
+  registry.register(Services.Resource, createResourceServiceImpl());
 
   // Initialize Plugins repository
   log.info('Initializing Plugins repository...');

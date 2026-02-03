@@ -53,3 +53,6 @@ export { TriggerServiceImpl, createTriggerServiceImpl } from './trigger-service-
 
 // Plan Service
 export { PlanServiceImpl, createPlanServiceImpl } from './plan-service-impl.js';
+
+// Resource Service
+export { ResourceServiceImpl, createResourceServiceImpl } from './resource-service-impl.js';

@@ -147,6 +147,9 @@ export {
   // Plan
   PlanServiceImpl,
   createPlanServiceImpl,
+  // Resource
+  ResourceServiceImpl,
+  createResourceServiceImpl,
 } from './services/index.js';
 
 // Config defaults (named constants for infrastructure tuning)
