@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Users, Plus, Trash2, Phone, Mail, Building, Star, Search } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { contactsApi } from '../api';
 
 interface Contact {
@@ -28,9 +32,11 @@ interface Contact {
 
 export function ContactsPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
@@ -38,7 +44,7 @@ export function ContactsPage() {
   const fetchContacts = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
-      if (searchQuery) params.search = searchQuery;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (filter === 'favorites') params.favorite = 'true';
 
       const data = await contactsApi.list(params);
@@ -48,7 +54,7 @@ export function ContactsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, filter]);
+  }, [debouncedSearch, filter]);
 
   useEffect(() => {
     fetchContacts();
@@ -59,6 +65,7 @@ export function ContactsPage() {
 
     try {
       await contactsApi.delete(contactId);
+      toast.success('Contact deleted');
       fetchContacts();
     } catch {
       // API client handles error reporting
@@ -68,6 +75,7 @@ export function ContactsPage() {
   const handleToggleFavorite = async (contact: Contact) => {
     try {
       await contactsApi.favorite(contact.id);
+      toast.success(contact.isFavorite ? 'Removed from favorites' : 'Added to favorites');
       fetchContacts();
     } catch {
       // API client handles error reporting
@@ -139,30 +147,14 @@ export function ContactsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading contacts...</p>
-          </div>
+          <LoadingSpinner message="Loading contacts..." />
         ) : contacts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Users className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              {searchQuery ? 'No contacts found' : 'No contacts yet'}
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4">
-              {searchQuery
-                ? 'Try a different search term.'
-                : 'Add your first contact to get started.'}
-            </p>
-            {!searchQuery && (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Add Contact
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={Users}
+            title={searchQuery ? 'No contacts found' : 'No contacts yet'}
+            description={searchQuery ? 'Try a different search term.' : 'Add your first contact to get started.'}
+            action={!searchQuery ? { label: 'Add Contact', onClick: () => setShowCreateModal(true), icon: Plus } : undefined}
+          />
         ) : (
           <div className="space-y-6">
             {sortedGroups.map(([letter, letterContacts]) => (
@@ -196,6 +188,7 @@ export function ContactsPage() {
             setEditingContact(null);
           }}
           onSave={() => {
+            toast.success(editingContact ? 'Contact updated' : 'Contact created');
             setShowCreateModal(false);
             setEditingContact(null);
             fetchContacts();

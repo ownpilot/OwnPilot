@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { goalsApi, apiClient } from '../api';
 import { Target, Plus, Trash2, ChevronRight, CheckCircle2, Circle, AlertTriangle, Pause } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
 
 interface GoalStep {
   id: string;
@@ -53,6 +56,7 @@ const priorityLabels: Record<number, string> = {
 
 export function GoalsPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<Goal['status'] | 'all'>('all');
@@ -85,6 +89,7 @@ export function GoalsPage() {
 
     try {
       await goalsApi.delete(goalId);
+      toast.success('Goal deleted');
       fetchGoals();
     } catch {
       // API client handles error reporting
@@ -94,6 +99,7 @@ export function GoalsPage() {
   const handleStatusChange = async (goalId: string, status: Goal['status']) => {
     try {
       await goalsApi.update(goalId, { status });
+      toast.success(`Goal ${status}`);
       fetchGoals();
     } catch {
       // API client handles error reporting
@@ -144,26 +150,14 @@ export function GoalsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading goals...</p>
-          </div>
+          <LoadingSpinner message="Loading goals..." />
         ) : goals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Target className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              No goals yet
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4">
-              Create goals to track what you want to achieve.
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Create Goal
-            </button>
-          </div>
+          <EmptyState
+            icon={Target}
+            title="No goals yet"
+            description="Create goals to track what you want to achieve."
+            action={{ label: 'Create Goal', onClick: () => setShowCreateModal(true), icon: Plus }}
+          />
         ) : (
           <div className="space-y-3">
             {goals.map((goal) => (
@@ -190,6 +184,7 @@ export function GoalsPage() {
             setEditingGoal(null);
           }}
           onSave={() => {
+            toast.success(editingGoal ? 'Goal updated' : 'Goal created');
             setShowCreateModal(false);
             setEditingGoal(null);
             fetchGoals();

@@ -14,6 +14,9 @@ import {
   Table,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
 // Data types
 type DataType = 'tasks' | 'bookmarks' | 'notes' | 'calendar' | 'contacts';
@@ -105,6 +108,7 @@ export function DataBrowserPage() {
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Record<string, unknown> | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -115,8 +119,8 @@ export function DataBrowserPage() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (searchQuery && config.searchable) {
-        params.append('search', searchQuery);
+      if (debouncedSearch && config.searchable) {
+        params.append('search', debouncedSearch);
       }
       params.append('limit', '100');
 
@@ -130,7 +134,7 @@ export function DataBrowserPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [config.endpoint, config.searchable, searchQuery]);
+  }, [config.endpoint, config.searchable, debouncedSearch]);
 
   useEffect(() => {
     fetchRecords();
@@ -282,21 +286,13 @@ export function DataBrowserPage() {
       {/* Table Content */}
       <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading...</p>
-          </div>
+          <LoadingSpinner message="Loading..." />
         ) : records.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Table className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              {searchQuery ? 'No records found' : `No ${config.name.toLowerCase()} yet`}
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4">
-              {searchQuery
-                ? 'Try a different search term.'
-                : `Add your first ${config.name.toLowerCase().replace(/s$/, '')} to get started.`}
-            </p>
-          </div>
+          <EmptyState
+            icon={Table}
+            title={searchQuery ? 'No records found' : `No ${config.name.toLowerCase()} yet`}
+            description={searchQuery ? 'Try a different search term.' : `Add your first ${config.name.toLowerCase().replace(/s$/, '')} to get started.`}
+          />
         ) : (
           <div className="p-6">
             <div className="overflow-x-auto border border-border dark:border-dark-border rounded-lg">

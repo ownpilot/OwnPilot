@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { memoriesApi, apiClient } from '../api';
 import { Brain, Plus, Trash2, Search, Star, Filter } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
 interface Memory {
   id: string;
@@ -31,9 +35,11 @@ const typeLabels = {
 
 export function MemoriesPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [typeFilter, setTypeFilter] = useState<Memory['type'] | 'all'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
@@ -41,8 +47,8 @@ export function MemoriesPage() {
   const fetchMemories = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
-      if (searchQuery) {
-        params.query = searchQuery;
+      if (debouncedSearch) {
+        params.query = debouncedSearch;
       }
       if (typeFilter !== 'all') {
         params.type = typeFilter;
@@ -55,7 +61,7 @@ export function MemoriesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, typeFilter]);
+  }, [debouncedSearch, typeFilter]);
 
   useEffect(() => {
     fetchMemories();
@@ -66,6 +72,7 @@ export function MemoriesPage() {
 
     try {
       await memoriesApi.delete(memoryId);
+      toast.success('Memory deleted');
       fetchMemories();
     } catch {
       // API client handles error reporting
@@ -141,28 +148,14 @@ export function MemoriesPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading memories...</p>
-          </div>
+          <LoadingSpinner message="Loading memories..." />
         ) : memories.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Brain className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              No memories yet
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4">
-              {searchQuery
-                ? 'No memories match your search.'
-                : 'The AI will automatically remember important information from conversations.'}
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add Memory
-            </button>
-          </div>
+          <EmptyState
+            icon={Brain}
+            title={searchQuery ? 'No memories found' : 'No memories yet'}
+            description={searchQuery ? 'No memories match your search.' : 'The AI will automatically remember important information from conversations.'}
+            action={{ label: 'Add Memory', onClick: () => setShowCreateModal(true), icon: Plus }}
+          />
         ) : (
           <div className="space-y-3">
             {memories.map((memory) => (
@@ -186,6 +179,7 @@ export function MemoriesPage() {
             setEditingMemory(null);
           }}
           onSave={() => {
+            toast.success(editingMemory ? 'Memory updated' : 'Memory created');
             setShowCreateModal(false);
             setEditingMemory(null);
             fetchMemories();

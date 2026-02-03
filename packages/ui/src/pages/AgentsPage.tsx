@@ -8,6 +8,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash, Bot, Settings, MessageSquare, Play } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
 import { agentsApi, modelsApi, toolsApi } from '../api';
 import type { Agent, Tool, ModelInfo, AgentDetail } from '../types';
 
@@ -93,26 +95,14 @@ export function AgentsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading agents...</p>
-          </div>
+          <LoadingSpinner message="Loading agents..." />
         ) : agents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Bot className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              No agents yet
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4 text-center max-w-md">
-              Create your first AI agent to get started. Agents can use different models and tools to help with various tasks.
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Create Agent
-            </button>
-          </div>
+          <EmptyState
+            icon={Bot}
+            title="No agents yet"
+            description="Create your first AI agent to get started. Agents can use different models and tools to help with various tasks."
+            action={{ label: 'Create Agent', onClick: () => setShowCreateModal(true), icon: Plus }}
+          />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {agents.map((agent) => (

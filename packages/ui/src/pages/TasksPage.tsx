@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, Circle, AlertTriangle, Plus, Trash2, Calendar } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
 import { tasksApi } from '../api';
 import type { Task } from '../types';
 
@@ -20,6 +23,7 @@ const priorityBg = {
 
 export function TasksPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
@@ -44,6 +48,7 @@ export function TasksPage() {
   const handleComplete = async (taskId: string) => {
     try {
       await tasksApi.complete(taskId);
+      toast.success('Task completed');
       fetchTasks();
     } catch {
       // API client handles error reporting
@@ -55,6 +60,7 @@ export function TasksPage() {
 
     try {
       await tasksApi.delete(taskId);
+      toast.success('Task deleted');
       fetchTasks();
     } catch {
       // API client handles error reporting
@@ -105,32 +111,14 @@ export function TasksPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading tasks...</p>
-          </div>
+          <LoadingSpinner message="Loading tasks..." />
         ) : tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <CheckCircle2 className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              {filter === 'all' ? 'No tasks yet' : `No ${filter} tasks`}
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4">
-              {filter === 'all'
-                ? 'Create your first task to get started.'
-                : filter === 'pending'
-                ? "You're all caught up!"
-                : 'Complete some tasks to see them here.'}
-            </p>
-            {filter === 'all' && (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Create Task
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={CheckCircle2}
+            title={filter === 'all' ? 'No tasks yet' : `No ${filter} tasks`}
+            description={filter === 'all' ? 'Create your first task to get started.' : filter === 'pending' ? "You're all caught up!" : 'Complete some tasks to see them here.'}
+            action={filter === 'all' ? { label: 'Create Task', onClick: () => setShowCreateModal(true), icon: Plus } : undefined}
+          />
         ) : (
           <div className="space-y-2">
             {tasks.map((task) => (
@@ -155,6 +143,7 @@ export function TasksPage() {
             setEditingTask(null);
           }}
           onSave={() => {
+            toast.success(editingTask ? 'Task updated' : 'Task created');
             setShowCreateModal(false);
             setEditingTask(null);
             fetchTasks();

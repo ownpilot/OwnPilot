@@ -3,3 +3,4 @@
  */
 
 export * from './useWebSocket';
+export * from './useDebouncedValue';

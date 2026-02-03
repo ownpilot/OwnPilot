@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileText, Plus, Trash2, Pin, Search } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { notesApi } from '../api';
 
 interface Note {
@@ -20,17 +24,19 @@ interface Note {
 
 export function NotesPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const fetchNotes = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
-      if (searchQuery) {
-        params.search = searchQuery;
+      if (debouncedSearch) {
+        params.search = debouncedSearch;
       }
 
       const data = await notesApi.list(params);
@@ -40,7 +46,7 @@ export function NotesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery]);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     fetchNotes();
@@ -51,6 +57,7 @@ export function NotesPage() {
 
     try {
       await notesApi.delete(noteId);
+      toast.success('Note deleted');
       fetchNotes();
       if (selectedNote?.id === noteId) {
         setSelectedNote(null);
@@ -63,6 +70,7 @@ export function NotesPage() {
   const handleTogglePin = async (note: Note) => {
     try {
       await notesApi.pin(note.id);
+      toast.success(note.isPinned ? 'Note unpinned' : 'Note pinned');
       fetchNotes();
     } catch {
       // API client handles error reporting
@@ -110,30 +118,14 @@ export function NotesPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading notes...</p>
-          </div>
+          <LoadingSpinner message="Loading notes..." />
         ) : notes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <FileText className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              {searchQuery ? 'No notes found' : 'No notes yet'}
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4">
-              {searchQuery
-                ? 'Try a different search term.'
-                : 'Create your first note to get started.'}
-            </p>
-            {!searchQuery && (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Create Note
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={FileText}
+            title={searchQuery ? 'No notes found' : 'No notes yet'}
+            description={searchQuery ? 'Try a different search term.' : 'Create your first note to get started.'}
+            action={!searchQuery ? { label: 'Create Note', onClick: () => setShowCreateModal(true), icon: Plus } : undefined}
+          />
         ) : (
           <div className="space-y-6">
             {/* Pinned Notes */}
@@ -191,6 +183,7 @@ export function NotesPage() {
             setSelectedNote(null);
           }}
           onSave={() => {
+            toast.success(selectedNote ? 'Note updated' : 'Note created');
             setShowCreateModal(false);
             setSelectedNote(null);
             fetchNotes();

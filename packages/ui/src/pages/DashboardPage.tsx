@@ -14,6 +14,7 @@ import {
 } from '../components/icons';
 import { AIBriefingCard } from '../components/AIBriefingCard';
 import { TimelineView } from '../components/TimelineView';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 import { summaryApi } from '../api';
 import type { SummaryData } from '../types';
@@ -58,11 +59,7 @@ export function DashboardPage() {
   }, [subscribe, debouncedRefresh]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-text-muted dark:text-dark-text-muted">Loading dashboard...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading dashboard..." />;
   }
 
   const stats = summary

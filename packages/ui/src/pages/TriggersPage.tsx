@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { triggersApi, apiClient } from '../api';
 import { Zap, Plus, Trash2, Play, Pause, Clock, History } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
 
 interface TriggerConfig {
   cron?: string;
@@ -71,6 +74,7 @@ const actionTypeLabels: Record<TriggerAction['type'], string> = {
 
 export function TriggersPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<Trigger['type'] | 'all'>('all');
@@ -114,6 +118,7 @@ export function TriggersPage() {
 
     try {
       await triggersApi.delete(triggerId);
+      toast.success('Trigger deleted');
       fetchTriggers();
     } catch {
       // API client handles error reporting
@@ -123,6 +128,7 @@ export function TriggersPage() {
   const handleToggle = async (triggerId: string, enabled: boolean) => {
     try {
       await triggersApi.update(triggerId, { enabled });
+      toast.success(enabled ? 'Trigger enabled' : 'Trigger disabled');
       fetchTriggers();
     } catch {
       // API client handles error reporting
@@ -132,6 +138,7 @@ export function TriggersPage() {
   const handleFireNow = async (triggerId: string) => {
     try {
       await triggersApi.fire(triggerId);
+      toast.success('Trigger fired');
       fetchTriggers();
     } catch {
       // API client handles error reporting
@@ -182,26 +189,14 @@ export function TriggersPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading triggers...</p>
-          </div>
+          <LoadingSpinner message="Loading triggers..." />
         ) : triggers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Zap className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              No triggers yet
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4 text-center max-w-md">
-              Triggers let the AI act proactively based on schedules, events, or conditions.
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Create Trigger
-            </button>
-          </div>
+          <EmptyState
+            icon={Zap}
+            title="No triggers yet"
+            description="Triggers let the AI act proactively based on schedules, events, or conditions."
+            action={{ label: 'Create Trigger', onClick: () => setShowCreateModal(true), icon: Plus }}
+          />
         ) : (
           <div className="space-y-3">
             {triggers.map((trigger) => (
@@ -228,6 +223,7 @@ export function TriggersPage() {
             setEditingTrigger(null);
           }}
           onSave={() => {
+            toast.success(editingTrigger ? 'Trigger updated' : 'Trigger created');
             setShowCreateModal(false);
             setEditingTrigger(null);
             fetchTriggers();

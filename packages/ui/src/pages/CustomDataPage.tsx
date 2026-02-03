@@ -1,18 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Database, Plus, Trash2, Search, Table, ChevronRight, Edit3, Lock } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { customDataApi } from '../api';
 import type { ColumnDefinition, CustomTable, CustomRecord } from '../api';
 
 
 export function CustomDataPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [tables, setTables] = useState<CustomTable[]>([]);
   const [selectedTable, setSelectedTable] = useState<CustomTable | null>(null);
   const [records, setRecords] = useState<CustomRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [showCreateTableModal, setShowCreateTableModal] = useState(false);
   const [showAddRecordModal, setShowAddRecordModal] = useState(false);
   const [editingRecord, setEditingRecord] = useState<CustomRecord | null>(null);
@@ -56,9 +62,9 @@ export function CustomDataPage() {
 
   useEffect(() => {
     if (selectedTable) {
-      fetchRecords(selectedTable.id, searchQuery || undefined);
+      fetchRecords(selectedTable.id, debouncedSearch || undefined);
     }
-  }, [selectedTable, searchQuery, fetchRecords]);
+  }, [selectedTable, debouncedSearch, fetchRecords]);
 
   const handleSelectTable = (table: CustomTable) => {
     setSelectedTable(table);
@@ -73,6 +79,7 @@ export function CustomDataPage() {
 
     try {
       await customDataApi.deleteTable(tableId);
+      toast.success('Table deleted');
       if (selectedTable?.id === tableId) {
         setSelectedTable(null);
         setRecords([]);
@@ -90,8 +97,9 @@ export function CustomDataPage() {
 
     try {
       await customDataApi.deleteRecord(recordId);
+      toast.success('Record deleted');
       if (selectedTable) {
-        fetchRecords(selectedTable.id, searchQuery || undefined);
+        fetchRecords(selectedTable.id, debouncedSearch || undefined);
       }
     } catch {
       // API client handles error reporting
@@ -127,7 +135,7 @@ export function CustomDataPage() {
               Tables
             </h3>
             {isLoading ? (
-              <p className="text-sm text-text-muted dark:text-dark-text-muted p-2">Loading...</p>
+              <p className="text-sm text-text-muted dark:text-dark-text-muted p-2 animate-pulse">Loading...</p>
             ) : tables.length === 0 ? (
               <p className="text-sm text-text-muted dark:text-dark-text-muted p-2">
                 No tables yet. Ask AI to create one!
@@ -220,21 +228,13 @@ export function CustomDataPage() {
               {/* Records Table */}
               <div className="flex-1 overflow-auto p-6">
                 {isLoadingRecords ? (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-text-muted dark:text-dark-text-muted">Loading records...</p>
-                  </div>
+                  <LoadingSpinner message="Loading records..." />
                 ) : records.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <Database className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-                    <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                      {searchQuery ? 'No records found' : 'No records yet'}
-                    </h3>
-                    <p className="text-text-muted dark:text-dark-text-muted mb-4">
-                      {searchQuery
-                        ? 'Try a different search term.'
-                        : 'Add your first record or ask AI to add data.'}
-                    </p>
-                  </div>
+                  <EmptyState
+                    icon={Database}
+                    title={searchQuery ? 'No records found' : 'No records yet'}
+                    description={searchQuery ? 'Try a different search term.' : 'Add your first record or ask AI to add data.'}
+                  />
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -331,6 +331,7 @@ export function CustomDataPage() {
         <CreateTableModal
           onClose={() => setShowCreateTableModal(false)}
           onSave={() => {
+            toast.success('Table created');
             setShowCreateTableModal(false);
             fetchTables();
           }}
@@ -347,9 +348,10 @@ export function CustomDataPage() {
             setEditingRecord(null);
           }}
           onSave={() => {
+            toast.success(editingRecord ? 'Record updated' : 'Record created');
             setShowAddRecordModal(false);
             setEditingRecord(null);
-            fetchRecords(selectedTable.id, searchQuery || undefined);
+            fetchRecords(selectedTable.id, debouncedSearch || undefined);
           }}
         />
       )}

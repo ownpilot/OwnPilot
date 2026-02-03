@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Bookmark, Plus, Trash2, Star, ExternalLink, Search, Folder } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { bookmarksApi } from '../api';
 
 interface BookmarkItem {
@@ -19,9 +23,11 @@ interface BookmarkItem {
 
 export function BookmarksPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<BookmarkItem | null>(null);
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
@@ -30,7 +36,7 @@ export function BookmarksPage() {
   const fetchBookmarks = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
-      if (searchQuery) params.search = searchQuery;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (filter === 'favorites') params.favorite = 'true';
       if (selectedFolder) params.folder = selectedFolder;
 
@@ -41,7 +47,7 @@ export function BookmarksPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, filter, selectedFolder]);
+  }, [debouncedSearch, filter, selectedFolder]);
 
   useEffect(() => {
     fetchBookmarks();
@@ -52,6 +58,7 @@ export function BookmarksPage() {
 
     try {
       await bookmarksApi.delete(bookmarkId);
+      toast.success('Bookmark deleted');
       fetchBookmarks();
     } catch {
       // API client handles error reporting
@@ -61,6 +68,7 @@ export function BookmarksPage() {
   const handleToggleFavorite = async (bookmark: BookmarkItem) => {
     try {
       await bookmarksApi.favorite(bookmark.id);
+      toast.success(bookmark.isFavorite ? 'Removed from favorites' : 'Added to favorites');
       fetchBookmarks();
     } catch {
       // API client handles error reporting
@@ -149,30 +157,14 @@ export function BookmarksPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading bookmarks...</p>
-          </div>
+          <LoadingSpinner message="Loading bookmarks..." />
         ) : bookmarks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Bookmark className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              {searchQuery ? 'No bookmarks found' : 'No bookmarks yet'}
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4">
-              {searchQuery
-                ? 'Try a different search term.'
-                : 'Save your favorite links to access them later.'}
-            </p>
-            {!searchQuery && (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Add Bookmark
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={Bookmark}
+            title={searchQuery ? 'No bookmarks found' : 'No bookmarks yet'}
+            description={searchQuery ? 'Try a different search term.' : 'Save your favorite links to access them later.'}
+            action={!searchQuery ? { label: 'Add Bookmark', onClick: () => setShowCreateModal(true), icon: Plus } : undefined}
+          />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {bookmarks.map((bookmark) => (
@@ -198,6 +190,7 @@ export function BookmarksPage() {
             setEditingBookmark(null);
           }}
           onSave={() => {
+            toast.success(editingBookmark ? 'Bookmark updated' : 'Bookmark created');
             setShowCreateModal(false);
             setEditingBookmark(null);
             fetchBookmarks();
