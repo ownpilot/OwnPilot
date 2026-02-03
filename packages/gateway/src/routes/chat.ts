@@ -38,7 +38,6 @@ import type { IMessageBus, NormalizedMessage, MessageProcessingResult, StreamCal
 import type { StreamChunk, ToolCall } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
 import { parseLimit, parseOffset } from '../utils/index.js';
-import { getCustomDataService } from '../services/custom-data-service.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Chat');
@@ -80,7 +79,7 @@ async function buildToolCatalog(allTools: readonly ToolDefinition[]): Promise<st
 
   // Fetch custom data tables
   try {
-    const service = getCustomDataService();
+    const service = getServiceRegistry().get(Services.Database);
     const tables = await service.listTables();
     if (tables.length > 0) {
       lines.push('');

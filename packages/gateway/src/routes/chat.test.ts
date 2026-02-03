@@ -165,9 +165,21 @@ vi.mock('../db/seeds/default-agents.js', () => ({
 
 vi.mock('@ownpilot/core', () => ({
   debugLog: vi.fn(),
-  hasServiceRegistry: vi.fn(() => false),
-  getServiceRegistry: vi.fn(() => ({ tryGet: vi.fn(() => null) })),
-  Services: { MessageBus: 'messageBus', Provider: 'provider' },
+  hasServiceRegistry: vi.fn(() => true),
+  getServiceRegistry: vi.fn(() => ({
+    tryGet: vi.fn(() => null),
+    get: vi.fn((token: { name: string }) => {
+      const services: Record<string, unknown> = {
+        database: { listTables: vi.fn(async () => []) },
+      };
+      return services[token.name];
+    }),
+  })),
+  Services: {
+    MessageBus: { name: 'messageBus' },
+    Provider: { name: 'provider' },
+    Database: { name: 'database' },
+  },
   getDefaultPluginRegistry: vi.fn(async () => ({ getAllTools: () => [] })),
   createDynamicToolRegistry: vi.fn(() => ({
     register: vi.fn(),

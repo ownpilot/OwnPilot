@@ -20,10 +20,40 @@ const mockToolRegistry = {
   execute: vi.fn(),
 };
 
+const mockMemorySvc = {
+  getImportantMemories: vi.fn(async () => []),
+  search: vi.fn(async () => []),
+};
+
+const mockGoalSvc = {
+  getActiveGoals: vi.fn(async () => []),
+  getActive: vi.fn(async () => []),
+  getNextActions: vi.fn(async () => []),
+};
+
+const mockPluginSvc = {
+  getAllTools: vi.fn(() => []),
+};
+
 vi.mock('@ownpilot/core', () => ({
-  hasServiceRegistry: vi.fn(() => false),
-  getServiceRegistry: vi.fn(() => ({ tryGet: vi.fn(() => null) })),
-  Services: { Provider: 'provider' },
+  hasServiceRegistry: vi.fn(() => true),
+  getServiceRegistry: vi.fn(() => ({
+    tryGet: vi.fn(() => null),
+    get: vi.fn((token: { name: string }) => {
+      const services: Record<string, unknown> = {
+        memory: mockMemorySvc,
+        goal: mockGoalSvc,
+        plugin: mockPluginSvc,
+      };
+      return services[token.name];
+    }),
+  })),
+  Services: {
+    Provider: { name: 'provider' },
+    Memory: { name: 'memory' },
+    Goal: { name: 'goal' },
+    Plugin: { name: 'plugin' },
+  },
   Agent: vi.fn(),
   createAgent: vi.fn(() => ({
     reset: vi.fn(() => ({ id: 'new-conversation-id' })),

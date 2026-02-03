@@ -25,7 +25,6 @@ import {
   TOOL_SEARCH_TAGS,
   TOOL_MAX_LIMITS,
   applyToolLimits,
-  getDefaultPluginRegistry,
   TOOL_GROUPS,
   getProviderConfig as coreGetProviderConfig,
   type AgentConfig,
@@ -57,8 +56,6 @@ import type {
 } from '../types/index.js';
 import { apiResponse } from './helpers.js'
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
-import { getMemoryService } from '../services/memory-service.js';
-import { getGoalService } from '../services/goal-service.js';
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
@@ -437,10 +434,10 @@ function validateRequiredParams(tools: ToolRegistry, toolName: string, args: Rec
  * Build memory context string from important memories
  */
 async function buildMemoryContext(userId = 'default'): Promise<string> {
-  const memoryService = getMemoryService();
+  const memoryService = getServiceRegistry().get(Services.Memory);
 
   // Get important memories
-  const importantMemories = await memoryService.getImportantMemories(userId, 0.5, 10);
+  const importantMemories = await memoryService.getImportantMemories(userId, { threshold: 0.5, limit: 10 });
 
   const sections: string[] = [];
 
@@ -501,7 +498,7 @@ You have access to a persistent memory system. Use it wisely:
  * Build goal context string from active goals
  */
 async function buildGoalContext(userId = 'default'): Promise<string> {
-  const goalService = getGoalService();
+  const goalService = getServiceRegistry().get(Services.Goal);
 
   // Get active goals
   const activeGoals = await goalService.getActive(userId, 5);
@@ -958,8 +955,8 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   }
 
   // Register plugin tools
-  const pluginRegistry = await getDefaultPluginRegistry();
-  const pluginTools = pluginRegistry.getAllTools();
+  const pluginService = getServiceRegistry().get(Services.Plugin);
+  const pluginTools = pluginService.getAllTools();
   const pluginToolDefs: typeof MEMORY_TOOLS = [];
 
   let pluginOverrides = 0;
@@ -1739,8 +1736,8 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   }
 
   // Register plugin tools
-  const pluginRegistry = await getDefaultPluginRegistry();
-  const pluginTools = pluginRegistry.getAllTools();
+  const pluginService = getServiceRegistry().get(Services.Plugin);
+  const pluginTools = pluginService.getAllTools();
   const pluginToolDefs: typeof MEMORY_TOOLS = [];
 
   for (const { definition, executor } of pluginTools) {
