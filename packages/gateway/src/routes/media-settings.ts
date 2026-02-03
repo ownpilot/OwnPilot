@@ -12,7 +12,7 @@ import {
   type MediaCapability,
 } from '../db/repositories/index.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js'
 
 const log = getLog('MediaSettings');
 
@@ -188,27 +188,13 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
     const providerExists = availableProviders.some((p) => p.provider === body.provider);
 
     if (!providerExists) {
-      return c.json(
-        {
-          success: false,
-          error: `Invalid provider: ${body.provider}`,
-          validProviders: availableProviders.map((p) => p.provider),
-        },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid provider: ${body.provider}. Valid: ${availableProviders.map((p) => p.provider).join(', ')}` }, 400);
     }
 
     // Check if provider is configured (has API key)
     if (!isProviderConfigured(body.provider)) {
       const keyName = PROVIDER_API_KEYS[body.provider];
-      return c.json(
-        {
-          success: false,
-          error: `Provider ${body.provider} is not configured`,
-          hint: `Add your ${body.provider} API key in Settings → API Keys (${keyName})`,
-        },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Provider ${body.provider} is not configured. Add your ${body.provider} API key in Settings → API Keys (${keyName})` }, 400);
     }
 
     // Validate model if provided
@@ -216,14 +202,7 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
       const providerOption = availableProviders.find((p) => p.provider === body.provider);
       const modelIds = providerOption?.models?.map((m) => m.id) || [];
       if (providerOption?.models && !modelIds.includes(body.model)) {
-        return c.json(
-          {
-            success: false,
-            error: `Invalid model: ${body.model}`,
-            validModels: modelIds,
-          },
-          400
-        );
+        return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid model: ${body.model}. Valid: ${modelIds.join(', ')}` }, 400);
       }
     }
 

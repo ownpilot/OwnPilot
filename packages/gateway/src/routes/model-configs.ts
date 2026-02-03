@@ -27,7 +27,7 @@ import {
 } from '@ownpilot/core';
 import { hasApiKey, getApiKey } from './settings.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js'
 
 const log = getLog('ModelConfigs');
 
@@ -782,11 +782,7 @@ modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
   }
 
   if (!modelList || modelList.length === 0) {
-    return c.json({
-      success: false,
-      error: `Could not discover models from ${providerName}. ${lastError}`,
-      triedUrls: candidateUrls,
-    }, 502);
+    return apiError(c, { code: ERROR_CODES.FETCH_ERROR, message: `Could not discover models from ${providerName}. ${lastError}` }, 502);
   }
 
   // Save each discovered model as a custom model
