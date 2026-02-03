@@ -9,6 +9,9 @@ import type {
   OutgoingMessage,
   ChannelHandler,
 } from '../types/index.js';
+import { getLog } from '../log.js';
+
+const log = getLog('Telegram');
 
 /**
  * Default configuration
@@ -57,7 +60,7 @@ export class TelegramBot implements ChannelHandler {
         try {
           await this.messageHandler(incoming);
         } catch (err) {
-          console.error('Error handling Telegram message:', err);
+          log.error('Error handling Telegram message', err);
           await ctx.reply('Sorry, I encountered an error processing your message.');
         }
       }
@@ -104,7 +107,7 @@ export class TelegramBot implements ChannelHandler {
 
     // Error handling
     this.bot.catch((err) => {
-      console.error('Telegram bot error:', err);
+      log.error('Telegram bot error', err);
     });
   }
 
@@ -164,12 +167,12 @@ export class TelegramBot implements ChannelHandler {
 
     // Get bot info
     const botInfo = await this.bot.api.getMe();
-    console.log(`Starting Telegram bot: @${botInfo.username}`);
+    log.info(`Starting Telegram bot: @${botInfo.username}`);
 
     // Start long polling
     await this.bot.start({
       onStart: () => {
-        console.log('Telegram bot started successfully');
+        log.info('Telegram bot started successfully');
       },
     });
   }
@@ -184,7 +187,7 @@ export class TelegramBot implements ChannelHandler {
 
     this.isRunning = false;
     await this.bot.stop();
-    console.log('Telegram bot stopped');
+    log.info('Telegram bot stopped');
   }
 
   /**
@@ -269,7 +272,7 @@ export class TelegramBot implements ChannelHandler {
    */
   async setWebhook(url: string): Promise<void> {
     await this.bot.api.setWebhook(url);
-    console.log(`Telegram webhook set to: ${url}`);
+    log.info(`Telegram webhook set to: ${url}`);
   }
 
   /**
@@ -277,7 +280,7 @@ export class TelegramBot implements ChannelHandler {
    */
   async deleteWebhook(): Promise<void> {
     await this.bot.api.deleteWebhook();
-    console.log('Telegram webhook deleted');
+    log.info('Telegram webhook deleted');
   }
 }
 

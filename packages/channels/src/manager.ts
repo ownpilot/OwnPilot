@@ -11,6 +11,9 @@ import type {
   TelegramConfig,
 } from './types/index.js';
 import { createTelegramBot } from './telegram/index.js';
+import { getLog } from './log.js';
+
+const log = getLog('ChannelManager');
 
 /**
  * Channel manager options
@@ -53,7 +56,7 @@ export class ChannelManager {
         return createTelegramBot(config as TelegramConfig);
       // Add more channel types here
       default:
-        console.warn(`Unknown channel type: ${config.type}`);
+        log.warn(`Unknown channel type: ${config.type}`);
         return undefined;
     }
   }
@@ -63,7 +66,7 @@ export class ChannelManager {
    */
   private setupMessageHandler(handler: ChannelHandler): void {
     handler.onMessage(async (message: IncomingMessage) => {
-      console.log(`[${handler.type}] Message from ${message.username ?? message.userId}: ${message.text}`);
+      log.info(`[${handler.type}] Message from ${message.username ?? message.userId}: ${message.text}`);
 
       try {
         // Process message through agent
@@ -86,7 +89,7 @@ export class ChannelManager {
           });
         }
       } catch (err) {
-        console.error(`Error processing message:`, err);
+        log.error(`Error processing message`, err);
         await handler.sendMessage({
           chatId: message.chatId,
           text: 'Sorry, something went wrong while processing your message.',
@@ -104,15 +107,15 @@ export class ChannelManager {
 
     for (const [type, handler] of this.handlers) {
       if (handler.isReady()) {
-        console.log(`Starting channel: ${type}`);
+        log.info(`Starting channel: ${type}`);
         startPromises.push(handler.start());
       } else {
-        console.warn(`Channel ${type} is not ready, skipping`);
+        log.warn(`Channel ${type} is not ready, skipping`);
       }
     }
 
     await Promise.all(startPromises);
-    console.log('All channels started');
+    log.info('All channels started');
   }
 
   /**
@@ -122,12 +125,12 @@ export class ChannelManager {
     const stopPromises: Promise<void>[] = [];
 
     for (const [type, handler] of this.handlers) {
-      console.log(`Stopping channel: ${type}`);
+      log.info(`Stopping channel: ${type}`);
       stopPromises.push(handler.stop());
     }
 
     await Promise.all(stopPromises);
-    console.log('All channels stopped');
+    log.info('All channels stopped');
   }
 
   /**
