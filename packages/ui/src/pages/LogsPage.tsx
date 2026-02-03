@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDialog } from '../components/ConfirmDialog';
 import { debugApi, apiClient } from '../api';
 import type { DebugInfo, DebugLogEntry, LogDetail, RequestLog, LogStats } from '../api';
@@ -199,10 +199,10 @@ export function LogsPage() {
     }
   };
 
-  const filteredDebugEntries = debugInfo?.entries.filter(entry => {
+  const filteredDebugEntries = useMemo(() => debugInfo?.entries.filter(entry => {
     if (debugFilter === 'all') return true;
     return entry.type === debugFilter;
-  }) || [];
+  }) || [], [debugInfo, debugFilter]);
 
   return (
     <div className="flex flex-col h-full">
@@ -646,9 +646,9 @@ export function LogsPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredDebugEntries.map((entry, index) => (
+                  {filteredDebugEntries.map((entry) => (
                     <button
-                      key={`${entry.timestamp}-${index}`}
+                      key={`${entry.timestamp}-${entry.type}`}
                       onClick={() => setSelectedDebugEntry(entry)}
                       className={`w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
                         selectedDebugEntry === entry ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''

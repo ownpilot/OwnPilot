@@ -372,6 +372,8 @@ function formatCellValue(value: unknown, type: string): string {
   return String(value);
 }
 
+type ColumnFormEntry = ColumnDefinition & { id: string };
+
 interface CreateTableModalProps {
   onClose: () => void;
   onSave: () => void;
@@ -381,20 +383,20 @@ function CreateTableModal({ onClose, onSave }: CreateTableModalProps) {
   const [name, setName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [description, setDescription] = useState('');
-  const [columns, setColumns] = useState<ColumnDefinition[]>([
-    { name: '', type: 'text', required: false },
+  const [columns, setColumns] = useState<ColumnFormEntry[]>([
+    { id: crypto.randomUUID(), name: '', type: 'text', required: false },
   ]);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleAddColumn = () => {
-    setColumns([...columns, { name: '', type: 'text', required: false }]);
+    setColumns([...columns, { id: crypto.randomUUID(), name: '', type: 'text', required: false }]);
   };
 
   const handleRemoveColumn = (index: number) => {
     setColumns(columns.filter((_, i) => i !== index));
   };
 
-  const handleColumnChange = (index: number, field: keyof ColumnDefinition, value: unknown) => {
+  const handleColumnChange = (index: number, field: keyof ColumnFormEntry, value: unknown) => {
     const newColumns = [...columns];
     const col = newColumns[index];
     if (col) {
@@ -418,7 +420,7 @@ function CreateTableModal({ onClose, onSave }: CreateTableModalProps) {
         name: name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
         displayName,
         description: description || undefined,
-        columns: validColumns.map((c) => ({
+        columns: validColumns.map(({ id: _id, ...c }) => ({
           ...c,
           name: c.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
         })),
@@ -497,7 +499,7 @@ function CreateTableModal({ onClose, onSave }: CreateTableModalProps) {
               </div>
               <div className="space-y-2">
                 {columns.map((col, index) => (
-                  <div key={index} className="flex items-center gap-2">
+                  <div key={col.id} className="flex items-center gap-2">
                     <input
                       type="text"
                       value={col.name}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Wrench } from '../../components/icons';
 import { toolsApi } from '../../api';
 import type { GroupedTools, ToolItem } from './types';
@@ -50,17 +50,17 @@ export function ToolsPage() {
     );
   };
 
-  const sortedCategories = groupedTools
+  const sortedCategories = useMemo(() => groupedTools
     ? Object.entries(groupedTools.categories).sort(([a], [b]) => {
         const aIndex = CATEGORY_ORDER.indexOf(a);
         const bIndex = CATEGORY_ORDER.indexOf(b);
         return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
       })
-    : [];
+    : [], [groupedTools, searchQuery]);
 
-  const filteredTotal = sortedCategories.reduce((sum, [, cat]) =>
+  const filteredTotal = useMemo(() => sortedCategories.reduce((sum, [, cat]) =>
     sum + filterTools(cat.tools).length, 0
-  );
+  ), [sortedCategories]);
 
   return (
     <div className="flex flex-col h-full">

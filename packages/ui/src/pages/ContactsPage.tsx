@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Users, Plus, Trash2, Phone, Mail, Building, Star, Search } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -85,14 +85,14 @@ export function ContactsPage() {
   const favoriteCount = contacts.filter((c) => c.isFavorite).length;
 
   // Group contacts alphabetically
-  const groupedContacts = contacts.reduce((acc, contact) => {
+  const groupedContacts = useMemo(() => contacts.reduce((acc, contact) => {
     const letter = (contact.name?.[0] ?? '#').toUpperCase();
     if (!acc[letter]) acc[letter] = [];
     acc[letter].push(contact);
     return acc;
-  }, {} as Record<string, Contact[]>);
+  }, {} as Record<string, Contact[]>), [contacts]);
 
-  const sortedGroups = Object.entries(groupedContacts).sort(([a], [b]) => a.localeCompare(b));
+  const sortedGroups = useMemo(() => Object.entries(groupedContacts).sort(([a], [b]) => a.localeCompare(b)), [contacts]);
 
   return (
     <div className="flex flex-col h-full">

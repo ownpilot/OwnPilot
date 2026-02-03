@@ -485,7 +485,7 @@ export function ChatPage() {
                 {progressEvents.length > 0 && (
                   <div className="mb-3 space-y-1">
                     {progressEvents.slice(-5).map((event, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted">
+                      <div key={`progress-${event.type}-${idx}`} className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted">
                         {event.type === 'status' && (
                           <>
                             <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
