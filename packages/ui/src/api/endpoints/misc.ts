@@ -42,7 +42,8 @@ import type {
 
 export const autonomyApi = {
   getConfig: () => apiClient.get<Record<string, unknown>>('/autonomy/config'),
-  getApprovals: () => apiClient.get<PendingApproval[]>('/autonomy/approvals'),
+  getApprovals: () =>
+    apiClient.get<{ pending: PendingApproval[]; count: number }>('/autonomy/approvals').then((r) => r.pending ?? []),
   setLevel: (level: string) => apiClient.post<void>('/autonomy/level', { level }),
   updateBudget: (budget: Record<string, unknown>) =>
     apiClient.patch<void>('/autonomy/budget', budget),
@@ -100,7 +101,7 @@ export const debugApi = {
 // ---- Plugins ----
 
 export const pluginsApi = {
-  list: () => apiClient.get<{ plugins: PluginInfo[] }>('/plugins'),
+  list: () => apiClient.get<PluginInfo[]>('/plugins'),
   stats: () => apiClient.get<PluginStats>('/plugins/stats'),
 };
 
@@ -170,11 +171,12 @@ export const mediaSettingsApi = {
 // ---- Model Configs ----
 
 export const modelConfigsApi = {
-  list: () => apiClient.get<MergedModel[]>('/model-configs'),
+  list: () =>
+    apiClient.get<{ data: MergedModel[]; count: number }>('/model-configs').then((r) => r.data ?? []),
   availableProviders: () =>
-    apiClient.get<AvailableProvider[]>('/model-configs/providers/available'),
+    apiClient.get<{ data: AvailableProvider[] }>('/model-configs/providers/available').then((r) => r.data ?? []),
   capabilities: () =>
-    apiClient.get<CapabilityDef[]>('/model-configs/capabilities/list'),
+    apiClient.get<{ data: CapabilityDef[] }>('/model-configs/capabilities/list').then((r) => r.data ?? []),
   syncApply: () => apiClient.post<Record<string, unknown>>('/model-configs/sync/apply'),
   syncReset: () => apiClient.post<Record<string, unknown>>('/model-configs/sync/reset'),
 };
@@ -182,12 +184,14 @@ export const modelConfigsApi = {
 // ---- Local Providers ----
 
 export const localProvidersApi = {
-  list: () => apiClient.get<LocalProvider[]>('/local-providers'),
-  templates: () => apiClient.get<LocalProviderTemplate[]>('/local-providers/templates'),
+  list: () =>
+    apiClient.get<{ data: LocalProvider[] }>('/local-providers').then((r) => r.data ?? []),
+  templates: () =>
+    apiClient.get<{ data: LocalProviderTemplate[] }>('/local-providers/templates').then((r) => r.data ?? []),
   create: (data: { providerName: string; url: string; apiKey?: string }) =>
     apiClient.post<Record<string, unknown>>('/local-providers', data),
   models: (id: string) =>
-    apiClient.get<Array<{ modelId: string; displayName?: string }>>(`/local-providers/${id}/models`),
+    apiClient.get<{ data: Array<{ modelId: string; displayName?: string }> }>(`/local-providers/${id}/models`).then((r) => r.data ?? []),
 };
 
 // ---- File Workspaces ----

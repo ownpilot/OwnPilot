@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Puzzle, Power, Wrench, Shield, Lock, Check, X, RefreshCw, Settings, Globe, AlertTriangle, Database } from '../components/icons';
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
 import { pluginsApi, apiClient } from '../api';
 import type { PluginInfo, PluginStats } from '../api';
 
@@ -52,8 +54,7 @@ export function PluginsPage() {
   const fetchPlugins = async () => {
     try {
       const data = await pluginsApi.list();
-      const result = data as { plugins: PluginInfo[] };
-      setPlugins(result.plugins);
+      setPlugins(Array.isArray(data) ? data : []);
     } catch {
       // API client handles error reporting
     } finally {
@@ -160,21 +161,15 @@ export function PluginsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading plugins...</p>
-          </div>
+          <LoadingSpinner message="Loading plugins..." />
         ) : filteredPlugins.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Puzzle className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              No plugins {filter !== 'all' ? filter : 'installed'}
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted">
-              {filter === 'all'
-                ? 'Install plugins to extend your AI assistant.'
-                : `No ${filter} plugins found.`}
-            </p>
-          </div>
+          <EmptyState
+            icon={Puzzle}
+            title={`No plugins ${filter !== 'all' ? filter : 'installed'}`}
+            description={filter === 'all'
+              ? 'Install plugins to extend your AI assistant.'
+              : `No ${filter} plugins found.`}
+          />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredPlugins.map((plugin) => (
