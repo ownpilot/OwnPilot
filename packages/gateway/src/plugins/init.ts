@@ -11,6 +11,8 @@ import {
   getDefaultPluginRegistry,
   createPlugin,
   buildCorePlugin,
+  getServiceRegistry,
+  Services,
   type PluginManifest,
   type PluginCapability,
   type PluginPermission,
@@ -20,7 +22,6 @@ import {
 import type { Plugin } from '@ownpilot/core';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { getCustomDataService } from '../services/custom-data-service.js';
 import { pomodoroRepo } from '../db/repositories/pomodoro.js';
 import { registerToolConfigRequirements } from '../services/api-service-registrar.js';
 import { buildTelegramChannelPlugin } from '../channels/plugins/telegram/index.js';
@@ -342,7 +343,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const feedUrl = String(params.url);
 
         // Create feed record
@@ -409,7 +410,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         parameters: { type: 'object', properties: {} },
       },
       async () => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const { records } = await repo.listRecords('plugin_rss_feeds', { limit: 100 });
         return {
           content: {
@@ -438,7 +439,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const limit = (params.limit as number) || 20;
         const { records } = await repo.listRecords('plugin_rss_items', { limit });
         return {
@@ -681,7 +682,7 @@ function buildReminderPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const record = await repo.addRecord('plugin_reminders', {
           title: params.title,
           time: params.time,
@@ -708,7 +709,7 @@ function buildReminderPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const filter = params.status ? { status: params.status } : undefined;
         const { records, total } = await repo.listRecords('plugin_reminders', { limit: 100, filter });
         return {
@@ -791,7 +792,7 @@ function buildClipboardPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const content = String(params.content);
         const record = await repo.addRecord('plugin_clipboard', {
           content,
@@ -820,7 +821,7 @@ function buildClipboardPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const limit = (params.limit as number) || 20;
         const { records, total } = await repo.listRecords('plugin_clipboard', { limit });
         return {
@@ -852,7 +853,7 @@ function buildClipboardPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const results = await repo.searchRecords('plugin_clipboard', String(params.query), { limit: 20 });
         return {
           content: {
@@ -1204,7 +1205,7 @@ function buildExpenseTrackerPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const record = await repo.addRecord('plugin_expenses', {
           amount: params.amount,
           category: params.category,
@@ -1233,7 +1234,7 @@ function buildExpenseTrackerPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const filter = params.category ? { category: params.category } : undefined;
         const limit = (params.limit as number) || 50;
         const { records, total } = await repo.listRecords('plugin_expenses', { limit, filter });
@@ -1261,7 +1262,7 @@ function buildExpenseTrackerPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getCustomDataService();
+        const repo = getServiceRegistry().get(Services.Database);
         const limit = (params.limit as number) || 500;
         const { records, total } = await repo.listRecords('plugin_expenses', { limit });
 
@@ -2741,7 +2742,7 @@ export async function initializePlugins(): Promise<void> {
 
       // 3. Auto-create declared database tables (protected, owned by plugin)
       if (manifest.databaseTables?.length) {
-        const customDataRepo = getCustomDataService();
+        const customDataRepo = getServiceRegistry().get(Services.Database);
         for (const table of manifest.databaseTables) {
           try {
             await customDataRepo.ensurePluginTable(

@@ -12,7 +12,8 @@ import type {
   MemoryType,
   CreateMemoryInput,
 } from '../db/repositories/memories.js';
-import { getMemoryService, MemoryServiceError } from '../services/memory-service.js';
+import { MemoryServiceError } from '../services/memory-service.js';
+import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 import { getLog } from '../services/log.js';
@@ -35,7 +36,7 @@ memoriesRoutes.get('/', async (c) => {
     ? parseFloat(c.req.query('minImportance')!)
     : undefined;
 
-  const service = getMemoryService();
+  const service = getServiceRegistry().get(Services.Memory);
   const memories = await service.listMemories(userId, {
     type,
     limit,
@@ -57,7 +58,7 @@ memoriesRoutes.post('/', async (c) => {
   const body = await c.req.json<CreateMemoryInput>();
 
   try {
-    const service = getMemoryService();
+    const service = getServiceRegistry().get(Services.Memory);
     const { memory, deduplicated } = await service.rememberMemory(userId, body);
 
     if (deduplicated) {
@@ -97,7 +98,7 @@ memoriesRoutes.get('/search', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'query (q) parameter is required' }, 400);
   }
 
-  const service = getMemoryService();
+  const service = getServiceRegistry().get(Services.Memory);
   const memories = await service.searchMemories(userId, query, { type, limit });
 
   log.info('Memory search', { userId, query, type, resultsCount: memories.length });
@@ -113,7 +114,7 @@ memoriesRoutes.get('/search', async (c) => {
  */
 memoriesRoutes.get('/stats', async (c) => {
   const userId = getUserId(c);
-  const service = getMemoryService();
+  const service = getServiceRegistry().get(Services.Memory);
   const stats = await service.getStats(userId);
 
   return apiResponse(c, stats);
@@ -126,7 +127,7 @@ memoriesRoutes.get('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getMemoryService();
+  const service = getServiceRegistry().get(Services.Memory);
   const memory = await service.getMemory(userId, id);
 
   if (!memory) {
@@ -148,7 +149,7 @@ memoriesRoutes.patch('/:id', async (c) => {
     tags?: string[];
   }>();
 
-  const service = getMemoryService();
+  const service = getServiceRegistry().get(Services.Memory);
   const updated = await service.updateMemory(userId, id, body);
 
   if (!updated) {
@@ -167,7 +168,7 @@ memoriesRoutes.post('/:id/boost', async (c) => {
   const body = await c.req.json<{ amount?: number }>().catch((): { amount?: number } => ({}));
   const amount = body.amount ?? 0.1;
 
-  const service = getMemoryService();
+  const service = getServiceRegistry().get(Services.Memory);
   const boosted = await service.boostMemory(userId, id, amount);
 
   if (!boosted) {
@@ -187,7 +188,7 @@ memoriesRoutes.delete('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getMemoryService();
+  const service = getServiceRegistry().get(Services.Memory);
   const deleted = await service.deleteMemory(userId, id);
 
   if (!deleted) {
@@ -211,7 +212,7 @@ memoriesRoutes.post('/decay', async (c) => {
     decayFactor?: number;
   }>().catch((): { daysThreshold?: number; decayFactor?: number } => ({}));
 
-  const service = getMemoryService();
+  const service = getServiceRegistry().get(Services.Memory);
   const affected = await service.decayMemories(userId, body);
 
   return apiResponse(c, {
@@ -230,7 +231,7 @@ memoriesRoutes.post('/cleanup', async (c) => {
     minImportance?: number;
   }>().catch((): { maxAge?: number; minImportance?: number } => ({}));
 
-  const service = getMemoryService();
+  const service = getServiceRegistry().get(Services.Memory);
   const deleted = await service.cleanupMemories(userId, body);
 
   return apiResponse(c, {
@@ -257,7 +258,7 @@ export async function executeMemoryTool(
   params: Record<string, unknown>,
   userId = 'default'
 ): Promise<ToolExecutionResult> {
-  const service = getMemoryService();
+  const service = getServiceRegistry().get(Services.Memory);
 
   try {
     switch (toolId) {

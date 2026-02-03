@@ -41,6 +41,19 @@ vi.mock('../services/custom-data-service.js', () => ({
   },
 }));
 
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
+    getServiceRegistry: vi.fn(() => ({
+      get: vi.fn((token: { name: string }) => {
+        const services: Record<string, unknown> = { database: mockCustomDataService };
+        return services[token.name];
+      }),
+    })),
+  };
+});
+
 // Import after mocks
 const { customDataRoutes } = await import('./custom-data.js');
 

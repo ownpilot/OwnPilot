@@ -32,6 +32,19 @@ vi.mock('../services/plan-service.js', () => ({
   getPlanService: () => mockPlanService,
 }));
 
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
+    getServiceRegistry: vi.fn(() => ({
+      get: vi.fn((token: { name: string }) => {
+        const services: Record<string, unknown> = { plan: mockPlanService };
+        return services[token.name];
+      }),
+    })),
+  };
+});
+
 vi.mock('../services/tool-executor.js', () => ({
   executeTool: vi.fn(async () => ({ success: true, result: 'tool output' })),
   hasTool: vi.fn(async () => true),

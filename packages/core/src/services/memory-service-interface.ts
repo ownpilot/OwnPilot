@@ -89,8 +89,9 @@ export interface IMemoryService {
 
   /**
    * Get a memory by ID.
+   * @param incrementAccess - Whether to track access (default true).
    */
-  getMemory(userId: string, id: string): Promise<ServiceMemoryEntry | null>;
+  getMemory(userId: string, id: string, incrementAccess?: boolean): Promise<ServiceMemoryEntry | null>;
 
   /**
    * Update a memory.
@@ -152,7 +153,7 @@ export interface IMemoryService {
   ): Promise<number>;
 
   /**
-   * Count total memories for user.
+   * Count total memories for user, optionally filtered by type.
    */
-  countMemories(userId: string): Promise<number>;
+  countMemories(userId: string, type?: MemoryType): Promise<number>;
 }

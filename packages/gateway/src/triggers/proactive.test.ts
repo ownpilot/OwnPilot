@@ -30,6 +30,19 @@ vi.mock('../services/trigger-service.js', () => ({
   getTriggerService: () => mockTriggerService,
 }));
 
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
+    getServiceRegistry: vi.fn(() => ({
+      get: vi.fn((token: { name: string }) => {
+        const services: Record<string, unknown> = { trigger: mockTriggerService };
+        return services[token.name];
+      }),
+    })),
+  };
+});
+
 import {
   DEFAULT_TRIGGERS,
   initializeDefaultTriggers,

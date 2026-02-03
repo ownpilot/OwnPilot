@@ -10,9 +10,8 @@ import {
   type CreateTriggerInput,
   type UpdateTriggerInput,
 } from '../db/repositories/triggers.js';
-import { getTriggerService } from '../services/trigger-service.js';
 import { getTriggerEngine } from '../triggers/index.js';
-import { validateCronExpression } from '@ownpilot/core';
+import { validateCronExpression, getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
@@ -31,7 +30,7 @@ triggersRoutes.get('/', async (c) => {
   const enabled = c.req.query('enabled');
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const triggers = await service.listTriggers(userId, {
     type,
     enabled: enabled === 'true' ? true : enabled === 'false' ? false : undefined,
@@ -65,7 +64,7 @@ triggersRoutes.post('/', async (c) => {
     }
   }
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
 
   let trigger;
   try {
@@ -86,7 +85,7 @@ triggersRoutes.post('/', async (c) => {
  */
 triggersRoutes.get('/stats', async (c) => {
   const userId = getUserId(c);
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const stats = await service.getStats(userId);
 
   return apiResponse(c, stats);
@@ -99,7 +98,7 @@ triggersRoutes.get('/history', async (c) => {
   const userId = getUserId(c);
   const limit = getIntParam(c, 'limit', 50, 1, 200);
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const history = await service.getRecentHistory(userId, limit);
 
   return apiResponse(c, {
@@ -114,7 +113,7 @@ triggersRoutes.get('/history', async (c) => {
 triggersRoutes.get('/due', async (c) => {
   const userId = getUserId(c);
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const triggers = await service.getDueTriggers(userId);
 
   return apiResponse(c, {
@@ -130,7 +129,7 @@ triggersRoutes.get('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
@@ -154,7 +153,7 @@ triggersRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<UpdateTriggerInput>();
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
 
   // Validate cron expression if config is being updated on a schedule trigger
   if (body.config) {
@@ -186,7 +185,7 @@ triggersRoutes.post('/:id/enable', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const updated = await service.updateTrigger(userId, id, { enabled: true });
 
   if (!updated) {
@@ -206,7 +205,7 @@ triggersRoutes.post('/:id/disable', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const updated = await service.updateTrigger(userId, id, { enabled: false });
 
   if (!updated) {
@@ -226,7 +225,7 @@ triggersRoutes.post('/:id/fire', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
@@ -263,7 +262,7 @@ triggersRoutes.delete('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const deleted = await service.deleteTrigger(userId, id);
 
   if (!deleted) {
@@ -283,7 +282,7 @@ triggersRoutes.get('/:id/history', async (c) => {
   const id = c.req.param('id');
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
@@ -307,7 +306,7 @@ triggersRoutes.post('/cleanup', async (c) => {
   const userId = getUserId(c);
   const body = await c.req.json<{ maxAgeDays?: number }>().catch((): { maxAgeDays?: number } => ({}));
 
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const deleted = await service.cleanupHistory(userId, body.maxAgeDays ?? 30);
 
   return apiResponse(c, {

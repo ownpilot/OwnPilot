@@ -31,6 +31,19 @@ vi.mock('../triggers/index.js', () => ({
   getTriggerEngine: () => mockTriggerEngine,
 }));
 
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
+    getServiceRegistry: vi.fn(() => ({
+      get: vi.fn((token: { name: string }) => {
+        const services: Record<string, unknown> = { trigger: mockTriggerService };
+        return services[token.name];
+      }),
+    })),
+  };
+});
+
 import { TRIGGER_TOOLS, executeTriggerTool } from './trigger-tools.js';
 
 // ---------------------------------------------------------------------------

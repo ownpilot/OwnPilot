@@ -10,10 +10,7 @@
  * It wraps the Agent to provide a fully autonomous personal AI assistant.
  */
 
-import type { ToolCall } from '@ownpilot/core';
-import { getMemoryService } from '../services/memory-service.js';
-import { getGoalService } from '../services/goal-service.js';
-import { getTriggerService } from '../services/trigger-service.js';
+import { type ToolCall, getServiceRegistry, Services } from '@ownpilot/core';
 import { getResourceRegistry } from '../services/resource-registry.js';
 import { getApprovalManager, assessRisk, type ActionCategory } from '../autonomy/index.js';
 import { getTriggerEngine } from '../triggers/engine.js';
@@ -49,8 +46,8 @@ export async function buildEnhancedSystemPrompt(
   basePrompt: string,
   options: OrchestratorOptions
 ): Promise<{ prompt: string; stats: { memoriesUsed: number; goalsUsed: number } }> {
-  const memoryService = getMemoryService();
-  const goalService = getGoalService();
+  const memoryService = getServiceRegistry().get(Services.Memory);
+  const goalService = getServiceRegistry().get(Services.Goal);
 
   const maxMemories = options.maxMemories ?? 10;
   const maxGoals = options.maxGoals ?? 5;
@@ -276,7 +273,7 @@ export async function evaluateTriggers(
   message: string,
   response: string
 ): Promise<{ triggered: string[]; pending: string[]; executed: string[] }> {
-  const triggerService = getTriggerService();
+  const triggerService = getServiceRegistry().get(Services.Trigger);
   const triggers = await triggerService.listTriggers(userId, { enabled: true });
   const triggerEngine = getTriggerEngine({ userId });
 
@@ -350,7 +347,7 @@ export async function extractMemories(
   message: string,
   _response: string
 ): Promise<number> {
-  const memoryService = getMemoryService();
+  const memoryService = getServiceRegistry().get(Services.Memory);
 
   // Simple pattern-based memory extraction
   // In a real implementation, this would use the LLM to extract facts
@@ -405,7 +402,7 @@ export async function updateGoalProgress(
   response: string,
   _toolCalls?: readonly ToolCall[]
 ): Promise<void> {
-  const goalService = getGoalService();
+  const goalService = getServiceRegistry().get(Services.Goal);
   const activeGoals = await goalService.getActive(userId);
 
   for (const goal of activeGoals) {
@@ -437,9 +434,9 @@ export async function getOrchestratorStats(userId: string): Promise<{
   pendingApprovals: number;
   autonomyLevel: number;
 }> {
-  const memoryService = getMemoryService();
-  const goalService = getGoalService();
-  const triggerService = getTriggerService();
+  const memoryService = getServiceRegistry().get(Services.Memory);
+  const goalService = getServiceRegistry().get(Services.Goal);
+  const triggerService = getServiceRegistry().get(Services.Trigger);
   const approvalManager = getApprovalManager();
 
   const config = approvalManager.getUserConfig(userId);

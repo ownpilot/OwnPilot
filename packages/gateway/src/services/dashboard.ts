@@ -17,16 +17,11 @@ import {
   type GoalStep,
   type Trigger,
   type TriggerHistory,
-  type Memory,
   type Note,
   type Plan,
 } from '../db/repositories/index.js';
 import { type CustomTableSchema } from '../db/repositories/custom-data.js';
-import { getMemoryService } from './memory-service.js';
-import { getGoalService } from './goal-service.js';
-import { getTriggerService } from './trigger-service.js';
-import { getPlanService } from './plan-service.js';
-import { getCustomDataService } from './custom-data-service.js';
+import { getServiceRegistry, Services, type IDatabaseService, type ServiceMemoryEntry } from '@ownpilot/core';
 import { getLog } from './log.js';
 
 const log = getLog('DashboardService');
@@ -61,8 +56,8 @@ export interface TriggersSummary {
 }
 
 export interface MemoriesSummary {
-  recent: Memory[];
-  important: Memory[];
+  recent: ServiceMemoryEntry[];
+  important: ServiceMemoryEntry[];
   stats: { total: number; recentCount: number };
 }
 
@@ -256,14 +251,15 @@ export class DashboardService {
   async aggregateDailyData(): Promise<DailyBriefingData> {
     const tasksRepo = new TasksRepository(this.userId);
     const calendarRepo = new CalendarRepository(this.userId);
-    const goalService = getGoalService();
-    const triggerService = getTriggerService();
-    const memoryService = getMemoryService();
+    const registry = getServiceRegistry();
+    const goalService = registry.get(Services.Goal);
+    const triggerService = registry.get(Services.Trigger);
+    const memoryService = registry.get(Services.Memory);
     const habitsRepo = new HabitsRepository(this.userId);
     const costsRepo = new CostsRepository();
     const notesRepo = new NotesRepository(this.userId);
-    const customDataService = getCustomDataService();
-    const planService = getPlanService();
+    const customDataService = registry.get(Services.Database);
+    const planService = registry.get(Services.Plan);
 
     const today = new Date().toISOString().split('T')[0] ?? '';
 
@@ -295,7 +291,7 @@ export class DashboardService {
 
     // Memories
     const recentMemories = await memoryService.getRecentMemories(this.userId, 10);
-    const importantMemories = await memoryService.getImportantMemories(this.userId, 0.7, 5);
+    const importantMemories = await memoryService.getImportantMemories(this.userId, { threshold: 0.7, limit: 5 });
     const memoryStats = await memoryService.getStats(this.userId);
 
     // Habits
@@ -722,7 +718,7 @@ Format your response as JSON:
    * Get custom data summary
    */
   private async getCustomDataSummary(
-    service: ReturnType<typeof getCustomDataService>,
+    service: IDatabaseService,
     tables: CustomTableSchema[]
   ): Promise<CustomDataSummary> {
     let totalRecords = 0;

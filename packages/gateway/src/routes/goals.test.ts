@@ -46,6 +46,19 @@ vi.mock('../services/goal-service.js', () => ({
   },
 }));
 
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
+    getServiceRegistry: vi.fn(() => ({
+      get: vi.fn((token: { name: string }) => {
+        const services: Record<string, unknown> = { goal: mockGoalService };
+        return services[token.name];
+      }),
+    })),
+  };
+});
+
 // Import after mocks
 const { goalsRoutes } = await import('./goals.js');
 

@@ -14,11 +14,8 @@ import {
   type ConditionConfig,
   type EventConfig,
 } from '../db/repositories/triggers.js';
-import { getTriggerService, type TriggerService } from '../services/trigger-service.js';
-import { getGoalService, type GoalService } from '../services/goal-service.js';
-import { getMemoryService, type MemoryService } from '../services/memory-service.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
-import { getNextRunTime } from '@ownpilot/core';
+import { getNextRunTime, getServiceRegistry, Services, type ITriggerService, type IGoalService, type IMemoryService } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 
 const log = getLog('TriggerEngine');
@@ -57,9 +54,9 @@ export type ChatHandler = (message: string, payload: Record<string, unknown>) =>
 
 export class TriggerEngine {
   private config: Required<TriggerEngineConfig>;
-  private triggerService: TriggerService;
-  private goalService: GoalService;
-  private memoryService: MemoryService;
+  private triggerService: ITriggerService;
+  private goalService: IGoalService;
+  private memoryService: IMemoryService;
   private pollTimer: NodeJS.Timeout | null = null;
   private conditionTimer: NodeJS.Timeout | null = null;
   private running = false;
@@ -75,9 +72,10 @@ export class TriggerEngine {
       userId: config.userId ?? 'default',
     };
 
-    this.triggerService = getTriggerService();
-    this.goalService = getGoalService();
-    this.memoryService = getMemoryService();
+    const registry = getServiceRegistry();
+    this.triggerService = registry.get(Services.Trigger);
+    this.goalService = registry.get(Services.Goal);
+    this.memoryService = registry.get(Services.Memory);
 
     // Register default action handlers
     this.registerDefaultActionHandlers();

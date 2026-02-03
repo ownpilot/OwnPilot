@@ -12,13 +12,14 @@
 import type {
   IMemoryService,
   ServiceMemoryEntry,
+  ServiceMemoryType,
   MemoryCreateInput as CreateMemoryInput,
   MemoryUpdateInput as UpdateMemoryInput,
   MemorySearchOptions,
   MemoryServiceStats as MemoryStats,
 } from '@ownpilot/core';
 import { getMemoryService } from './memory-service.js';
-import type { Memory } from '../db/repositories/memories.js';
+import type { Memory, MemoryType } from '../db/repositories/memories.js';
 
 // ============================================================================
 // Type Mapping Helpers
@@ -79,8 +80,8 @@ export class MemoryServiceImpl implements IMemoryService {
     };
   }
 
-  async getMemory(userId: string, id: string): Promise<ServiceMemoryEntry | null> {
-    const result = await this.service.getMemory(userId, id);
+  async getMemory(userId: string, id: string, incrementAccess?: boolean): Promise<ServiceMemoryEntry | null> {
+    const result = await this.service.getMemory(userId, id, incrementAccess);
     return result ? toMemoryEntry(result) : null;
   }
 
@@ -151,8 +152,8 @@ export class MemoryServiceImpl implements IMemoryService {
     return this.service.cleanupMemories(userId, options);
   }
 
-  async countMemories(userId: string): Promise<number> {
-    return this.service.countMemories(userId);
+  async countMemories(userId: string, type?: ServiceMemoryType): Promise<number> {
+    return this.service.countMemories(userId, type as MemoryType | undefined);
   }
 }
 

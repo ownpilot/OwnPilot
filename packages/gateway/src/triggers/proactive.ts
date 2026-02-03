@@ -6,7 +6,7 @@
  */
 
 import { type CreateTriggerInput } from '../db/repositories/triggers.js';
-import { getTriggerService } from '../services/trigger-service.js';
+import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Proactive');
@@ -144,7 +144,7 @@ export async function initializeDefaultTriggers(userId = 'default'): Promise<{
   created: number;
   skipped: number;
 }> {
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const existing = await service.listTriggers(userId, { limit: 100 });
   const existingNames = new Set(existing.map((t) => t.name));
 
@@ -186,7 +186,7 @@ export async function getProactiveStatus(userId = 'default'): Promise<{
   enabledCount: number;
   totalFires: number;
 }> {
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const triggers = await service.listTriggers(userId, { limit: 100 });
 
   // Filter to only show the default proactive triggers
@@ -212,7 +212,7 @@ export async function enableProactiveFeature(
   name: string,
   userId = 'default'
 ): Promise<boolean> {
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const triggers = await service.listTriggers(userId, { limit: 100 });
   const trigger = triggers.find((t) => t.name === name);
 
@@ -231,7 +231,7 @@ export async function disableProactiveFeature(
   name: string,
   userId = 'default'
 ): Promise<boolean> {
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const triggers = await service.listTriggers(userId, { limit: 100 });
   const trigger = triggers.find((t) => t.name === name);
 
@@ -247,7 +247,7 @@ export async function disableProactiveFeature(
  * Enable all proactive features
  */
 export async function enableAllProactive(userId = 'default'): Promise<number> {
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const triggers = await service.listTriggers(userId, { limit: 100 });
   const defaultNames = new Set(DEFAULT_TRIGGERS.map((t) => t.name));
 
@@ -266,7 +266,7 @@ export async function enableAllProactive(userId = 'default'): Promise<number> {
  * Disable all proactive features
  */
 export async function disableAllProactive(userId = 'default'): Promise<number> {
-  const service = getTriggerService();
+  const service = getServiceRegistry().get(Services.Trigger);
   const triggers = await service.listTriggers(userId, { limit: 100 });
   const defaultNames = new Set(DEFAULT_TRIGGERS.map((t) => t.name));
 

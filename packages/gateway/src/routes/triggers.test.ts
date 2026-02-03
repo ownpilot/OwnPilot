@@ -46,6 +46,12 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
+    getServiceRegistry: vi.fn(() => ({
+      get: vi.fn((token: { name: string }) => {
+        const services: Record<string, unknown> = { trigger: mockTriggerService };
+        return services[token.name];
+      }),
+    })),
     validateCronExpression: vi.fn((cron: string) => {
       if (cron === 'invalid') return { valid: false, error: 'Invalid cron expression' };
       return { valid: true };

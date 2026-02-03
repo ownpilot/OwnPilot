@@ -18,8 +18,8 @@ import {
   PLAN_MAX_BACKOFF_MS,
   PLAN_MAX_LOOP_ITERATIONS,
 } from '../config/defaults.js';
-import { getPlanService, type PlanService } from '../services/plan-service.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
+import { getServiceRegistry, Services, type IPlanService } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 
 const log = getLog('PlanExecutor');
@@ -90,7 +90,7 @@ export interface PlanExecutorEvents {
 
 export class PlanExecutor extends EventEmitter {
   private config: Required<ExecutorConfig>;
-  private planService: PlanService;
+  private planService: IPlanService;
   private stepHandlers: Map<string, StepHandler> = new Map();
   private runningPlans: Map<string, AbortController> = new Map();
   private pausedPlans: Set<string> = new Set();
@@ -104,7 +104,7 @@ export class PlanExecutor extends EventEmitter {
       verbose: config.verbose ?? false,
       autonomyLevel: config.autonomyLevel ?? 1,
     };
-    this.planService = getPlanService();
+    this.planService = getServiceRegistry().get(Services.Plan);
     this.registerDefaultHandlers();
   }
 

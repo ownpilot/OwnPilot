@@ -55,6 +55,16 @@ vi.mock('@ownpilot/core', async () => {
   const actual = await vi.importActual<typeof import('@ownpilot/core')>('@ownpilot/core');
   return {
     ...actual,
+    getServiceRegistry: vi.fn(() => ({
+      get: vi.fn((token: { name: string }) => {
+        const services: Record<string, unknown> = {
+          trigger: mockTriggerService,
+          goal: mockGoalService,
+          memory: mockMemoryService,
+        };
+        return services[token.name];
+      }),
+    })),
     getNextRunTime: vi.fn(() => new Date('2025-01-01T09:00:00Z')),
   };
 });

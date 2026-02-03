@@ -4,9 +4,8 @@
  * AI agent tools for creating, managing, and executing autonomous plans.
  */
 
-import type { ToolDefinition } from '@ownpilot/core';
+import { type ToolDefinition, getServiceRegistry, Services } from '@ownpilot/core';
 import type { CreateStepInput } from '../db/repositories/plans.js';
-import { getPlanService } from '../services/plan-service.js';
 import { getPlanExecutor } from '../plans/executor.js';
 import { getLog } from '../services/log.js';
 
@@ -218,7 +217,7 @@ export async function executePlanTool(
   args: Record<string, unknown>,
   userId = 'default'
 ): Promise<{ success: boolean; result?: unknown; error?: string }> {
-  const service = getPlanService();
+  const service = getServiceRegistry().get(Services.Plan);
 
   switch (toolName) {
     case 'create_plan': {
