@@ -6,7 +6,6 @@
  */
 
 import { Hono } from 'hono';
-import { HTTPException } from 'hono/http-exception';
 import {
   createCustomToolsRepo,
   type CustomToolRecord,
@@ -26,7 +25,7 @@ import {
   registerToolConfigRequirements,
   unregisterDependencies,
 } from '../services/api-service-registrar.js';
-import { getUserId, apiResponse, getOptionalIntParam } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam } from './helpers.js'
 
 export const customToolsRoutes = new Hono();
 
@@ -196,9 +195,7 @@ customToolsRoutes.get('/:id', async (c) => {
 
   const tool = await repo.get(id);
   if (!tool) {
-    throw new HTTPException(404, {
-      message: `Custom tool not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
   }
 
   return apiResponse(c, tool);
@@ -236,9 +233,7 @@ customToolsRoutes.post('/', async (c) => {
 
   for (const pattern of dangerousPatterns) {
     if (pattern.test(body.code)) {
-      throw new HTTPException(400, {
-        message: `Tool code contains forbidden pattern: ${pattern.source}`,
-      });
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code contains forbidden pattern: ${pattern.source}` }, 400);
     }
   }
 
@@ -247,9 +242,7 @@ customToolsRoutes.post('/', async (c) => {
   // Check if tool name already exists
   const existing = await repo.getByName(body.name);
   if (existing) {
-    throw new HTTPException(409, {
-      message: `Tool with name '${body.name}' already exists`,
-    });
+    return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Tool with name '${body.name}' already exists` }, 409);
   }
 
   const tool = await repo.create({
@@ -300,9 +293,7 @@ customToolsRoutes.patch('/:id', async (c) => {
 
   // Validate tool name format if provided
   if (body.name && !/^[a-z][a-z0-9_]*$/.test(body.name)) {
-    throw new HTTPException(400, {
-      message: 'Invalid tool name format',
-    });
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid tool name format' }, 400);
   }
 
   // Validate code if provided
@@ -319,18 +310,14 @@ customToolsRoutes.patch('/:id', async (c) => {
 
     for (const pattern of dangerousPatterns) {
       if (pattern.test(body.code)) {
-        throw new HTTPException(400, {
-          message: `Tool code contains forbidden pattern: ${pattern.source}`,
-        });
+        return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code contains forbidden pattern: ${pattern.source}` }, 400);
       }
     }
   }
 
   const tool = await repo.update(id, body);
   if (!tool) {
-    throw new HTTPException(404, {
-      message: `Custom tool not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
   }
 
   // Re-register config dependencies if changed
@@ -371,9 +358,7 @@ customToolsRoutes.delete('/:id', async (c) => {
 
   const deleted = await repo.delete(id);
   if (!deleted) {
-    throw new HTTPException(404, {
-      message: `Custom tool not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
   }
 
   // Invalidate agent cache so tool removal takes effect
@@ -395,9 +380,7 @@ customToolsRoutes.post('/:id/enable', async (c) => {
 
   const tool = await repo.enable(id);
   if (!tool) {
-    throw new HTTPException(404, {
-      message: `Custom tool not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
   }
 
   syncToolToRegistry(tool);
@@ -417,9 +400,7 @@ customToolsRoutes.post('/:id/disable', async (c) => {
 
   const tool = await repo.disable(id);
   if (!tool) {
-    throw new HTTPException(404, {
-      message: `Custom tool not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
   }
 
   syncToolToRegistry(tool);
@@ -439,15 +420,11 @@ customToolsRoutes.post('/:id/approve', async (c) => {
 
   const tool = await repo.get(id);
   if (!tool) {
-    throw new HTTPException(404, {
-      message: `Custom tool not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
   }
 
   if (tool.status !== 'pending_approval') {
-    throw new HTTPException(400, {
-      message: `Tool is not pending approval. Current status: ${tool.status}`,
-    });
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Tool is not pending approval. Current status: ${tool.status}` }, 400);
   }
 
   const approved = await repo.approve(id);
@@ -469,15 +446,11 @@ customToolsRoutes.post('/:id/reject', async (c) => {
 
   const tool = await repo.get(id);
   if (!tool) {
-    throw new HTTPException(404, {
-      message: `Custom tool not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
   }
 
   if (tool.status !== 'pending_approval') {
-    throw new HTTPException(400, {
-      message: `Tool is not pending approval. Current status: ${tool.status}`,
-    });
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Tool is not pending approval. Current status: ${tool.status}` }, 400);
   }
 
   const rejected = await repo.reject(id);
@@ -500,15 +473,11 @@ customToolsRoutes.post('/:id/execute', async (c) => {
   const tool = await repo.get(id);
 
   if (!tool) {
-    throw new HTTPException(404, {
-      message: `Custom tool not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
   }
 
   if (tool.status !== 'active') {
-    throw new HTTPException(400, {
-      message: `Tool is not active. Current status: ${tool.status}`,
-    });
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Tool is not active. Current status: ${tool.status}` }, 400);
   }
 
   // Ensure tool is registered
@@ -552,9 +521,7 @@ customToolsRoutes.post('/test', async (c) => {
 
   // Validate required fields
   if (!body.name || !body.description || !body.parameters || !body.code) {
-    throw new HTTPException(400, {
-      message: 'Missing required fields: name, description, parameters, code',
-    });
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Missing required fields: name, description, parameters, code' }, 400);
   }
 
   // Validate code for dangerous patterns
@@ -570,9 +537,7 @@ customToolsRoutes.post('/test', async (c) => {
 
   for (const pattern of dangerousPatterns) {
     if (pattern.test(body.code)) {
-      throw new HTTPException(400, {
-        message: `Tool code contains forbidden pattern: ${pattern.source}`,
-      });
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code contains forbidden pattern: ${pattern.source}` }, 400);
     }
   }
 

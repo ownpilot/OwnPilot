@@ -6,7 +6,6 @@
  */
 
 import { Hono } from 'hono';
-import { HTTPException } from 'hono/http-exception';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
@@ -54,7 +53,7 @@ import type {
   UpdateAgentRequest,
   AgentInfo,
 } from '../types/index.js';
-import { apiResponse } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES } from './helpers.js'
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
@@ -1180,9 +1179,7 @@ agentRoutes.get('/:id', async (c) => {
   const record = await agentsRepo.getById(id);
 
   if (!record) {
-    throw new HTTPException(404, {
-      message: `Agent not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${id}` }, 404);
   }
 
   // Resolve tools from config (explicit tools and/or toolGroups)
@@ -1241,18 +1238,14 @@ agentRoutes.patch('/:id', async (c) => {
 
   const existing = await agentsRepo.getById(id);
   if (!existing) {
-    throw new HTTPException(404, {
-      message: `Agent not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${id}` }, 404);
   }
 
   // If provider is being changed to a specific provider (not 'default'), validate API key
   if (body.provider && body.provider !== 'default' && body.provider !== existing.provider) {
     const apiKey = await getProviderApiKey(body.provider);
     if (!apiKey) {
-      throw new HTTPException(400, {
-        message: `API key not configured for provider: ${body.provider}`,
-      });
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `API key not configured for provider: ${body.provider}` }, 400);
     }
   }
 
@@ -1277,9 +1270,7 @@ agentRoutes.patch('/:id', async (c) => {
   });
 
   if (!updated) {
-    throw new HTTPException(500, {
-      message: 'Failed to update agent',
-    });
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: 'Failed to update agent' }, 500);
   }
 
   // Invalidate cache to force recreation with new config
@@ -1320,9 +1311,7 @@ agentRoutes.delete('/:id', async (c) => {
   const deleted = await agentsRepo.delete(id);
 
   if (!deleted) {
-    throw new HTTPException(404, {
-      message: `Agent not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${id}` }, 404);
   }
 
   // Clear from cache
@@ -1340,9 +1329,7 @@ agentRoutes.post('/:id/reset', async (c) => {
   const record = await agentsRepo.getById(id);
 
   if (!record) {
-    throw new HTTPException(404, {
-      message: `Agent not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${id}` }, 404);
   }
 
   const agent = await getOrCreateAgentInstance(record);

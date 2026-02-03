@@ -3,13 +3,12 @@
  */
 
 import { Hono } from 'hono';
-import { HTTPException } from 'hono/http-exception';
 import { streamSSE } from 'hono/streaming';
 import type {
   ChatRequest,
   StreamChunkResponse,
 } from '../types/index.js';
-import { apiResponse, getUserId, getIntParam } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam } from './helpers.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
@@ -526,9 +525,7 @@ chatRoutes.post('/', async (c) => {
 
   // Validate model is available for non-demo mode
   if (!requestedModel) {
-    throw new HTTPException(400, {
-      message: `No model available for provider: ${provider}. Configure a default model in Settings.`,
-    });
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `No model available for provider: ${provider}. Configure a default model in Settings.` }, 400);
   }
 
   // Get agent based on agentId or provider/model from request
@@ -538,18 +535,14 @@ chatRoutes.post('/', async (c) => {
     // Use specific agent if agentId provided
     agent = await getAgent(body.agentId);
     if (!agent) {
-      throw new HTTPException(404, {
-        message: `Agent not found: ${body.agentId}`,
-      });
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${body.agentId}` }, 404);
     }
   } else {
     // Use provider/model from request to create chat agent
     try {
       agent = await getOrCreateChatAgent(provider, model);
     } catch (error) {
-      throw new HTTPException(400, {
-        message: error instanceof Error ? error.message : 'Failed to create agent',
-      });
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: error instanceof Error ? error.message : 'Failed to create agent' }, 400);
     }
   }
 
@@ -557,9 +550,7 @@ chatRoutes.post('/', async (c) => {
   if (body.conversationId) {
     const loaded = agent.loadConversation(body.conversationId);
     if (!loaded) {
-      throw new HTTPException(404, {
-        message: `Conversation not found: ${body.conversationId}`,
-      });
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${body.conversationId}` }, 404);
     }
   }
 
@@ -1019,9 +1010,7 @@ chatRoutes.post('/', async (c) => {
 
     // Check for errors
     if (busResult.response.metadata.error) {
-      throw new HTTPException(500, {
-        message: busResult.response.metadata.error as string,
-      });
+      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: busResult.response.metadata.error as string }, 500);
     }
 
     const conversation = agent.getConversation();
@@ -1232,9 +1221,7 @@ chatRoutes.post('/', async (c) => {
       // Ignore logging errors
     }
 
-    throw new HTTPException(500, {
-      message: result.error.message,
-    });
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error.message }, 500);
   }
 
   const conversation = agent.getConversation();
@@ -1523,18 +1510,14 @@ chatRoutes.get('/conversations/:id', async (c) => {
   const agent = agentId ? await getAgent(agentId) : await getOrCreateDefaultAgent();
 
   if (!agent) {
-    throw new HTTPException(404, {
-      message: `Agent not found: ${agentId}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${agentId}` }, 404);
   }
 
   const memory = agent.getMemory();
   const conversation = memory.get(id);
 
   if (!conversation) {
-    throw new HTTPException(404, {
-      message: `Conversation not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -1566,9 +1549,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   const agent = agentId ? await getAgent(agentId) : await getOrCreateDefaultAgent();
 
   if (!agent) {
-    throw new HTTPException(404, {
-      message: `Agent not found: ${agentId}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${agentId}` }, 404);
   }
 
   const memory = agent.getMemory();
@@ -1579,9 +1560,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   await chatRepo.deleteConversation(id);
 
   if (!deleted) {
-    throw new HTTPException(404, {
-      message: `Conversation not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {});
@@ -1641,9 +1620,7 @@ chatRoutes.get('/history/:id', async (c) => {
   const data = await chatRepo.getConversationWithMessages(id);
 
   if (!data) {
-    throw new HTTPException(404, {
-      message: `Conversation not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -1684,9 +1661,7 @@ chatRoutes.delete('/history/:id', async (c) => {
   const deleted = await chatRepo.deleteConversation(id);
 
   if (!deleted) {
-    throw new HTTPException(404, {
-      message: `Conversation not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${id}` }, 404);
   }
 
   return apiResponse(c, { deleted: true });
@@ -1704,9 +1679,7 @@ chatRoutes.patch('/history/:id/archive', async (c) => {
   const updated = await chatRepo.updateConversation(id, { isArchived: body.archived });
 
   if (!updated) {
-    throw new HTTPException(404, {
-      message: `Conversation not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${id}` }, 404);
   }
 
   return apiResponse(c, { archived: updated.isArchived });
@@ -1783,9 +1756,7 @@ chatRoutes.get('/logs/:id', async (c) => {
   const log = await logsRepo.getLog(id);
 
   if (!log) {
-    throw new HTTPException(404, {
-      message: `Log not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Log not found: ${id}` }, 404);
   }
 
   return apiResponse(c, log);

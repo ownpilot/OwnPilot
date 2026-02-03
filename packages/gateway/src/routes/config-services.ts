@@ -7,11 +7,10 @@
  */
 
 import { Hono } from 'hono';
-import { HTTPException } from 'hono/http-exception';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import type { CreateConfigServiceInput, UpdateConfigServiceInput, CreateConfigEntryInput, UpdateConfigEntryInput } from '../db/repositories/config-services.js';
 import type { ConfigServiceDefinition, ConfigEntry, ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES } from './helpers.js'
 
 export const configServicesRoutes = new Hono();
 
@@ -149,7 +148,7 @@ configServicesRoutes.get('/:name', async (c) => {
   const name = c.req.param('name');
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    throw new HTTPException(404, { message: `Config service not found: ${name}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
   }
 
   return apiResponse(c, sanitizeService(service));
@@ -162,24 +161,18 @@ configServicesRoutes.post('/', async (c) => {
   const body = await c.req.json<CreateConfigServiceInput>();
 
   if (!body.name || !body.displayName || !body.category) {
-    throw new HTTPException(400, {
-      message: 'Missing required fields: name, displayName, category',
-    });
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Missing required fields: name, displayName, category' }, 400);
   }
 
   // Validate name format
   if (!/^[a-z][a-z0-9_]*$/.test(body.name)) {
-    throw new HTTPException(400, {
-      message: 'Invalid service name. Must start with lowercase letter and contain only lowercase letters, numbers, and underscores.',
-    });
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid service name. Must start with lowercase letter and contain only lowercase letters, numbers, and underscores.' }, 400);
   }
 
   // Check for duplicate
   const existing = configServicesRepo.getByName(body.name);
   if (existing) {
-    throw new HTTPException(409, {
-      message: `Config service '${body.name}' already exists`,
-    });
+    return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Config service '${body.name}' already exists` }, 409);
   }
 
   const service = await configServicesRepo.create(body);
@@ -196,7 +189,7 @@ configServicesRoutes.put('/:name', async (c) => {
 
   const updated = await configServicesRepo.update(name, body);
   if (!updated) {
-    throw new HTTPException(404, { message: `Config service not found: ${name}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
   }
 
   return apiResponse(c, sanitizeService(updated));
@@ -210,7 +203,7 @@ configServicesRoutes.delete('/:name', async (c) => {
 
   const deleted = await configServicesRepo.delete(name);
   if (!deleted) {
-    throw new HTTPException(404, { message: `Config service not found: ${name}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
   }
 
   return apiResponse(c, { deleted: true });
@@ -227,7 +220,7 @@ configServicesRoutes.get('/:name/entries', async (c) => {
   const name = c.req.param('name');
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    throw new HTTPException(404, { message: `Config service not found: ${name}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
   }
 
   const entries = configServicesRepo.getEntries(name);
@@ -245,7 +238,7 @@ configServicesRoutes.post('/:name/entries', async (c) => {
   const name = c.req.param('name');
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    throw new HTTPException(404, { message: `Config service not found: ${name}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
   }
 
   const body = await c.req.json<CreateConfigEntryInput>();
@@ -263,7 +256,7 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
 
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    throw new HTTPException(404, { message: `Config service not found: ${name}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
   }
 
   const body = await c.req.json<UpdateConfigEntryInput>();
@@ -291,7 +284,7 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
 
   const updated = await configServicesRepo.updateEntry(entryId, body);
   if (!updated) {
-    throw new HTTPException(404, { message: `Config entry not found: ${entryId}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config entry not found: ${entryId}` }, 404);
   }
 
   return apiResponse(c, sanitizeEntry(updated, service.configSchema));
@@ -306,12 +299,12 @@ configServicesRoutes.delete('/:name/entries/:entryId', async (c) => {
 
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    throw new HTTPException(404, { message: `Config service not found: ${name}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
   }
 
   const deleted = await configServicesRepo.deleteEntry(entryId);
   if (!deleted) {
-    throw new HTTPException(404, { message: `Config entry not found: ${entryId}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config entry not found: ${entryId}` }, 404);
   }
 
   return apiResponse(c, { deleted: true });
@@ -326,14 +319,14 @@ configServicesRoutes.put('/:name/entries/:entryId/default', async (c) => {
 
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    throw new HTTPException(404, { message: `Config service not found: ${name}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
   }
 
   // Verify the entry exists for this service
   const entries = configServicesRepo.getEntries(name);
   const entry = entries.find(e => e.id === entryId);
   if (!entry) {
-    throw new HTTPException(404, { message: `Config entry not found: ${entryId}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config entry not found: ${entryId}` }, 404);
   }
 
   await configServicesRepo.setDefaultEntry(name, entryId);

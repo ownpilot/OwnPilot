@@ -4,7 +4,6 @@
  */
 
 import { Hono } from 'hono';
-import { HTTPException } from 'hono/http-exception';
 import {
   getDefaultPluginRegistry,
   type Plugin,
@@ -13,7 +12,7 @@ import {
   type PluginStatus,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse, apiError } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
@@ -184,9 +183,7 @@ pluginsRoutes.get('/:id', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    throw new HTTPException(404, {
-      message: `Plugin not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   // Get detailed tool info
@@ -222,9 +219,7 @@ pluginsRoutes.post('/:id/enable', async (c) => {
   const success = await registry.enable(id);
 
   if (!success) {
-    throw new HTTPException(404, {
-      message: `Plugin not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   await pluginsRepo.updateStatus(id, 'enabled');
@@ -247,9 +242,7 @@ pluginsRoutes.post('/:id/disable', async (c) => {
   const success = await registry.disable(id);
 
   if (!success) {
-    throw new HTTPException(404, {
-      message: `Plugin not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   await pluginsRepo.updateStatus(id, 'disabled');
@@ -271,9 +264,7 @@ pluginsRoutes.put('/:id/config', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    throw new HTTPException(404, {
-      message: `Plugin not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   const body = await c.req.json<{ settings: Record<string, unknown> }>();
@@ -302,9 +293,7 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    throw new HTTPException(404, {
-      message: `Plugin not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   const body = await c.req.json<{ permissions: PluginPermission[] }>();
@@ -312,9 +301,7 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
   // Validate permissions
   for (const perm of body.permissions) {
     if (!plugin.manifest.permissions.includes(perm)) {
-      throw new HTTPException(400, {
-        message: `Plugin does not request permission: ${perm}`,
-      });
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Plugin does not request permission: ${perm}` }, 400);
     }
   }
 
@@ -338,7 +325,7 @@ pluginsRoutes.get('/:id/settings', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -358,12 +345,12 @@ pluginsRoutes.put('/:id/settings', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   const body = await c.req.json<{ settings: Record<string, unknown> }>();
   if (!body.settings || typeof body.settings !== 'object') {
-    return apiError(c, { code: 'INVALID_INPUT', message: 'settings object required' }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'settings object required' }, 400);
   }
 
   // Merge with existing settings
@@ -397,7 +384,7 @@ pluginsRoutes.get('/:id/required-services', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: 'NOT_FOUND', message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   const requiredServices = (plugin.manifest.requiredServices ?? []).map(svc => {
@@ -432,9 +419,7 @@ pluginsRoutes.delete('/:id', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    throw new HTTPException(404, {
-      message: `Plugin not found: ${id}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
   }
 
   const name = plugin.manifest.name;

@@ -4,7 +4,6 @@
  */
 
 import { Hono } from 'hono';
-import { HTTPException } from 'hono/http-exception';
 import { streamSSE } from 'hono/streaming';
 import {
   ToolRegistry,
@@ -18,7 +17,7 @@ import {
   type ToolDefinition,
 } from '@ownpilot/core';
 import type { ToolInfo } from '../types/index.js';
-import { apiResponse } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES } from './helpers.js'
 import { getAgent } from './agents.js';
 import { initializeToolOverrides } from '../services/tool-overrides.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
@@ -94,7 +93,7 @@ const CATEGORY_INFO: Record<string, { icon: string; description: string }> = {
 
 /**
  * Resolve and execute a tool from the shared registry or plugin registry.
- * Throws HTTPException 404 if the tool is not found in either.
+ * Throws Error if the tool is not found in either.
  */
 async function resolveAndExecuteTool(
   name: string,
@@ -105,7 +104,7 @@ async function resolveAndExecuteTool(
 
   // Single dispatch — all tools (core, gateway, plugin, custom) are in one registry
   if (!registry.has(name)) {
-    throw new HTTPException(404, { message: `Tool not found: ${name}` });
+    throw new Error(`Tool not found: ${name}`);
   }
 
   const result = await registry.execute(name, args, { conversationId });
@@ -219,9 +218,7 @@ toolsRoutes.get('/', async (c) => {
   if (agentId) {
     const agent = await getAgent(agentId);
     if (!agent) {
-      throw new HTTPException(404, {
-        message: `Agent not found: ${agentId}`,
-      });
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${agentId}` }, 404);
     }
 
     tools = agent.getTools().map((t) => ({
@@ -291,7 +288,7 @@ toolsRoutes.get('/:name/source', async (c) => {
   // Try TypeScript source first, fall back to executor.toString()
   const source = getToolSource(name, fallbackToString);
   if (!source) {
-    throw new HTTPException(404, { message: `Tool not found: ${name}` });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Tool not found: ${name}` }, 404);
   }
 
   return apiResponse(c, { name, source });
@@ -309,9 +306,7 @@ toolsRoutes.get('/:name', async (c) => {
   if (agentId) {
     const agent = await getAgent(agentId);
     if (!agent) {
-      throw new HTTPException(404, {
-        message: `Agent not found: ${agentId}`,
-      });
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${agentId}` }, 404);
     }
     tool = agent.getTools().find((t) => t.name === name);
   } else {
@@ -321,9 +316,7 @@ toolsRoutes.get('/:name', async (c) => {
   }
 
   if (!tool) {
-    throw new HTTPException(404, {
-      message: `Tool not found: ${name}`,
-    });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Tool not found: ${name}` }, 404);
   }
 
   return apiResponse(c, {
@@ -341,16 +334,24 @@ toolsRoutes.post('/:name/execute', async (c) => {
   const name = c.req.param('name');
   const body = await c.req.json<{ arguments: Record<string, unknown> }>();
 
-  const startTime = Date.now();
-  const result = await resolveAndExecuteTool(name, body.arguments ?? {}, 'direct-execution');
-  const duration = Date.now() - startTime;
+  try {
+    const startTime = Date.now();
+    const result = await resolveAndExecuteTool(name, body.arguments ?? {}, 'direct-execution');
+    const duration = Date.now() - startTime;
 
-  return apiResponse(c, {
-    tool: name,
-    result: result.content,
-    isError: result.isError,
-    duration,
-  });
+    return apiResponse(c, {
+      tool: name,
+      result: result.content,
+      isError: result.isError,
+      duration,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.startsWith('Tool not found:')) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message }, 404);
+    }
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message }, 500);
+  }
 });
 
 /**
@@ -422,9 +423,7 @@ toolsRoutes.post('/batch', async (c) => {
   }>();
 
   if (!body.executions || !Array.isArray(body.executions)) {
-    throw new HTTPException(400, {
-      message: 'Missing required field: executions (array)',
-    });
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Missing required field: executions (array)' }, 400);
   }
 
   const startTime = Date.now();
