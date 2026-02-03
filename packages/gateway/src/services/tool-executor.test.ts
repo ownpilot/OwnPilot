@@ -22,6 +22,16 @@ const mockToolRegistry = {
   registerPluginTools: vi.fn(),
 };
 
+const mockPluginService = {
+  getTool: vi.fn(),
+  getEnabled: vi.fn(() => []),
+  get: vi.fn(),
+};
+
+const mockEventSystem = {
+  onAny: vi.fn(),
+};
+
 vi.mock('@ownpilot/core', async () => {
   const actual = await vi.importActual<typeof import('@ownpilot/core')>('@ownpilot/core');
   return {
@@ -29,19 +39,26 @@ vi.mock('@ownpilot/core', async () => {
     ToolRegistry: vi.fn(() => mockToolRegistry),
     registerAllTools: vi.fn(),
     registerCoreTools: vi.fn(),
+    hasServiceRegistry: vi.fn(() => true),
+    getServiceRegistry: vi.fn(() => ({
+      get: vi.fn((token: { name: string }) => {
+        if (token.name === 'plugin') return mockPluginService;
+        if (token.name === 'event') return mockEventSystem;
+        return undefined;
+      }),
+      tryGet: vi.fn(() => undefined),
+    })),
+    Services: {
+      ...(actual as Record<string, unknown>)['Services'],
+      Plugin: { name: 'plugin' },
+      Event: { name: 'event' },
+      Audit: { name: 'audit' },
+    },
   };
 });
 
 vi.mock('./config-center-impl.js', () => ({
   gatewayConfigCenter: { mocked: true },
-}));
-
-const mockPluginRegistry = {
-  getTool: vi.fn(),
-};
-
-vi.mock('../plugins/index.js', () => ({
-  getDefaultPluginRegistry: vi.fn(async () => mockPluginRegistry),
 }));
 
 const mockMemoryProvider = { name: 'memory', getTools: vi.fn(() => []) };
@@ -248,7 +265,7 @@ describe('Tool Executor', () => {
         content: 'plugin result',
         isError: false,
       });
-      mockPluginRegistry.getTool.mockReturnValue({
+      mockPluginService.getTool.mockReturnValue({
         executor: mockPluginExecutor,
         plugin: { manifest: { id: 'test-plugin' } },
       });
@@ -260,7 +277,7 @@ describe('Tool Executor', () => {
         result: 'plugin result',
         error: undefined,
       });
-      expect(mockPluginRegistry.getTool).toHaveBeenCalledWith('plugin_tool');
+      expect(mockPluginService.getTool).toHaveBeenCalledWith('plugin_tool');
     });
 
     it('returns error when plugin tool execution returns isError', async () => {
@@ -270,7 +287,7 @@ describe('Tool Executor', () => {
         content: 'plugin error',
         isError: true,
       });
-      mockPluginRegistry.getTool.mockReturnValue({
+      mockPluginService.getTool.mockReturnValue({
         executor: mockPluginExecutor,
         plugin: { manifest: { id: 'test-plugin' } },
       });
@@ -286,7 +303,7 @@ describe('Tool Executor', () => {
 
     it('returns not-found error when tool exists in neither registry nor plugins', async () => {
       mockToolRegistry.has.mockReturnValue(false);
-      mockPluginRegistry.getTool.mockReturnValue(null);
+      mockPluginService.getTool.mockReturnValue(null);
 
       const result = await executeTool('nonexistent_tool', {});
 
@@ -300,7 +317,7 @@ describe('Tool Executor', () => {
       mockToolRegistry.has.mockReturnValue(false);
 
       const mockPluginExecutor = vi.fn().mockRejectedValue(new Error('Plugin crashed'));
-      mockPluginRegistry.getTool.mockReturnValue({
+      mockPluginService.getTool.mockReturnValue({
         executor: mockPluginExecutor,
         plugin: { manifest: { id: 'test-plugin' } },
       });
@@ -326,12 +343,12 @@ describe('Tool Executor', () => {
 
       expect(result).toBe(true);
       // Should not check plugins if found in registry
-      expect(mockPluginRegistry.getTool).not.toHaveBeenCalled();
+      expect(mockPluginService.getTool).not.toHaveBeenCalled();
     });
 
     it('returns true when tool is in plugin registry', async () => {
       mockToolRegistry.has.mockReturnValue(false);
-      mockPluginRegistry.getTool.mockReturnValue({ executor: vi.fn() });
+      mockPluginService.getTool.mockReturnValue({ executor: vi.fn() });
 
       const result = await hasTool('plugin_tool');
 
@@ -340,20 +357,19 @@ describe('Tool Executor', () => {
 
     it('returns false when tool exists in neither registry', async () => {
       mockToolRegistry.has.mockReturnValue(false);
-      mockPluginRegistry.getTool.mockReturnValue(null);
+      mockPluginService.getTool.mockReturnValue(null);
 
       const result = await hasTool('nonexistent_tool');
 
       expect(result).toBe(false);
     });
 
-    it('returns false when plugin registry throws', async () => {
+    it('returns false when plugin service throws', async () => {
       mockToolRegistry.has.mockReturnValue(false);
 
-      const { getDefaultPluginRegistry } = await import('../plugins/index.js');
-      (getDefaultPluginRegistry as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-        new Error('Plugin system down')
-      );
+      mockPluginService.getTool.mockImplementation(() => {
+        throw new Error('Plugin system down');
+      });
 
       const result = await hasTool('any_tool');
 

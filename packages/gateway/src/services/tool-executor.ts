@@ -21,7 +21,6 @@ import {
 } from '@ownpilot/core';
 import type { ToolDefinition, ToolContext } from '@ownpilot/core';
 import { gatewayConfigCenter } from './config-center-impl.js';
-import { getDefaultPluginRegistry } from '../plugins/index.js';
 import { registerToolConfigRequirements } from './api-service-registrar.js';
 import {
   createMemoryToolProvider,
@@ -114,35 +113,37 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
  * Also listens for plugin enable/disable events to add/remove tools dynamically.
  */
 function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
-  // getDefaultPluginRegistry() is async — fire-and-forget registration
-  getDefaultPluginRegistry()
-    .then((pluginRegistry) => {
-      // Register tools from all currently enabled plugins
-      // Skip core-category plugins — their tools are registered synchronously
-      // by registerAllTools() + registerCoreTools() above.
-      for (const plugin of pluginRegistry.getEnabled()) {
-        if (plugin.tools.size > 0 && plugin.manifest.category !== 'core') {
+  if (!hasServiceRegistry()) return;
+
+  try {
+    const pluginService = getServiceRegistry().get(Services.Plugin);
+    const eventSystem = getServiceRegistry().get(Services.Event);
+
+    // Register tools from all currently enabled plugins
+    // Skip core-category plugins — their tools are registered synchronously
+    // by registerAllTools() + registerCoreTools() above.
+    for (const plugin of pluginService.getEnabled()) {
+      if (plugin.tools.size > 0 && plugin.manifest.category !== 'core') {
+        registry.registerPluginTools(createPluginId(plugin.manifest.id), plugin.tools);
+      }
+    }
+
+    // Listen for future plugin state changes via EventSystem
+    eventSystem.onAny('plugin.status', (e) => {
+      const event = e.data as { pluginId: string; newStatus: string };
+      const pluginId = createPluginId(event.pluginId);
+      if (event.newStatus === 'enabled') {
+        const plugin = pluginService.get(event.pluginId);
+        if (plugin && plugin.tools.size > 0 && plugin.manifest.category !== 'core') {
           registry.registerPluginTools(createPluginId(plugin.manifest.id), plugin.tools);
         }
+      } else if (event.newStatus === 'disabled') {
+        registry.unregisterPluginTools(pluginId);
       }
-
-      // Listen for future plugin state changes
-      pluginRegistry.onEvent('plugin.status', (data: unknown) => {
-        const event = data as { pluginId: string; newStatus: string };
-        const pluginId = createPluginId(event.pluginId);
-        if (event.newStatus === 'enabled') {
-          const plugin = pluginRegistry.get(event.pluginId);
-          if (plugin && plugin.tools.size > 0 && plugin.manifest.category !== 'core') {
-            registry.registerPluginTools(createPluginId(plugin.manifest.id), plugin.tools);
-          }
-        } else if (event.newStatus === 'disabled') {
-          registry.unregisterPluginTools(pluginId);
-        }
-      });
-    })
-    .catch(() => {
-      // Plugin registry not initialized yet — plugins will register later
     });
+  } catch {
+    // Plugin or Event service not initialized yet — plugins will register later
+  }
 }
 
 /**
@@ -269,10 +270,10 @@ async function executeToolInternal(
     }
   }
 
-  // Fallback: check plugin registry (covers the async sync race window)
+  // Fallback: check plugin service (covers the sync race window)
   try {
-    const pluginRegistry = await getDefaultPluginRegistry();
-    const pluginTool = pluginRegistry.getTool(toolName);
+    const pluginService = getServiceRegistry().get(Services.Plugin);
+    const pluginTool = pluginService.getTool(toolName);
     if (pluginTool != null) {
       try {
         const pluginResult = await pluginTool.executor(args, { callId: 'fallback', conversationId: 'system-execution' });
@@ -290,7 +291,7 @@ async function executeToolInternal(
       }
     }
   } catch {
-    // Ignore plugin registry lookup errors — fall through to not-found
+    // Ignore plugin service lookup errors — fall through to not-found
   }
 
   return {
@@ -306,10 +307,10 @@ export async function hasTool(toolName: string): Promise<boolean> {
   const tools = getSharedToolRegistry();
   if (tools.has(toolName)) return true;
 
-  // Fallback: check plugin registry
+  // Fallback: check plugin service
   try {
-    const pluginRegistry = await getDefaultPluginRegistry();
-    return pluginRegistry.getTool(toolName) != null;
+    const pluginService = getServiceRegistry().get(Services.Plugin);
+    return pluginService.getTool(toolName) != null;
   } catch {
     return false;
   }
