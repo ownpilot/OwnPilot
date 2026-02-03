@@ -9,7 +9,6 @@ import {
   createApp,
   type GatewayConfig,
   initializeScheduler,
-  initializeChannelFactories,
   initializeAdapter,
   loadApiKeysToEnvironment,
   settingsRepo,
@@ -77,9 +76,6 @@ export async function startServer(options: ServerOptions): Promise<void> {
   }
 
   const app = createApp(config);
-
-  // Initialize channel factories (loads channels from database)
-  await initializeChannelFactories();
 
   // Initialize plugins
   try {

@@ -13,7 +13,6 @@ import {
   loadApiKeysToEnvironment,
   getDefaultProvider,
   isDemoModeFromSettings,
-  initializeChannelFactories,
 } from '@ownpilot/gateway';
 
 interface StartOptions {
@@ -70,10 +69,7 @@ export async function startAll(options: StartOptions): Promise<void> {
     }
   );
 
-  // Initialize channel factories (loads channels from database)
-  await initializeChannelFactories();
-
-  // The Telegram bot functionality is now handled by the channel manager
+  // Channel plugins are initialized by PluginRegistry automatically
   // Channels are loaded from the database automatically
   // No need for manual bot setup here
 
