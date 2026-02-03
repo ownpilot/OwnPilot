@@ -42,35 +42,23 @@ describe('Route Helpers', () => {
       expect(c.get).toHaveBeenCalledWith('userId');
     });
 
-    it('should return userId from query parameter when not in context', () => {
+    it('should return default when no userId in auth context', () => {
       const c = createMockContext();
       vi.mocked(c.get).mockReturnValue(undefined);
-      vi.mocked(c.req.query).mockReturnValue('user-from-query');
-
-      const result = getUserId(c);
-
-      expect(result).toBe('user-from-query');
-      expect(c.req.query).toHaveBeenCalledWith('userId');
-    });
-
-    it('should return default when no userId available', () => {
-      const c = createMockContext();
-      vi.mocked(c.get).mockReturnValue(undefined);
-      vi.mocked(c.req.query).mockReturnValue(undefined);
 
       const result = getUserId(c);
 
       expect(result).toBe('default');
     });
 
-    it('should prioritize context.get over query parameter', () => {
+    it('should not accept userId from query parameters (security)', () => {
       const c = createMockContext();
-      vi.mocked(c.get).mockReturnValue('user-from-auth');
-      vi.mocked(c.req.query).mockReturnValue('user-from-query');
+      vi.mocked(c.get).mockReturnValue(undefined);
+      vi.mocked(c.req.query).mockReturnValue('malicious-user');
 
       const result = getUserId(c);
 
-      expect(result).toBe('user-from-auth');
+      expect(result).toBe('default');
     });
   });
 

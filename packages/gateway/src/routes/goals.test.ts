@@ -56,6 +56,11 @@ const { goalsRoutes } = await import('./goals.js');
 function createApp() {
   const app = new Hono();
   app.use('*', requestId);
+  // Simulate authenticated user
+  app.use('*', async (c, next) => {
+    c.set('userId', 'u1');
+    await next();
+  });
   app.route('/goals', goalsRoutes);
   app.onError(errorHandler);
   return app;
@@ -95,7 +100,7 @@ describe('Goals Routes', () => {
     it('passes query params to service', async () => {
       mockGoalService.listGoals.mockResolvedValue([]);
 
-      await app.request('/goals?userId=u1&status=active&limit=5');
+      await app.request('/goals?status=active&limit=5');
 
       expect(mockGoalService.listGoals).toHaveBeenCalledWith('u1', {
         status: 'active',
@@ -110,7 +115,7 @@ describe('Goals Routes', () => {
 
       await app.request('/goals?parentId=null');
 
-      expect(mockGoalService.listGoals).toHaveBeenCalledWith('default', expect.objectContaining({
+      expect(mockGoalService.listGoals).toHaveBeenCalledWith('u1', expect.objectContaining({
         parentId: null,
       }));
     });

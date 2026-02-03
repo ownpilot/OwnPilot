@@ -65,6 +65,11 @@ const { plansRoutes } = await import('./plans.js');
 function createApp() {
   const app = new Hono();
   app.use('*', requestId);
+  // Simulate authenticated user
+  app.use('*', async (c, next) => {
+    c.set('userId', 'u1');
+    await next();
+  });
   app.route('/plans', plansRoutes);
   app.onError(errorHandler);
   return app;
@@ -104,7 +109,7 @@ describe('Plans Routes', () => {
     it('passes query params to service', async () => {
       mockPlanService.listPlans.mockResolvedValue([]);
 
-      await app.request('/plans?userId=u1&status=running&goalId=g1&limit=5&offset=10');
+      await app.request('/plans?status=running&goalId=g1&limit=5&offset=10');
 
       expect(mockPlanService.listPlans).toHaveBeenCalledWith('u1', {
         status: 'running',
