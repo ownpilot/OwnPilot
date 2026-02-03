@@ -97,10 +97,6 @@ vi.mock('../utils/index.js', () => ({
   }),
 }));
 
-vi.mock('../services/custom-data-service.js', () => ({
-  getCustomDataService: vi.fn(),
-}));
-
 vi.mock('../services/log.js', () => ({
   getLog: vi.fn(() => ({
     info: vi.fn(),
