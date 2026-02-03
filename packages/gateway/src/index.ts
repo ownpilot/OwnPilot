@@ -39,7 +39,6 @@ export {
   createSlidingWindowRateLimiter,
   errorHandler,
   notFoundHandler,
-  ErrorCodes,
 } from './middleware/index.js';
 
 // Routes

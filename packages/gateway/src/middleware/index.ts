@@ -10,5 +10,5 @@ export {
   createSlidingWindowRateLimiter,
   stopAllRateLimiters,
 } from './rate-limit.js';
-export { errorHandler, notFoundHandler, ErrorCodes } from './error-handler.js';
+export { errorHandler, notFoundHandler } from './error-handler.js';
 export { auditMiddleware } from './audit.js';

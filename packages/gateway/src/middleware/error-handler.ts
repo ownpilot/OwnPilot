@@ -5,23 +5,10 @@
 import type { Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { ApiResponse } from '../types/index.js';
+import { ERROR_CODES } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('ErrorHandler');
-
-/**
- * Error codes
- */
-export const ErrorCodes = {
-  VALIDATION_ERROR: 'VALIDATION_ERROR',
-  NOT_FOUND: 'NOT_FOUND',
-  UNAUTHORIZED: 'UNAUTHORIZED',
-  FORBIDDEN: 'FORBIDDEN',
-  RATE_LIMITED: 'RATE_LIMITED',
-  INTERNAL_ERROR: 'INTERNAL_ERROR',
-  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
-  BAD_REQUEST: 'BAD_REQUEST',
-} as const;
 
 /**
  * Map HTTP status to error code
@@ -29,21 +16,21 @@ export const ErrorCodes = {
 function statusToErrorCode(status: number): string {
   switch (status) {
     case 400:
-      return ErrorCodes.BAD_REQUEST;
+      return ERROR_CODES.BAD_REQUEST;
     case 401:
-      return ErrorCodes.UNAUTHORIZED;
+      return ERROR_CODES.UNAUTHORIZED;
     case 403:
-      return ErrorCodes.FORBIDDEN;
+      return ERROR_CODES.FORBIDDEN;
     case 404:
-      return ErrorCodes.NOT_FOUND;
+      return ERROR_CODES.NOT_FOUND;
     case 422:
-      return ErrorCodes.VALIDATION_ERROR;
+      return ERROR_CODES.VALIDATION_ERROR;
     case 429:
-      return ErrorCodes.RATE_LIMITED;
+      return ERROR_CODES.RATE_LIMITED;
     case 503:
-      return ErrorCodes.SERVICE_UNAVAILABLE;
+      return ERROR_CODES.SERVICE_UNAVAILABLE;
     default:
-      return ErrorCodes.INTERNAL_ERROR;
+      return ERROR_CODES.INTERNAL_ERROR;
   }
 }
 
@@ -75,7 +62,7 @@ export function errorHandler(err: Error, c: Context): Response {
     const response: ApiResponse = {
       success: false,
       error: {
-        code: ErrorCodes.BAD_REQUEST,
+        code: ERROR_CODES.BAD_REQUEST,
         message: 'Invalid JSON in request body',
       },
       meta: {
@@ -91,7 +78,7 @@ export function errorHandler(err: Error, c: Context): Response {
     const response: ApiResponse = {
       success: false,
       error: {
-        code: ErrorCodes.VALIDATION_ERROR,
+        code: ERROR_CODES.VALIDATION_ERROR,
         message: err.message,
       },
       meta: {
@@ -109,7 +96,7 @@ export function errorHandler(err: Error, c: Context): Response {
   const response: ApiResponse = {
     success: false,
     error: {
-      code: ErrorCodes.INTERNAL_ERROR,
+      code: ERROR_CODES.INTERNAL_ERROR,
       message: 'An unexpected error occurred',
       details:
         process.env.NODE_ENV === 'development'
@@ -134,7 +121,7 @@ export function notFoundHandler(c: Context): Response {
   const response: ApiResponse = {
     success: false,
     error: {
-      code: ErrorCodes.NOT_FOUND,
+      code: ERROR_CODES.NOT_FOUND,
       message: `Route not found: ${c.req.method} ${c.req.path}`,
     },
     meta: {
