@@ -19,7 +19,7 @@ import {
   createPluginSecurityMiddleware,
   createPluginId,
 } from '@ownpilot/core';
-import type { ToolDefinition, ToolContext } from '@ownpilot/core';
+import type { ToolDefinition, ToolContext, DynamicToolDefinition } from '@ownpilot/core';
 import { gatewayConfigCenter } from './config-center-impl.js';
 import { registerToolConfigRequirements } from './api-service-registrar.js';
 import {
@@ -163,10 +163,10 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
         dynamicRegistry.register({
           name: tool.name,
           description: tool.description,
-          parameters: tool.parameters as any,
+          parameters: tool.parameters as DynamicToolDefinition['parameters'],
           code: tool.code,
           category: tool.category,
-          permissions: tool.permissions as any,
+          permissions: tool.permissions as DynamicToolDefinition['permissions'],
           requiresApproval: tool.requiresApproval,
         });
 
