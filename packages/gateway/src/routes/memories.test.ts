@@ -53,6 +53,11 @@ const { memoriesRoutes } = await import('./memories.js');
 function createApp() {
   const app = new Hono();
   app.use('*', requestId);
+  // Simulate authenticated user
+  app.use('*', async (c, next) => {
+    c.set('userId', 'u1');
+    await next();
+  });
   app.route('/memories', memoriesRoutes);
   app.onError(errorHandler);
   return app;
@@ -94,7 +99,7 @@ describe('Memories Routes', () => {
       mockMemoryService.listMemories.mockResolvedValue([]);
       mockMemoryService.countMemories.mockResolvedValue(0);
 
-      await app.request('/memories?userId=u1&type=fact&limit=5&minImportance=0.5');
+      await app.request('/memories?type=fact&limit=5&minImportance=0.5');
 
       expect(mockMemoryService.listMemories).toHaveBeenCalledWith('u1', {
         type: 'fact',
@@ -105,13 +110,13 @@ describe('Memories Routes', () => {
       expect(mockMemoryService.countMemories).toHaveBeenCalledWith('u1', 'fact');
     });
 
-    it('defaults userId to "default"', async () => {
+    it('uses authenticated userId from context', async () => {
       mockMemoryService.listMemories.mockResolvedValue([]);
       mockMemoryService.countMemories.mockResolvedValue(0);
 
       await app.request('/memories');
 
-      expect(mockMemoryService.listMemories).toHaveBeenCalledWith('default', expect.anything());
+      expect(mockMemoryService.listMemories).toHaveBeenCalledWith('u1', expect.anything());
     });
   });
 

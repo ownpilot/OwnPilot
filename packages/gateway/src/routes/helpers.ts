@@ -21,7 +21,7 @@ export { ERROR_CODES, type ErrorCode };
  *   3. Fallback: 'default'
  */
 export function getUserId(c: Context): string {
-  return c.get('userId') ?? c.req.query('userId') ?? 'default';
+  return c.get('userId') ?? 'default';
 }
 
 /**

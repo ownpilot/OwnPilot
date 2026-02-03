@@ -6,6 +6,7 @@
  */
 
 import { Hono } from 'hono';
+import { randomBytes } from 'node:crypto';
 import { google } from 'googleapis';
 import { settingsRepo, oauthIntegrationsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
@@ -84,7 +85,7 @@ function getGoogleOAuthConfig(): GoogleOAuthConfig | null {
  * Store OAuth state for CSRF protection
  */
 async function storeOAuthState(state: OAuthState): Promise<string> {
-  const stateToken = Buffer.from(JSON.stringify(state)).toString('base64url');
+  const stateToken = randomBytes(32).toString('hex');
   await settingsRepo.set(`oauth_state:${stateToken}`, {
     ...state,
     createdAt: new Date().toISOString(),

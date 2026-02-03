@@ -69,6 +69,11 @@ const { triggersRoutes } = await import('./triggers.js');
 function createApp() {
   const app = new Hono();
   app.use('*', requestId);
+  // Simulate authenticated user
+  app.use('*', async (c, next) => {
+    c.set('userId', 'u1');
+    await next();
+  });
   app.route('/triggers', triggersRoutes);
   app.onError(errorHandler);
   return app;
@@ -108,7 +113,7 @@ describe('Triggers Routes', () => {
     it('passes query params to service', async () => {
       mockTriggerService.listTriggers.mockResolvedValue([]);
 
-      await app.request('/triggers?userId=u1&type=schedule&enabled=true&limit=5');
+      await app.request('/triggers?type=schedule&enabled=true&limit=5');
 
       expect(mockTriggerService.listTriggers).toHaveBeenCalledWith('u1', {
         type: 'schedule',
@@ -122,7 +127,7 @@ describe('Triggers Routes', () => {
 
       await app.request('/triggers?enabled=false');
 
-      expect(mockTriggerService.listTriggers).toHaveBeenCalledWith('default', expect.objectContaining({
+      expect(mockTriggerService.listTriggers).toHaveBeenCalledWith('u1', expect.objectContaining({
         enabled: false,
       }));
     });
@@ -333,7 +338,7 @@ describe('Triggers Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.message).toContain('enabled');
-      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('default', 't1', { enabled: true });
+      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('u1', 't1', { enabled: true });
     });
 
     it('returns 404 when trigger not found', async () => {
@@ -357,7 +362,7 @@ describe('Triggers Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.message).toContain('disabled');
-      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('default', 't1', { enabled: false });
+      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('u1', 't1', { enabled: false });
     });
   });
 
