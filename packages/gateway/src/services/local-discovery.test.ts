@@ -6,7 +6,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { discoverModels, type DiscoveryResult } from './local-discovery.js';
+import type { LocalProvider } from '../db/repositories/local-providers.js';
+import { discoverModels } from './local-discovery.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -21,7 +22,7 @@ function makeProvider(overrides: Record<string, unknown> = {}) {
     apiKey: null,
     discoveryEndpoint: null,
     ...overrides,
-  } as any;
+  } as unknown as LocalProvider;
 }
 
 function mockFetchResponse(body: unknown, ok = true, status = 200) {
@@ -144,7 +145,7 @@ describe('Local Discovery Service', () => {
 
       await discoverModels(makeProvider({ apiKey: null }));
 
-      const callHeaders = (globalThis.fetch as any).mock.calls[0][1].headers;
+      const callHeaders = vi.mocked(globalThis.fetch).mock.calls[0][1]!.headers as Record<string, string>;
       expect(callHeaders.Authorization).toBeUndefined();
     });
   });
@@ -193,7 +194,7 @@ describe('Local Discovery Service', () => {
   describe('discoverModels - generic', () => {
     it('discovers from first working URL', async () => {
       let callCount = 0;
-      globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
+      globalThis.fetch = vi.fn().mockImplementation(async (_url: string) => {
         callCount++;
         if (callCount === 1) {
           // First URL fails
@@ -251,7 +252,7 @@ describe('Local Discovery Service', () => {
       }));
 
       // First call should be the custom endpoint
-      expect((globalThis.fetch as any).mock.calls[0][0]).toBe('http://localhost:9000/custom/api/models');
+      expect(vi.mocked(globalThis.fetch).mock.calls[0][0]).toBe('http://localhost:9000/custom/api/models');
       expect(result.models).toHaveLength(1);
     });
 

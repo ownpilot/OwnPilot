@@ -5,7 +5,7 @@
  * the proper platform-specific data directory.
  */
 
-import { existsSync, copyFileSync, mkdirSync, readdirSync, statSync, renameSync } from 'node:fs';
+import { existsSync, copyFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { getDataPaths, getLegacyDataPath, hasLegacyData, initializeDataDirectories } from './index.js';
 import { getLog } from '../services/log.js';
@@ -80,7 +80,7 @@ export function getMigrationStatus(): {
 /**
  * Migrate data from legacy location to new location
  */
-export function migrateData(options: { backup?: boolean } = {}): MigrationResult {
+export function migrateData(_options: { backup?: boolean } = {}): MigrationResult {
   const legacyPath = getLegacyDataPath();
   const paths = initializeDataDirectories();
 

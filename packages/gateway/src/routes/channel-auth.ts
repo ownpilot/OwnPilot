@@ -8,6 +8,7 @@
 import { Hono } from 'hono';
 import { getChannelVerificationService } from '../channels/auth/verification.js';
 import { channelUsersRepo } from '../db/repositories/channel-users.js';
+import { getPaginationParams } from './helpers.js';
 
 export const channelAuthRoutes = new Hono();
 
@@ -98,8 +99,7 @@ channelAuthRoutes.post('/unblock/:platform/:platformUserId', async (c) => {
 channelAuthRoutes.get('/users', async (c) => {
   const platform = c.req.query('platform');
   const verified = c.req.query('verified');
-  const limit = parseInt(c.req.query('limit') ?? '100', 10);
-  const offset = parseInt(c.req.query('offset') ?? '0', 10);
+  const { limit, offset } = getPaginationParams(c, 100);
 
   const users = await channelUsersRepo.list({
     platform: platform ?? undefined,

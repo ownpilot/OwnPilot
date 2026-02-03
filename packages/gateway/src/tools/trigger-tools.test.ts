@@ -224,7 +224,7 @@ describe('Trigger Tools', () => {
 
       expect(result.success).toBe(true);
       expect(result.result).toHaveLength(1);
-      expect((result.result as any[])[0]).toMatchObject({
+      expect((result.result as Record<string, unknown>[])[0]).toMatchObject({
         id: 't1',
         name: 'Daily',
         type: 'schedule',

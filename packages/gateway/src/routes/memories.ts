@@ -13,7 +13,7 @@ import type {
   CreateMemoryInput,
 } from '../db/repositories/memories.js';
 import { getMemoryService, MemoryServiceError } from '../services/memory-service.js';
-import { getUserId, apiResponse, getIntParam } from './helpers.js'
+import { getUserId, apiResponse, apiError, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 import { getLog } from '../services/log.js';
 
@@ -77,16 +77,7 @@ memoriesRoutes.post('/', async (c) => {
   } catch (err) {
     if (err instanceof MemoryServiceError && err.code === 'VALIDATION_ERROR') {
       log.warn('Memory validation error', { userId, error: err.message });
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ERROR_CODES.INVALID_REQUEST,
-            message: err.message,
-          },
-        },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: err.message }, 400);
     }
     log.error('Memory creation error', { userId, error: err instanceof Error ? err.message : 'Unknown error' });
     throw err;
@@ -103,16 +94,7 @@ memoriesRoutes.get('/search', async (c) => {
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   if (!query) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_REQUEST,
-          message: 'query (q) parameter is required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'query (q) parameter is required' }, 400);
   }
 
   const service = getMemoryService();
@@ -148,16 +130,7 @@ memoriesRoutes.get('/:id', async (c) => {
   const memory = await service.getMemory(userId, id);
 
   if (!memory) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Memory not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${id}` }, 404);
   }
 
   return apiResponse(c, memory);
@@ -179,16 +152,7 @@ memoriesRoutes.patch('/:id', async (c) => {
   const updated = await service.updateMemory(userId, id, body);
 
   if (!updated) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Memory not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${id}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -207,16 +171,7 @@ memoriesRoutes.post('/:id/boost', async (c) => {
   const boosted = await service.boostMemory(userId, id, amount);
 
   if (!boosted) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Memory not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -237,16 +192,7 @@ memoriesRoutes.delete('/:id', async (c) => {
 
   if (!deleted) {
     log.warn('Memory not found for deletion', { userId, memoryId: id });
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Memory not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${id}` }, 404);
   }
 
   log.info('Memory deleted', { userId, memoryId: id });

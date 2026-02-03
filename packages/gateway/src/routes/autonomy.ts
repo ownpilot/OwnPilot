@@ -14,8 +14,7 @@ import {
   type ActionCategory,
   type ApprovalDecision,
 } from '../autonomy/index.js';
-import { getUserId, apiResponse } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js';
 
 export const autonomyRoutes = new Hono();
 
@@ -104,16 +103,7 @@ autonomyRoutes.post('/level', async (c) => {
   const body = await c.req.json<{ level: number }>();
 
   if (body.level === undefined || body.level < 0 || body.level > 4) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_LEVEL,
-          message: 'Level must be between 0 and 4',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_LEVEL, message: 'Level must be between 0 and 4' }, 400);
   }
 
   const manager = getApprovalManager();
@@ -144,16 +134,7 @@ autonomyRoutes.post('/assess', async (c) => {
   }>();
 
   if (!body.category || !body.actionType) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_REQUEST,
-          message: 'category and actionType are required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'category and actionType are required' }, 400);
   }
 
   const manager = getApprovalManager();
@@ -205,16 +186,7 @@ autonomyRoutes.post('/approvals/request', async (c) => {
   }>();
 
   if (!body.category || !body.actionType || !body.description) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_REQUEST,
-          message: 'category, actionType, and description are required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'category, actionType, and description are required' }, 400);
   }
 
   try {
@@ -244,16 +216,7 @@ autonomyRoutes.post('/approvals/request', async (c) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.APPROVAL_ERROR,
-          message: errorMessage,
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.APPROVAL_ERROR, message: errorMessage }, 500);
   }
 });
 
@@ -266,16 +229,7 @@ autonomyRoutes.get('/approvals/:id', (c) => {
   const action = manager.getPendingAction(id);
 
   if (!action) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Pending action not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
   }
 
   return apiResponse(c, action);
@@ -289,16 +243,7 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   const body = await c.req.json<Omit<ApprovalDecision, 'actionId'>>();
 
   if (!body.decision || !['approve', 'reject', 'modify'].includes(body.decision)) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_DECISION,
-          message: 'decision must be "approve", "reject", or "modify"',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_DECISION, message: 'decision must be "approve", "reject", or "modify"' }, 400);
   }
 
   const manager = getApprovalManager();
@@ -308,16 +253,7 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   });
 
   if (!action) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Pending action not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -342,16 +278,7 @@ autonomyRoutes.post('/approvals/:id/approve', async (c) => {
   });
 
   if (!action) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Pending action not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -376,16 +303,7 @@ autonomyRoutes.post('/approvals/:id/reject', async (c) => {
   });
 
   if (!action) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Pending action not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -403,16 +321,7 @@ autonomyRoutes.delete('/approvals/:id', (c) => {
   const cancelled = manager.cancelPending(id);
 
   if (!cancelled) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Pending action not found or already processed: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found or already processed: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -432,16 +341,7 @@ autonomyRoutes.post('/tools/allow', async (c) => {
   const body = await c.req.json<{ tool: string }>();
 
   if (!body.tool) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_REQUEST,
-          message: 'tool is required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'tool is required' }, 400);
   }
 
   const manager = getApprovalManager();
@@ -469,16 +369,7 @@ autonomyRoutes.post('/tools/block', async (c) => {
   const body = await c.req.json<{ tool: string }>();
 
   if (!body.tool) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_REQUEST,
-          message: 'tool is required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'tool is required' }, 400);
   }
 
   const manager = getApprovalManager();

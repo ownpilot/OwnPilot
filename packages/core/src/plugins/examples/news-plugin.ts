@@ -367,7 +367,7 @@ const newsHandler: MessageHandler = {
     return /\b(news|rss|feed|headlines?|updates?|articles?)\b/i.test(lower);
   },
 
-  handle: async (message: string, context: HandlerContext): Promise<HandlerResult> => {
+  handle: async (message: string, _context: HandlerContext): Promise<HandlerResult> => {
     const lower = message.toLowerCase();
 
     // Check for specific actions

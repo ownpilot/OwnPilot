@@ -88,7 +88,7 @@ export interface AgentExecutionResult {
 /**
  * Turn result (single iteration of the loop)
  */
-interface TurnResult {
+interface _TurnResult {
   /** Response from LLM */
   response: string;
   /** Tool calls requested */
@@ -205,7 +205,7 @@ export class AgentExecutor {
     let turns = 0;
     let totalToolCalls = 0;
     let lastResponse = '';
-    let tokensUsed = { prompt: 0, completion: 0 };
+    const tokensUsed = { prompt: 0, completion: 0 };
 
     this.log(`[${executionId}] Starting execution with agent: ${agent.id}`);
 

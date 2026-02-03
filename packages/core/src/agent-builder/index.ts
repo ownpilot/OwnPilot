@@ -438,7 +438,7 @@ Return ONLY the system prompt, no explanations.`;
         if (response && response.length > 50) {
           return response;
         }
-      } catch (error) {
+      } catch {
         console.warn('[InteractiveAgentBuilder] LLM generation failed, using template');
       }
     }

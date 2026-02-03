@@ -8,7 +8,6 @@ import { MessageBus } from './message-bus-impl.js';
 import type {
   NormalizedMessage,
   MessageProcessingResult,
-  PipelineContext,
 } from '@ownpilot/core';
 
 function createTestMessage(overrides?: Partial<NormalizedMessage>): NormalizedMessage {
@@ -78,7 +77,7 @@ describe('MessageBus', () => {
     });
 
     it('middleware can produce a response', async () => {
-      bus.use(async (msg, ctx, next) => {
+      bus.use(async (msg, _ctx, _next) => {
         return createTestResult(msg, 'Hello from middleware!');
       });
 
@@ -129,7 +128,7 @@ describe('MessageBus', () => {
         return next();
       });
 
-      bus.use(async (msg, ctx, next) => {
+      bus.use(async (_msg, _ctx, _next) => {
         // This should not run
         throw new Error('Should not reach here');
       });

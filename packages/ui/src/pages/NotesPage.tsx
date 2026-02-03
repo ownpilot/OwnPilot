@@ -291,7 +291,11 @@ function NoteModal({ note, onClose, onSave }: NoteModalProps) {
         category: category.trim() || undefined,
       };
 
-      note ? await notesApi.update(note.id, body) : await notesApi.create(body);
+      if (note) {
+        await notesApi.update(note.id, body);
+      } else {
+        await notesApi.create(body);
+      }
       onSave();
     } catch {
       // API client handles error reporting

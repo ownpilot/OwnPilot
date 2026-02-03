@@ -245,13 +245,7 @@ localProvidersRoutes.post('/:id/discover', async (c) => {
 
     // If discovery returned an error and no models, report upstream failure
     if (result.error && (!result.models || result.models.length === 0)) {
-      return c.json(
-        {
-          success: false,
-          error: result.error,
-        },
-        502
-      );
+      return apiError(c, result.error, 502);
     }
 
     const discovered = result.models || [];

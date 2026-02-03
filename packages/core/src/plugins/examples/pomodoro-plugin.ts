@@ -8,7 +8,7 @@
  * - Session tracking and statistics
  */
 
-import { createPlugin, type MessageHandler, type HandlerContext, type HandlerResult } from '../index.js';
+import { createPlugin } from '../index.js';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../../agent/types.js';
 
 // =============================================================================
@@ -39,7 +39,7 @@ interface PomodoroState {
 }
 
 // In-memory state (replace with persistent storage in production)
-let state: PomodoroState = {
+const state: PomodoroState = {
   sessionsToday: 0,
   totalWorkMinutesToday: 0,
   streak: 0,
@@ -298,7 +298,7 @@ const pomodoroSettingsExecutor: ToolExecutor = async (params): Promise<ToolExecu
   };
 };
 
-const pomodoroLogInterruptionExecutor: ToolExecutor = async (params): Promise<ToolExecutionResult> => {
+const pomodoroLogInterruptionExecutor: ToolExecutor = async (_params): Promise<ToolExecutionResult> => {
   if (!state.currentSession || state.currentSession.endedAt) {
     return {
       content: {

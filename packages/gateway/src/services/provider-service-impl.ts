@@ -17,7 +17,6 @@ import {
   getDefaultModel,
   setDefaultProvider,
   setDefaultModel,
-  hasApiKey,
 } from '../routes/settings.js';
 
 // ============================================================================

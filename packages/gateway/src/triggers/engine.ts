@@ -10,7 +10,6 @@
 
 import {
   type Trigger,
-  type TriggerAction,
   type ScheduleConfig,
   type ConditionConfig,
   type EventConfig,
@@ -19,7 +18,7 @@ import { getTriggerService, type TriggerService } from '../services/trigger-serv
 import { getGoalService, type GoalService } from '../services/goal-service.js';
 import { getMemoryService, type MemoryService } from '../services/memory-service.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
-import { getNextRunTime, matchesCron } from '@ownpilot/core';
+import { getNextRunTime } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 
 const log = getLog('TriggerEngine');

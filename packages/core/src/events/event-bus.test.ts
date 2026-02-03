@@ -68,7 +68,7 @@ describe('EventBus (new API)', () => {
       bus.onPattern('channel.message.**', handler);
 
       bus.emit('channel.message.received', 'telegram', {
-        message: { id: 'm1' } as any,
+        message: { id: 'm1' } as Record<string, unknown>,
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -205,7 +205,7 @@ describe('EventBus (new API)', () => {
       bus.emit('channel.connected', 'test', {
         channelPluginId: 'c1', platform: 'telegram', status: 'connected',
       });
-      bus.emit('channel.message.received', 'test', { message: {} as any });
+      bus.emit('channel.message.received', 'test', { message: {} as Record<string, unknown> });
 
       expect(handler).toHaveBeenCalledTimes(2);
     });

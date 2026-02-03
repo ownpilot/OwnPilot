@@ -94,7 +94,7 @@ export const sendEmailTool: ToolDefinition = {
   configRequirements: [SMTP_CONFIG_REQUIREMENT],
 };
 
-export const sendEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const sendEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const to = params.to as string[];
   const subject = params.subject as string;
   const body = params.body as string;
@@ -126,9 +126,9 @@ export const sendEmailExecutor: ToolExecutor = async (params, context): Promise<
 
   // Try to use nodemailer if available
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let nodemailer: any = null; // Optional dependency - dynamically imported
+  let _nodemailer: any = null; // Optional dependency - dynamically imported
   try {
-    nodemailer = await import(/* webpackIgnore: true */ 'nodemailer' as string);
+    _nodemailer = await import(/* webpackIgnore: true */ 'nodemailer' as string);
   } catch {
     return {
       content: {
@@ -264,7 +264,7 @@ export const listEmailsTool: ToolDefinition = {
   configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
-export const listEmailsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const listEmailsExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const folder = (params.folder as string) || 'INBOX';
   const limit = Math.min((params.limit as number) || 20, 100);
   const unreadOnly = params.unreadOnly === true;
@@ -274,9 +274,9 @@ export const listEmailsExecutor: ToolExecutor = async (params, context): Promise
   const before = params.before as string | undefined;
 
   // Try to use imap-simple or similar
-  let imapSimple: unknown;
+  let _imapSimple: unknown;
   try {
-    imapSimple = await import(/* webpackIgnore: true */ 'imap-simple' as string);
+    _imapSimple = await import(/* webpackIgnore: true */ 'imap-simple' as string);
   } catch {
     return {
       content: {
@@ -352,7 +352,7 @@ export const readEmailTool: ToolDefinition = {
   configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
-export const readEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const readEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const folder = (params.folder as string) || 'INBOX';
   const downloadAttachments = params.downloadAttachments === true;
@@ -404,7 +404,7 @@ export const deleteEmailTool: ToolDefinition = {
   configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
-export const deleteEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const deleteEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const folder = (params.folder as string) || 'INBOX';
   const permanent = params.permanent === true;
@@ -461,7 +461,7 @@ export const searchEmailsTool: ToolDefinition = {
   configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
-export const searchEmailsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const searchEmailsExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const query = params.query as string;
   const folder = params.folder as string | undefined;
   const hasAttachment = params.hasAttachment as boolean | undefined;
@@ -522,7 +522,7 @@ export const replyEmailTool: ToolDefinition = {
   configRequirements: [SMTP_CONFIG_REQUIREMENT, IMAP_CONFIG_REQUIREMENT],
 };
 
-export const replyEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const replyEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const body = params.body as string;
   const isHtml = params.html === true;

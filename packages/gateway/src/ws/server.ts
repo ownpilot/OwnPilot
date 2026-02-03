@@ -11,7 +11,7 @@ import type { Server as HttpsServer } from 'node:https';
 import type { Http2SecureServer, Http2Server } from 'node:http2';
 import type { ClientEvents, WSMessage, Channel } from './types.js';
 import { sessionManager } from './session.js';
-import { gatewayEvents, ClientEventHandler } from './events.js';
+import { ClientEventHandler } from './events.js';
 import { channelManager } from '../channels/index.js';
 import {
   WS_PORT,
@@ -19,7 +19,7 @@ import {
   WS_SESSION_TIMEOUT_MS,
   WS_MAX_PAYLOAD_BYTES,
 } from '../config/defaults.js';
-import { getOrCreateDefaultAgent, getAgent, isDemoMode } from '../routes/agents.js';
+import { getOrCreateDefaultAgent, isDemoMode } from '../routes/agents.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('WebSocket');

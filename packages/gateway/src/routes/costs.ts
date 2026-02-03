@@ -8,16 +8,14 @@ import { Hono } from 'hono';
 import {
   UsageTracker,
   BudgetManager,
-  calculateCost,
   estimateCost,
   MODEL_PRICING,
   formatCost,
-  formatTokens,
   type AIProvider,
   type BudgetConfig,
 } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
-import { apiResponse, getIntParam } from './helpers.js'
+import { apiResponse, apiError, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('Costs');
@@ -239,16 +237,7 @@ costRoutes.post('/estimate', async (c) => {
     }>();
 
     if (!body.provider || !body.model) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ERROR_CODES.INVALID_REQUEST,
-            message: 'provider and model are required',
-          },
-        },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'provider and model are required' }, 400);
     }
 
     // Estimate tokens from text if provided
@@ -271,16 +260,7 @@ costRoutes.post('/estimate', async (c) => {
         note: 'This is an estimate. Actual costs may vary.',
       });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.ESTIMATION_FAILED,
-          message: error instanceof Error ? error.message : 'Failed to estimate cost',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.ESTIMATION_FAILED, message: error instanceof Error ? error.message : 'Failed to estimate cost' }, 500);
   }
 });
 
@@ -325,16 +305,7 @@ costRoutes.post('/budget', async (c) => {
         status,
       });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.BUDGET_FAILED,
-          message: error instanceof Error ? error.message : 'Failed to set budget',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.BUDGET_FAILED, message: error instanceof Error ? error.message : 'Failed to set budget' }, 500);
   }
 });
 
@@ -414,16 +385,7 @@ costRoutes.post('/record', async (c) => {
     }>();
 
     if (!body.provider || !body.model || !body.userId) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ERROR_CODES.INVALID_REQUEST,
-            message: 'provider, model, and userId are required',
-          },
-        },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'provider, model, and userId are required' }, 400);
     }
 
     // Record usage
@@ -455,16 +417,7 @@ costRoutes.post('/record', async (c) => {
         },
       });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.RECORD_FAILED,
-          message: error instanceof Error ? error.message : 'Failed to record usage',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.RECORD_FAILED, message: error instanceof Error ? error.message : 'Failed to record usage' }, 500);
   }
 });
 
@@ -473,7 +426,7 @@ costRoutes.post('/record', async (c) => {
  */
 costRoutes.get('/export', async (c) => {
   const format = (c.req.query('format') ?? 'json') as 'json' | 'csv';
-  const days = parseInt(c.req.query('days') ?? '30', 10);
+  const days = getIntParam(c, 'days', 30, 1);
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);

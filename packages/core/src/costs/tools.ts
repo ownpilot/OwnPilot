@@ -9,9 +9,6 @@ import type {
   UsageTracker,
   BudgetManager,
   UsageSummary,
-  BudgetStatus,
-  CostRecommendation,
-  AIProvider,
 } from './index.js';
 import {
   formatCost,
@@ -214,7 +211,7 @@ export function createCostToolExecutors(
   return {
     get_cost_summary: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const args = rawArgs as {
         period: 'today' | 'week' | 'month' | 'custom';
@@ -288,7 +285,7 @@ export function createCostToolExecutors(
 
     get_budget_status: async (
       _rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const budgetMgr = getBudgetMgr();
       const status = await budgetMgr.getStatus();
@@ -332,7 +329,7 @@ export function createCostToolExecutors(
 
     set_budget: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const args = rawArgs as {
         dailyLimit?: number;
@@ -360,7 +357,7 @@ export function createCostToolExecutors(
 
     get_cost_breakdown: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const args = rawArgs as {
         groupBy: 'provider' | 'model' | 'day';
@@ -433,7 +430,7 @@ export function createCostToolExecutors(
 
     get_expensive_requests: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const args = rawArgs as {
         limit?: number;
@@ -481,7 +478,7 @@ export function createCostToolExecutors(
 
     get_cost_recommendations: async (
       _rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const tracker = getTracker();
       const recommendations = await generateRecommendations(tracker);
@@ -517,7 +514,7 @@ export function createCostToolExecutors(
 
     compare_model_costs: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const args = rawArgs as {
         providers?: string[];
@@ -568,7 +565,7 @@ export function createCostToolExecutors(
 
     export_usage: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const args = rawArgs as {
         format: 'json' | 'csv';

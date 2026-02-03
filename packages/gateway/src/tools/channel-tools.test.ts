@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { ToolContext } from '@ownpilot/core';
 
 // ---------------------------------------------------------------------------
 // Mock IChannelService via @ownpilot/core
@@ -107,7 +108,7 @@ describe('Channel Tools', () => {
     it('returns error when channel service not initialized', async () => {
       serviceInitialized = false;
 
-      const result = await sendChannelMessageExecutor({ message: 'hello', chatId: '123' }, {} as any);
+      const result = await sendChannelMessageExecutor({ message: 'hello', chatId: '123' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
       expect(JSON.parse(result.content as string).details).toContain('ChannelService not initialized');
@@ -116,7 +117,7 @@ describe('Channel Tools', () => {
     it('sends message to specified channelId', async () => {
       const result = await sendChannelMessageExecutor(
         { message: 'Hello!', channelId: 'channel.telegram', chatId: '111' },
-        {} as any,
+        {} as unknown as ToolContext,
       );
 
       expect(result.isError).toBeFalsy();
@@ -134,7 +135,7 @@ describe('Channel Tools', () => {
     it('resolves channel by platform when no channelId', async () => {
       const result = await sendChannelMessageExecutor(
         { message: 'Hello!', platform: 'telegram', chatId: '111' },
-        {} as any,
+        {} as unknown as ToolContext,
       );
 
       expect(result.isError).toBeFalsy();
@@ -145,7 +146,7 @@ describe('Channel Tools', () => {
     it('falls back to any connected channel', async () => {
       const result = await sendChannelMessageExecutor(
         { message: 'Hello!', chatId: '111' },
-        {} as any,
+        {} as unknown as ToolContext,
       );
 
       expect(result.isError).toBeFalsy();
@@ -161,7 +162,7 @@ describe('Channel Tools', () => {
 
       const result = await sendChannelMessageExecutor(
         { message: 'Hello!', platform: 'slack', chatId: '111' },
-        {} as any,
+        {} as unknown as ToolContext,
       );
 
       expect(result.isError).toBe(true);
@@ -171,7 +172,7 @@ describe('Channel Tools', () => {
     it('returns error when chatId is missing', async () => {
       const result = await sendChannelMessageExecutor(
         { message: 'Hello!', channelId: 'channel.telegram' },
-        {} as any,
+        {} as unknown as ToolContext,
       );
 
       expect(result.isError).toBe(true);
@@ -181,7 +182,7 @@ describe('Channel Tools', () => {
     it('passes replyToId when provided', async () => {
       await sendChannelMessageExecutor(
         { message: 'Reply', channelId: 'channel.telegram', chatId: '111', replyToId: 'orig-msg' },
-        {} as any,
+        {} as unknown as ToolContext,
       );
 
       expect(mockService.send).toHaveBeenCalledWith('channel.telegram', {
@@ -196,7 +197,7 @@ describe('Channel Tools', () => {
 
       const result = await sendChannelMessageExecutor(
         { message: 'Hello!', channelId: 'channel.telegram', chatId: '111' },
-        {} as any,
+        {} as unknown as ToolContext,
       );
 
       expect(result.isError).toBe(true);
@@ -210,7 +211,7 @@ describe('Channel Tools', () => {
 
       const result = await sendChannelMessageExecutor(
         { message: 'Hello!', platform: 'discord', chatId: '111' },
-        {} as any,
+        {} as unknown as ToolContext,
       );
 
       // Should fall back to any connected channel
@@ -227,14 +228,14 @@ describe('Channel Tools', () => {
     it('returns error when channel service not initialized', async () => {
       serviceInitialized = false;
 
-      const result = await listChannelsExecutor({}, {} as any);
+      const result = await listChannelsExecutor({}, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
       expect(JSON.parse(result.content as string).details).toContain('ChannelService not initialized');
     });
 
     it('lists all channels', async () => {
-      const result = await listChannelsExecutor({}, {} as any);
+      const result = await listChannelsExecutor({}, {} as unknown as ToolContext);
 
       expect(result.isError).toBeFalsy();
       const content = JSON.parse(result.content as string);
@@ -244,7 +245,7 @@ describe('Channel Tools', () => {
     });
 
     it('filters by platform', async () => {
-      const result = await listChannelsExecutor({ platform: 'telegram' }, {} as any);
+      const result = await listChannelsExecutor({ platform: 'telegram' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBeFalsy();
       const content = JSON.parse(result.content as string);
@@ -255,7 +256,7 @@ describe('Channel Tools', () => {
     it('handles list error gracefully', async () => {
       mockService.listChannels.mockImplementation(() => { throw new Error('DB error'); });
 
-      const result = await listChannelsExecutor({}, {} as any);
+      const result = await listChannelsExecutor({}, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
       expect(JSON.parse(result.content as string).details).toContain('DB error');

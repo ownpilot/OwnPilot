@@ -9,10 +9,9 @@
  * - Audit logging
  */
 
-import { Worker, type MessagePort } from 'node:worker_threads';
+import { Worker } from 'node:worker_threads';
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
-import { createHash } from 'node:crypto';
 import type { PluginId } from '../types/branded.js';
 import { createPluginId } from '../types/branded.js';
 import type { Result } from '../types/result.js';

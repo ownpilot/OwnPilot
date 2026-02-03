@@ -13,7 +13,6 @@ import {
 } from '../db/repositories/index.js';
 import { getLog } from '../services/log.js';
 import { getUserId, apiResponse, apiError } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('MediaSettings');
 

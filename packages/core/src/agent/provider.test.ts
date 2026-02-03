@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createProvider, BaseProvider } from './provider.js';
+import { createProvider } from './provider.js';
 import type { ProviderConfig } from './types.js';
 
 describe('createProvider', () => {

@@ -6,10 +6,9 @@
  */
 
 import { Hono } from 'hono';
-import { createReadStream, existsSync } from 'node:fs';
+import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
-import type { ApiResponse } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
 import {
   listSessionWorkspaces,

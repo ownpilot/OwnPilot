@@ -9,7 +9,6 @@ import type {
   DataStore,
   Bookmark,
   Note,
-  MemoryItem,
   Task,
   PersonalCalendarEvent,
   Contact,

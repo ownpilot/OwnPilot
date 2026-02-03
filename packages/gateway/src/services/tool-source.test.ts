@@ -28,7 +28,7 @@ import { getToolSource, initToolSourceMappings } from './tool-source.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function setMockFile(pathSuffix: string, content: string) {
+function _setMockFile(pathSuffix: string, content: string) {
   // The tool-source resolves absolute paths from __dirname,
   // so we need to match what it resolves. We'll set with the full suffix
   // and let the mock match by checking the end of the path.

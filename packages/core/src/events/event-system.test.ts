@@ -6,7 +6,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EventSystem, getEventSystem, resetEventSystem } from './event-system.js';
-import type { TypedEvent } from './types.js';
 
 describe('EventSystem', () => {
   let system: EventSystem;

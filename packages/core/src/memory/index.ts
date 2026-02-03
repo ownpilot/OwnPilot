@@ -19,7 +19,6 @@ import {
   createCipheriv,
   createDecipheriv,
   pbkdf2Sync,
-  timingSafeEqual,
 } from 'node:crypto';
 
 // =============================================================================
@@ -184,7 +183,7 @@ export interface SecureMemoryConfig {
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 16;
-const AUTH_TAG_LENGTH = 16;
+const _AUTH_TAG_LENGTH = 16;
 const SALT_LENGTH = 32;
 const PBKDF2_DEFAULT_ITERATIONS = 100000;
 
@@ -203,7 +202,7 @@ function deriveKey(
 /**
  * Generate a secure random salt
  */
-function generateSalt(): Buffer {
+function _generateSalt(): Buffer {
   return randomBytes(SALT_LENGTH);
 }
 
@@ -474,7 +473,7 @@ export class SecureMemoryStore {
         content: JSON.parse(contentStr),
         metadata: entry.metadata,
       };
-    } catch (error) {
+    } catch {
       await this.logAudit('read', userId, memoryId, entry.type, false, 'Decryption failed');
       return null;
     } finally {
@@ -1072,7 +1071,7 @@ export const forgetTool: ToolDefinition = {
 export const SECURE_MEMORY_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecutor }> = [
   {
     definition: rememberTool,
-    executor: async (args, context): Promise<ToolExecutionResult> => {
+    executor: async (args, _context): Promise<ToolExecutionResult> => {
       // In production, get userId and masterKey from context
       return {
         content: JSON.stringify({
@@ -1085,7 +1084,7 @@ export const SECURE_MEMORY_TOOLS: Array<{ definition: ToolDefinition; executor: 
   },
   {
     definition: recallTool,
-    executor: async (args, context): Promise<ToolExecutionResult> => {
+    executor: async (args, _context): Promise<ToolExecutionResult> => {
       return {
         content: JSON.stringify({
           message: 'Memory tools require secure context with userId and masterKey',
@@ -1097,7 +1096,7 @@ export const SECURE_MEMORY_TOOLS: Array<{ definition: ToolDefinition; executor: 
   },
   {
     definition: forgetTool,
-    executor: async (args, context): Promise<ToolExecutionResult> => {
+    executor: async (args, _context): Promise<ToolExecutionResult> => {
       return {
         content: JSON.stringify({
           message: 'Memory tools require secure context with userId and masterKey',

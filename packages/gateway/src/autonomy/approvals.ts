@@ -14,7 +14,6 @@ import {
   type AutonomyConfig,
   type AutonomyNotification,
   DEFAULT_AUTONOMY_CONFIG,
-  AutonomyLevel,
 } from './types.js';
 import { assessRisk } from './risk.js';
 

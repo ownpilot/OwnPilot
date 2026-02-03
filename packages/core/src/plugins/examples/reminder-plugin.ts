@@ -533,7 +533,7 @@ const reminderHandler: MessageHandler = {
     return /\b(remind|reminder|alarm|alert|notify|snooze)\b/i.test(lower);
   },
 
-  handle: async (message: string, context: HandlerContext): Promise<HandlerResult> => {
+  handle: async (message: string, _context: HandlerContext): Promise<HandlerResult> => {
     const lower = message.toLowerCase();
 
     // "Remind me to X" pattern

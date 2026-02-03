@@ -11,7 +11,7 @@ import { createInterface } from 'node:readline';
 import { dirname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { type Result, ok, err } from '../types/result.js';
-import { createAuditEventId, type AuditEventId } from '../types/branded.js';
+import { createAuditEventId } from '../types/branded.js';
 import { InternalError, ValidationError } from '../types/errors.js';
 import {
   type AuditEvent,
@@ -217,11 +217,11 @@ export class AuditLogger {
         crlfDelay: Infinity,
       });
 
-      let lineNumber = 0;
+      let _lineNumber = 0;
       let skipped = 0;
 
       for await (const line of rl) {
-        lineNumber++;
+        _lineNumber++;
         if (!line.trim()) continue;
 
         try {

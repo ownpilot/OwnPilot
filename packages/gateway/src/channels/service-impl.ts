@@ -14,7 +14,6 @@ import {
   type ChannelPluginAPI,
   type ChannelPluginInfo,
   type ChannelIncomingMessage,
-  type ChannelConnectionStatus,
   type ChannelPluginManifest,
   ChannelEvents,
   type ChannelMessageReceivedData,

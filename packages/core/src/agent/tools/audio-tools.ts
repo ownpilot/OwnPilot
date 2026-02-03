@@ -78,7 +78,7 @@ export const textToSpeechTool: ToolDefinition = {
   configRequirements: [OPENAI_AUDIO_CONFIG, ELEVENLABS_CONFIG],
 };
 
-export const textToSpeechExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const textToSpeechExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const text = params.text as string;
   const voice = (params.voice as string) || 'alloy';
   const model = (params.model as string) || 'tts-1';
@@ -192,7 +192,7 @@ export const speechToTextTool: ToolDefinition = {
   configRequirements: [OPENAI_AUDIO_CONFIG],
 };
 
-export const speechToTextExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const speechToTextExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const language = params.language as string | undefined;
   const prompt = params.prompt as string | undefined;
@@ -204,7 +204,7 @@ export const speechToTextExecutor: ToolExecutor = async (params, context): Promi
     const fs = await import('node:fs/promises');
     const path = await import('node:path');
 
-    let audioPath: string;
+    const audioPath: string = source;
     let audioFormat: string;
     let fileSize: number;
 
@@ -233,7 +233,6 @@ export const speechToTextExecutor: ToolExecutor = async (params, context): Promi
     }
 
     // File path
-    audioPath = source;
     audioFormat = path.extname(source).slice(1).toLowerCase();
 
     // Validate format
@@ -328,7 +327,7 @@ export const translateAudioTool: ToolDefinition = {
   configRequirements: [OPENAI_AUDIO_CONFIG],
 };
 
-export const translateAudioExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const translateAudioExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const prompt = params.prompt as string | undefined;
   const model = (params.model as string) || 'whisper-1';
@@ -402,7 +401,7 @@ export const audioInfoTool: ToolDefinition = {
   },
 };
 
-export const audioInfoExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const audioInfoExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const audioPath = params.path as string;
 
   try {
@@ -499,7 +498,7 @@ export const splitAudioTool: ToolDefinition = {
   },
 };
 
-export const splitAudioExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const splitAudioExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const segmentDuration = (params.segmentDuration as number) || 600;
   const outputDir = params.outputDir as string | undefined;

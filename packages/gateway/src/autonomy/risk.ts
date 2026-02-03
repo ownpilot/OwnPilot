@@ -279,7 +279,7 @@ function evaluateFactor(
   factorId: string,
   toolFactors: string[],
   params: Record<string, unknown>,
-  context: ActionContext
+  _context: ActionContext
 ): boolean {
   // Check if explicitly in tool factors
   if (toolFactors.includes(factorId)) {

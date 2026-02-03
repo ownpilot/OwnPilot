@@ -11,11 +11,8 @@
  * All access is mediated through capability-based proxies.
  */
 
-import { Worker, MessageChannel, type MessagePort } from 'node:worker_threads';
-import { randomUUID, createHash, createVerify, createSign } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import type { PluginId } from '../types/branded.js';
-import { createPluginId } from '../types/branded.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 

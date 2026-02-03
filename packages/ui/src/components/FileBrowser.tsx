@@ -52,7 +52,7 @@ export function FileBrowser({ initialPath = '~', onFileSelect, onFileOpen }: Fil
       } else {
         setError((result?.error as string) || 'Failed to load directory');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to connect to server');
     } finally {
       setIsLoading(false);

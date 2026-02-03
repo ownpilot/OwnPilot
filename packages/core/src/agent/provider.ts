@@ -220,7 +220,7 @@ export abstract class BaseProvider implements IProvider {
     const timeout = timeoutMs ?? this.config.timeout ?? 300000; // 5 minutes default
 
     // Set up timeout
-    const timeoutId = setTimeout(() => {
+    const _timeoutId = setTimeout(() => {
       this.abortController?.abort();
     }, timeout);
 

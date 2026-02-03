@@ -12,7 +12,6 @@ import {
   resetEventBus,
   EventTypes,
   type ILegacyEventBus,
-  type TypedEvent,
 } from './index.js';
 
 describe('Legacy EventBus API', () => {

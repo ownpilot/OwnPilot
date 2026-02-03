@@ -13,7 +13,6 @@ import {
   type GmailCredentials,
   type GmailTokens,
   type GmailMessageHeader,
-  type GmailMessageFull,
   type GmailLabel,
   type GmailAttachment,
 } from '@ownpilot/core';
@@ -102,7 +101,7 @@ function notConnectedError(): ToolExecutionResult {
 // SEND EMAIL EXECUTOR
 // =============================================================================
 
-export const gmailSendEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailSendEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const to = params.to as string[];
   const subject = params.subject as string;
   const body = params.body as string;
@@ -166,7 +165,7 @@ export const gmailSendEmailExecutor: ToolExecutor = async (params, context): Pro
 // LIST EMAILS EXECUTOR
 // =============================================================================
 
-export const gmailListEmailsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailListEmailsExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const folder = (params.folder as string) || 'INBOX';
   const limit = Math.min((params.limit as number) || 20, 100);
   const unreadOnly = params.unreadOnly === true;
@@ -237,7 +236,7 @@ export const gmailListEmailsExecutor: ToolExecutor = async (params, context): Pr
 // READ EMAIL EXECUTOR
 // =============================================================================
 
-export const gmailReadEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailReadEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const markAsRead = params.markAsRead !== false;
   const userId = (params.userId as string) || 'default';
@@ -300,7 +299,7 @@ export const gmailReadEmailExecutor: ToolExecutor = async (params, context): Pro
 // DELETE EMAIL EXECUTOR
 // =============================================================================
 
-export const gmailDeleteEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailDeleteEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const permanent = params.permanent === true;
   const userId = (params.userId as string) || 'default';
@@ -354,7 +353,7 @@ export const gmailDeleteEmailExecutor: ToolExecutor = async (params, context): P
 // SEARCH EMAILS EXECUTOR
 // =============================================================================
 
-export const gmailSearchEmailsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailSearchEmailsExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const query = params.query as string;
   const folder = params.folder as string | undefined;
   const hasAttachment = params.hasAttachment as boolean | undefined;
@@ -423,7 +422,7 @@ export const gmailSearchEmailsExecutor: ToolExecutor = async (params, context): 
 // REPLY EMAIL EXECUTOR
 // =============================================================================
 
-export const gmailReplyEmailExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailReplyEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const body = params.body as string;
   const isHtml = params.html === true;
@@ -477,7 +476,7 @@ export const gmailReplyEmailExecutor: ToolExecutor = async (params, context): Pr
 /**
  * Mark email as read/unread
  */
-export const gmailMarkReadExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailMarkReadExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const read = params.read !== false;
   const userId = (params.userId as string) || 'default';
@@ -518,7 +517,7 @@ export const gmailMarkReadExecutor: ToolExecutor = async (params, context): Prom
 /**
  * Star/unstar email
  */
-export const gmailStarExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailStarExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const star = params.star !== false;
   const userId = (params.userId as string) || 'default';
@@ -559,7 +558,7 @@ export const gmailStarExecutor: ToolExecutor = async (params, context): Promise<
 /**
  * Archive email
  */
-export const gmailArchiveExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailArchiveExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const userId = (params.userId as string) || 'default';
 
@@ -594,7 +593,7 @@ export const gmailArchiveExecutor: ToolExecutor = async (params, context): Promi
 /**
  * Get email labels
  */
-export const gmailGetLabelsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailGetLabelsExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const userId = (params.userId as string) || 'default';
 
   if (!await isGmailConnected(userId)) {
@@ -631,7 +630,7 @@ export const gmailGetLabelsExecutor: ToolExecutor = async (params, context): Pro
 /**
  * Get attachment
  */
-export const gmailGetAttachmentExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gmailGetAttachmentExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const messageId = params.messageId as string;
   const attachmentId = params.attachmentId as string;
   const userId = (params.userId as string) || 'default';

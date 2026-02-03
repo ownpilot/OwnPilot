@@ -9,12 +9,12 @@
  * - Context management
  */
 
-import type { Message, ToolDefinition, ToolCall, CompletionResponse } from '../agent/types.js';
+import type { Message, ToolDefinition, ToolCall } from '../agent/types.js';
 import type { PluginRegistry, HandlerContext, HandlerResult } from '../plugins/index.js';
 import type { SecureMemoryStore } from '../memory/index.js';
 import type { Scheduler } from '../scheduler/index.js';
 import { CodeGenerator, createCodeGenerator } from '../agent/code-generator.js';
-import type { CodeGenerationRequest, CodeGenerationResponse, CodeLanguage } from '../agent/code-generator.js';
+import type { CodeGenerationRequest, CodeLanguage } from '../agent/code-generator.js';
 
 // =============================================================================
 // Types
@@ -174,8 +174,7 @@ export type Intent =
  * for language-independent operation. The AI should understand user intent in
  * any language and convert it to proper tool parameters.
  */
-export function classifyIntent(message: string, context: ConversationContext): IntentResult {
-  const lower = message.toLowerCase().trim();
+export function classifyIntent(message: string, _context: ConversationContext): IntentResult {
 
   // Code-related patterns
   const codePatterns = [
@@ -395,7 +394,7 @@ export interface CodeResult {
 export async function executeCode(
   code: string,
   language: string,
-  timeout: number = 30000
+  _timeout: number = 30000
 ): Promise<{ success: boolean; output?: string; error?: string }> {
   // This would use the sandbox module for execution
   // For now, return placeholder
@@ -454,7 +453,7 @@ export class PersonalAssistant {
    * Process a user request
    */
   async process(request: AssistantRequest): Promise<AssistantResponse> {
-    const { message, attachments, user, conversation } = request;
+    const { message, attachments: _attachments, user, conversation } = request;
 
     // 1. Classify intent
     const intent = classifyIntent(message, conversation);
@@ -546,7 +545,7 @@ export class PersonalAssistant {
   private async handleCodeRequest(
     message: string,
     intent: IntentResult,
-    request: AssistantRequest
+    _request: AssistantRequest
   ): Promise<AssistantResponse> {
     const language = (intent.entities.language as CodeLanguage) ?? 'javascript';
 
@@ -616,7 +615,7 @@ export class PersonalAssistant {
   private async handleScheduleRequest(
     message: string,
     intent: IntentResult,
-    request: AssistantRequest
+    _request: AssistantRequest
   ): Promise<AssistantResponse> {
     return {
       message: 'I understand your scheduling request. You can use these tools:',
@@ -636,9 +635,9 @@ export class PersonalAssistant {
    * Handle memory requests
    */
   private async handleMemoryRequest(
-    message: string,
-    intent: IntentResult,
-    request: AssistantRequest
+    _message: string,
+    _intent: IntentResult,
+    _request: AssistantRequest
   ): Promise<AssistantResponse> {
     return {
       message: 'I understand your memory request. What would you like me to remember or recall?',
@@ -654,8 +653,8 @@ export class PersonalAssistant {
    * Handle help requests
    */
   private async handleHelpRequest(
-    message: string,
-    request: AssistantRequest
+    _message: string,
+    _request: AssistantRequest
   ): Promise<AssistantResponse> {
     const capabilities = [
       '**General Chat**: Answer questions, have conversations',
@@ -683,7 +682,7 @@ export class PersonalAssistant {
   private async handleGeneralRequest(
     message: string,
     intent: IntentResult,
-    request: AssistantRequest
+    _request: AssistantRequest
   ): Promise<AssistantResponse> {
     // In production, this would call the LLM
     return {

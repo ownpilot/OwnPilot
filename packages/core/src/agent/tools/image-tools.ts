@@ -72,14 +72,14 @@ export const analyzeImageTool: ToolDefinition = {
   configRequirements: [OPENAI_IMAGE_CONFIG],
 };
 
-export const analyzeImageExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const analyzeImageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const task = (params.task as string) || 'describe';
   const question = params.question as string | undefined;
   const detailLevel = (params.detailLevel as string) || 'medium';
 
   try {
-    let imageData: string;
+    let _imageData: string;
     let imageFormat: string;
     let imageSource: 'file' | 'url' | 'base64';
 
@@ -99,12 +99,12 @@ export const analyzeImageExecutor: ToolExecutor = async (params, context): Promi
         };
       }
 
-      imageData = source;
+      _imageData = source;
     } else if (source.startsWith('data:image/')) {
       imageSource = 'base64';
       const match = source.match(/data:image\/(\w+);base64,/);
       imageFormat = match?.[1] || 'unknown';
-      imageData = source;
+      _imageData = source;
     } else {
       // File path
       imageSource = 'file';
@@ -145,7 +145,7 @@ export const analyzeImageExecutor: ToolExecutor = async (params, context): Promi
       // Read and encode
       const buffer = await fs.readFile(source);
       const mimeType = getMimeType(imageFormat);
-      imageData = `data:${mimeType};base64,${buffer.toString('base64')}`;
+      _imageData = `data:${mimeType};base64,${buffer.toString('base64')}`;
     }
 
     // Build analysis prompt based on task
@@ -249,7 +249,7 @@ export const generateImageTool: ToolDefinition = {
   configRequirements: [OPENAI_IMAGE_CONFIG, STABILITY_IMAGE_CONFIG],
 };
 
-export const generateImageExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const generateImageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const prompt = params.prompt as string;
   const style = (params.style as string) || 'realistic';
   const size = (params.size as string) || '1024x1024';
@@ -342,7 +342,7 @@ export const editImageTool: ToolDefinition = {
   configRequirements: [OPENAI_IMAGE_CONFIG],
 };
 
-export const editImageExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const editImageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const mask = params.mask as string | undefined;
   const prompt = params.prompt as string;
@@ -405,7 +405,7 @@ export const imageVariationTool: ToolDefinition = {
   configRequirements: [OPENAI_IMAGE_CONFIG],
 };
 
-export const imageVariationExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const imageVariationExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const n = Math.min(Math.max((params.n as number) || 1, 1), 4);
   const size = (params.size as string) || '1024x1024';
@@ -474,7 +474,7 @@ export const resizeImageTool: ToolDefinition = {
   },
 };
 
-export const resizeImageExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const resizeImageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const width = params.width as number | undefined;
   const height = params.height as number | undefined;

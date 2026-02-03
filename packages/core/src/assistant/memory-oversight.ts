@@ -21,7 +21,7 @@ import type {
   MemoryRetentionPolicy,
   UserProfile,
 } from '../memory/conversation.js';
-import { getMemoryStore, DEFAULT_RETENTION_POLICY } from '../memory/conversation.js';
+import { DEFAULT_RETENTION_POLICY } from '../memory/conversation.js';
 
 // =============================================================================
 // Tool Definitions
@@ -282,7 +282,7 @@ export function createMemoryOversightExecutors(
   return {
     list_memories: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const store = getStore();
       const args = rawArgs as {
@@ -328,7 +328,7 @@ export function createMemoryOversightExecutors(
 
     delete_memory: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const store = getStore();
       const args = rawArgs as { memoryId: string };
@@ -358,7 +358,7 @@ export function createMemoryOversightExecutors(
 
     bulk_delete_memories: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const args = rawArgs as {
         category?: MemoryCategory;
@@ -422,7 +422,7 @@ export function createMemoryOversightExecutors(
 
     archive_memory: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const store = getStore();
       const args = rawArgs as { memoryId: string };
@@ -459,7 +459,7 @@ export function createMemoryOversightExecutors(
 
     restore_memory: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const store = getStore();
       const args = rawArgs as { memoryId: string };
@@ -496,7 +496,7 @@ export function createMemoryOversightExecutors(
 
     view_my_profile: async (
       _rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const store = getStore();
       const profile = await store.getUserProfile();
@@ -514,7 +514,7 @@ export function createMemoryOversightExecutors(
 
     update_memory_importance: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const store = getStore();
       const args = rawArgs as { memoryId: string; importance: MemoryImportance };
@@ -542,7 +542,7 @@ export function createMemoryOversightExecutors(
 
     export_memories: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const store = getStore();
       const args = rawArgs as { category?: MemoryCategory; includeArchived?: boolean };
@@ -586,7 +586,7 @@ export function createMemoryOversightExecutors(
 
     memory_stats: async (
       _rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const store = getStore();
 
@@ -635,7 +635,7 @@ export function createMemoryOversightExecutors(
 
     clear_all_memories: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const args = rawArgs as { confirm: boolean; confirmPhrase: string };
       const { confirm, confirmPhrase } = args;
@@ -678,7 +678,7 @@ export function createMemoryOversightExecutors(
 
     configure_retention: async (
       rawArgs: Record<string, unknown>,
-      context: ToolContext
+      _context: ToolContext
     ) => {
       const store = getStore();
       const args = rawArgs as {
@@ -913,7 +913,7 @@ export class MemoryCleaner {
   /**
    * Merge similar memories
    */
-  async mergeSimilarMemories(similarityThreshold: number = 0.9): Promise<number> {
+  async mergeSimilarMemories(_similarityThreshold: number = 0.9): Promise<number> {
     // This would use embeddings for similarity in production
     // For now, just use simple text matching
     const allMemories = await this.store.queryMemories({ limit: 10000 });

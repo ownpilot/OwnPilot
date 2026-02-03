@@ -77,15 +77,27 @@ interface IntegrationRow {
 // Encryption Helpers
 // ============================================================================
 
-// Encryption key from environment or generate a default (should be set in production)
+// Encryption key from environment (required for production)
 function getEncryptionKey(): Buffer {
   const keyHex = process.env.OAUTH_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
   if (keyHex && keyHex.length === 64) {
     return Buffer.from(keyHex, 'hex');
   }
-  // Fallback: derive from a secret (less secure, but works for development)
-  const secret = process.env.JWT_SECRET || process.env.API_KEYS || 'ownpilot-default-key';
-  return createHash('sha256').update(secret).digest();
+
+  // In production, require a proper encryption key
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'OAUTH_ENCRYPTION_KEY (64-char hex) is required in production. ' +
+      'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+    );
+  }
+
+  // Development fallback: derive from JWT_SECRET or API_KEYS
+  const secret = process.env.JWT_SECRET || process.env.API_KEYS;
+  if (!secret) {
+    log.warn('No OAUTH_ENCRYPTION_KEY set. Using insecure fallback for development only.');
+  }
+  return createHash('sha256').update(secret || 'dev-only-insecure-key').digest();
 }
 
 function encryptToken(token: string): { encrypted: string; iv: string } {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createSandbox, runInSandbox, SandboxExecutor } from './executor.js';
+import { createSandbox, runInSandbox } from './executor.js';
 import { validateCode } from './context.js';
 import { unsafePluginId } from '../types/branded.js';
 

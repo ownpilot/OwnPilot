@@ -203,7 +203,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
     return () => {
       disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - only connect on mount
 
   return {

@@ -15,7 +15,7 @@
  * - Audit logging for all operations
  */
 
-import { randomUUID, createHash, randomBytes } from 'node:crypto';
+import { randomUUID, randomBytes } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
@@ -648,7 +648,7 @@ export class GmailIntegration extends GoogleIntegration {
   /**
    * List messages
    */
-  async listMessages(options: {
+  async listMessages(_options: {
     maxResults?: number;
     query?: string;
     labels?: string[];
@@ -662,7 +662,7 @@ export class GmailIntegration extends GoogleIntegration {
   /**
    * Get message by ID
    */
-  async getMessage(messageId: string): Promise<OperationResult<GmailMessage>> {
+  async getMessage(_messageId: string): Promise<OperationResult<GmailMessage>> {
     return this.executeWithPermission('read:messages', 'gmail:get', async () => {
       // In real implementation, this would call Gmail API
       throw new Error('Not implemented');
@@ -673,10 +673,10 @@ export class GmailIntegration extends GoogleIntegration {
    * Send message
    */
   async sendMessage(
-    to: string[],
-    subject: string,
-    body: string,
-    options?: { cc?: string[]; bcc?: string[]; attachments?: Buffer[] }
+    _to: string[],
+    _subject: string,
+    _body: string,
+    _options?: { cc?: string[]; bcc?: string[]; attachments?: Buffer[] }
   ): Promise<OperationResult<{ messageId: string }>> {
     return this.executeWithPermission('write:messages', 'gmail:send', async () => {
       // In real implementation, this would call Gmail API
@@ -702,7 +702,7 @@ export class GmailIntegration extends GoogleIntegration {
   /**
    * Search messages
    */
-  async searchMessages(query: string, maxResults: number = 10): Promise<OperationResult<GmailMessage[]>> {
+  async searchMessages(query: string, _maxResults: number = 10): Promise<OperationResult<GmailMessage[]>> {
     return this.executeWithPermission('read:messages', 'gmail:search', async () => {
       // In real implementation, this would call Gmail API
       return [] as GmailMessage[];
@@ -744,7 +744,7 @@ export class GoogleCalendarIntegration extends GoogleIntegration {
   /**
    * List events
    */
-  async listEvents(options: {
+  async listEvents(_options: {
     calendarId?: string;
     timeMin?: Date;
     timeMax?: Date;
@@ -759,7 +759,7 @@ export class GoogleCalendarIntegration extends GoogleIntegration {
   /**
    * Get event by ID
    */
-  async getEvent(eventId: string, calendarId?: string): Promise<OperationResult<CalendarEvent>> {
+  async getEvent(_eventId: string, _calendarId?: string): Promise<OperationResult<CalendarEvent>> {
     return this.executeWithPermission('read:calendar', 'calendar:get', async () => {
       // In real implementation, this would call Calendar API
       throw new Error('Not implemented');
@@ -780,8 +780,8 @@ export class GoogleCalendarIntegration extends GoogleIntegration {
    * Update event
    */
   async updateEvent(
-    eventId: string,
-    updates: Partial<CalendarEvent>
+    _eventId: string,
+    _updates: Partial<CalendarEvent>
   ): Promise<OperationResult<CalendarEvent>> {
     return this.executeWithPermission('write:calendar', 'calendar:update', async () => {
       // In real implementation, this would call Calendar API
@@ -857,7 +857,7 @@ export class GoogleDriveIntegration extends GoogleIntegration {
   /**
    * List files
    */
-  async listFiles(options: {
+  async listFiles(_options: {
     folderId?: string;
     query?: string;
     maxResults?: number;
@@ -871,7 +871,7 @@ export class GoogleDriveIntegration extends GoogleIntegration {
   /**
    * Get file metadata
    */
-  async getFile(fileId: string): Promise<OperationResult<DriveFile>> {
+  async getFile(_fileId: string): Promise<OperationResult<DriveFile>> {
     return this.executeWithPermission('read:files', 'drive:get', async () => {
       // In real implementation, this would call Drive API
       throw new Error('Not implemented');
@@ -881,7 +881,7 @@ export class GoogleDriveIntegration extends GoogleIntegration {
   /**
    * Download file content
    */
-  async downloadFile(fileId: string): Promise<OperationResult<Buffer>> {
+  async downloadFile(_fileId: string): Promise<OperationResult<Buffer>> {
     return this.executeWithPermission('read:files', 'drive:download', async () => {
       // In real implementation, this would call Drive API
       return Buffer.from('');

@@ -7,14 +7,12 @@ import { HTTPException } from 'hono/http-exception';
 import { streamSSE } from 'hono/streaming';
 import type {
   ChatRequest,
-  ChatResponse,
   StreamChunkResponse,
 } from '../types/index.js';
-import { apiResponse, getUserId, ERROR_CODES } from './helpers.js';
+import { apiResponse, getUserId, getIntParam } from './helpers.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
-import { getDatabase } from '../db/connection.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
 import type { AIProvider } from '@ownpilot/core';
 import {
@@ -34,12 +32,11 @@ import {
   traceInfo as recordTraceInfo,
   traceError as recordTraceError,
   getTraceSummary,
-  type TraceSummary,
 } from '../tracing/index.js';
 import { debugLog, type ToolDefinition, hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
 import type { IMessageBus, NormalizedMessage, MessageProcessingResult, StreamCallbacks, ToolEndResult } from '@ownpilot/core';
 import type { StreamChunk, ToolCall } from '@ownpilot/core';
-import { getOrCreateSessionWorkspace, getSessionWorkspace } from '../workspace/file-workspace.js';
+import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
 import { parseLimit, parseOffset } from '../utils/index.js';
 import { getCustomDataService } from '../services/custom-data-service.js';
 import { getLog } from '../services/log.js';
@@ -516,7 +513,16 @@ chatRoutes.post('/', async (c) => {
   if (await isDemoMode()) {
     const demoResponse = generateDemoResponse(body.message, provider, model);
 
-    return apiResponse(c, { /* PLACEHOLDER - manual fix needed */ });
+    return apiResponse(c, {
+      id: crypto.randomUUID(),
+      conversationId: 'demo',
+      message: demoResponse,
+      response: demoResponse,
+      model,
+      toolCalls: [],
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      processingTime: 0,
+    });
   }
 
   // Validate model is available for non-demo mode
@@ -561,11 +567,11 @@ chatRoutes.post('/', async (c) => {
   // Set workspace directory for file operations
   // Use session-based workspaces for isolated file storage
   const sessionId = body.workspaceId || body.conversationId || agent.getConversation().id;
-  let sessionWorkspacePath: string | undefined;
+  let _sessionWorkspacePath: string | undefined;
   try {
     // Get or create a session workspace for this chat
     const sessionWorkspace = getOrCreateSessionWorkspace(sessionId, body.agentId);
-    sessionWorkspacePath = sessionWorkspace.path;
+    _sessionWorkspacePath = sessionWorkspace.path;
     agent.setWorkspaceDir(sessionWorkspace.path);
 
     // Update the system prompt with the correct workspace path
@@ -1756,7 +1762,7 @@ chatRoutes.get('/logs', async (c) => {
  */
 chatRoutes.get('/logs/stats', async (c) => {
   const userId = getUserId(c);
-  const days = parseInt(c.req.query('days') ?? '7');
+  const days = getIntParam(c, 'days', 7, 1);
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
@@ -1795,7 +1801,7 @@ chatRoutes.get('/logs/:id', async (c) => {
 chatRoutes.delete('/logs', async (c) => {
   const userId = getUserId(c);
   const clearAll = c.req.query('all') === 'true';
-  const days = parseInt(c.req.query('olderThanDays') ?? '30');
+  const days = getIntParam(c, 'olderThanDays', 30, 1);
 
   const logsRepo = new LogsRepository(userId);
   const deleted = clearAll

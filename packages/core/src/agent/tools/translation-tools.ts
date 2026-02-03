@@ -96,7 +96,7 @@ export const translateTextTool: ToolDefinition = {
   configRequirements: [DEEPL_CONFIG_REQUIREMENT],
 };
 
-export const translateTextExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const translateTextExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const text = params.text as string;
   const targetLanguage = params.targetLanguage as string;
   const sourceLanguage = (params.sourceLanguage as string) || 'auto';
@@ -251,7 +251,7 @@ export const detectLanguageTool: ToolDefinition = {
   },
 };
 
-export const detectLanguageExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const detectLanguageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const text = params.text as string;
 
   if (!text || text.trim().length === 0) {
@@ -350,7 +350,7 @@ export const listLanguagesTool: ToolDefinition = {
   },
 };
 
-export const listLanguagesExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const listLanguagesExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const filter = (params.filter as string)?.toLowerCase();
 
   let languages = Object.entries(SUPPORTED_LANGUAGES)
@@ -404,7 +404,7 @@ export const batchTranslateTool: ToolDefinition = {
   configRequirements: [DEEPL_CONFIG_REQUIREMENT],
 };
 
-export const batchTranslateExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const batchTranslateExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const texts = params.texts as string[];
   const targetLanguage = params.targetLanguage as string;
   const sourceLanguage = (params.sourceLanguage as string) || 'auto';

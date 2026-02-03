@@ -23,7 +23,6 @@ import {
   generateIV,
   toBase64,
   fromBase64,
-  secureClear,
 } from './derive.js';
 
 const crypto = webcrypto;

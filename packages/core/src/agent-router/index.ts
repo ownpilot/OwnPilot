@@ -5,7 +5,7 @@
  * Analyzes user messages and routes them to specialized agents.
  */
 
-import type { Message, ToolDefinition } from '../agent/types.js';
+import type { Message } from '../agent/types.js';
 
 // =============================================================================
 // Types

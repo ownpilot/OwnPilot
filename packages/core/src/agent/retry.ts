@@ -5,7 +5,7 @@
  */
 
 import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
+import { err } from '../types/result.js';
 import { InternalError, TimeoutError } from '../types/errors.js';
 
 /**

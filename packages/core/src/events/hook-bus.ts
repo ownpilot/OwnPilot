@@ -10,7 +10,7 @@
  * to visually distinguish from dot-delimited events.
  */
 
-import type { HookMap, HookType, HookPayload } from './hook-map.js';
+import type { HookType, HookPayload } from './hook-map.js';
 import type { HookContext, HookHandler, Unsubscribe } from './types.js';
 
 // ============================================================================

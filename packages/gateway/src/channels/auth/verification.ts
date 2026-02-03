@@ -6,9 +6,7 @@
  */
 
 import {
-  type ChannelEvents,
   type ChannelUserVerifiedData,
-  type ChannelUserFirstSeenData,
   getEventBus,
   createEvent,
 } from '@ownpilot/core';

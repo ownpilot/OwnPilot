@@ -532,7 +532,7 @@ export class AgentOrchestrator {
       args = typeof toolCall.arguments === 'string'
         ? JSON.parse(toolCall.arguments)
         : toolCall.arguments as Record<string, unknown>;
-    } catch (parseError) {
+    } catch {
       console.warn(`[Orchestrator] Failed to parse tool arguments for "${toolName}":`, toolCall.arguments);
       args = {};
       // Return early with error so the AI can see what went wrong

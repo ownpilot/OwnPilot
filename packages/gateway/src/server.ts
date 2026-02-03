@@ -48,7 +48,7 @@ import { initializePluginsRepo } from './db/repositories/plugins.js';
 import { initializeLocalProvidersRepo } from './db/repositories/local-providers.js';
 import { seedConfigServices } from './db/seeds/config-services-seed.js';
 import { gatewayConfigCenter } from './services/config-center-impl.js';
-import { startTriggerEngine, getTriggerEngine, initializeDefaultTriggers } from './triggers/index.js';
+import { startTriggerEngine, initializeDefaultTriggers } from './triggers/index.js';
 import { seedExamplePlans } from './db/seeds/plans-seed.js';
 import { createChannelServiceImpl } from './channels/service-impl.js';
 import { initServiceRegistry, Services, getEventSystem, setChannelService } from '@ownpilot/core';
@@ -144,7 +144,7 @@ async function main() {
   log.info(`POSTGRES_DB=${process.env.POSTGRES_DB || 'ownpilot'}`);
 
   // Initialize data directories (creates platform-specific directories)
-  const dataPaths = initializeDataDirectories();
+  const _dataPaths = initializeDataDirectories();
   const dataInfo = getDataDirectoryInfo();
 
   log.info(`Data directory: ${dataInfo.root}`);
@@ -232,7 +232,7 @@ async function main() {
 
     // Wire up the chat handler once agent system is available
     // The chat handler uses dynamic import to avoid circular dependencies
-    triggerEngine.setChatHandler(async (message, payload) => {
+    triggerEngine.setChatHandler(async (message, _payload) => {
       const { getOrCreateChatAgent } = await import('./routes/agents.js');
       const { resolveProviderAndModel } = await import('./routes/settings.js');
       const resolved = await resolveProviderAndModel('default', 'default');

@@ -318,9 +318,11 @@ function ContactModal({ contact, onClose, onSave }: ContactModalProps) {
         isFavorite,
       };
 
-      contact
-        ? await contactsApi.update(contact.id, body)
-        : await contactsApi.create(body);
+      if (contact) {
+        await contactsApi.update(contact.id, body);
+      } else {
+        await contactsApi.create(body);
+      }
 
       onSave();
     } catch {

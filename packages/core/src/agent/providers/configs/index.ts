@@ -217,7 +217,7 @@ export function resolveProviderConfig(id: string): ResolvedProviderConfig | null
   const apiKey = process.env[config.apiKeyEnv];
   if (!apiKey) return null;
 
-  const { apiKeyEnv, ...rest } = config;
+  const { apiKeyEnv: _apiKeyEnv, ...rest } = config;
   return { ...rest, apiKey };
 }
 

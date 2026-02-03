@@ -237,7 +237,7 @@ export function logResponse(info: ResponseDebugInfo): void {
   });
 
   if (shouldLogToConsole()) {
-    const statusIcon = info.status === 'success' ? '✓' : '✗';
+    const _statusIcon = info.status === 'success' ? '✓' : '✗';
     const statusColor = info.status === 'success' ? '🟢' : '🔴';
 
     console.log('\n' + '═'.repeat(80));
@@ -304,7 +304,7 @@ export function logToolResult(info: ToolResultDebugInfo): void {
   });
 
   if (shouldLogToConsole()) {
-    const statusIcon = info.success ? '✓' : '✗';
+    const _statusIcon = info.success ? '✓' : '✗';
     const statusColor = info.success ? '🟢' : '🔴';
     console.log(`\n⚡ TOOL RESULT ${statusColor} ${info.name} (${info.durationMs}ms)`);
     console.log(`  ID: ${info.toolCallId}`);

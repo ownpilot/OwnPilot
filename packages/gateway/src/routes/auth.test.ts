@@ -38,10 +38,19 @@ vi.mock('../db/repositories/index.js', () => ({
 
 import { google } from 'googleapis';
 import { settingsRepo, oauthIntegrationsRepo } from '../db/repositories/index.js';
+import type { OAuthIntegration } from '../db/repositories/index.js';
+
+interface MockOAuth2Client {
+  generateAuthUrl: ReturnType<typeof vi.fn>;
+  getToken: ReturnType<typeof vi.fn>;
+  setCredentials: ReturnType<typeof vi.fn>;
+  refreshAccessToken: ReturnType<typeof vi.fn>;
+  revokeToken: ReturnType<typeof vi.fn>;
+}
 
 describe('Auth Routes', () => {
   let app: Hono;
-  let mockOAuth2Client: any;
+  let mockOAuth2Client: MockOAuth2Client;
 
   beforeEach(() => {
     app = new Hono();
@@ -58,7 +67,7 @@ describe('Auth Routes', () => {
     // Reset oauthIntegrationsRepo methods
     vi.mocked(oauthIntegrationsRepo.getById).mockResolvedValue(null);
     vi.mocked(oauthIntegrationsRepo.getByUserProviderService).mockResolvedValue(null);
-    vi.mocked(oauthIntegrationsRepo.create).mockResolvedValue({} as any);
+    vi.mocked(oauthIntegrationsRepo.create).mockResolvedValue({} as unknown as OAuthIntegration);
     vi.mocked(oauthIntegrationsRepo.updateTokens).mockResolvedValue(undefined);
     vi.mocked(oauthIntegrationsRepo.updateStatus).mockResolvedValue(undefined);
     vi.mocked(oauthIntegrationsRepo.delete).mockResolvedValue(undefined);
@@ -73,12 +82,12 @@ describe('Auth Routes', () => {
       revokeToken: vi.fn(),
     };
 
-    vi.mocked(google.auth.OAuth2).mockReturnValue(mockOAuth2Client as any);
+    vi.mocked(google.auth.OAuth2).mockReturnValue(mockOAuth2Client as unknown as InstanceType<typeof google.auth.OAuth2>);
     vi.mocked(google.oauth2).mockReturnValue({
       userinfo: {
         get: vi.fn(),
       },
-    } as any);
+    } as unknown as ReturnType<typeof google.oauth2>);
   });
 
   afterEach(() => {
@@ -282,7 +291,7 @@ describe('Auth Routes', () => {
     });
 
     it('should include return URL in state', async () => {
-      mockOAuth2Client.generateAuthUrl.mockImplementation((options: any) => {
+      mockOAuth2Client.generateAuthUrl.mockImplementation((options: Record<string, unknown>) => {
         expect(options.state).toBeDefined();
         return 'https://accounts.google.com/oauth';
       });
@@ -300,7 +309,7 @@ describe('Auth Routes', () => {
       vi.mocked(oauthIntegrationsRepo.getById).mockResolvedValue({
         id: 'int-123',
         service: 'gmail',
-      } as any);
+      } as unknown as OAuthIntegration);
       vi.mocked(oauthIntegrationsRepo.getTokens).mockResolvedValue({
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
@@ -356,7 +365,7 @@ describe('Auth Routes', () => {
       vi.mocked(oauthIntegrationsRepo.getById).mockResolvedValue({
         id: 'int-123',
         service: 'gmail',
-      } as any);
+      } as unknown as OAuthIntegration);
       vi.mocked(oauthIntegrationsRepo.getTokens).mockResolvedValue({
         accessToken: 'token',
       });
@@ -404,7 +413,7 @@ describe('Auth Routes', () => {
     it('should refresh token successfully', async () => {
       vi.mocked(oauthIntegrationsRepo.getById).mockResolvedValue({
         id: 'int-123',
-      } as any);
+      } as unknown as OAuthIntegration);
       vi.mocked(oauthIntegrationsRepo.getTokens).mockResolvedValue({
         accessToken: 'old-token',
         refreshToken: 'refresh-token',
@@ -464,7 +473,7 @@ describe('Auth Routes', () => {
     it('should return 400 when no refresh token available', async () => {
       vi.mocked(oauthIntegrationsRepo.getById).mockResolvedValue({
         id: 'int-123',
-      } as any);
+      } as unknown as OAuthIntegration);
       vi.mocked(oauthIntegrationsRepo.getTokens).mockResolvedValue({
         accessToken: 'token',
         refreshToken: undefined,
@@ -489,7 +498,7 @@ describe('Auth Routes', () => {
     it('should return 400 when OAuth not configured', async () => {
       vi.mocked(oauthIntegrationsRepo.getById).mockResolvedValue({
         id: 'int-123',
-      } as any);
+      } as unknown as OAuthIntegration);
       vi.mocked(oauthIntegrationsRepo.getTokens).mockResolvedValue({
         refreshToken: 'refresh-token',
       });
@@ -509,7 +518,7 @@ describe('Auth Routes', () => {
     it('should mark integration as expired on refresh failure', async () => {
       vi.mocked(oauthIntegrationsRepo.getById).mockResolvedValue({
         id: 'int-123',
-      } as any);
+      } as unknown as OAuthIntegration);
       vi.mocked(oauthIntegrationsRepo.getTokens).mockResolvedValue({
         refreshToken: 'refresh-token',
       });

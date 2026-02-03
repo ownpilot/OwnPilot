@@ -10,7 +10,7 @@
  *   const result = await tools.execute('get_current_time', {});
  */
 
-import type { ToolDefinition, ToolExecutor, ToolMiddleware, ToolSource } from '../agent/types.js';
+import type { ToolDefinition, ToolMiddleware, ToolSource } from '../agent/types.js';
 
 // ============================================================================
 // Tool Execution Result (simplified for service layer)

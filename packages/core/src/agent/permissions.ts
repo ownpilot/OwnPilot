@@ -8,8 +8,7 @@
  * - Configurable permission policies
  */
 
-import type { ToolId } from '../types/branded.js';
-import type { ToolContext, ToolDefinition } from './types.js';
+import type { ToolContext } from './types.js';
 
 // =============================================================================
 // Permission Types
