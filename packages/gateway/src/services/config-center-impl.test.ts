@@ -20,7 +20,7 @@ vi.mock('../db/repositories/config-services.js', () => ({
   configServicesRepo: mockConfigServicesRepo,
 }));
 
-import { GatewayConfigCenter, gatewayConfigCenter, gatewayApiKeyCenter } from './config-center-impl.js';
+import { GatewayConfigCenter, gatewayConfigCenter } from './config-center-impl.js';
 
 const mockServiceDefinition = {
   name: 'openai',
@@ -268,8 +268,5 @@ describe('GatewayConfigCenter', () => {
       expect(gatewayConfigCenter).toBeInstanceOf(GatewayConfigCenter);
     });
 
-    it('gatewayApiKeyCenter is the same instance as gatewayConfigCenter', () => {
-      expect(gatewayApiKeyCenter).toBe(gatewayConfigCenter);
-    });
   });
 });

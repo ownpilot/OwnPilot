@@ -21,7 +21,7 @@ import type { ToolInfo } from '../types/index.js';
 import { apiResponse } from './helpers.js'
 import { getAgent } from './agents.js';
 import { initializeToolOverrides } from '../services/tool-overrides.js';
-import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-center-impl.js';
+import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { initToolSourceMappings, getToolSource } from '../services/tool-source.js';
 import { TRIGGER_TOOLS, PLAN_TOOLS } from '../tools/index.js';
@@ -49,7 +49,7 @@ function getToolRegistry(): ToolRegistry {
   if (!toolRegistry) {
     toolRegistry = new ToolRegistry();
     registerCoreTools(toolRegistry);
-    toolRegistry.setApiKeyCenter(gatewayApiKeyCenter);
+    toolRegistry.setApiKeyCenter(gatewayConfigCenter);
 
     // Initialize tool overrides (Gmail, Media, etc.)
     if (!toolOverridesInitialized) {

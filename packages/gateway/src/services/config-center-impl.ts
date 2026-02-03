@@ -117,5 +117,3 @@ export class GatewayConfigCenter implements ConfigCenter {
 /** Singleton instance */
 export const gatewayConfigCenter = new GatewayConfigCenter();
 
-/** @deprecated Use gatewayConfigCenter */
-export const gatewayApiKeyCenter = gatewayConfigCenter;
