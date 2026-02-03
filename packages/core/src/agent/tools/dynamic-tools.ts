@@ -32,22 +32,6 @@ export type DynamicToolPermission =
 
 import type { ConfigFieldDefinition } from '../../services/config-center.js';
 
-/**
- * @deprecated Use RequiredConfigService instead
- */
-export interface RequiredApiKey {
-  /** Service name (used as lookup key in Config Center) */
-  name: string;
-  /** Human-readable display name */
-  displayName?: string;
-  /** Description of what this API key is used for */
-  description?: string;
-  /** Category for grouping in Config Center */
-  category?: string;
-  /** Link to the API provider's docs/signup page */
-  docsUrl?: string;
-}
-
 /** Config service requirement declared by a tool */
 export interface RequiredConfigService {
   /** Service name (lookup key in Config Center) */
@@ -86,7 +70,7 @@ export interface DynamicToolDefinition {
   /** Whether this tool requires user approval before each execution */
   requiresApproval?: boolean;
   /** API keys this tool requires (auto-registered in Config Center) */
-  requiredApiKeys?: RequiredApiKey[];
+  requiredApiKeys?: RequiredConfigService[];
 }
 
 /**
