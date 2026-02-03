@@ -51,8 +51,8 @@ import {
   configServicesRoutes,
   localProvidersRoutes,
   channelAuthRoutes,
+  debugRoutes,
 } from './routes/index.js';
-import { debugRoutes } from './routes/debug.js';
 
 /**
  * Default configuration
