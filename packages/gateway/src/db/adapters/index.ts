@@ -79,17 +79,3 @@ export async function closeAdapter(): Promise<void> {
   }
 }
 
-/**
- * Check if using PostgreSQL (always true)
- */
-export function isPostgres(): boolean {
-  return true;
-}
-
-/**
- * Check if using SQLite (always false - SQLite is deprecated)
- * @deprecated SQLite is no longer supported
- */
-export function isSQLite(): boolean {
-  return false;
-}

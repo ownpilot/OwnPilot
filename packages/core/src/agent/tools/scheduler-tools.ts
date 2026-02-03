@@ -258,28 +258,6 @@ export function parseSchedule(text: string): ParsedSchedule | null {
 }
 
 /**
- * Legacy function for backward compatibility
- * @deprecated Use parseSchedule instead
- */
-export function naturalLanguageToCron(text: string): { cron: string; description: string } | null {
-  const result = parseSchedule(text);
-  if (!result) return null;
-
-  if (result.type === 'cron' && result.cron) {
-    return { cron: result.cron, description: result.description };
-  }
-
-  // For one-time schedules, return a cron that runs at that time daily
-  // This is a fallback for legacy code that only supports cron
-  if (result.type === 'one-time' && result.runAt) {
-    const cron = `${result.runAt.getMinutes()} ${result.runAt.getHours()} * * *`;
-    return { cron, description: result.description + ' (converted to daily)' };
-  }
-
-  return null;
-}
-
-/**
  * Format cron expression for display
  */
 export function formatCronDescription(cron: string): string {
@@ -675,14 +653,18 @@ export const updateScheduledTaskExecutor: ToolExecutor = async (
     if (args.priority) updates.priority = args.priority as TaskPriority;
 
     if (args.schedule) {
-      const parsed = naturalLanguageToCron(args.schedule as string);
+      const parsed = parseSchedule(args.schedule as string);
       if (!parsed) {
         return {
           content: 'Could not parse schedule expression',
           isError: true,
         };
       }
-      updates.cron = parsed.cron;
+      if (parsed.type === 'cron' && parsed.cron) {
+        updates.cron = parsed.cron;
+      } else if (parsed.type === 'one-time' && parsed.runAt) {
+        updates.cron = `${parsed.runAt.getMinutes()} ${parsed.runAt.getHours()} * * *`;
+      }
     }
 
     const updated = await scheduler.updateTask(taskId, updates);
