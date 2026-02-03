@@ -11,6 +11,7 @@ import {
 } from './icons';
 import { CodeBlock } from './CodeBlock';
 import { toolsApi } from '../api';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface FileItem {
   name: string;
@@ -182,8 +183,8 @@ export function FileBrowser({ initialPath = '~', onFileSelect, onFileOpen }: Fil
               </button>
             </div>
           ) : isLoading && files.length === 0 ? (
-            <div className="p-4 text-center text-text-muted">
-              Loading...
+            <div className="p-4">
+              <LoadingSpinner size="sm" message="Loading..." />
             </div>
           ) : sortedFiles.length === 0 ? (
             <div className="p-4 text-center text-text-muted">

@@ -27,6 +27,7 @@ import {
 } from './icons';
 import { summaryApi, costsApi, providersApi, modelsApi } from '../api';
 import type { SummaryData, CostsData } from '../types';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -179,9 +180,7 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {isLoading ? (
-          <div className="text-center text-text-muted dark:text-dark-text-muted text-sm">
-            Loading...
-          </div>
+          <LoadingSpinner size="sm" message="Loading..." />
         ) : (
           <>
             {/* Personal Data */}

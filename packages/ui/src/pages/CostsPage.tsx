@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { costsApi } from '../api';
 import type { CostSummary, BudgetStatus, ProviderBreakdown, DailyUsage } from '../api';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useToast } from '../components/ToastProvider';
 
 
 
@@ -10,6 +12,7 @@ import type { CostSummary, BudgetStatus, ProviderBreakdown, DailyUsage } from '.
 type Period = 'day' | 'week' | 'month' | 'year';
 
 export function CostsPage() {
+  const toast = useToast();
   const [period, setPeriod] = useState<Period>('month');
   const [summary, setSummary] = useState<CostSummary | null>(null);
   const [budget, setBudget] = useState<BudgetStatus | null>(null);
@@ -64,6 +67,7 @@ export function CostsPage() {
 
       const data = await costsApi.setBudget(body);
       setBudget(data.status);
+      toast.success('Budget saved');
     } catch {
       setError('Failed to save budget');
     } finally {
@@ -78,11 +82,7 @@ export function CostsPage() {
   };
 
   if (loading && !summary) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500 dark:text-gray-400">Loading cost data...</div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading cost data..." />;
   }
 
   return (

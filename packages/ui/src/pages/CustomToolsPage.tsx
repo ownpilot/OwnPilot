@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Wrench, Plus, Check, X, Trash, Play, Code } from '../components/icons';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/ToastProvider';
+import { useDebouncedValue } from '../hooks';
 import { customToolsApi } from '../api';
 import type { CustomTool, ToolStats, ToolStatus, ToolPermission } from '../types';
 
@@ -28,6 +32,7 @@ const PERMISSION_LABELS: Record<ToolPermission, string> = {
 };
 
 export function CustomToolsPage() {
+  const toast = useToast();
   const [tools, setTools] = useState<CustomTool[]>([]);
   const [stats, setStats] = useState<ToolStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +40,7 @@ export function CustomToolsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | ToolStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
   useEffect(() => {
     fetchTools();
@@ -68,6 +74,8 @@ export function CustomToolsPage() {
       } else {
         await customToolsApi.action(toolId, action);
       }
+      const labels: Record<string, string> = { enable: 'Tool enabled', disable: 'Tool disabled', approve: 'Tool approved', reject: 'Tool rejected', delete: 'Tool deleted' };
+      toast.success(labels[action]);
       fetchTools();
       fetchStats();
       if (selectedTool?.id === toolId) {
@@ -79,8 +87,8 @@ export function CustomToolsPage() {
   };
 
   const filteredTools = tools.filter(tool => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
+    if (!debouncedSearch) return true;
+    const query = debouncedSearch.toLowerCase();
     return (
       tool.name.toLowerCase().includes(query) ||
       tool.description.toLowerCase().includes(query) ||
@@ -162,28 +170,14 @@ export function CustomToolsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading custom tools...</p>
-          </div>
+          <LoadingSpinner message="Loading custom tools..." />
         ) : filteredTools.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Code className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              {searchQuery ? 'No tools match your search' : 'No custom tools yet'}
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4">
-              {searchQuery ? 'Try a different search term.' : 'Create your first custom tool or let the AI create one for you.'}
-            </p>
-            {!searchQuery && (
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Create Tool
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={Code}
+            title={searchQuery ? 'No tools match your search' : 'No custom tools yet'}
+            description={searchQuery ? 'Try a different search term.' : 'Create your first custom tool or let the AI create one for you.'}
+            action={!searchQuery ? { label: 'Create Tool', onClick: () => setIsCreateModalOpen(true), icon: Plus } : undefined}
+          />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredTools.map((tool) => (
@@ -575,6 +569,7 @@ interface CreateToolModalProps {
 }
 
 function CreateToolModal({ onClose, onCreated }: CreateToolModalProps) {
+  const toast = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -623,6 +618,7 @@ function CreateToolModal({ onClose, onCreated }: CreateToolModalProps) {
         createdBy: 'user',
       });
 
+      toast.success('Tool created');
       onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create tool');

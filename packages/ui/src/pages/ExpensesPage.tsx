@@ -17,6 +17,7 @@ import type {
   ExpenseMonthlyResponse as MonthlyResponse,
   ExpenseSummaryResponse as SummaryResponse,
 } from '../api';
+import { useToast } from '../components/ToastProvider';
 
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -35,6 +36,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export function ExpensesPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [year, setYear] = useState(new Date().getFullYear());
   const [monthlyData, setMonthlyData] = useState<MonthlyResponse | null>(null);
   const [summaryData, setSummaryData] = useState<SummaryResponse | null>(null);
@@ -91,6 +93,7 @@ export function ExpensesPage() {
         ...newExpense,
         amount: parseFloat(newExpense.amount),
       });
+      toast.success('Expense added');
       setShowAddForm(false);
       setNewExpense({
         date: new Date().toISOString().split('T')[0],
@@ -110,6 +113,7 @@ export function ExpensesPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this expense?', variant: 'danger' })) return;
     try {
       await expensesApi.delete(id);
+      toast.success('Expense deleted');
       fetchData();
     } catch {
       // API client handles error reporting

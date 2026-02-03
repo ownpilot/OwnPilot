@@ -5,6 +5,8 @@ import type { GroupedTools, ToolItem } from './types';
 import { CATEGORY_ORDER, CATEGORY_NAMES } from './constants';
 import { ToolCard } from './ToolCard';
 import { ToolDetailModal } from './ToolDetailModal';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { EmptyState } from '../../components/EmptyState';
 
 export function ToolsPage() {
   const [groupedTools, setGroupedTools] = useState<GroupedTools | null>(null);
@@ -98,19 +100,13 @@ export function ToolsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading tools...</p>
-          </div>
+          <LoadingSpinner message="Loading tools..." />
         ) : !groupedTools || filteredTotal === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Wrench className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              {searchQuery ? 'No tools match your search' : 'No tools available'}
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted">
-              {searchQuery ? 'Try a different search term.' : 'Tools will appear here when configured.'}
-            </p>
-          </div>
+          <EmptyState
+            icon={Wrench}
+            title={searchQuery ? 'No tools match your search' : 'No tools available'}
+            description={searchQuery ? 'Try a different search term.' : 'Tools will appear here when configured.'}
+          />
         ) : (
           <div className="space-y-4">
             {sortedCategories.map(([categoryId, category]) => {

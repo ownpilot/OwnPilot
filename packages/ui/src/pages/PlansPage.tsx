@@ -19,6 +19,9 @@ import {
   Code,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/ToastProvider';
 
 interface PlanStep {
   id: string;
@@ -101,6 +104,7 @@ const stepStatusIcons: Record<PlanStep['status'], typeof Circle> = {
 
 export function PlansPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<Plan['status'] | 'all'>('all');
@@ -155,6 +159,7 @@ export function PlansPage() {
 
     try {
       await plansApi.delete(planId);
+      toast.success('Plan deleted');
       fetchPlans();
     } catch {
       // API client handles error reporting
@@ -162,10 +167,12 @@ export function PlansPage() {
   };
 
   const handleAction = async (planId: string, action: 'start' | 'pause' | 'resume' | 'abort') => {
+    const actionLabels = { start: 'Plan started', pause: 'Plan paused', resume: 'Plan resumed', abort: 'Plan aborted' };
     try {
       // Backend uses /execute endpoint instead of /start
       const endpoint = action === 'start' ? 'execute' : action;
       await plansApi.action(planId, endpoint);
+      toast.success(actionLabels[action]);
       fetchPlans();
     } catch {
       // API client handles error reporting
@@ -177,6 +184,7 @@ export function PlansPage() {
 
     try {
       await plansApi.rollback(planId);
+      toast.success('Rolled back to checkpoint');
       fetchPlans();
     } catch {
       // API client handles error reporting
@@ -229,26 +237,14 @@ export function PlansPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading plans...</p>
-          </div>
+          <LoadingSpinner message="Loading plans..." />
         ) : plans.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <ListChecks className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              No plans yet
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4 text-center max-w-md">
-              Plans let the AI execute multi-step workflows autonomously.
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Create Plan
-            </button>
-          </div>
+          <EmptyState
+            icon={ListChecks}
+            title="No plans yet"
+            description="Plans let the AI execute multi-step workflows autonomously."
+            action={{ label: 'Create Plan', onClick: () => setShowCreateModal(true), icon: Plus }}
+          />
         ) : (
           <div className="space-y-3">
             {plans.map((plan) => (
@@ -737,6 +733,7 @@ interface PlanModalProps {
 }
 
 function PlanModal({ plan, onClose, onSave }: PlanModalProps) {
+  const toast = useToast();
   const [name, setName] = useState(plan?.name ?? '');
   const [goal, setGoal] = useState(plan?.goal ?? '');
   const [description, setDescription] = useState(plan?.description ?? '');
@@ -756,8 +753,10 @@ function PlanModal({ plan, onClose, onSave }: PlanModalProps) {
 
 if (plan) {
         await apiClient.patch(`/plans/${plan.id}`, body);
+        toast.success('Plan updated');
       } else {
         await apiClient.post('/plans', body);
+        toast.success('Plan created');
       }
       onSave();
     } catch {
@@ -857,6 +856,7 @@ interface AddStepFormProps {
 }
 
 function AddStepForm({ planId, nextOrder, onAdded, onCancel }: AddStepFormProps) {
+  const toast = useToast();
   const [stepName, setStepName] = useState('');
   const [stepType, setStepType] = useState<PlanStep['type']>('tool_call');
   const [stepDescription, setStepDescription] = useState('');
@@ -887,6 +887,7 @@ await plansApi.addStep(planId, {
           orderNum: nextOrder,
           config,
         });
+      toast.success('Step added');
       onAdded();
     } catch {
       // API client handles error reporting
