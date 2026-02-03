@@ -629,16 +629,9 @@ export const calculatorPlugin = createPlugin()
     capabilities: ['tools', 'handlers'],
     permissions: [],
     icon: '🔢',
-    configSchema: {
-      type: 'object',
-      properties: {
-        precision: {
-          type: 'number',
-          description: 'Decimal precision for results',
-          default: 6,
-        },
-      },
-    },
+    pluginConfigSchema: [
+      { name: 'precision', label: 'Precision', type: 'number', description: 'Decimal precision for results', defaultValue: 6 },
+    ],
     defaultConfig: {
       precision: 6,
     },

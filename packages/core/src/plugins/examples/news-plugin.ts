@@ -404,21 +404,10 @@ export const newsPlugin = createPlugin()
     capabilities: ['tools', 'handlers', 'storage', 'scheduled'],
     permissions: ['network', 'storage'],
     icon: '📰',
-    configSchema: {
-      type: 'object',
-      properties: {
-        refreshInterval: {
-          type: 'number',
-          description: 'Feed refresh interval in minutes',
-          default: 30,
-        },
-        maxItemsPerFeed: {
-          type: 'number',
-          description: 'Maximum items to store per feed',
-          default: 100,
-        },
-      },
-    },
+    pluginConfigSchema: [
+      { name: 'refreshInterval', label: 'Refresh Interval', type: 'number', description: 'Feed refresh interval in minutes', defaultValue: 30 },
+      { name: 'maxItemsPerFeed', label: 'Max Items Per Feed', type: 'number', description: 'Maximum items to store per feed', defaultValue: 100 },
+    ],
     defaultConfig: {
       refreshInterval: 30,
       maxItemsPerFeed: 100,

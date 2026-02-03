@@ -188,20 +188,20 @@ export function createExpenseTrackerPlugin() {
       },
       capabilities: ['tools', 'handlers', 'storage'],
       permissions: ['file_read', 'file_write', 'storage'],
-      configSchema: {
-        type: 'object',
-        properties: {
-          defaultCurrency: {
-            type: 'string',
-            enum: ['USD', 'EUR', 'GBP'],
-            default: 'USD',
-          },
-          categories: {
-            type: 'array',
-            items: { type: 'string' },
-          },
+      pluginConfigSchema: [
+        {
+          name: 'defaultCurrency',
+          label: 'Default Currency',
+          type: 'select',
+          options: [
+            { value: 'USD', label: 'USD' },
+            { value: 'EUR', label: 'EUR' },
+            { value: 'GBP', label: 'GBP' },
+          ],
+          defaultValue: 'USD',
         },
-      },
+        { name: 'categories', label: 'Categories', type: 'json', description: 'Expense categories list' },
+      ],
       defaultConfig: {
         defaultCurrency: 'USD',
         categories: ['food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'education', 'travel', 'subscription', 'housing', 'other'],

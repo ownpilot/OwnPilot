@@ -575,21 +575,10 @@ export const reminderPlugin = createPlugin()
     capabilities: ['tools', 'handlers', 'storage', 'scheduled', 'notifications'],
     permissions: ['notifications', 'storage'],
     icon: '⏰',
-    configSchema: {
-      type: 'object',
-      properties: {
-        defaultSnooze: {
-          type: 'number',
-          description: 'Default snooze duration in minutes',
-          default: 15,
-        },
-        notifyBefore: {
-          type: 'number',
-          description: 'Minutes before due time to notify',
-          default: 5,
-        },
-      },
-    },
+    pluginConfigSchema: [
+      { name: 'defaultSnooze', label: 'Default Snooze', type: 'number', description: 'Default snooze duration in minutes', defaultValue: 15 },
+      { name: 'notifyBefore', label: 'Notify Before', type: 'number', description: 'Minutes before due time to notify', defaultValue: 5 },
+    ],
     defaultConfig: {
       defaultSnooze: 15,
       notifyBefore: 5,

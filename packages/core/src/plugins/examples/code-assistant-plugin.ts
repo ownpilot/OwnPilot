@@ -769,19 +769,10 @@ export const codeAssistantPlugin = createPlugin()
     capabilities: ['tools'],
     permissions: [],
     icon: '💻',
-    configSchema: {
-      type: 'object',
-      properties: {
-        defaultIndent: {
-          type: 'number',
-          default: 2,
-        },
-        maxLineLength: {
-          type: 'number',
-          default: 120,
-        },
-      },
-    },
+    pluginConfigSchema: [
+      { name: 'defaultIndent', label: 'Default Indent', type: 'number', defaultValue: 2 },
+      { name: 'maxLineLength', label: 'Max Line Length', type: 'number', defaultValue: 120 },
+    ],
     defaultConfig: {
       defaultIndent: 2,
       maxLineLength: 120,

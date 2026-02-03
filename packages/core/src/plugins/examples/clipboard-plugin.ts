@@ -459,16 +459,9 @@ export const clipboardPlugin = createPlugin()
     capabilities: ['tools', 'handlers', 'storage'],
     permissions: ['storage'],
     icon: '📋',
-    configSchema: {
-      type: 'object',
-      properties: {
-        maxItems: {
-          type: 'number',
-          description: 'Maximum items to keep in history',
-          default: 100,
-        },
-      },
-    },
+    pluginConfigSchema: [
+      { name: 'maxItems', label: 'Max Items', type: 'number', description: 'Maximum items to keep in history', defaultValue: 100 },
+    ],
     defaultConfig: {
       maxItems: 100,
     },
