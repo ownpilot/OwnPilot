@@ -16,8 +16,9 @@ export {
 // Service Tokens
 export { Services } from './tokens.js';
 
-// Service Interfaces
+// Logging
 export type { ILogService, LogLevel } from './log-service.js';
+export { getLog } from './get-log.js';
 export type {
   ISessionService,
   Session,
