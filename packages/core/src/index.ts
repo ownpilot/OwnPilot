@@ -46,7 +46,7 @@ export * from './assistant/index.js';
 // Integrations
 export * from './integrations/index.js';
 
-// Services (Media, Weather)
+// Services (ServiceRegistry, interfaces, tokens, media, weather)
 export * from './services/index.js';
 
 // Notifications

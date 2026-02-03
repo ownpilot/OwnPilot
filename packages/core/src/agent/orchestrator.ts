@@ -125,7 +125,6 @@ export interface AgentStep {
   timestamp: Date;
 }
 
-/** @deprecated OrchestratorEvents removed - use EventSystem with 'agent.*' events instead */
 
 // ============================================================================
 // AGENT ORCHESTRATOR

@@ -3,8 +3,6 @@
  *
  * Implements the ConfigCenter interface from core,
  * backed by the config_services PostgreSQL tables with in-memory cache.
- *
- * Backed by the config_services PostgreSQL tables with in-memory cache.
  */
 
 import type {
