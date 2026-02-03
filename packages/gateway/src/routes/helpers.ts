@@ -4,6 +4,7 @@
  * Shared utilities for Hono route handlers.
  */
 
+import { timingSafeEqual } from 'node:crypto';
 import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { ApiResponse } from '../types/index.js';
@@ -13,12 +14,22 @@ import { ERROR_CODES, type ErrorCode } from './error-codes.js';
 export { ERROR_CODES, type ErrorCode };
 
 /**
+ * Timing-safe comparison of two strings (e.g. API keys, admin keys).
+ * Returns false if either value is undefined/empty or lengths differ.
+ */
+export function safeKeyCompare(a: string | undefined, b: string | undefined): boolean {
+  if (!a || !b) return false;
+  const aBuf = Buffer.from(a);
+  const bBuf = Buffer.from(b);
+  if (aBuf.length !== bBuf.length) return false;
+  return timingSafeEqual(aBuf, bBuf);
+}
+
+/**
  * Extract the authenticated user ID from a Hono context.
  *
- * Resolution order:
- *   1. Auth middleware (c.get('userId')) — set by JWT or API-key auth
- *   2. Query parameter (?userId=...)   — for unauthenticated/testing usage
- *   3. Fallback: 'default'
+ * Returns the authenticated user ID from context (set by auth middleware),
+ * or 'default' if no authentication is configured.
  */
 export function getUserId(c: Context): string {
   return c.get('userId') ?? 'default';

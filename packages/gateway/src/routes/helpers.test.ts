@@ -13,6 +13,7 @@ import {
   getOptionalIntParam,
   apiResponse,
   apiError,
+  safeKeyCompare,
   ERROR_CODES,
 } from './helpers.js';
 
@@ -461,6 +462,38 @@ describe('Route Helpers', () => {
 
       const [response] = vi.mocked(c.json).mock.calls[0];
       expect(response.meta.requestId).toBe('unknown');
+    });
+  });
+
+  describe('safeKeyCompare', () => {
+    it('should return true for matching strings', () => {
+      expect(safeKeyCompare('my-secret-key', 'my-secret-key')).toBe(true);
+    });
+
+    it('should return false for non-matching strings', () => {
+      expect(safeKeyCompare('key-a', 'key-b')).toBe(false);
+    });
+
+    it('should return false when first argument is undefined', () => {
+      expect(safeKeyCompare(undefined, 'key')).toBe(false);
+    });
+
+    it('should return false when second argument is undefined', () => {
+      expect(safeKeyCompare('key', undefined)).toBe(false);
+    });
+
+    it('should return false when both arguments are undefined', () => {
+      expect(safeKeyCompare(undefined, undefined)).toBe(false);
+    });
+
+    it('should return false for empty strings', () => {
+      expect(safeKeyCompare('', 'key')).toBe(false);
+      expect(safeKeyCompare('key', '')).toBe(false);
+      expect(safeKeyCompare('', '')).toBe(false);
+    });
+
+    it('should return false for different length strings', () => {
+      expect(safeKeyCompare('short', 'a-much-longer-key')).toBe(false);
     });
   });
 

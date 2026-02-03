@@ -9,7 +9,7 @@ import { createMiddleware } from 'hono/factory';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, safeKeyCompare } from './helpers.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
@@ -111,8 +111,8 @@ const requireDatabaseAdmin = createMiddleware(async (c, next) => {
     return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Database admin operations require ADMIN_API_KEY to be configured' }, 503);
   }
 
-  const providedKey = c.req.header('X-Admin-Key');
-  if (!providedKey || providedKey !== adminKey) {
+  const providedKey = c.req.header('X-Admin-Key') ?? '';
+  if (!safeKeyCompare(providedKey, adminKey)) {
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Valid X-Admin-Key header required for database admin operations' }, 403);
   }
 

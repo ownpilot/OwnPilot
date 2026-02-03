@@ -73,7 +73,7 @@ export function errorHandler(err: Error, c: Context): Response {
     return c.json(response, 400);
   }
 
-  // Handle validation errors thrown as plain Errors (legacy path)
+  // Handle validation errors thrown as plain Errors (from validateBody)
   if (err.message?.startsWith('Validation failed:')) {
     const response: ApiResponse = {
       success: false,

@@ -5,7 +5,7 @@
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { getDebugInfo, debugLog } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, getIntParam, safeKeyCompare } from './helpers.js'
 
 export const debugRoutes = new Hono();
 
@@ -17,8 +17,8 @@ const requireDebugAccess = createMiddleware(async (c, next) => {
     if (!adminKey) {
       return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Debug endpoints require ADMIN_API_KEY in production' }, 503);
     }
-    const providedKey = c.req.header('X-Admin-Key');
-    if (!providedKey || providedKey !== adminKey) {
+    const providedKey = c.req.header('X-Admin-Key') ?? '';
+    if (!safeKeyCompare(providedKey, adminKey)) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Valid X-Admin-Key header required for debug endpoints' }, 403);
     }
   }
