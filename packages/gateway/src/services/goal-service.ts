@@ -273,11 +273,15 @@ export class GoalServiceError extends Error {
 }
 
 // ============================================================================
-// Singleton
+// Singleton (internal — use ServiceRegistry instead)
 // ============================================================================
 
 let instance: GoalService | null = null;
 
+/**
+ * @internal Used only by GoalServiceImpl adapter.
+ * @deprecated Use `getServiceRegistry().get(Services.Goal)` instead.
+ */
 export function getGoalService(): GoalService {
   if (!instance) {
     instance = new GoalService();

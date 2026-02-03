@@ -231,11 +231,15 @@ export class PlanServiceError extends Error {
 }
 
 // ============================================================================
-// Singleton
+// Singleton (internal — use ServiceRegistry instead)
 // ============================================================================
 
 let instance: PlanService | null = null;
 
+/**
+ * @internal Used only by PlanServiceImpl adapter.
+ * @deprecated Use `getServiceRegistry().get(Services.Plan)` instead.
+ */
 export function getPlanService(): PlanService {
   if (!instance) {
     instance = new PlanService();

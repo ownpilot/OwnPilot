@@ -179,11 +179,15 @@ export class TriggerServiceError extends Error {
 }
 
 // ============================================================================
-// Singleton
+// Singleton (internal — use ServiceRegistry instead)
 // ============================================================================
 
 let instance: TriggerService | null = null;
 
+/**
+ * @internal Used only by TriggerServiceImpl adapter.
+ * @deprecated Use `getServiceRegistry().get(Services.Trigger)` instead.
+ */
 export function getTriggerService(): TriggerService {
   if (!instance) {
     instance = new TriggerService();

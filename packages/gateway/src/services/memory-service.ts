@@ -275,11 +275,15 @@ export class MemoryServiceError extends Error {
 }
 
 // ============================================================================
-// Singleton
+// Singleton (internal — use ServiceRegistry instead)
 // ============================================================================
 
 let instance: MemoryService | null = null;
 
+/**
+ * @internal Used only by MemoryServiceImpl adapter.
+ * @deprecated Use `getServiceRegistry().get(Services.Memory)` instead.
+ */
 export function getMemoryService(): MemoryService {
   if (!instance) {
     instance = new MemoryService();

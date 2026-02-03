@@ -271,11 +271,15 @@ export class CustomDataServiceError extends Error {
 }
 
 // ============================================================================
-// Singleton
+// Singleton (internal — use ServiceRegistry instead)
 // ============================================================================
 
 let instance: CustomDataService | null = null;
 
+/**
+ * @internal Used only by DatabaseServiceImpl adapter.
+ * @deprecated Use `getServiceRegistry().get(Services.Database)` instead.
+ */
 export function getCustomDataService(): CustomDataService {
   if (!instance) {
     instance = new CustomDataService();

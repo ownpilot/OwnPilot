@@ -909,7 +909,10 @@ export function createPluginRegistry(storageDir?: string): PluginRegistry {
 }
 
 /**
- * Default plugin registry singleton
+ * Default plugin registry singleton.
+ *
+ * @internal Used by server.ts startup, tool-executor.ts, and PluginServiceImpl adapter.
+ * Prefer `getServiceRegistry().get(Services.Plugin)` for new code.
  */
 let defaultRegistry: PluginRegistry | null = null;
 
