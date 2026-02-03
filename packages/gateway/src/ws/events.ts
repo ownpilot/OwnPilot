@@ -18,7 +18,7 @@ import {
 import type { ServerEvents, ClientEvents } from './types.js';
 import { getLog } from '../services/log.js';
 
-const log = getLog('WSEvents');
+const _log = getLog('WSEvents');
 
 type EventHandler<T = unknown> = (data: T) => void | Promise<void>;
 
