@@ -147,7 +147,7 @@ authRoutes.post('/config/google', async (c) => {
     }>();
 
     if (!body.clientId || !body.clientSecret) {
-      return apiError(c, 'Client ID and Client Secret are required', 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Client ID and Client Secret are required' }, 400);
     }
 
     await settingsRepo.set('google_oauth_client_id', body.clientId);
@@ -160,7 +160,7 @@ authRoutes.post('/config/google', async (c) => {
     return apiResponse(c, { message: 'Google OAuth configuration saved', });
   } catch (error) {
     log.error('Failed to save Google OAuth config:', error);
-    return apiError(c, 'Failed to save configuration', 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: 'Failed to save configuration' }, 500);
   }
 });
 
@@ -185,7 +185,7 @@ authRoutes.get('/google/start', async (c) => {
 
   // Validate service
   if (!['gmail', 'calendar', 'drive'].includes(service)) {
-    return apiError(c, `Invalid service: ${service}`, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid service: ${service}` }, 400);
   }
 
   // Get OAuth configuration
@@ -332,13 +332,13 @@ authRoutes.post('/google/revoke', async (c) => {
     const { integrationId } = body;
 
     if (!integrationId) {
-      return apiError(c, 'Integration ID required', 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Integration ID required' }, 400);
     }
 
     // Get integration
     const integration = await oauthIntegrationsRepo.getById(integrationId);
     if (!integration) {
-      return apiError(c, 'Integration not found', 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Integration not found' }, 404);
     }
 
     // Get tokens for revocation
@@ -368,7 +368,7 @@ authRoutes.post('/google/revoke', async (c) => {
     return apiResponse(c, { message: `${integration.service} disconnected successfully`, });
   } catch (error) {
     log.error('Failed to revoke OAuth:', error);
-    return apiError(c, 'Failed to disconnect', 500);
+    return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: 'Failed to disconnect' }, 500);
   }
 });
 
@@ -381,26 +381,26 @@ authRoutes.post('/google/refresh', async (c) => {
     const { integrationId } = body;
 
     if (!integrationId) {
-      return apiError(c, 'Integration ID required', 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Integration ID required' }, 400);
     }
 
     // Get integration
     const integration = await oauthIntegrationsRepo.getById(integrationId);
     if (!integration) {
-      return apiError(c, 'Integration not found', 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Integration not found' }, 404);
     }
 
     // Get tokens
     const tokens = await oauthIntegrationsRepo.getTokens(integrationId);
     if (!tokens?.refreshToken) {
       await oauthIntegrationsRepo.updateStatus(integrationId, 'expired', 'No refresh token available');
-      return apiError(c, 'No refresh token available', 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'No refresh token available' }, 400);
     }
 
     // Get OAuth configuration
     const config = getGoogleOAuthConfig();
     if (!config) {
-      return apiError(c, 'OAuth not configured', 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'OAuth not configured' }, 400);
     }
 
     // Create OAuth client and refresh
@@ -444,6 +444,6 @@ authRoutes.post('/google/refresh', async (c) => {
       );
     }
 
-    return apiError(c, 'Failed to refresh token', 500);
+    return apiError(c, { code: ERROR_CODES.REFRESH_FAILED, message: 'Failed to refresh token' }, 500);
   }
 });
