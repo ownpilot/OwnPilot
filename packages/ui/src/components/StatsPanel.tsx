@@ -7,7 +7,8 @@
  * - Provider/model info
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import {
   Activity,
   Brain,
@@ -71,17 +72,38 @@ interface StatsPanelProps {
 }
 
 export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
+  const { status: wsStatus, subscribe } = useGateway();
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [costs, setCosts] = useState<CostsData | null>(null);
   const [providerCount, setProviderCount] = useState(0);
   const [modelCount, setModelCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchStats(), 2000);
+  }, []);
+
+  // Polling fallback
   useEffect(() => {
     fetchStats();
     const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, []);
+
+  // WS-triggered refresh
+  useEffect(() => {
+    const unsubs = [
+      subscribe('system:notification', debouncedRefresh),
+      subscribe('channel:message', debouncedRefresh),
+      subscribe('tool:end', debouncedRefresh),
+    ];
+    return () => unsubs.forEach(fn => fn());
+  }, [subscribe, debouncedRefresh]);
 
   const fetchStats = async () => {
     try {
@@ -273,8 +295,17 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
       {/* Footer */}
       <div className="p-4 border-t border-border dark:border-dark-border">
         <div className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted">
-          <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-          <span>Updates every 30s</span>
+          {wsStatus === 'connected' ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span>Live</span>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-text-muted" />
+              <span>Updates every 30s</span>
+            </>
+          )}
         </div>
       </div>
     </aside>

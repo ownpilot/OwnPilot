@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import { Link } from 'react-router-dom';
 import {
   CheckCircle2,
@@ -18,21 +19,43 @@ import { summaryApi } from '../api';
 import type { SummaryData } from '../types';
 
 export function DashboardPage() {
+  const { subscribe } = useGateway();
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetchSummary();
-  }, []);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchSummary = async () => {
     try {
       const data = await summaryApi.get();
       setSummary(data);
+      setLastUpdated(new Date());
     } finally {
       setIsLoading(false);
     }
   };
+
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSummary(), 2000);
+  }, []);
+
+  useEffect(() => {
+    fetchSummary();
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  // WS-triggered refresh
+  useEffect(() => {
+    const unsubs = [
+      subscribe('system:notification', debouncedRefresh),
+      subscribe('channel:message', debouncedRefresh),
+      subscribe('tool:end', debouncedRefresh),
+    ];
+    return () => unsubs.forEach(fn => fn());
+  }, [subscribe, debouncedRefresh]);
 
   if (isLoading) {
     return (
@@ -107,6 +130,11 @@ export function DashboardPage() {
             Your personal assistant overview
           </p>
         </div>
+        {lastUpdated && (
+          <span className="text-xs text-text-muted dark:text-dark-text-muted">
+            Last updated {lastUpdated.toLocaleTimeString()}
+          </span>
+        )}
       </header>
 
       {/* Content */}

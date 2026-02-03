@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
 import {
   MessageSquare,
   Inbox,
@@ -38,6 +39,7 @@ import {
   Info,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
+import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
 
 interface NavItem {
   to: string;
@@ -136,7 +138,7 @@ const bottomItems: NavItem[] = [
   { to: '/profile', icon: UserCircle, label: 'Profile' },
 ];
 
-function NavItemLink({ item, compact = false }: { item: NavItem; compact?: boolean }) {
+function NavItemLink({ item, compact = false, badge }: { item: NavItem; compact?: boolean; badge?: number }) {
   const Icon = item.icon;
   return (
     <NavLink
@@ -151,7 +153,12 @@ function NavItemLink({ item, compact = false }: { item: NavItem; compact?: boole
       }
     >
       <Icon className="w-4 h-4 shrink-0" />
-      <span className="truncate">{item.label}</span>
+      <span className="truncate flex-1">{item.label}</span>
+      {badge != null && badge > 0 && (
+        <span className="ml-auto min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full bg-error text-white text-[10px] font-bold leading-none">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </NavLink>
   );
 }
@@ -216,12 +223,42 @@ function ModeToggle({ isAdvanced, onToggle }: { isAdvanced: boolean; onToggle: (
   );
 }
 
+const CONNECTION_STYLES: Record<ConnectionStatus, { color: string; pulse: boolean; label: string }> = {
+  connected: { color: 'bg-success', pulse: false, label: 'Connected' },
+  connecting: { color: 'bg-warning', pulse: true, label: 'Connecting...' },
+  disconnected: { color: 'bg-error', pulse: false, label: 'Disconnected' },
+  error: { color: 'bg-error', pulse: false, label: 'Connection Error' },
+};
+
+function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
+  const style = CONNECTION_STYLES[status];
+  return (
+    <div className="flex items-center gap-2 px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">
+      <span className={`w-1.5 h-1.5 rounded-full ${style.color} ${style.pulse ? 'animate-pulse' : ''}`} />
+      <span>{style.label}</span>
+    </div>
+  );
+}
+
 export function Layout() {
+  const { status: wsStatus } = useGateway();
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(false);
   const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
     return localStorage.getItem('ownpilot-advanced-mode') === 'true';
   });
+  const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({ inbox: 0, tasks: 0 });
+  const handleBadgeUpdate = useCallback(
+    (updater: (prev: BadgeCounts) => BadgeCounts) => setBadgeCounts(updater),
+    [],
+  );
   const location = useLocation();
+
+  // Reset inbox badge when navigating to /inbox
+  useEffect(() => {
+    if (location.pathname === '/inbox' || location.pathname.startsWith('/inbox/')) {
+      setBadgeCounts(prev => prev.inbox === 0 ? prev : { ...prev, inbox: 0 });
+    }
+  }, [location.pathname]);
 
   // Persist mode preference
   useEffect(() => {
@@ -276,7 +313,11 @@ export function Layout() {
           {/* Main Items */}
           <div className="space-y-0.5 mb-3">
             {mainItems.map((item) => (
-              <NavItemLink key={item.to} item={item} />
+              <NavItemLink
+                key={item.to}
+                item={item}
+                badge={item.to === '/inbox' ? badgeCounts.inbox : undefined}
+              />
             ))}
           </div>
 
@@ -312,10 +353,7 @@ export function Layout() {
             isAdvanced={isAdvancedMode}
             onToggle={() => setIsAdvancedMode(!isAdvancedMode)}
           />
-          <div className="flex items-center gap-2 px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">
-            <span className="w-1.5 h-1.5 rounded-full bg-success" />
-            <span>Connected</span>
-          </div>
+          <ConnectionIndicator status={wsStatus} />
         </div>
       </aside>
 
@@ -329,6 +367,9 @@ export function Layout() {
         isCollapsed={isStatsPanelCollapsed}
         onToggle={() => setIsStatsPanelCollapsed(!isStatsPanelCollapsed)}
       />
+
+      {/* Realtime WS→UI wiring (invisible) */}
+      <RealtimeBridge onBadgeUpdate={handleBadgeUpdate} />
     </div>
   );
 }
