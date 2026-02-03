@@ -140,15 +140,10 @@ vi.mock('./personal-data-tools.js', () => ({
 
 vi.mock('../tools/index.js', () => ({
   CHANNEL_TOOLS: [],
-  setChannelManager: vi.fn(),
   TRIGGER_TOOLS: [],
   executeTriggerTool: vi.fn(),
   PLAN_TOOLS: [],
   executePlanTool: vi.fn(),
-}));
-
-vi.mock('../channels/manager.js', () => ({
-  channelManager: {},
 }));
 
 vi.mock('../services/config-tools.js', () => ({

@@ -14,8 +14,8 @@ import type {
   WorkspaceAgentConfig,
 } from './types.js';
 import { gatewayEvents } from '../ws/events.js';
-import { channelManager } from '../channels/manager.js';
-import type { IncomingMessage, OutgoingMessage } from '../ws/types.js';
+import { getChannelService } from '@ownpilot/core';
+import type { IncomingMessage } from '../ws/types.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('WorkspaceManager');
@@ -193,13 +193,12 @@ class WorkspaceInstance implements Workspace {
       this.emit('streamEnd', responseId, responseContent);
 
       // Send to channel
-      if (channelId && channelManager.has(channelId)) {
-        const outgoing: OutgoingMessage = {
-          channelId,
-          content: responseContent,
-        };
-
-        await channelManager.send(channelId, outgoing);
+      const channelService = getChannelService();
+      if (channelId && channelService.getChannel(channelId)) {
+        await channelService.send(channelId, {
+          platformChatId: channelId,
+          text: responseContent,
+        });
       }
 
       this.setState('idle');

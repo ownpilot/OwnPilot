@@ -194,10 +194,3 @@ export const CHANNEL_TOOLS: Array<{ definition: ToolDefinition; executor: ToolEx
  */
 export const CHANNEL_TOOL_NAMES = CHANNEL_TOOLS.map((t) => t.definition.name);
 
-/**
- * @deprecated No longer needed - channel tools use getChannelService() directly.
- * Kept as no-op for backward compatibility with existing callers.
- */
-export function setChannelManager(_manager: unknown): void {
-  // No-op: channel tools now use getChannelService() singleton
-}
