@@ -135,7 +135,7 @@ export function CustomDataPage() {
               Tables
             </h3>
             {isLoading ? (
-              <p className="text-sm text-text-muted dark:text-dark-text-muted p-2 animate-pulse">Loading...</p>
+              <LoadingSpinner size="sm" message="Loading..." />
             ) : tables.length === 0 ? (
               <p className="text-sm text-text-muted dark:text-dark-text-muted p-2">
                 No tables yet. Ask AI to create one!

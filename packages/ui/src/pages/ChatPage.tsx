@@ -264,7 +264,7 @@ export function ChatPage() {
               className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors disabled:opacity-50"
             >
               {isLoadingModels ? (
-                <span className="text-text-muted dark:text-dark-text-muted">Loading...</span>
+                <span className="text-text-muted dark:text-dark-text-muted animate-pulse">Loading...</span>
               ) : (
                 <>
                   <span className="font-medium text-text-primary dark:text-dark-text-primary">

@@ -359,9 +359,7 @@ function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
-            <div className="flex items-center justify-center h-40">
-              <p className="text-text-muted dark:text-dark-text-muted">Loading...</p>
-            </div>
+            <LoadingSpinner size="sm" message="Loading..." />
           ) : step === 'info' ? (
             <div className="space-y-4">
               <div>
@@ -770,9 +768,7 @@ function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalProps) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
-            <div className="flex items-center justify-center h-40">
-              <p className="text-text-muted dark:text-dark-text-muted">Loading...</p>
-            </div>
+            <LoadingSpinner size="sm" message="Loading..." />
           ) : step === 'info' ? (
             <div className="space-y-4">
               <div>

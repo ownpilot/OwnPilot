@@ -18,6 +18,7 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+nul
 
 # Env - NEVER commit real credentials!
 .env
