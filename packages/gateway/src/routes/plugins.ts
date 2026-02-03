@@ -208,7 +208,7 @@ pluginsRoutes.get('/:id', async (c) => {
     toolsDetailed,
     handlersInfo,
     config: plugin.config.settings,
-    configSchema: plugin.manifest.pluginConfigSchema ?? plugin.manifest.configSchema,
+    configSchema: plugin.manifest.pluginConfigSchema,
   });
 });
 

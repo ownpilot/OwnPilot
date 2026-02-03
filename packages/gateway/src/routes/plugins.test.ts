@@ -29,7 +29,6 @@ const samplePlugin = {
     pluginConfigSchema: [
       { name: 'apiUrl', type: 'text', label: 'API URL' },
     ],
-    configSchema: [],
     defaultConfig: { apiUrl: 'http://localhost' },
     requiredServices: [
       { name: 'gmail', displayName: 'Gmail', category: 'email' },
