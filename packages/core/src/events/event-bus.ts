@@ -82,6 +82,9 @@ export interface IEventBus {
 // Implementation
 // ============================================================================
 
+/** Maximum number of listeners allowed per event type / category / pattern. */
+const MAX_LISTENERS_PER_EVENT = 100;
+
 export class EventBus implements IEventBus {
   private handlers = new Map<string, Set<EventHandler>>();
   private categoryHandlers = new Map<EventCategory, Set<EventHandler>>();
@@ -135,12 +138,20 @@ export class EventBus implements IEventBus {
     if (!this.categoryHandlers.has(category)) {
       this.categoryHandlers.set(category, new Set());
     }
-    this.categoryHandlers.get(category)!.add(handler);
+    const set = this.categoryHandlers.get(category)!;
+    if (set.size >= MAX_LISTENERS_PER_EVENT) {
+      console.warn(
+        `[EventBus] Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for category "${category}". ` +
+        `Handler not added. Possible memory leak.`,
+      );
+      return () => {};
+    }
+    set.add(handler);
     return () => {
-      const set = this.categoryHandlers.get(category);
-      if (set) {
-        set.delete(handler);
-        if (set.size === 0) this.categoryHandlers.delete(category);
+      const s = this.categoryHandlers.get(category);
+      if (s) {
+        s.delete(handler);
+        if (s.size === 0) this.categoryHandlers.delete(category);
       }
     };
   }
@@ -149,12 +160,20 @@ export class EventBus implements IEventBus {
     if (!this.patternHandlers.has(pattern)) {
       this.patternHandlers.set(pattern, new Set());
     }
-    this.patternHandlers.get(pattern)!.add(handler);
+    const set = this.patternHandlers.get(pattern)!;
+    if (set.size >= MAX_LISTENERS_PER_EVENT) {
+      console.warn(
+        `[EventBus] Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for pattern "${pattern}". ` +
+        `Handler not added. Possible memory leak.`,
+      );
+      return () => {};
+    }
+    set.add(handler);
     return () => {
-      const set = this.patternHandlers.get(pattern);
-      if (set) {
-        set.delete(handler);
-        if (set.size === 0) this.patternHandlers.delete(pattern);
+      const s = this.patternHandlers.get(pattern);
+      if (s) {
+        s.delete(handler);
+        if (s.size === 0) this.patternHandlers.delete(pattern);
       }
     };
   }
@@ -192,7 +211,15 @@ export class EventBus implements IEventBus {
     if (!this.handlers.has(type)) {
       this.handlers.set(type, new Set());
     }
-    this.handlers.get(type)!.add(handler);
+    const set = this.handlers.get(type)!;
+    if (set.size >= MAX_LISTENERS_PER_EVENT) {
+      console.warn(
+        `[EventBus] Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for "${type}". ` +
+        `Handler not added. Possible memory leak.`,
+      );
+      return () => {};
+    }
+    set.add(handler);
     return () => this.off(type, handler);
   }
 

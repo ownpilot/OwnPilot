@@ -72,6 +72,9 @@ interface TapEntry {
 
 const DEFAULT_PRIORITY = 10;
 
+/** Maximum number of tap entries allowed per hook type. */
+const MAX_TAPS_PER_HOOK = 100;
+
 export class HookBus implements IHookBus {
   private hooks = new Map<string, TapEntry[]>();
 
@@ -113,8 +116,16 @@ export class HookBus implements IHookBus {
       this.hooks.set(hook, []);
     }
 
-    const entry: TapEntry = { handler, priority };
     const entries = this.hooks.get(hook)!;
+    if (entries.length >= MAX_TAPS_PER_HOOK) {
+      console.warn(
+        `[HookBus] Max taps (${MAX_TAPS_PER_HOOK}) reached for "${hook}". ` +
+        `Handler not added. Possible memory leak.`,
+      );
+      return () => {};
+    }
+
+    const entry: TapEntry = { handler, priority };
     entries.push(entry);
 
     // Sort by priority (lower runs first)

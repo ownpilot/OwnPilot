@@ -632,6 +632,10 @@ const agentCache = new Map<string, Agent>();
 const agentConfigCache = new Map<string, AgentConfig>();
 const chatAgentCache = new Map<string, Agent>(); // Chat agents keyed by provider:model
 
+// In-flight creation promises to prevent duplicate concurrent creation
+const pendingAgents = new Map<string, Promise<Agent>>();
+const pendingChatAgents = new Map<string, Promise<Agent>>();
+
 /**
  * Clear all agent caches
  * Call this when custom tools, plugins, or other dynamic resources change
@@ -640,6 +644,8 @@ export function invalidateAgentCache(): void {
   agentCache.clear();
   agentConfigCache.clear();
   chatAgentCache.clear();
+  pendingAgents.clear();
+  pendingChatAgents.clear();
   log.info('Agent cache invalidated due to tool/plugin changes');
 }
 
@@ -1075,14 +1081,25 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 }
 
 /**
- * Get or create runtime Agent instance
+ * Get or create runtime Agent instance.
+ * Uses promise-based deduplication so concurrent requests for the same agent
+ * share a single createAgentFromRecord call instead of racing.
  */
 async function getOrCreateAgentInstance(record: AgentRecord): Promise<Agent> {
-  let agent = agentCache.get(record.id);
-  if (!agent) {
-    agent = await createAgentFromRecord(record);
-  }
-  return agent;
+  const cached = agentCache.get(record.id);
+  if (cached) return cached;
+
+  // Check if creation is already in-flight
+  const pending = pendingAgents.get(record.id);
+  if (pending) return pending;
+
+  // Start creation and store the promise for deduplication
+  const promise = createAgentFromRecord(record).finally(() => {
+    pendingAgents.delete(record.id);
+  });
+  pendingAgents.set(record.id, promise);
+
+  return promise;
 }
 
 export const agentRoutes = new Hono();
@@ -1394,82 +1411,127 @@ agentRoutes.post('/resync', async (c) => {
 });
 
 /**
- * Get agent from store (database + cache)
+ * Get agent from store (database + cache).
+ * Uses promise-based deduplication to prevent concurrent creation races.
  */
 export async function getAgent(id: string): Promise<Agent | undefined> {
   // First check cache
-  let agent = agentCache.get(id);
-  if (agent) return agent;
+  const cached = agentCache.get(id);
+  if (cached) return cached;
+
+  // Check if creation is already in-flight
+  const pending = pendingAgents.get(id);
+  if (pending) {
+    try {
+      return await pending;
+    } catch {
+      return undefined;
+    }
+  }
 
   // Try to load from database
   const record = await agentsRepo.getById(id);
   if (!record) return undefined;
 
-  // Create runtime instance
+  // Create runtime instance with deduplication
+  const promise = createAgentFromRecord(record).finally(() => {
+    pendingAgents.delete(id);
+  });
+  pendingAgents.set(id, promise);
+
   try {
-    agent = await createAgentFromRecord(record);
-    return agent;
+    return await promise;
   } catch {
     return undefined;
   }
 }
 
 /**
- * Get or create default agent
+ * Get or create default agent.
+ * Uses promise-based deduplication to prevent concurrent creation races.
  */
 export async function getOrCreateDefaultAgent(): Promise<Agent> {
   const defaultId = 'default';
 
   // Check cache first
-  let defaultAgent = agentCache.get(defaultId);
-  if (defaultAgent) return defaultAgent;
+  const cached = agentCache.get(defaultId);
+  if (cached) return cached;
 
-  // Check database
-  let record = await agentsRepo.getById(defaultId);
+  // Check if creation is already in-flight
+  const pending = pendingAgents.get(defaultId);
+  if (pending) return pending;
 
-  if (!record) {
-    // Find first configured provider dynamically
-    const provider = await getDefaultProvider();
-    if (!provider) {
-      throw new Error('No API key configured for any provider. Configure a provider in Settings.');
+  // Start creation and store the promise for deduplication
+  const promise = (async () => {
+    // Check database
+    let record = await agentsRepo.getById(defaultId);
+
+    if (!record) {
+      // Find first configured provider dynamically
+      const provider = await getDefaultProvider();
+      if (!provider) {
+        throw new Error('No API key configured for any provider. Configure a provider in Settings.');
+      }
+
+      const model = await getDefaultModel(provider);
+      if (!model) {
+        throw new Error(`No model available for provider: ${provider}`);
+      }
+
+      record = await agentsRepo.create({
+        id: defaultId,
+        name: 'Personal Assistant',
+        systemPrompt: 'You are a helpful personal AI assistant. You help the user with their daily tasks, remember their preferences, and proactively assist them.',
+        provider,
+        model,
+        config: {
+          maxTokens: 8192,
+          temperature: 0.7,
+          maxTurns: 25,
+          maxToolCalls: 200,
+        },
+      });
     }
 
-    const model = await getDefaultModel(provider);
-    if (!model) {
-      throw new Error(`No model available for provider: ${provider}`);
-    }
+    // Create runtime instance with memory injection
+    return createAgentFromRecord(record);
+  })().finally(() => {
+    pendingAgents.delete(defaultId);
+  });
+  pendingAgents.set(defaultId, promise);
 
-    record = await agentsRepo.create({
-      id: defaultId,
-      name: 'Personal Assistant',
-      systemPrompt: 'You are a helpful personal AI assistant. You help the user with their daily tasks, remember their preferences, and proactively assist them.',
-      provider,
-      model,
-      config: {
-        maxTokens: 8192,
-        temperature: 0.7,
-        maxTurns: 25,
-        maxToolCalls: 200,
-      },
-    });
-  }
-
-  // Create runtime instance with memory injection
-  defaultAgent = await createAgentFromRecord(record);
-  return defaultAgent;
+  return promise;
 }
 
 /**
- * Get or create an agent for chat with specific provider and model
- * This is used when the user selects a provider/model in the chat UI
+ * Get or create an agent for chat with specific provider and model.
+ * This is used when the user selects a provider/model in the chat UI.
+ * Uses promise-based deduplication to prevent concurrent creation races.
  */
 export async function getOrCreateChatAgent(provider: string, model: string): Promise<Agent> {
   const cacheKey = `chat:${provider}:${model}`;
 
   // Check cache first
-  let agent = chatAgentCache.get(cacheKey);
-  if (agent) return agent;
+  const cached = chatAgentCache.get(cacheKey);
+  if (cached) return cached;
 
+  // Check if creation is already in-flight
+  const pending = pendingChatAgents.get(cacheKey);
+  if (pending) return pending;
+
+  // Start creation and store the promise for deduplication
+  const promise = createChatAgentInstance(provider, model, cacheKey).finally(() => {
+    pendingChatAgents.delete(cacheKey);
+  });
+  pendingChatAgents.set(cacheKey, promise);
+
+  return promise;
+}
+
+/**
+ * Internal: Create a chat agent instance (extracted for deduplication wrapper).
+ */
+async function createChatAgentInstance(provider: string, model: string, cacheKey: string): Promise<Agent> {
   // Get API key for the provider
   const apiKey = await getProviderApiKey(provider);
   if (!apiKey) {
@@ -1793,7 +1855,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   };
 
   // Create and cache the agent
-  agent = createAgent(config, { tools });
+  const agent = createAgent(config, { tools });
   chatAgentCache.set(cacheKey, agent);
 
   return agent;
