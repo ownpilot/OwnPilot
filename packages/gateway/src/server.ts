@@ -183,13 +183,13 @@ async function main() {
   await initializeConfigServicesRepo();
   await seedConfigServices();
 
-  // 5. Register Config Center in registry
+  // 5. Config Center
   registry.register(Services.Config, gatewayConfigCenter);
 
-  // 6. Register Database Service (wraps CustomDataService)
+  // 6. Database Service (wraps CustomDataService)
   registry.register(Services.Database, createDatabaseServiceImpl());
 
-  // 6b. Register Resource Service (wraps ResourceRegistry)
+  // 7. Resource Service (wraps ResourceRegistry)
   registry.register(Services.Resource, createResourceServiceImpl());
 
   // Initialize Plugins repository
@@ -219,36 +219,36 @@ async function main() {
   const pluginRegistry = await getDefaultPluginRegistry();
   const channelService = createChannelServiceImpl(pluginRegistry);
 
-  // Register both as singleton and in ServiceRegistry
+  // 8. Channel Service (unified channel access via plugin registry)
   setChannelService(channelService);
   registry.register(Services.Channel, channelService);
   log.info('Channel Service initialized.');
 
-  // 7. Register Plugin Service (wraps PluginRegistry)
+  // 9. Plugin Service (wraps PluginRegistry)
   registry.register(Services.Plugin, await createPluginService());
 
-  // 8. Register Memory Service (wraps MemoryService)
+  // 10. Memory Service (wraps MemoryService)
   registry.register(Services.Memory, createMemoryServiceImpl());
 
-  // 9. Register Goal Service (wraps GoalService)
+  // 11. Goal Service (wraps GoalService)
   registry.register(Services.Goal, createGoalServiceImpl());
 
-  // 10. Register Trigger Service (wraps TriggerService)
+  // 12. Trigger Service (wraps TriggerService)
   registry.register(Services.Trigger, createTriggerServiceImpl());
 
-  // 11. Register Plan Service (wraps PlanService)
+  // 13. Plan Service (wraps PlanService)
   registry.register(Services.Plan, createPlanServiceImpl());
 
-  // 12. Register Tool Service in registry (wraps ToolRegistry)
+  // 14. Tool Service (wraps ToolRegistry)
   registry.register(Services.Tool, createToolService());
 
-  // 13. Register Provider Service in registry
+  // 15. Provider Service
   registry.register(Services.Provider, createProviderService());
 
-  // 14. Register Audit Service in registry
+  // 16. Audit Service
   registry.register(Services.Audit, createAuditService());
 
-  // 15. Register Workspace Service (wraps WorkspaceManager)
+  // 17. Workspace Service (wraps WorkspaceManager)
   registry.register(Services.Workspace, createWorkspaceServiceImpl());
 
   // Start trigger engine (proactive automation)
