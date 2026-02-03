@@ -10,7 +10,6 @@
  */
 
 import { Hono } from 'hono';
-import { HTTPException } from 'hono/http-exception';
 import {
   TasksRepository,
   BookmarksRepository,
@@ -33,7 +32,7 @@ import {
   type UpdateContactInput,
   type ContactQuery,
 } from '../db/repositories/index.js';
-import { apiResponse, getUserId, getIntParam, getOptionalIntParam } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, getOptionalIntParam } from './helpers.js'
 
 export const personalDataRoutes = new Hono();
 
@@ -88,7 +87,7 @@ tasksRoutes.get('/:id', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const task = await repo.get(c.req.param('id'));
   if (!task) {
-    throw new HTTPException(404, { message: 'Task not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
   }
   return apiResponse(c, task);
 });
@@ -105,7 +104,7 @@ tasksRoutes.patch('/:id', async (c) => {
   const body = await c.req.json<UpdateTaskInput>();
   const task = await repo.update(c.req.param('id'), body);
   if (!task) {
-    throw new HTTPException(404, { message: 'Task not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
   }
   return apiResponse(c, task);
 });
@@ -114,7 +113,7 @@ tasksRoutes.post('/:id/complete', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const task = await repo.complete(c.req.param('id'));
   if (!task) {
-    throw new HTTPException(404, { message: 'Task not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
   }
   return apiResponse(c, task);
 });
@@ -123,7 +122,7 @@ tasksRoutes.delete('/:id', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const deleted = await repo.delete(c.req.param('id'));
   if (!deleted) {
-    throw new HTTPException(404, { message: 'Task not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
   }
   return apiResponse(c, { deleted: true });
 });
@@ -171,7 +170,7 @@ bookmarksRoutes.get('/:id', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
   const bookmark = await repo.get(c.req.param('id'));
   if (!bookmark) {
-    throw new HTTPException(404, { message: 'Bookmark not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
   }
   return apiResponse(c, bookmark);
 });
@@ -188,7 +187,7 @@ bookmarksRoutes.patch('/:id', async (c) => {
   const body = await c.req.json<UpdateBookmarkInput>();
   const bookmark = await repo.update(c.req.param('id'), body);
   if (!bookmark) {
-    throw new HTTPException(404, { message: 'Bookmark not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
   }
   return apiResponse(c, bookmark);
 });
@@ -197,7 +196,7 @@ bookmarksRoutes.post('/:id/favorite', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
   const bookmark = await repo.toggleFavorite(c.req.param('id'));
   if (!bookmark) {
-    throw new HTTPException(404, { message: 'Bookmark not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
   }
   return apiResponse(c, bookmark);
 });
@@ -206,7 +205,7 @@ bookmarksRoutes.delete('/:id', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
   const deleted = await repo.delete(c.req.param('id'));
   if (!deleted) {
-    throw new HTTPException(404, { message: 'Bookmark not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
   }
   return apiResponse(c, { deleted: true });
 });
@@ -254,7 +253,7 @@ notesRoutes.get('/:id', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const note = await repo.get(c.req.param('id'));
   if (!note) {
-    throw new HTTPException(404, { message: 'Note not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
   return apiResponse(c, note);
 });
@@ -271,7 +270,7 @@ notesRoutes.patch('/:id', async (c) => {
   const body = await c.req.json<UpdateNoteInput>();
   const note = await repo.update(c.req.param('id'), body);
   if (!note) {
-    throw new HTTPException(404, { message: 'Note not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
   return apiResponse(c, note);
 });
@@ -280,7 +279,7 @@ notesRoutes.post('/:id/pin', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const note = await repo.togglePin(c.req.param('id'));
   if (!note) {
-    throw new HTTPException(404, { message: 'Note not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
   return apiResponse(c, note);
 });
@@ -289,7 +288,7 @@ notesRoutes.post('/:id/archive', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const note = await repo.archive(c.req.param('id'));
   if (!note) {
-    throw new HTTPException(404, { message: 'Note not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
   return apiResponse(c, note);
 });
@@ -298,7 +297,7 @@ notesRoutes.post('/:id/unarchive', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const note = await repo.unarchive(c.req.param('id'));
   if (!note) {
-    throw new HTTPException(404, { message: 'Note not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
   return apiResponse(c, note);
 });
@@ -307,7 +306,7 @@ notesRoutes.delete('/:id', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const deleted = await repo.delete(c.req.param('id'));
   if (!deleted) {
-    throw new HTTPException(404, { message: 'Note not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
   return apiResponse(c, { deleted: true });
 });
@@ -356,7 +355,7 @@ calendarRoutes.get('/:id', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
   const event = await repo.get(c.req.param('id'));
   if (!event) {
-    throw new HTTPException(404, { message: 'Event not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Event not found' }, 404);
   }
   return apiResponse(c, event);
 });
@@ -373,7 +372,7 @@ calendarRoutes.patch('/:id', async (c) => {
   const body = await c.req.json<UpdateEventInput>();
   const event = await repo.update(c.req.param('id'), body);
   if (!event) {
-    throw new HTTPException(404, { message: 'Event not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Event not found' }, 404);
   }
   return apiResponse(c, event);
 });
@@ -382,7 +381,7 @@ calendarRoutes.delete('/:id', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
   const deleted = await repo.delete(c.req.param('id'));
   if (!deleted) {
-    throw new HTTPException(404, { message: 'Event not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Event not found' }, 404);
   }
   return apiResponse(c, { deleted: true });
 });
@@ -444,7 +443,7 @@ contactsRoutes.get('/:id', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const contact = await repo.get(c.req.param('id'));
   if (!contact) {
-    throw new HTTPException(404, { message: 'Contact not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
   }
   return apiResponse(c, contact);
 });
@@ -461,7 +460,7 @@ contactsRoutes.patch('/:id', async (c) => {
   const body = await c.req.json<UpdateContactInput>();
   const contact = await repo.update(c.req.param('id'), body);
   if (!contact) {
-    throw new HTTPException(404, { message: 'Contact not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
   }
   return apiResponse(c, contact);
 });
@@ -470,7 +469,7 @@ contactsRoutes.post('/:id/favorite', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const contact = await repo.toggleFavorite(c.req.param('id'));
   if (!contact) {
-    throw new HTTPException(404, { message: 'Contact not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
   }
   return apiResponse(c, contact);
 });
@@ -479,7 +478,7 @@ contactsRoutes.delete('/:id', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const deleted = await repo.delete(c.req.param('id'));
   if (!deleted) {
-    throw new HTTPException(404, { message: 'Contact not found' });
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
   }
   return apiResponse(c, { deleted: true });
 });
