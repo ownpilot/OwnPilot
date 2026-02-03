@@ -42,8 +42,7 @@ import {
   executeActiveCustomTool,
   getActiveCustomToolDefinitions,
 } from './custom-tools.js';
-import { CHANNEL_TOOLS, setChannelManager, TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool } from '../tools/index.js';
-import { channelManager } from '../channels/manager.js';
+import { CHANNEL_TOOLS, TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import {
   traceToolCallStart,
@@ -954,7 +953,6 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   log.info(`Registered ${activeCustomToolDefs.length} active custom tools`);
 
   // Register channel tools
-  setChannelManager(channelManager);
   for (const { definition, executor } of CHANNEL_TOOLS) {
     tools.register(definition, executor);
   }
@@ -1736,7 +1734,6 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   }
 
   // Register channel tools
-  setChannelManager(channelManager);
   for (const { definition, executor } of CHANNEL_TOOLS) {
     tools.register(definition, executor);
   }

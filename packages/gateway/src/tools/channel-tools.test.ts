@@ -48,7 +48,6 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 
 // Import after mocks
 const {
-  setChannelManager,
   sendChannelMessageExecutor,
   listChannelsExecutor,
   CHANNEL_TOOLS,
@@ -263,14 +262,4 @@ describe('Channel Tools', () => {
     });
   });
 
-  // ========================================================================
-  // setChannelManager (deprecated no-op)
-  // ========================================================================
-
-  describe('setChannelManager', () => {
-    it('is a no-op function for backward compatibility', () => {
-      expect(() => setChannelManager(null)).not.toThrow();
-      expect(() => setChannelManager({})).not.toThrow();
-    });
-  });
 });

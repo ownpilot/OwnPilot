@@ -12,7 +12,7 @@ import type { Http2SecureServer, Http2Server } from 'node:http2';
 import type { ClientEvents, WSMessage, Channel } from './types.js';
 import { sessionManager } from './session.js';
 import { ClientEventHandler } from './events.js';
-import { channelManager } from '../channels/index.js';
+import { getChannelService } from '@ownpilot/core';
 import {
   WS_PORT,
   WS_HEARTBEAT_INTERVAL_MS,
@@ -377,11 +377,14 @@ export class WSGateway {
           ...config,
         };
 
-        // Connect the channel using the channel manager
-        const adapter = await channelManager.connect(fullConfig);
+        // Connect the channel using IChannelService
+        const service = getChannelService();
+        const pluginId = fullConfig.id ?? `channel.${fullConfig.type}`;
+        await service.connect(pluginId);
 
-        if (!adapter) {
-          throw new Error(`Channel plugin ${channelId} not found`);
+        const channelApi = service.getChannel(pluginId);
+        if (!channelApi) {
+          throw new Error(`Channel plugin ${pluginId} not found`);
         }
 
         // Subscribe this session to the channel
@@ -391,10 +394,10 @@ export class WSGateway {
           // Send success response
           sessionManager.send(sessionId, 'channel:connected', {
             channel: {
-              id: adapter.id,
-              type: adapter.type,
-              name: adapter.name,
-              status: adapter.status,
+              id: pluginId,
+              type: channelApi.getPlatform(),
+              name: pluginId,
+              status: channelApi.getStatus(),
               connectedAt: new Date(),
               config: {},
             },
@@ -419,7 +422,7 @@ export class WSGateway {
       log.info('Channel disconnect', { data });
 
       try {
-        await channelManager.disconnect(data.channelId);
+        await getChannelService().disconnect(data.channelId);
 
         if (sessionId) {
           sessionManager.unsubscribeFromChannel(sessionId, data.channelId);
@@ -470,7 +473,15 @@ export class WSGateway {
       log.info('Channel send', { data });
 
       try {
-        const messageId = await channelManager.send(data.message.channelId, data.message);
+        // Parse legacy "adapterId:chatId" format
+        const cid = data.message.channelId;
+        const parts = cid.split(':');
+        const chatId = parts.length > 1 ? parts.slice(1).join(':') : cid;
+        const messageId = await getChannelService().send(cid, {
+          platformChatId: chatId,
+          text: data.message.content,
+          replyToId: data.message.replyToId,
+        });
 
         if (sessionId) {
           sessionManager.send(sessionId, 'channel:message:sent', {
@@ -493,15 +504,29 @@ export class WSGateway {
     this.clientHandler.handle('channel:list', async (_data, sessionId) => {
       log.info('Channel list requested');
 
-      const adapters = channelManager.getAll();
-      const channels: Channel[] = adapters.map((adapter) => ({
-        id: adapter.id,
-        type: adapter.type,
-        name: adapter.name,
-        status: adapter.status,
-        connectedAt: adapter.status === 'connected' ? new Date() : undefined,
+      const service = getChannelService();
+      const channelInfos = service.listChannels();
+      const channels: Channel[] = channelInfos.map((ch) => ({
+        id: ch.pluginId,
+        type: ch.platform,
+        name: ch.name,
+        status: ch.status,
+        connectedAt: ch.status === 'connected' ? new Date() : undefined,
         config: {},
       }));
+
+      // Compute status summary
+      const byType: Record<string, number> = {};
+      for (const ch of channelInfos) {
+        byType[ch.platform] = (byType[ch.platform] ?? 0) + 1;
+      }
+      const summary = {
+        total: channelInfos.length,
+        connected: channelInfos.filter((c) => c.status === 'connected').length,
+        disconnected: channelInfos.filter((c) => c.status === 'disconnected').length,
+        error: channelInfos.filter((c) => c.status === 'error').length,
+        byType,
+      };
 
       // Send channel list to requester
       if (sessionId) {
@@ -510,7 +535,7 @@ export class WSGateway {
           type: 'info',
           message: JSON.stringify({
             channels,
-            summary: channelManager.getStatus(),
+            summary,
           }),
         });
 

@@ -23,7 +23,7 @@ import {
   type TaskNotificationEvent,
 } from '@ownpilot/core';
 import type { NotificationRequest } from '@ownpilot/core';
-import { channelManager } from '../channels/manager.js';
+import { getChannelService } from '@ownpilot/core';
 import { getOrCreateDefaultAgent } from '../routes/agents.js';
 import { getDataPaths } from '../paths/index.js';
 import { getLog } from '../services/log.js';
@@ -183,29 +183,36 @@ async function handleSchedulerNotification(
   const message = `${notification.content.title}\n\n${notification.content.body}`;
 
   // Send to each configured channel
+  const service = getChannelService();
   for (const channelId of channels) {
     try {
-      // Check if it's a channel type (e.g., "telegram") or specific channel ID
-      let targetChannel = channelManager.get(channelId);
+      // Check if it's a specific channel ID first
+      let targetPluginId: string | undefined;
+      let targetPlatform: string | undefined;
+      const directChannel = service.getChannel(channelId);
 
-      if (!targetChannel) {
-        // Try to find a connected channel of that type
-        const channelsByType = channelManager.getByType(channelId as 'telegram' | 'discord' | 'slack');
-        const connectedChannel = channelsByType.find((c) => c.status === 'connected');
-        if (connectedChannel) {
-          targetChannel = connectedChannel;
+      if (directChannel) {
+        targetPluginId = channelId;
+        targetPlatform = directChannel.getPlatform();
+      } else {
+        // Try to find a connected channel of that platform type
+        const byPlatform = service.listChannels().filter((ch) => ch.platform === channelId);
+        const connected = byPlatform.find((ch) => ch.status === 'connected');
+        if (connected) {
+          targetPluginId = connected.pluginId;
+          targetPlatform = connected.platform;
         }
       }
 
-      if (targetChannel) {
+      if (targetPluginId) {
         try {
-          await channelManager.send(targetChannel.id, {
-            content: message,
-            channelId: targetChannel.id,
+          await service.send(targetPluginId, {
+            platformChatId: targetPluginId,
+            text: message,
           });
-          log.info(`[Scheduler] Notification sent to ${targetChannel.type}:${targetChannel.id}`);
+          log.info(`[Scheduler] Notification sent to ${targetPlatform}:${targetPluginId}`);
         } catch (sendError) {
-          log.warn(`[Scheduler] Failed to send to ${targetChannel.type}:${targetChannel.id}`, sendError);
+          log.warn(`[Scheduler] Failed to send to ${targetPlatform}:${targetPluginId}`, sendError);
         }
       } else {
         log.warn(`[Scheduler] Channel not found or not connected: ${channelId}`);
