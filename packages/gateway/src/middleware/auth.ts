@@ -4,10 +4,10 @@
  */
 
 import { createMiddleware } from 'hono/factory';
-import { HTTPException } from 'hono/http-exception';
 import { jwtVerify } from 'jose';
 import { createSecretKey, timingSafeEqual } from 'node:crypto';
 import type { AuthConfig } from '../types/index.js';
+import { apiError, ERROR_CODES } from '../routes/helpers.js';
 
 /**
  * Timing-safe API key check.
@@ -32,8 +32,7 @@ export function createAuthMiddleware(config: AuthConfig) {
   return createMiddleware(async (c, next) => {
     // Skip auth if type is 'none'
     if (config.type === 'none') {
-      await next();
-      return;
+      return next();
     }
 
     const authHeader = c.req.header('Authorization');
@@ -45,15 +44,11 @@ export function createAuthMiddleware(config: AuthConfig) {
         : c.req.header('X-API-Key');
 
       if (!apiKey) {
-        throw new HTTPException(401, {
-          message: 'API key required',
-        });
+        return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'API key required' }, 401);
       }
 
       if (!config.apiKeys?.length || !apiKeyMatches(apiKey, config.apiKeys)) {
-        throw new HTTPException(403, {
-          message: 'Invalid API key',
-        });
+        return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid API key' }, 403);
       }
 
       // Could extract user info from API key mapping
@@ -61,9 +56,7 @@ export function createAuthMiddleware(config: AuthConfig) {
     } else if (config.type === 'jwt') {
       // JWT authentication
       if (!authHeader?.startsWith('Bearer ')) {
-        throw new HTTPException(401, {
-          message: 'JWT token required',
-        });
+        return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'JWT token required' }, 401);
       }
 
       const token = authHeader.slice(7);
@@ -74,11 +67,11 @@ export function createAuthMiddleware(config: AuthConfig) {
         c.set('jwtPayload', payload);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Invalid or expired token';
-        throw new HTTPException(403, { message });
+        return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message }, 403);
       }
     }
 
-    await next();
+    return next();
   });
 }
 
@@ -112,8 +105,7 @@ async function validateJWT(
 export function createOptionalAuthMiddleware(config: AuthConfig) {
   return createMiddleware(async (c, next) => {
     if (config.type === 'none') {
-      await next();
-      return;
+      return next();
     }
 
     const authHeader = c.req.header('Authorization');
@@ -136,6 +128,6 @@ export function createOptionalAuthMiddleware(config: AuthConfig) {
       }
     }
 
-    await next();
+    return next();
   });
 }

@@ -32,9 +32,15 @@ export const ERROR_CODES = {
   INVALID_IMPORT_DATA: 'INVALID_IMPORT_DATA',
   MISSING_FILENAME: 'MISSING_FILENAME',
 
+  // Authentication Errors (401)
+  UNAUTHORIZED: 'UNAUTHORIZED',
+
   // Access & Permission Errors (403)
   ACCESS_DENIED: 'ACCESS_DENIED',
   PROTECTED: 'PROTECTED',
+
+  // Rate Limiting (429)
+  RATE_LIMITED: 'RATE_LIMITED',
 
   // Conflict Errors (409)
   ALREADY_EXISTS: 'ALREADY_EXISTS',

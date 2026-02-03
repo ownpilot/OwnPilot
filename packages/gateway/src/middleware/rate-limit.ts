@@ -4,8 +4,8 @@
  */
 
 import { createMiddleware } from 'hono/factory';
-import { HTTPException } from 'hono/http-exception';
 import type { RateLimitConfig } from '../types/index.js';
+import { apiError, ERROR_CODES } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('RateLimit');
@@ -45,7 +45,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
   // Skip if disabled
   if (config.disabled) {
     return createMiddleware(async (_c, next) => {
-      await next();
+      return next();
     });
   }
 
@@ -72,8 +72,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
 
     // Check if path is excluded
     if (excludePaths.some((p) => path.startsWith(p))) {
-      await next();
-      return;
+      return next();
     }
 
     // Use user ID if available, otherwise fall back to IP
@@ -122,8 +121,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
       }
 
       // Continue in soft mode or burst mode
-      await next();
-      return;
+      return next();
     }
 
     // Check if over burst limit
@@ -135,17 +133,14 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
         c.header('X-RateLimit-SoftLimit', 'true');
         c.header('X-RateLimit-Warning', 'Rate limit exceeded, but soft limit is enabled');
         log.warn(`[RateLimit] Soft limit exceeded for ${key}: ${entry.count} requests`);
-        await next();
-        return;
+        return next();
       }
 
       // Hard limit: block
-      throw new HTTPException(429, {
-        message: `Rate limit exceeded. Please wait ${reset} seconds.`,
-      });
+      return apiError(c, { code: ERROR_CODES.RATE_LIMITED, message: `Rate limit exceeded. Please wait ${reset} seconds.` }, 429);
     }
 
-    await next();
+    return next();
   });
 }
 
@@ -156,7 +151,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
 export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
   if (config.disabled) {
     return createMiddleware(async (_c, next) => {
-      await next();
+      return next();
     });
   }
 
@@ -185,8 +180,7 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
     const path = c.req.path;
 
     if (excludePaths.some((p) => path.startsWith(p))) {
-      await next();
-      return;
+      return next();
     }
 
     const userId = c.get('userId');
@@ -222,19 +216,16 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
         c.header('X-RateLimit-SoftLimit', 'true');
         timestamps.push(now);
         requests.set(key, timestamps);
-        await next();
-        return;
+        return next();
       }
 
-      throw new HTTPException(429, {
-        message: `Rate limit exceeded. Please wait ${retryAfter} seconds.`,
-      });
+      return apiError(c, { code: ERROR_CODES.RATE_LIMITED, message: `Rate limit exceeded. Please wait ${retryAfter} seconds.` }, 429);
     }
 
     // Add current timestamp
     timestamps.push(now);
     requests.set(key, timestamps);
 
-    await next();
+    return next();
   });
 }

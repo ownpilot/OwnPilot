@@ -6,7 +6,6 @@
  */
 
 import { z } from 'zod';
-import { HTTPException } from 'hono/http-exception';
 
 // ─── Agent Schemas ───────────────────────────────────────────────
 
@@ -115,7 +114,7 @@ export function validateBody<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body);
   if (!result.success) {
     const issues = result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-    throw new HTTPException(400, { message: `Validation failed: ${issues}` });
+    throw new Error(`Validation failed: ${issues}`);
   }
   return result.data;
 }
