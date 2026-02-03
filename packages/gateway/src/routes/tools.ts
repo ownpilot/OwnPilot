@@ -49,7 +49,7 @@ function getToolRegistry(): ToolRegistry {
   if (!toolRegistry) {
     toolRegistry = new ToolRegistry();
     registerCoreTools(toolRegistry);
-    toolRegistry.setApiKeyCenter(gatewayConfigCenter);
+    toolRegistry.setConfigCenter(gatewayConfigCenter);
 
     // Initialize tool overrides (Gmail, Media, etc.)
     if (!toolOverridesInitialized) {

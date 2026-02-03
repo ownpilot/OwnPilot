@@ -119,7 +119,7 @@ export interface ApiServiceConfig {
  * Runtime interface for looking up service configuration.
  * Tools use this to retrieve config values without knowing the storage mechanism.
  *
- * Replaces ApiKeyCenter. Backward compatible: getApiKey() still works.
+ * Backward compatible: getApiKey() still works alongside the richer entry-based methods.
  */
 export interface ConfigCenter {
   // --- Backward-compatible methods ---
@@ -172,7 +172,3 @@ export interface ConfigCenter {
   getServiceDefinition(serviceName: string): ConfigServiceDefinition | null;
 }
 
-/**
- * @deprecated Use ConfigCenter instead
- */
-export type ApiKeyCenter = ConfigCenter;

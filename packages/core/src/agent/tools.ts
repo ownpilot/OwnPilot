@@ -34,8 +34,6 @@ import {
   type ToolRegisteredData,
   type ToolExecutedData,
 } from '../events/index.js';
-// Backward compat alias
-type ApiKeyCenter = ConfigCenter;
 
 // Re-export types for consumers
 export type {
@@ -71,7 +69,7 @@ export type ConfigRegistrationHandler = (
 export class ToolRegistry {
   private readonly tools = new Map<string, RegisteredTool>();
   private readonly pluginTools = new Map<string, Set<string>>();
-  private _apiKeyCenter?: ApiKeyCenter;
+  private _configCenter?: ConfigCenter;
   private readonly globalMiddleware: ToolMiddleware[] = [];
   private readonly perToolMiddleware = new Map<string, ToolMiddleware[]>();
   private readonly hookUnsubs: (() => void)[] = [];
@@ -174,12 +172,10 @@ export class ToolRegistry {
   }
 
   /**
-   * Update executor for an existing tool
-   * Used to override placeholder implementations with real ones (e.g., Gmail, Media services)
+   * Replace executor for an existing tool.
+   * Used to override placeholder implementations with real ones (e.g., Gmail, Media services).
    */
-  /** @deprecated Use `useFor()` middleware instead. Will be removed in a future release. */
   updateExecutor(name: string, executor: ToolExecutor): boolean {
-    console.warn(`[ToolRegistry] updateExecutor('${name}') is deprecated. Use useFor() middleware instead.`);
     const tool = this.tools.get(name);
     if (!tool) return false;
 
@@ -285,45 +281,45 @@ export class ToolRegistry {
       source: tool.source,
       trustLevel: tool.trustLevel,
       // Config Center accessors - scoped for plugin/custom tools
-      getApiKey: this._apiKeyCenter
+      getApiKey: this._configCenter
         ? (serviceName: string) => {
             if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
               console.warn(`[ToolRegistry] Tool '${name}' tried to access undeclared service '${serviceName}'`);
               return undefined;
             }
-            return this._apiKeyCenter!.getApiKey(serviceName);
+            return this._configCenter!.getApiKey(serviceName);
           }
         : undefined,
-      getServiceConfig: this._apiKeyCenter
+      getServiceConfig: this._configCenter
         ? (serviceName: string) => {
             if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
               return null;
             }
-            return this._apiKeyCenter!.getServiceConfig(serviceName);
+            return this._configCenter!.getServiceConfig(serviceName);
           }
         : undefined,
-      getConfigEntry: this._apiKeyCenter
+      getConfigEntry: this._configCenter
         ? (serviceName: string, entryLabel?: string) => {
             if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
               return null;
             }
-            return this._apiKeyCenter!.getConfigEntry(serviceName, entryLabel);
+            return this._configCenter!.getConfigEntry(serviceName, entryLabel);
           }
         : undefined,
-      getConfigEntries: this._apiKeyCenter
+      getConfigEntries: this._configCenter
         ? (serviceName: string) => {
             if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
               return [];
             }
-            return this._apiKeyCenter!.getConfigEntries(serviceName);
+            return this._configCenter!.getConfigEntries(serviceName);
           }
         : undefined,
-      getFieldValue: this._apiKeyCenter
+      getFieldValue: this._configCenter
         ? (serviceName: string, fieldName: string, entryLabel?: string) => {
             if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
               return undefined;
             }
-            return this._apiKeyCenter!.getFieldValue(serviceName, fieldName, entryLabel);
+            return this._configCenter!.getFieldValue(serviceName, fieldName, entryLabel);
           }
         : undefined,
     };
@@ -404,8 +400,8 @@ export class ToolRegistry {
    * Set the Config Center for centralized service configuration.
    * Tools can then access configs via context.getApiKey(), context.getConfigEntry(), etc.
    */
-  setApiKeyCenter(center: ApiKeyCenter): void {
-    this._apiKeyCenter = center;
+  setConfigCenter(center: ConfigCenter): void {
+    this._configCenter = center;
   }
 
   /**
@@ -483,8 +479,8 @@ export class ToolRegistry {
   /**
    * Get the current Config Center (if set).
    */
-  getApiKeyCenter(): ApiKeyCenter | undefined {
-    return this._apiKeyCenter;
+  getConfigCenter(): ConfigCenter | undefined {
+    return this._configCenter;
   }
 
   private _workspaceDir: string | undefined;

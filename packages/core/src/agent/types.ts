@@ -318,7 +318,7 @@ export interface ToolMiddlewareContext {
 
 /**
  * Tool Middleware - intercepts tool execution for cross-cutting concerns.
- * Applied globally or per-tool. Replaces the need for updateExecutor().
+ * Applied globally or per-tool via `use()` / `useFor()`.
  */
 export interface ToolMiddleware {
   /** Middleware name for debugging */
