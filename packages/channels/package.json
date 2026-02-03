@@ -24,10 +24,10 @@
   },
   "dependencies": {
     "@ownpilot/core": "workspace:*",
-    "grammy": "^1.36.0"
+    "grammy": "^1.39.3"
   },
   "devDependencies": {
-    "typescript": "^5.7.3",
+    "typescript": "^5.9.3",
     "vitest": "^2.1.9"
   },
   "keywords": ["telegram", "bot", "channels", "ai", "gateway"]

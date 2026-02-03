@@ -195,25 +195,15 @@ plansRoutes.post('/:id/execute', async (c) => {
     const result = await executor.execute(id);
 
     log.info('Plan execution completed', { userId, planId: id, status: result.status, completedSteps: result.completedSteps });
-    return c.json({
-      success: result.status === 'completed',
-      data: {
+
+    if (result.status !== 'completed') {
+      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error ?? `Plan execution ended with status: ${result.status}` }, 500);
+    }
+
+    return apiResponse(c, {
         result,
-        message: result.status === 'completed'
-          ? 'Plan executed successfully.'
-          : `Plan execution ended with status: ${result.status}`,
-      },
-      error: result.error
-        ? {
-            code: ERROR_CODES.EXECUTION_ERROR,
-            message: result.error,
-          }
-        : undefined,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, result.status === 'completed' ? 200 : 500);
+        message: 'Plan executed successfully.',
+      });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: errorMessage }, 500);
@@ -237,17 +227,10 @@ plansRoutes.post('/:id/pause', async (c) => {
   const executor = getPlanExecutor({ userId });
   const paused = await executor.pause(id);
 
-  return c.json({
-    success: paused,
-    data: {
+  return apiResponse(c, {
       paused,
       message: paused ? 'Plan paused.' : 'Plan was not running.',
-    },
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  });
+    });
 });
 
 /**
@@ -272,17 +255,14 @@ plansRoutes.post('/:id/resume', async (c) => {
     const executor = getPlanExecutor({ userId });
     const result = await executor.resume(id);
 
-    return c.json({
-      success: result.status === 'completed',
-      data: {
+    if (result.status !== 'completed') {
+      return apiError(c, { code: ERROR_CODES.RESUME_ERROR, message: result.error ?? `Plan resume ended with status: ${result.status}` }, 500);
+    }
+
+    return apiResponse(c, {
         result,
         message: 'Plan resumed.',
-      },
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    });
+      });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return apiError(c, { code: ERROR_CODES.RESUME_ERROR, message: errorMessage }, 500);
@@ -359,25 +339,15 @@ plansRoutes.post('/:id/start', async (c) => {
     const result = await executor.execute(id);
 
     log.info('Plan execution completed', { userId, planId: id, status: result.status, completedSteps: result.completedSteps });
-    return c.json({
-      success: result.status === 'completed',
-      data: {
+
+    if (result.status !== 'completed') {
+      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error ?? `Plan execution ended with status: ${result.status}` }, 500);
+    }
+
+    return apiResponse(c, {
         result,
-        message: result.status === 'completed'
-          ? 'Plan executed successfully.'
-          : `Plan execution ended with status: ${result.status}`,
-      },
-      error: result.error
-        ? {
-            code: ERROR_CODES.EXECUTION_ERROR,
-            message: result.error,
-          }
-        : undefined,
-      meta: {
-        requestId: c.get('requestId') ?? 'unknown',
-        timestamp: new Date().toISOString(),
-      },
-    }, result.status === 'completed' ? 200 : 500);
+        message: 'Plan executed successfully.',
+      });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: errorMessage }, 500);

@@ -209,15 +209,17 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
   const [loadingSteps, setLoadingSteps] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     if (isExpanded && steps.length === 0) {
       setLoadingSteps(true);
       goalsApi.steps(goal.id)
         .then((data) => {
-          setSteps(data.steps as GoalStep[]);
+          if (!cancelled) setSteps(data.steps as GoalStep[]);
         })
         .catch(() => { /* API client handles error */ })
-        .finally(() => setLoadingSteps(false));
+        .finally(() => { if (!cancelled) setLoadingSteps(false); });
     }
+    return () => { cancelled = true; };
   }, [isExpanded, goal.id, steps.length]);
 
   const handleStepStatusChange = async (stepId: string, status: GoalStep['status']) => {

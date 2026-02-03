@@ -31,7 +31,7 @@
     "dotenv": "^16.4.7"
   },
   "devDependencies": {
-    "typescript": "^5.7.3",
+    "typescript": "^5.9.3",
     "vitest": "^2.1.9"
   },
   "keywords": ["cli", "ai", "gateway", "openai", "anthropic"]

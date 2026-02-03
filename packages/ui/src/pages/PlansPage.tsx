@@ -334,28 +334,31 @@ function PlanItem({
   const [showAddStep, setShowAddStep] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     if (isExpanded && steps.length === 0) {
       setLoadingSteps(true);
       plansApi.steps(plan.id)
         .then((data) => {
-          setSteps(data.steps as PlanStep[]);
+          if (!cancelled) setSteps(data.steps as PlanStep[]);
         })
         .catch(() => { /* API client handles error */ })
-        .finally(() => setLoadingSteps(false));
+        .finally(() => { if (!cancelled) setLoadingSteps(false); });
     }
+    return () => { cancelled = true; };
   }, [isExpanded, plan.id, steps.length]);
 
   // Refresh steps when plan is running
   useEffect(() => {
     if (plan.status === 'running' && isExpanded) {
+      let cancelled = false;
       const interval = setInterval(() => {
         plansApi.steps(plan.id)
           .then((data) => {
-            setSteps(data.steps as PlanStep[]);
+            if (!cancelled) setSteps(data.steps as PlanStep[]);
           })
           .catch(() => { /* API client handles error */ });
       }, 2000);
-      return () => clearInterval(interval);
+      return () => { cancelled = true; clearInterval(interval); };
     }
   }, [plan.status, plan.id, isExpanded]);
 

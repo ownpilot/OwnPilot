@@ -674,15 +674,11 @@ app.post('/:id/container/start', async (c) => {
 
     // Check if already running
     if (workspace.containerStatus === 'running' && workspace.containerId) {
-      return apiResponse(c, { data: {
+      return apiResponse(c, {
           containerId: workspace.containerId,
           status: 'running',
           message: 'Container already running',
-        },
-        meta: {
-          requestId: c.get('requestId') ?? 'unknown',
-          timestamp: new Date().toISOString(),
-        }, });
+        });
     }
 
     const orchestrator = getOrchestrator();

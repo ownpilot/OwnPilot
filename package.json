@@ -19,7 +19,7 @@
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
     "typecheck": "turbo typecheck",
-    "clean": "turbo clean && rm -rf node_modules",
+    "clean": "turbo clean && rimraf node_modules",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"
@@ -36,6 +36,6 @@
   "packageManager": "pnpm@10.28.2",
   "engines": {
     "node": ">=22.0.0",
-    "pnpm": ">=9.0.0"
+    "pnpm": ">=10.0.0"
   }
 }
