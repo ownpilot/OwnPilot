@@ -59,8 +59,7 @@ export {
   stopScheduler,
 } from './scheduler/index.js';
 
-// Channels (new plugin-based + backward-compat bridge)
-export { initializeChannelFactories, channelManager } from './channels/manager.js';
+// Channels (plugin-based)
 export { createChannelServiceImpl, getChannelServiceImpl } from './channels/service-impl.js';
 
 // Settings (database-driven)

@@ -35,7 +35,6 @@ import type { Server } from 'node:http';
 import { createApp } from './app.js';
 import type { GatewayConfig } from './types/index.js';
 import { wsGateway } from './ws/index.js';
-import { initializeChannelFactories } from './channels/index.js';
 import { initializeAdapter } from './db/adapters/index.js';
 import { loadApiKeysToEnvironment } from './routes/settings.js';
 import { initializeFileWorkspace } from './workspace/index.js';
@@ -209,11 +208,6 @@ async function main() {
 
   const port = config.port ?? 3000;
   const host = config.host ?? '0.0.0.0';
-
-  // Initialize channel adapters
-  log.info('Initializing channel factories...');
-  await initializeChannelFactories();
-  log.info('Channel factories initialized.');
 
   // Initialize plugins (registers built-in plugins)
   log.info('Initializing plugins...');
