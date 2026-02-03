@@ -102,12 +102,52 @@ export {
 } from './paths/index.js';
 
 // Services (gateway implementations)
-export { createLogService, LogService, type LogServiceOptions } from './services/log-service-impl.js';
-export { createSessionService, SessionService } from './services/session-service-impl.js';
-export { createMessageBus, MessageBus } from './services/message-bus-impl.js';
-export { createToolService, ToolService } from './services/tool-service-impl.js';
-export { createProviderService, ProviderService } from './services/provider-service-impl.js';
-export { createAuditService, AuditService } from './services/audit-service-impl.js';
+export {
+  // Log
+  LogService,
+  createLogService,
+  type LogServiceOptions,
+  // Session
+  SessionService,
+  createSessionService,
+  // Message Bus
+  MessageBus,
+  createMessageBus,
+  // Config Center
+  GatewayConfigCenter,
+  gatewayConfigCenter,
+  gatewayApiKeyCenter,
+  // Tool
+  ToolService,
+  createToolService,
+  // Provider
+  ProviderService,
+  createProviderService,
+  // Audit
+  AuditService,
+  createAuditService,
+  // Plugin
+  PluginServiceImpl,
+  createPluginService,
+  // Memory
+  MemoryServiceImpl,
+  createMemoryServiceImpl,
+  // Database
+  DatabaseServiceImpl,
+  createDatabaseServiceImpl,
+  // Workspace
+  WorkspaceServiceImpl,
+  createWorkspaceServiceImpl,
+  // Goal
+  GoalServiceImpl,
+  createGoalServiceImpl,
+  // Trigger
+  TriggerServiceImpl,
+  createTriggerServiceImpl,
+  // Plan
+  PlanServiceImpl,
+  createPlanServiceImpl,
+} from './services/index.js';
 
 // Config defaults (named constants for infrastructure tuning)
 export {
