@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { Agent, createAgent, createSimpleAgent } from './agent.js';
-import { ToolRegistry, registerCoreTools } from './tools.js';
+import { ToolRegistry } from './tools.js';
 import { ConversationMemory } from './memory.js';
 import type { AgentConfig } from './types.js';
 
@@ -163,7 +163,7 @@ describe('Agent', () => {
       const conv1 = agent.getConversation();
 
       agent.reset();
-      const conv2 = agent.getConversation();
+      const _conv2 = agent.getConversation();
 
       expect(agent.loadConversation(conv1.id)).toBe(true);
       expect(agent.getConversation().id).toBe(conv1.id);

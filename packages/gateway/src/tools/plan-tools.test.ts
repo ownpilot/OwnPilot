@@ -101,7 +101,7 @@ describe('Plan Tools', () => {
         description: 'A test',
         priority: 7,
       });
-      expect((result.result as any).message).toContain('created');
+      expect((result.result as Record<string, unknown>).message).toContain('created');
     });
   });
 
@@ -220,7 +220,7 @@ describe('Plan Tools', () => {
       const result = await executePlanTool('list_plans', { status: 'completed' }, 'user-1');
 
       expect(result.success).toBe(true);
-      const plans = result.result as any[];
+      const plans = result.result as Record<string, unknown>[];
       expect(plans).toHaveLength(1);
       expect(plans[0]).toMatchObject({
         id: 'p1',
@@ -258,7 +258,7 @@ describe('Plan Tools', () => {
       const result = await executePlanTool('get_plan_details', { plan_id: 'p1' }, 'user-1');
 
       expect(result.success).toBe(true);
-      const details = result.result as any;
+      const details = result.result as Record<string, unknown[]>;
       expect(details.steps).toHaveLength(2);
       expect(details.recentHistory).toHaveLength(1);
     });
@@ -289,7 +289,7 @@ describe('Plan Tools', () => {
       const result = await executePlanTool('execute_plan', { plan_id: 'p1' }, 'user-1');
 
       expect(result.success).toBe(true);
-      expect((result.result as any).totalSteps).toBe(2);
+      expect((result.result as Record<string, unknown>).totalSteps).toBe(2);
     });
 
     it('rejects non-pending plan', async () => {

@@ -45,7 +45,6 @@ const OTHER_KEYS = [
 ] as const;
 
 type OtherKey = (typeof OTHER_KEYS)[number];
-type ConfigKey = `${Provider}-api-key` | OtherKey;
 
 interface ConfigSetOptions {
   key: string;
@@ -101,14 +100,6 @@ function parseKey(key: string): { dbKey: string; isApiKey: boolean; isSensitive:
 
   // Unknown key
   return { dbKey: key, isApiKey: false, isSensitive: false };
-}
-
-/**
- * Get valid keys list for help message
- */
-function getValidKeys(): string[] {
-  const apiKeys = VALID_PROVIDERS.map(p => `${p}-api-key`);
-  return [...apiKeys, ...OTHER_KEYS];
 }
 
 /**

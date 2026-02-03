@@ -215,7 +215,7 @@ interface CronParts {
 /**
  * Check if a cron part matches a value
  */
-function matchesCronPart(part: string, value: number, max: number): boolean {
+function matchesCronPart(part: string, value: number, _max: number): boolean {
   // Any value
   if (part === '*') {
     return true;

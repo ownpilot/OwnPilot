@@ -10,7 +10,6 @@ import {
   type Plan,
   type PlanStep,
   type PlanStatus,
-  type StepStatus,
   type StepConfig,
 } from '../db/repositories/plans.js';
 import {
@@ -543,7 +542,7 @@ export class PlanExecutor extends EventEmitter {
 
   private registerDefaultHandlers(): void {
     // Tool call handler - executes tools via shared tool executor
-    this.registerHandler('tool_call', async (config, context) => {
+    this.registerHandler('tool_call', async (config, _context) => {
       if (!config.toolName) {
         return { success: false, error: 'No tool name specified' };
       }
@@ -632,7 +631,7 @@ export class PlanExecutor extends EventEmitter {
     });
 
     // User input handler
-    this.registerHandler('user_input', async (config, context) => {
+    this.registerHandler('user_input', async (config, _context) => {
       // Pause for user input
       return {
         success: true,
@@ -677,7 +676,7 @@ export class PlanExecutor extends EventEmitter {
     });
 
     // Parallel handler - executes multiple tool calls concurrently (respects maxConcurrent)
-    this.registerHandler('parallel', async (config, context) => {
+    this.registerHandler('parallel', async (config, _context) => {
       const rawSteps = (config.steps ?? []) as unknown[];
       const steps = rawSteps.map((s) => {
         if (typeof s === 'object' && s !== null) {
@@ -762,7 +761,7 @@ export class PlanExecutor extends EventEmitter {
     });
 
     // Sub-plan handler
-    this.registerHandler('sub_plan', async (config, context) => {
+    this.registerHandler('sub_plan', async (config, _context) => {
       if (!config.subPlanId) {
         return { success: false, error: 'No sub-plan ID specified' };
       }

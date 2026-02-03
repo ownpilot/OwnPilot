@@ -18,14 +18,15 @@ import {
   ALL_TOOLS,
   type DynamicToolDefinition,
   type ToolDefinition,
+  type ToolContext,
+  type ToolExecutor,
 } from '@ownpilot/core';
 import { invalidateAgentCache } from './agents.js';
 import {
   registerToolConfigRequirements,
   unregisterDependencies,
 } from '../services/api-service-registrar.js';
-import { getUserId, apiResponse } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { getUserId, apiResponse, getOptionalIntParam } from './helpers.js'
 
 export const customToolsRoutes = new Hono();
 
@@ -41,10 +42,10 @@ export function getCustomToolDynamicRegistry() {
 
 // Reference to shared registry — set by tool-executor.ts during initialization
 let _sharedRegistry: {
-  registerCustomTool: (def: ToolDefinition, exec: (args: Record<string, unknown>, ctx: any) => Promise<any>, id: string) => any;
+  registerCustomTool: (def: ToolDefinition, exec: ToolExecutor, id: string) => unknown;
   unregister: (name: string) => void;
   has: (name: string) => boolean;
-  execute: (name: string, args: Record<string, unknown>, context: any) => Promise<any>;
+  execute: (name: string, args: Record<string, unknown>, context: Omit<ToolContext, 'callId'>) => Promise<{ ok: true; value: { content: unknown; isError?: boolean; metadata?: Record<string, unknown> } } | { ok: false; error: { message: string } }>;
 } | null = null;
 
 /**
@@ -126,7 +127,7 @@ function syncToolToRegistry(tool: CustomToolRecord): void {
           docsUrl: k.docsUrl,
         })),
       };
-      const executor = (args: Record<string, unknown>, context: any) =>
+      const executor = (args: Record<string, unknown>, context: ToolContext) =>
         dynamicRegistry.execute(tool.name, args, context);
       _sharedRegistry.registerCustomTool(def, executor, tool.id);
     }
@@ -162,8 +163,8 @@ customToolsRoutes.get('/', async (c) => {
   const status = c.req.query('status') as ToolStatus | undefined;
   const category = c.req.query('category');
   const createdBy = c.req.query('createdBy') as 'user' | 'llm' | undefined;
-  const limit = c.req.query('limit') ? parseInt(c.req.query('limit')!) : undefined;
-  const offset = c.req.query('offset') ? parseInt(c.req.query('offset')!) : undefined;
+  const limit = getOptionalIntParam(c, 'limit', 1, 100);
+  const offset = getOptionalIntParam(c, 'offset', 0);
 
   const tools = await repo.list({ status, category, createdBy, limit, offset });
 

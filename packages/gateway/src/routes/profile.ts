@@ -12,7 +12,6 @@ import {
   getPersonalMemoryStore,
   getMemoryInjector,
   type PersonalDataCategory,
-  type ComprehensiveProfile,
 } from '@ownpilot/core';
 
 const app = new Hono();

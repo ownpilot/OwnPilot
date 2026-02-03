@@ -180,16 +180,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
   const body = await c.req.json<{ data: Record<string, unknown> }>();
 
   if (!body.data) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_REQUEST,
-          message: 'data is required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'data is required' }, 400);
   }
 
   try {
@@ -211,16 +202,7 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   if (!query) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_REQUEST,
-          message: 'Search query (q) is required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Search query (q) is required' }, 400);
   }
 
   try {
@@ -256,16 +238,7 @@ customDataRoutes.put('/records/:id', async (c) => {
   const body = await c.req.json<{ data: Record<string, unknown> }>();
 
   if (!body.data) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.INVALID_REQUEST,
-          message: 'data is required',
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'data is required' }, 400);
   }
 
   try {

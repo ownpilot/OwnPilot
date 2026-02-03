@@ -33,7 +33,6 @@ import {
   EventTypes,
   type ToolRegisteredData,
   type ToolExecutedData,
-  type IHookBus,
 } from '../events/index.js';
 // Backward compat alias
 type ApiKeyCenter = ConfigCenter;

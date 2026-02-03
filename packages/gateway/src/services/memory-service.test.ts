@@ -132,7 +132,7 @@ describe('MemoryService', () => {
 
     it('throws VALIDATION_ERROR when type is missing', async () => {
       await expect(
-        service.createMemory('user-1', { type: undefined as any, content: 'x' }),
+        service.createMemory('user-1', { type: undefined as unknown as string, content: 'x' }),
       ).rejects.toThrow(/Type is required/);
     });
   });
@@ -215,7 +215,7 @@ describe('MemoryService', () => {
       const result = await service.batchRemember('user-1', [
         { type: 'fact', content: 'Valid' },
         { type: 'fact', content: '' },
-        { type: undefined as any, content: 'No type' },
+        { type: undefined as unknown as string, content: 'No type' },
       ]);
 
       expect(result.created).toBe(1);

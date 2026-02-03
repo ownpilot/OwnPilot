@@ -5,9 +5,8 @@
  * Handles long-polling, message normalization, and event emission.
  */
 
-import { randomUUID } from 'node:crypto';
 import { Bot } from 'grammy';
-import type { Message, Update } from 'grammy/types';
+import type { Message } from 'grammy/types';
 import {
   type ChannelPluginAPI,
   type ChannelConnectionStatus,
@@ -173,17 +172,17 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     });
   }
 
-  async editMessage(platformMessageId: string, newText: string): Promise<void> {
+  async editMessage(_platformMessageId: string, _newText: string): Promise<void> {
     // editMessage requires chat_id which we don't track per message.
     // This is a known limitation - would need message-to-chat mapping.
     log.warn('[Telegram] editMessage not yet supported (requires chat_id tracking)');
   }
 
-  async deleteMessage(platformMessageId: string): Promise<void> {
+  async deleteMessage(_platformMessageId: string): Promise<void> {
     log.warn('[Telegram] deleteMessage not yet supported (requires chat_id tracking)');
   }
 
-  async resolveUser(platformUserId: string): Promise<ChannelUser | null> {
+  async resolveUser(_platformUserId: string): Promise<ChannelUser | null> {
     if (!this.bot) return null;
     try {
       // grammy doesn't have getUser, but we can try getChatMember-like approaches

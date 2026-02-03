@@ -61,7 +61,6 @@ vi.mock('@ownpilot/core', async () => {
 
 import { TriggerEngine } from './engine.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
-import { getNextRunTime } from '@ownpilot/core';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -322,7 +321,7 @@ describe('TriggerEngine', () => {
 
     it('returns error for unknown action type', async () => {
       const trigger = makeTrigger({
-        action: { type: 'unknown_type' as any, payload: {} },
+        action: { type: 'unknown_type' as Trigger['action']['type'], payload: {} },
       });
       mockTriggerService.getTrigger.mockResolvedValue(trigger);
 
@@ -443,7 +442,7 @@ describe('TriggerEngine', () => {
       engine.registerActionHandler('custom', customHandler);
 
       const trigger = makeTrigger({
-        action: { type: 'custom' as any, payload: { custom: true } },
+        action: { type: 'custom' as Trigger['action']['type'], payload: { custom: true } },
       });
       mockTriggerService.getTrigger.mockResolvedValue(trigger);
 

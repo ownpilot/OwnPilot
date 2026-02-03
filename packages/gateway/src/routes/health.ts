@@ -4,7 +4,7 @@
 
 import { Hono } from 'hono';
 import { VERSION, getSandboxStatus, resetSandboxCache, ensureImage } from '@ownpilot/core';
-import type { HealthResponse, HealthCheck } from '../types/index.js';
+import type { HealthCheck } from '../types/index.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { apiResponse, apiError } from './helpers.js'
@@ -30,7 +30,7 @@ healthRoutes.get('/', async (c) => {
 
   // Get PostgreSQL database status
   const config = getDatabaseConfig();
-  let databaseStatus: { type: 'postgres'; connected: boolean; host?: string } = {
+  const databaseStatus: { type: 'postgres'; connected: boolean; host?: string } = {
     type: 'postgres',
     connected: false,
     host: config.postgresHost,

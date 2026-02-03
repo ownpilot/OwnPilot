@@ -4,9 +4,7 @@
  */
 
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { createContext, runInContext, Script } from 'node:vm';
+import { createContext, Script } from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';

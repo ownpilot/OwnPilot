@@ -387,7 +387,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
             last_fetched: new Date().toISOString(),
             status: 'active',
           });
-        } catch (fetchErr) {
+        } catch {
           await repo.updateRecord(feedRecord.id, { status: 'error' });
         }
 

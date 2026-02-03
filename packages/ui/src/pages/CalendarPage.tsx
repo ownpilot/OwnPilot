@@ -306,9 +306,11 @@ function EventModal({ event, defaultDate, onClose, onSave }: EventModalProps) {
         color,
       };
 
-      event
-        ? await calendarApi.update(event.id, body)
-        : await calendarApi.create(body);
+      if (event) {
+        await calendarApi.update(event.id, body);
+      } else {
+        await calendarApi.create(body);
+      }
       onSave();
     } catch {
       // Error is handled by the global API client error callback

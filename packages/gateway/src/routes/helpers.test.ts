@@ -10,6 +10,7 @@ import {
   getUserId,
   getPaginationParams,
   getIntParam,
+  getOptionalIntParam,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -153,7 +154,7 @@ describe('Route Helpers', () => {
       expect(result.limit).toBe(200);
     });
 
-    it('should handle invalid limit values (returns NaN - known limitation)', () => {
+    it('should fall back to default limit when given invalid string', () => {
       const c = createMockContext();
       vi.mocked(c.req.query).mockImplementation((key) => {
         if (key === 'limit') return 'invalid';
@@ -162,9 +163,19 @@ describe('Route Helpers', () => {
 
       const result = getPaginationParams(c);
 
-      // Note: Current implementation doesn't handle NaN from invalid strings
-      // This is a known limitation - invalid strings result in NaN
-      expect(result.limit).toBeNaN();
+      expect(result.limit).toBe(20);
+    });
+
+    it('should fall back to default offset when given invalid string', () => {
+      const c = createMockContext();
+      vi.mocked(c.req.query).mockImplementation((key) => {
+        if (key === 'offset') return 'abc';
+        return undefined;
+      });
+
+      const result = getPaginationParams(c);
+
+      expect(result.offset).toBe(0);
     });
   });
 
@@ -233,15 +244,87 @@ describe('Route Helpers', () => {
       expect(result).toBe(999);
     });
 
-    it('should handle invalid strings (returns NaN - known limitation)', () => {
+    it('should fall back to default value when given invalid string', () => {
       const c = createMockContext();
       vi.mocked(c.req.query).mockReturnValue('not-a-number');
 
       const result = getIntParam(c, 'days', 30);
 
-      // Note: Current implementation doesn't handle NaN from invalid strings
-      // This is a known limitation that could be improved
-      expect(result).toBeNaN();
+      expect(result).toBe(30);
+    });
+
+    it('should apply bounds after NaN fallback to default', () => {
+      const c = createMockContext();
+      vi.mocked(c.req.query).mockReturnValue('abc');
+
+      const result = getIntParam(c, 'count', 50, 1, 100);
+
+      expect(result).toBe(50);
+    });
+  });
+
+  describe('getOptionalIntParam', () => {
+    it('should return undefined when parameter not provided', () => {
+      const c = createMockContext();
+      vi.mocked(c.req.query).mockReturnValue(undefined);
+
+      const result = getOptionalIntParam(c, 'limit');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should parse valid integer from query parameter', () => {
+      const c = createMockContext();
+      vi.mocked(c.req.query).mockReturnValue('25');
+
+      const result = getOptionalIntParam(c, 'limit');
+
+      expect(result).toBe(25);
+    });
+
+    it('should return undefined for invalid string', () => {
+      const c = createMockContext();
+      vi.mocked(c.req.query).mockReturnValue('abc');
+
+      const result = getOptionalIntParam(c, 'limit');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should enforce minimum bound', () => {
+      const c = createMockContext();
+      vi.mocked(c.req.query).mockReturnValue('-5');
+
+      const result = getOptionalIntParam(c, 'offset', 0);
+
+      expect(result).toBe(0);
+    });
+
+    it('should enforce maximum bound', () => {
+      const c = createMockContext();
+      vi.mocked(c.req.query).mockReturnValue('500');
+
+      const result = getOptionalIntParam(c, 'limit', 1, 100);
+
+      expect(result).toBe(100);
+    });
+
+    it('should allow values within bounds', () => {
+      const c = createMockContext();
+      vi.mocked(c.req.query).mockReturnValue('50');
+
+      const result = getOptionalIntParam(c, 'limit', 1, 100);
+
+      expect(result).toBe(50);
+    });
+
+    it('should handle zero as valid value', () => {
+      const c = createMockContext();
+      vi.mocked(c.req.query).mockReturnValue('0');
+
+      const result = getOptionalIntParam(c, 'offset', 0);
+
+      expect(result).toBe(0);
     });
   });
 
@@ -254,7 +337,7 @@ describe('Route Helpers', () => {
       });
 
       const data = { message: 'Success', count: 5 };
-      const result = apiResponse(c, data);
+      const _result = apiResponse(c, data);
 
       expect(c.json).toHaveBeenCalled();
       const [response] = vi.mocked(c.json).mock.calls[0];
@@ -272,7 +355,7 @@ describe('Route Helpers', () => {
       const c = createMockContext();
       vi.mocked(c.get).mockReturnValue(undefined);
 
-      const result = apiResponse(c, { data: 'test' });
+      const _result = apiResponse(c, { data: 'test' });
 
       const [response] = vi.mocked(c.json).mock.calls[0];
       expect(response.meta.requestId).toBe('unknown');

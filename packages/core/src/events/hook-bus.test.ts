@@ -11,7 +11,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HookBus } from './hook-bus.js';
-import type { HookContext } from './types.js';
 
 describe('HookBus', () => {
   let hooks: HookBus;

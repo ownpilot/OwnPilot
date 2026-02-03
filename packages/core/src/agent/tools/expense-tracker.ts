@@ -10,7 +10,7 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult, ToolContext } from '../types.js';
+import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 
 // =============================================================================
 // Types
@@ -222,7 +222,7 @@ export const addExpenseTool: ToolDefinition = {
   },
 };
 
-export const addExpenseExecutor: ToolExecutor = async (args, context): Promise<ToolExecutionResult> => {
+export const addExpenseExecutor: ToolExecutor = async (args, _context): Promise<ToolExecutionResult> => {
   try {
     const db = await loadExpenseDb();
 

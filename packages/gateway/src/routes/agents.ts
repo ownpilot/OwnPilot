@@ -7,7 +7,6 @@
 
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
@@ -15,7 +14,6 @@ import {
   Agent,
   createAgent,
   ToolRegistry,
-  registerCoreTools,
   registerAllTools,
   getToolDefinitions,
   injectMemoryIntoPrompt,
@@ -43,7 +41,6 @@ import {
   executeCustomToolTool,
   executeActiveCustomTool,
   getActiveCustomToolDefinitions,
-  isCustomTool,
 } from './custom-tools.js';
 import { CHANNEL_TOOLS, setChannelManager, TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool } from '../tools/index.js';
 import { channelManager } from '../channels/manager.js';
@@ -51,7 +48,6 @@ import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import {
   traceToolCallStart,
   traceToolCallEnd,
-  traceMemoryOp,
   traceDbWrite,
   traceDbRead,
 } from '../tracing/index.js';
@@ -59,10 +55,8 @@ import type {
   CreateAgentRequest,
   UpdateAgentRequest,
   AgentInfo,
-  AgentDetail,
 } from '../types/index.js';
 import { apiResponse } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
 import { getMemoryService } from '../services/memory-service.js';
 import { getGoalService } from '../services/goal-service.js';

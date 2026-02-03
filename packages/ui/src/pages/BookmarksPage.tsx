@@ -340,9 +340,11 @@ function BookmarkModal({ bookmark, folders, onClose, onSave }: BookmarkModalProp
         isFavorite,
       };
 
-      bookmark
-        ? await bookmarksApi.update(bookmark.id, body)
-        : await bookmarksApi.create(body);
+      if (bookmark) {
+        await bookmarksApi.update(bookmark.id, body);
+      } else {
+        await bookmarksApi.create(body);
+      }
       onSave();
     } catch {
       // handled by API client

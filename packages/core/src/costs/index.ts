@@ -846,7 +846,7 @@ export function estimateCost(
   promptText: string,
   estimatedOutputTokens: number = 500
 ): CostEstimate {
-  const pricing = getModelPricing(provider, modelId);
+  const _pricing = getModelPricing(provider, modelId);
 
   // Rough token estimation (1 token ≈ 4 characters for English)
   const estimatedInputTokens = Math.ceil(promptText.length / 4);
@@ -1344,7 +1344,7 @@ export class BudgetManager extends EventEmitter {
   /**
    * Check budget after usage and emit alerts
    */
-  private async checkBudget(record: UsageRecord): Promise<void> {
+  private async checkBudget(_record: UsageRecord): Promise<void> {
     const status = await this.getStatus();
 
     for (const alert of status.alerts) {

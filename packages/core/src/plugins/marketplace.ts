@@ -15,11 +15,8 @@ import {
   createSign,
   createVerify,
   generateKeyPairSync,
-  randomUUID,
 } from 'node:crypto';
 import type { PluginCapability } from './isolation.js';
-import type { PluginId } from '../types/branded.js';
-import { createPluginId } from '../types/branded.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 

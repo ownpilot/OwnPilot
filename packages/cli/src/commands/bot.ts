@@ -13,7 +13,6 @@ import {
   getDefaultProvider,
   getApiKey,
   getDefaultModel,
-  isDemoModeFromSettings,
   settingsRepo,
 } from '@ownpilot/gateway';
 

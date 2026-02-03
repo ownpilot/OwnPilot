@@ -7,7 +7,6 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { streamSSE } from 'hono/streaming';
 import {
-  CORE_TOOLS,
   ToolRegistry,
   registerCoreTools,
   MEMORY_TOOLS,
@@ -20,7 +19,6 @@ import {
 } from '@ownpilot/core';
 import type { ToolInfo } from '../types/index.js';
 import { apiResponse } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
 import { getAgent } from './agents.js';
 import { initializeToolOverrides } from '../services/tool-overrides.js';
 import { gatewayConfigCenter as gatewayApiKeyCenter } from '../services/config-center-impl.js';
@@ -399,14 +397,14 @@ toolsRoutes.post('/:name/stream', async (c) => {
           timestamp: new Date().toISOString(),
         }),
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       const duration = Date.now() - startTime;
 
       await stream.writeSSE({
         event: 'error',
         data: JSON.stringify({
           success: false,
-          error: err.message,
+          error: err instanceof Error ? err.message : String(err),
           duration,
         }),
       });
@@ -443,12 +441,12 @@ toolsRoutes.post('/batch', async (c) => {
         isError: result.isError,
         duration: Date.now() - toolStartTime,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         tool: exec.tool,
         success: false,
         result: null,
-        error: err.message,
+        error: err instanceof Error ? err.message : String(err),
         duration: Date.now() - toolStartTime,
       };
     }

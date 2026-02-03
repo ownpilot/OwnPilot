@@ -116,7 +116,7 @@ describe('API Service Registrar', () => {
 
     it('sets multiEntry/configSchema to undefined for legacy RequiredKeyInput', async () => {
       await registerToolApiDependencies('tool-1', 'my_tool', [
-        { name: 'legacy_api', envVarName: 'LEGACY_API_KEY' } as any,
+        { name: 'legacy_api', envVarName: 'LEGACY_API_KEY' } as unknown as Parameters<typeof registerToolApiDependencies>[2][number],
       ]);
 
       expect(mockConfigServicesRepo.upsert).toHaveBeenCalledWith(

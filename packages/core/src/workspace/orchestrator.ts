@@ -229,16 +229,16 @@ export class UserContainerOrchestrator {
     }
 
     // Build exec command based on language
-    let execCmd: string[];
+    let _execCmd: string[];
     switch (language) {
       case 'python':
-        execCmd = ['python', '-c', code];
+        _execCmd = ['python', '-c', code];
         break;
       case 'javascript':
-        execCmd = ['node', '-e', code];
+        _execCmd = ['node', '-e', code];
         break;
       case 'shell':
-        execCmd = ['sh', '-c', code];
+        _execCmd = ['sh', '-c', code];
         break;
       default:
         return {
@@ -350,7 +350,7 @@ export class UserContainerOrchestrator {
       });
       this.containers.delete(containerId);
       console.log(`[Workspace] Container stopped: ${containerId.substring(0, 12)}`);
-    } catch (err) {
+    } catch {
       // Container might already be stopped
       this.containers.delete(containerId);
     }

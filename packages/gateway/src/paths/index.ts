@@ -17,7 +17,7 @@
  * - cache/        Temporary cache data
  */
 
-import { existsSync, mkdirSync, chmodSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, chmodSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { getLog } from '../services/log.js';

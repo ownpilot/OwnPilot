@@ -42,9 +42,9 @@ import { WorkspacesRepository } from '../db/repositories/workspaces.js';
 
 describe('Workspaces Routes', () => {
   let app: Hono;
-  let mockRepo: any;
-  let mockOrchestrator: any;
-  let mockStorage: any;
+  let mockRepo: Record<string, ReturnType<typeof vi.fn>>;
+  let mockOrchestrator: Record<string, ReturnType<typeof vi.fn>>;
+  let mockStorage: Record<string, ReturnType<typeof vi.fn>>;
 
   beforeEach(() => {
     app = new Hono();

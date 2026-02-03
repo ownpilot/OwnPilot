@@ -263,7 +263,7 @@ expensesRoutes.get('/summary', async (c) => {
  */
 expensesRoutes.get('/monthly', async (c) => {
   const db = await loadExpenseDb();
-  const year = parseInt(c.req.query('year') ?? String(new Date().getFullYear()), 10);
+  const year = getIntParam(c, 'year', new Date().getFullYear(), 2000, 2100);
 
   // Filter expenses for the year
   const yearStart = `${year}-01-01`;

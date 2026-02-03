@@ -33,8 +33,7 @@ import {
   type UpdateContactInput,
   type ContactQuery,
 } from '../db/repositories/index.js';
-import { apiResponse, getUserId, getIntParam } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { apiResponse, getUserId, getIntParam, getOptionalIntParam } from './helpers.js'
 
 export const personalDataRoutes = new Hono();
 
@@ -52,8 +51,8 @@ tasksRoutes.get('/', async (c) => {
     category: c.req.query('category'),
     projectId: c.req.query('projectId'),
     search: c.req.query('search'),
-    limit: c.req.query('limit') ? parseInt(c.req.query('limit')!) : undefined,
-    offset: c.req.query('offset') ? parseInt(c.req.query('offset')!) : undefined,
+    limit: getOptionalIntParam(c, 'limit', 1, 100),
+    offset: getOptionalIntParam(c, 'offset', 0),
   };
 
   const tasks = await repo.list(query);
@@ -74,7 +73,7 @@ tasksRoutes.get('/overdue', async (c) => {
 
 tasksRoutes.get('/upcoming', async (c) => {
   const repo = new TasksRepository(getUserId(c));
-  const days = c.req.query('days') ? parseInt(c.req.query('days')!) : 7;
+  const days = getIntParam(c, 'days', 7, 1);
   const tasks = await repo.getUpcoming(days);
   return apiResponse(c, tasks);
 });
@@ -141,8 +140,8 @@ bookmarksRoutes.get('/', async (c) => {
     category: c.req.query('category'),
     isFavorite: c.req.query('favorite') === 'true' ? true : undefined,
     search: c.req.query('search'),
-    limit: c.req.query('limit') ? parseInt(c.req.query('limit')!) : undefined,
-    offset: c.req.query('offset') ? parseInt(c.req.query('offset')!) : undefined,
+    limit: getOptionalIntParam(c, 'limit', 1, 100),
+    offset: getOptionalIntParam(c, 'offset', 0),
   };
 
   const bookmarks = await repo.list(query);
@@ -225,8 +224,8 @@ notesRoutes.get('/', async (c) => {
     isPinned: c.req.query('pinned') === 'true' ? true : undefined,
     isArchived: c.req.query('archived') === 'true' ? true : false,
     search: c.req.query('search'),
-    limit: c.req.query('limit') ? parseInt(c.req.query('limit')!) : undefined,
-    offset: c.req.query('offset') ? parseInt(c.req.query('offset')!) : undefined,
+    limit: getOptionalIntParam(c, 'limit', 1, 100),
+    offset: getOptionalIntParam(c, 'offset', 0),
   };
 
   const notes = await repo.list(query);
@@ -326,8 +325,8 @@ calendarRoutes.get('/', async (c) => {
     startBefore: c.req.query('startBefore'),
     category: c.req.query('category'),
     search: c.req.query('search'),
-    limit: c.req.query('limit') ? parseInt(c.req.query('limit')!) : undefined,
-    offset: c.req.query('offset') ? parseInt(c.req.query('offset')!) : undefined,
+    limit: getOptionalIntParam(c, 'limit', 1, 100),
+    offset: getOptionalIntParam(c, 'offset', 0),
   };
 
   const events = await repo.list(query);
@@ -342,7 +341,7 @@ calendarRoutes.get('/today', async (c) => {
 
 calendarRoutes.get('/upcoming', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
-  const days = c.req.query('days') ? parseInt(c.req.query('days')!) : 7;
+  const days = getIntParam(c, 'days', 7, 1);
   const events = await repo.getUpcoming(days);
   return apiResponse(c, events);
 });
@@ -401,8 +400,8 @@ contactsRoutes.get('/', async (c) => {
     company: c.req.query('company'),
     isFavorite: c.req.query('favorite') === 'true' ? true : undefined,
     search: c.req.query('search'),
-    limit: c.req.query('limit') ? parseInt(c.req.query('limit')!) : undefined,
-    offset: c.req.query('offset') ? parseInt(c.req.query('offset')!) : undefined,
+    limit: getOptionalIntParam(c, 'limit', 1, 100),
+    offset: getOptionalIntParam(c, 'offset', 0),
   };
 
   const contacts = await repo.list(query);
@@ -417,14 +416,14 @@ contactsRoutes.get('/favorites', async (c) => {
 
 contactsRoutes.get('/recent', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
-  const limit = c.req.query('limit') ? parseInt(c.req.query('limit')!) : 10;
+  const limit = getIntParam(c, 'limit', 10, 1, 100);
   const contacts = await repo.getRecentlyContacted(limit);
   return apiResponse(c, contacts);
 });
 
 contactsRoutes.get('/birthdays', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
-  const days = c.req.query('days') ? parseInt(c.req.query('days')!) : 30;
+  const days = getIntParam(c, 'days', 30, 1);
   const contacts = await repo.getUpcomingBirthdays(days);
   return apiResponse(c, contacts);
 });

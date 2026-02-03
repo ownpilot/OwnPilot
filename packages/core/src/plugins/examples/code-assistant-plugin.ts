@@ -612,7 +612,7 @@ const minifyCodeExecutor: ToolExecutor = async (params): Promise<ToolExecutionRe
 const diffCodeExecutor: ToolExecutor = async (params): Promise<ToolExecutionResult> => {
   const original = params.original as string;
   const modified = params.modified as string;
-  const context = (params.context as number) || 3;
+  const _context = (params.context as number) || 3;
 
   const originalLines = original.split('\n');
   const modifiedLines = modified.split('\n');

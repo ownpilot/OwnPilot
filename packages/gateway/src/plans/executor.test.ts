@@ -159,7 +159,7 @@ describe('PlanExecutor', () => {
       // After executeSteps sets status to 'completed', getPlan should reflect that
       let planStatus = 'pending';
       mockPlanService.getPlan.mockImplementation(async () => ({ ...plan, status: planStatus }));
-      mockPlanService.updatePlan.mockImplementation(async (_uid: string, _id: string, input: any) => {
+      mockPlanService.updatePlan.mockImplementation(async (_uid: string, _id: string, input: Record<string, unknown>) => {
         if (input.status) planStatus = input.status;
         return {};
       });
@@ -200,7 +200,7 @@ describe('PlanExecutor', () => {
       const resultPromise = executor.execute('plan-1');
       // Advance timers to allow the while loop iterations
       await vi.advanceTimersByTimeAsync(100);
-      const result = await resultPromise;
+      const _result = await resultPromise;
 
       expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-1', { status: 'running' });
       expect(executeTool).toHaveBeenCalledWith('my_tool', { key: 'val' }, 'user-1');
@@ -354,7 +354,7 @@ describe('PlanExecutor', () => {
       executor.registerHandler('custom_type', customHandler);
 
       const plan = makePlan();
-      const step = makeStep({ type: 'custom_type' as any, config: { myArg: 42 } });
+      const step = makeStep({ type: 'custom_type' as PlanStep['type'], config: { myArg: 42 } });
 
       mockPlanService.getPlan.mockResolvedValue(plan);
       mockPlanService.getSteps.mockResolvedValue([step]);
@@ -368,7 +368,7 @@ describe('PlanExecutor', () => {
 
       const resultPromise = executor.execute('plan-1');
       await vi.advanceTimersByTimeAsync(100);
-      const result = await resultPromise;
+      const _result = await resultPromise;
 
       expect(customHandler).toHaveBeenCalledWith(
         { myArg: 42 },
@@ -445,7 +445,7 @@ describe('PlanExecutor', () => {
 
       const resultPromise = executor.execute('plan-1');
       await vi.advanceTimersByTimeAsync(100);
-      const result = await resultPromise;
+      const _result = await resultPromise;
 
       // Should have paused the plan
       expect(mockPlanService.updatePlan).toHaveBeenCalledWith(
@@ -476,7 +476,7 @@ describe('PlanExecutor', () => {
 
       const resultPromise = executor.execute('plan-1');
       await vi.advanceTimersByTimeAsync(100);
-      const result = await resultPromise;
+      const _result = await resultPromise;
 
       // Step should have been completed
       expect(mockPlanService.updateStep).toHaveBeenCalledWith(

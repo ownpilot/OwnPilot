@@ -188,7 +188,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   if (toolName === 'list_directory' && typeof result === 'object' && result.files) {
     return (
       <div className="space-y-1">
-        {result.files.map((file: any, i: number) => (
+        {result.files.map((file: { isDirectory?: boolean; name?: string; size?: number }, i: number) => (
           <div
             key={i}
             className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary rounded"
@@ -310,7 +310,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   if (toolName === 'search_web' && typeof result === 'object' && result.results) {
     return (
       <div className="space-y-2">
-        {result.results.map((item: any, i: number) => (
+        {result.results.map((item: { url?: string; title?: string; description?: string; snippet?: string }, i: number) => (
           <a
             key={i}
             href={item.url}

@@ -26,6 +26,7 @@ vi.mock('./tool-executor.js', () => ({
 // SUT
 // ---------------------------------------------------------------------------
 
+import type { ToolMiddleware } from '@ownpilot/core';
 import { ToolService, createToolService } from './tool-service-impl.js';
 
 // ---------------------------------------------------------------------------
@@ -159,7 +160,7 @@ describe('ToolService', () => {
     it('passes middleware to registry', () => {
       const middleware = { name: 'test-mw' };
       const svc = new ToolService();
-      svc.use(middleware as any);
+      svc.use(middleware as unknown as ToolMiddleware);
       expect(mockRegistry.use).toHaveBeenCalledWith(middleware);
     });
   });

@@ -279,7 +279,11 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
         category: category.trim() || undefined,
       };
 
-      task ? await tasksApi.update(task.id, body) : await tasksApi.create(body);
+      if (task) {
+        await tasksApi.update(task.id, body);
+      } else {
+        await tasksApi.create(body);
+      }
       onSave();
     } catch {
       // Task save failed — handled silently

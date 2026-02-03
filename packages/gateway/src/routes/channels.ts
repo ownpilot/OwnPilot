@@ -140,16 +140,7 @@ channelRoutes.post('/:id/connect', async (c) => {
     await service.connect(pluginId);
     return apiResponse(c, { pluginId, status: 'connected' });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.CONNECTION_FAILED,
-          message: error instanceof Error ? error.message : 'Failed to connect channel',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: error instanceof Error ? error.message : 'Failed to connect channel' }, 500);
   }
 });
 
@@ -163,16 +154,7 @@ channelRoutes.post('/:id/disconnect', async (c) => {
     await service.disconnect(pluginId);
     return apiResponse(c, { pluginId, status: 'disconnected' });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.DISCONNECT_FAILED,
-          message: error instanceof Error ? error.message : 'Failed to disconnect channel',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.DISCONNECT_FAILED, message: error instanceof Error ? error.message : 'Failed to disconnect channel' }, 500);
   }
 });
 
@@ -185,10 +167,7 @@ channelRoutes.get('/:id', (c) => {
   const api = service.getChannel(pluginId);
 
   if (!api) {
-    return c.json(
-      { success: false, error: { code: ERROR_CODES.NOT_FOUND, message: `Channel ${pluginId} not found` } },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Channel ${pluginId} not found` }, 404);
   }
 
   return apiResponse(c, {
@@ -207,10 +186,7 @@ channelRoutes.post('/:id/send', async (c) => {
   const api = service.getChannel(pluginId);
 
   if (!api) {
-    return c.json(
-      { success: false, error: { code: ERROR_CODES.NOT_FOUND, message: `Channel ${pluginId} not found` } },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Channel ${pluginId} not found` }, 404);
   }
 
   try {
@@ -221,10 +197,7 @@ channelRoutes.post('/:id/send', async (c) => {
     }>();
 
     if (!body.text || !body.chatId) {
-      return c.json(
-        { success: false, error: { code: ERROR_CODES.INVALID_REQUEST, message: 'text and chatId are required' } },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'text and chatId are required' }, 400);
     }
 
     const messageId = await service.send(pluginId, {
@@ -235,16 +208,7 @@ channelRoutes.post('/:id/send', async (c) => {
 
     return apiResponse(c, { messageId, pluginId, chatId: body.chatId });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.SEND_FAILED,
-          message: error instanceof Error ? error.message : 'Failed to send message',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.SEND_FAILED, message: error instanceof Error ? error.message : 'Failed to send message' }, 500);
   }
 });
 
@@ -254,7 +218,7 @@ channelRoutes.post('/:id/send', async (c) => {
 channelRoutes.get('/:id/messages', async (c) => {
   const channelId = c.req.param('id');
   const limit = getIntParam(c, 'limit', 50, 1, 200);
-  const offset = parseInt(c.req.query('offset') ?? '0', 10);
+  const offset = getIntParam(c, 'offset', 0, 0);
 
   try {
     const messagesRepo = new ChannelMessagesRepository();
@@ -262,16 +226,7 @@ channelRoutes.get('/:id/messages', async (c) => {
 
     return apiResponse(c, { messages, count: messages.length, limit, offset });
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.FETCH_FAILED,
-          message: error instanceof Error ? error.message : 'Failed to fetch messages',
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.FETCH_FAILED, message: error instanceof Error ? error.message : 'Failed to fetch messages' }, 500);
   }
 });
 

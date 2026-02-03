@@ -24,7 +24,7 @@
  *   channelBus.emit('connected', data); // → 'channel.connected'
  */
 
-import type { EventMap, EventType, EventPayload } from './event-map.js';
+import type { EventType, EventPayload } from './event-map.js';
 import type { TypedEvent, EventHandler, Unsubscribe, EventCategory } from './types.js';
 import type { IEventBus } from './event-bus.js';
 import type { IHookBus } from './hook-bus.js';

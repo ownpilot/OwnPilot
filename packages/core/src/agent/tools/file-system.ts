@@ -6,10 +6,7 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { createWriteStream } from 'node:fs';
-import { pipeline } from 'node:stream/promises';
-import { Readable } from 'node:stream';
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult, ToolContext } from '../types.js';
+import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 
 /**
  * Safely convert a glob pattern to a RegExp.
@@ -98,7 +95,7 @@ async function isPathAllowedAsync(filePath: string, workspaceDir?: string): Prom
 /**
  * Synchronous path check for backward compatibility (less secure, use async when possible)
  */
-function isPathAllowed(filePath: string, workspaceDir?: string): boolean {
+function _isPathAllowed(filePath: string, workspaceDir?: string): boolean {
   const targetPath = path.isAbsolute(filePath)
     ? path.resolve(filePath)
     : path.resolve(getWorkspaceDir(workspaceDir), filePath);
@@ -239,7 +236,7 @@ export const writeFileExecutor: ToolExecutor = async (args, context): Promise<To
   const rawPath = args.path as string;
   const content = args.content as string;
   const append = args.append as boolean | undefined;
-  const createDirs = args.createDirs as boolean | undefined;
+  const _createDirs = args.createDirs as boolean | undefined;
 
   // Resolve relative paths to workspace directory
   const filePath = resolveFilePath(rawPath, context.workspaceDir);

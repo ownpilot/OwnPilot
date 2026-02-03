@@ -352,7 +352,7 @@ export function AIModelsTab() {
       );
       setSuccess(`Model ${enabled ? 'enabled' : 'disabled'}`);
       setTimeout(() => setSuccess(null), 2000);
-    } catch (err) {
+    } catch {
       setError('Failed to toggle model');
     } finally {
       setTogglingModel(null);
@@ -389,7 +389,7 @@ export function AIModelsTab() {
       setEditingModel(null);
       setSuccess('Model updated');
       setTimeout(() => setSuccess(null), 2000);
-    } catch (err) {
+    } catch {
       setError('Failed to update model');
     }
   };
@@ -406,7 +406,7 @@ export function AIModelsTab() {
       setTimeout(() => setSuccess(null), 3000);
       // Reload data after sync
       await loadData();
-    } catch (err) {
+    } catch {
       setError('Sync failed');
     } finally {
       setIsSyncing(false);
@@ -428,7 +428,7 @@ export function AIModelsTab() {
       setSuccess(`Reset complete! Deleted ${stats?.deleted || 0}, synced ${stats?.synced || 0} providers`);
       setTimeout(() => setSuccess(null), 5000);
       await loadData();
-    } catch (err) {
+    } catch {
       setError('Reset sync failed');
     } finally {
       setIsSyncing(false);

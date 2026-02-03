@@ -53,6 +53,32 @@ export interface DiscordChannelConfig {
   allowed_channels?: string;
 }
 
+/** Minimal Discord gateway event data for MESSAGE_CREATE */
+interface DiscordMessage {
+  guild_id?: string;
+  channel_id: string;
+  content: string;
+  author: {
+    id: string;
+    username: string;
+    global_name?: string;
+    avatar?: string;
+    bot?: boolean;
+  };
+  id: string;
+  timestamp: string;
+  referenced_message?: { id: string };
+  channel?: { name?: string };
+}
+
+/** Minimal Discord gateway payload */
+interface DiscordGatewayPayload {
+  op: number;
+  d: unknown;
+  s: number | null;
+  t: string | null;
+}
+
 // ============================================================================
 // Implementation
 // ============================================================================
@@ -117,7 +143,7 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
         }
       });
 
-      this.ws.on('close', (code, reason) => {
+      this.ws.on('close', (_code, _reason) => {
         this.stopHeartbeat();
         if (this.status !== 'disconnected') {
           this.status = 'reconnecting';
@@ -204,12 +230,12 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
     });
   }
 
-  async editMessage(platformMessageId: string, newText: string): Promise<void> {
+  async editMessage(_platformMessageId: string, _newText: string): Promise<void> {
     // Would need channel_id tracking per message
     log.warn('[Discord] editMessage not yet supported (requires channel_id tracking)');
   }
 
-  async deleteMessage(platformMessageId: string): Promise<void> {
+  async deleteMessage(_platformMessageId: string): Promise<void> {
     log.warn('[Discord] deleteMessage not yet supported (requires channel_id tracking)');
   }
 
@@ -218,7 +244,7 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
   // --------------------------------------------------------------------------
 
   private handleGatewayPayload(
-    payload: { op: number; d: any; s: number | null; t: string | null },
+    payload: DiscordGatewayPayload,
     onReady?: (value: void) => void
   ): void {
     if (payload.s !== null) {
@@ -227,8 +253,8 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
 
     switch (payload.op) {
       case GatewayOpcode.Hello: {
-        const interval = payload.d.heartbeat_interval;
-        this.startHeartbeat(interval);
+        const helloData = payload.d as { heartbeat_interval: number };
+        this.startHeartbeat(helloData.heartbeat_interval);
         this.identify();
         break;
       }
@@ -245,32 +271,39 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
         break;
 
       case GatewayOpcode.Dispatch:
-        this.handleDispatch(payload.t!, payload.d, onReady);
+        this.handleDispatch(payload.t!, payload.d as Record<string, unknown>, onReady);
         break;
     }
   }
 
   private handleDispatch(
     event: string,
-    data: any,
+    data: Record<string, unknown>,
     onReady?: (value: void) => void
   ): void {
     switch (event) {
-      case 'READY':
-        this.sessionId = data.session_id;
+      case 'READY': {
+        const readyData = data as unknown as {
+          session_id: string;
+          user: { username: string; discriminator: string };
+        };
+        this.sessionId = readyData.session_id;
         this.status = 'connected';
-        log.info(`[Discord] Connected as ${data.user.username}#${data.user.discriminator}`);
+        log.info(`[Discord] Connected as ${readyData.user.username}#${readyData.user.discriminator}`);
         this.emitConnectionEvent('connected');
         onReady?.();
         break;
+      }
 
-      case 'MESSAGE_CREATE':
+      case 'MESSAGE_CREATE': {
+        const msg = data as unknown as DiscordMessage;
         // Skip bot messages
-        if (data.author.bot) return;
-        this.handleIncomingMessage(data).catch((err) => {
+        if (msg.author.bot) return;
+        this.handleIncomingMessage(msg).catch((err) => {
           log.error('[Discord] Error handling message:', err);
         });
         break;
+      }
     }
   }
 
@@ -311,7 +344,7 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
   // Private: Message Processing
   // --------------------------------------------------------------------------
 
-  private async handleIncomingMessage(data: any): Promise<void> {
+  private async handleIncomingMessage(data: DiscordMessage): Promise<void> {
     const guildId = data.guild_id ?? '';
     const channelId = data.channel_id ?? '';
 

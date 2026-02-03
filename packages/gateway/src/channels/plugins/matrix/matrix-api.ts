@@ -34,12 +34,57 @@ export interface MatrixChannelConfig {
   enable_encryption?: boolean;
 }
 
+/** Minimal Matrix SDK types for dynamically imported matrix-js-sdk */
+interface MatrixEvent {
+  getType(): string;
+  getSender(): string;
+  getContent(): { body?: string; msgtype?: string };
+  getId(): string;
+  getTs(): number;
+  event?: { event_id?: string; origin_server_ts?: number };
+}
+
+interface MatrixRoomMember {
+  name?: string;
+  getAvatarUrl?(
+    baseUrl: string,
+    width: number,
+    height: number,
+    resizeMethod: string,
+    allowDefault: boolean
+  ): string | undefined;
+}
+
+interface MatrixRoom {
+  roomId: string;
+  name: string;
+  getJoinedMemberCount(): number;
+  getMember(userId: string): MatrixRoomMember | null;
+}
+
+interface MatrixClient {
+  on(event: 'Room.timeline', handler: (event: MatrixEvent, room: MatrixRoom) => void): void;
+  on(event: 'sync', handler: (state: string) => void): void;
+  on(event: string, handler: (...args: never[]) => void): void;
+  startClient(opts: Record<string, unknown>): Promise<void>;
+  stopClient(): void;
+  sendEvent(
+    roomId: string,
+    eventType: string,
+    content: Record<string, unknown>
+  ): Promise<{ event_id: string }>;
+  sendTyping(roomId: string, typing: boolean, timeout: number): Promise<void>;
+  getRooms(): MatrixRoom[];
+  setDisplayName(name: string): Promise<void>;
+  getUser(userId: string): { displayName?: string } | null;
+}
+
 // ============================================================================
 // Implementation
 // ============================================================================
 
 export class MatrixChannelAPI implements ChannelPluginAPI {
-  private client: any = null;
+  private client: MatrixClient | null = null;
   private status: ChannelConnectionStatus = 'disconnected';
   private readonly config: MatrixChannelConfig;
   private readonly pluginId: string;
@@ -78,10 +123,10 @@ export class MatrixChannelAPI implements ChannelPluginAPI {
         baseUrl: this.config.homeserver_url,
         accessToken: this.config.access_token,
         userId: this.config.user_id,
-      });
+      }) as unknown as MatrixClient;
 
       // Room timeline handler
-      this.client.on('Room.timeline', (event: any, room: any) => {
+      this.client.on('Room.timeline', (event: MatrixEvent, room: MatrixRoom) => {
         // Skip non-message events and own messages
         if (event.getType() !== 'm.room.message') return;
         if (event.getSender() === this.config.user_id) return;
@@ -169,11 +214,11 @@ export class MatrixChannelAPI implements ChannelPluginAPI {
       });
   }
 
-  async editMessage(platformMessageId: string, newText: string): Promise<void> {
+  async editMessage(_platformMessageId: string, _newText: string): Promise<void> {
     log.warn('[Matrix] editMessage not yet supported');
   }
 
-  async deleteMessage(platformMessageId: string): Promise<void> {
+  async deleteMessage(_platformMessageId: string): Promise<void> {
     log.warn('[Matrix] deleteMessage not yet supported');
   }
 
@@ -181,7 +226,7 @@ export class MatrixChannelAPI implements ChannelPluginAPI {
   // Private: Message Processing
   // --------------------------------------------------------------------------
 
-  private async handleIncomingMessage(event: any, room: any): Promise<void> {
+  private async handleIncomingMessage(event: MatrixEvent, room: MatrixRoom): Promise<void> {
     const roomId = room.roomId ?? '';
 
     // Access control
@@ -216,7 +261,7 @@ export class MatrixChannelAPI implements ChannelPluginAPI {
         48,
         'crop',
         false
-      ),
+      ) ?? undefined,
     };
 
     const normalized: ChannelIncomingMessage = {

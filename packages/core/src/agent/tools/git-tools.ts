@@ -46,7 +46,7 @@ export const gitStatusTool: ToolDefinition = {
   },
 };
 
-export const gitStatusExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gitStatusExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const short = params.short === true;
 
@@ -173,7 +173,7 @@ export const gitDiffTool: ToolDefinition = {
   },
 };
 
-export const gitDiffExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gitDiffExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const file = params.file as string | undefined;
   const staged = params.staged === true;
@@ -269,7 +269,7 @@ export const gitLogTool: ToolDefinition = {
   },
 };
 
-export const gitLogExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gitLogExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const limit = (params.limit as number) || 10;
   const oneline = params.oneline === true;
@@ -357,7 +357,7 @@ export const gitCommitTool: ToolDefinition = {
   },
 };
 
-export const gitCommitExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gitCommitExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const message = params.message as string;
   const all = params.all === true;
@@ -427,7 +427,7 @@ export const gitAddTool: ToolDefinition = {
   },
 };
 
-export const gitAddExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gitAddExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const files = params.files as string[] | undefined;
   const all = params.all === true;
@@ -497,7 +497,7 @@ export const gitBranchTool: ToolDefinition = {
   },
 };
 
-export const gitBranchExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gitBranchExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const action = (params.action as string) || 'list';
   const name = params.name as string | undefined;
@@ -596,7 +596,7 @@ export const gitCheckoutTool: ToolDefinition = {
   },
 };
 
-export const gitCheckoutExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const gitCheckoutExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const branch = params.branch as string | undefined;
   const file = params.file as string | undefined;

@@ -16,10 +16,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockTriggerService = {
   listTriggers: vi.fn(async () => []),
-  createTrigger: vi.fn(async (_userId: string, input: any) => ({
+  createTrigger: vi.fn(async (_userId: string, input: Record<string, unknown>) => ({
     id: `t-${input.name}`,
     ...input,
-    enabled: input.enabled ?? false,
+    enabled: (input.enabled as boolean | undefined) ?? false,
     lastFired: null,
     fireCount: 0,
   })),

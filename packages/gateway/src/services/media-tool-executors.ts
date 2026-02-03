@@ -78,7 +78,7 @@ async function isProviderConfigured(capability: MediaCapability): Promise<boolea
 // IMAGE GENERATION EXECUTOR
 // =============================================================================
 
-export const mediaGenerateImageExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const mediaGenerateImageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const prompt = params.prompt as string;
   const style = (params.style as string) || 'realistic';
   const size = (params.size as string) || '1024x1024';
@@ -188,7 +188,7 @@ export const mediaGenerateImageExecutor: ToolExecutor = async (params, context):
 // IMAGE ANALYSIS (VISION) EXECUTOR
 // =============================================================================
 
-export const mediaAnalyzeImageExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const mediaAnalyzeImageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const task = (params.task as string) || 'describe';
   const question = params.question as string | undefined;
@@ -291,10 +291,10 @@ export const mediaAnalyzeImageExecutor: ToolExecutor = async (params, context): 
 // TEXT TO SPEECH EXECUTOR
 // =============================================================================
 
-export const mediaTTSExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const mediaTTSExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const text = params.text as string;
   const voice = (params.voice as string) || 'alloy';
-  const model = params.model as string | undefined;
+  const _model = params.model as string | undefined;
   const speed = Math.min(Math.max((params.speed as number) || 1.0, 0.25), 4.0);
   const format = (params.format as string) || 'mp3';
   const outputPath = params.outputPath as string | undefined;
@@ -369,7 +369,7 @@ export const mediaTTSExecutor: ToolExecutor = async (params, context): Promise<T
 // SPEECH TO TEXT EXECUTOR
 // =============================================================================
 
-export const mediaSTTExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const mediaSTTExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const language = params.language as string | undefined;
   const prompt = params.prompt as string | undefined;
@@ -430,7 +430,7 @@ export const mediaSTTExecutor: ToolExecutor = async (params, context): Promise<T
 // AUDIO TRANSLATION EXECUTOR
 // =============================================================================
 
-export const mediaTranslateAudioExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const mediaTranslateAudioExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const prompt = params.prompt as string | undefined;
   const responseFormat = (params.responseFormat as string) || 'json';

@@ -8,7 +8,7 @@
  * - Error isolation (handler failures never propagate)
  */
 
-import type { EventMap, EventType, EventPayload } from './event-map.js';
+import type { EventType, EventPayload } from './event-map.js';
 import type { TypedEvent, EventHandler, Unsubscribe, EventCategory } from './types.js';
 import { deriveCategory } from './types.js';
 

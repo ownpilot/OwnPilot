@@ -19,7 +19,7 @@ import {
   createPluginSecurityMiddleware,
   createPluginId,
 } from '@ownpilot/core';
-import type { ToolDefinition } from '@ownpilot/core';
+import type { ToolDefinition, ToolContext } from '@ownpilot/core';
 import { gatewayConfigCenter as gatewayApiKeyCenter } from './config-center-impl.js';
 import { getDefaultPluginRegistry } from '../plugins/index.js';
 import { registerToolConfigRequirements } from './api-service-registrar.js';
@@ -185,7 +185,7 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
         };
 
         // Executor delegates to dynamic registry which handles sandboxing
-        const executor = (args: Record<string, unknown>, context: any) =>
+        const executor = (args: Record<string, unknown>, context: ToolContext) =>
           dynamicRegistry.execute(tool.name, args, context);
 
         registry.registerCustomTool(def, executor, tool.id);

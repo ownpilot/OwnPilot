@@ -7,7 +7,7 @@
 
 import * as crypto from 'node:crypto';
 import { createSandbox } from '../../sandbox/executor.js';
-import type { SandboxPermissions, ResourceLimits } from '../../sandbox/types.js';
+import type { SandboxPermissions } from '../../sandbox/types.js';
 import type { PluginId } from '../../types/branded.js';
 import type {
   ToolDefinition,

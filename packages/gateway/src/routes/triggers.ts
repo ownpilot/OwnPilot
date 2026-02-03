@@ -13,7 +13,7 @@ import {
 import { getTriggerService } from '../services/trigger-service.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression } from '@ownpilot/core';
-import { getUserId, apiResponse, getIntParam } from './helpers.js'
+import { getUserId, apiResponse, apiError, getIntParam } from './helpers.js'
 import { ERROR_CODES } from './helpers.js';
 
 export const triggersRoutes = new Hono();
@@ -57,29 +57,11 @@ triggersRoutes.post('/', async (c) => {
   if (body.type === 'schedule') {
     const config = body.config as { cron?: string };
     if (!config.cron) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ERROR_CODES.INVALID_CRON,
-            message: 'Schedule triggers require a cron expression in config.cron',
-          },
-        },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.INVALID_CRON, message: 'Schedule triggers require a cron expression in config.cron' }, 400);
     }
     const validation = validateCronExpression(config.cron);
     if (!validation.valid) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: ERROR_CODES.INVALID_CRON,
-            message: validation.error!,
-          },
-        },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.INVALID_CRON, message: validation.error! }, 400);
     }
   }
 
@@ -90,16 +72,7 @@ triggersRoutes.post('/', async (c) => {
     trigger = await service.createTrigger(userId, body);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to create trigger';
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.CREATE_FAILED,
-          message,
-        },
-      },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message }, 400);
   }
 
   return apiResponse(c, {
@@ -161,16 +134,7 @@ triggersRoutes.get('/:id', async (c) => {
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Trigger not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
   }
 
   // Get recent history for this trigger
@@ -200,16 +164,7 @@ triggersRoutes.patch('/:id', async (c) => {
       if (config.cron) {
         const validation = validateCronExpression(config.cron);
         if (!validation.valid) {
-          return c.json(
-            {
-              success: false,
-              error: {
-                code: ERROR_CODES.INVALID_CRON,
-                message: validation.error!,
-              },
-            },
-            400
-          );
+          return apiError(c, { code: ERROR_CODES.INVALID_CRON, message: validation.error! }, 400);
         }
       }
     }
@@ -218,16 +173,7 @@ triggersRoutes.patch('/:id', async (c) => {
   const updated = await service.updateTrigger(userId, id, body);
 
   if (!updated) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Trigger not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -244,16 +190,7 @@ triggersRoutes.post('/:id/enable', async (c) => {
   const updated = await service.updateTrigger(userId, id, { enabled: true });
 
   if (!updated) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Trigger not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -273,16 +210,7 @@ triggersRoutes.post('/:id/disable', async (c) => {
   const updated = await service.updateTrigger(userId, id, { enabled: false });
 
   if (!updated) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Trigger not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -302,16 +230,7 @@ triggersRoutes.post('/:id/fire', async (c) => {
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Trigger not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
   }
 
   // Fire the trigger using the engine
@@ -348,16 +267,7 @@ triggersRoutes.delete('/:id', async (c) => {
   const deleted = await service.deleteTrigger(userId, id);
 
   if (!deleted) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Trigger not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
   }
 
   return apiResponse(c, {
@@ -377,16 +287,7 @@ triggersRoutes.get('/:id/history', async (c) => {
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.NOT_FOUND,
-          message: `Trigger not found: ${id}`,
-        },
-      },
-      404
-    );
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
   }
 
   const history = await service.getHistoryForTrigger(userId, id, limit);

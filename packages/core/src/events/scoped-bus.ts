@@ -14,7 +14,7 @@
  *   // → subscribes to 'channel.connected' on global bus
  */
 
-import type { TypedEvent, EventHandler, HookHandler, HookContext, Unsubscribe } from './types.js';
+import type { EventHandler, HookHandler, HookContext, Unsubscribe } from './types.js';
 import type { IEventBus } from './event-bus.js';
 import type { IHookBus } from './hook-bus.js';
 

@@ -24,7 +24,7 @@ async function isGmailConfigured(userId = 'default'): Promise<boolean> {
 /**
  * Check if any media settings are configured
  */
-async function hasMediaSettings(): Promise<boolean> {
+async function _hasMediaSettings(): Promise<boolean> {
   // Check if any media provider is configured (for default user)
   const capabilities = ['image_generation', 'vision', 'tts', 'stt'] as const;
   for (const cap of capabilities) {

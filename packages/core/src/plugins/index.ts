@@ -11,8 +11,8 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { ToolDefinition, ToolExecutor, ToolContext, ToolExecutionResult } from '../agent/types.js';
-import type { PluginId, ToolId } from '../types/branded.js';
+import type { ToolDefinition, ToolExecutor } from '../agent/types.js';
+import type { PluginId } from '../types/branded.js';
 import type { ConfigFieldDefinition } from '../services/config-center.js';
 import {
   getEventSystem,
@@ -654,7 +654,7 @@ export class PluginRegistry {
    */
   private createEvents(pluginId: string): PluginEvents {
     const bus = getEventSystem().scoped(`plugin.${pluginId}`, `plugin:${pluginId}`);
-    const handlerMap = new Map<Function, () => void>();
+    const handlerMap = new Map<(...args: unknown[]) => void, () => void>();
 
     return {
       emit: (event, data) => bus.emit(event, data),

@@ -28,6 +28,34 @@ const log = getLog('Line');
 // Types
 // ============================================================================
 
+/** Minimal shape of a LINE webhook event. */
+interface LINEEvent {
+  type: string;
+  message: { id: string; type: string; text: string };
+  source: { type?: string; userId?: string; groupId?: string; roomId?: string };
+  replyToken: string;
+  timestamp: number;
+}
+
+/** Minimal interface for the LINE MessagingApiClient. */
+interface LINEClient {
+  replyMessage(opts: {
+    replyToken: string;
+    messages: { type: string; text: string }[];
+  }): Promise<unknown>;
+  pushMessage(opts: {
+    to: string;
+    messages: { type: string; text: string }[];
+  }): Promise<unknown>;
+  getProfile(userId: string): Promise<{ displayName?: string }>;
+}
+
+/** Minimal interface for a Node.js HTTP server. */
+interface LINEServer {
+  listen(port: number, callback?: () => void): void;
+  close(): void;
+}
+
 export interface LINEChannelConfig {
   channel_access_token: string;
   channel_secret: string;
@@ -39,8 +67,8 @@ export interface LINEChannelConfig {
 // ============================================================================
 
 export class LINEChannelAPI implements ChannelPluginAPI {
-  private client: any = null;
-  private server: any = null;
+  private client: LINEClient | null = null;
+  private server: LINEServer | null = null;
   private status: ChannelConnectionStatus = 'disconnected';
   private readonly config: LINEChannelConfig;
   private readonly pluginId: string;
@@ -77,10 +105,10 @@ export class LINEChannelAPI implements ChannelPluginAPI {
 
       this.client = new line.messagingApi.MessagingApiClient({
         channelAccessToken: this.config.channel_access_token,
-      });
+      }) as unknown as LINEClient;
 
       // Create webhook handler
-      const middleware = line.middleware(lineConfig);
+      const _middleware = line.middleware(lineConfig);
       const http = await import('node:http');
       const port = this.config.webhook_port ?? LINE_WEBHOOK_PORT;
 
@@ -172,7 +200,7 @@ export class LINEChannelAPI implements ChannelPluginAPI {
     return 'line';
   }
 
-  async sendTyping(platformChatId: string): Promise<void> {
+  async sendTyping(_platformChatId: string): Promise<void> {
     // LINE doesn't have a typing indicator API
   }
 
@@ -180,7 +208,7 @@ export class LINEChannelAPI implements ChannelPluginAPI {
   // Private: Webhook Processing
   // --------------------------------------------------------------------------
 
-  private handleWebhookEvents(events: any[]): void {
+  private handleWebhookEvents(events: LINEEvent[]): void {
     for (const event of events) {
       if (event.type !== 'message' || event.message.type !== 'text') continue;
 
@@ -205,7 +233,7 @@ export class LINEChannelAPI implements ChannelPluginAPI {
     }
   }
 
-  private async handleIncomingMessage(event: any): Promise<void> {
+  private async handleIncomingMessage(event: LINEEvent): Promise<void> {
     const userId = event.source.userId ?? '';
     const groupId = event.source.groupId ?? event.source.roomId ?? '';
     const chatId = groupId || userId;

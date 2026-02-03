@@ -108,7 +108,7 @@ goalsRoutes.get('/next-actions', async (c) => {
  */
 goalsRoutes.get('/upcoming', async (c) => {
   const userId = getUserId(c);
-  const days = parseInt(c.req.query('days') ?? '7', 10);
+  const days = getIntParam(c, 'days', 7, 1);
 
   const service = getGoalService();
   const goals = await service.getUpcoming(userId, days);
@@ -203,16 +203,7 @@ goalsRoutes.post('/:id/steps', async (c) => {
   } catch (err) {
     if (err instanceof GoalServiceError) {
       const status = err.code === 'NOT_FOUND' ? 404 : 400;
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: err.code,
-            message: err.message,
-          },
-        },
-        status
-      );
+      return apiError(c, { code: err.code, message: err.message }, status);
     }
     throw err;
   }

@@ -787,7 +787,7 @@ app.get('/:id/container/status', async (c) => {
 app.get('/:id/container/logs', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const tail = parseInt(c.req.query('tail') || '100');
+  const tail = getIntParam(c, 'tail', 100, 1, 1000);
   const repo = new WorkspacesRepository(userId);
 
   try {

@@ -36,7 +36,7 @@ export const readPdfTool: ToolDefinition = {
   },
 };
 
-export const readPdfExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const readPdfExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const path = params.path as string;
   const pages = (params.pages as string) || 'all';
   const extractTables = params.extractTables === true;
@@ -192,7 +192,7 @@ export const createPdfTool: ToolDefinition = {
   },
 };
 
-export const createPdfExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const createPdfExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const outputPath = params.path as string;
   const content = params.content as string;
   const format = (params.format as string) || 'text';
@@ -344,7 +344,7 @@ export const pdfInfoTool: ToolDefinition = {
   },
 };
 
-export const pdfInfoExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const pdfInfoExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const pdfPath = params.path as string;
 
   try {

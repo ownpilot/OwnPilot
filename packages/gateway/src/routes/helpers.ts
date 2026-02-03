@@ -41,11 +41,10 @@ export function getPaginationParams(
   defaultLimit: number = 20,
   maxLimit: number = 100
 ): { limit: number; offset: number } {
-  const limit = Math.min(
-    Math.max(1, parseInt(c.req.query('limit') ?? String(defaultLimit), 10)),
-    maxLimit
-  );
-  const offset = Math.max(0, parseInt(c.req.query('offset') ?? '0', 10));
+  const limitRaw = parseInt(c.req.query('limit') ?? String(defaultLimit), 10);
+  const limit = Math.min(Math.max(1, Number.isNaN(limitRaw) ? defaultLimit : limitRaw), maxLimit);
+  const offsetRaw = parseInt(c.req.query('offset') ?? '0', 10);
+  const offset = Math.max(0, Number.isNaN(offsetRaw) ? 0 : offsetRaw);
 
   return { limit, offset };
 }
@@ -71,6 +70,38 @@ export function getIntParam(
   max?: number
 ): number {
   let value = parseInt(c.req.query(name) ?? String(defaultValue), 10);
+  if (Number.isNaN(value)) value = defaultValue;
+
+  if (min !== undefined) value = Math.max(min, value);
+  if (max !== undefined) value = Math.min(max, value);
+
+  return value;
+}
+
+/**
+ * Parse optional integer query parameter. Returns undefined if parameter is missing or invalid.
+ * If present, applies bounds checking.
+ *
+ * Replaces repeated pattern:
+ *   const limit = c.req.query('limit') ? parseInt(c.req.query('limit')!) : undefined;
+ *
+ * @param c - Hono context
+ * @param name - Query parameter name
+ * @param min - Minimum allowed value (optional)
+ * @param max - Maximum allowed value (optional)
+ * @returns Parsed and bounded integer, or undefined if parameter is absent/invalid
+ */
+export function getOptionalIntParam(
+  c: Context,
+  name: string,
+  min?: number,
+  max?: number
+): number | undefined {
+  const raw = c.req.query(name);
+  if (raw === undefined) return undefined;
+
+  let value = parseInt(raw, 10);
+  if (Number.isNaN(value)) return undefined;
 
   if (min !== undefined) value = Math.max(min, value);
   if (max !== undefined) value = Math.min(max, value);

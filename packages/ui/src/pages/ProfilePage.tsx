@@ -113,7 +113,7 @@ export function ProfilePage() {
       await profileApi.setData('instructions', `instruction_${Date.now()}`, newInstruction);
       setNewInstruction('');
       fetchProfile();
-    } catch (err) {
+    } catch {
       setError('Failed to add instruction');
     }
   };
@@ -125,7 +125,7 @@ export function ProfilePage() {
       await profileApi.setData('boundaries', `boundary_${Date.now()}`, newBoundary);
       setNewBoundary('');
       fetchProfile();
-    } catch (err) {
+    } catch {
       setError('Failed to add boundary');
     }
   };
@@ -140,7 +140,7 @@ export function ProfilePage() {
       a.download = 'profile-backup.json';
       a.click();
       URL.revokeObjectURL(url);
-    } catch (err) {
+    } catch {
       setError('Failed to export profile');
     }
   };
@@ -154,7 +154,7 @@ export function ProfilePage() {
       const data = JSON.parse(text);
       await profileApi.import(data.entries);
       fetchProfile();
-    } catch (err) {
+    } catch {
       setError('Failed to import profile');
     }
   };

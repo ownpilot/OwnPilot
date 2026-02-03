@@ -8,14 +8,12 @@ import { HTTPException } from 'hono/http-exception';
 import {
   getDefaultPluginRegistry,
   type Plugin,
-  type PluginManifest,
   type PluginCapability,
   type PluginPermission,
   type PluginStatus,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
 import { apiResponse, apiError } from './helpers.js';
-import type { ApiResponse } from '../types/index.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';

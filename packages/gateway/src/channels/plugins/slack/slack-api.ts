@@ -27,6 +27,46 @@ const log = getLog('Slack');
 // Types
 // ============================================================================
 
+/** Minimal shape of a Slack incoming message (from Bolt event payload). */
+interface SlackMessage {
+  subtype?: string;
+  bot_id?: string;
+  channel: string;
+  user: string;
+  text: string;
+  ts: string;
+  thread_ts?: string;
+  team?: string;
+}
+
+/** Minimal shape of Slack user profile returned by users.info. */
+interface SlackUserInfo {
+  user?: {
+    real_name?: string;
+    name?: string;
+  };
+}
+
+/** Minimal interface for the @slack/bolt App instance. */
+interface SlackApp {
+  message(handler: (args: { message: SlackMessage; say: unknown }) => Promise<void>): void;
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  client: {
+    chat: {
+      postMessage(opts: {
+        token: string;
+        channel: string;
+        text: string;
+        thread_ts?: string;
+      }): Promise<{ ts?: string }>;
+    };
+    users: {
+      info(opts: { token: string; user: string }): Promise<SlackUserInfo>;
+    };
+  };
+}
+
 export interface SlackChannelConfig {
   bot_token: string;
   app_token: string;
@@ -39,7 +79,7 @@ export interface SlackChannelConfig {
 // ============================================================================
 
 export class SlackChannelAPI implements ChannelPluginAPI {
-  private app: any = null;
+  private app: SlackApp | null = null;
   private status: ChannelConnectionStatus = 'disconnected';
   private readonly config: SlackChannelConfig;
   private readonly pluginId: string;
@@ -78,10 +118,10 @@ export class SlackChannelAPI implements ChannelPluginAPI {
         token: this.config.bot_token,
         appToken: this.config.app_token,
         socketMode: true,
-      });
+      }) as unknown as SlackApp;
 
       // Message handler
-      this.app.message(async ({ message, say }: any) => {
+      this.app.message(async ({ message, say: _say }: { message: SlackMessage; say: unknown }) => {
         // Skip bot messages and subtypes
         if (message.subtype || message.bot_id) return;
         this.handleIncomingMessage(message).catch((err: Error) => {
@@ -135,15 +175,15 @@ export class SlackChannelAPI implements ChannelPluginAPI {
     return 'slack';
   }
 
-  async sendTyping(platformChatId: string): Promise<void> {
+  async sendTyping(_platformChatId: string): Promise<void> {
     // Slack doesn't have a direct typing indicator API for bots
   }
 
-  async editMessage(platformMessageId: string, newText: string): Promise<void> {
+  async editMessage(_platformMessageId: string, _newText: string): Promise<void> {
     log.warn('[Slack] editMessage not yet supported (requires channel tracking)');
   }
 
-  async deleteMessage(platformMessageId: string): Promise<void> {
+  async deleteMessage(_platformMessageId: string): Promise<void> {
     log.warn('[Slack] deleteMessage not yet supported (requires channel tracking)');
   }
 
@@ -151,7 +191,8 @@ export class SlackChannelAPI implements ChannelPluginAPI {
   // Private: Message Processing
   // --------------------------------------------------------------------------
 
-  private async handleIncomingMessage(message: any): Promise<void> {
+  private async handleIncomingMessage(message: SlackMessage): Promise<void> {
+    if (!this.app) return;
     const channelId = message.channel ?? '';
 
     // Access control

@@ -12,14 +12,9 @@ import {
   initializeAdapter,
   loadApiKeysToEnvironment,
   getDefaultProvider,
-  getApiKey,
-  getDefaultModel,
   isDemoModeFromSettings,
-  channelManager,
   initializeChannelFactories,
 } from '@ownpilot/gateway';
-import { createSimpleAgent } from '@ownpilot/core';
-import { createTelegramBot, type TelegramConfig } from '@ownpilot/channels';
 
 interface StartOptions {
   port: string;

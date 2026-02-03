@@ -521,16 +521,12 @@ export class HabitsRepository extends BaseRepository {
     const monthlyCompletions = monthlyLogs.reduce((sum, log) => sum + log.count, 0);
 
     // Calculate expected completions based on frequency
-    let expectedWeekly = 7;
     let expectedMonthly = 30;
     if (habit.frequency === 'weekdays') {
-      expectedWeekly = 5;
       expectedMonthly = 22;
     } else if (habit.frequency === 'weekly') {
-      expectedWeekly = 1;
       expectedMonthly = 4;
     } else if (habit.frequency === 'custom') {
-      expectedWeekly = habit.targetDays.length;
       expectedMonthly = habit.targetDays.length * 4;
     }
 

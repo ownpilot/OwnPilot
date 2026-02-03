@@ -6,8 +6,7 @@ import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import { getDebugInfo, debugLog } from '@ownpilot/core';
-import { apiResponse } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { apiResponse, getIntParam } from './helpers.js'
 
 export const debugRoutes = new Hono();
 
@@ -33,7 +32,7 @@ debugRoutes.use('*', requireDebugAccess);
  * Get debug log entries
  */
 debugRoutes.get('/', async (c) => {
-  const count = parseInt(c.req.query('count') ?? '50', 10);
+  const count = getIntParam(c, 'count', 50, 1, 500);
   const debugInfo = getDebugInfo();
 
   return apiResponse(c, {
@@ -47,7 +46,7 @@ debugRoutes.get('/', async (c) => {
  * Get recent entries only
  */
 debugRoutes.get('/recent', async (c) => {
-  const count = parseInt(c.req.query('count') ?? '10', 10);
+  const count = getIntParam(c, 'count', 10, 1, 500);
   const entries = debugLog.getRecent(count);
 
   return apiResponse(c, {
@@ -86,7 +85,7 @@ debugRoutes.post('/toggle', async (c) => {
  * Get errors only
  */
 debugRoutes.get('/errors', async (c) => {
-  const count = parseInt(c.req.query('count') ?? '20', 10);
+  const count = getIntParam(c, 'count', 20, 1, 500);
   const allEntries = debugLog.getAll();
   const errors = allEntries
     .filter(e => e.type === 'error' || e.type === 'retry')
@@ -102,7 +101,7 @@ debugRoutes.get('/errors', async (c) => {
  * Get requests and responses only
  */
 debugRoutes.get('/requests', async (c) => {
-  const count = parseInt(c.req.query('count') ?? '20', 10);
+  const count = getIntParam(c, 'count', 20, 1, 500);
   const allEntries = debugLog.getAll();
   const requests = allEntries
     .filter(e => e.type === 'request' || e.type === 'response')
@@ -118,7 +117,7 @@ debugRoutes.get('/requests', async (c) => {
  * Get tool calls only
  */
 debugRoutes.get('/tools', async (c) => {
-  const count = parseInt(c.req.query('count') ?? '20', 10);
+  const count = getIntParam(c, 'count', 20, 1, 500);
   const allEntries = debugLog.getAll();
   const toolCalls = allEntries
     .filter(e => e.type === 'tool_call' || e.type === 'tool_result')
@@ -134,7 +133,7 @@ debugRoutes.get('/tools', async (c) => {
  * Get sandbox executions only (execute_shell, execute_python, execute_javascript)
  */
 debugRoutes.get('/sandbox', async (c) => {
-  const count = parseInt(c.req.query('count') ?? '20', 10);
+  const count = getIntParam(c, 'count', 20, 1, 500);
   const allEntries = debugLog.getAll();
   const sandboxExecutions = allEntries
     .filter(e => e.type === 'sandbox_execution')

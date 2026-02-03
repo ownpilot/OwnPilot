@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { ToolContext } from '@ownpilot/core';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -32,7 +33,7 @@ const mockGmailClient = {
 vi.mock('@ownpilot/core', () => ({
   GmailClient: vi.fn(),
   createGmailClient: vi.fn(() => mockGmailClient),
-  buildGmailQuery: vi.fn((opts: any) => {
+  buildGmailQuery: vi.fn((opts: Record<string, unknown>) => {
     const parts: string[] = [];
     if (opts.from) parts.push(`from:${opts.from}`);
     if (opts.subject) parts.push(`subject:${opts.subject}`);
@@ -172,11 +173,11 @@ describe('Gmail Tool Executors', () => {
         to: ['test@example.com'],
         subject: 'Test',
         body: 'Hello',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
-      expect((result.content as any).success).toBe(true);
-      expect((result.content as any).messageId).toBe('msg-1');
+      expect((result.content as Record<string, unknown>).success).toBe(true);
+      expect((result.content as Record<string, unknown>).messageId).toBe('msg-1');
     });
 
     it('returns error for empty recipients', async () => {
@@ -184,10 +185,10 @@ describe('Gmail Tool Executors', () => {
         to: [],
         subject: 'Test',
         body: 'Hello',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('recipient is required');
+      expect((result.content as Record<string, unknown>).error).toContain('recipient is required');
     });
 
     it('validates email format', async () => {
@@ -195,10 +196,10 @@ describe('Gmail Tool Executors', () => {
         to: ['invalid-email'],
         subject: 'Test',
         body: 'Hello',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('Invalid email address');
+      expect((result.content as Record<string, unknown>).error).toContain('Invalid email address');
     });
 
     it('returns error when Gmail not connected', async () => {
@@ -208,10 +209,10 @@ describe('Gmail Tool Executors', () => {
         to: ['test@example.com'],
         subject: 'Test',
         body: 'Hello',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('not connected');
+      expect((result.content as Record<string, unknown>).error).toContain('not connected');
     });
 
     it('handles Gmail API error', async () => {
@@ -222,10 +223,10 @@ describe('Gmail Tool Executors', () => {
         to: ['test@example.com'],
         subject: 'Test',
         body: 'Hello',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('Rate limited');
+      expect((result.content as Record<string, unknown>).error).toContain('Rate limited');
     });
   });
 
@@ -254,19 +255,20 @@ describe('Gmail Tool Executors', () => {
         nextPageToken: null,
       });
 
-      const result = await gmailListEmailsExecutor({}, {} as any);
+      const result = await gmailListEmailsExecutor({}, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
-      const content = result.content as any;
-      expect(content.emails).toHaveLength(1);
-      expect(content.emails[0].from).toBe('sender@test.com');
+      const content = result.content as Record<string, unknown>;
+      const emails = content.emails as Record<string, unknown>[];
+      expect(emails).toHaveLength(1);
+      expect(emails[0].from).toBe('sender@test.com');
       expect(content.hasMore).toBe(false);
     });
 
     it('returns error when not connected', async () => {
       mockOauthIntegrationsRepo.isConnected.mockResolvedValue(false);
 
-      const result = await gmailListEmailsExecutor({}, {} as any);
+      const result = await gmailListEmailsExecutor({}, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
     });
@@ -275,7 +277,7 @@ describe('Gmail Tool Executors', () => {
       setupConnectedGmail();
       mockGmailClient.listMessages.mockResolvedValue({ messages: [], nextPageToken: null });
 
-      await gmailListEmailsExecutor({ limit: 500 }, {} as any);
+      await gmailListEmailsExecutor({ limit: 500 }, {} as unknown as ToolContext);
 
       expect(mockGmailClient.listMessages).toHaveBeenCalledWith(
         expect.objectContaining({ maxResults: 100 }),
@@ -304,18 +306,19 @@ describe('Gmail Tool Executors', () => {
         isUnread: true,
       });
 
-      const result = await gmailReadEmailExecutor({ id: 'msg-1' }, {} as any);
+      const result = await gmailReadEmailExecutor({ id: 'msg-1' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
-      expect((result.content as any).email.subject).toBe('Test');
+      const email = (result.content as Record<string, unknown>).email as Record<string, unknown>;
+      expect(email.subject).toBe('Test');
       expect(mockGmailClient.markAsRead).toHaveBeenCalledWith('msg-1');
     });
 
     it('returns error when id is missing', async () => {
-      const result = await gmailReadEmailExecutor({}, {} as any);
+      const result = await gmailReadEmailExecutor({}, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('Email ID is required');
+      expect((result.content as Record<string, unknown>).error).toContain('Email ID is required');
     });
   });
 
@@ -328,26 +331,26 @@ describe('Gmail Tool Executors', () => {
       setupConnectedGmail();
       mockGmailClient.trashMessage.mockResolvedValue(undefined);
 
-      const result = await gmailDeleteEmailExecutor({ id: 'msg-1' }, {} as any);
+      const result = await gmailDeleteEmailExecutor({ id: 'msg-1' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
       expect(mockGmailClient.trashMessage).toHaveBeenCalledWith('msg-1');
-      expect((result.content as any).message).toContain('trash');
+      expect((result.content as Record<string, unknown>).message).toContain('trash');
     });
 
     it('permanently deletes when requested', async () => {
       setupConnectedGmail();
       mockGmailClient.deleteMessagePermanently.mockResolvedValue(undefined);
 
-      const result = await gmailDeleteEmailExecutor({ id: 'msg-1', permanent: true }, {} as any);
+      const result = await gmailDeleteEmailExecutor({ id: 'msg-1', permanent: true }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
       expect(mockGmailClient.deleteMessagePermanently).toHaveBeenCalledWith('msg-1');
-      expect((result.content as any).warning).toContain('cannot be undone');
+      expect((result.content as Record<string, unknown>).warning).toContain('cannot be undone');
     });
 
     it('returns error when id is missing', async () => {
-      const result = await gmailDeleteEmailExecutor({}, {} as any);
+      const result = await gmailDeleteEmailExecutor({}, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
     });
@@ -368,7 +371,7 @@ describe('Gmail Tool Executors', () => {
       const result = await gmailSearchEmailsExecutor({
         query: 'invoice',
         hasAttachment: true,
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
       expect(mockGmailClient.searchMessages).toHaveBeenCalledWith(
@@ -377,17 +380,17 @@ describe('Gmail Tool Executors', () => {
     });
 
     it('returns error when query is missing', async () => {
-      const result = await gmailSearchEmailsExecutor({}, {} as any);
+      const result = await gmailSearchEmailsExecutor({}, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('Search query is required');
+      expect((result.content as Record<string, unknown>).error).toContain('Search query is required');
     });
 
     it('caps limit to 200', async () => {
       setupConnectedGmail();
       mockGmailClient.searchMessages.mockResolvedValue({ messages: [], nextPageToken: null });
 
-      await gmailSearchEmailsExecutor({ query: 'test', limit: 1000 }, {} as any);
+      await gmailSearchEmailsExecutor({ query: 'test', limit: 1000 }, {} as unknown as ToolContext);
 
       expect(mockGmailClient.searchMessages).toHaveBeenCalledWith(
         expect.objectContaining({ maxResults: 200 }),
@@ -410,7 +413,7 @@ describe('Gmail Tool Executors', () => {
       const result = await gmailReplyEmailExecutor({
         id: 'msg-1',
         body: 'Thanks!',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
       expect(mockGmailClient.replyToMessage).toHaveBeenCalledWith('msg-1', 'Thanks!', {
@@ -420,13 +423,13 @@ describe('Gmail Tool Executors', () => {
     });
 
     it('returns error when email id missing', async () => {
-      const result = await gmailReplyEmailExecutor({ body: 'Thanks!' }, {} as any);
+      const result = await gmailReplyEmailExecutor({ body: 'Thanks!' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
     });
 
     it('returns error when body missing', async () => {
-      const result = await gmailReplyEmailExecutor({ id: 'msg-1' }, {} as any);
+      const result = await gmailReplyEmailExecutor({ id: 'msg-1' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
     });
@@ -440,7 +443,7 @@ describe('Gmail Tool Executors', () => {
     it('marks as read', async () => {
       setupConnectedGmail();
 
-      const result = await gmailMarkReadExecutor({ id: 'msg-1', read: true }, {} as any);
+      const result = await gmailMarkReadExecutor({ id: 'msg-1', read: true }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
       expect(mockGmailClient.markAsRead).toHaveBeenCalledWith('msg-1');
@@ -449,14 +452,14 @@ describe('Gmail Tool Executors', () => {
     it('marks as unread', async () => {
       setupConnectedGmail();
 
-      const result = await gmailMarkReadExecutor({ id: 'msg-1', read: false }, {} as any);
+      const result = await gmailMarkReadExecutor({ id: 'msg-1', read: false }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
       expect(mockGmailClient.markAsUnread).toHaveBeenCalledWith('msg-1');
     });
 
     it('returns error when id is missing', async () => {
-      const result = await gmailMarkReadExecutor({}, {} as any);
+      const result = await gmailMarkReadExecutor({}, {} as unknown as ToolContext);
       expect(result.isError).toBe(true);
     });
   });
@@ -469,7 +472,7 @@ describe('Gmail Tool Executors', () => {
     it('stars email', async () => {
       setupConnectedGmail();
 
-      const result = await gmailStarExecutor({ id: 'msg-1' }, {} as any);
+      const result = await gmailStarExecutor({ id: 'msg-1' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
       expect(mockGmailClient.starMessage).toHaveBeenCalledWith('msg-1');
@@ -478,7 +481,7 @@ describe('Gmail Tool Executors', () => {
     it('unstars email', async () => {
       setupConnectedGmail();
 
-      const result = await gmailStarExecutor({ id: 'msg-1', star: false }, {} as any);
+      const result = await gmailStarExecutor({ id: 'msg-1', star: false }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
       expect(mockGmailClient.unstarMessage).toHaveBeenCalledWith('msg-1');
@@ -493,14 +496,14 @@ describe('Gmail Tool Executors', () => {
     it('archives email', async () => {
       setupConnectedGmail();
 
-      const result = await gmailArchiveExecutor({ id: 'msg-1' }, {} as any);
+      const result = await gmailArchiveExecutor({ id: 'msg-1' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
       expect(mockGmailClient.archiveMessage).toHaveBeenCalledWith('msg-1');
     });
 
     it('returns error when id is missing', async () => {
-      const result = await gmailArchiveExecutor({}, {} as any);
+      const result = await gmailArchiveExecutor({}, {} as unknown as ToolContext);
       expect(result.isError).toBe(true);
     });
   });
@@ -516,10 +519,10 @@ describe('Gmail Tool Executors', () => {
         { id: 'INBOX', name: 'INBOX', type: 'system', messagesTotal: 100, messagesUnread: 5 },
       ]);
 
-      const result = await gmailGetLabelsExecutor({}, {} as any);
+      const result = await gmailGetLabelsExecutor({}, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
-      const labels = (result.content as any).labels;
+      const labels = (result.content as Record<string, unknown>).labels as Record<string, unknown>[];
       expect(labels).toHaveLength(1);
       expect(labels[0].name).toBe('INBOX');
     });
@@ -537,19 +540,19 @@ describe('Gmail Tool Executors', () => {
       const result = await gmailGetAttachmentExecutor({
         messageId: 'msg-1',
         attachmentId: 'att-1',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
-      const content = result.content as any;
+      const content = result.content as Record<string, unknown>;
       expect(content.encoding).toBe('base64');
       expect(content.size).toBeGreaterThan(0);
     });
 
     it('returns error when ids are missing', async () => {
-      const result = await gmailGetAttachmentExecutor({}, {} as any);
+      const result = await gmailGetAttachmentExecutor({}, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('required');
+      expect((result.content as Record<string, unknown>).error).toContain('required');
     });
   });
 });

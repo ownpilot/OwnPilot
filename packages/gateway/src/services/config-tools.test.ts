@@ -35,6 +35,11 @@ vi.mock('../db/repositories/config-services.js', () => ({
 
 import { CONFIG_TOOLS, executeConfigTool } from './config-tools.js';
 
+// Type helpers for accessing dynamic result shapes in tests
+interface ServiceListResult { services: Array<Record<string, unknown>>; configured: number; unconfigured: number }
+interface ServiceDetailResult { service: Record<string, unknown>; schema: unknown[]; configured: boolean; entries: Array<{ data: Record<string, unknown> }> }
+interface SetEntryResult { action: string }
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -88,14 +93,14 @@ describe('Config Tools', () => {
       const result = await executeConfigTool('config_list_services', {});
 
       expect(result.success).toBe(true);
-      const services = (result.result as any).services;
+      const { services, configured, unconfigured } = result.result as ServiceListResult;
       expect(services).toHaveLength(2);
       expect(services[0].name).toBe('deepl');
       expect(services[0].configured).toBe(true);
       expect(services[1].name).toBe('smtp');
       expect(services[1].configured).toBe(false);
-      expect((result.result as any).configured).toBe(1);
-      expect((result.result as any).unconfigured).toBe(1);
+      expect(configured).toBe(1);
+      expect(unconfigured).toBe(1);
     });
 
     it('filters by category', async () => {
@@ -116,7 +121,7 @@ describe('Config Tools', () => {
 
       const result = await executeConfigTool('config_list_services', {});
 
-      const services = (result.result as any).services;
+      const { services } = result.result as ServiceListResult;
       expect(services[0].configured).toBe(false);
     });
 
@@ -128,7 +133,7 @@ describe('Config Tools', () => {
 
       const result = await executeConfigTool('config_list_services', {});
 
-      const services = (result.result as any).services;
+      const { services } = result.result as ServiceListResult;
       expect(services[0].requiredBy).toEqual(['tool:my_tool']);
     });
   });
@@ -158,7 +163,7 @@ describe('Config Tools', () => {
       const result = await executeConfigTool('config_get_service', { service: 'deepl' });
 
       expect(result.success).toBe(true);
-      const content = result.result as any;
+      const content = result.result as ServiceDetailResult;
       expect(content.service.name).toBe('deepl');
       expect(content.schema).toHaveLength(2);
       expect(content.configured).toBe(true);
@@ -194,7 +199,7 @@ describe('Config Tools', () => {
 
       const result = await executeConfigTool('config_get_service', { service: 'svc' });
 
-      const entry = (result.result as any).entries[0];
+      const entry = (result.result as ServiceDetailResult).entries[0];
       expect(entry.data.api_key).toBe('');
     });
   });
@@ -221,7 +226,7 @@ describe('Config Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result.result as any).action).toBe('created');
+      expect((result.result as SetEntryResult).action).toBe('created');
       expect(mockConfigServicesRepo.createEntry).toHaveBeenCalledWith('deepl', {
         data: { api_key: 'sk-new-key' },
         label: 'Default',
@@ -249,7 +254,7 @@ describe('Config Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result.result as any).action).toBe('updated');
+      expect((result.result as SetEntryResult).action).toBe('updated');
       expect(mockConfigServicesRepo.updateEntry).toHaveBeenCalledWith(
         'existing-entry',
         expect.objectContaining({

@@ -80,7 +80,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 
 // Import after mocks
 const { providersRoutes } = await import('./providers.js');
-const { getApiKeySource, hasApiKey } = await import('./settings.js');
+const { getApiKeySource, hasApiKey: _hasApiKey } = await import('./settings.js');
 
 // ---------------------------------------------------------------------------
 // App setup

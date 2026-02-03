@@ -573,8 +573,8 @@ describe('File Workspaces Routes', () => {
       const mockStream = {};
       vi.mocked(getSessionWorkspace).mockReturnValue(mockWorkspace);
       vi.mocked(zipSessionWorkspace).mockResolvedValue(mockZipPath);
-      vi.mocked(stat).mockResolvedValue({ size: 1024 } as any);
-      vi.mocked(createReadStream).mockReturnValue(mockStream as any);
+      vi.mocked(stat).mockResolvedValue({ size: 1024 } as unknown as Awaited<ReturnType<typeof stat>>);
+      vi.mocked(createReadStream).mockReturnValue(mockStream as unknown as ReturnType<typeof createReadStream>);
 
       const res = await app.request('/file-workspaces/ws-123/download');
 

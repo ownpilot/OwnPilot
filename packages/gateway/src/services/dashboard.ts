@@ -20,8 +20,6 @@ import {
   type Memory,
   type Note,
   type Plan,
-  type Habit,
-  type DailyCost,
 } from '../db/repositories/index.js';
 import { type CustomTableSchema } from '../db/repositories/custom-data.js';
 import { getMemoryService } from './memory-service.js';

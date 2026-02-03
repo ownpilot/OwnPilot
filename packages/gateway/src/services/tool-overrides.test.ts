@@ -42,6 +42,7 @@ vi.mock('../db/repositories/index.js', () => ({
   },
 }));
 
+import type { ToolRegistry } from '@ownpilot/core';
 import {
   registerGmailToolOverrides,
   registerMediaToolOverrides,
@@ -86,7 +87,7 @@ describe('Tool Overrides', () => {
       registry._addTool('send_email');
       registry._addTool('read_emails');
 
-      const count = await registerGmailToolOverrides(registry as any, 'user-1');
+      const count = await registerGmailToolOverrides(registry as unknown as ToolRegistry, 'user-1');
 
       expect(count).toBe(2);
       expect(registry.updateExecutor).toHaveBeenCalledTimes(2);
@@ -98,7 +99,7 @@ describe('Tool Overrides', () => {
       mockOauthIntegrationsRepo.getByUserProviderService.mockResolvedValue(null);
 
       const registry = createMockRegistry();
-      const count = await registerGmailToolOverrides(registry as any);
+      const count = await registerGmailToolOverrides(registry as unknown as ToolRegistry);
 
       expect(count).toBe(0);
       expect(registry.updateExecutor).not.toHaveBeenCalled();
@@ -110,7 +111,7 @@ describe('Tool Overrides', () => {
       });
 
       const registry = createMockRegistry();
-      const count = await registerGmailToolOverrides(registry as any);
+      const count = await registerGmailToolOverrides(registry as unknown as ToolRegistry);
 
       expect(count).toBe(0);
     });
@@ -124,7 +125,7 @@ describe('Tool Overrides', () => {
       registry._addTool('send_email');
       // read_emails NOT added to registry
 
-      const count = await registerGmailToolOverrides(registry as any);
+      const count = await registerGmailToolOverrides(registry as unknown as ToolRegistry);
 
       expect(count).toBe(1); // only send_email
     });
@@ -140,7 +141,7 @@ describe('Tool Overrides', () => {
       registry._addTool('generate_image');
       registry._addTool('text_to_speech');
 
-      const count = await registerMediaToolOverrides(registry as any);
+      const count = await registerMediaToolOverrides(registry as unknown as ToolRegistry);
 
       expect(count).toBe(2);
       expect(registry.updateExecutor).toHaveBeenCalledWith('generate_image', expect.any(Function));
@@ -150,7 +151,7 @@ describe('Tool Overrides', () => {
     it('returns 0 when no media tools in registry', async () => {
       const registry = createMockRegistry();
 
-      const count = await registerMediaToolOverrides(registry as any);
+      const count = await registerMediaToolOverrides(registry as unknown as ToolRegistry);
 
       expect(count).toBe(0);
     });
@@ -160,7 +161,7 @@ describe('Tool Overrides', () => {
       registry._addTool('generate_image');
       // text_to_speech NOT in registry
 
-      const count = await registerMediaToolOverrides(registry as any);
+      const count = await registerMediaToolOverrides(registry as unknown as ToolRegistry);
 
       expect(count).toBe(1);
     });
@@ -182,7 +183,7 @@ describe('Tool Overrides', () => {
       registry._addTool('generate_image');
       registry._addTool('text_to_speech');
 
-      const result = await initializeToolOverrides(registry as any, 'user-1');
+      const result = await initializeToolOverrides(registry as unknown as ToolRegistry, 'user-1');
 
       expect(result.gmail).toBe(2);
       expect(result.media).toBe(2);
@@ -197,7 +198,7 @@ describe('Tool Overrides', () => {
       const registry = createMockRegistry();
       registry._addTool('generate_image');
 
-      const result = await initializeToolOverrides(registry as any);
+      const result = await initializeToolOverrides(registry as unknown as ToolRegistry);
 
       expect(result.gmail).toBe(0);
       expect(result.media).toBe(1);
@@ -209,7 +210,7 @@ describe('Tool Overrides', () => {
 
       const registry = createMockRegistry();
 
-      const result = await initializeToolOverrides(registry as any);
+      const result = await initializeToolOverrides(registry as unknown as ToolRegistry);
 
       expect(result).toEqual({ gmail: 0, media: 0, total: 0 });
     });

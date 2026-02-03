@@ -97,7 +97,7 @@ const expenseHandler: MessageHandler = {
   description: 'Handles expense-related messages like "spent $50 on food"',
   priority: 50, // Medium priority
 
-  canHandle: async (message: string, context: HandlerContext): Promise<boolean> => {
+  canHandle: async (message: string, _context: HandlerContext): Promise<boolean> => {
     // Check if message matches any expense pattern
     for (const pattern of EXPENSE_PATTERNS.addExpense) {
       if (pattern.test(message)) return true;
@@ -108,7 +108,7 @@ const expenseHandler: MessageHandler = {
     return false;
   },
 
-  handle: async (message: string, context: HandlerContext): Promise<HandlerResult> => {
+  handle: async (message: string, _context: HandlerContext): Promise<HandlerResult> => {
     // Check if it's a query
     for (const pattern of EXPENSE_PATTERNS.queryExpense) {
       if (pattern.test(message)) {

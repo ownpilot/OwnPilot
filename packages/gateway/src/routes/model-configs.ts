@@ -24,12 +24,10 @@ import {
   getAggregatorProvider,
   isAggregatorProvider,
   type ModelCapability,
-  type AggregatorProvider,
 } from '@ownpilot/core';
 import { hasApiKey, getApiKey } from './settings.js';
 import { getLog } from '../services/log.js';
 import { getUserId, apiResponse, apiError } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
 
 const log = getLog('ModelConfigs');
 

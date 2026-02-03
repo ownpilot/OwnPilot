@@ -75,7 +75,7 @@ export const createEmbeddingTool: ToolDefinition = {
   configRequirements: [OPENAI_EMBEDDING_CONFIG],
 };
 
-export const createEmbeddingExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const createEmbeddingExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const text = params.text as string | undefined;
   const texts = params.texts as string[] | undefined;
   const model = (params.model as string) || 'text-embedding-3-small';
@@ -169,7 +169,7 @@ export const semanticSearchTool: ToolDefinition = {
   configRequirements: [OPENAI_EMBEDDING_CONFIG, PINECONE_CONFIG, QDRANT_CONFIG],
 };
 
-export const semanticSearchExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const semanticSearchExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const query = params.query as string;
   const collection = params.collection as string;
   const topK = (params.topK as number) || 10;
@@ -251,7 +251,7 @@ export const upsertVectorsTool: ToolDefinition = {
   configRequirements: [OPENAI_EMBEDDING_CONFIG, PINECONE_CONFIG, QDRANT_CONFIG],
 };
 
-export const upsertVectorsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const upsertVectorsExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const collection = params.collection as string;
   const vectors = params.vectors as Array<{
     id: string;
@@ -332,7 +332,7 @@ export const deleteVectorsTool: ToolDefinition = {
   configRequirements: [PINECONE_CONFIG, QDRANT_CONFIG],
 };
 
-export const deleteVectorsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const deleteVectorsExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const collection = params.collection as string;
   const ids = params.ids as string[] | undefined;
   const filter = params.filter as Record<string, unknown> | undefined;
@@ -392,7 +392,7 @@ export const listCollectionsTool: ToolDefinition = {
   configRequirements: [PINECONE_CONFIG, QDRANT_CONFIG],
 };
 
-export const listCollectionsExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const listCollectionsExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const includeStats = params.includeStats === true;
 
   return {
@@ -438,7 +438,7 @@ export const createCollectionTool: ToolDefinition = {
   configRequirements: [PINECONE_CONFIG, QDRANT_CONFIG],
 };
 
-export const createCollectionExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const createCollectionExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const name = params.name as string;
   const dimensions = params.dimensions as number;
   const metric = (params.metric as string) || 'cosine';
@@ -513,7 +513,7 @@ export const similarityScoreTool: ToolDefinition = {
   configRequirements: [OPENAI_EMBEDDING_CONFIG],
 };
 
-export const similarityScoreExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const similarityScoreExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const text1 = params.text1 as string | undefined;
   const text2 = params.text2 as string | undefined;
   const vector1 = params.vector1 as number[] | undefined;

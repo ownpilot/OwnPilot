@@ -216,16 +216,7 @@ plansRoutes.post('/:id/execute', async (c) => {
     }, result.status === 'completed' ? 200 : 500);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.EXECUTION_ERROR,
-          message: errorMessage,
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: errorMessage }, 500);
   }
 });
 
@@ -294,16 +285,7 @@ plansRoutes.post('/:id/resume', async (c) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.RESUME_ERROR,
-          message: errorMessage,
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.RESUME_ERROR, message: errorMessage }, 500);
   }
 });
 
@@ -398,16 +380,7 @@ plansRoutes.post('/:id/start', async (c) => {
     }, result.status === 'completed' ? 200 : 500);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.EXECUTION_ERROR,
-          message: errorMessage,
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: errorMessage }, 500);
   }
 });
 
@@ -452,16 +425,7 @@ plansRoutes.post('/:id/rollback', async (c) => {
       });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.ROLLBACK_ERROR,
-          message: errorMessage,
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.ROLLBACK_ERROR, message: errorMessage }, 500);
   }
 });
 
@@ -514,16 +478,7 @@ plansRoutes.post('/:id/steps', async (c) => {
       }, 201);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: ERROR_CODES.ADD_STEP_ERROR,
-          message: errorMessage,
-        },
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.ADD_STEP_ERROR, message: errorMessage }, 500);
   }
 });
 

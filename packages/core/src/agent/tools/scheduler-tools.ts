@@ -8,7 +8,7 @@
  * - Natural language to cron conversion
  */
 
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult, ToolContext } from '../types.js';
+import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 import {
   Scheduler,
   createScheduler,

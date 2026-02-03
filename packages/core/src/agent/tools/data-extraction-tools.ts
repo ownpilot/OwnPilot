@@ -55,7 +55,7 @@ export const extractStructuredDataTool: ToolDefinition = {
   },
 };
 
-export const extractStructuredDataExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const extractStructuredDataExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const text = params.text as string;
   const schema = params.schema as Record<string, unknown> | undefined;
   const template = (params.template as string) || 'custom';
@@ -334,7 +334,7 @@ export const extractEntitiesTool: ToolDefinition = {
   },
 };
 
-export const extractEntitiesExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const extractEntitiesExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const text = params.text as string;
   const entityTypes = params.entityTypes as string[] | undefined;
   const includeConfidence = params.includeConfidence === true;
@@ -418,7 +418,7 @@ export const extractTableDataTool: ToolDefinition = {
   },
 };
 
-export const extractTableDataExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const extractTableDataExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const content = params.content as string;
   const format = (params.format as string) || 'auto';
   const hasHeader = params.hasHeader !== false;
@@ -658,7 +658,7 @@ export const summarizeTextTool: ToolDefinition = {
   },
 };
 
-export const summarizeTextExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const summarizeTextExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const text = params.text as string;
   const maxLength = (params.maxLength as number) || 100;
   const style = (params.style as string) || 'paragraph';

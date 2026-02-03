@@ -7,6 +7,32 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { ToolContext } from '@ownpilot/core';
+
+// ---------------------------------------------------------------------------
+// Test-only helper types for executor result content
+// ---------------------------------------------------------------------------
+
+/** Content shape returned on success from image/tts/stt executors */
+interface SuccessContent {
+  success: boolean;
+  provider: string;
+  model?: string;
+  images?: { url?: string; revisedPrompt?: string }[];
+  analysis?: string;
+  task?: string;
+  voice?: string;
+  speed?: number;
+  text?: string;
+  language?: string;
+  duration?: number;
+}
+
+/** Content shape returned on error from all executors */
+interface ErrorContent {
+  error: string;
+  suggestion?: string;
+}
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -54,7 +80,7 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function setupConfiguredProvider(capability = 'image_generation') {
+function setupConfiguredProvider(_capability = 'image_generation') {
   mockMediaSettingsRepo.getEffective.mockResolvedValue({
     provider: 'openai',
     model: 'dall-e-3',
@@ -141,29 +167,29 @@ describe('Media Tool Executors', () => {
 
       const result = await mediaGenerateImageExecutor({
         prompt: 'A cat in a hat',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
-      const content = result.content as any;
+      const content = result.content as SuccessContent;
       expect(content.success).toBe(true);
       expect(content.provider).toBe('openai');
       expect(content.images).toHaveLength(1);
     });
 
     it('returns error for empty prompt', async () => {
-      const result = await mediaGenerateImageExecutor({ prompt: '' }, {} as any);
+      const result = await mediaGenerateImageExecutor({ prompt: '' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('Prompt is required');
+      expect((result.content as ErrorContent).error).toContain('Prompt is required');
     });
 
     it('returns error for prompt exceeding 4000 chars', async () => {
       const result = await mediaGenerateImageExecutor({
         prompt: 'x'.repeat(4001),
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('too long');
+      expect((result.content as ErrorContent).error).toContain('too long');
     });
 
     it('returns error when no provider configured', async () => {
@@ -171,10 +197,10 @@ describe('Media Tool Executors', () => {
 
       const result = await mediaGenerateImageExecutor({
         prompt: 'A cat',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('No image generation provider');
+      expect((result.content as ErrorContent).error).toContain('No image generation provider');
     });
 
     it('enhances prompt with style description', async () => {
@@ -188,7 +214,7 @@ describe('Media Tool Executors', () => {
       await mediaGenerateImageExecutor({
         prompt: 'A cat',
         style: 'anime',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(mockMediaService.generateImage).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -208,7 +234,7 @@ describe('Media Tool Executors', () => {
       await mediaGenerateImageExecutor({
         prompt: 'A cat',
         n: 10,
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(mockMediaService.generateImage).toHaveBeenCalledWith(
         expect.objectContaining({ n: 4 }),
@@ -221,10 +247,10 @@ describe('Media Tool Executors', () => {
 
       const result = await mediaGenerateImageExecutor({
         prompt: 'A cat',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('Quota exceeded');
+      expect((result.content as ErrorContent).error).toContain('Quota exceeded');
     });
   });
 
@@ -245,10 +271,10 @@ describe('Media Tool Executors', () => {
       const result = await mediaAnalyzeImageExecutor({
         source: 'https://example.com/cat.jpg',
         task: 'describe',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
-      const content = result.content as any;
+      const content = result.content as SuccessContent;
       expect(content.analysis).toBe('A photo of a cat.');
       expect(content.task).toBe('describe');
     });
@@ -258,10 +284,10 @@ describe('Media Tool Executors', () => {
 
       const result = await mediaAnalyzeImageExecutor({
         source: 'https://example.com/cat.jpg',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('No vision provider');
+      expect((result.content as ErrorContent).error).toContain('No vision provider');
     });
 
     it('returns error for custom task without question', async () => {
@@ -270,10 +296,10 @@ describe('Media Tool Executors', () => {
       const result = await mediaAnalyzeImageExecutor({
         source: 'https://example.com/cat.jpg',
         task: 'custom',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('Question is required');
+      expect((result.content as ErrorContent).error).toContain('Question is required');
     });
   });
 
@@ -306,38 +332,38 @@ describe('Media Tool Executors', () => {
         text: 'Hello world',
         voice: 'nova',
         speed: 1.2,
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
-      const content = result.content as any;
+      const content = result.content as SuccessContent;
       expect(content.success).toBe(true);
       expect(content.voice).toBe('nova');
       expect(content.speed).toBe(1.2);
     });
 
     it('returns error for empty text', async () => {
-      const result = await mediaTTSExecutor({ text: '' }, {} as any);
+      const result = await mediaTTSExecutor({ text: '' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('Text is required');
+      expect((result.content as ErrorContent).error).toContain('Text is required');
     });
 
     it('returns error for text exceeding 4096 chars', async () => {
       const result = await mediaTTSExecutor({
         text: 'x'.repeat(4097),
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('too long');
+      expect((result.content as ErrorContent).error).toContain('too long');
     });
 
     it('returns error when no TTS provider configured', async () => {
       mockMediaSettingsRepo.getEffective.mockResolvedValue(null);
 
-      const result = await mediaTTSExecutor({ text: 'Hello' }, {} as any);
+      const result = await mediaTTSExecutor({ text: 'Hello' }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('No TTS provider');
+      expect((result.content as ErrorContent).error).toContain('No TTS provider');
     });
 
     it('clamps speed to valid range', async () => {
@@ -352,10 +378,10 @@ describe('Media Tool Executors', () => {
       const result = await mediaTTSExecutor({
         text: 'Hello',
         speed: 10, // Should be clamped to 4.0
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
-      expect((result.content as any).speed).toBe(4.0);
+      expect((result.content as SuccessContent).speed).toBe(4.0);
     });
   });
 
@@ -369,10 +395,10 @@ describe('Media Tool Executors', () => {
 
       const result = await mediaSTTExecutor({
         source: 'https://example.com/audio.mp3',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(true);
-      expect((result.content as any).error).toContain('No STT provider');
+      expect((result.content as ErrorContent).error).toContain('No STT provider');
     });
 
     it('transcribes audio from URL', async () => {
@@ -393,10 +419,10 @@ describe('Media Tool Executors', () => {
 
       const result = await mediaSTTExecutor({
         source: 'https://example.com/audio.mp3',
-      }, {} as any);
+      }, {} as unknown as ToolContext);
 
       expect(result.isError).toBe(false);
-      const content = result.content as any;
+      const content = result.content as SuccessContent;
       expect(content.text).toBe('Hello world');
       expect(content.language).toBe('en');
 

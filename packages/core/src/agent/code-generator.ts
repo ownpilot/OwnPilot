@@ -7,7 +7,7 @@
 
 import { createSandbox } from '../sandbox/executor.js';
 import { validateCode } from '../sandbox/context.js';
-import type { SandboxPermissions, ResourceLimits, ExecutionResult as SandboxExecutionResult } from '../sandbox/types.js';
+import type { SandboxPermissions, ResourceLimits } from '../sandbox/types.js';
 import { createPluginId } from '../types/branded.js';
 
 // =============================================================================
@@ -232,7 +232,7 @@ export class CodeGenerator {
    */
   async generate(request: CodeGenerationRequest): Promise<CodeGenerationResponse> {
     const language = request.language ?? this.config.defaultLanguage;
-    const startTime = Date.now();
+    const _startTime = Date.now();
 
     try {
       // Without LLM provider, use template-based generation
@@ -442,7 +442,7 @@ export class CodeGenerator {
   /**
    * Wrap code for execution
    */
-  private wrapCodeForExecution(code: string, language: CodeLanguage): string {
+  private wrapCodeForExecution(code: string, _language: CodeLanguage): string {
     // For TypeScript, would need to transpile first
     // For now, assume JavaScript or already transpiled
 

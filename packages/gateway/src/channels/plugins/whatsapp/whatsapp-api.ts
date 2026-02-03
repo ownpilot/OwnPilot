@@ -12,7 +12,6 @@ import {
   type ChannelOutgoingMessage,
   type ChannelUser,
   type ChannelIncomingMessage,
-  type ChannelAttachment,
   ChannelEvents,
   type ChannelMessageReceivedData,
   type ChannelConnectionEventData,
@@ -27,6 +26,34 @@ const log = getLog('WhatsApp');
 // Types
 // ============================================================================
 
+/** Minimal shape of a Baileys incoming message. */
+interface WAMessage {
+  key: { remoteJid?: string; fromMe?: boolean; id?: string };
+  message?: {
+    conversation?: string;
+    extendedTextMessage?: { text?: string };
+    imageMessage?: { caption?: string };
+  };
+  messageTimestamp?: number | { low: number; high: number; unsigned: boolean };
+  pushName?: string;
+}
+
+/** Minimal interface for a Baileys WASocket. */
+interface WASocket {
+  ev: {
+    on(event: 'creds.update', handler: () => void): void;
+    on(
+      event: 'connection.update',
+      handler: (update: { connection?: string; lastDisconnect?: { error?: Error }; qr?: string }) => void,
+    ): void;
+    on(event: 'messages.upsert', handler: (m: { type: string; messages: WAMessage[] }) => void): void;
+    on(event: string, handler: (...args: unknown[]) => void): void;
+  };
+  end(reason: undefined): void;
+  sendMessage(jid: string, content: { text: string }): Promise<{ key?: { id?: string | null } } | undefined>;
+  sendPresenceUpdate(status: string, jid: string): Promise<void>;
+}
+
 export interface WhatsAppChannelConfig {
   session_id?: string;
   allowed_numbers?: string;
@@ -38,7 +65,7 @@ export interface WhatsAppChannelConfig {
 // ============================================================================
 
 export class WhatsAppChannelAPI implements ChannelPluginAPI {
-  private socket: any = null;
+  private socket: WASocket | null = null;
   private status: ChannelConnectionStatus = 'disconnected';
   private readonly config: WhatsAppChannelConfig;
   private readonly pluginId: string;
@@ -88,7 +115,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
         auth: state,
         printQRInTerminal: true,
         browser: ['OwnPilot', 'Desktop', '1.0.0'],
-      });
+      }) as unknown as WASocket;
 
       // Save credentials on update
       this.socket.ev.on('creds.update', saveCreds);
@@ -128,7 +155,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       });
 
       // Message handler
-      this.socket.ev.on('messages.upsert', (m: { type: string; messages: any[] }) => {
+      this.socket.ev.on('messages.upsert', (m: { type: string; messages: WAMessage[] }) => {
         if (m.type !== 'notify') return;
         for (const msg of m.messages) {
           if (msg.key.fromMe) continue;
@@ -188,7 +215,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   // Private: Message Processing
   // --------------------------------------------------------------------------
 
-  private async handleIncomingMessage(msg: any): Promise<void> {
+  private async handleIncomingMessage(msg: WAMessage): Promise<void> {
     const remoteJid = msg.key.remoteJid ?? '';
     const senderId = remoteJid.replace(/@s\.whatsapp\.net$/, '').replace(/@g\.us$/, '');
 
@@ -220,7 +247,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       platformChatId: remoteJid,
       sender,
       text,
-      timestamp: new Date((msg.messageTimestamp ?? Date.now() / 1000) * 1000),
+      timestamp: new Date((typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : Date.now() / 1000) * 1000),
       metadata: {
         platformMessageId: msg.key.id,
         isGroup: remoteJid.endsWith('@g.us'),

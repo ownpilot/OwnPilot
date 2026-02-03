@@ -3,7 +3,7 @@
  * Executes code in an isolated context using Node.js vm module
  */
 
-import { createContext, runInContext, Script } from 'node:vm';
+import { createContext, Script } from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';

@@ -28,7 +28,6 @@ import { ProviderService, createProviderService } from './provider-service-impl.
 import {
   resolveProviderAndModel,
   getDefaultProvider,
-  getDefaultModel,
   setDefaultProvider,
   setDefaultModel,
 } from '../routes/settings.js';
