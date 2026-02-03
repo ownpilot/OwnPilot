@@ -59,6 +59,10 @@ import { registerPipelineMiddleware } from './services/middleware/index.js';
 import { createToolService } from './services/tool-service-impl.js';
 import { createProviderService } from './services/provider-service-impl.js';
 import { createAuditService } from './services/audit-service-impl.js';
+import { createDatabaseServiceImpl } from './services/database-service-impl.js';
+import { createPluginService } from './services/plugin-service-impl.js';
+import { createMemoryServiceImpl } from './services/memory-service-impl.js';
+import { createWorkspaceServiceImpl } from './services/workspace-service-impl.js';
 import { getLog } from './services/log.js';
 
 const log = getLog('Server');
@@ -179,6 +183,9 @@ async function main() {
   // 5. Register Config Center in registry
   registry.register(Services.Config, gatewayConfigCenter);
 
+  // 6. Register Database Service (wraps CustomDataService)
+  registry.register(Services.Database, createDatabaseServiceImpl());
+
   // Initialize Plugins repository
   log.info('Initializing Plugins repository...');
   await initializePluginsRepo();
@@ -216,14 +223,23 @@ async function main() {
   registry.register(Services.Channel, channelService);
   log.info('Channel Service initialized.');
 
-  // 7. Register Tool Service in registry (wraps ToolRegistry)
+  // 7. Register Plugin Service (wraps PluginRegistry)
+  registry.register(Services.Plugin, await createPluginService());
+
+  // 8. Register Memory Service (wraps MemoryService)
+  registry.register(Services.Memory, createMemoryServiceImpl());
+
+  // 9. Register Tool Service in registry (wraps ToolRegistry)
   registry.register(Services.Tool, createToolService());
 
   // 8. Register Provider Service in registry
   registry.register(Services.Provider, createProviderService());
 
-  // 9. Register Audit Service in registry
+  // 11. Register Audit Service in registry
   registry.register(Services.Audit, createAuditService());
+
+  // 12. Register Workspace Service (wraps WorkspaceManager)
+  registry.register(Services.Workspace, createWorkspaceServiceImpl());
 
   // Start trigger engine (proactive automation)
   log.info('Starting Trigger Engine...');

@@ -20,6 +20,10 @@ import type { IAuditService } from './audit-service.js';
 import type { IEventSystem } from '../events/event-system.js';
 import type { IChannelService } from '../channels/service.js';
 import type { ConfigCenter } from './config-center.js';
+import type { IPluginService } from './plugin-service.js';
+import type { IMemoryService } from './memory-service-interface.js';
+import type { IDatabaseService } from './database-service.js';
+import type { IWorkspaceService } from './workspace-service.js';
 
 /**
  * All service tokens.
@@ -51,4 +55,16 @@ export const Services = {
 
   /** Config center (service configuration management) */
   Config: new ServiceToken<ConfigCenter>('config'),
+
+  /** Plugin management */
+  Plugin: new ServiceToken<IPluginService>('plugin'),
+
+  /** Memory management (per-user) */
+  Memory: new ServiceToken<IMemoryService>('memory'),
+
+  /** Custom database tables and records */
+  Database: new ServiceToken<IDatabaseService>('database'),
+
+  /** Workspace management */
+  Workspace: new ServiceToken<IWorkspaceService>('workspace'),
 } as const;

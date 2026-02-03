@@ -59,6 +59,37 @@ export type {
   ToolEndResult,
 } from './message-bus.js';
 
+// Plugin Service
+export type { IPluginService, PluginInfo, PluginToolEntry } from './plugin-service.js';
+
+// Memory Service
+export type {
+  IMemoryService,
+  ServiceMemoryEntry,
+  MemoryType as ServiceMemoryType,
+  CreateMemoryInput as MemoryCreateInput,
+  UpdateMemoryInput as MemoryUpdateInput,
+  MemorySearchOptions,
+  MemoryStats as MemoryServiceStats,
+} from './memory-service-interface.js';
+
+// Database Service
+export type {
+  IDatabaseService,
+  TableColumn,
+  TableSchema,
+  DataRecord,
+  TableStats as DatabaseTableStats,
+} from './database-service.js';
+
+// Workspace Service
+export type {
+  IWorkspaceService,
+  WorkspaceInfo,
+  CreateWorkspaceInput,
+  WorkspaceAgentInput,
+} from './workspace-service.js';
+
 // Config Center
 export * from './config-center.js';
 
