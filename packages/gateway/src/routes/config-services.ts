@@ -20,11 +20,12 @@ export const configServicesRoutes = new Hono();
 
 /**
  * Mask a secret value for safe display.
- * If the string is 8+ characters, show first 4 + '...' + last 4.
+ * If the string is 12+ characters, show first 4 + '...' + last 4
+ * (guarantees at least 4 hidden characters).
  * Otherwise return '****'.
  */
 function maskSecret(value: unknown): string {
-  if (typeof value === 'string' && value.length >= 8) {
+  if (typeof value === 'string' && value.length >= 12) {
     return `${value.slice(0, 4)}...${value.slice(-4)}`;
   }
   return '****';

@@ -15,6 +15,42 @@ import {
 import { mediaSettingsRepo, settingsRepo } from '../db/repositories/index.js';
 import { validateWritePath } from '../workspace/file-workspace.js';
 
+/** Timeout for fetching remote media URLs (ms) */
+const FETCH_TIMEOUT_MS = 30_000;
+/** Maximum allowed response size for remote media (bytes) — 50 MB */
+const MAX_FETCH_SIZE_BYTES = 50 * 1024 * 1024;
+
+/**
+ * Fetch a remote URL with timeout and size limits
+ */
+async function fetchWithLimits(url: string): Promise<Buffer> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+
+    if (!response.ok) {
+      throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
+    }
+
+    const contentLength = response.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > MAX_FETCH_SIZE_BYTES) {
+      throw new Error(`Response too large: ${contentLength} bytes (max ${MAX_FETCH_SIZE_BYTES})`);
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    if (buffer.length > MAX_FETCH_SIZE_BYTES) {
+      throw new Error(`Response too large: ${buffer.length} bytes (max ${MAX_FETCH_SIZE_BYTES})`);
+    }
+
+    return buffer;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 // =============================================================================
 // Helper Functions
 // =============================================================================
@@ -159,8 +195,7 @@ export const mediaGenerateImageExecutor: ToolExecutor = async (params, _context)
         if (img.base64) {
           await fs.writeFile(filePath, Buffer.from(img.base64, 'base64'));
         } else if (img.url) {
-          const response = await fetch(img.url);
-          const buffer = Buffer.from(await response.arrayBuffer());
+          const buffer = await fetchWithLimits(img.url);
           await fs.writeFile(filePath, buffer);
         }
 
@@ -408,8 +443,7 @@ export const mediaSTTExecutor: ToolExecutor = async (params, _context): Promise<
 
     // Handle URL vs file path
     if (source.startsWith('http://') || source.startsWith('https://')) {
-      const response = await fetch(source);
-      audioSource = Buffer.from(await response.arrayBuffer());
+      audioSource = await fetchWithLimits(source);
     } else {
       // File path - verify exists
       const fs = await import('node:fs/promises');

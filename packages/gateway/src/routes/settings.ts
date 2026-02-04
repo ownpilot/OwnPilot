@@ -93,8 +93,12 @@ settingsRoutes.get('/data-info', async (c) => {
 settingsRoutes.post('/default-provider', async (c) => {
   const body = await c.req.json<{ provider: string }>();
 
-  if (!body.provider) {
+  if (!body.provider || typeof body.provider !== 'string') {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Provider is required' }, 400);
+  }
+
+  if (body.provider.length > 64) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Provider name too long (max 64 characters)' }, 400);
   }
 
   await settingsRepo.set(DEFAULT_PROVIDER_KEY, body.provider);
@@ -110,8 +114,12 @@ settingsRoutes.post('/default-provider', async (c) => {
 settingsRoutes.post('/default-model', async (c) => {
   const body = await c.req.json<{ model: string }>();
 
-  if (!body.model) {
+  if (!body.model || typeof body.model !== 'string') {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Model is required' }, 400);
+  }
+
+  if (body.model.length > 128) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Model name too long (max 128 characters)' }, 400);
   }
 
   await settingsRepo.set(DEFAULT_MODEL_KEY, body.model);
@@ -129,6 +137,10 @@ settingsRoutes.post('/api-keys', async (c) => {
 
   if (!body.provider || !body.apiKey) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Provider and apiKey are required' }, 400);
+  }
+
+  if (body.provider.length > 64) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Provider name too long (max 64 characters)' }, 400);
   }
 
   // Store API key in database

@@ -107,8 +107,16 @@ app.post('/', async (c) => {
   try {
     const body = (await c.req.json()) as CreateWorkspaceRequest;
 
-    if (!body.name) {
+    if (!body.name || typeof body.name !== 'string') {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace name is required' }, 400);
+    }
+
+    if (body.name.length > 100) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace name too long (max 100 characters)' }, 400);
+    }
+
+    if (body.description && typeof body.description === 'string' && body.description.length > 500) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace description too long (max 500 characters)' }, 400);
     }
 
     // Check workspace limit
@@ -207,6 +215,14 @@ app.patch('/:id', async (c) => {
 
     if (!existing) {
       return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+    }
+
+    // Validate lengths
+    if (body.name && typeof body.name === 'string' && body.name.length > 100) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace name too long (max 100 characters)' }, 400);
+    }
+    if (body.description && typeof body.description === 'string' && body.description.length > 500) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace description too long (max 500 characters)' }, 400);
     }
 
     // Build update input
