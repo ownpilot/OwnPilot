@@ -37,28 +37,35 @@ export function FileBrowser({ initialPath = '~', onFileSelect, onFileOpen }: Fil
   const [searchQuery, setSearchQuery] = useState('');
   // viewMode state reserved for future grid/list toggle feature
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    loadDirectory(currentPath);
-  }, [currentPath]);
-
-  const loadDirectory = async (path: string) => {
+    let stale = false;
     setIsLoading(true);
     setError(null);
-    try {
-      const data = await toolsApi.execute('list_directory', { path, recursive: false }) as Record<string, unknown>;
-      const result = data?.result as Record<string, unknown> | undefined;
-      if (result?.files) {
-        setFiles(result.files as FileItem[]);
-      } else {
-        setError((result?.error as string) || 'Failed to load directory');
-      }
-    } catch {
-      setError('Failed to connect to server');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
+    toolsApi.execute('list_directory', { path: currentPath, recursive: false })
+      .then((data) => {
+        if (stale) return;
+        const result = (data as Record<string, unknown>)?.result as Record<string, unknown> | undefined;
+        if (result?.files) {
+          setFiles(result.files as FileItem[]);
+        } else {
+          setError((result?.error as string) || 'Failed to load directory');
+        }
+      })
+      .catch(() => {
+        if (stale) return;
+        setError('Failed to connect to server');
+      })
+      .finally(() => {
+        if (!stale) setIsLoading(false);
+      });
+
+    return () => { stale = true; };
+  }, [currentPath, refreshKey]);
+
+  const refreshDirectory = () => setRefreshKey(k => k + 1);
 
   const loadFileContent = async (file: FileItem) => {
     if (file.isDirectory) return;
@@ -128,7 +135,7 @@ export function FileBrowser({ initialPath = '~', onFileSelect, onFileOpen }: Fil
           <ChevronRight className="w-4 h-4 text-text-secondary dark:text-dark-text-secondary rotate-180" />
         </button>
         <button
-          onClick={() => loadDirectory(currentPath)}
+          onClick={refreshDirectory}
           className="p-2 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
           title="Refresh"
         >
@@ -176,7 +183,7 @@ export function FileBrowser({ initialPath = '~', onFileSelect, onFileOpen }: Fil
             <div className="p-4 text-center">
               <p className="text-error text-sm">{error}</p>
               <button
-                onClick={() => loadDirectory(currentPath)}
+                onClick={refreshDirectory}
                 className="mt-2 px-3 py-1 text-sm text-primary hover:bg-primary/10 rounded transition-colors"
               >
                 Retry

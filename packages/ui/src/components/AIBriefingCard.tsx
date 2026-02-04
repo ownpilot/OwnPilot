@@ -131,7 +131,9 @@ export function AIBriefingCard() {
     fetchProvidersAndModels();
   }, []);
 
-  const fetchBriefing = useCallback(async (refresh = false, useStreaming = false) => {
+  const fetchBriefing = useCallback(async (refresh = false, useStreaming = false, modelOverride?: ProviderModel) => {
+    const model = modelOverride ?? selectedModel;
+
     // Cancel any ongoing request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -152,7 +154,7 @@ export function AIBriefingCard() {
       if (useStreaming || refresh) {
         const response = await dashboardApi.briefingStream({
           signal: abortControllerRef.current.signal,
-          params: { provider: selectedModel.provider, model: selectedModel.model },
+          params: { provider: model.provider, model: model.model },
         });
 
         const reader = response.body?.getReader();
@@ -202,7 +204,7 @@ export function AIBriefingCard() {
         // Non-streaming fetch for initial load (use cache)
         const data = await dashboardApi.briefing({
           signal: abortControllerRef.current.signal,
-          params: { provider: selectedModel.provider, model: selectedModel.model },
+          params: { provider: model.provider, model: model.model },
         });
 
         if (data.aiBriefing) {
@@ -257,8 +259,8 @@ export function AIBriefingCard() {
     setSelectedModel(model);
     localStorage.setItem(STORAGE_KEYS.BRIEFING_MODEL, JSON.stringify(model));
     setShowModelSelector(false);
-    // Refresh with new model
-    fetchBriefing(true, true);
+    // Refresh with new model — pass explicitly to avoid stale closure
+    fetchBriefing(true, true, model);
   };
 
   // Loading state
