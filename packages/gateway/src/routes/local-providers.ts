@@ -108,7 +108,7 @@ localProvidersRoutes.get('/:id', async (c) => {
   try {
     const provider = await localProvidersRepo.getProvider(id);
 
-    if (!provider) {
+    if (!provider || provider.userId !== userId) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
     }
 
@@ -128,9 +128,15 @@ localProvidersRoutes.get('/:id', async (c) => {
  * PUT /:id - Update a local provider
  */
 localProvidersRoutes.put('/:id', async (c) => {
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   try {
+    const existing = await localProvidersRepo.getProvider(id);
+    if (!existing || existing.userId !== userId) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+    }
+
     const body = await c.req.json();
     const { name, baseUrl, apiKey, discoveryEndpoint, isEnabled } = body;
 
@@ -157,9 +163,15 @@ localProvidersRoutes.put('/:id', async (c) => {
  * DELETE /:id - Delete a local provider (CASCADE deletes its models)
  */
 localProvidersRoutes.delete('/:id', async (c) => {
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   try {
+    const existing = await localProvidersRepo.getProvider(id);
+    if (!existing || existing.userId !== userId) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+    }
+
     const deleted = await localProvidersRepo.deleteProvider(id);
 
     if (!deleted) {
@@ -177,6 +189,7 @@ localProvidersRoutes.delete('/:id', async (c) => {
  * PATCH /:id/toggle - Toggle provider enabled/disabled
  */
 localProvidersRoutes.patch('/:id/toggle', async (c) => {
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   try {
@@ -185,6 +198,11 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
 
     if (typeof enabled !== 'boolean') {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'enabled field is required and must be a boolean' }, 400);
+    }
+
+    const existing = await localProvidersRepo.getProvider(id);
+    if (!existing || existing.userId !== userId) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
     }
 
     const updated = await localProvidersRepo.updateProvider(id, { isEnabled: enabled });
@@ -230,7 +248,7 @@ localProvidersRoutes.post('/:id/discover', async (c) => {
   try {
     const provider = await localProvidersRepo.getProvider(id);
 
-    if (!provider) {
+    if (!provider || provider.userId !== userId) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
     }
 
