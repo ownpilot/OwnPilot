@@ -330,8 +330,8 @@ app.put('/:id/files/*', async (c) => {
     const body = await c.req.json();
     const { content } = body;
 
-    if (content === undefined) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Content is required' }, 400);
+    if (content === undefined || typeof content !== 'string') {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Content must be a string' }, 400);
     }
 
     const storage = getWorkspaceStorage();

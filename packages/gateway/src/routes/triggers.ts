@@ -155,7 +155,7 @@ triggersRoutes.patch('/:id', async (c) => {
   const service = getServiceRegistry().get(Services.Trigger);
 
   // Validate cron expression if config is being updated on a schedule trigger
-  if (body.config) {
+  if (body.config && typeof body.config === 'object') {
     const existing = await service.getTrigger(userId, id);
     if (existing?.type === 'schedule') {
       const config = body.config as { cron?: string };

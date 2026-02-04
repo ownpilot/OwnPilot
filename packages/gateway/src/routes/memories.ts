@@ -31,8 +31,9 @@ memoriesRoutes.get('/', async (c) => {
   const userId = getUserId(c);
   const type = c.req.query('type') as MemoryType | undefined;
   const limit = getIntParam(c, 'limit', 20, 1, 100);
-  const minImportance = c.req.query('minImportance')
-    ? parseFloat(c.req.query('minImportance')!)
+  const rawMinImportance = c.req.query('minImportance');
+  const minImportance = rawMinImportance !== undefined
+    ? Math.max(0, Math.min(1, parseFloat(rawMinImportance) || 0))
     : undefined;
 
   const service = getServiceRegistry().get(Services.Memory);
@@ -148,8 +149,8 @@ memoriesRoutes.patch('/:id', async (c) => {
     tags?: string[];
   }>();
 
-  if (body.importance !== undefined && (typeof body.importance !== 'number' || body.importance < 0 || body.importance > 1)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'importance must be a number between 0 and 1' }, 400);
+  if (body.importance !== undefined && (typeof body.importance !== 'number' || !Number.isFinite(body.importance) || body.importance < 0 || body.importance > 1)) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'importance must be a finite number between 0 and 1' }, 400);
   }
 
   const service = getServiceRegistry().get(Services.Memory);

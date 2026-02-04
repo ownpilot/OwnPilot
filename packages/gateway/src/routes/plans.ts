@@ -28,7 +28,11 @@ export const plansRoutes = new Hono();
  */
 plansRoutes.get('/', async (c) => {
   const userId = getUserId(c);
-  const status = c.req.query('status') as PlanStatus | undefined;
+  const VALID_PLAN_STATUSES: PlanStatus[] = ['pending', 'running', 'paused', 'completed', 'failed', 'cancelled'];
+  const rawStatus = c.req.query('status');
+  const status = rawStatus && VALID_PLAN_STATUSES.includes(rawStatus as PlanStatus)
+    ? (rawStatus as PlanStatus)
+    : undefined;
   const goalId = c.req.query('goalId');
   const triggerId = c.req.query('triggerId');
   const limit = getIntParam(c, 'limit', 20, 1, 100);

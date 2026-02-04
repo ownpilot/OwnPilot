@@ -32,7 +32,11 @@ export const goalsRoutes = new Hono();
  */
 goalsRoutes.get('/', async (c) => {
   const userId = getUserId(c);
-  const status = c.req.query('status') as GoalStatus | undefined;
+  const VALID_GOAL_STATUSES: GoalStatus[] = ['active', 'paused', 'completed', 'abandoned'];
+  const rawStatus = c.req.query('status');
+  const status = rawStatus && VALID_GOAL_STATUSES.includes(rawStatus as GoalStatus)
+    ? (rawStatus as GoalStatus)
+    : undefined;
   const limit = getIntParam(c, 'limit', 20, 1, 100);
   const parentId = c.req.query('parentId');
 

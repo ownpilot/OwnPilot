@@ -179,8 +179,8 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
   const tableId = c.req.param('table');
   const body = await c.req.json<{ data: Record<string, unknown> }>();
 
-  if (!body.data) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'data is required' }, 400);
+  if (!body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'data must be a non-empty object' }, 400);
   }
 
   try {
@@ -237,8 +237,8 @@ customDataRoutes.put('/records/:id', async (c) => {
   const recordId = c.req.param('id');
   const body = await c.req.json<{ data: Record<string, unknown> }>();
 
-  if (!body.data) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'data is required' }, 400);
+  if (!body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'data must be a non-empty object' }, 400);
   }
 
   try {
