@@ -111,22 +111,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
 
       wsRef.current.onopen = () => {
         setStatus('connected');
-        console.log('WebSocket connected');
       };
 
       wsRef.current.onmessage = handleMessage;
 
-      wsRef.current.onclose = (event) => {
+      wsRef.current.onclose = (_event) => {
         setStatus('disconnected');
         setSessionId(null);
-        console.log(`WebSocket closed: ${event.code} ${event.reason}`);
 
         // Attempt reconnection
         if (reconnect && reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current++;
-          console.log(
-            `Reconnecting (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})...`
-          );
 
           reconnectTimerRef.current = setTimeout(() => {
             connect();
