@@ -183,7 +183,9 @@ export class CustomToolsRepository extends BaseRepository {
       ]
     );
 
-    return (await this.get(id))!;
+    const tool = await this.get(id);
+    if (!tool) throw new Error('Failed to create custom tool');
+    return tool;
   }
 
   /**

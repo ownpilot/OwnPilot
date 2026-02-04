@@ -180,7 +180,9 @@ export class TriggersRepository extends BaseRepository {
       ]
     );
 
-    return (await this.get(id))!;
+    const trigger = await this.get(id);
+    if (!trigger) throw new Error('Failed to create trigger');
+    return trigger;
   }
 
   /**
@@ -400,7 +402,9 @@ export class TriggersRepository extends BaseRepository {
       ]
     );
 
-    return (await this.getHistory(id))!;
+    const history = await this.getHistory(id);
+    if (!history) throw new Error('Failed to create trigger history');
+    return history;
   }
 
   /**

@@ -272,7 +272,9 @@ export class PlansRepository extends BaseRepository {
       ]
     );
 
-    return (await this.get(id))!;
+    const plan = await this.get(id);
+    if (!plan) throw new Error('Failed to create plan');
+    return plan;
   }
 
   /**
@@ -489,7 +491,9 @@ export class PlansRepository extends BaseRepository {
       [planId, new Date().toISOString()]
     );
 
-    return (await this.getStep(id))!;
+    const step = await this.getStep(id);
+    if (!step) throw new Error('Failed to create plan step');
+    return step;
   }
 
   /**

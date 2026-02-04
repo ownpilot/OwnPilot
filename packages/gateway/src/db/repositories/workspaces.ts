@@ -199,7 +199,9 @@ export class WorkspacesRepository extends BaseRepository {
       ]
     );
 
-    return (await this.get(id))!;
+    const workspace = await this.get(id);
+    if (!workspace) throw new Error('Failed to create workspace');
+    return workspace;
   }
 
   /**
@@ -298,7 +300,8 @@ export class WorkspacesRepository extends BaseRepository {
       `SELECT * FROM code_executions WHERE id = $1`,
       [id]
     );
-    return rowToExecution(row!);
+    if (!row) throw new Error('Failed to create execution');
+    return rowToExecution(row);
   }
 
   /**

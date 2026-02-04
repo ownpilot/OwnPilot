@@ -169,7 +169,8 @@ export class MemoriesRepository extends BaseRepository {
       ]
     );
 
-    const memory = (await this.get(id))!;
+    const memory = await this.get(id);
+    if (!memory) throw new Error('Failed to create memory');
 
     getEventBus().emit(createEvent<ResourceCreatedData>(
       EventTypes.RESOURCE_CREATED, 'resource', 'memories-repository',

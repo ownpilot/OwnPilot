@@ -184,7 +184,9 @@ export class LogsRepository extends BaseRepository {
         ]
       );
 
-      return (await this.getLog(id))!;
+      const logEntry = await this.getLog(id);
+      if (!logEntry) throw new Error('Failed to create log entry');
+      return logEntry;
     } catch (err) {
       // Don't throw - logging should never break the main flow
       log.error('[LogsRepository] Failed to log request:', err);

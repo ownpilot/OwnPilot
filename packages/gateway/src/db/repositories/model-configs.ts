@@ -317,7 +317,9 @@ export class ModelConfigsRepository extends BaseRepository {
         ]
       );
 
-      return (await this.getModel(userId, input.providerId, input.modelId))!;
+      const model = await this.getModel(userId, input.providerId, input.modelId);
+      if (!model) throw new Error('Failed to upsert model config');
+      return model;
     } else {
       // Insert new
       const id = randomUUID();
@@ -346,7 +348,9 @@ export class ModelConfigsRepository extends BaseRepository {
         ]
       );
 
-      return (await this.getModel(userId, input.providerId, input.modelId))!;
+      const model = await this.getModel(userId, input.providerId, input.modelId);
+      if (!model) throw new Error('Failed to upsert model config');
+      return model;
     }
   }
 
@@ -520,7 +524,9 @@ export class ModelConfigsRepository extends BaseRepository {
         ]
       );
 
-      return (await this.getProvider(userId, input.providerId))!;
+      const provider = await this.getProvider(userId, input.providerId);
+      if (!provider) throw new Error('Failed to upsert provider');
+      return provider;
     } else {
       // Insert new
       const id = randomUUID();
@@ -544,7 +550,9 @@ export class ModelConfigsRepository extends BaseRepository {
         ]
       );
 
-      return (await this.getProvider(userId, input.providerId))!;
+      const provider = await this.getProvider(userId, input.providerId);
+      if (!provider) throw new Error('Failed to upsert provider');
+      return provider;
     }
   }
 
@@ -695,7 +703,9 @@ export class ModelConfigsRepository extends BaseRepository {
         ]
       );
 
-      return (await this.getUserProviderConfig(userId, input.providerId))!;
+      const config = await this.getUserProviderConfig(userId, input.providerId);
+      if (!config) throw new Error('Failed to upsert user provider config');
+      return config;
     } else {
       // Insert new
       const id = randomUUID();
@@ -719,7 +729,9 @@ export class ModelConfigsRepository extends BaseRepository {
         ]
       );
 
-      return (await this.getUserProviderConfig(userId, input.providerId))!;
+      const config = await this.getUserProviderConfig(userId, input.providerId);
+      if (!config) throw new Error('Failed to upsert user provider config');
+      return config;
     }
   }
 

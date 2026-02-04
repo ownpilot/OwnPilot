@@ -196,7 +196,9 @@ export class OAuthIntegrationsRepository extends BaseRepository {
       ]
     );
 
-    return (await this.getById(id))!;
+    const integration = await this.getById(id);
+    if (!integration) throw new Error('Failed to create OAuth integration');
+    return integration;
   }
 
   /**

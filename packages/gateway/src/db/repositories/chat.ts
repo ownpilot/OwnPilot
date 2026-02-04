@@ -188,7 +188,9 @@ export class ChatRepository extends BaseRepository {
       ]
     );
 
-    return (await this.getConversation(id))!;
+    const conversation = await this.getConversation(id);
+    if (!conversation) throw new Error('Failed to create conversation');
+    return conversation;
   }
 
   async getConversation(id: string): Promise<Conversation | null> {
@@ -335,7 +337,9 @@ export class ChatRepository extends BaseRepository {
       [input.conversationId]
     );
 
-    return (await this.getMessage(id))!;
+    const message = await this.getMessage(id);
+    if (!message) throw new Error('Failed to create message');
+    return message;
   }
 
   async getMessage(id: string): Promise<Message | null> {

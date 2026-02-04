@@ -170,7 +170,9 @@ export class PomodoroRepository extends BaseRepository {
       [id, this.userId, input.type, input.taskDescription ?? null, input.durationMinutes, now]
     );
 
-    return (await this.getSession(id))!;
+    const session = await this.getSession(id);
+    if (!session) throw new Error('Failed to create pomodoro session');
+    return session;
   }
 
   async getSession(id: string): Promise<PomodoroSession | null> {

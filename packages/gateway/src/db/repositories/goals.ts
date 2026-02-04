@@ -173,7 +173,8 @@ export class GoalsRepository extends BaseRepository {
       ]
     );
 
-    const goal = (await this.get(id))!;
+    const goal = await this.get(id);
+    if (!goal) throw new Error('Failed to create goal');
 
     getEventBus().emit(createEvent<ResourceCreatedData>(
       EventTypes.RESOURCE_CREATED, 'resource', 'goals-repository',

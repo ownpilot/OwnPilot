@@ -280,7 +280,9 @@ export class MediaSettingsRepository extends BaseRepository {
         ]
       );
 
-      return (await this.get(userId, input.capability))!;
+      const setting = await this.get(userId, input.capability);
+      if (!setting) throw new Error('Failed to upsert media setting');
+      return setting;
     } else {
       // Insert
       const id = randomUUID();
@@ -302,7 +304,9 @@ export class MediaSettingsRepository extends BaseRepository {
         ]
       );
 
-      return (await this.get(userId, input.capability))!;
+      const setting = await this.get(userId, input.capability);
+      if (!setting) throw new Error('Failed to upsert media setting');
+      return setting;
     }
   }
 

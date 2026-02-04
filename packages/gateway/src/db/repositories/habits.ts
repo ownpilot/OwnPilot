@@ -219,7 +219,9 @@ export class HabitsRepository extends BaseRepository {
       ]
     );
 
-    return (await this.get(id))!;
+    const habit = await this.get(id);
+    if (!habit) throw new Error('Failed to create habit');
+    return habit;
   }
 
   async get(id: string): Promise<Habit | null> {
