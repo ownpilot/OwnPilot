@@ -431,6 +431,10 @@ toolsRoutes.post('/batch', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Missing required field: executions (array)' }, 400);
   }
 
+  if (body.executions.length > 20) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Batch size exceeds maximum of 20 executions' }, 400);
+  }
+
   const startTime = Date.now();
 
   const executeOne = async (exec: { tool: string; arguments: Record<string, unknown> }) => {

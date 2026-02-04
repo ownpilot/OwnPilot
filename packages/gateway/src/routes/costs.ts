@@ -15,7 +15,7 @@ import {
   type BudgetConfig,
 } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
-import { apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getIntParam, getUserId, ERROR_CODES } from './helpers.js';
 
 const log = getLog('Costs');
 
@@ -65,7 +65,7 @@ function getPeriodStart(period: 'day' | 'week' | 'month' | 'year'): Date {
  */
 costRoutes.get('/', async (c) => {
   const period = (c.req.query('period') ?? 'month') as 'day' | 'week' | 'month' | 'year';
-  const userId = c.req.query('userId');
+  const userId = getUserId(c); // Use authenticated user, not arbitrary query param
 
   const startDate = getPeriodStart(period);
   const endDate = new Date();
