@@ -8,8 +8,7 @@
 import { Hono } from 'hono';
 import { getChannelService } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
-import { apiResponse, apiError, getIntParam } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
 
 export const channelRoutes = new Hono();
 

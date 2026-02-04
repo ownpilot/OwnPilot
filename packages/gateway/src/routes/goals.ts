@@ -17,8 +17,7 @@ import type {
 } from '../db/repositories/goals.js';
 import { GoalServiceError } from '../services/goal-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Goals');

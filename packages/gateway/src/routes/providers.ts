@@ -7,8 +7,7 @@
 
 import { Hono } from 'hono';
 import { loadProviderConfig, PROVIDER_IDS } from '@ownpilot/core';
-import { apiResponse, apiError, getUserId } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getUserId, ERROR_CODES } from './helpers.js';
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';

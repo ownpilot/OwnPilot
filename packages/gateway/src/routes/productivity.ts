@@ -22,8 +22,7 @@ import {
   type ProcessCaptureInput,
   type CaptureType,
 } from '../db/repositories/captures.js';
-import { apiResponse, apiError, getUserId, getIntParam } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getUserId, getIntParam, ERROR_CODES } from './helpers.js';
 
 export const productivityRoutes = new Hono();
 

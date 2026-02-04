@@ -8,8 +8,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, getIntParam } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { CustomDataServiceError } from '../services/custom-data-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
