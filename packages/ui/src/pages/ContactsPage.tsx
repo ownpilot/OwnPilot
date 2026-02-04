@@ -261,12 +261,14 @@ function ContactItem({ contact, onEdit, onDelete, onToggleFavorite }: ContactIte
               ? 'text-warning'
               : 'text-text-muted dark:text-dark-text-muted hover:text-warning'
           }`}
+          aria-label={contact.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >
           <Star className={`w-4 h-4 ${contact.isFavorite ? 'fill-warning' : ''}`} />
         </button>
         <button
           onClick={onDelete}
           className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+          aria-label="Delete contact"
         >
           <Trash2 className="w-4 h-4" />
         </button>

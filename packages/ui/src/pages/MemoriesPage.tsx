@@ -237,6 +237,7 @@ function MemoryItem({ memory, onEdit, onDelete }: MemoryItemProps) {
           onDelete();
         }}
         className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+        aria-label="Delete memory"
       >
         <Trash2 className="w-4 h-4" />
       </button>

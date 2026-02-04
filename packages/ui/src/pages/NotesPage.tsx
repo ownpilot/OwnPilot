@@ -227,6 +227,7 @@ function NoteCard({ note, onClick, onTogglePin, onDelete }: NoteCardProps) {
                 ? 'text-primary'
                 : 'text-text-muted dark:text-dark-text-muted hover:text-primary'
             }`}
+            aria-label={note.isPinned ? 'Unpin note' : 'Pin note'}
           >
             <Pin className="w-4 h-4" />
           </button>
@@ -236,6 +237,7 @@ function NoteCard({ note, onClick, onTogglePin, onDelete }: NoteCardProps) {
               onDelete();
             }}
             className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error rounded transition-colors"
+            aria-label="Delete note"
           >
             <Trash2 className="w-4 h-4" />
           </button>

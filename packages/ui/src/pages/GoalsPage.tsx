@@ -240,6 +240,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
         <button
           onClick={onToggle}
           className="mt-1 flex-shrink-0 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
+          aria-label={isExpanded ? 'Collapse goal steps' : 'Expand goal steps'}
         >
           <ChevronRight
             className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -292,6 +293,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
               onClick={() => onStatusChange('completed')}
               className="p-1 text-text-muted dark:text-dark-text-muted hover:text-success transition-colors"
               title="Mark complete"
+              aria-label="Mark goal as complete"
             >
               <CheckCircle2 className="w-4 h-4" />
             </button>
@@ -301,6 +303,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
               onClick={() => onStatusChange('paused')}
               className="p-1 text-text-muted dark:text-dark-text-muted hover:text-warning transition-colors"
               title="Pause"
+              aria-label="Pause goal"
             >
               <Pause className="w-4 h-4" />
             </button>
@@ -310,6 +313,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
               onClick={() => onStatusChange('active')}
               className="p-1 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
               title="Resume"
+              aria-label="Resume goal"
             >
               <Target className="w-4 h-4" />
             </button>
@@ -317,6 +321,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
           <button
             onClick={onDelete}
             className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+            aria-label="Delete goal"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -344,6 +349,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
                       )
                     }
                     className="flex-shrink-0"
+                    aria-label={step.status === 'completed' ? 'Mark step as pending' : 'Mark step as complete'}
                   >
                     {step.status === 'completed' ? (
                       <CheckCircle2 className="w-4 h-4 text-success" />

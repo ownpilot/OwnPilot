@@ -387,6 +387,7 @@ function ToolDetailModal({ tool, onClose, onAction, onRefresh }: ToolDetailModal
               <button
                 onClick={() => onAction(tool.id, 'delete')}
                 className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                aria-label="Delete tool"
               >
                 <Trash className="w-4 h-4" />
               </button>

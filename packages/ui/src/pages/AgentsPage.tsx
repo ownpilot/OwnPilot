@@ -201,6 +201,7 @@ function AgentCard({ agent, onDelete, onSelect, onChat, onConfigure, isSelected 
           }}
           className="p-2 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
           title="Delete agent"
+          aria-label="Delete agent"
         >
           <Trash className="w-4 h-4" />
         </button>
@@ -559,6 +560,7 @@ function AgentDetailPanel({ agent, onClose, onChat }: AgentDetailPanelProps) {
         <button
           onClick={onClose}
           className="p-1 text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary"
+          aria-label="Close agent details"
         >
           ×
         </button>
