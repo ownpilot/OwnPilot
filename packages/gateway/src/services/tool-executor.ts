@@ -201,7 +201,7 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
       }
     })
     .catch((err) => {
-      log.debug('[tool-executor] Custom tools sync deferred — DB may not be ready yet', { error: err });
+      log.warn('[tool-executor] Custom tools sync deferred — DB may not be ready yet', { error: err });
     });
 }
 

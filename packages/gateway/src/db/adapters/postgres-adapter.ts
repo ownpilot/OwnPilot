@@ -88,7 +88,11 @@ export class PostgresAdapter implements DatabaseAdapter {
       await client.query('COMMIT');
       return result;
     } catch (error) {
-      await client.query('ROLLBACK');
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        log.error('[PostgreSQL] Rollback failed:', rollbackError);
+      }
       throw error;
     } finally {
       client.release();

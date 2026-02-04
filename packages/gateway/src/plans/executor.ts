@@ -150,7 +150,10 @@ export class PlanExecutor extends EventEmitter {
       await this.executeSteps(planId, results, abortController.signal);
 
       // Check final status
-      const updatedPlan = (await this.planService.getPlan(this.config.userId, planId))!;
+      const updatedPlan = await this.planService.getPlan(this.config.userId, planId);
+      if (!updatedPlan) {
+        throw new Error(`Plan ${planId} was deleted during execution`);
+      }
       const completedSteps = (await this.planService.getStepsByStatus(this.config.userId, planId, 'completed')).length;
       const totalSteps = steps.length;
 
@@ -394,7 +397,10 @@ export class PlanExecutor extends EventEmitter {
     results: Map<string, unknown>,
     signal: AbortSignal
   ): Promise<void> {
-    const plan = (await this.planService.getPlan(this.config.userId, planId))!;
+    const plan = await this.planService.getPlan(this.config.userId, planId);
+    if (!plan) {
+      throw new Error(`Plan ${planId} was deleted during execution`);
+    }
 
     // Update step status
     await this.planService.updateStep(this.config.userId, step.id, { status: 'running' });
