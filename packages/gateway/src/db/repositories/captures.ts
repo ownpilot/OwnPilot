@@ -222,7 +222,7 @@ export class CapturesRepository extends BaseRepository {
 
     if (query.tag) {
       sql += ` AND tags::text LIKE $${paramIndex++}`;
-      params.push(`%"${query.tag.toLowerCase()}"%`);
+      params.push(`%"${this.escapeLike(query.tag.toLowerCase())}"%`);
     }
 
     if (query.processed !== undefined) {
@@ -232,7 +232,7 @@ export class CapturesRepository extends BaseRepository {
 
     if (query.search) {
       sql += ` AND content ILIKE $${paramIndex++}`;
-      params.push(`%${query.search}%`);
+      params.push(`%${this.escapeLike(query.search)}%`);
     }
 
     sql += ` ORDER BY created_at DESC`;

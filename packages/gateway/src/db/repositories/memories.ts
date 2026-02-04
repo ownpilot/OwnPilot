@@ -307,13 +307,13 @@ export class MemoriesRepository extends BaseRepository {
     if (query.tags && query.tags.length > 0) {
       for (const tag of query.tags) {
         sql += ` AND tags ILIKE $${paramIndex++}`;
-        params.push(`%"${tag}"%`);
+        params.push(`%"${this.escapeLike(tag)}"%`);
       }
     }
 
     if (query.search) {
       sql += ` AND content ILIKE $${paramIndex++}`;
-      params.push(`%${query.search}%`);
+      params.push(`%${this.escapeLike(query.search)}%`);
     }
 
     // Order by

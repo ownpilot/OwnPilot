@@ -216,7 +216,7 @@ export class ChatRepository extends BaseRepository {
 
     if (query.search) {
       conditions.push(`(title ILIKE $${paramIndex} OR agent_name ILIKE $${paramIndex})`);
-      params.push(`%${query.search}%`);
+      params.push(`%${this.escapeLike(query.search)}%`);
       paramIndex++;
     }
 
