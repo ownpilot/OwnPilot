@@ -223,72 +223,76 @@ export class OpenAICompatibleProvider {
       }
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let reasoningBuffer = '';
-      let reasoningDone = false;
+      try {
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let reasoningBuffer = '';
+        let reasoningDone = false;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (data === '[DONE]') {
-            yield ok({ id: '', done: true });
-            return;
-          }
-
-          try {
-            const parsed = JSON.parse(data) as OpenAIResponse;
-            const choice = parsed.choices?.[0];
-            const delta = choice?.delta ?? {};
-
-            // Handle reasoning content streaming (DeepSeek R1, QwQ)
-            if (delta.reasoning_content) {
-              reasoningBuffer += delta.reasoning_content;
-              yield ok({
-                id: parsed.id ?? '',
-                content: delta.reasoning_content,
-                metadata: { type: 'reasoning' },
-                done: false,
-              });
-              continue;
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') {
+              yield ok({ id: '', done: true });
+              return;
             }
 
-            // When switching from reasoning to content
-            if (reasoningBuffer && !reasoningDone && delta.content) {
-              reasoningDone = true;
+            try {
+              const parsed = JSON.parse(data) as OpenAIResponse;
+              const choice = parsed.choices?.[0];
+              const delta = choice?.delta ?? {};
+
+              // Handle reasoning content streaming (DeepSeek R1, QwQ)
+              if (delta.reasoning_content) {
+                reasoningBuffer += delta.reasoning_content;
+                yield ok({
+                  id: parsed.id ?? '',
+                  content: delta.reasoning_content,
+                  metadata: { type: 'reasoning' },
+                  done: false,
+                });
+                continue;
+              }
+
+              // When switching from reasoning to content
+              if (reasoningBuffer && !reasoningDone && delta.content) {
+                reasoningDone = true;
+                yield ok({
+                  id: parsed.id ?? '',
+                  content: '\n\n',
+                  done: false,
+                });
+              }
+
               yield ok({
                 id: parsed.id ?? '',
-                content: '\n\n',
-                done: false,
+                content: delta.content,
+                toolCalls: delta.tool_calls?.map((tc) => ({
+                  id: tc.id,
+                  name: tc.function?.name,
+                  arguments: tc.function?.arguments,
+                })),
+                done: choice?.finish_reason != null,
+                finishReason: choice?.finish_reason
+                  ? this.mapFinishReason(choice.finish_reason)
+                  : undefined,
+                usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
               });
+            } catch {
+              // Skip malformed chunks
             }
-
-            yield ok({
-              id: parsed.id ?? '',
-              content: delta.content,
-              toolCalls: delta.tool_calls?.map((tc) => ({
-                id: tc.id,
-                name: tc.function?.name,
-                arguments: tc.function?.arguments,
-              })),
-              done: choice?.finish_reason != null,
-              finishReason: choice?.finish_reason
-                ? this.mapFinishReason(choice.finish_reason)
-                : undefined,
-              usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
-            });
-          } catch {
-            // Skip malformed chunks
           }
         }
+      } finally {
+        try { await reader.cancel(); } catch { /* already released */ }
       }
     } catch (error) {
       yield err(

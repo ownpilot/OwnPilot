@@ -404,71 +404,75 @@ export class GoogleProvider {
       }
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+      try {
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (!data) continue;
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6).trim();
+            if (!data) continue;
 
-          try {
-            const parsed = JSON.parse(data) as GeminiResponse;
-            const candidate = parsed.candidates?.[0];
+            try {
+              const parsed = JSON.parse(data) as GeminiResponse;
+              const candidate = parsed.candidates?.[0];
 
-            if (candidate?.content?.parts) {
-              for (const part of candidate.content.parts) {
-                if (part.text) {
-                  yield ok({
-                    id: `gemini_${Date.now()}`,
-                    content: part.text,
-                    metadata: part.thought ? { type: 'thinking' } : undefined,
-                    done: false,
-                  });
-                }
-                if (part.functionCall) {
-                  yield ok({
-                    id: `gemini_${Date.now()}`,
-                    toolCalls: [{
-                      id: `call_${Date.now()}`,
-                      name: part.functionCall.name,
-                      arguments: JSON.stringify(part.functionCall.args),
-                      // Capture thoughtSignature for Gemini 3+ thinking models
-                      metadata: part.thoughtSignature ? { thoughtSignature: part.thoughtSignature } : undefined,
-                    }],
-                    done: false,
-                  });
+              if (candidate?.content?.parts) {
+                for (const part of candidate.content.parts) {
+                  if (part.text) {
+                    yield ok({
+                      id: `gemini_${Date.now()}`,
+                      content: part.text,
+                      metadata: part.thought ? { type: 'thinking' } : undefined,
+                      done: false,
+                    });
+                  }
+                  if (part.functionCall) {
+                    yield ok({
+                      id: `gemini_${Date.now()}`,
+                      toolCalls: [{
+                        id: `call_${Date.now()}`,
+                        name: part.functionCall.name,
+                        arguments: JSON.stringify(part.functionCall.args),
+                        // Capture thoughtSignature for Gemini 3+ thinking models
+                        metadata: part.thoughtSignature ? { thoughtSignature: part.thoughtSignature } : undefined,
+                      }],
+                      done: false,
+                    });
+                  }
                 }
               }
-            }
 
-            if (candidate?.finishReason) {
-              yield ok({
-                id: `gemini_${Date.now()}`,
-                done: true,
-                finishReason: this.mapFinishReason(candidate.finishReason),
-                usage: parsed.usageMetadata
-                  ? {
-                      promptTokens: parsed.usageMetadata.promptTokenCount ?? 0,
-                      completionTokens: (parsed.usageMetadata.candidatesTokenCount ?? 0) +
-                                       (parsed.usageMetadata.thoughtsTokenCount ?? 0),
-                      totalTokens: parsed.usageMetadata.totalTokenCount ?? 0,
-                    }
-                  : undefined,
-              });
+              if (candidate?.finishReason) {
+                yield ok({
+                  id: `gemini_${Date.now()}`,
+                  done: true,
+                  finishReason: this.mapFinishReason(candidate.finishReason),
+                  usage: parsed.usageMetadata
+                    ? {
+                        promptTokens: parsed.usageMetadata.promptTokenCount ?? 0,
+                        completionTokens: (parsed.usageMetadata.candidatesTokenCount ?? 0) +
+                                         (parsed.usageMetadata.thoughtsTokenCount ?? 0),
+                        totalTokens: parsed.usageMetadata.totalTokenCount ?? 0,
+                      }
+                    : undefined,
+                });
+              }
+            } catch {
+              // Skip malformed chunks
             }
-          } catch {
-            // Skip malformed chunks
           }
         }
+      } finally {
+        try { await reader.cancel(); } catch { /* already released */ }
       }
     } catch (error) {
       this.clearAbortTimeout();

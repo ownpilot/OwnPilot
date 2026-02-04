@@ -504,48 +504,52 @@ export class OpenAIProvider extends BaseProvider {
       }
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+      try {
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (data === '[DONE]') {
-            yield ok({ id: '', done: true });
-            return;
-          }
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') {
+              yield ok({ id: '', done: true });
+              return;
+            }
 
-          try {
-            const parsed = JSON.parse(data) as OpenAIResponse;
-            const choice = parsed.choices?.[0];
-            const delta = choice?.delta ?? {};
+            try {
+              const parsed = JSON.parse(data) as OpenAIResponse;
+              const choice = parsed.choices?.[0];
+              const delta = choice?.delta ?? {};
 
-            yield ok({
-              id: parsed.id ?? '',
-              content: delta.content,
-              toolCalls: delta.tool_calls?.map((tc) => ({
-                id: tc.id,
-                name: tc.function?.name,
-                arguments: tc.function?.arguments,
-              })),
-              done: choice?.finish_reason != null,
-              finishReason: choice?.finish_reason
-                ? this.mapFinishReason(choice.finish_reason)
-                : undefined,
-              usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
-            });
-          } catch {
-            // Skip malformed chunks
+              yield ok({
+                id: parsed.id ?? '',
+                content: delta.content,
+                toolCalls: delta.tool_calls?.map((tc) => ({
+                  id: tc.id,
+                  name: tc.function?.name,
+                  arguments: tc.function?.arguments,
+                })),
+                done: choice?.finish_reason != null,
+                finishReason: choice?.finish_reason
+                  ? this.mapFinishReason(choice.finish_reason)
+                  : undefined,
+                usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
+              });
+            } catch {
+              // Skip malformed chunks
+            }
           }
         }
+      } finally {
+        try { await reader.cancel(); } catch { /* already released */ }
       }
     } catch (error) {
       yield err(
@@ -830,52 +834,56 @@ export class AnthropicProvider extends BaseProvider {
       }
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+      try {
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (!data) continue;
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6).trim();
+            if (!data) continue;
 
-          try {
-            const parsed = JSON.parse(data) as AnthropicStreamEvent;
+            try {
+              const parsed = JSON.parse(data) as AnthropicStreamEvent;
 
-            if (parsed.type === 'content_block_delta') {
-              yield ok({
-                id: '',
-                content: parsed.delta?.text,
-                done: false,
-              });
-            } else if (parsed.type === 'message_stop') {
-              yield ok({ id: '', done: true });
-              return;
-            } else if (parsed.type === 'message_delta') {
-              yield ok({
-                id: '',
-                done: true,
-                finishReason: this.mapAnthropicStopReason(parsed.delta?.stop_reason ?? 'end_turn'),
-                usage: parsed.usage
-                  ? {
-                      promptTokens: 0,
-                      completionTokens: parsed.usage.output_tokens ?? 0,
-                      totalTokens: parsed.usage.output_tokens ?? 0,
-                    }
-                  : undefined,
-              });
+              if (parsed.type === 'content_block_delta') {
+                yield ok({
+                  id: '',
+                  content: parsed.delta?.text,
+                  done: false,
+                });
+              } else if (parsed.type === 'message_stop') {
+                yield ok({ id: '', done: true });
+                return;
+              } else if (parsed.type === 'message_delta') {
+                yield ok({
+                  id: '',
+                  done: true,
+                  finishReason: this.mapAnthropicStopReason(parsed.delta?.stop_reason ?? 'end_turn'),
+                  usage: parsed.usage
+                    ? {
+                        promptTokens: 0,
+                        completionTokens: parsed.usage.output_tokens ?? 0,
+                        totalTokens: parsed.usage.output_tokens ?? 0,
+                      }
+                    : undefined,
+                });
+              }
+            } catch {
+              // Skip malformed chunks
             }
-          } catch {
-            // Skip malformed chunks
           }
         }
+      } finally {
+        try { await reader.cancel(); } catch { /* already released */ }
       }
     } catch (error) {
       yield err(
