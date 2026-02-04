@@ -611,6 +611,8 @@ interface ToolExecutionResult {
   pendingToolId?: string;
 }
 
+const MAX_TOOL_CODE_SIZE = 50_000; // 50KB max for tool code
+
 // Dangerous patterns that are not allowed in tool code
 const DANGEROUS_PATTERNS = [
   /process\.exit/i,
@@ -620,12 +622,18 @@ const DANGEROUS_PATTERNS = [
   /__filename/i,
   /global\./i,
   /globalThis\./i,
+  /\bFunction\s*\(/i,      // Function constructor
+  /\bnew\s+Function\b/i,   // new Function(...)
+  /\beval\s*\(/i,           // eval()
 ];
 
 /**
  * Validate tool code for dangerous patterns
  */
 function validateToolCode(code: string): { valid: boolean; error?: string } {
+  if (code.length > MAX_TOOL_CODE_SIZE) {
+    return { valid: false, error: `Tool code exceeds maximum size of ${MAX_TOOL_CODE_SIZE} characters` };
+  }
   for (const pattern of DANGEROUS_PATTERNS) {
     if (pattern.test(code)) {
       return { valid: false, error: `Tool code contains forbidden pattern: ${pattern.source}` };

@@ -625,6 +625,9 @@ export function createDynamicToolRegistry(
         /__filename/i,
         /global\./i,
         /globalThis\./i,
+        /\bFunction\s*\(/i,      // Function constructor
+        /\bnew\s+Function\b/i,   // new Function(...)
+        /\beval\s*\(/i,           // eval()
       ];
 
       for (const pattern of dangerousPatterns) {
