@@ -6,20 +6,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useDebouncedValue, useModalClose } from '../hooks';
 import { notesApi } from '../api';
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  contentType: 'markdown' | 'text';
-  category?: string;
-  tags: string[];
-  isPinned: boolean;
-  isArchived: boolean;
-  color?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Note } from '../api';
 
 
 export function NotesPage() {

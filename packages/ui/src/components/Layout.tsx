@@ -40,6 +40,7 @@ import {
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 
 interface NavItem {
   to: string;
@@ -244,7 +245,7 @@ export function Layout() {
   const { status: wsStatus } = useGateway();
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(false);
   const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
-    return localStorage.getItem('ownpilot-advanced-mode') === 'true';
+    return localStorage.getItem(STORAGE_KEYS.ADVANCED_MODE) === 'true';
   });
   const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({ inbox: 0, tasks: 0 });
   const handleBadgeUpdate = useCallback(
@@ -262,7 +263,7 @@ export function Layout() {
 
   // Persist mode preference
   useEffect(() => {
-    localStorage.setItem('ownpilot-advanced-mode', String(isAdvancedMode));
+    localStorage.setItem(STORAGE_KEYS.ADVANCED_MODE, String(isAdvancedMode));
   }, [isAdvancedMode]);
 
   // Filter nav groups based on mode

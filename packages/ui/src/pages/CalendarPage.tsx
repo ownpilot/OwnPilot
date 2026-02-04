@@ -3,22 +3,7 @@ import { Calendar, Plus, Trash2, Clock, MapPin } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useModalClose } from '../hooks';
 import { calendarApi } from '../api';
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  description?: string;
-  startDate: string;
-  endDate?: string;
-  startTime?: string;
-  endTime?: string;
-  location?: string;
-  isAllDay: boolean;
-  color?: string;
-  reminders: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+import type { CalendarEvent } from '../api';
 
 
 const colorOptions = [

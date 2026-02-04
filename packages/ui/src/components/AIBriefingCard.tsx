@@ -13,6 +13,7 @@ import {
 import { providersApi, dashboardApi } from '../api';
 import type { AIBriefing } from '../api';
 import type { ProviderInfo } from '../types';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 
 interface ProviderModel {
   provider: string;
@@ -20,8 +21,6 @@ interface ProviderModel {
   model: string;
   modelName: string;
 }
-
-const STORAGE_KEY = 'briefing-model-preference';
 
 // Default fallback if API fails
 const DEFAULT_MODEL: ProviderModel = {
@@ -41,7 +40,7 @@ export function AIBriefingCard() {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [availableModels, setAvailableModels] = useState<ProviderModel[]>([]);
   const [selectedModel, setSelectedModel] = useState<ProviderModel>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEYS.BRIEFING_MODEL);
     if (saved) {
       try {
         return JSON.parse(saved) as ProviderModel;
@@ -102,7 +101,7 @@ export function AIBriefingCard() {
           setAvailableModels(models);
 
           // If saved model is not in available list, use first available
-          const savedModel = localStorage.getItem(STORAGE_KEY);
+          const savedModel = localStorage.getItem(STORAGE_KEYS.BRIEFING_MODEL);
           if (savedModel) {
             try {
               const parsed = JSON.parse(savedModel) as ProviderModel;
@@ -111,17 +110,17 @@ export function AIBriefingCard() {
               );
               if (!found && models.length > 0) {
                 setSelectedModel(models[0]!);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(models[0]!));
+                localStorage.setItem(STORAGE_KEYS.BRIEFING_MODEL, JSON.stringify(models[0]!));
               }
             } catch {
               // Invalid saved data, use first model
               setSelectedModel(models[0]!);
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(models[0]!));
+              localStorage.setItem(STORAGE_KEYS.BRIEFING_MODEL, JSON.stringify(models[0]!));
             }
           } else {
             // No saved preference, use first available
             setSelectedModel(models[0]!);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(models[0]!));
+            localStorage.setItem(STORAGE_KEYS.BRIEFING_MODEL, JSON.stringify(models[0]!));
           }
         }
       } catch {
@@ -256,7 +255,7 @@ export function AIBriefingCard() {
 
   const handleModelChange = (model: ProviderModel) => {
     setSelectedModel(model);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(model));
+    localStorage.setItem(STORAGE_KEYS.BRIEFING_MODEL, JSON.stringify(model));
     setShowModelSelector(false);
     // Refresh with new model
     fetchBriefing(true, true);
@@ -489,7 +488,7 @@ export function AIBriefingCard() {
               <ol className="space-y-1 pl-6">
                 {briefing.priorities.map((priority, index) => (
                   <li
-                    key={index}
+                    key={`priority-${index}`}
                     className="text-sm text-text-primary dark:text-dark-text-primary list-decimal marker:text-primary marker:font-semibold"
                   >
                     {priority}
@@ -514,7 +513,7 @@ export function AIBriefingCard() {
                   <ul className="space-y-1">
                     {briefing.insights.map((insight, index) => (
                       <li
-                        key={index}
+                        key={`insight-${index}`}
                         className="text-sm text-text-muted dark:text-dark-text-muted flex items-start gap-2"
                       >
                         <span className="text-success mt-1">•</span>
@@ -537,7 +536,7 @@ export function AIBriefingCard() {
                   <ul className="space-y-1">
                     {briefing.suggestedFocusAreas.map((area, index) => (
                       <li
-                        key={index}
+                        key={`focus-${index}`}
                         className="text-sm text-text-muted dark:text-dark-text-muted flex items-start gap-2"
                       >
                         <span className="text-info mt-1">•</span>

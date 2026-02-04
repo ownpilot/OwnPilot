@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { plansApi, apiClient } from '../api';
+import type { Plan, PlanStep, PlanEventType, PlanHistoryEntry } from '../api';
 import {
   ListChecks,
   Plus,
@@ -23,56 +24,6 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
 import { useModalClose } from '../hooks';
-
-interface PlanStep {
-  id: string;
-  planId: string;
-  type: 'tool_call' | 'llm_decision' | 'user_input' | 'condition' | 'parallel' | 'loop' | 'sub_plan';
-  name: string;
-  description?: string;
-  config: Record<string, unknown>;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'blocked' | 'waiting';
-  orderNum: number;
-  dependencies: string[];
-  result?: unknown;
-  error?: string;
-  retryCount: number;
-  maxRetries: number;
-  startedAt?: string;
-  completedAt?: string;
-  durationMs?: number;
-}
-
-type PlanEventType = 'started' | 'step_started' | 'step_completed' | 'step_failed' | 'paused' | 'resumed' | 'completed' | 'failed' | 'cancelled' | 'checkpoint' | 'rollback';
-
-interface PlanHistoryEntry {
-  id: string;
-  planId: string;
-  stepId: string | null;
-  eventType: PlanEventType;
-  details: Record<string, unknown>;
-  createdAt: string;
-}
-
-interface Plan {
-  id: string;
-  name: string;
-  goal: string;
-  description?: string;
-  status: 'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
-  goalId?: string;
-  triggerId?: string;
-  progress: number;
-  totalSteps: number;
-  currentStep?: number;
-  error?: string;
-  checkpoint?: string;
-  createdAt: string;
-  updatedAt: string;
-  startedAt?: string;
-  completedAt?: string;
-  steps?: PlanStep[];
-}
 
 const statusColors: Record<Plan['status'], string> = {
   pending: 'bg-warning/10 text-warning',
@@ -118,7 +69,7 @@ export function PlansPage() {
   const fetchPlanHistory = async (planId: string) => {
     try {
       const data = await plansApi.history(planId);
-      setPlanHistory(data.history as PlanHistoryEntry[]);
+      setPlanHistory(data.history);
       setHistoryPlanId(planId);
     } catch {
       // API client handles error reporting

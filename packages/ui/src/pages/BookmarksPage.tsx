@@ -6,19 +6,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useDebouncedValue, useModalClose } from '../hooks';
 import { bookmarksApi } from '../api';
-
-interface BookmarkItem {
-  id: string;
-  url: string;
-  title: string;
-  description?: string;
-  favicon?: string;
-  tags: string[];
-  folder?: string;
-  isFavorite: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { BookmarkItem } from '../api';
 
 
 export function BookmarksPage() {

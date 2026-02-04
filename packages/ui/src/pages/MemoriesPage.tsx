@@ -1,23 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { memoriesApi, apiClient } from '../api';
+import type { Memory } from '../api';
 import { Brain, Plus, Trash2, Search, Star, Filter } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useDebouncedValue, useModalClose } from '../hooks';
-
-interface Memory {
-  id: string;
-  type: 'fact' | 'preference' | 'conversation' | 'event';
-  content: string;
-  source?: string;
-  importance: number;
-  createdAt: string;
-  updatedAt: string;
-  accessedAt?: string;
-  metadata?: Record<string, unknown>;
-}
 
 const typeColors = {
   fact: 'bg-blue-500/10 text-blue-500',

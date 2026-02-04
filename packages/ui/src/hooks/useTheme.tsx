@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 
 type Theme = 'system' | 'light' | 'dark';
 
@@ -9,8 +10,6 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
-
-const STORAGE_KEY = 'theme';
 
 function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light';
@@ -29,13 +28,13 @@ function applyTheme(theme: 'light' | 'dark') {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window === 'undefined') return 'system';
-    const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    const saved = localStorage.getItem(STORAGE_KEYS.THEME) as Theme | null;
     return saved || 'system';
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'light';
-    const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    const saved = localStorage.getItem(STORAGE_KEYS.THEME) as Theme | null;
     if (saved === 'light' || saved === 'dark') return saved;
     return getSystemTheme();
   });
@@ -72,7 +71,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem(STORAGE_KEY, newTheme);
+    localStorage.setItem(STORAGE_KEYS.THEME, newTheme);
   }, []);
 
   return (
