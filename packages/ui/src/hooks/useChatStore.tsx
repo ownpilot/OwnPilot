@@ -229,10 +229,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                     throw new Error(data.error);
                   }
                 } catch (parseErr) {
-                  // Ignore parse errors for incomplete JSON
-                  if (!(parseErr instanceof SyntaxError)) {
-                    console.warn('Failed to parse SSE data:', parseErr);
-                  }
+                  // Ignore SyntaxErrors from incomplete JSON chunks; re-throw real errors
+                  if (parseErr instanceof SyntaxError) continue;
+                  throw parseErr;
                 }
               }
             }

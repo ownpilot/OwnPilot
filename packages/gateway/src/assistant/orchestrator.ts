@@ -117,13 +117,17 @@ export async function buildEnhancedSystemPrompt(
       }
 
       // Include pending steps
-      const steps = await goalService.getSteps(options.userId, goal.id);
-      const pendingSteps = steps.filter((s) => s.status === 'pending' || s.status === 'in_progress');
-      if (pendingSteps.length > 0) {
-        goalLines.push('  Next steps:');
-        pendingSteps.slice(0, 3).forEach((s) => {
-          goalLines.push(`  - [ ] ${s.title}`);
-        });
+      try {
+        const steps = await goalService.getSteps(options.userId, goal.id);
+        const pendingSteps = steps.filter((s) => s.status === 'pending' || s.status === 'in_progress');
+        if (pendingSteps.length > 0) {
+          goalLines.push('  Next steps:');
+          pendingSteps.slice(0, 3).forEach((s) => {
+            goalLines.push(`  - [ ] ${s.title}`);
+          });
+        }
+      } catch {
+        // Skip steps if fetch fails — don't break system prompt generation
       }
     }
 
