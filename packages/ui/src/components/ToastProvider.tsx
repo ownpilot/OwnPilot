@@ -157,14 +157,28 @@ let toastCounter = 0;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const exitTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+
+  // Clean up animation timers on unmount
+  useEffect(() => {
+    const timers = exitTimersRef.current;
+    return () => {
+      for (const timer of timers.values()) clearTimeout(timer);
+      timers.clear();
+    };
+  }, []);
 
   const removeToast = useCallback((id: string) => {
+    // Prevent double-removal
+    if (exitTimersRef.current.has(id)) return;
     // Mark as exiting first for slide-out animation
     setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
     // Remove from DOM after animation completes
-    setTimeout(() => {
+    const timer = setTimeout(() => {
+      exitTimersRef.current.delete(id);
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 300);
+    exitTimersRef.current.set(id, timer);
   }, []);
 
   const addToast = useCallback(

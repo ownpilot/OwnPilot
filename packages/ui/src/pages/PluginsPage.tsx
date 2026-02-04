@@ -332,7 +332,7 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
         })
         .catch(() => setPluginTables([]));
     }
-  }, [plugin]);
+  }, [plugin.id]);
 
   // Initialize settings values when modal opens or plugin changes
   useEffect(() => {
@@ -340,7 +340,7 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
       setSettingsValues(plugin.settings ?? {});
       setSettingsMessage(null);
     }
-  }, [plugin]);
+  }, [plugin.id]);
 
   // Reset to overview tab if the current tab is no longer available
   useEffect(() => {
