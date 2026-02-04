@@ -69,6 +69,53 @@ function isValidEmail(email: string): boolean {
 }
 
 /**
+ * Validate IBAN check digits (ISO 13616 mod-97)
+ */
+function isValidIBAN(iban: string): boolean {
+  const clean = iban.replace(/\s/g, '').toUpperCase();
+  if (clean.length < 15 || clean.length > 34) return false;
+
+  // Move first 4 chars to end
+  const rearranged = clean.slice(4) + clean.slice(0, 4);
+
+  // Replace letters with numbers (A=10 .. Z=35)
+  let numStr = '';
+  for (const char of rearranged) {
+    const code = char.charCodeAt(0);
+    if (code >= 65 && code <= 90) {
+      numStr += (code - 55).toString();
+    } else {
+      numStr += char;
+    }
+  }
+
+  // Mod 97 using string-based modulo (number may exceed safe integer)
+  let remainder = 0;
+  for (const digit of numStr) {
+    remainder = (remainder * 10 + parseInt(digit, 10)) % 97;
+  }
+
+  return remainder === 1;
+}
+
+/**
+ * Validate US routing number checksum
+ * Weighted sum: 3*d1 + 7*d2 + d3 + 3*d4 + 7*d5 + d6 + 3*d7 + 7*d8 + d9 must be divisible by 10
+ */
+function isValidRoutingNumber(routing: string): boolean {
+  const digits = routing.replace(/\D/g, '');
+  if (digits.length !== 9) return false;
+
+  const d = digits.split('').map(Number);
+  const checksum =
+    3 * (d[0]! + d[3]! + d[6]!) +
+    7 * (d[1]! + d[4]! + d[7]!) +
+    (d[2]! + d[5]! + d[8]!);
+
+  return checksum % 10 === 0;
+}
+
+/**
  * Check if IP address is valid
  */
 function isValidIPv4(ip: string): boolean {
@@ -167,8 +214,9 @@ export const BUILT_IN_PATTERNS: readonly PIIPattern[] = [
   {
     name: 'ipv6',
     category: 'ip_address',
-    pattern: /\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b/g,
-    confidence: 0.9,
+    // Matches full and compressed IPv6 (e.g. ::1, fe80::1, 2001:db8::8a2e:370:7334)
+    pattern: /(?:(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?::[0-9a-fA-F]{1,4}){1,6}|:(?::[0-9a-fA-F]{1,4}){1,7}|::)/g,
+    confidence: 0.85,
     severity: 'low',
   },
 
@@ -228,7 +276,7 @@ export const BUILT_IN_PATTERNS: readonly PIIPattern[] = [
     name: 'aws_secret_key',
     category: 'api_key',
     pattern: /\b[A-Za-z0-9/+=]{40}\b/g,
-    confidence: 0.5, // Low confidence as it can match many things
+    confidence: 0.3, // Very low - matches any 40-char base64 string
     severity: 'critical',
   },
 
@@ -266,6 +314,7 @@ export const BUILT_IN_PATTERNS: readonly PIIPattern[] = [
     pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{4}\d{7}(?:[A-Z0-9]?){0,16}\b/g,
     confidence: 0.85,
     severity: 'critical',
+    validate: isValidIBAN,
   },
   {
     name: 'bank_routing_number',
@@ -273,6 +322,7 @@ export const BUILT_IN_PATTERNS: readonly PIIPattern[] = [
     pattern: /\b\d{9}\b/g, // US routing numbers
     confidence: 0.3, // Very low - too many false positives
     severity: 'high',
+    validate: isValidRoutingNumber,
   },
 
   // Passport numbers (US format)

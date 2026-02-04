@@ -81,10 +81,11 @@ export class ChannelManager {
           };
           await handler.sendMessage(response);
         } else {
-          // Send error message
+          // Log full error internally; send generic message to user
+          log.error(`Agent error for ${message.username ?? message.userId}:`, result.error.message);
           await handler.sendMessage({
             chatId: message.chatId,
-            text: `Sorry, I encountered an error: ${result.error.message}`,
+            text: 'Sorry, I encountered an error processing your request. Please try again.',
             replyToMessageId: message.id,
           });
         }
