@@ -1039,7 +1039,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   const promptWithContext = contextSections.join('\n\n');
 
   const { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(promptWithContext, {
-    userId: 'default-user',
+    userId: 'default',
     tools: toolDefs,
     workspaceContext: getWorkspaceContext(),
     includeProfile: true,
@@ -1821,7 +1821,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // Inject personal memory into system prompt
   const basePrompt = 'You are a helpful personal AI assistant. You help the user with their daily tasks, remember their preferences, and proactively assist them.';
   const { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
-    userId: 'default-user',
+    userId: 'default',
     tools: toolDefs,
     workspaceContext: getWorkspaceContext(),
     includeProfile: true,

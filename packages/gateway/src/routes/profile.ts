@@ -6,8 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError } from './helpers.js'
-import { ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId } from './helpers.js';
 import {
   getPersonalMemoryStore,
   getMemoryInjector,
@@ -16,15 +15,12 @@ import {
 
 const app = new Hono();
 
-// Default user ID (single-user mode for now)
-const DEFAULT_USER_ID = 'default-user';
-
 /**
  * GET /profile - Get user profile
  */
 app.get('/', async (c) => {
   try {
-    const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
+    const store = await getPersonalMemoryStore(getUserId(c));
     const profile = await store.getProfile();
 
     return apiResponse(c, profile);
@@ -38,7 +34,7 @@ app.get('/', async (c) => {
  */
 app.get('/summary', async (c) => {
   try {
-    const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
+    const store = await getPersonalMemoryStore(getUserId(c));
     const summary = await store.getProfileSummary();
 
     return apiResponse(c, { summary });
@@ -54,7 +50,7 @@ app.get('/category/:category', async (c) => {
   const category = c.req.param('category') as PersonalDataCategory;
 
   try {
-    const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
+    const store = await getPersonalMemoryStore(getUserId(c));
     const entries = await store.getCategory(category);
 
     return apiResponse(c, {
@@ -79,7 +75,7 @@ app.post('/data', async (c) => {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'category, key, and value are required' }, 400);
     }
 
-    const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
+    const store = await getPersonalMemoryStore(getUserId(c));
     const entry = await store.set(category, key, value, {
       data,
       confidence,
@@ -88,7 +84,7 @@ app.post('/data', async (c) => {
     });
 
     // Invalidate prompt cache so next AI call sees updated profile
-    getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
+    getMemoryInjector().invalidateCache(getUserId(c));
 
     return apiResponse(c, entry, 201);
   } catch (error) {
@@ -108,10 +104,10 @@ app.delete('/data', async (c) => {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'category and key are required' }, 400);
     }
 
-    const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
+    const store = await getPersonalMemoryStore(getUserId(c));
     const deleted = await store.delete(category, key);
 
-    getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
+    getMemoryInjector().invalidateCache(getUserId(c));
 
     return apiResponse(c, { deleted });
   } catch (error) {
@@ -131,7 +127,7 @@ app.get('/search', async (c) => {
   }
 
   try {
-    const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
+    const store = await getPersonalMemoryStore(getUserId(c));
     const categories = categoriesParam
       ? categoriesParam.split(',') as PersonalDataCategory[]
       : undefined;
@@ -159,10 +155,10 @@ app.post('/import', async (c) => {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'entries array is required' }, 400);
     }
 
-    const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
+    const store = await getPersonalMemoryStore(getUserId(c));
     const imported = await store.importData(entries);
 
-    getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
+    getMemoryInjector().invalidateCache(getUserId(c));
 
     return apiResponse(c, {
         imported,
@@ -178,7 +174,7 @@ app.post('/import', async (c) => {
  */
 app.get('/export', async (c) => {
   try {
-    const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
+    const store = await getPersonalMemoryStore(getUserId(c));
     const data = await store.exportData();
 
     return apiResponse(c, {
@@ -208,7 +204,7 @@ app.post('/quick', async (c) => {
       autonomyLevel,
     } = body;
 
-    const store = await getPersonalMemoryStore(DEFAULT_USER_ID);
+    const store = await getPersonalMemoryStore(getUserId(c));
     let count = 0;
 
     // Set provided values
@@ -245,7 +241,7 @@ app.post('/quick', async (c) => {
       count++;
     }
 
-    getMemoryInjector().invalidateCache(DEFAULT_USER_ID);
+    getMemoryInjector().invalidateCache(getUserId(c));
 
     // Get updated profile
     const profile = await store.getProfile();
