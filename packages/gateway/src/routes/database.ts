@@ -96,8 +96,9 @@ export const databaseRoutes = new Hono();
 // --- Database Admin Guard ---
 // Requires ADMIN_API_KEY env var to be set. All database admin operations
 // require this key via X-Admin-Key header, regardless of global auth config.
-// GET /status and /stats are exempt (read-only info).
-const ADMIN_EXEMPT_PATHS = ['/status', '/stats', '/operation/status'];
+// Only operation status is exempt (needed for polling long-running ops).
+// /status and /stats expose table names, DB host/port, PG version — require auth.
+const ADMIN_EXEMPT_PATHS = ['/operation/status'];
 
 const requireDatabaseAdmin = createMiddleware(async (c, next) => {
   const path = new URL(c.req.url).pathname.replace(/.*\/database/, '');
