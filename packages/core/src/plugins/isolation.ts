@@ -850,6 +850,14 @@ export class PluginIsolatedLogger implements IsolatedLogger {
 
       if (typeof value === 'string') {
         result[key] = this.sanitize(value);
+      } else if (Array.isArray(value)) {
+        result[key] = value.map((item) =>
+          typeof item === 'string'
+            ? this.sanitize(item)
+            : typeof item === 'object' && item !== null
+              ? this.sanitizeObject(item as Record<string, unknown>)
+              : item,
+        );
       } else if (typeof value === 'object' && value !== null) {
         result[key] = this.sanitizeObject(value as Record<string, unknown>);
       } else {

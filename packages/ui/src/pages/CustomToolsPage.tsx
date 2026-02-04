@@ -42,12 +42,7 @@ export function CustomToolsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
-  useEffect(() => {
-    fetchTools();
-    fetchStats();
-  }, [filter]);
-
-  const fetchTools = async () => {
+  const fetchTools = useCallback(async () => {
     try {
       const { tools } = await customToolsApi.list(filter === 'all' ? undefined : filter);
       setTools(tools);
@@ -56,16 +51,21 @@ export function CustomToolsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filter]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const data = await customToolsApi.stats();
       setStats(data);
     } catch {
       // API client handles error reporting
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchTools();
+    fetchStats();
+  }, [fetchTools, fetchStats]);
 
   const handleAction = useCallback(async (toolId: string, action: 'enable' | 'disable' | 'approve' | 'reject' | 'delete') => {
     try {

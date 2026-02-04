@@ -66,6 +66,7 @@ export interface IEventBus {
   /**
    * Wait for a specific event type. Returns a promise that resolves
    * with the first matching event, or rejects on timeout.
+   * Defaults to 30s timeout to prevent handler leaks.
    */
   waitFor<K extends EventType>(
     type: K,
@@ -180,22 +181,18 @@ export class EventBus implements IEventBus {
 
   waitFor<K extends EventType>(
     type: K,
-    timeoutMs?: number,
+    timeoutMs: number = 30_000,
   ): Promise<TypedEvent<EventPayload<K>>> {
     return new Promise((resolve, reject) => {
-      let timer: ReturnType<typeof setTimeout> | undefined;
-
       const unsub = this.once(type, ((event: TypedEvent<EventPayload<K>>) => {
-        if (timer) clearTimeout(timer);
+        clearTimeout(timer);
         resolve(event);
       }) as EventHandler<EventPayload<K>>);
 
-      if (timeoutMs !== undefined && timeoutMs > 0) {
-        timer = setTimeout(() => {
-          unsub();
-          reject(new Error(`waitFor('${type}') timed out after ${timeoutMs}ms`));
-        }, timeoutMs);
-      }
+      const timer = setTimeout(() => {
+        unsub();
+        reject(new Error(`waitFor('${type}') timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
     });
   }
 
