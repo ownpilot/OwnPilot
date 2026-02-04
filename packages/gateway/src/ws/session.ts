@@ -185,7 +185,8 @@ export class SessionManager {
         session.socket.send(JSON.stringify(message));
         return true;
       } catch {
-        // Socket closed between readyState check and send
+        // Socket closed between readyState check and send — remove stale session
+        this.remove(sessionId);
         return false;
       }
     }

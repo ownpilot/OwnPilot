@@ -260,7 +260,8 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
 
     switch (payload.op) {
       case GatewayOpcode.Hello: {
-        const helloData = payload.d as { heartbeat_interval: number };
+        const helloData = payload.d as { heartbeat_interval?: number } | null;
+        if (!helloData?.heartbeat_interval) break;
         this.startHeartbeat(helloData.heartbeat_interval);
         this.identify();
         break;
@@ -280,7 +281,9 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
       }
 
       case GatewayOpcode.Dispatch:
-        this.handleDispatch(payload.t!, payload.d as Record<string, unknown>, onReady);
+        if (payload.t) {
+          this.handleDispatch(payload.t, (payload.d ?? {}) as Record<string, unknown>, onReady);
+        }
         break;
     }
   }

@@ -345,13 +345,13 @@ export class InteractiveAgentBuilder {
     // Extract answers
     const answers = new Map(session.answers.map((a) => [a.questionId, a.value]));
 
-    const purpose = answers.get('purpose') as string;
-    const name = answers.get('name') as string;
-    const category = answers.get('category') as string;
-    const personality = answers.get('personality') as string;
+    const purpose = (answers.get('purpose') as string) ?? '';
+    const name = (answers.get('name') as string) ?? 'Unnamed Agent';
+    const category = (answers.get('category') as string) ?? 'general';
+    const personality = (answers.get('personality') as string) ?? 'helpful';
     const dataAccess = (answers.get('dataAccess') as string[]) ?? [];
     const tools = (answers.get('tools') as string[]) ?? [];
-    const autonomous = answers.get('autonomous') as boolean;
+    const autonomous = (answers.get('autonomous') as boolean) ?? false;
 
     // Generate ID from name
     const id = name
