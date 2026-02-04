@@ -61,6 +61,12 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('Agents');
 
+/** Safely extract a string[] from unknown config values (DB records, etc.) */
+function safeStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.filter((v): v is string => typeof v === 'string');
+}
+
 /**
  * Maps plugin tool names to the core stub tool names they supersede.
  * When a plugin provides a real implementation, the corresponding core stubs
@@ -1012,8 +1018,8 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs];
 
   // Filter tools based on agent's toolGroups configuration
-  const configuredToolGroups = (record.config.toolGroups as string[] | undefined);
-  const configuredTools = (record.config.tools as string[] | undefined);
+  const configuredToolGroups = safeStringArray(record.config.toolGroups);
+  const configuredTools = safeStringArray(record.config.tools);
   const allowedToolNames = new Set(resolveToolGroups(configuredToolGroups, configuredTools));
 
   // Only filter standard tools by toolGroups
@@ -1112,8 +1118,8 @@ agentRoutes.get('/', async (c) => {
 
   const agentList: AgentInfo[] = records.map((record) => {
     // Resolve tools from config (explicit tools and/or toolGroups)
-    const configuredTools = (record.config.tools as string[] | undefined);
-    const configuredToolGroups = (record.config.toolGroups as string[] | undefined);
+    const configuredTools = safeStringArray(record.config.tools);
+    const configuredToolGroups = safeStringArray(record.config.toolGroups);
 
     // Use resolveToolGroups to get all tools
     const tools = resolveToolGroups(configuredToolGroups, configuredTools);
@@ -1174,8 +1180,8 @@ agentRoutes.post('/', async (c) => {
   // Return the stored record without creating runtime agent
   // Runtime agent will be created on-demand when the agent is used
   const config = record.config as Record<string, unknown>;
-  const configuredTools = (config.tools as string[] | undefined);
-  const configuredToolGroups = (config.toolGroups as string[] | undefined);
+  const configuredTools = safeStringArray(config.tools);
+  const configuredToolGroups = safeStringArray(config.toolGroups);
   const tools = resolveToolGroups(configuredToolGroups, configuredTools);
 
   return apiResponse(c, {
@@ -1200,8 +1206,8 @@ agentRoutes.get('/:id', async (c) => {
   }
 
   // Resolve tools from config (explicit tools and/or toolGroups)
-  const configuredTools = (record.config.tools as string[] | undefined);
-  const configuredToolGroups = (record.config.toolGroups as string[] | undefined);
+  const configuredTools = safeStringArray(record.config.tools);
+  const configuredToolGroups = safeStringArray(record.config.toolGroups);
 
   // Use resolveToolGroups to get all tools (same logic as list endpoint)
   let tools: string[] = resolveToolGroups(configuredToolGroups, configuredTools);
@@ -1295,8 +1301,8 @@ agentRoutes.patch('/:id', async (c) => {
   agentConfigCache.delete(id);
 
   // Resolve tools from both explicit tools and toolGroups
-  const configuredTools = (newConfig.tools as string[] | undefined);
-  const configuredToolGroups = (newConfig.toolGroups as string[] | undefined);
+  const configuredTools = safeStringArray(newConfig.tools);
+  const configuredToolGroups = safeStringArray(newConfig.toolGroups);
   const tools = resolveToolGroups(configuredToolGroups, configuredTools);
 
   return apiResponse(c, {

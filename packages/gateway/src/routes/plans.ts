@@ -54,11 +54,9 @@ plansRoutes.get('/', async (c) => {
  */
 plansRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<CreatePlanInput>();
-
-  if (!body.name || !body.goal) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'name and goal are required' }, 400);
-  }
+  const rawBody = await c.req.json();
+  const { validateBody, createPlanSchema } = await import('../middleware/validation.js');
+  const body = validateBody(createPlanSchema, rawBody) as unknown as CreatePlanInput;
 
   const service = getServiceRegistry().get(Services.Plan);
   const plan = await service.createPlan(userId, body);
@@ -139,7 +137,9 @@ plansRoutes.get('/:id', async (c) => {
 plansRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = await c.req.json<UpdatePlanInput>();
+  const rawBody = await c.req.json();
+  const { validateBody, updatePlanSchema } = await import('../middleware/validation.js');
+  const body = validateBody(updatePlanSchema, rawBody) as unknown as UpdatePlanInput;
 
   const service = getServiceRegistry().get(Services.Plan);
   const updated = await service.updatePlan(userId, id, body);
@@ -435,11 +435,9 @@ plansRoutes.get('/:id/steps', async (c) => {
 plansRoutes.post('/:id/steps', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = await c.req.json<CreateStepInput>();
-
-  if (!body.type || !body.name || body.orderNum === undefined) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'type, name, and orderNum are required' }, 400);
-  }
+  const rawBody = await c.req.json();
+  const { validateBody, createPlanStepSchema } = await import('../middleware/validation.js');
+  const body = validateBody(createPlanStepSchema, rawBody) as unknown as CreateStepInput;
 
   try {
     const service = getServiceRegistry().get(Services.Plan);

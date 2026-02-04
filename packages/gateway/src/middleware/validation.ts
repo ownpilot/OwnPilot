@@ -20,7 +20,8 @@ export const createAgentSchema = z.object({
   maxToolCalls: z.number().int().min(1).max(500).optional(),
   category: z.string().max(50).optional(),
   description: z.string().max(2000).optional(),
-  tools: z.array(z.string().max(100)).optional(),
+  tools: z.array(z.string().max(100)).max(200).optional(),
+  toolGroups: z.array(z.string().max(100)).max(50).optional(),
   isDefault: z.boolean().optional(),
 }).passthrough();
 
@@ -49,6 +50,7 @@ export const createTriggerSchema = z.object({
   type: z.enum(['schedule', 'event', 'condition', 'webhook']),
   description: z.string().max(2000).optional(),
   enabled: z.boolean().optional(),
+  priority: z.number().int().min(0).max(100).optional(),
   config: z.record(z.string(), z.unknown()),
   action: z.record(z.string(), z.unknown()),
 }).passthrough();
@@ -58,9 +60,27 @@ export const createTriggerSchema = z.object({
 export const createPlanSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(5000).optional(),
+  goal: z.string().min(1).max(5000),
+  deadline: z.string().max(100).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+}).passthrough();
+
+export const updatePlanSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(5000).optional(),
   goal: z.string().max(5000).optional(),
   deadline: z.string().max(100).optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  status: z.enum(['pending', 'running', 'paused', 'completed', 'failed', 'cancelled']).optional(),
+}).passthrough();
+
+export const createPlanStepSchema = z.object({
+  name: z.string().min(1).max(500),
+  type: z.enum(['tool_call', 'llm_decision', 'user_input', 'condition', 'parallel', 'loop', 'sub_plan']),
+  orderNum: z.number().int().min(0).max(1000),
+  description: z.string().max(5000).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
+  action: z.record(z.string(), z.unknown()).optional(),
 }).passthrough();
 
 export const updatePlanStepSchema = z.object({
@@ -68,7 +88,7 @@ export const updatePlanStepSchema = z.object({
   description: z.string().max(5000).optional(),
   type: z.enum(['tool_call', 'llm_decision', 'user_input', 'condition', 'parallel', 'loop', 'sub_plan']).optional(),
   status: z.enum(['pending', 'running', 'completed', 'failed', 'skipped', 'blocked', 'waiting']).optional(),
-  orderNum: z.number().int().min(0).optional(),
+  orderNum: z.number().int().min(0).max(1000).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
   action: z.record(z.string(), z.unknown()).optional(),
 }).passthrough();

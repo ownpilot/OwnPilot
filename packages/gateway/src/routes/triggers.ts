@@ -53,11 +53,11 @@ triggersRoutes.post('/', async (c) => {
 
   // Validate cron expression for schedule triggers before saving
   if (body.type === 'schedule') {
-    const config = body.config as { cron?: string };
-    if (!config.cron) {
-      return apiError(c, { code: ERROR_CODES.INVALID_CRON, message: 'Schedule triggers require a cron expression in config.cron' }, 400);
+    const cron = (body.config as Record<string, unknown>).cron;
+    if (typeof cron !== 'string' || !cron) {
+      return apiError(c, { code: ERROR_CODES.INVALID_CRON, message: 'Schedule triggers require a cron expression string in config.cron' }, 400);
     }
-    const validation = validateCronExpression(config.cron);
+    const validation = validateCronExpression(cron);
     if (!validation.valid) {
       return apiError(c, { code: ERROR_CODES.INVALID_CRON, message: validation.error! }, 400);
     }
@@ -158,9 +158,12 @@ triggersRoutes.patch('/:id', async (c) => {
   if (body.config && typeof body.config === 'object') {
     const existing = await service.getTrigger(userId, id);
     if (existing?.type === 'schedule') {
-      const config = body.config as { cron?: string };
-      if (config.cron) {
-        const validation = validateCronExpression(config.cron);
+      const cron = (body.config as Record<string, unknown>).cron;
+      if (cron !== undefined) {
+        if (typeof cron !== 'string' || !cron) {
+          return apiError(c, { code: ERROR_CODES.INVALID_CRON, message: 'config.cron must be a non-empty string' }, 400);
+        }
+        const validation = validateCronExpression(cron);
         if (!validation.valid) {
           return apiError(c, { code: ERROR_CODES.INVALID_CRON, message: validation.error! }, 400);
         }
