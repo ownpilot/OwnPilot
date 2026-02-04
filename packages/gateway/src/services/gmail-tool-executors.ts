@@ -102,12 +102,15 @@ function notConnectedError(): ToolExecutionResult {
 // =============================================================================
 
 export const gmailSendEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
-  const to = params.to as string[];
+  const toRaw = params.to;
+  const to = Array.isArray(toRaw) ? toRaw as string[] : typeof toRaw === 'string' ? [toRaw] : undefined;
   const subject = params.subject as string;
   const body = params.body as string;
   const isHtml = params.html === true;
-  const cc = params.cc as string[] | undefined;
-  const bcc = params.bcc as string[] | undefined;
+  const ccRaw = params.cc;
+  const cc = Array.isArray(ccRaw) ? ccRaw as string[] : typeof ccRaw === 'string' ? [ccRaw] : undefined;
+  const bccRaw = params.bcc;
+  const bcc = Array.isArray(bccRaw) ? bccRaw as string[] : typeof bccRaw === 'string' ? [bccRaw] : undefined;
   const replyTo = params.replyTo as string | undefined;
   const userId = (params.userId as string) || 'default';
 
@@ -118,8 +121,9 @@ export const gmailSendEmailExecutor: ToolExecutor = async (params, _context): Pr
 
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  for (const email of to) {
-    if (!emailRegex.test(email)) {
+  const allAddresses = [...to, ...(cc ?? []), ...(bcc ?? [])];
+  for (const email of allAddresses) {
+    if (typeof email !== 'string' || !emailRegex.test(email)) {
       return errorResult(`Invalid email address: ${email}`);
     }
   }
@@ -187,13 +191,23 @@ export const gmailListEmailsExecutor: ToolExecutor = async (params, _context): P
   }
 
   try {
-    // Build query
+    // Build query with date validation
+    const afterDate = since ? new Date(since) : undefined;
+    const beforeDate = before ? new Date(before) : undefined;
+
+    if (afterDate && isNaN(afterDate.getTime())) {
+      return errorResult(`Invalid date format for 'since': ${since}`);
+    }
+    if (beforeDate && isNaN(beforeDate.getTime())) {
+      return errorResult(`Invalid date format for 'before': ${before}`);
+    }
+
     const query = buildGmailQuery({
       from: fromFilter,
       subject: subjectFilter,
       isUnread: unreadOnly || undefined,
-      after: since ? new Date(since) : undefined,
-      before: before ? new Date(before) : undefined,
+      after: afterDate,
+      before: beforeDate,
       in: folder.toLowerCase() as 'inbox' | 'sent' | 'trash' | 'spam' | 'draft',
     });
 
