@@ -66,7 +66,7 @@ export function PlansPage() {
   const [historyPlanId, setHistoryPlanId] = useState<string | null>(null);
   const [planHistory, setPlanHistory] = useState<PlanHistoryEntry[]>([]);
 
-  const fetchPlanHistory = async (planId: string) => {
+  const fetchPlanHistory = useCallback(async (planId: string) => {
     try {
       const data = await plansApi.history(planId);
       setPlanHistory(data.history);
@@ -74,7 +74,7 @@ export function PlansPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, []);
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -106,7 +106,7 @@ export function PlansPage() {
     return () => clearInterval(interval);
   }, [hasRunningPlans, fetchPlans]);
 
-  const handleDelete = async (planId: string) => {
+  const handleDelete = useCallback(async (planId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this plan?', variant: 'danger' })) return;
 
     try {
@@ -116,9 +116,9 @@ export function PlansPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, toast, fetchPlans]);
 
-  const handleAction = async (planId: string, action: 'start' | 'pause' | 'resume' | 'abort') => {
+  const handleAction = useCallback(async (planId: string, action: 'start' | 'pause' | 'resume' | 'abort') => {
     const actionLabels = { start: 'Plan started', pause: 'Plan paused', resume: 'Plan resumed', abort: 'Plan aborted' };
     try {
       // Backend uses /execute endpoint instead of /start
@@ -129,9 +129,9 @@ export function PlansPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [toast, fetchPlans]);
 
-  const handleRollback = async (planId: string) => {
+  const handleRollback = useCallback(async (planId: string) => {
     if (!await confirm({ message: 'Are you sure you want to rollback to the last checkpoint?', variant: 'danger' })) return;
 
     try {
@@ -141,7 +141,7 @@ export function PlansPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, toast, fetchPlans]);
 
   const runningCount = plans.filter((p) => p.status === 'running').length;
   const completedCount = plans.filter((p) => p.status === 'completed').length;

@@ -39,7 +39,7 @@ export function NotesPage() {
     fetchNotes();
   }, [fetchNotes]);
 
-  const handleDelete = async (noteId: string) => {
+  const handleDelete = useCallback(async (noteId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this note?', variant: 'danger' })) return;
 
     try {
@@ -52,9 +52,9 @@ export function NotesPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, toast, fetchNotes, selectedNote?.id]);
 
-  const handleTogglePin = async (note: Note) => {
+  const handleTogglePin = useCallback(async (note: Note) => {
     try {
       await notesApi.pin(note.id);
       toast.success(note.isPinned ? 'Note unpinned' : 'Note pinned');
@@ -62,7 +62,7 @@ export function NotesPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [toast, fetchNotes]);
 
   const pinnedNotes = notes.filter((n) => n.isPinned);
   const otherNotes = notes.filter((n) => !n.isPinned);

@@ -61,7 +61,7 @@ export function TriggersPage() {
     fetchTriggers();
   }, [fetchTriggers]);
 
-  const fetchHistory = async (triggerId: string) => {
+  const fetchHistory = useCallback(async (triggerId: string) => {
     try {
       const data = await triggersApi.history(triggerId);
       setHistory(data.history);
@@ -69,9 +69,9 @@ export function TriggersPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, []);
 
-  const handleDelete = async (triggerId: string) => {
+  const handleDelete = useCallback(async (triggerId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this trigger?', variant: 'danger' })) return;
 
     try {
@@ -81,9 +81,9 @@ export function TriggersPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, toast, fetchTriggers]);
 
-  const handleToggle = async (triggerId: string, enabled: boolean) => {
+  const handleToggle = useCallback(async (triggerId: string, enabled: boolean) => {
     try {
       await triggersApi.update(triggerId, { enabled });
       toast.success(enabled ? 'Trigger enabled' : 'Trigger disabled');
@@ -91,9 +91,9 @@ export function TriggersPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [toast, fetchTriggers]);
 
-  const handleFireNow = async (triggerId: string) => {
+  const handleFireNow = useCallback(async (triggerId: string) => {
     try {
       await triggersApi.fire(triggerId);
       toast.success('Trigger fired');
@@ -101,7 +101,7 @@ export function TriggersPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [toast, fetchTriggers]);
 
   const enabledCount = triggers.filter((t) => t.enabled).length;
   const scheduleCount = triggers.filter((t) => t.type === 'schedule').length;

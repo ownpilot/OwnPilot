@@ -56,7 +56,7 @@ export function MemoriesPage() {
     fetchMemories();
   }, [fetchMemories]);
 
-  const handleDelete = async (memoryId: string) => {
+  const handleDelete = useCallback(async (memoryId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this memory?', variant: 'danger' })) return;
 
     try {
@@ -66,12 +66,12 @@ export function MemoriesPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, toast, fetchMemories]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     fetchMemories();
-  };
+  }, [fetchMemories]);
 
   const factCount = memories.filter((m) => m.type === 'fact').length;
   const preferenceCount = memories.filter((m) => m.type === 'preference').length;
