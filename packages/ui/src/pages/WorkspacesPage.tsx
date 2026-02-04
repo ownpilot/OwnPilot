@@ -126,7 +126,7 @@ export function WorkspacesPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch {
-      // API client handles error reporting
+      toast.error('Failed to download workspace');
     }
   };
 
