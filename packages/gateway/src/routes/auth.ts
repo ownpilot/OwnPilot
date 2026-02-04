@@ -253,15 +253,19 @@ authRoutes.get('/google/callback', async (c) => {
     return c.redirect('/settings?oauth_error=invalid_or_expired_state');
   }
 
+  // Re-validate returnUrl from state (defense in depth — /start already validates)
+  const safeReturnUrl = (state.returnUrl && state.returnUrl.startsWith('/') && !state.returnUrl.startsWith('//'))
+    ? state.returnUrl : '/settings';
+
   // Validate code
   if (!code) {
-    return c.redirect(`${state.returnUrl || '/settings'}?oauth_error=missing_code`);
+    return c.redirect(`${safeReturnUrl}?oauth_error=missing_code`);
   }
 
   // Get OAuth configuration
   const config = getGoogleOAuthConfig();
   if (!config) {
-    return c.redirect(`${state.returnUrl || '/settings'}?oauth_error=oauth_not_configured`);
+    return c.redirect(`${safeReturnUrl}?oauth_error=oauth_not_configured`);
   }
 
   try {
@@ -314,14 +318,12 @@ authRoutes.get('/google/callback', async (c) => {
     }
 
     // Redirect back with success
-    const returnUrl = state.returnUrl || '/settings';
-    const separator = returnUrl.includes('?') ? '&' : '?';
-    return c.redirect(`${returnUrl}${separator}oauth_success=${state.service}`);
+    const separator = safeReturnUrl.includes('?') ? '&' : '?';
+    return c.redirect(`${safeReturnUrl}${separator}oauth_success=${state.service}`);
   } catch (err) {
     log.error('Google OAuth callback error:', err);
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    const returnUrl = state.returnUrl || '/settings';
-    return c.redirect(`${returnUrl}?oauth_error=${encodeURIComponent(errorMessage)}`);
+    return c.redirect(`${safeReturnUrl}?oauth_error=${encodeURIComponent(errorMessage)}`);
   }
 });
 

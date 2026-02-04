@@ -243,11 +243,11 @@ async function processStreamingViaBus(
         id: chunk.id,
         conversationId,
         delta: chunk.content,
-        toolCalls: chunk.toolCalls?.map((tc) => ({
-          id: tc.id!,
-          name: tc.name!,
-          arguments: tc.arguments ? JSON.parse(tc.arguments) : undefined,
-        })),
+        toolCalls: chunk.toolCalls?.map((tc) => {
+          let args: Record<string, unknown> | undefined;
+          try { args = tc.arguments ? JSON.parse(tc.arguments) : undefined; } catch { args = undefined; }
+          return { id: tc.id!, name: tc.name!, arguments: args };
+        }),
         done: chunk.done,
         finishReason: chunk.finishReason,
         usage: chunk.usage
@@ -341,12 +341,13 @@ async function processStreamingViaBus(
     },
 
     onToolStart(toolCall: ToolCall) {
-      const parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined;
+      let parsedArgs: Record<string, unknown> | undefined;
+      try { parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined; } catch { /* malformed */ }
       const displayName = toolCall.name === 'use_tool' && parsedArgs?.tool_name
-        ? parsedArgs.tool_name
+        ? String(parsedArgs.tool_name)
         : toolCall.name;
       const displayArgs = toolCall.name === 'use_tool' && parsedArgs?.arguments
-        ? parsedArgs.arguments
+        ? parsedArgs.arguments as Record<string, unknown>
         : parsedArgs;
 
       traceToolCalls.push({
@@ -673,11 +674,11 @@ chatRoutes.post('/', async (c) => {
             id: chunk.id,
             conversationId,
             delta: chunk.content,
-            toolCalls: chunk.toolCalls?.map((tc) => ({
-              id: tc.id,
-              name: tc.name,
-              arguments: tc.arguments ? JSON.parse(tc.arguments) : undefined,
-            })),
+            toolCalls: chunk.toolCalls?.map((tc) => {
+              let args: Record<string, unknown> | undefined;
+              try { args = tc.arguments ? JSON.parse(tc.arguments) : undefined; } catch { args = undefined; }
+              return { id: tc.id, name: tc.name, arguments: args };
+            }),
             done: chunk.done,
             finishReason: chunk.finishReason,
             usage: chunk.usage
