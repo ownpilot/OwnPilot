@@ -528,9 +528,13 @@ export class AgentOrchestrator {
     let args: Record<string, unknown>;
 
     try {
-      args = typeof toolCall.arguments === 'string'
+      const parsed = typeof toolCall.arguments === 'string'
         ? JSON.parse(toolCall.arguments)
-        : toolCall.arguments as Record<string, unknown>;
+        : toolCall.arguments;
+      // Ensure parsed result is a non-null object (not array, primitive, or null)
+      args = (parsed && typeof parsed === 'object' && !Array.isArray(parsed))
+        ? parsed as Record<string, unknown>
+        : {};
     } catch {
       console.warn(`[Orchestrator] Failed to parse tool arguments for "${toolName}":`, toolCall.arguments);
       args = {};

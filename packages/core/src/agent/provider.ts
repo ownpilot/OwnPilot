@@ -165,6 +165,7 @@ export abstract class BaseProvider implements IProvider {
   abstract readonly type: AIProvider;
   protected readonly config: ProviderConfig;
   protected abortController: AbortController | null = null;
+  protected requestTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: ProviderConfig) {
     this.config = config;
@@ -206,6 +207,7 @@ export abstract class BaseProvider implements IProvider {
    * Cancel ongoing request
    */
   cancel(): void {
+    this.clearRequestTimeout();
     if (this.abortController) {
       this.abortController.abort();
       this.abortController = null;
@@ -213,14 +215,25 @@ export abstract class BaseProvider implements IProvider {
   }
 
   /**
+   * Clear the request timeout to prevent stale timer leaks
+   */
+  protected clearRequestTimeout(): void {
+    if (this.requestTimeoutId !== null) {
+      clearTimeout(this.requestTimeoutId);
+      this.requestTimeoutId = null;
+    }
+  }
+
+  /**
    * Create fetch options with timeout
    */
   protected createFetchOptions(body: unknown, timeoutMs?: number): RequestInit {
+    this.clearRequestTimeout();
     this.abortController = new AbortController();
     const timeout = timeoutMs ?? this.config.timeout ?? 300000; // 5 minutes default
 
-    // Set up timeout
-    const _timeoutId = setTimeout(() => {
+    // Set up timeout (cleared after request completes)
+    this.requestTimeoutId = setTimeout(() => {
       this.abortController?.abort();
     }, timeout);
 
@@ -385,6 +398,7 @@ export class OpenAIProvider extends BaseProvider {
     const result = await withRetry(async () => {
       try {
         const response = await fetch(endpoint, this.createFetchOptions(body));
+        this.clearRequestTimeout();
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -482,6 +496,7 @@ export class OpenAIProvider extends BaseProvider {
         `${this.config.baseUrl}/chat/completions`,
         this.createFetchOptions(body)
       );
+      this.clearRequestTimeout();
 
       if (!response.ok || !response.body) {
         yield err(new InternalError(`OpenAI stream error: ${response.status}`));
@@ -662,6 +677,13 @@ export class AnthropicProvider extends BaseProvider {
     // Use retry wrapper for the actual API call
     const result = await withRetry(async () => {
       try {
+        this.clearRequestTimeout();
+        this.abortController = new AbortController();
+        const anthropicTimeout = this.config.timeout ?? 300000;
+        this.requestTimeoutId = setTimeout(() => {
+          this.abortController?.abort();
+        }, anthropicTimeout);
+
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
@@ -670,7 +692,9 @@ export class AnthropicProvider extends BaseProvider {
             'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify(body),
+          signal: this.abortController.signal,
         });
+        this.clearRequestTimeout();
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -781,6 +805,13 @@ export class AnthropicProvider extends BaseProvider {
     logRequest(anthropicStreamDebugInfo);
 
     try {
+      this.clearRequestTimeout();
+      this.abortController = new AbortController();
+      const streamTimeout = this.config.timeout ?? 300000;
+      this.requestTimeoutId = setTimeout(() => {
+        this.abortController?.abort();
+      }, streamTimeout);
+
       const response = await fetch(`${this.config.baseUrl}/messages`, {
         method: 'POST',
         headers: {
@@ -789,7 +820,9 @@ export class AnthropicProvider extends BaseProvider {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify(body),
+        signal: this.abortController.signal,
       });
+      this.clearRequestTimeout();
 
       if (!response.ok || !response.body) {
         yield err(new InternalError(`Anthropic stream error: ${response.status}`));

@@ -239,11 +239,11 @@ export class GoogleProvider {
     }
 
     try {
-      const actualUrl = `${endpoint}?key=${this.config.apiKey}`;
-      const response = await fetch(actualUrl, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-goog-api-key': this.config.apiKey!,
         },
         body: JSON.stringify(body),
         signal: this.createAbortSignal(),
@@ -367,14 +367,14 @@ export class GoogleProvider {
       return;
     }
 
-    const url = `${this.config.baseUrl}/models/${model}:streamGenerateContent?key=${this.config.apiKey}&alt=sse`;
+    const url = `${this.config.baseUrl}/models/${model}:streamGenerateContent?alt=sse`;
     const body = this.buildGeminiRequest(request);
 
     // Log streaming request with payload breakdown
     const googleStreamDebugInfo = buildRequestDebugInfo(
       'google',
       model,
-      url.replace(/key=[^&]+/, 'key=***'),
+      url,
       request.messages,
       request.tools,
       request.model.maxTokens,
@@ -389,6 +389,7 @@ export class GoogleProvider {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-goog-api-key': this.config.apiKey!,
         },
         body: JSON.stringify(body),
         signal: this.createAbortSignal(),
