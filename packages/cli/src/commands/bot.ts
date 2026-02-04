@@ -144,10 +144,12 @@ export async function startBot(options: BotOptions): Promise<void> {
   console.log('');
   console.log('Press Ctrl+C to stop');
 
-  // Handle shutdown
-  process.on('SIGINT', async () => {
+  // Handle shutdown signals
+  const shutdown = async () => {
     console.log('\n\n🛑 Stopping bot...');
     await bot.stop();
     process.exit(0);
-  });
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }

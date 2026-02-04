@@ -91,9 +91,11 @@ export async function startAll(options: StartOptions): Promise<void> {
   console.log('💡 Configure API keys and channels via the web UI');
   console.log('Press Ctrl+C to stop');
 
-  // Handle shutdown
-  process.on('SIGINT', () => {
+  // Handle shutdown signals
+  const shutdown = () => {
     console.log('\n\n🛑 Shutting down...');
     process.exit(0);
-  });
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }

@@ -128,4 +128,12 @@ export async function startServer(options: ServerOptions): Promise<void> {
       console.log('Press Ctrl+C to stop');
     }
   );
+
+  // Handle shutdown signals
+  const shutdown = () => {
+    console.log('\n\n🛑 Shutting down...');
+    process.exit(0);
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }

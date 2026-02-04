@@ -204,21 +204,32 @@ export class TelegramBot implements ChannelHandler {
     // Split long messages
     const parts = this.splitMessage(text, maxLength);
 
+    let lastError: Error | null = null;
     for (let i = 0; i < parts.length; i++) {
       const partText = parts[i];
       if (!partText) continue;
 
-      await this.bot.api.sendMessage(chatId, partText, {
-        parse_mode: parseMode,
-        reply_to_message_id: i === 0 && message.replyToMessageId
-          ? Number(message.replyToMessageId)
-          : undefined,
-      });
+      try {
+        await this.bot.api.sendMessage(chatId, partText, {
+          parse_mode: parseMode,
+          reply_to_message_id: i === 0 && message.replyToMessageId
+            ? Number(message.replyToMessageId)
+            : undefined,
+        });
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        log.error(`Failed to send message part ${i + 1}/${parts.length}`, { chatId, error: lastError.message });
+      }
 
       // Small delay between split messages
       if (parts.length > 1 && i < parts.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
+    }
+
+    // Throw if any part failed (after attempting all parts)
+    if (lastError) {
+      throw lastError;
     }
   }
 

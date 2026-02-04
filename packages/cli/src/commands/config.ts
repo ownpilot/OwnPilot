@@ -69,15 +69,16 @@ async function readLine(prompt: string): Promise<string> {
       output: process.stdout,
     });
 
+    let settled = false;
     rl.on('error', (err) => {
-      rl.close();
-      reject(err);
+      if (!settled) { settled = true; rl.close(); reject(err); }
     });
-    rl.on('close', () => resolve(''));
+    rl.on('close', () => {
+      if (!settled) { settled = true; resolve(''); }
+    });
 
     rl.question(prompt, (answer) => {
-      rl.close();
-      resolve(answer.trim());
+      if (!settled) { settled = true; rl.close(); resolve(answer.trim()); }
     });
   });
 }
