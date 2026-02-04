@@ -2156,6 +2156,14 @@ export const regexExecutor: ToolExecutor = async (args): Promise<ToolExecutionRe
     const replacement = args.replacement as string;
     const flags = (args.flags as string) || '';
 
+    // Guard against excessively long patterns that could cause ReDoS
+    if (pattern.length > 1000) {
+      return {
+        content: JSON.stringify({ error: 'Regex pattern too long (max 1000 characters)' }),
+        isError: true,
+      };
+    }
+
     let regex: RegExp;
     try {
       regex = new RegExp(pattern, flags);

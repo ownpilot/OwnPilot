@@ -750,36 +750,49 @@ export class SecurePluginRuntime extends EventEmitter {
 
     // Handle worker messages
     worker.on('message', (msg: WorkerMessage) => {
-      this.handleWorkerMessage(instance.manifest.id, msg);
+      try {
+        this.handleWorkerMessage(instance.manifest.id, msg);
+      } catch (err) {
+        instance.errorCount++;
+        instance.lastError = err instanceof Error ? err.message : 'Worker message handler failed';
+      }
     });
 
     // Handle worker errors
     worker.on('error', (error) => {
-      instance.errorCount++;
-      instance.lastError = error.message;
+      try {
+        instance.errorCount++;
+        instance.lastError = error instanceof Error ? error.message : String(error);
 
-      this.emit('plugin:error', {
-        pluginId: instance.manifest.id,
-        error: error.message,
-      });
-
-      if (instance.errorCount >= this.config.maxErrors) {
-        instance.state = 'blocked';
-        this.emit('plugin:blocked', {
+        this.emit('plugin:error', {
           pluginId: instance.manifest.id,
-          reason: `Too many errors (${instance.errorCount})`,
+          error: instance.lastError,
         });
+
+        if (instance.errorCount >= this.config.maxErrors) {
+          instance.state = 'blocked';
+          this.emit('plugin:blocked', {
+            pluginId: instance.manifest.id,
+            reason: `Too many errors (${instance.errorCount})`,
+          });
+        }
+      } catch {
+        // Prevent error handler from throwing and crashing the process
       }
     });
 
     // Handle worker exit
     worker.on('exit', (code) => {
-      if (instance.state === 'running') {
-        instance.state = 'stopped';
-        this.emit('plugin:stopped', {
-          pluginId: instance.manifest.id,
-          reason: `Worker exited with code ${code}`,
-        });
+      try {
+        if (instance.state === 'running') {
+          instance.state = 'stopped';
+          this.emit('plugin:stopped', {
+            pluginId: instance.manifest.id,
+            reason: `Worker exited with code ${code}`,
+          });
+        }
+      } catch {
+        // Prevent exit handler from throwing
       }
     });
 

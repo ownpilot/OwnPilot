@@ -719,15 +719,13 @@ modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
   let lastError = '';
 
   for (const url of candidateUrls) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-
       const response = await fetch(url, {
         headers,
         signal: controller.signal,
       });
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         lastError = `HTTP ${response.status} from ${url}`;
@@ -770,6 +768,8 @@ modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
       lastError = msg.includes('abort')
         ? `Timeout connecting to ${url}`
         : `Fetch error for ${url}: ${msg}`;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 

@@ -109,13 +109,21 @@ export class TriggerEngine {
 
     // Start polling for schedule triggers
     this.pollTimer = setInterval(() => {
-      this.processScheduleTriggers().catch((err) => log.error('Schedule trigger poll failed', { error: err }));
+      try {
+        this.processScheduleTriggers().catch((err) => log.error('Schedule trigger poll failed', { error: err }));
+      } catch (err) {
+        log.error('Schedule trigger poll threw synchronously', { error: err });
+      }
     }, this.config.pollIntervalMs);
     this.pollTimer.unref();
 
     // Start checking conditions
     this.conditionTimer = setInterval(() => {
-      this.processConditionTriggers().catch((err) => log.error('Condition trigger check failed', { error: err }));
+      try {
+        this.processConditionTriggers().catch((err) => log.error('Condition trigger check failed', { error: err }));
+      } catch (err) {
+        log.error('Condition trigger check threw synchronously', { error: err });
+      }
     }, this.config.conditionCheckIntervalMs);
     this.conditionTimer.unref();
 

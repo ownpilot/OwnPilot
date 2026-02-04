@@ -483,7 +483,11 @@ export class Scheduler {
 
     this.isRunning = true;
     this.checkTimer = setInterval(() => {
-      this.checkAndRunTasks().catch(console.error);
+      try {
+        this.checkAndRunTasks().catch(console.error);
+      } catch (err) {
+        console.error('[Scheduler] checkAndRunTasks threw synchronously:', err);
+      }
     }, this.config.checkInterval);
     this.checkTimer.unref();
 
