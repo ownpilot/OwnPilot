@@ -56,6 +56,8 @@ export function createPostProcessingMiddleware(): MessageMiddleware {
         if (triggered.length > 0) log.info(`${triggered.length} triggers evaluated`);
         if (executed.length > 0) log.info(`${executed.length} triggers executed`);
       }
+    }).catch(e => {
+      log.warn('Post-processing chain failed', { error: e });
     });
 
     return result;

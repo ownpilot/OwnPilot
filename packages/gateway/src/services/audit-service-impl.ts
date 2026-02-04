@@ -14,6 +14,9 @@ import type {
 } from '@ownpilot/core';
 import { createLogsRepository, type LogsRepository } from '../db/repositories/logs.js';
 import { getAuditLogger } from '../audit/index.js';
+import { getLog } from './log.js';
+
+const log = getLog('AuditService');
 
 export class AuditService implements IAuditService {
   private logsRepo: LogsRepository;
@@ -34,8 +37,8 @@ export class AuditService implements IAuditService {
       durationMs: entry.durationMs,
       error: entry.error,
       statusCode: entry.success === false ? 500 : entry.success === true ? 200 : undefined,
-    }).catch(() => {
-      // Swallow errors — logging should never crash the caller
+    }).catch((err) => {
+      log.debug('Audit log write failed (non-critical)', { error: err });
     });
   }
 
