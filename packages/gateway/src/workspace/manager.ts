@@ -74,6 +74,11 @@ class WorkspaceInstance implements Workspace {
    */
   addMessage(message: WorkspaceMessage): void {
     this.messages.push(message);
+    // Prune old messages to prevent unbounded growth
+    const maxHistory = (this.config.settings?.maxContextMessages ?? 20) * 5;
+    if (this.messages.length > maxHistory) {
+      this.messages = this.messages.slice(-maxHistory);
+    }
     this._lastActivityAt = new Date();
     this.emit('message', message);
   }

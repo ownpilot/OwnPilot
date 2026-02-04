@@ -286,7 +286,8 @@ app.get('/:id/download', async (c) => {
 app.post('/cleanup', async (c) => {
   try {
     const body = await c.req.json().catch(() => ({}));
-    const maxAgeDays = body.maxAgeDays || 7;
+    const raw = Number(body.maxAgeDays) || 7;
+    const maxAgeDays = Math.max(1, Math.min(365, raw));
 
     const result = cleanupSessionWorkspaces(maxAgeDays);
 

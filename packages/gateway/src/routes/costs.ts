@@ -289,11 +289,18 @@ costRoutes.post('/budget', async (c) => {
 
     const config: Partial<BudgetConfig> = {};
 
-    if (body.dailyLimit !== undefined) config.dailyLimit = body.dailyLimit;
-    if (body.weeklyLimit !== undefined) config.weeklyLimit = body.weeklyLimit;
-    if (body.monthlyLimit !== undefined) config.monthlyLimit = body.monthlyLimit;
-    if (body.alertThresholds) config.alertThresholds = body.alertThresholds;
-    if (body.limitAction) config.limitAction = body.limitAction;
+    const isPositiveFinite = (v: unknown): v is number =>
+      typeof v === 'number' && Number.isFinite(v) && v > 0;
+
+    if (isPositiveFinite(body.dailyLimit)) config.dailyLimit = body.dailyLimit;
+    if (isPositiveFinite(body.weeklyLimit)) config.weeklyLimit = body.weeklyLimit;
+    if (isPositiveFinite(body.monthlyLimit)) config.monthlyLimit = body.monthlyLimit;
+    if (Array.isArray(body.alertThresholds)) {
+      config.alertThresholds = body.alertThresholds
+        .filter((v): v is number => typeof v === 'number' && v >= 0 && v <= 100)
+        .slice(0, 10);
+    }
+    if (body.limitAction === 'warn' || body.limitAction === 'block') config.limitAction = body.limitAction;
 
     budgetManager.configure(config);
 
