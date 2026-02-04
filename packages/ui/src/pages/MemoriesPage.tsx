@@ -121,6 +121,7 @@ export function MemoriesPage() {
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
           <select
+            aria-label="Filter by memory type"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as Memory['type'] | 'all')}
             className="px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"

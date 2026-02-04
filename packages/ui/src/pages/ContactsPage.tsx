@@ -201,7 +201,7 @@ function ContactItem({ contact, onEdit, onDelete, onToggleFavorite }: ContactIte
       </div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0 cursor-pointer" onClick={onEdit}>
+      <div className="flex-1 min-w-0 cursor-pointer" role="button" tabIndex={0} onClick={onEdit} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(); } }}>
         <div className="flex items-center gap-2">
           <span className="font-medium text-text-primary dark:text-dark-text-primary">
             {displayName}

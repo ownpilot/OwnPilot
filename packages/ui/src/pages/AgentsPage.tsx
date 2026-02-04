@@ -173,7 +173,10 @@ function AgentCard({ agent, onDelete, onSelect, onChat, onConfigure, isSelected 
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } }}
       className={`card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border rounded-xl cursor-pointer transition-all ${
         isSelected
           ? 'border-primary ring-2 ring-primary/20'

@@ -197,7 +197,10 @@ function NoteCard({ note, onClick, onTogglePin, onDelete }: NoteCardProps) {
     <div
       style={colorStyles}
       className="card-elevated card-hover p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg cursor-pointer"
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-medium text-text-primary dark:text-dark-text-primary line-clamp-1">
