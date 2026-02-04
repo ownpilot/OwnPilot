@@ -400,9 +400,8 @@ export function AIModelsTab() {
     setError(null);
 
     try {
-      const data = await modelConfigsApi.syncApply() as Record<string, unknown>;
-      const stats = data.stats as Record<string, number> | undefined;
-      setSuccess(`Synced ${stats?.providers || 0} providers with ${stats?.totalModels || 0} models`);
+      const data = await modelConfigsApi.syncApply();
+      setSuccess(`Synced ${data.stats?.providers ?? 0} providers with ${data.stats?.totalModels ?? 0} models`);
       setTimeout(() => setSuccess(null), 3000);
       // Reload data after sync
       await loadData();
@@ -423,9 +422,8 @@ export function AIModelsTab() {
     setError(null);
 
     try {
-      const data = await modelConfigsApi.syncReset() as Record<string, unknown>;
-      const stats = data.stats as Record<string, number> | undefined;
-      setSuccess(`Reset complete! Deleted ${stats?.deleted || 0}, synced ${stats?.synced || 0} providers`);
+      const data = await modelConfigsApi.syncReset();
+      setSuccess(`Reset complete! Deleted ${data.stats?.deleted ?? 0}, synced ${data.stats?.synced ?? 0} providers`);
       setTimeout(() => setSuccess(null), 5000);
       await loadData();
     } catch {
@@ -469,9 +467,8 @@ export function AIModelsTab() {
       setShowAddLocalDialog(false);
       await loadData();
       // Auto-discover models after adding provider
-      const result = data as Record<string, unknown>;
-      if (result.id) {
-        await handleLocalDiscover(result.id as string);
+      if (data.id) {
+        await handleLocalDiscover(data.id);
       }
     } catch {
       setError('Failed to add local provider');

@@ -566,6 +566,14 @@ export interface CapabilitySettings {
 
 // ---- Model Configs / AI Models ----
 
+export interface SyncApplyResult {
+  stats?: { providers: number; totalModels: number };
+}
+
+export interface SyncResetResult {
+  stats?: { deleted: number; synced: number };
+}
+
 export type ModelCapability =
   | 'chat'
   | 'code'
