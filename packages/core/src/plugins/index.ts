@@ -378,12 +378,24 @@ export class PluginRegistry {
 
     // Call onLoad
     if (plugin.lifecycle.onLoad) {
-      await plugin.lifecycle.onLoad();
+      try {
+        await plugin.lifecycle.onLoad();
+      } catch (err) {
+        console.error(`[PluginRegistry] onLoad failed for ${manifest.id}:`, err);
+        this.plugins.delete(manifest.id);
+        this.handlers = this.handlers.filter(h => !plugin.handlers.includes(h));
+        throw err;
+      }
     }
 
     // Call onEnable if enabled
     if (config.enabled && plugin.lifecycle.onEnable) {
-      await plugin.lifecycle.onEnable();
+      try {
+        await plugin.lifecycle.onEnable();
+      } catch (err) {
+        console.error(`[PluginRegistry] onEnable failed for ${manifest.id}:`, err);
+        plugin.status = 'error';
+      }
     }
 
     console.log(`[PluginRegistry] Registered plugin: ${manifest.name} v${manifest.version}`);
@@ -426,7 +438,13 @@ export class PluginRegistry {
     await this.savePluginConfig(id, plugin.config);
 
     if (plugin.lifecycle.onEnable) {
-      await plugin.lifecycle.onEnable();
+      try {
+        await plugin.lifecycle.onEnable();
+      } catch (err) {
+        console.error(`[PluginRegistry] onEnable failed for ${id}:`, err);
+        plugin.status = 'error';
+        return false;
+      }
     }
 
     getEventSystem().emit('plugin.status', 'plugin-registry', {
@@ -446,7 +464,11 @@ export class PluginRegistry {
     if (!plugin) return false;
 
     if (plugin.lifecycle.onDisable) {
-      await plugin.lifecycle.onDisable();
+      try {
+        await plugin.lifecycle.onDisable();
+      } catch (err) {
+        console.error(`[PluginRegistry] onDisable failed for ${id}:`, err);
+      }
     }
 
     const oldStatus = plugin.status;
@@ -474,7 +496,11 @@ export class PluginRegistry {
 
     // Call onUnload
     if (plugin.lifecycle.onUnload) {
-      await plugin.lifecycle.onUnload();
+      try {
+        await plugin.lifecycle.onUnload();
+      } catch (err) {
+        console.error(`[PluginRegistry] onUnload failed for ${id}:`, err);
+      }
     }
 
     // Remove handlers
@@ -594,10 +620,15 @@ export class PluginRegistry {
           const content = await fs.readFile(storageFile, 'utf-8');
           data = JSON.parse(content);
         } catch {
-          // File doesn't exist
+          // File doesn't exist yet
         }
         data[key] = value;
-        await fs.writeFile(storageFile, JSON.stringify(data, null, 2), 'utf-8');
+        try {
+          await fs.writeFile(storageFile, JSON.stringify(data, null, 2), 'utf-8');
+        } catch (err) {
+          console.error(`[PluginStorage] Failed to write ${storageFile}:`, err);
+          throw err;
+        }
       },
 
       async delete(key: string): Promise<boolean> {
