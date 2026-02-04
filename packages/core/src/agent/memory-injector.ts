@@ -245,7 +245,8 @@ export class MemoryInjector {
         .join('\n');
 
       return `Relevant information from memory:\n${relevantInfo}`;
-    } catch {
+    } catch (error) {
+      console.warn('[MemoryInjector] Failed to retrieve memory context:', error instanceof Error ? error.message : error);
       return null;
     }
   }

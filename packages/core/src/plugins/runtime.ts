@@ -892,9 +892,9 @@ export function getDefaultRuntime(): SecurePluginRuntime {
 /**
  * Reset default runtime (for testing)
  */
-export function resetDefaultRuntime(): void {
+export async function resetDefaultRuntime(): Promise<void> {
   if (defaultRuntime) {
-    defaultRuntime.shutdown();
+    await defaultRuntime.shutdown();
     defaultRuntime = null;
   }
 }

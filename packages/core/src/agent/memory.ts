@@ -354,7 +354,8 @@ export class ConversationMemory {
 
       this.conversations.set(conversation.id, conversation);
       return conversation;
-    } catch {
+    } catch (error) {
+      console.warn('[Memory] Failed to import conversation:', error instanceof Error ? error.message : error);
       return undefined;
     }
   }
