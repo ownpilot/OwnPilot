@@ -13,6 +13,7 @@ import {
   type MediaProviderConfig,
 } from '@ownpilot/core';
 import { mediaSettingsRepo, settingsRepo } from '../db/repositories/index.js';
+import { validateWritePath } from '../workspace/file-workspace.js';
 
 // =============================================================================
 // Helper Functions
@@ -130,6 +131,15 @@ export const mediaGenerateImageExecutor: ToolExecutor = async (params, _context)
 
     // Save to file if outputPath provided
     if (outputPath && result.images.length > 0) {
+      // Validate output path is within workspace
+      const pathCheck = validateWritePath(outputPath);
+      if (!pathCheck.valid) {
+        return errorResult(
+          pathCheck.error ?? 'Cannot write to path outside workspace',
+          pathCheck.suggestedPath ? `Suggested path: ${pathCheck.suggestedPath}` : undefined,
+        );
+      }
+
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
 
@@ -332,6 +342,15 @@ export const mediaTTSExecutor: ToolExecutor = async (params, _context): Promise<
     // Save to file
     let savedPath: string | undefined;
     if (outputPath) {
+      // Validate output path is within workspace
+      const pathCheck = validateWritePath(outputPath);
+      if (!pathCheck.valid) {
+        return errorResult(
+          pathCheck.error ?? 'Cannot write to path outside workspace',
+          pathCheck.suggestedPath ? `Suggested path: ${pathCheck.suggestedPath}` : undefined,
+        );
+      }
+
       const fs = await import('node:fs/promises');
       await fs.writeFile(outputPath, result.audio);
       savedPath = outputPath;

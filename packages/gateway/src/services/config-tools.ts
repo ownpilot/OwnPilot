@@ -192,8 +192,9 @@ async function executeSetConfigEntry(
   }
 
   // Validate required fields
+  const schema = svc.configSchema ?? [];
   const missing: string[] = [];
-  for (const field of svc.configSchema) {
+  for (const field of schema) {
     if (field.required && (data[field.name] === undefined || data[field.name] === '')) {
       missing.push(`${field.name} (${field.label})`);
     }
@@ -208,7 +209,7 @@ async function executeSetConfigEntry(
     if (existingEntry) {
       // Merge new data with existing data (don't wipe fields not provided)
       // Protect against masked secret values being merged in
-      const secretFieldNames = svc.configSchema
+      const secretFieldNames = schema
         .filter(f => f.type === 'secret')
         .map(f => f.name);
       const cleanData = { ...data };

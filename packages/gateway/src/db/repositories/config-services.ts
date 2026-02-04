@@ -653,7 +653,7 @@ export class ConfigServicesRepository extends BaseRepository {
     }
 
     // Fall back to environment variable from schema
-    const field = svc.configSchema.find(f => f.name === 'api_key');
+    const field = (svc.configSchema ?? []).find(f => f.name === 'api_key');
     if (field?.envVar) {
       const envVal = process.env[field.envVar];
       if (envVal) return envVal;
@@ -685,7 +685,7 @@ export class ConfigServicesRepository extends BaseRepository {
     }
 
     // Look up the schema field for fallbacks
-    const field = svc.configSchema.find(f => f.name === fieldName);
+    const field = (svc.configSchema ?? []).find(f => f.name === fieldName);
     if (!field) return undefined;
 
     // Fall back to environment variable
