@@ -263,55 +263,114 @@ export class DashboardService {
 
     const today = new Date().toISOString().split('T')[0] ?? '';
 
-    // Aggregate all data (async operations from database)
+    // Aggregate all data with graceful degradation per section
+    // Each section is wrapped so a single data source failure doesn't crash the entire briefing
+
     // Tasks
-    const allTasks = await tasksRepo.list({ limit: 1000 });
+    let allTasks: Task[] = [];
+    try {
+      allTasks = await tasksRepo.list({ limit: 1000 });
+    } catch (err) {
+      log.error('[DashboardService] Failed to load tasks:', err);
+    }
     const pendingTasks = allTasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
     const dueTodayTasks = allTasks.filter(t => t.dueDate === today && t.status !== 'completed' && t.status !== 'cancelled');
     const overdueTasks = allTasks.filter(t => t.dueDate && t.dueDate < today && t.status !== 'completed' && t.status !== 'cancelled');
 
     // Calendar
-    const todayEvents = await calendarRepo.getToday();
-    const upcomingEvents = await calendarRepo.getUpcoming(7);
+    let todayEvents: CalendarEvent[] = [];
+    let upcomingEvents: CalendarEvent[] = [];
+    try {
+      todayEvents = await calendarRepo.getToday();
+      upcomingEvents = await calendarRepo.getUpcoming(7);
+    } catch (err) {
+      log.error('[DashboardService] Failed to load calendar:', err);
+    }
 
     // Goals
-    const activeGoals = await goalService.getActive(this.userId, 10);
-    const nextActions = await goalService.getNextActions(this.userId, 5);
+    let activeGoals: Goal[] = [];
+    let nextActions: Array<GoalStep & { goalTitle: string }> = [];
+    try {
+      activeGoals = await goalService.getActive(this.userId, 10);
+      nextActions = await goalService.getNextActions(this.userId, 5);
+    } catch (err) {
+      log.error('[DashboardService] Failed to load goals:', err);
+    }
     const goalStats = this.calculateGoalStats(activeGoals);
 
     // Triggers
-    const allTriggers = await triggerService.listTriggers(this.userId, { limit: 100 });
+    let allTriggers: Trigger[] = [];
+    let triggerHistory: TriggerHistory[] = [];
+    try {
+      allTriggers = await triggerService.listTriggers(this.userId, { limit: 100 });
+      triggerHistory = await triggerService.getRecentHistory(this.userId, 10);
+    } catch (err) {
+      log.error('[DashboardService] Failed to load triggers:', err);
+    }
     const enabledTriggers = allTriggers.filter(t => t.enabled);
     const scheduledToday = enabledTriggers.filter(t => {
       if (!t.nextFire) return false;
       const fireDate = new Date(t.nextFire).toISOString().split('T')[0];
       return fireDate === today;
     });
-    const triggerHistory = await triggerService.getRecentHistory(this.userId, 10);
 
     // Memories
-    const recentMemories = await memoryService.getRecentMemories(this.userId, 10);
-    const importantMemories = await memoryService.getImportantMemories(this.userId, { threshold: 0.7, limit: 5 });
-    const memoryStats = await memoryService.getStats(this.userId);
+    let recentMemories: ServiceMemoryEntry[] = [];
+    let importantMemories: ServiceMemoryEntry[] = [];
+    let memoryStats: { total: number; recentCount: number } = { total: 0, recentCount: 0 };
+    try {
+      recentMemories = await memoryService.getRecentMemories(this.userId, 10);
+      importantMemories = await memoryService.getImportantMemories(this.userId, { threshold: 0.7, limit: 5 });
+      memoryStats = await memoryService.getStats(this.userId);
+    } catch (err) {
+      log.error('[DashboardService] Failed to load memories:', err);
+    }
 
     // Habits
-    const todayHabits = await this.getHabitProgress(habitsRepo);
+    let todayHabits: HabitProgress = { completed: 0, total: 0, habits: [] };
+    try {
+      todayHabits = await this.getHabitProgress(habitsRepo);
+    } catch (err) {
+      log.error('[DashboardService] Failed to load habits:', err);
+    }
     const streaksAtRisk = todayHabits.habits.filter((h: HabitProgressItem) => !h.completedToday && h.streakCurrent > 0);
 
     // Notes
-    const pinnedNotes = await notesRepo.getPinned();
-    const recentNotes = await notesRepo.getRecent(5);
+    let pinnedNotes: Note[] = [];
+    let recentNotes: Note[] = [];
+    try {
+      pinnedNotes = await notesRepo.getPinned();
+      recentNotes = await notesRepo.getRecent(5);
+    } catch (err) {
+      log.error('[DashboardService] Failed to load notes:', err);
+    }
 
     // Costs
-    const dailyCosts = await this.getDailyCosts(costsRepo);
-    const monthlyCosts = await this.getMonthlyCosts(costsRepo);
+    let dailyCosts: CostSummaryData = { totalTokens: 0, totalCost: 0, totalCalls: 0 };
+    let monthlyCosts: CostSummaryData = { totalTokens: 0, totalCost: 0, totalCalls: 0 };
+    try {
+      dailyCosts = await this.getDailyCosts(costsRepo);
+      monthlyCosts = await this.getMonthlyCosts(costsRepo);
+    } catch (err) {
+      log.error('[DashboardService] Failed to load costs:', err);
+    }
 
     // Custom Data
-    const customTables = await customDataService.listTables();
-    const customDataSummary = await this.getCustomDataSummary(customDataService, customTables);
+    let customDataSummary: CustomDataSummary = { tables: [], totalRecords: 0 };
+    try {
+      const customTables = await customDataService.listTables();
+      customDataSummary = await this.getCustomDataSummary(customDataService, customTables);
+    } catch (err) {
+      log.error('[DashboardService] Failed to load custom data:', err);
+    }
 
     // Plans
-    const allPlans = await planService.listPlans(this.userId, { limit: 50 });
+    let allPlans: Plan[] = [];
+    try {
+      allPlans = await planService.listPlans(this.userId, { limit: 50 });
+    } catch (err) {
+      log.error('[DashboardService] Failed to load plans:', err);
+    }
     const runningPlans = allPlans.filter(p => p.status === 'running');
     const pendingApprovalPlans = allPlans.filter(p => p.status === 'pending');
 
