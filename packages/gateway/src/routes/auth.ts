@@ -180,7 +180,9 @@ authRoutes.delete('/config/google', async (c) => {
  */
 authRoutes.get('/google/start', async (c) => {
   const service = (c.req.query('service') || 'gmail') as OAuthService;
-  const returnUrl = c.req.query('returnUrl') || '/settings';
+  const rawReturnUrl = c.req.query('returnUrl') || '/settings';
+  // Prevent open redirect: only allow relative paths (no protocol-relative or absolute URLs)
+  const returnUrl = rawReturnUrl.startsWith('/') && !rawReturnUrl.startsWith('//') ? rawReturnUrl : '/settings';
   const userId = getUserId(c);
 
   // Validate service

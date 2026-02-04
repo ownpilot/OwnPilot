@@ -124,9 +124,9 @@ export abstract class BaseRepository {
     const countResult = await this.queryOne<{ count: string }>(countSql, params);
     const total = parseInt(countResult?.count ?? '0', 10);
 
-    // Build ORDER BY
+    // Build ORDER BY — validate column name to prevent SQL injection
     let orderClause: string;
-    if (query.orderBy) {
+    if (query.orderBy && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(query.orderBy)) {
       const dir = query.orderDir === 'asc' ? 'ASC' : 'DESC';
       orderClause = `${query.orderBy} ${dir}`;
     } else {
