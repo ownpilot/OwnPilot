@@ -41,7 +41,7 @@ export function BookmarksPage() {
     fetchBookmarks();
   }, [fetchBookmarks]);
 
-  const handleDelete = async (bookmarkId: string) => {
+  const handleDelete = useCallback(async (bookmarkId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this bookmark?', variant: 'danger' })) return;
 
     try {
@@ -51,9 +51,9 @@ export function BookmarksPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, toast, fetchBookmarks]);
 
-  const handleToggleFavorite = async (bookmark: BookmarkItem) => {
+  const handleToggleFavorite = useCallback(async (bookmark: BookmarkItem) => {
     try {
       await bookmarksApi.favorite(bookmark.id);
       toast.success(bookmark.isFavorite ? 'Removed from favorites' : 'Added to favorites');
@@ -61,7 +61,7 @@ export function BookmarksPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [toast, fetchBookmarks]);
 
   // Get unique folders
   const folders = Array.from(new Set(bookmarks.map((b) => b.folder).filter(Boolean))) as string[];

@@ -39,7 +39,7 @@ export function ContactsPage() {
     fetchContacts();
   }, [fetchContacts]);
 
-  const handleDelete = async (contactId: string) => {
+  const handleDelete = useCallback(async (contactId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this contact?', variant: 'danger' })) return;
 
     try {
@@ -49,9 +49,9 @@ export function ContactsPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, toast, fetchContacts]);
 
-  const handleToggleFavorite = async (contact: Contact) => {
+  const handleToggleFavorite = useCallback(async (contact: Contact) => {
     try {
       await contactsApi.favorite(contact.id);
       toast.success(contact.isFavorite ? 'Removed from favorites' : 'Added to favorites');
@@ -59,7 +59,7 @@ export function ContactsPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [toast, fetchContacts]);
 
   const favoriteCount = contacts.filter((c) => c.isFavorite).length;
 

@@ -46,7 +46,7 @@ export function TasksPage() {
     fetchTasks();
   }, [fetchTasks]);
 
-  const handleComplete = async (taskId: string) => {
+  const handleComplete = useCallback(async (taskId: string) => {
     try {
       await tasksApi.complete(taskId);
       toast.success('Task completed');
@@ -54,9 +54,9 @@ export function TasksPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [toast, fetchTasks]);
 
-  const handleDelete = async (taskId: string) => {
+  const handleDelete = useCallback(async (taskId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this task?', variant: 'danger' })) return;
 
     try {
@@ -66,7 +66,7 @@ export function TasksPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, toast, fetchTasks]);
 
   const pendingCount = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length;
   const completedCount = tasks.filter((t) => t.status === 'completed').length;

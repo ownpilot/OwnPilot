@@ -58,7 +58,7 @@ export function GoalsPage() {
     fetchGoals();
   }, [fetchGoals]);
 
-  const handleDelete = async (goalId: string) => {
+  const handleDelete = useCallback(async (goalId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this goal?', variant: 'danger' })) return;
 
     try {
@@ -68,9 +68,9 @@ export function GoalsPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, toast, fetchGoals]);
 
-  const handleStatusChange = async (goalId: string, status: Goal['status']) => {
+  const handleStatusChange = useCallback(async (goalId: string, status: Goal['status']) => {
     try {
       await goalsApi.update(goalId, { status });
       toast.success(`Goal ${status}`);
@@ -78,7 +78,7 @@ export function GoalsPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [toast, fetchGoals]);
 
   const activeCount = goals.filter((g) => g.status === 'active').length;
   const completedCount = goals.filter((g) => g.status === 'completed').length;
@@ -196,7 +196,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
     return () => { cancelled = true; };
   }, [isExpanded, goal.id, steps.length]);
 
-  const handleStepStatusChange = async (stepId: string, status: GoalStep['status']) => {
+  const handleStepStatusChange = useCallback(async (stepId: string, status: GoalStep['status']) => {
     try {
       await goalsApi.updateStep(goal.id, stepId, { status });
       setSteps((prev) =>
@@ -205,7 +205,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [goal.id]);
 
   return (
     <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg overflow-hidden">
@@ -365,7 +365,7 @@ function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
   const [dueDate, setDueDate] = useState(goal?.dueDate ?? '');
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
@@ -389,7 +389,7 @@ function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [title, description, priority, dueDate, goal, onSave]);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
