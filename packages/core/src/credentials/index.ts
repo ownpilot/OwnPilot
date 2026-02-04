@@ -9,7 +9,7 @@
  * - Audit logging
  */
 
-import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
+import { createHash, randomBytes, createCipheriv, createDecipheriv, pbkdf2Sync } from 'node:crypto';
 
 // =============================================================================
 // Types
@@ -81,6 +81,8 @@ export interface CredentialEntry {
   readonly encryptedValue: string;
   /** Initialization vector for decryption */
   readonly iv: string;
+  /** PBKDF2 salt (absent in legacy entries using SHA-256 derivation) */
+  readonly salt?: string;
   /** Metadata */
   readonly metadata: CredentialMetadata;
 }
@@ -202,11 +204,18 @@ export class InMemoryCredentialBackend implements CredentialStorageBackend {
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
+const SALT_LENGTH = 32;
+const PBKDF2_ITERATIONS = 600_000;
 
 /**
- * Derive a 256-bit key from the master key
+ * Derive a 256-bit key from the master key using PBKDF2.
+ * Falls back to legacy SHA-256 hash when no salt is provided (for reading old data).
  */
-function deriveKey(masterKey: string): Buffer {
+function deriveKey(masterKey: string, salt?: Buffer): Buffer {
+  if (salt) {
+    return pbkdf2Sync(masterKey, salt, PBKDF2_ITERATIONS, 32, 'sha256');
+  }
+  // Legacy fallback — single SHA-256 (no brute-force resistance)
   return createHash('sha256').update(masterKey).digest();
 }
 
@@ -216,8 +225,9 @@ function deriveKey(masterKey: string): Buffer {
 function encryptValue(
   value: string,
   masterKey: string
-): { encrypted: string; iv: string } {
-  const key = deriveKey(masterKey);
+): { encrypted: string; iv: string; salt: string } {
+  const salt = randomBytes(SALT_LENGTH);
+  const key = deriveKey(masterKey, salt);
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, key, iv);
 
@@ -231,14 +241,17 @@ function encryptValue(
   return {
     encrypted: combined.toString('base64'),
     iv: iv.toString('base64'),
+    salt: salt.toString('base64'),
   };
 }
 
 /**
- * Decrypt a credential value
+ * Decrypt a credential value.
+ * Accepts optional salt for PBKDF2; omit for legacy SHA-256 derivation.
  */
-function decryptValue(encrypted: string, iv: string, masterKey: string): string {
-  const key = deriveKey(masterKey);
+function decryptValue(encrypted: string, iv: string, masterKey: string, salt?: string): string {
+  const saltBuffer = salt ? Buffer.from(salt, 'base64') : undefined;
+  const key = deriveKey(masterKey, saltBuffer);
   const ivBuffer = Buffer.from(iv, 'base64');
   const combined = Buffer.from(encrypted, 'base64');
 
@@ -290,7 +303,7 @@ export class UserCredentialStore {
     const id = `cred_${randomBytes(16).toString('hex')}`;
 
     // Encrypt the value
-    const { encrypted, iv } = encryptValue(value, this.config.encryptionKey);
+    const { encrypted, iv, salt } = encryptValue(value, this.config.encryptionKey);
 
     // Create entry
     const entry: CredentialEntry = {
@@ -300,6 +313,7 @@ export class UserCredentialStore {
       type,
       encryptedValue: encrypted,
       iv,
+      salt,
       metadata: {
         createdAt: new Date(),
         usageCount: 0,
@@ -335,7 +349,7 @@ export class UserCredentialStore {
     }
 
     // Decrypt
-    const value = decryptValue(entry.encryptedValue, entry.iv, this.config.encryptionKey);
+    const value = decryptValue(entry.encryptedValue, entry.iv, this.config.encryptionKey, entry.salt);
 
     // Update usage
     await this.updateUsage(entry);
@@ -365,7 +379,7 @@ export class UserCredentialStore {
     }
 
     // Decrypt
-    const value = decryptValue(entry.encryptedValue, entry.iv, this.config.encryptionKey);
+    const value = decryptValue(entry.encryptedValue, entry.iv, this.config.encryptionKey, entry.salt);
 
     // Update usage
     await this.updateUsage(entry);

@@ -133,15 +133,22 @@ export async function storeSecret(
       }
 
       case 'win32': {
-        // Windows: Use cmdkey with array args via execFile
+        // Windows: Write to DPAPI-protected file (cmdkey cannot retrieve passwords)
+        const { writeFileSync, mkdirSync } = await import('node:fs');
+        const credDir = `${process.env.LOCALAPPDATA || ''}\\OwnPilot`;
+        mkdirSync(credDir, { recursive: true });
+        const credPath = `${credDir}\\cred.dat`;
+        // Use PowerShell DPAPI to encrypt before writing
         try {
-          await execFileAsync('cmdkey', ['/delete', cfg.service]);
+          const { stdout } = await execAsync(
+            `powershell -NoProfile -Command "[Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Protect([System.Text.Encoding]::UTF8.GetBytes('${base64Secret}'),[byte[]]@(),'CurrentUser'))"`,
+            { timeout: 10000 }
+          );
+          writeFileSync(credPath, stdout.trim(), { mode: 0o600 });
         } catch {
-          // Ignore - may not exist
+          // Fallback: write base64 directly if DPAPI unavailable
+          writeFileSync(credPath, base64Secret, { mode: 0o600 });
         }
-        await execFileAsync('cmdkey', [
-          `/generic:${cfg.service}`, `/user:${cfg.account}`, `/pass:${base64Secret}`,
-        ]);
         return ok(undefined);
       }
 
@@ -196,13 +203,25 @@ export async function retrieveSecret(
       }
 
       case 'win32': {
-        // Windows: Read from file-based credential storage
+        // Windows: Read from DPAPI-protected file
         const credPath = `${process.env.LOCALAPPDATA || ''}\\OwnPilot\\cred.dat`;
         try {
           const { readFileSync } = await import('node:fs');
           const content = readFileSync(credPath, 'utf-8').trim();
           if (!content) return ok(null);
-          return ok(fromBase64(content));
+          // Try DPAPI decryption first
+          try {
+            const { stdout } = await execAsync(
+              `powershell -NoProfile -Command "[System.Text.Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String('${content}'),[byte[]]@(),'CurrentUser'))"`,
+              { timeout: 10000 }
+            );
+            const base64Secret = stdout.trim();
+            if (!base64Secret) return ok(null);
+            return ok(fromBase64(base64Secret));
+          } catch {
+            // Fallback: treat content as plain base64 (legacy data)
+            return ok(fromBase64(content));
+          }
         } catch {
           return ok(null);
         }
