@@ -46,7 +46,7 @@ export function GoalsPage() {
       }
 
       const data = await goalsApi.list(params);
-      setGoals(data.goals as Goal[]);
+      setGoals(data.goals);
     } catch {
       // API client handles error reporting
     } finally {
@@ -188,7 +188,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
       setLoadingSteps(true);
       goalsApi.steps(goal.id)
         .then((data) => {
-          if (!cancelled) setSteps(data.steps as GoalStep[]);
+          if (!cancelled) setSteps(data.steps);
         })
         .catch(() => { /* API client handles error */ })
         .finally(() => { if (!cancelled) setLoadingSteps(false); });
