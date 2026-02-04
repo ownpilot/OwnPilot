@@ -18,6 +18,7 @@ import {
   WS_HEARTBEAT_INTERVAL_MS,
   WS_SESSION_TIMEOUT_MS,
   WS_MAX_PAYLOAD_BYTES,
+  WS_MAX_CONNECTIONS,
 } from '../config/defaults.js';
 import { getOrCreateDefaultAgent, isDemoMode } from '../routes/agents.js';
 import { getLog } from '../services/log.js';
@@ -35,6 +36,10 @@ export interface WSGatewayConfig {
   sessionTimeout?: number;
   /** Max message size in bytes */
   maxPayloadSize?: number;
+  /** Maximum concurrent connections */
+  maxConnections?: number;
+  /** Allowed origins for WebSocket connections (empty = allow all) */
+  allowedOrigins?: string[];
 }
 
 const DEFAULT_CONFIG: Required<WSGatewayConfig> = {
@@ -43,7 +48,21 @@ const DEFAULT_CONFIG: Required<WSGatewayConfig> = {
   heartbeatInterval: WS_HEARTBEAT_INTERVAL_MS,
   sessionTimeout: WS_SESSION_TIMEOUT_MS,
   maxPayloadSize: WS_MAX_PAYLOAD_BYTES,
+  maxConnections: WS_MAX_CONNECTIONS,
+  allowedOrigins: [],
 };
+
+/**
+ * Validate WebSocket origin against allowed origins.
+ * Returns true if origin is allowed or no restrictions are configured.
+ */
+function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): boolean {
+  // No restrictions configured — allow all (self-hosted default)
+  if (allowedOrigins.length === 0) return true;
+  // No origin header — reject when restrictions are configured
+  if (!origin) return false;
+  return allowedOrigins.some(allowed => origin === allowed);
+}
 
 /**
  * WebSocket Gateway Server
@@ -150,6 +169,21 @@ export class WSGateway {
    * Handle new WebSocket connection
    */
   private handleConnection(socket: WebSocket, request: IncomingMessage): void {
+    // Enforce max connections
+    if (sessionManager.count >= this.config.maxConnections) {
+      log.warn('Connection rejected: max connections reached', { current: sessionManager.count, max: this.config.maxConnections });
+      socket.close(1013, 'Maximum connections reached');
+      return;
+    }
+
+    // Validate origin
+    const origin = request.headers.origin;
+    if (!isOriginAllowed(origin, this.config.allowedOrigins)) {
+      log.warn('Connection rejected: origin not allowed', { origin });
+      socket.close(1008, 'Origin not allowed');
+      return;
+    }
+
     // Create session
     const session = sessionManager.create(socket);
 

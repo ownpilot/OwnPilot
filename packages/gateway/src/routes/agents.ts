@@ -635,6 +635,9 @@ function resolveToolGroups(toolGroups: string[] | undefined, explicitTools: stri
   return Array.from(tools);
 }
 
+/** Maximum number of tool calls in a single batch_use_tool invocation */
+const MAX_BATCH_TOOL_CALLS = 20;
+
 // Runtime agent cache (runtime instances, not serializable)
 const agentCache = new Map<string, Agent>();
 const agentConfigCache = new Map<string, AgentConfig>();
@@ -878,6 +881,10 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
         return { content: 'Provide a "calls" array with at least one tool call.', isError: true };
       }
 
+      if (calls.length > MAX_BATCH_TOOL_CALLS) {
+        return { content: `Batch size ${calls.length} exceeds maximum of ${MAX_BATCH_TOOL_CALLS}. Split into smaller batches.`, isError: true };
+      }
+
       // Execute all tool calls in parallel
       const results = await Promise.allSettled(
         calls.map(async (call, idx) => {
@@ -1113,10 +1120,10 @@ async function getOrCreateAgentInstance(record: AgentRecord): Promise<Agent> {
 export const agentRoutes = new Hono();
 
 /**
- * List all agents
+ * List all agents (capped at 100)
  */
 agentRoutes.get('/', async (c) => {
-  const records = await agentsRepo.getAll();
+  const records = (await agentsRepo.getAll()).slice(0, 100);
 
   const agentList: AgentInfo[] = records.map((record) => {
     // Resolve tools from config (explicit tools and/or toolGroups)
@@ -1713,6 +1720,10 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
 
       if (!calls?.length) {
         return { content: 'Provide a "calls" array with at least one tool call.', isError: true };
+      }
+
+      if (calls.length > MAX_BATCH_TOOL_CALLS) {
+        return { content: `Batch size ${calls.length} exceeds maximum of ${MAX_BATCH_TOOL_CALLS}. Split into smaller batches.`, isError: true };
       }
 
       // Execute all tool calls in parallel

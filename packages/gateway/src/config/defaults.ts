@@ -36,6 +36,9 @@ export const WS_SESSION_TIMEOUT_MS = 300_000;
 /** Maximum WebSocket payload size (bytes) */
 export const WS_MAX_PAYLOAD_BYTES = 1024 * 1024; // 1 MB
 
+/** Maximum concurrent WebSocket connections */
+export const WS_MAX_CONNECTIONS = 50;
+
 /** Close code for session timeout */
 export const WS_CLOSE_SESSION_TIMEOUT = 4000;
 
