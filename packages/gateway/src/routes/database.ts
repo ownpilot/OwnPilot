@@ -98,7 +98,8 @@ export const databaseRoutes = new Hono();
 // require this key via X-Admin-Key header, regardless of global auth config.
 // Only operation status is exempt (needed for polling long-running ops).
 // /status and /stats expose table names, DB host/port, PG version — require auth.
-const ADMIN_EXEMPT_PATHS = ['/operation/status'];
+// No paths exempt from admin auth — operation status also requires authentication
+const ADMIN_EXEMPT_PATHS: string[] = [];
 
 const requireDatabaseAdmin = createMiddleware(async (c, next) => {
   const path = new URL(c.req.url).pathname.replace(/.*\/database/, '');
@@ -436,7 +437,12 @@ databaseRoutes.post('/maintenance', async (c) => {
   }
 
   const body: { type?: 'vacuum' | 'analyze' | 'full' } = await c.req.json().catch(() => ({}));
-  const maintenanceType = body.type || 'vacuum';
+  const ALLOWED_MAINTENANCE_TYPES = ['vacuum', 'analyze', 'full'] as const;
+  const rawType = body.type || 'vacuum';
+  if (!ALLOWED_MAINTENANCE_TYPES.includes(rawType as typeof ALLOWED_MAINTENANCE_TYPES[number])) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid maintenance type: "${rawType}". Allowed: ${ALLOWED_MAINTENANCE_TYPES.join(', ')}` }, 400);
+  }
+  const maintenanceType = rawType as typeof ALLOWED_MAINTENANCE_TYPES[number];
 
   let connected = false;
   try {

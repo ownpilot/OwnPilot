@@ -110,13 +110,20 @@ export class SessionManager {
   /**
    * Subscribe session to a channel
    */
+  /** Maximum channel subscriptions per session. */
+  private static readonly MAX_CHANNEL_SUBS = 50;
+
   subscribeToChannel(sessionId: string, channelId: string): boolean {
     const session = this.sessions.get(sessionId);
-    if (session) {
-      session.channels.add(channelId);
-      return true;
+    if (!session) return false;
+
+    // Prevent unbounded channel subscription growth
+    if (session.channels.size >= SessionManager.MAX_CHANNEL_SUBS && !session.channels.has(channelId)) {
+      return false;
     }
-    return false;
+
+    session.channels.add(channelId);
+    return true;
   }
 
   /**
@@ -133,11 +140,20 @@ export class SessionManager {
   /**
    * Set session metadata
    */
+  /** Maximum metadata keys per session. */
+  private static readonly MAX_METADATA_KEYS = 50;
+
   setMetadata(sessionId: string, key: string, value: unknown): void {
     const session = this.sessions.get(sessionId);
-    if (session) {
-      (session.metadata as Record<string, unknown>)[key] = value;
+    if (!session) return;
+
+    const meta = session.metadata as Record<string, unknown>;
+    // Prevent unbounded metadata key growth
+    if (Object.keys(meta).length >= SessionManager.MAX_METADATA_KEYS && !(key in meta)) {
+      return;
     }
+
+    meta[key] = value;
     tryGetSessionService()?.setMetadata(sessionId, key, value);
   }
 

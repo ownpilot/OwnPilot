@@ -71,7 +71,22 @@ export class ProviderService implements IProviderService {
     }
   }
 
+  /** Known provider identifiers (must match provider JSON config filenames). */
+  private static readonly KNOWN_PROVIDERS = new Set([
+    'openai', 'anthropic', 'google', 'azure', 'groq',
+    'deepseek', 'mistral', 'cohere', 'ollama-cloud',
+    'fireworks-ai', 'togetherai', 'openrouter', 'xai',
+  ]);
+
+  /** Validate provider name to prevent path traversal / env probing. */
+  private static isValidProvider(provider: string): boolean {
+    return ProviderService.KNOWN_PROVIDERS.has(provider);
+  }
+
   listModels(provider: string): ModelInfo[] {
+    // Validate provider name against known list to prevent path traversal via require()
+    if (!ProviderService.isValidProvider(provider)) return [];
+
     // Models are loaded from provider JSON configs at runtime
     // This is a sync convenience method; use provider.getModels() for full async list
     try {
@@ -91,7 +106,9 @@ export class ProviderService implements IProviderService {
   }
 
   hasApiKey(provider: string): boolean {
-    // hasApiKey is async in settings, but we need sync here
+    // Validate provider name to prevent env variable probing
+    if (!ProviderService.isValidProvider(provider)) return false;
+
     // Check environment variable as a quick sync check
     const envKey = process.env[`${provider.toUpperCase().replace(/-/g, '_')}_API_KEY`];
     return !!envKey;
