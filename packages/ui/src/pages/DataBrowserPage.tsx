@@ -16,6 +16,7 @@ import {
 import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/ToastProvider';
 import { useDebouncedValue, useModalClose } from '../hooks';
 
 // Data types
@@ -120,6 +121,7 @@ function formatCellValue(value: unknown, type: string): string {
 
 export function DataBrowserPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [selectedType, setSelectedType] = useState<DataType>('tasks');
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -171,12 +173,13 @@ export function DataBrowserPage() {
       });
       const data = await response.json();
       if (data.success) {
+        toast.success('Record deleted');
         fetchRecords();
       }
     } catch {
-      // API client handles error reporting
+      toast.error('Failed to delete record');
     }
-  }, [confirm, fetchRecords]);
+  }, [confirm, fetchRecords, toast]);
 
   const TypeIcon = config.icon;
 
@@ -402,6 +405,7 @@ interface RecordModalProps {
 }
 
 function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalProps) {
+  const toast = useToast();
   const { onBackdropClick } = useModalClose(onClose);
   const [formData, setFormData] = useState<Record<string, unknown>>(record || {});
   const [isSaving, setIsSaving] = useState(false);
@@ -428,10 +432,11 @@ function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalP
 
       const data = await response.json();
       if (data.success) {
+        toast.success(record ? 'Record updated' : 'Record created');
         onSave();
       }
     } catch {
-      // API client handles error reporting
+      toast.error(record ? 'Failed to update record' : 'Failed to create record');
     } finally {
       setIsSaving(false);
     }
