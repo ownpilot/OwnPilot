@@ -179,21 +179,23 @@ export class GoalService {
       throw new GoalServiceError(`Goal not found: ${goalId}`, 'NOT_FOUND');
     }
 
-    const createdSteps: GoalStep[] = [];
-    for (const stepInput of steps) {
-      const step = await repo.addStep(goalId, {
-        title: stepInput.title,
-        description: stepInput.description,
-      });
-      if (step) {
-        createdSteps.push(step);
+    return repo.transaction(async () => {
+      const createdSteps: GoalStep[] = [];
+      for (const stepInput of steps) {
+        const step = await repo.addStep(goalId, {
+          title: stepInput.title,
+          description: stepInput.description,
+        });
+        if (step) {
+          createdSteps.push(step);
+        }
       }
-    }
 
-    // Recalculate progress
-    await repo.recalculateProgress(goalId);
+      // Recalculate progress
+      await repo.recalculateProgress(goalId);
 
-    return createdSteps;
+      return createdSteps;
+    });
   }
 
   async getSteps(userId: string, goalId: string): Promise<GoalStep[]> {

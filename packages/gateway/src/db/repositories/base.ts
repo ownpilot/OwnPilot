@@ -74,7 +74,7 @@ export abstract class BaseRepository {
   /**
    * Run operations in a transaction
    */
-  protected async transaction<T>(fn: () => Promise<T>): Promise<T> {
+  async transaction<T>(fn: () => Promise<T>): Promise<T> {
     const adapter = await this.getAdapter();
     return adapter.transaction(fn);
   }

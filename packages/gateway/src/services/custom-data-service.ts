@@ -184,12 +184,14 @@ export class CustomDataService {
       throw new CustomDataServiceError(`Table not found: ${tableNameOrId}`, 'NOT_FOUND');
     }
 
-    const created: CustomDataRecord[] = [];
-    for (const data of records) {
-      const record = await repo.addRecord(tableNameOrId, data);
-      created.push(record);
-    }
-    return created;
+    return repo.transaction(async () => {
+      const created: CustomDataRecord[] = [];
+      for (const data of records) {
+        const record = await repo.addRecord(tableNameOrId, data);
+        created.push(record);
+      }
+      return created;
+    });
   }
 
   async getRecord(recordId: string): Promise<CustomDataRecord | null> {

@@ -284,16 +284,22 @@ export class DashboardService {
     // Aggregate all data with graceful degradation per section
     // Each section is wrapped so a single data source failure doesn't crash the entire briefing
 
-    // Tasks
-    let allTasks: Task[] = [];
+    // Tasks — use DB-side filtering instead of loading all into memory
+    let pendingTasks: Task[] = [];
+    let dueTodayTasks: Task[] = [];
+    let overdueTasks: Task[] = [];
+    let taskTotal = 0;
     try {
-      allTasks = await tasksRepo.list({ limit: 1000 });
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0] ?? '';
+      [pendingTasks, dueTodayTasks, overdueTasks] = await Promise.all([
+        tasksRepo.list({ status: ['pending', 'in_progress'], limit: 50 }),
+        tasksRepo.list({ status: ['pending', 'in_progress'], dueAfter: today, dueBefore: today, limit: 50 }),
+        tasksRepo.list({ status: ['pending', 'in_progress'], dueBefore: yesterday, limit: 50 }),
+      ]);
+      taskTotal = pendingTasks.length;
     } catch (err) {
       log.error('[DashboardService] Failed to load tasks:', err);
     }
-    const pendingTasks = allTasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
-    const dueTodayTasks = allTasks.filter(t => t.dueDate === today && t.status !== 'completed' && t.status !== 'cancelled');
-    const overdueTasks = allTasks.filter(t => t.dueDate && t.dueDate < today && t.status !== 'completed' && t.status !== 'cancelled');
 
     // Calendar
     let todayEvents: CalendarEvent[] = [];
@@ -413,7 +419,7 @@ export class DashboardService {
           pending: pendingTasks.length,
           dueToday: dueTodayTasks.length,
           overdue: overdueTasks.length,
-          total: allTasks.length,
+          total: taskTotal,
         },
       },
       calendar: {
