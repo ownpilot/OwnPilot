@@ -24,6 +24,45 @@ import { apiResponse, apiError, ERROR_CODES, getIntParam, getUserId } from './he
 const app = new Hono();
 
 // ============================================
+// Container config limits
+// ============================================
+
+const CONTAINER_LIMITS = {
+  memoryMB: { min: 64, max: 2048 },
+  cpuCores: { min: 0.25, max: 4 },
+  storageGB: { min: 1, max: 10 },
+  timeoutMs: { min: 5000, max: 120000 },
+} as const;
+
+const VALID_NETWORK_POLICIES = ['none', 'restricted', 'full'] as const;
+
+/**
+ * Validate and clamp user-supplied container config against safe limits
+ */
+function sanitizeContainerConfig(
+  base: ContainerConfig,
+  userConfig?: Partial<ContainerConfig>
+): ContainerConfig {
+  if (!userConfig || typeof userConfig !== 'object') return { ...base };
+
+  const clamp = (val: unknown, limits: { min: number; max: number }, fallback: number): number =>
+    typeof val === 'number' ? Math.max(limits.min, Math.min(limits.max, val)) : fallback;
+
+  return {
+    memoryMB: clamp(userConfig.memoryMB, CONTAINER_LIMITS.memoryMB, base.memoryMB),
+    cpuCores: clamp(userConfig.cpuCores, CONTAINER_LIMITS.cpuCores, base.cpuCores),
+    storageGB: clamp(userConfig.storageGB, CONTAINER_LIMITS.storageGB, base.storageGB),
+    timeoutMs: clamp(userConfig.timeoutMs, CONTAINER_LIMITS.timeoutMs, base.timeoutMs),
+    networkPolicy: VALID_NETWORK_POLICIES.includes(userConfig.networkPolicy as typeof VALID_NETWORK_POLICIES[number])
+      ? (userConfig.networkPolicy as ContainerConfig['networkPolicy'])
+      : base.networkPolicy,
+    ...(userConfig.allowedHosts && Array.isArray(userConfig.allowedHosts)
+      ? { allowedHosts: userConfig.allowedHosts.filter((h): h is string => typeof h === 'string').slice(0, 50) }
+      : {}),
+  };
+}
+
+// ============================================
 // Workspace CRUD
 // ============================================
 
@@ -85,10 +124,7 @@ app.post('/', async (c) => {
     const workspaceId = crypto.randomUUID();
     const storagePath = await storage.createUserStorage(`${userId}/${workspaceId}`);
 
-    const containerConfig: ContainerConfig = {
-      ...DEFAULT_CONTAINER_CONFIG,
-      ...body.containerConfig,
-    };
+    const containerConfig = sanitizeContainerConfig(DEFAULT_CONTAINER_CONFIG, body.containerConfig);
 
     // Create workspace in repository
     const workspace = await repo.create({
@@ -183,7 +219,7 @@ app.patch('/:id', async (c) => {
       updateInput.description = body.description;
     }
     if (body.containerConfig) {
-      updateInput.containerConfig = { ...existing.containerConfig, ...body.containerConfig };
+      updateInput.containerConfig = sanitizeContainerConfig(existing.containerConfig, body.containerConfig);
     }
 
     if (Object.keys(updateInput).length > 0) {
