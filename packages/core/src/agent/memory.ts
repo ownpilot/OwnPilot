@@ -72,17 +72,19 @@ export class ConversationMemory {
     const conversation = this.conversations.get(conversationId);
     if (!conversation) return undefined;
 
-    const updated: Conversation = {
-      ...conversation,
-      messages: [...conversation.messages, message],
-      updatedAt: new Date(),
-    };
+    let newMessages = [...conversation.messages, message];
 
     // Apply message limit
-    if (updated.messages.length > this.config.maxMessages) {
-      const excess = updated.messages.length - this.config.maxMessages;
-      updated.messages.slice(excess);
+    if (newMessages.length > this.config.maxMessages) {
+      const excess = newMessages.length - this.config.maxMessages;
+      newMessages = newMessages.slice(excess);
     }
+
+    const updated: Conversation = {
+      ...conversation,
+      messages: newMessages,
+      updatedAt: new Date(),
+    };
 
     this.conversations.set(conversationId, updated);
     return updated;

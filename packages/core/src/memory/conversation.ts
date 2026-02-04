@@ -797,8 +797,9 @@ export class ConversationMemoryStore {
         .sort((a, b) => this.calculateRelevanceScore(b[1]) - this.calculateRelevanceScore(a[1]));
 
       while (sortedMemories.length > this.retentionPolicy.maxMemories) {
-        const [id] = sortedMemories.pop()!;
-        this.memories.delete(id);
+        const entry = sortedMemories.pop();
+        if (!entry) break;
+        this.memories.delete(entry[0]);
         deleted++;
       }
     }
