@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Wrench, Plus, Check, X, Trash, Play, Code } from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
@@ -67,7 +67,7 @@ export function CustomToolsPage() {
     }
   };
 
-  const handleAction = async (toolId: string, action: 'enable' | 'disable' | 'approve' | 'reject' | 'delete') => {
+  const handleAction = useCallback(async (toolId: string, action: 'enable' | 'disable' | 'approve' | 'reject' | 'delete') => {
     try {
       if (action === 'delete') {
         await customToolsApi.delete(toolId);
@@ -84,9 +84,9 @@ export function CustomToolsPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [selectedTool, toast, fetchTools, fetchStats]);
 
-  const filteredTools = tools.filter(tool => {
+  const filteredTools = useMemo(() => tools.filter(tool => {
     if (!debouncedSearch) return true;
     const query = debouncedSearch.toLowerCase();
     return (
@@ -94,7 +94,7 @@ export function CustomToolsPage() {
       tool.description.toLowerCase().includes(query) ||
       (tool.category?.toLowerCase().includes(query) ?? false)
     );
-  });
+  }), [tools, debouncedSearch]);
 
   const pendingCount = stats?.pendingApproval ?? 0;
 

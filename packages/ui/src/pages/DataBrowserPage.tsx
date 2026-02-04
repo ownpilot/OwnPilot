@@ -102,6 +102,22 @@ interface ApiResponse<T> {
   error?: { message: string };
 }
 
+function formatCellValue(value: unknown, type: string): string {
+  if (value === null || value === undefined) return '-';
+  if (type === 'boolean') return value ? 'Yes' : 'No';
+  if (type === 'date') {
+    if (typeof value === 'string') {
+      const date = new Date(value);
+      return date.toLocaleDateString() + (value.includes('T') ? ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+    }
+    return '-';
+  }
+  if (type === 'tags' && Array.isArray(value)) {
+    return value.join(', ');
+  }
+  return String(value);
+}
+
 export function DataBrowserPage() {
   const { confirm } = useDialog();
   const [selectedType, setSelectedType] = useState<DataType>('tasks');
@@ -146,7 +162,7 @@ export function DataBrowserPage() {
     setRecords([]);
   }, [selectedType]);
 
-  const handleDelete = async (recordId: string) => {
+  const handleDelete = useCallback(async (recordId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this record?', variant: 'danger' })) return;
 
     try {
@@ -160,23 +176,7 @@ export function DataBrowserPage() {
     } catch {
       // API client handles error reporting
     }
-  };
-
-  const formatCellValue = (value: unknown, type: string): string => {
-    if (value === null || value === undefined) return '-';
-    if (type === 'boolean') return value ? 'Yes' : 'No';
-    if (type === 'date') {
-      if (typeof value === 'string') {
-        const date = new Date(value);
-        return date.toLocaleDateString() + (value.includes('T') ? ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
-      }
-      return '-';
-    }
-    if (type === 'tags' && Array.isArray(value)) {
-      return value.join(', ');
-    }
-    return String(value);
-  };
+  }, [confirm, fetchRecords]);
 
   const TypeIcon = config.icon;
 

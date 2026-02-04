@@ -66,13 +66,13 @@ export function CustomDataPage() {
     }
   }, [selectedTable, debouncedSearch, fetchRecords]);
 
-  const handleSelectTable = (table: CustomTable) => {
+  const handleSelectTable = useCallback((table: CustomTable) => {
     setSelectedTable(table);
     setSearchQuery('');
     setRecords([]);
-  };
+  }, []);
 
-  const handleDeleteTable = async (tableId: string) => {
+  const handleDeleteTable = useCallback(async (tableId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this table and ALL its data? This cannot be undone.', variant: 'danger' })) {
       return;
     }
@@ -88,9 +88,9 @@ export function CustomDataPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, selectedTable, fetchTables, toast]);
 
-  const handleDeleteRecord = async (recordId: string) => {
+  const handleDeleteRecord = useCallback(async (recordId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this record?', variant: 'danger' })) {
       return;
     }
@@ -104,7 +104,7 @@ export function CustomDataPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, selectedTable, fetchRecords, debouncedSearch, toast]);
 
   return (
     <div className="flex flex-col h-full">
