@@ -92,6 +92,12 @@ export class LINEChannelAPI implements ChannelPluginAPI {
       throw new Error('LINE channel_access_token and channel_secret are required');
     }
 
+    // Clean up any existing server instance (e.g. reconnecting after error)
+    if (this.server) {
+      try { this.server.close(); } catch { /* already closed */ }
+      this.server = null;
+    }
+
     this.status = 'connecting';
     this.emitConnectionEvent('connecting');
 

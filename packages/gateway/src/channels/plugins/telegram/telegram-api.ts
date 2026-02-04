@@ -79,7 +79,14 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
       throw new Error('Telegram bot_token is required');
     }
 
+    // Clean up any existing bot instance (e.g. reconnecting after error)
+    if (this.bot) {
+      try { this.bot.stop(); } catch { /* already stopped */ }
+      this.bot = null;
+    }
+
     this.status = 'connecting';
+    this.emitConnectionEvent('connecting');
 
     try {
       this.bot = new Bot(this.config.bot_token);
@@ -98,6 +105,13 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         );
       });
 
+      // Install error handler BEFORE starting polling
+      this.bot.catch((err) => {
+        log.error('[Telegram] Bot error:', err);
+        this.status = 'error';
+        this.emitConnectionEvent('error');
+      });
+
       // Start long-polling (non-blocking)
       this.bot.start({
         onStart: () => {
@@ -105,13 +119,6 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
           log.info('[Telegram] Bot connected and polling');
           this.emitConnectionEvent('connected');
         },
-      });
-
-      // Handle errors
-      this.bot.catch((err) => {
-        log.error('[Telegram] Bot error:', err);
-        this.status = 'error';
-        this.emitConnectionEvent('error');
       });
     } catch (error) {
       this.status = 'error';
