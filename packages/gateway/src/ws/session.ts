@@ -181,8 +181,13 @@ export class SessionManager {
         payload,
         timestamp: new Date().toISOString(),
       };
-      session.socket.send(JSON.stringify(message));
-      return true;
+      try {
+        session.socket.send(JSON.stringify(message));
+        return true;
+      } catch {
+        // Socket closed between readyState check and send
+        return false;
+      }
     }
     return false;
   }
@@ -204,8 +209,12 @@ export class SessionManager {
 
     for (const session of this.sessions.values()) {
       if (session.socket.readyState === 1) {
-        session.socket.send(data);
-        count++;
+        try {
+          session.socket.send(data);
+          count++;
+        } catch {
+          // Socket closed between readyState check and send — skip
+        }
       }
     }
 
@@ -230,8 +239,12 @@ export class SessionManager {
 
     for (const session of this.sessions.values()) {
       if (session.channels.has(channelId) && session.socket.readyState === 1) {
-        session.socket.send(data);
-        count++;
+        try {
+          session.socket.send(data);
+          count++;
+        } catch {
+          // Socket closed between readyState check and send — skip
+        }
       }
     }
 
