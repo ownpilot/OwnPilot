@@ -5,7 +5,7 @@
  * Each user gets their own container with strict security controls.
  */
 
-import { spawn, execSync, type ChildProcess } from 'node:child_process';
+import { spawn, execSync, execFileSync, type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import type {
   ContainerConfig,
@@ -27,6 +27,26 @@ const DOCKER_SECURITY_ARGS = [
   '--pids-limit=100', // Limit processes
   '-u', '1000:1000', // Non-root user
 ];
+
+/**
+ * Validate Docker container ID format (12-64 hex characters)
+ */
+function validateContainerId(id: string): string {
+  if (!/^[a-f0-9]{12,64}$/.test(id)) {
+    throw new Error(`Invalid container ID format`);
+  }
+  return id;
+}
+
+/**
+ * Validate Docker image name format
+ */
+function validateImageName(name: string): string {
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._/:-]*$/.test(name) || name.length > 200) {
+    throw new Error(`Invalid Docker image name`);
+  }
+  return name;
+}
 
 /**
  * Container info stored in memory
@@ -58,18 +78,19 @@ export async function isDockerAvailable(): Promise<boolean> {
  * Ensure Docker image is available
  */
 export async function ensureImage(image: string): Promise<boolean> {
+  const validImage = validateImageName(image);
   try {
     // Check if image exists locally
-    execSync(`docker image inspect ${image}`, { stdio: 'ignore' });
+    execFileSync('docker', ['image', 'inspect', validImage], { stdio: 'ignore' });
     return true;
   } catch {
     // Try to pull the image
     try {
-      console.log(`[Workspace] Pulling Docker image: ${image}`);
-      execSync(`docker pull ${image}`, { stdio: 'inherit', timeout: 300000 });
+      console.log(`[Workspace] Pulling Docker image: ${validImage}`);
+      execFileSync('docker', ['pull', validImage], { stdio: 'inherit', timeout: 300000 });
       return true;
     } catch (err) {
-      console.error(`[Workspace] Failed to pull image ${image}:`, err);
+      console.error(`[Workspace] Failed to pull image ${validImage}:`, err);
       return false;
     }
   }
@@ -178,12 +199,12 @@ export class UserContainerOrchestrator {
     args.push('tail', '-f', '/dev/null'); // Keep container alive
 
     try {
-      const result = execSync(`docker ${args.join(' ')}`, {
+      const result = execFileSync('docker', args, {
         encoding: 'utf-8',
         timeout: 30000,
       });
 
-      const containerId = result.trim();
+      const containerId = validateContainerId(result.trim());
 
       // Store container info
       this.containers.set(containerId, {
@@ -253,19 +274,19 @@ export class UserContainerOrchestrator {
       let stderr = '';
       let timedOut = false;
 
-      // Escape command for docker exec
-      const escapedCode = code.replace(/'/g, "'\\''");
-      let dockerExecCmd: string;
+      // Build docker exec args without shell interpolation
+      const validId = validateContainerId(containerId);
+      let execArgs: string[];
 
       switch (language) {
         case 'python':
-          dockerExecCmd = `docker exec ${containerId} python -c '${escapedCode}'`;
+          execArgs = ['exec', validId, 'python', '-c', code];
           break;
         case 'javascript':
-          dockerExecCmd = `docker exec ${containerId} node -e '${escapedCode}'`;
+          execArgs = ['exec', validId, 'node', '-e', code];
           break;
         case 'shell':
-          dockerExecCmd = `docker exec ${containerId} sh -c '${escapedCode}'`;
+          execArgs = ['exec', validId, 'sh', '-c', code];
           break;
         default:
           resolve({
@@ -276,7 +297,7 @@ export class UserContainerOrchestrator {
           return;
       }
 
-      const child: ChildProcess = spawn('sh', ['-c', dockerExecCmd], {
+      const child: ChildProcess = spawn('docker', execArgs, {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
@@ -343,8 +364,9 @@ export class UserContainerOrchestrator {
    * Stop a container
    */
   async stopContainer(containerId: string): Promise<void> {
+    const validId = validateContainerId(containerId);
     try {
-      execSync(`docker stop ${containerId}`, {
+      execFileSync('docker', ['stop', validId], {
         timeout: 10000,
         stdio: 'ignore',
       });
@@ -360,8 +382,9 @@ export class UserContainerOrchestrator {
    * Remove a container
    */
   async removeContainer(containerId: string): Promise<void> {
+    const validId = validateContainerId(containerId);
     try {
-      execSync(`docker rm -f ${containerId}`, {
+      execFileSync('docker', ['rm', '-f', validId], {
         timeout: 10000,
         stdio: 'ignore',
       });
@@ -375,9 +398,10 @@ export class UserContainerOrchestrator {
    * Get container status
    */
   async getContainerStatus(containerId: string): Promise<ContainerStatus> {
+    const validId = validateContainerId(containerId);
     try {
-      const result = execSync(
-        `docker inspect --format='{{.State.Status}}' ${containerId}`,
+      const result = execFileSync(
+        'docker', ['inspect', '--format={{.State.Status}}', validId],
         { encoding: 'utf-8', timeout: 5000 }
       );
       const status = result.trim();
@@ -404,9 +428,10 @@ export class UserContainerOrchestrator {
    * Get container resource usage
    */
   async getResourceUsage(containerId: string): Promise<ResourceUsage | null> {
+    const validId = validateContainerId(containerId);
     try {
-      const result = execSync(
-        `docker stats ${containerId} --no-stream --format "{{.MemUsage}},{{.CPUPerc}},{{.NetIO}}"`,
+      const result = execFileSync(
+        'docker', ['stats', validId, '--no-stream', '--format', '{{.MemUsage}},{{.CPUPerc}},{{.NetIO}}'],
         { encoding: 'utf-8', timeout: 5000 }
       );
 
@@ -460,8 +485,9 @@ export class UserContainerOrchestrator {
     containerId: string,
     tail: number = 100
   ): Promise<string> {
+    const validId = validateContainerId(containerId);
     try {
-      const result = execSync(`docker logs --tail ${tail} ${containerId}`, {
+      const result = execFileSync('docker', ['logs', '--tail', String(tail), validId], {
         encoding: 'utf-8',
         timeout: 5000,
       });
