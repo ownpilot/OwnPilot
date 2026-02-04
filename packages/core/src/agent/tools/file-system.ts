@@ -8,6 +8,12 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 
+/** Maximum file size for read/write operations (10 MB) */
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+/** Maximum recursion depth for directory search */
+const MAX_SEARCH_DEPTH = 20;
+
 /**
  * Safely convert a glob pattern to a RegExp.
  * Escapes all regex metacharacters first, then converts glob wildcards.
@@ -170,6 +176,15 @@ export const readFileExecutor: ToolExecutor = async (args, context): Promise<Too
   }
 
   try {
+    // Check file size before reading to prevent memory exhaustion
+    const stats = await fs.stat(filePath);
+    if (stats.size > MAX_FILE_SIZE) {
+      return {
+        content: `Error: File too large (${(stats.size / 1024 / 1024).toFixed(1)} MB). Maximum is ${MAX_FILE_SIZE / 1024 / 1024} MB.`,
+        isError: true,
+      };
+    }
+
     const content = await fs.readFile(filePath, { encoding });
 
     // Handle line range
@@ -243,6 +258,15 @@ export const writeFileExecutor: ToolExecutor = async (args, context): Promise<To
 
   if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
     return { content: `Error: Access denied to path: ${filePath}`, isError: true };
+  }
+
+  // Check content size before writing
+  const contentSize = Buffer.byteLength(content, 'utf-8');
+  if (contentSize > MAX_FILE_SIZE) {
+    return {
+      content: `Error: Content too large (${(contentSize / 1024 / 1024).toFixed(1)} MB). Maximum is ${MAX_FILE_SIZE / 1024 / 1024} MB.`,
+      isError: true,
+    };
   }
 
   try {
@@ -451,8 +475,20 @@ export const searchFilesExecutor: ToolExecutor = async (args, context): Promise<
       content: string;
     }> = [];
 
-    async function searchDir(dir: string): Promise<void> {
-      if (results.length >= maxResults) return;
+    const visited = new Set<string>();
+
+    async function searchDir(dir: string, depth = 0): Promise<void> {
+      if (results.length >= maxResults || depth > MAX_SEARCH_DEPTH) return;
+
+      // Prevent symlink loops
+      let realDir: string;
+      try {
+        realDir = await fs.realpath(dir);
+      } catch {
+        return;
+      }
+      if (visited.has(realDir)) return;
+      visited.add(realDir);
 
       const items = await fs.readdir(dir, { withFileTypes: true });
 
@@ -463,7 +499,7 @@ export const searchFilesExecutor: ToolExecutor = async (args, context): Promise<
         const fullPath = path.join(dir, item.name);
 
         if (item.isDirectory()) {
-          await searchDir(fullPath);
+          await searchDir(fullPath, depth + 1);
         } else if (item.isFile()) {
           // Apply file pattern filter
           if (filePattern) {

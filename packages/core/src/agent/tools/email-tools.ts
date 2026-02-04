@@ -113,10 +113,11 @@ export const sendEmailExecutor: ToolExecutor = async (params, _context): Promise
     };
   }
 
-  // Validate email format
+  // Validate email format (reject CRLF injection and control chars)
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  for (const email of to) {
-    if (!emailRegex.test(email)) {
+  const allRecipients = [...to, ...(cc ?? []), ...(bcc ?? [])];
+  for (const email of allRecipients) {
+    if (!emailRegex.test(email) || /[\r\n\x00-\x1f]/.test(email)) {
       return {
         content: { error: `Invalid email address: ${email}` },
         isError: true,
@@ -147,10 +148,21 @@ export const sendEmailExecutor: ToolExecutor = async (params, _context): Promise
     };
   }
 
+  // Sanitize header fields against CRLF injection
+  const sanitizeHeader = (v: string) => v.replace(/[\r\n]/g, '');
+
+  // Validate replyTo if provided
+  if (replyTo && (!emailRegex.test(replyTo) || /[\r\n\x00-\x1f]/.test(replyTo))) {
+    return {
+      content: { error: `Invalid replyTo address: ${replyTo}` },
+      isError: true,
+    };
+  }
+
   // Build email message
   const message: Record<string, unknown> = {
     to: to.join(', '),
-    subject,
+    subject: sanitizeHeader(subject),
     [isHtml ? 'html' : 'text']: body,
   };
 
@@ -163,7 +175,7 @@ export const sendEmailExecutor: ToolExecutor = async (params, _context): Promise
   }
 
   if (replyTo) {
-    message.replyTo = replyTo;
+    message.replyTo = sanitizeHeader(replyTo);
   }
 
   // Set priority header

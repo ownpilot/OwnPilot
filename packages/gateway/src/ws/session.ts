@@ -208,15 +208,21 @@ export class SessionManager {
     };
     const data = JSON.stringify(message);
 
+    const stale: string[] = [];
     for (const session of this.sessions.values()) {
       if (session.socket.readyState === 1) {
         try {
           session.socket.send(data);
           count++;
         } catch {
-          // Socket closed between readyState check and send — skip
+          // Socket closed between readyState check and send
+          stale.push(session.id);
         }
       }
+    }
+    // Clean up stale sessions
+    for (const id of stale) {
+      this.remove(id);
     }
 
     return count;
@@ -238,15 +244,19 @@ export class SessionManager {
     };
     const data = JSON.stringify(message);
 
+    const stale: string[] = [];
     for (const session of this.sessions.values()) {
       if (session.channels.has(channelId) && session.socket.readyState === 1) {
         try {
           session.socket.send(data);
           count++;
         } catch {
-          // Socket closed between readyState check and send — skip
+          stale.push(session.id);
         }
       }
+    }
+    for (const id of stale) {
+      this.remove(id);
     }
 
     return count;
