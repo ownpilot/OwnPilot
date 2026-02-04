@@ -643,6 +643,7 @@ export async function zipSessionWorkspace(id: string): Promise<string> {
       resolve(zipPath);
     });
 
+    output.on('error', reject);
     archive.on('error', reject);
     archive.pipe(output);
     archive.directory(workspacePath, basename(workspacePath));

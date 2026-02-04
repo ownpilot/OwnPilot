@@ -462,15 +462,19 @@ export class WorkspaceManager {
    */
   private setupChannelForwarding(): void {
     const unsub = gatewayEvents.on('channel:message', async ({ message }) => {
-      // Find workspace for this channel
-      const workspace = this.getByChannel(message.channelId) as WorkspaceInstance | undefined;
+      try {
+        // Find workspace for this channel
+        const workspace = this.getByChannel(message.channelId) as WorkspaceInstance | undefined;
 
-      if (workspace) {
-        await workspace.processIncomingMessage(message);
-      } else {
-        // If no workspace, use default
-        const defaultWorkspace = this.getOrCreateDefault() as WorkspaceInstance;
-        await defaultWorkspace.processIncomingMessage(message);
+        if (workspace) {
+          await workspace.processIncomingMessage(message);
+        } else {
+          // If no workspace, use default
+          const defaultWorkspace = this.getOrCreateDefault() as WorkspaceInstance;
+          await defaultWorkspace.processIncomingMessage(message);
+        }
+      } catch (error) {
+        log.error('[WorkspaceManager] Error processing channel message:', error instanceof Error ? error.message : error);
       }
     });
     this.unsubscribes.push(unsub);
