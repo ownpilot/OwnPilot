@@ -789,6 +789,7 @@ export class SecurePluginRuntime extends EventEmitter {
   private waitForReady(worker: Worker, timeout: number): Promise<void> {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
+        worker.off('message', handler);
         reject(new Error('Worker initialization timed out'));
       }, timeout);
 

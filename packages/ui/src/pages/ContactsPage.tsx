@@ -71,7 +71,7 @@ export function ContactsPage() {
     return acc;
   }, {} as Record<string, Contact[]>), [contacts]);
 
-  const sortedGroups = useMemo(() => Object.entries(groupedContacts).sort(([a], [b]) => a.localeCompare(b)), [contacts]);
+  const sortedGroups = useMemo(() => Object.entries(groupedContacts).sort(([a], [b]) => a.localeCompare(b)), [groupedContacts]);
 
   return (
     <div className="flex flex-col h-full">
