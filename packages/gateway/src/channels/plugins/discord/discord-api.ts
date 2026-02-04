@@ -89,6 +89,7 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
   private readonly config: DiscordChannelConfig;
   private readonly pluginId: string;
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+  private pendingTimers: Set<ReturnType<typeof setTimeout>> = new Set();
   private sequence: number | null = null;
   private sessionId: string | null = null;
   private allowedGuilds: Set<string> = new Set();
@@ -148,8 +149,9 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
         if (this.status !== 'disconnected') {
           this.status = 'reconnecting';
           this.emitConnectionEvent('reconnecting');
-          // Auto-reconnect after delay
-          setTimeout(() => this.connect().catch((e) => log.error(e)), 5000);
+          // Auto-reconnect after delay (tracked for cleanup on disconnect)
+          const timer = setTimeout(() => { this.pendingTimers.delete(timer); this.connect().catch((e) => log.error(e)); }, 5000);
+          this.pendingTimers.add(timer);
         }
       });
 
@@ -165,6 +167,11 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
   async disconnect(): Promise<void> {
     this.status = 'disconnected';
     this.stopHeartbeat();
+    // Cancel any pending reconnect/identify timers
+    for (const timer of this.pendingTimers) {
+      clearTimeout(timer);
+    }
+    this.pendingTimers.clear();
     if (this.ws) {
       this.ws.close(1000, 'Normal closure');
       this.ws = null;
@@ -266,9 +273,11 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
         this.ws?.close(4000, 'Server requested reconnect');
         break;
 
-      case GatewayOpcode.InvalidSession:
-        setTimeout(() => this.identify(), 5000);
+      case GatewayOpcode.InvalidSession: {
+        const timer = setTimeout(() => { this.pendingTimers.delete(timer); this.identify(); }, 5000);
+        this.pendingTimers.add(timer);
         break;
+      }
 
       case GatewayOpcode.Dispatch:
         this.handleDispatch(payload.t!, payload.d as Record<string, unknown>, onReady);

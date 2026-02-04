@@ -170,6 +170,9 @@ export class PlanExecutor extends EventEmitter {
 
       return result;
     } catch (error) {
+      // Signal cancellation to any pending step execution
+      abortController.abort();
+
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.planService.updatePlan(this.config.userId, planId, { status: 'failed', error: errorMessage });
       await this.planService.logEvent(this.config.userId, planId, 'failed', undefined, { error: errorMessage });
