@@ -227,10 +227,13 @@ export class EventBus implements IEventBus {
    * 3. Pattern match
    */
   private dispatch<T>(event: TypedEvent<T>): void {
+    // Snapshot handler sets before iteration to prevent concurrent modification
+    // when handlers unsubscribe themselves or others during dispatch.
+
     // 1. Exact type match
     const typeHandlers = this.handlers.get(event.type);
     if (typeHandlers) {
-      for (const handler of typeHandlers) {
+      for (const handler of [...typeHandlers]) {
         this.safeCall(handler, event);
       }
     }
@@ -238,15 +241,15 @@ export class EventBus implements IEventBus {
     // 2. Category match
     const catHandlers = this.categoryHandlers.get(event.category);
     if (catHandlers) {
-      for (const handler of catHandlers) {
+      for (const handler of [...catHandlers]) {
         this.safeCall(handler, event);
       }
     }
 
     // 3. Pattern match
-    for (const [pattern, patHandlers] of this.patternHandlers) {
+    for (const [pattern, patHandlers] of [...this.patternHandlers]) {
       if (this.matchPattern(pattern, event.type)) {
-        for (const handler of patHandlers) {
+        for (const handler of [...patHandlers]) {
           this.safeCall(handler, event);
         }
       }

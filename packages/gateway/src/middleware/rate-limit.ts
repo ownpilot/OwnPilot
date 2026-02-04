@@ -91,7 +91,8 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
     if (!entry || entry.resetAt < now) {
       // Prevent unbounded growth from many unique IPs
       if (!entry && store.size >= maxStoreSize) {
-        return next();
+        log.warn(`Rate limit store full (${maxStoreSize} entries), rejecting new client`);
+        return apiError(c, { code: ERROR_CODES.RATE_LIMITED, message: 'Too many requests' }, 429);
       }
       entry = {
         count: 0,
@@ -204,7 +205,8 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
 
     // Prevent unbounded growth from many unique IPs
     if (!timestamps && requests.size >= maxStoreSize) {
-      return next();
+      log.warn(`Sliding window store full (${maxStoreSize} entries), rejecting new client`);
+      return apiError(c, { code: ERROR_CODES.RATE_LIMITED, message: 'Too many requests' }, 429);
     }
 
     // Filter out old timestamps
