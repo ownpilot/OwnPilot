@@ -13,6 +13,7 @@ import {
   Trash2,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { autonomyApi } from '../api';
 import type { PendingApproval, AutonomyConfig, AutonomyLevel } from '../api';
 
@@ -133,9 +134,7 @@ export function AutonomyPage() {
 
   if (isLoading || !config) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-text-muted dark:text-dark-text-muted">Loading autonomy settings...</p>
-      </div>
+      <LoadingSpinner message="Loading autonomy settings..." />
     );
   }
 

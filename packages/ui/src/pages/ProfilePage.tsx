@@ -17,6 +17,7 @@ import {
   Download,
   Upload,
 } from '../components/icons';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { profileApi } from '../api';
 import type { ProfileData } from '../api';
 
@@ -161,9 +162,7 @@ export function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-text-muted dark:text-dark-text-muted">Loading profile...</div>
-      </div>
+      <LoadingSpinner message="Loading profile..." />
     );
   }
 

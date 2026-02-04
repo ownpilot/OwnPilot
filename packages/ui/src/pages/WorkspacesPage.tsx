@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from '../components/icons';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { fileWorkspacesApi } from '../api';
 import { useModalClose } from '../hooks';
 import type { FileWorkspaceInfo, WorkspaceFile } from '../api';
@@ -229,9 +230,7 @@ export function WorkspacesPage() {
         {/* Workspace List */}
         <div className="w-80 border-r border-border dark:border-dark-border overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-text-muted dark:text-dark-text-muted">Loading workspaces...</p>
-            </div>
+            <LoadingSpinner message="Loading workspaces..." />
           ) : workspaces.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full p-4">
               <Folder className="w-12 h-12 text-text-muted dark:text-dark-text-muted mb-3" />
@@ -369,9 +368,7 @@ export function WorkspacesPage() {
               {/* Files List */}
               <div className="flex-1 overflow-y-auto p-4">
                 {isLoadingFiles ? (
-                  <div className="flex items-center justify-center h-32">
-                    <p className="text-text-muted dark:text-dark-text-muted">Loading files...</p>
-                  </div>
+                  <LoadingSpinner size="sm" message="Loading files..." />
                 ) : workspaceFiles.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-32">
                     <File className="w-10 h-10 text-text-muted dark:text-dark-text-muted mb-2" />

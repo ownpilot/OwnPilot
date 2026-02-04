@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { Cpu, Check, AlertCircle, ExternalLink, Zap, Eye, Code, MessageSquare } from '../components/icons';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { modelsApi, providersApi } from '../api';
 
 interface ModelInfo {
@@ -137,9 +138,7 @@ export function ModelsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading models...</p>
-          </div>
+          <LoadingSpinner message="Loading models..." />
         ) : error ? (
           <div className="flex flex-col items-center justify-center h-full">
             <AlertCircle className="w-16 h-16 text-error mb-4" />

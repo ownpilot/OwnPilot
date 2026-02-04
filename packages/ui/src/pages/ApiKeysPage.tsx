@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Check, AlertCircle, ChevronDown, ChevronRight, Key } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { settingsApi, providersApi, modelsApi, localProvidersApi } from '../api';
 import type { ProviderConfig, LocalProviderInfo, ModelInfo } from '../types';
 
@@ -393,9 +394,7 @@ export function ApiKeysPage() {
       </header>
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading settings...</p>
-          </div>
+          <LoadingSpinner message="Loading settings..." />
         ) : (
           <div className="space-y-8">
             {/* Error message */}

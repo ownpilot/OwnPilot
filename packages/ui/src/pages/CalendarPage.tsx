@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Plus, Trash2, Clock, MapPin } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useModalClose } from '../hooks';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { calendarApi } from '../api';
 import type { CalendarEvent } from '../api';
 
@@ -134,9 +135,7 @@ export function CalendarPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-text-muted dark:text-dark-text-muted">Loading events...</p>
-          </div>
+          <LoadingSpinner message="Loading events..." />
         ) : events.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full">
             <Calendar className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
