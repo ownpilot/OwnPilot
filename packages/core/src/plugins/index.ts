@@ -315,10 +315,28 @@ export class PluginRegistry {
   private plugins: Map<string, Plugin> = new Map();
   private handlers: MessageHandler[] = [];
   private storageDir: string;
+  /** Tracks event unsubscribe functions per plugin for cleanup */
+  private pluginEventCleanups = new Map<string, Array<() => void>>();
+  /** Simple async mutex for register/unregister serialization */
+  private registryLock: Promise<void> = Promise.resolve();
 
   constructor(storageDir?: string) {
     const homeDir = process.env.HOME ?? process.env.USERPROFILE ?? '.';
     this.storageDir = storageDir ?? path.join(homeDir, '.ownpilot', 'plugins');
+  }
+
+  /** Run an async function under the registry lock to prevent concurrent mutations */
+  private async withLock<T>(fn: () => Promise<T>): Promise<T> {
+    let release!: () => void;
+    const acquire = new Promise<void>(resolve => { release = resolve; });
+    const prev = this.registryLock;
+    this.registryLock = acquire;
+    await prev;
+    try {
+      return await fn();
+    } finally {
+      release();
+    }
   }
 
   /**
@@ -336,6 +354,7 @@ export class PluginRegistry {
    * Register a plugin
    */
   async register(manifest: PluginManifest, implementation: Partial<Plugin>): Promise<Plugin> {
+    return this.withLock(async () => {
     // Check dependencies
     for (const [depId, depVersion] of Object.entries(manifest.dependencies ?? {})) {
       const dep = this.plugins.get(depId);
@@ -400,6 +419,7 @@ export class PluginRegistry {
 
     console.log(`[PluginRegistry] Registered plugin: ${manifest.name} v${manifest.version}`);
     return plugin;
+    }); // end withLock
   }
 
   /**
@@ -491,6 +511,7 @@ export class PluginRegistry {
    * Unregister a plugin
    */
   async unregister(id: string): Promise<boolean> {
+    return this.withLock(async () => {
     const plugin = this.plugins.get(id);
     if (!plugin) return false;
 
@@ -503,11 +524,21 @@ export class PluginRegistry {
       }
     }
 
+    // Clean up event subscriptions
+    const cleanups = this.pluginEventCleanups.get(id);
+    if (cleanups) {
+      for (const unsub of cleanups) {
+        try { unsub(); } catch { /* already cleaned */ }
+      }
+      this.pluginEventCleanups.delete(id);
+    }
+
     // Remove handlers
     this.handlers = this.handlers.filter(h => !plugin.handlers.includes(h));
 
     this.plugins.delete(id);
     return true;
+    }); // end withLock
   }
 
   /**
@@ -687,17 +718,26 @@ export class PluginRegistry {
     const bus = getEventSystem().scoped(`plugin.${pluginId}`, `plugin:${pluginId}`);
     const handlerMap = new Map<(...args: unknown[]) => void, () => void>();
 
+    // Track all unsubscribe functions for cleanup on unregister
+    if (!this.pluginEventCleanups.has(pluginId)) {
+      this.pluginEventCleanups.set(pluginId, []);
+    }
+    const cleanups = this.pluginEventCleanups.get(pluginId)!;
+
     return {
       emit: (event, data) => bus.emit(event, data),
       on: (event, handler) => {
         const unsub = bus.on(event, (e) => handler(e.data));
         handlerMap.set(handler, unsub);
+        cleanups.push(unsub);
       },
       off: (_event, handler) => {
         const unsub = handlerMap.get(handler);
         if (unsub) {
           unsub();
           handlerMap.delete(handler);
+          const idx = cleanups.indexOf(unsub);
+          if (idx >= 0) cleanups.splice(idx, 1);
         }
       },
     };
