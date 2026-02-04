@@ -111,11 +111,13 @@ export class TriggerEngine {
     this.pollTimer = setInterval(() => {
       this.processScheduleTriggers().catch((err) => log.error('Schedule trigger poll failed', { error: err }));
     }, this.config.pollIntervalMs);
+    this.pollTimer.unref();
 
     // Start checking conditions
     this.conditionTimer = setInterval(() => {
       this.processConditionTriggers().catch((err) => log.error('Condition trigger check failed', { error: err }));
     }, this.config.conditionCheckIntervalMs);
+    this.conditionTimer.unref();
 
     // Run initial checks
     this.processScheduleTriggers().catch((err) => log.error('Initial schedule trigger poll failed', { error: err }));

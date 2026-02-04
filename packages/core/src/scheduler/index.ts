@@ -485,6 +485,7 @@ export class Scheduler {
     this.checkTimer = setInterval(() => {
       this.checkAndRunTasks().catch(console.error);
     }, this.config.checkInterval);
+    this.checkTimer.unref();
 
     console.log('[Scheduler] Started with check interval:', this.config.checkInterval, 'ms');
   }

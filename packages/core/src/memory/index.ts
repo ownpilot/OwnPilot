@@ -319,6 +319,7 @@ export class SecureMemoryStore {
       this.purgeTimer = setInterval(() => {
         this.purgeExpired().catch(console.error);
       }, this.config.purgeInterval);
+      this.purgeTimer.unref();
     }
 
     this.initialized = true;
