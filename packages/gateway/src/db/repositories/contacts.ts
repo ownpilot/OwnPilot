@@ -326,13 +326,13 @@ export class ContactsRepository extends BaseRepository {
     if (query.tags && query.tags.length > 0) {
       for (const tag of query.tags) {
         sql += ` AND tags::text LIKE $${paramIndex++}`;
-        params.push(`%"${tag}"%`);
+        params.push(`%"${this.escapeLike(tag)}"%`);
       }
     }
 
     if (query.search) {
       sql += ` AND (name ILIKE $${paramIndex} OR nickname ILIKE $${paramIndex} OR email ILIKE $${paramIndex} OR phone ILIKE $${paramIndex} OR company ILIKE $${paramIndex})`;
-      params.push(`%${query.search}%`);
+      params.push(`%${this.escapeLike(query.search)}%`);
       paramIndex++;
     }
 

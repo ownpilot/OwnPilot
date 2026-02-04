@@ -158,7 +158,7 @@ export class ChannelMessagesRepository extends BaseRepository {
        WHERE content ILIKE $1
        ORDER BY created_at DESC
        LIMIT $2`,
-      [`%${searchQuery}%`, limit]
+      [`%${this.escapeLike(searchQuery)}%`, limit]
     );
     return rows.map(rowToChannelMessage);
   }

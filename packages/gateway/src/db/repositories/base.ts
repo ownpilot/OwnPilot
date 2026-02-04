@@ -101,6 +101,14 @@ export abstract class BaseRepository {
   }
 
   /**
+   * Escape LIKE wildcard characters (%, _) in a value.
+   * Use this when building LIKE patterns from user input.
+   */
+  protected escapeLike(value: string): string {
+    return value.replace(/%/g, '\\%').replace(/_/g, '\\_');
+  }
+
+  /**
    * Execute a paginated query with automatic count.
    *
    * @param baseSql - The base SELECT query (without ORDER BY, LIMIT, OFFSET)

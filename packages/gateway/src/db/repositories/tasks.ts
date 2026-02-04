@@ -327,7 +327,7 @@ export class TasksRepository extends BaseRepository {
 
     if (query.search) {
       sql += ` AND (title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
-      params.push(`%${query.search}%`);
+      params.push(`%${this.escapeLike(query.search)}%`);
       paramIndex++;
     }
 
