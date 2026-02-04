@@ -90,11 +90,15 @@ export class ChannelManager {
         }
       } catch (err) {
         log.error(`Error processing message`, err);
-        await handler.sendMessage({
-          chatId: message.chatId,
-          text: 'Sorry, something went wrong while processing your message.',
-          replyToMessageId: message.id,
-        });
+        try {
+          await handler.sendMessage({
+            chatId: message.chatId,
+            text: 'Sorry, something went wrong while processing your message.',
+            replyToMessageId: message.id,
+          });
+        } catch (sendErr) {
+          log.error(`Failed to send error response`, sendErr);
+        }
       }
     });
   }
@@ -103,33 +107,45 @@ export class ChannelManager {
    * Start all channels
    */
   async start(): Promise<void> {
-    const startPromises: Promise<void>[] = [];
+    const entries: Array<{ type: string; promise: Promise<void> }> = [];
 
     for (const [type, handler] of this.handlers) {
       if (handler.isReady()) {
         log.info(`Starting channel: ${type}`);
-        startPromises.push(handler.start());
+        entries.push({ type, promise: handler.start() });
       } else {
         log.warn(`Channel ${type} is not ready, skipping`);
       }
     }
 
-    await Promise.all(startPromises);
-    log.info('All channels started');
+    const results = await Promise.allSettled(entries.map((e) => e.promise));
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i]!;
+      if (result.status === 'rejected') {
+        log.error(`Failed to start channel ${entries[i]!.type}:`, result.reason);
+      }
+    }
+    log.info('Channel startup complete');
   }
 
   /**
    * Stop all channels
    */
   async stop(): Promise<void> {
-    const stopPromises: Promise<void>[] = [];
+    const entries: Array<{ type: string; promise: Promise<void> }> = [];
 
     for (const [type, handler] of this.handlers) {
       log.info(`Stopping channel: ${type}`);
-      stopPromises.push(handler.stop());
+      entries.push({ type, promise: handler.stop() });
     }
 
-    await Promise.all(stopPromises);
+    const results = await Promise.allSettled(entries.map((e) => e.promise));
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i]!;
+      if (result.status === 'rejected') {
+        log.error(`Failed to stop channel ${entries[i]!.type}:`, result.reason);
+      }
+    }
     log.info('All channels stopped');
   }
 
@@ -164,16 +180,22 @@ export class ChannelManager {
    * Broadcast message to all channels
    */
   async broadcast(chatIds: Map<string, string>, text: string): Promise<void> {
-    const promises: Promise<void>[] = [];
+    const entries: Array<{ type: string; promise: Promise<void> }> = [];
 
     for (const [channelType, chatId] of chatIds) {
       const handler = this.handlers.get(channelType);
       if (handler) {
-        promises.push(handler.sendMessage({ chatId, text }));
+        entries.push({ type: channelType, promise: handler.sendMessage({ chatId, text }) });
       }
     }
 
-    await Promise.all(promises);
+    const results = await Promise.allSettled(entries.map((e) => e.promise));
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i]!;
+      if (result.status === 'rejected') {
+        log.error(`Failed to broadcast to ${entries[i]!.type}:`, result.reason);
+      }
+    }
   }
 }
 

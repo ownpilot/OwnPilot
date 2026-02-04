@@ -163,15 +163,14 @@ export class TelegramBot implements ChannelHandler {
       throw new Error('Telegram bot is not properly configured');
     }
 
-    this.isRunning = true;
-
-    // Get bot info
+    // Get bot info before marking as running
     const botInfo = await this.bot.api.getMe();
     log.info(`Starting Telegram bot: @${botInfo.username}`);
 
     // Start long polling
     await this.bot.start({
       onStart: () => {
+        this.isRunning = true;
         log.info('Telegram bot started successfully');
       },
     });
@@ -195,6 +194,9 @@ export class TelegramBot implements ChannelHandler {
    */
   async sendMessage(message: OutgoingMessage): Promise<void> {
     const chatId = Number(message.chatId);
+    if (!Number.isFinite(chatId)) {
+      throw new Error(`Invalid chatId: ${message.chatId}`);
+    }
     const text = message.text;
     const parseMode = message.parseMode ?? this.config.parseMode;
     const maxLength = this.config.maxMessageLength ?? 4096;
