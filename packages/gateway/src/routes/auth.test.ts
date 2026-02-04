@@ -300,6 +300,35 @@ describe('Auth Routes', () => {
       expect(settingsRepo.set).toHaveBeenCalled();
       const stateKey = vi.mocked(settingsRepo.set).mock.calls[0][0] as string;
       expect(stateKey).toContain('oauth_state:');
+      const stateValue = vi.mocked(settingsRepo.set).mock.calls[0][1] as Record<string, unknown>;
+      expect(stateValue.returnUrl).toBe('/dashboard');
+    });
+
+    it('should sanitize absolute URL returnUrl to prevent open redirect', async () => {
+      mockOAuth2Client.generateAuthUrl.mockReturnValue('https://accounts.google.com/oauth');
+
+      await app.request('/auth/google/start?returnUrl=https://evil.com');
+
+      const stateValue = vi.mocked(settingsRepo.set).mock.calls[0][1] as Record<string, unknown>;
+      expect(stateValue.returnUrl).toBe('/settings');
+    });
+
+    it('should sanitize protocol-relative returnUrl to prevent open redirect', async () => {
+      mockOAuth2Client.generateAuthUrl.mockReturnValue('https://accounts.google.com/oauth');
+
+      await app.request('/auth/google/start?returnUrl=//evil.com');
+
+      const stateValue = vi.mocked(settingsRepo.set).mock.calls[0][1] as Record<string, unknown>;
+      expect(stateValue.returnUrl).toBe('/settings');
+    });
+
+    it('should sanitize javascript: returnUrl to prevent XSS', async () => {
+      mockOAuth2Client.generateAuthUrl.mockReturnValue('https://accounts.google.com/oauth');
+
+      await app.request('/auth/google/start?returnUrl=javascript:alert(1)');
+
+      const stateValue = vi.mocked(settingsRepo.set).mock.calls[0][1] as Record<string, unknown>;
+      expect(stateValue.returnUrl).toBe('/settings');
     });
   });
 

@@ -235,23 +235,11 @@ triggersRoutes.post('/:id/fire', async (c) => {
   const engine = getTriggerEngine({ userId });
   const result = await engine.fireTrigger(id);
 
-  return c.json({
-    success: result.success,
-    data: {
-      result,
-      message: result.success ? 'Trigger fired successfully.' : 'Trigger execution failed.',
-    },
-    error: result.error
-      ? {
-          code: ERROR_CODES.EXECUTION_ERROR,
-          message: result.error,
-        }
-      : undefined,
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    },
-  }, result.success ? 200 : 500);
+  if (!result.success) {
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error || 'Trigger execution failed.' }, 500);
+  }
+
+  return apiResponse(c, { result, message: 'Trigger fired successfully.' });
 });
 
 /**
