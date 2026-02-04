@@ -225,11 +225,16 @@ autonomyRoutes.post('/approvals/request', async (c) => {
  */
 autonomyRoutes.get('/approvals/:id', (c) => {
   const id = c.req.param('id');
+  const userId = getUserId(c);
   const manager = getApprovalManager();
   const action = manager.getPendingAction(id);
 
   if (!action) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
+  }
+
+  if (action.userId !== userId) {
+    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to view this action' }, 403);
   }
 
   return apiResponse(c, action);
@@ -240,6 +245,7 @@ autonomyRoutes.get('/approvals/:id', (c) => {
  */
 autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   const id = c.req.param('id');
+  const userId = getUserId(c);
   const body = await c.req.json<Omit<ApprovalDecision, 'actionId'>>();
 
   if (!body.decision || !['approve', 'reject', 'modify'].includes(body.decision)) {
@@ -247,6 +253,14 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   }
 
   const manager = getApprovalManager();
+  const pending = manager.getPendingAction(id);
+  if (!pending) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
+  }
+  if (pending.userId !== userId) {
+    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to decide this action' }, 403);
+  }
+
   const action = manager.processDecision({
     actionId: id,
     ...body,
@@ -267,19 +281,24 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
  */
 autonomyRoutes.post('/approvals/:id/approve', async (c) => {
   const id = c.req.param('id');
+  const userId = getUserId(c);
   const body = await c.req.json<{ reason?: string; remember?: boolean }>().catch((): { reason?: string; remember?: boolean } => ({}));
 
   const manager = getApprovalManager();
+  const pending = manager.getPendingAction(id);
+  if (!pending) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
+  }
+  if (pending.userId !== userId) {
+    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to approve this action' }, 403);
+  }
+
   const action = manager.processDecision({
     actionId: id,
     decision: 'approve',
     reason: body.reason,
     remember: body.remember,
   });
-
-  if (!action) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
-  }
 
   return apiResponse(c, {
     action,
@@ -292,19 +311,24 @@ autonomyRoutes.post('/approvals/:id/approve', async (c) => {
  */
 autonomyRoutes.post('/approvals/:id/reject', async (c) => {
   const id = c.req.param('id');
+  const userId = getUserId(c);
   const body = await c.req.json<{ reason?: string; remember?: boolean }>().catch((): { reason?: string; remember?: boolean } => ({}));
 
   const manager = getApprovalManager();
+  const pending = manager.getPendingAction(id);
+  if (!pending) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
+  }
+  if (pending.userId !== userId) {
+    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to reject this action' }, 403);
+  }
+
   const action = manager.processDecision({
     actionId: id,
     decision: 'reject',
     reason: body.reason,
     remember: body.remember,
   });
-
-  if (!action) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
-  }
 
   return apiResponse(c, {
     action,
@@ -317,13 +341,18 @@ autonomyRoutes.post('/approvals/:id/reject', async (c) => {
  */
 autonomyRoutes.delete('/approvals/:id', (c) => {
   const id = c.req.param('id');
+  const userId = getUserId(c);
   const manager = getApprovalManager();
-  const cancelled = manager.cancelPending(id);
+  const pending = manager.getPendingAction(id);
 
-  if (!cancelled) {
+  if (!pending) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found or already processed: ${id}` }, 404);
   }
+  if (pending.userId !== userId) {
+    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to cancel this action' }, 403);
+  }
 
+  manager.cancelPending(id);
   return apiResponse(c, {
     message: 'Pending action cancelled.',
   });
