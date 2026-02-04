@@ -218,7 +218,7 @@ function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite }: Bookmark
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={onEdit}>
+        <div className="flex-1 min-w-0 cursor-pointer" role="button" tabIndex={0} onClick={onEdit} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(); } }}>
           <h4 className="font-medium text-text-primary dark:text-dark-text-primary line-clamp-1">
             {bookmark.title}
           </h4>
