@@ -130,15 +130,19 @@ function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
 
     // Listen for future plugin state changes via EventSystem
     eventSystem.onAny('plugin.status', (e) => {
-      const event = e.data as { pluginId: string; newStatus: string };
-      const pluginId = createPluginId(event.pluginId);
-      if (event.newStatus === 'enabled') {
-        const plugin = pluginService.get(event.pluginId);
-        if (plugin && plugin.tools.size > 0 && plugin.manifest.category !== 'core') {
-          registry.registerPluginTools(createPluginId(plugin.manifest.id), plugin.tools);
+      try {
+        const event = e.data as { pluginId: string; newStatus: string };
+        const pluginId = createPluginId(event.pluginId);
+        if (event.newStatus === 'enabled') {
+          const plugin = pluginService.get(event.pluginId);
+          if (plugin && plugin.tools.size > 0 && plugin.manifest.category !== 'core') {
+            registry.registerPluginTools(createPluginId(plugin.manifest.id), plugin.tools);
+          }
+        } else if (event.newStatus === 'disabled') {
+          registry.unregisterPluginTools(pluginId);
         }
-      } else if (event.newStatus === 'disabled') {
-        registry.unregisterPluginTools(pluginId);
+      } catch (err) {
+        log.warn('[tool-executor] Plugin status event handler failed', { error: err });
       }
     });
   } catch {
@@ -196,8 +200,8 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
         log.info(`[tool-executor] Synced ${tools.length} custom tool(s) into shared registry`);
       }
     })
-    .catch(() => {
-      // DB not ready yet — custom tools will be registered on-demand via CRUD routes
+    .catch((err) => {
+      log.debug('[tool-executor] Custom tools sync deferred — DB may not be ready yet', { error: err });
     });
 }
 
