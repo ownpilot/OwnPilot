@@ -53,13 +53,11 @@ export function AgentsPage() {
       await agentsApi.delete(id);
       toast.success('Agent deleted');
       setAgents((prev) => prev.filter((a) => a.id !== id));
-      if (selectedAgent?.id === id) {
-        setSelectedAgent(null);
-      }
+      setSelectedAgent((prev) => prev?.id === id ? null : prev);
     } catch {
       // API client handles error reporting
     }
-  }, [confirm, toast, fetchAgents]);
+  }, [confirm, toast]);
 
   const openEditModal = useCallback((agentId: string) => {
     setEditingAgentId(agentId);
@@ -69,12 +67,10 @@ export function AgentsPage() {
   const handleAgentUpdated = useCallback((updatedAgent: Agent) => {
     toast.success('Agent updated');
     setAgents((prev) => prev.map((a) => (a.id === updatedAgent.id ? updatedAgent : a)));
-    if (selectedAgent?.id === updatedAgent.id) {
-      setSelectedAgent(updatedAgent);
-    }
+    setSelectedAgent((prev) => prev?.id === updatedAgent.id ? updatedAgent : prev);
     setShowEditModal(false);
     setEditingAgentId(null);
-  }, [selectedAgent, toast, fetchAgents]);
+  }, [toast]);
 
   return (
     <div className="flex flex-col h-full">

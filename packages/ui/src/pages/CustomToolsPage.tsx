@@ -78,13 +78,11 @@ export function CustomToolsPage() {
       toast.success(labels[action]!);
       fetchTools();
       fetchStats();
-      if (selectedTool?.id === toolId) {
-        setSelectedTool(null);
-      }
+      setSelectedTool((prev) => prev?.id === toolId ? null : prev);
     } catch {
       // API client handles error reporting
     }
-  }, [selectedTool, toast, fetchTools, fetchStats]);
+  }, [toast, fetchTools, fetchStats]);
 
   const filteredTools = useMemo(() => tools.filter(tool => {
     if (!debouncedSearch) return true;

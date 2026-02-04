@@ -46,13 +46,11 @@ export function NotesPage() {
       await notesApi.delete(noteId);
       toast.success('Note deleted');
       fetchNotes();
-      if (selectedNote?.id === noteId) {
-        setSelectedNote(null);
-      }
+      setSelectedNote((prev) => prev?.id === noteId ? null : prev);
     } catch {
       // API client handles error reporting
     }
-  }, [confirm, toast, fetchNotes, selectedNote?.id]);
+  }, [confirm, toast, fetchNotes]);
 
   const handleTogglePin = useCallback(async (note: Note) => {
     try {
