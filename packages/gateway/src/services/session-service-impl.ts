@@ -188,6 +188,11 @@ export class SessionService implements ISessionService {
 
     for (const [id, session] of this.sessions) {
       if (!session.isActive && session.lastActivityAt.getTime() < cutoff) {
+        // Clean up channel index entry before removing session
+        if (session.channelPluginId && session.platformChatId) {
+          const key = this.channelKey(session.channelPluginId, session.platformChatId);
+          this.channelIndex.delete(key);
+        }
         this.sessions.delete(id);
         removed++;
       }

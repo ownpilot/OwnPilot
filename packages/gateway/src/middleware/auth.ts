@@ -55,6 +55,10 @@ export function createAuthMiddleware(config: AuthConfig) {
       c.set('userId', `apikey:${apiKey.slice(0, 8)}...`);
     } else if (config.type === 'jwt') {
       // JWT authentication
+      if (!config.jwtSecret) {
+        return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'JWT authentication is not configured' }, 503);
+      }
+
       if (!authHeader?.startsWith('Bearer ')) {
         return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'JWT token required' }, 401);
       }
@@ -62,7 +66,7 @@ export function createAuthMiddleware(config: AuthConfig) {
       const token = authHeader.slice(7);
 
       try {
-        const payload = await validateJWT(token, config.jwtSecret ?? '');
+        const payload = await validateJWT(token, config.jwtSecret);
         c.set('userId', payload.sub);
         c.set('jwtPayload', payload);
       } catch (error) {
@@ -118,9 +122,9 @@ export function createOptionalAuthMiddleware(config: AuthConfig) {
       if (apiKey && config.apiKeys?.length && apiKeyMatches(apiKey, config.apiKeys)) {
         c.set('userId', `apikey:${apiKey.slice(0, 8)}...`);
       }
-    } else if (config.type === 'jwt' && authHeader?.startsWith('Bearer ')) {
+    } else if (config.type === 'jwt' && config.jwtSecret && authHeader?.startsWith('Bearer ')) {
       try {
-        const payload = await validateJWT(authHeader.slice(7), config.jwtSecret ?? '');
+        const payload = await validateJWT(authHeader.slice(7), config.jwtSecret);
         c.set('userId', payload.sub);
         c.set('jwtPayload', payload);
       } catch {

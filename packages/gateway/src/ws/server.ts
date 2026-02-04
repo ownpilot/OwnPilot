@@ -225,6 +225,22 @@ export class WSGateway {
         return;
       }
 
+      // Validate event type against known client events
+      const VALID_CLIENT_EVENTS = new Set<string>([
+        'chat:send', 'chat:stop', 'chat:retry',
+        'channel:connect', 'channel:disconnect', 'channel:subscribe', 'channel:unsubscribe',
+        'channel:send', 'channel:list',
+        'workspace:create', 'workspace:switch', 'workspace:delete', 'workspace:list',
+        'agent:configure', 'agent:stop',
+        'tool:cancel',
+        'session:ping', 'session:pong',
+      ]);
+
+      if (!VALID_CLIENT_EVENTS.has(message.type)) {
+        this.sendError(sessionId, 'UNKNOWN_EVENT', 'Unknown event type');
+        return;
+      }
+
       // Process client event
       const eventType = message.type as keyof ClientEvents;
 
@@ -236,7 +252,7 @@ export class WSGateway {
             this.sendError(
               sessionId,
               'HANDLER_ERROR',
-              error instanceof Error ? error.message : 'Unknown error'
+              'Failed to process event'
             );
           });
       } else {

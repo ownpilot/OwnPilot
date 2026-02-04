@@ -98,9 +98,10 @@ export function errorHandler(err: Error, c: Context): Response {
     error: {
       code: ERROR_CODES.INTERNAL_ERROR,
       message: 'An unexpected error occurred',
+      // Only expose error message in development — never stack traces
       details:
         process.env.NODE_ENV === 'development'
-          ? { message: err.message, stack: err.stack }
+          ? { message: err.message }
           : undefined,
     },
     meta: {
@@ -122,7 +123,7 @@ export function notFoundHandler(c: Context): Response {
     success: false,
     error: {
       code: ERROR_CODES.NOT_FOUND,
-      message: `Route not found: ${c.req.method} ${c.req.path}`,
+      message: `Route not found: ${c.req.method} ${c.req.path.replace(/[^\w/.\-~%]/g, '')}`,
     },
     meta: {
       requestId,
