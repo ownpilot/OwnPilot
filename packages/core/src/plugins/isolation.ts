@@ -698,6 +698,7 @@ export class PluginIsolatedEvents implements IsolatedEvents {
 
   constructor(pluginId: PluginId) {
     this.pluginId = pluginId;
+    this.emitter.setMaxListeners(20);
   }
 
   on(event: AllowedPluginEvent, handler: (data: unknown) => void): () => void {

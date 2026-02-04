@@ -313,8 +313,19 @@ export class Agent {
             };
           });
 
-          const resolvedResults = await Promise.all(execPromises);
-          executionResults.push(...resolvedResults);
+          const settled = await Promise.allSettled(execPromises);
+          for (const outcome of settled) {
+            if (outcome.status === 'fulfilled') {
+              executionResults.push(outcome.value);
+            } else {
+              // Rejected tool call — report error back to the model
+              executionResults.push({
+                toolCallId: 'unknown',
+                content: `Tool execution failed: ${outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason)}`,
+                isError: true,
+              });
+            }
+          }
         }
 
         // Combine results
