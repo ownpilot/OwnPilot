@@ -52,6 +52,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
   const store = new Map<string, RateLimitEntry>();
   const burstLimit = config.burstLimit ?? Math.floor(config.maxRequests * 1.5);
   const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health', '/api/v1/chat/stream'];
+  const maxStoreSize = 10_000;
 
   // Clean up expired entries periodically
   const cleanupInterval = setInterval(() => {
@@ -88,6 +89,10 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
 
     // Reset if window expired
     if (!entry || entry.resetAt < now) {
+      // Prevent unbounded growth from many unique IPs
+      if (!entry && store.size >= maxStoreSize) {
+        return next();
+      }
       entry = {
         count: 0,
         burstCount: 0,
@@ -158,6 +163,7 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
   const requests = new Map<string, number[]>();
   const burstLimit = config.burstLimit ?? Math.floor(config.maxRequests * 1.5);
   const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health', '/api/v1/chat/stream'];
+  const maxStoreSize = 10_000;
 
   // Clean up old entries
   const cleanupInterval = setInterval(() => {
@@ -194,10 +200,15 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
     const cutoff = now - config.windowMs;
 
     // Get or create timestamps array
-    let timestamps = requests.get(key) ?? [];
+    let timestamps = requests.get(key);
+
+    // Prevent unbounded growth from many unique IPs
+    if (!timestamps && requests.size >= maxStoreSize) {
+      return next();
+    }
 
     // Filter out old timestamps
-    timestamps = timestamps.filter((t) => t > cutoff);
+    timestamps = (timestamps ?? []).filter((t) => t > cutoff);
 
     // Set headers
     const remaining = Math.max(0, config.maxRequests - timestamps.length);
