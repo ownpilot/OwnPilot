@@ -258,9 +258,16 @@ export class AgentExecutor {
           );
           const toolDuration = Date.now() - toolStart;
 
+          let parsedArgs: Record<string, unknown> = {};
+          try {
+            parsedArgs = JSON.parse(toolCall.arguments || '{}');
+          } catch {
+            parsedArgs = { _raw: toolCall.arguments };
+          }
+
           toolCallHistory.push({
             tool: toolCall.name,
-            args: JSON.parse(toolCall.arguments || '{}'),
+            args: parsedArgs,
             result: result.content,
             duration: toolDuration,
           });
