@@ -66,7 +66,22 @@ export class ChannelManager {
    */
   private setupMessageHandler(handler: ChannelHandler): void {
     handler.onMessage(async (message: IncomingMessage) => {
-      log.info(`[${handler.type}] Message from ${message.username ?? message.userId}: ${message.text}`);
+      const MAX_MESSAGE_LENGTH = 32_000;
+      const displayText = message.text.length > 100 ? message.text.slice(0, 100) + '...' : message.text;
+      log.info(`[${handler.type}] Message from ${message.username ?? message.userId}: ${displayText}`);
+
+      if (!message.text.trim()) {
+        return; // Ignore empty messages
+      }
+
+      if (message.text.length > MAX_MESSAGE_LENGTH) {
+        await handler.sendMessage({
+          chatId: message.chatId,
+          text: `Message too long (${message.text.length} chars). Please keep messages under ${MAX_MESSAGE_LENGTH} characters.`,
+          replyToMessageId: message.id,
+        });
+        return;
+      }
 
       try {
         // Process message through agent

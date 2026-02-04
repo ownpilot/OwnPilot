@@ -78,9 +78,11 @@ export async function startServer(options: ServerOptions): Promise<void> {
     const dbRateLimitMax = await settingsRepo.get<number>(GATEWAY_RATE_LIMIT_MAX_KEY);
     const dbRateLimitWindow = await settingsRepo.get<number>(GATEWAY_RATE_LIMIT_WINDOW_KEY);
 
+    const windowMs = dbRateLimitWindow ?? parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? '60000', 10);
+    const maxRequests = dbRateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10);
     config.rateLimit = {
-      windowMs: dbRateLimitWindow ?? parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? '60000', 10),
-      maxRequests: dbRateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10),
+      windowMs: Number.isFinite(windowMs) && windowMs > 0 ? windowMs : 60000,
+      maxRequests: Number.isFinite(maxRequests) && maxRequests > 0 ? maxRequests : 100,
     };
   }
 

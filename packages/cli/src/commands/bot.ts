@@ -134,8 +134,21 @@ export async function startBot(options: BotOptions): Promise<void> {
 
   // Start bot
   if (options.webhook) {
-    await bot.setWebhook(options.webhook);
-    console.log(`✅ Webhook set to: ${options.webhook}`);
+    try {
+      const webhookUrl = new URL(options.webhook);
+      if (webhookUrl.protocol !== 'https:') {
+        console.error('❌ Webhook URL must use HTTPS');
+        process.exit(1);
+      }
+      await bot.setWebhook(options.webhook);
+      console.log(`✅ Webhook set to: ${webhookUrl.origin}${webhookUrl.pathname}`);
+    } catch (err) {
+      if (err instanceof TypeError) {
+        console.error(`❌ Invalid webhook URL: ${options.webhook}`);
+        process.exit(1);
+      }
+      throw err;
+    }
   } else {
     await bot.start();
     console.log('✅ Bot started with long polling');
