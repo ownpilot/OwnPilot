@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Plus, Trash2, Clock, MapPin } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
 import { useModalClose } from '../hooks';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { calendarApi } from '../api';
@@ -17,6 +18,7 @@ const colorOptions = [
 
 export function CalendarPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]!);
@@ -52,6 +54,7 @@ export function CalendarPage() {
 
     try {
       await calendarApi.delete(eventId);
+      toast.success('Event deleted');
       fetchEvents();
     } catch {
       // API client handles error reporting
@@ -184,6 +187,7 @@ export function CalendarPage() {
             setEditingEvent(null);
           }}
           onSave={() => {
+            toast.success(editingEvent ? 'Event updated' : 'Event created');
             setShowCreateModal(false);
             setEditingEvent(null);
             fetchEvents();

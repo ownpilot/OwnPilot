@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
 import { debugApi, apiClient } from '../api';
 import type { DebugInfo, DebugLogEntry, LogDetail, RequestLog, LogStats } from '../api';
 
@@ -14,7 +15,8 @@ type TabType = 'requests' | 'debug';
 type DebugFilterType = 'all' | 'tool_call' | 'tool_result' | 'request' | 'response' | 'error';
 
 export function LogsPage() {
-  const { confirm, alert: showAlert } = useDialog();
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('requests');
 
   // Request logs state
@@ -87,7 +89,7 @@ export function LogsPage() {
 
     try {
       await debugApi.deleteLogs({ olderThanDays });
-      await showAlert('Logs deleted');
+      toast.success('Old logs deleted');
       fetchLogs();
       fetchStats();
     } catch {
@@ -100,7 +102,7 @@ export function LogsPage() {
 
     try {
       await debugApi.deleteLogs({ all: true });
-      await showAlert('All logs deleted');
+      toast.success('All logs deleted');
       fetchLogs();
       fetchStats();
     } catch {
@@ -112,6 +114,7 @@ export function LogsPage() {
     if (!await confirm({ message: 'Clear all debug logs?', variant: 'danger' })) return;
     try {
       await debugApi.clear();
+      toast.success('Debug logs cleared');
       fetchDebugLogs();
     } catch {
       // Ignore

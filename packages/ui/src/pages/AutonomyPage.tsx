@@ -14,6 +14,7 @@ import {
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useToast } from '../components/ToastProvider';
 import { autonomyApi } from '../api';
 import type { PendingApproval, AutonomyConfig, AutonomyLevel } from '../api';
 
@@ -35,6 +36,7 @@ const riskColors = {
 
 export function AutonomyPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [config, setConfig] = useState<AutonomyConfig | null>(null);
   const [levels, setLevels] = useState<AutonomyLevel[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
@@ -74,19 +76,21 @@ export function AutonomyPage() {
     try {
       await autonomyApi.setLevel(String(level));
       fetchConfig();
+      toast.success("Autonomy level updated");
     } catch {
       // API client handles error reporting
     }
-  }, [fetchConfig]);
+  }, [fetchConfig, toast]);
 
   const handleBudgetUpdate = useCallback(async (updates: Partial<AutonomyConfig>) => {
     try {
       await autonomyApi.updateBudget({ ...updates });
       fetchConfig();
+      toast.success("Budget updated");
     } catch {
       // API client handles error reporting
     }
-  }, [fetchConfig]);
+  }, [fetchConfig, toast]);
 
   const handleAddTool = useCallback(async (type: "allow" | "block", tool: string) => {
     if (!tool.trim()) return;
@@ -97,40 +101,44 @@ export function AutonomyPage() {
         await autonomyApi.blockTool(tool.trim());
       }
       fetchConfig();
+      toast.success("Tool added");
       if (type === "allow") setNewAllowedTool("");
       else setNewBlockedTool("");
     } catch {
       // API client handles error reporting
     }
-  }, [fetchConfig]);
+  }, [fetchConfig, toast]);
 
   const handleRemoveTool = useCallback(async (tool: string) => {
     try {
       await autonomyApi.removeTool(tool);
       fetchConfig();
+      toast.success("Tool removed");
     } catch {
       // API client handles error reporting
     }
-  }, [fetchConfig]);
+  }, [fetchConfig, toast]);
 
   const handleApproval = useCallback(async (actionId: string, decision: 'approve' | 'reject') => {
     try {
       await autonomyApi.resolveApproval(actionId, decision);
       fetchPendingApprovals();
+      toast.success(decision === 'approve' ? 'Action approved' : 'Action rejected');
     } catch {
       // API client handles error reporting
     }
-  }, [fetchPendingApprovals]);
+  }, [fetchPendingApprovals, toast]);
 
   const handleResetConfig = useCallback(async () => {
     if (!await confirm({ message: 'Are you sure you want to reset autonomy settings to defaults?', variant: 'danger' })) return;
     try {
       await autonomyApi.resetConfig();
       fetchConfig();
+      toast.success("Config reset");
     } catch {
       // API client handles error reporting
     }
-  }, [confirm, fetchConfig]);
+  }, [confirm, fetchConfig, toast]);
 
   if (isLoading || !config) {
     return (

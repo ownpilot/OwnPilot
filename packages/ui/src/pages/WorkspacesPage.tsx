@@ -13,6 +13,7 @@ import {
   ChevronDown,
 } from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useToast } from '../components/ToastProvider';
 import { fileWorkspacesApi } from '../api';
 import { useModalClose } from '../hooks';
 import type { FileWorkspaceInfo, WorkspaceFile } from '../api';
@@ -52,6 +53,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function WorkspacesPage() {
+  const toast = useToast();
   const [workspaces, setWorkspaces] = useState<FileWorkspaceInfo[]>([]);
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,6 +133,7 @@ export function WorkspacesPage() {
   const handleDelete = async (workspaceId: string) => {
     try {
       await fileWorkspacesApi.delete(workspaceId);
+      toast.success('Workspace deleted');
       if (selectedWorkspace?.id === workspaceId) {
         setSelectedWorkspace(null);
         setWorkspaceFiles([]);
@@ -146,6 +149,7 @@ export function WorkspacesPage() {
   const handleCleanup = async () => {
     try {
       await fileWorkspacesApi.cleanup(7);
+      toast.success('Old workspaces cleaned up');
       fetchWorkspaces();
     } catch {
       // API client handles error reporting

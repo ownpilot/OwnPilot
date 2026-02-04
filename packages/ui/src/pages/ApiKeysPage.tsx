@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Check, AlertCircle, ChevronDown, ChevronRight, Key } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { settingsApi, providersApi, modelsApi, localProvidersApi } from '../api';
 import type { ProviderConfig, LocalProviderInfo, ModelInfo } from '../types';
@@ -16,6 +17,7 @@ const FALLBACK_PROVIDERS: ProviderConfig[] = [];
 
 export function ApiKeysPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
@@ -23,7 +25,6 @@ export function ApiKeysPage() {
   const [uncategorized, setUncategorized] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Popular']));
   const [searchQuery, setSearchQuery] = useState('');
@@ -116,7 +117,6 @@ export function ApiKeysPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    setSaved(false);
     setError(null);
 
     try {
@@ -140,8 +140,7 @@ export function ApiKeysPage() {
       // Clear input fields after successful save
       setApiKeys({});
 
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      toast.success('Settings saved');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save settings');
     } finally {
@@ -155,6 +154,7 @@ export function ApiKeysPage() {
     // Save to backend
     try {
       await settingsApi.setDefaultProvider(providerId);
+      toast.success('Default provider updated');
 
       // Update default model to first model of this provider
       const providerModels = models.filter((m) => m.provider === providerId);
@@ -187,6 +187,7 @@ export function ApiKeysPage() {
 
     try {
       await settingsApi.deleteApiKey(providerId);
+      toast.success('API key deleted');
 
       // Remove from configured list
       setConfiguredProviders((prev) => prev.filter((p) => p !== providerId));
@@ -555,9 +556,6 @@ export function ApiKeysPage() {
               >
                 {isSaving ? 'Saving...' : 'Save API Keys'}
               </button>
-              {saved && (
-                <span className="text-sm text-success">Settings saved successfully!</span>
-              )}
             </div>
           </div>
         )}

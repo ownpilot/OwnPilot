@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Inbox, Telegram, Discord, Slack, Globe, RefreshCw, Send, Check, X, Plus, Loader, ChevronRight, AlertCircle, Zap } from '../components/icons';
 import { channelsApi } from '../api';
 import type { Channel, ChannelMessage } from '../api';
+import { useToast } from '../components/ToastProvider';
 
 
 // Channel type config
@@ -490,6 +491,7 @@ function AddChannelModal({
 }
 
 export function InboxPage() {
+  const toast = useToast();
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
@@ -631,6 +633,7 @@ export function InboxPage() {
       // Clear reply state
       setReplyContent('');
       setSelectedMessage(null);
+      toast.success('Reply sent');
 
       // Refresh messages
       await fetchInbox();
@@ -639,7 +642,7 @@ export function InboxPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedMessage, replyContent, fetchInbox]);
+  }, [selectedMessage, replyContent, fetchInbox, toast]);
 
   // Calculate unread per channel
   const getChannelUnread = (channelId: string) => {
@@ -963,7 +966,7 @@ export function InboxPage() {
       {showAddModal && (
         <AddChannelModal
           onClose={() => setShowAddModal(false)}
-          onCreated={handleRefresh}
+          onCreated={() => { handleRefresh(); toast.success('Channel added'); }}
         />
       )}
     </div>
