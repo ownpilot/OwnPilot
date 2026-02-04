@@ -13,6 +13,7 @@ import {
   ChevronDown,
 } from '../components/icons';
 import { fileWorkspacesApi } from '../api';
+import { useModalClose } from '../hooks';
 import type { FileWorkspaceInfo, WorkspaceFile } from '../api';
 
 
@@ -59,6 +60,7 @@ export function WorkspacesPage() {
   const [currentPath, setCurrentPath] = useState('');
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const { onBackdropClick: onDeleteBackdropClick } = useModalClose(() => setDeleteConfirm(null));
 
   useEffect(() => {
     fetchWorkspaces();
@@ -445,7 +447,7 @@ export function WorkspacesPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onDeleteBackdropClick}>
           <div className="bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">

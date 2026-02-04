@@ -4,7 +4,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useDebouncedValue, useModalClose } from '../hooks';
 import { notesApi } from '../api';
 
 interface Note {
@@ -267,6 +267,7 @@ interface NoteModalProps {
 }
 
 function NoteModal({ note, onClose, onSave }: NoteModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [title, setTitle] = useState(note?.title ?? '');
   const [content, setContent] = useState(note?.content ?? '');
   const [category, setCategory] = useState(note?.category ?? '');
@@ -298,7 +299,7 @@ function NoteModal({ note, onClose, onSave }: NoteModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-2xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <div className="p-6 border-b border-border dark:border-dark-border">

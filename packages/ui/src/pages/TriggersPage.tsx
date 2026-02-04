@@ -5,6 +5,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
+import { useModalClose } from '../hooks';
 
 interface TriggerConfig {
   cron?: string;
@@ -409,6 +410,7 @@ function validateCron(cron: string): { valid: boolean; error?: string } {
 }
 
 function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [name, setName] = useState(trigger?.name ?? '');
   const [description, setDescription] = useState(trigger?.description ?? '');
   const [type, setType] = useState<Trigger['type']>(trigger?.type ?? 'schedule');
@@ -490,7 +492,7 @@ function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">
@@ -728,8 +730,10 @@ interface HistoryModalProps {
 }
 
 function HistoryModal({ history, onClose }: HistoryModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="p-6 border-b border-border dark:border-dark-border">
           <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">

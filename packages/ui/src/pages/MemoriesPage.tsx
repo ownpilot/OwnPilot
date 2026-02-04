@@ -5,7 +5,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useDebouncedValue, useModalClose } from '../hooks';
 
 interface Memory {
   id: string;
@@ -251,6 +251,7 @@ interface MemoryModalProps {
 }
 
 function MemoryModal({ memory, onClose, onSave }: MemoryModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [content, setContent] = useState(memory?.content ?? '');
   const [type, setType] = useState<Memory['type']>(memory?.type ?? 'fact');
   const [importance, setImportance] = useState(memory?.importance ?? 0.5);
@@ -282,7 +283,7 @@ function MemoryModal({ memory, onClose, onSave }: MemoryModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">

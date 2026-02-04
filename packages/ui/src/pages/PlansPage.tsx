@@ -22,6 +22,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
+import { useModalClose } from '../hooks';
 
 interface PlanStep {
   id: string;
@@ -736,6 +737,7 @@ interface PlanModalProps {
 }
 
 function PlanModal({ plan, onClose, onSave }: PlanModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const toast = useToast();
   const [name, setName] = useState(plan?.name ?? '');
   const [goal, setGoal] = useState(plan?.goal ?? '');
@@ -770,7 +772,7 @@ if (plan) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">
@@ -1011,8 +1013,10 @@ interface PlanHistoryModalProps {
 }
 
 function PlanHistoryModal({ history, onClose }: PlanHistoryModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="p-6 border-b border-border dark:border-dark-border">
           <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">

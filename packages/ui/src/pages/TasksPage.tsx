@@ -4,6 +4,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
+import { useModalClose } from '../hooks';
 import { tasksApi } from '../api';
 import type { Task } from '../types';
 
@@ -245,6 +246,7 @@ interface TaskModalProps {
 }
 
 function TaskModal({ task, onClose, onSave }: TaskModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
   const [priority, setPriority] = useState<Task['priority']>(task?.priority ?? 'normal');
@@ -282,7 +284,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">

@@ -1,6 +1,7 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { PageErrorBoundary } from './components/PageErrorBoundary';
 
 // Eagerly load the default route for instant first paint
 import { ChatPage } from './pages/ChatPage';
@@ -48,44 +49,53 @@ function PageLoader() {
   );
 }
 
+/** Wraps a lazy page with Suspense + PageErrorBoundary */
+function page(children: ReactNode) {
+  return (
+    <PageErrorBoundary>
+      <Suspense fallback={<PageLoader />}>{children}</Suspense>
+    </PageErrorBoundary>
+  );
+}
+
 export function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<ChatPage />} />
-        <Route path="dashboard" element={<Suspense fallback={<PageLoader />}><DashboardPage /></Suspense>} />
-        <Route path="memories" element={<Suspense fallback={<PageLoader />}><MemoriesPage /></Suspense>} />
-        <Route path="goals" element={<Suspense fallback={<PageLoader />}><GoalsPage /></Suspense>} />
-        <Route path="triggers" element={<Suspense fallback={<PageLoader />}><TriggersPage /></Suspense>} />
-        <Route path="plans" element={<Suspense fallback={<PageLoader />}><PlansPage /></Suspense>} />
-        <Route path="autonomy" element={<Suspense fallback={<PageLoader />}><AutonomyPage /></Suspense>} />
-        <Route path="tasks" element={<Suspense fallback={<PageLoader />}><TasksPage /></Suspense>} />
-        <Route path="notes" element={<Suspense fallback={<PageLoader />}><NotesPage /></Suspense>} />
-        <Route path="calendar" element={<Suspense fallback={<PageLoader />}><CalendarPage /></Suspense>} />
-        <Route path="contacts" element={<Suspense fallback={<PageLoader />}><ContactsPage /></Suspense>} />
-        <Route path="bookmarks" element={<Suspense fallback={<PageLoader />}><BookmarksPage /></Suspense>} />
-        <Route path="expenses" element={<Suspense fallback={<PageLoader />}><ExpensesPage /></Suspense>} />
-        <Route path="custom-data" element={<Suspense fallback={<PageLoader />}><CustomDataPage /></Suspense>} />
-        <Route path="data-browser" element={<Suspense fallback={<PageLoader />}><DataBrowserPage /></Suspense>} />
-        <Route path="inbox" element={<Suspense fallback={<PageLoader />}><InboxPage /></Suspense>} />
-        <Route path="agents" element={<Suspense fallback={<PageLoader />}><AgentsPage /></Suspense>} />
-        <Route path="tools" element={<Suspense fallback={<PageLoader />}><ToolsPage /></Suspense>} />
-        <Route path="custom-tools" element={<Suspense fallback={<PageLoader />}><CustomToolsPage /></Suspense>} />
-        <Route path="plugins" element={<Suspense fallback={<PageLoader />}><PluginsPage /></Suspense>} />
-        <Route path="workspaces" element={<Suspense fallback={<PageLoader />}><WorkspacesPage /></Suspense>} />
-        <Route path="models" element={<Suspense fallback={<PageLoader />}><ModelsPage /></Suspense>} />
-        <Route path="costs" element={<Suspense fallback={<PageLoader />}><CostsPage /></Suspense>} />
-        <Route path="logs" element={<Suspense fallback={<PageLoader />}><LogsPage /></Suspense>} />
-        <Route path="settings" element={<Suspense fallback={<PageLoader />}><SettingsPage /></Suspense>} />
-        <Route path="settings/config-center" element={<Suspense fallback={<PageLoader />}><ConfigCenterPage /></Suspense>} />
-        <Route path="settings/api-keys" element={<Suspense fallback={<PageLoader />}><ApiKeysPage /></Suspense>} />
-        <Route path="settings/providers" element={<Suspense fallback={<PageLoader />}><ProvidersPage /></Suspense>} />
-        <Route path="settings/ai-models" element={<Suspense fallback={<PageLoader />}><AIModelsPage /></Suspense>} />
-        <Route path="settings/integrations" element={<Suspense fallback={<PageLoader />}><IntegrationsPage /></Suspense>} />
-        <Route path="settings/media" element={<Suspense fallback={<PageLoader />}><MediaSettingsPage /></Suspense>} />
-        <Route path="settings/system" element={<Suspense fallback={<PageLoader />}><SystemPage /></Suspense>} />
-        <Route path="about" element={<Suspense fallback={<PageLoader />}><AboutPage /></Suspense>} />
-        <Route path="profile" element={<Suspense fallback={<PageLoader />}><ProfilePage /></Suspense>} />
+        <Route index element={<PageErrorBoundary><ChatPage /></PageErrorBoundary>} />
+        <Route path="dashboard" element={page(<DashboardPage />)} />
+        <Route path="memories" element={page(<MemoriesPage />)} />
+        <Route path="goals" element={page(<GoalsPage />)} />
+        <Route path="triggers" element={page(<TriggersPage />)} />
+        <Route path="plans" element={page(<PlansPage />)} />
+        <Route path="autonomy" element={page(<AutonomyPage />)} />
+        <Route path="tasks" element={page(<TasksPage />)} />
+        <Route path="notes" element={page(<NotesPage />)} />
+        <Route path="calendar" element={page(<CalendarPage />)} />
+        <Route path="contacts" element={page(<ContactsPage />)} />
+        <Route path="bookmarks" element={page(<BookmarksPage />)} />
+        <Route path="expenses" element={page(<ExpensesPage />)} />
+        <Route path="custom-data" element={page(<CustomDataPage />)} />
+        <Route path="data-browser" element={page(<DataBrowserPage />)} />
+        <Route path="inbox" element={page(<InboxPage />)} />
+        <Route path="agents" element={page(<AgentsPage />)} />
+        <Route path="tools" element={page(<ToolsPage />)} />
+        <Route path="custom-tools" element={page(<CustomToolsPage />)} />
+        <Route path="plugins" element={page(<PluginsPage />)} />
+        <Route path="workspaces" element={page(<WorkspacesPage />)} />
+        <Route path="models" element={page(<ModelsPage />)} />
+        <Route path="costs" element={page(<CostsPage />)} />
+        <Route path="logs" element={page(<LogsPage />)} />
+        <Route path="settings" element={page(<SettingsPage />)} />
+        <Route path="settings/config-center" element={page(<ConfigCenterPage />)} />
+        <Route path="settings/api-keys" element={page(<ApiKeysPage />)} />
+        <Route path="settings/providers" element={page(<ProvidersPage />)} />
+        <Route path="settings/ai-models" element={page(<AIModelsPage />)} />
+        <Route path="settings/integrations" element={page(<IntegrationsPage />)} />
+        <Route path="settings/media" element={page(<MediaSettingsPage />)} />
+        <Route path="settings/system" element={page(<SystemPage />)} />
+        <Route path="about" element={page(<AboutPage />)} />
+        <Route path="profile" element={page(<ProfilePage />)} />
         {/* Catch-all route - redirect unknown paths to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -3,7 +3,7 @@ import { Wrench, Plus, Check, X, Trash, Play, Code } from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
-import { useDebouncedValue } from '../hooks';
+import { useDebouncedValue, useModalClose } from '../hooks';
 import { customToolsApi } from '../api';
 import type { CustomTool, ToolStats, ToolStatus, ToolPermission } from '../types';
 
@@ -304,6 +304,7 @@ interface ToolDetailModalProps {
 }
 
 function ToolDetailModal({ tool, onClose, onAction, onRefresh }: ToolDetailModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [activeTab, setActiveTab] = useState<'details' | 'code' | 'test'>('details');
   const [testInput, setTestInput] = useState('{}');
   const [testResult, setTestResult] = useState<string | null>(null);
@@ -334,7 +335,7 @@ function ToolDetailModal({ tool, onClose, onAction, onRefresh }: ToolDetailModal
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-3xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-border dark:border-dark-border">
@@ -569,6 +570,7 @@ interface CreateToolModalProps {
 }
 
 function CreateToolModal({ onClose, onCreated }: CreateToolModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const toast = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -628,7 +630,7 @@ function CreateToolModal({ onClose, onCreated }: CreateToolModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-2xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-border dark:border-dark-border">

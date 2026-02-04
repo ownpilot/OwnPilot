@@ -4,7 +4,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useDebouncedValue, useModalClose } from '../hooks';
 import { bookmarksApi } from '../api';
 
 interface BookmarkItem {
@@ -309,6 +309,7 @@ interface BookmarkModalProps {
 }
 
 function BookmarkModal({ bookmark, folders, onClose, onSave }: BookmarkModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [url, setUrl] = useState(bookmark?.url ?? '');
   const [title, setTitle] = useState(bookmark?.title ?? '');
   const [description, setDescription] = useState(bookmark?.description ?? '');
@@ -347,7 +348,7 @@ function BookmarkModal({ bookmark, folders, onClose, onSave }: BookmarkModalProp
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">

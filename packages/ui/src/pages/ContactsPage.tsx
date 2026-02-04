@@ -4,7 +4,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useDebouncedValue, useModalClose } from '../hooks';
 import { contactsApi } from '../api';
 
 interface Contact {
@@ -282,6 +282,7 @@ interface ContactModalProps {
 }
 
 function ContactModal({ contact, onClose, onSave }: ContactModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [name, setName] = useState(contact?.name ?? '');
   const [nickname, setNickname] = useState(contact?.nickname ?? '');
   const [email, setEmail] = useState(contact?.email ?? '');
@@ -326,7 +327,7 @@ function ContactModal({ contact, onClose, onSave }: ContactModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">

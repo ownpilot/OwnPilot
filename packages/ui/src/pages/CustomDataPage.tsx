@@ -4,7 +4,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useDebouncedValue, useModalClose } from '../hooks';
 import { customDataApi } from '../api';
 import type { ColumnDefinition, CustomTable, CustomRecord } from '../api';
 
@@ -380,6 +380,7 @@ interface CreateTableModalProps {
 }
 
 function CreateTableModal({ onClose, onSave }: CreateTableModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [name, setName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [description, setDescription] = useState('');
@@ -434,7 +435,7 @@ function CreateTableModal({ onClose, onSave }: CreateTableModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-2xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">
@@ -573,6 +574,7 @@ interface RecordModalProps {
 }
 
 function RecordModal({ table, record, onClose, onSave }: RecordModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [data, setData] = useState<Record<string, unknown>>(record?.data ?? {});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -606,7 +608,7 @@ function RecordModal({ table, record, onClose, onSave }: RecordModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">

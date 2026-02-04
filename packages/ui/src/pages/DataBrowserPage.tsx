@@ -16,7 +16,7 @@ import {
 import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useDebouncedValue, useModalClose } from '../hooks';
 
 // Data types
 type DataType = 'tasks' | 'bookmarks' | 'notes' | 'calendar' | 'contacts';
@@ -400,6 +400,7 @@ interface RecordModalProps {
 }
 
 function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [formData, setFormData] = useState<Record<string, unknown>>(record || {});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -485,7 +486,7 @@ function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalP
   const inputClasses = 'w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50';
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <div className="p-6 border-b border-border dark:border-dark-border">

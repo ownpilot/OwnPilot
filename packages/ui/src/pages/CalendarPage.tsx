@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Plus, Trash2, Clock, MapPin } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useModalClose } from '../hooks';
 import { calendarApi } from '../api';
 
 interface CalendarEvent {
@@ -277,6 +278,7 @@ interface EventModalProps {
 }
 
 function EventModal({ event, defaultDate, onClose, onSave }: EventModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [title, setTitle] = useState(event?.title ?? '');
   const [description, setDescription] = useState(event?.description ?? '');
   const [startDate, setStartDate] = useState(event?.startDate ?? defaultDate);
@@ -320,7 +322,7 @@ function EventModal({ event, defaultDate, onClose, onSave }: EventModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">

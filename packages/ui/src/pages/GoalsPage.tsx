@@ -5,6 +5,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
+import { useModalClose } from '../hooks';
 
 interface GoalStep {
   id: string;
@@ -378,6 +379,7 @@ interface GoalModalProps {
 }
 
 function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
+  const { onBackdropClick } = useModalClose(onClose);
   const [title, setTitle] = useState(goal?.title ?? '');
   const [description, setDescription] = useState(goal?.description ?? '');
   const [priority, setPriority] = useState(goal?.priority ?? 5);
@@ -411,7 +413,7 @@ function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">
