@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, RefreshCw, ShieldCheck, Shield, XCircle, CheckCircle2, Database, Upload, Download, Trash2, Wrench, Server, AlertCircle, Settings } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useTheme } from '../hooks/useTheme';
 import { systemApi } from '../api';
 import type { SandboxStatus, DatabaseStatus, BackupInfo, DatabaseStats } from '../api';
@@ -196,8 +197,8 @@ export function SystemPage() {
             </div>
 
             {isLoadingSystem ? (
-              <div className="flex items-center justify-center py-8">
-                <RefreshCw className="w-6 h-6 animate-spin text-text-muted" />
+              <div className="py-4">
+                <LoadingSpinner size="sm" />
               </div>
             ) : sandboxStatus ? (
               <div className="space-y-4">

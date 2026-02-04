@@ -10,6 +10,7 @@ import { Inbox, Telegram, Discord, Slack, Globe, RefreshCw, Send, Check, X, Plus
 import { channelsApi } from '../api';
 import type { Channel, ChannelMessage } from '../api';
 import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 
 // Channel type config
@@ -651,12 +652,7 @@ export function InboxPage() {
 
   // Loading state
   if (isLoading && messages.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted">
-        <Loader className="w-8 h-8 mb-4 animate-spin" />
-        <p>Loading inbox...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading inbox..." />;
   }
 
   return (

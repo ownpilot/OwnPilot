@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { debugApi, apiClient } from '../api';
 import type { DebugInfo, DebugLogEntry, LogDetail, RequestLog, LogStats } from '../api';
 
@@ -390,8 +391,8 @@ export function LogsPage() {
             {/* Logs List */}
             <div className={`flex-1 overflow-auto ${selectedLog ? 'hidden md:block md:w-1/2' : ''}`}>
               {loading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-gray-500 dark:text-gray-400">Loading logs...</div>
+                <div className="py-12">
+                  <LoadingSpinner size="sm" message="Loading logs..." />
                 </div>
               ) : error ? (
                 <div className="m-4 p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg">
@@ -637,8 +638,8 @@ export function LogsPage() {
           <div className="flex-1 overflow-hidden flex">
             <div className={`flex-1 overflow-auto ${selectedDebugEntry ? 'hidden md:block md:w-1/2' : ''}`}>
               {debugLoading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-gray-500 dark:text-gray-400">Loading debug logs...</div>
+                <div className="py-12">
+                  <LoadingSpinner size="sm" message="Loading debug logs..." />
                 </div>
               ) : filteredDebugEntries.length === 0 ? (
                 <div className="flex items-center justify-center h-64">

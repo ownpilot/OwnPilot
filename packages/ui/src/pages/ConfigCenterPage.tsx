@@ -17,6 +17,7 @@ import {
 } from '../components/icons';
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
 import { useDialog } from '../components/ConfirmDialog';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { configServicesApi } from '../api';
 import { useToast } from '../components/ToastProvider';
 import type { ConfigEntryView, ConfigServiceView, ConfigServiceStats } from '../api';
@@ -493,12 +494,7 @@ export function ConfigCenterPage() {
 
         {/* Loading state */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24">
-            <RefreshCw className="w-8 h-8 text-text-muted dark:text-dark-text-muted animate-spin mb-4" />
-            <p className="text-text-muted dark:text-dark-text-muted">
-              Loading services...
-            </p>
-          </div>
+          <LoadingSpinner message="Loading services..." />
         ) : (
           <>
             {/* Unconfigured Required Services Warning */}
