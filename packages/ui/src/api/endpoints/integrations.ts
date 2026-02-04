@@ -6,10 +6,8 @@ import { apiClient } from '../client';
 import type { Integration, AvailableIntegration } from '../../types';
 
 export const integrationsApi = {
-  list: () =>
-    apiClient.get<{ data: Integration[] }>('/integrations').then((r) => r.data ?? []),
-  available: () =>
-    apiClient.get<{ data: AvailableIntegration[] }>('/integrations/available').then((r) => r.data ?? []),
+  list: () => apiClient.get<Integration[]>('/integrations'),
+  available: () => apiClient.get<AvailableIntegration[]>('/integrations/available'),
   delete: (id: string) => apiClient.delete<void>(`/integrations/${id}`),
   sync: (id: string) => apiClient.post<void>(`/integrations/${id}/sync`),
 };

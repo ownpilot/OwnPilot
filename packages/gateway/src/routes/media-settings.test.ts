@@ -119,9 +119,9 @@ describe('Media Settings Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       // image_generation, vision, tts, stt
-      expect(json.data.data).toHaveLength(4);
-      expect(json.data.data[0].capability).toBe('image_generation');
-      expect(json.data.data[0].name).toBe('Image Generation');
+      expect(json.data).toHaveLength(4);
+      expect(json.data[0].capability).toBe('image_generation');
+      expect(json.data[0].name).toBe('Image Generation');
     });
 
     it('includes current provider when set', async () => {
@@ -134,8 +134,8 @@ describe('Media Settings Routes', () => {
       const res = await app.request('/media');
       const json = await res.json();
 
-      expect(json.data.data[0].currentProvider).toBe('openai');
-      expect(json.data.data[0].currentModel).toBe('dall-e-3');
+      expect(json.data[0].currentProvider).toBe('openai');
+      expect(json.data[0].currentModel).toBe('dall-e-3');
     });
   });
 
@@ -149,10 +149,10 @@ describe('Media Settings Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.data.capability).toBe('image_generation');
-      expect(json.data.data.name).toBe('Image Generation');
-      expect(json.data.data.availableProviders).toHaveLength(1);
-      expect(json.data.data.availableProviders[0].isConfigured).toBe(true);
+      expect(json.data.capability).toBe('image_generation');
+      expect(json.data.name).toBe('Image Generation');
+      expect(json.data.availableProviders).toHaveLength(1);
+      expect(json.data.availableProviders[0].isConfigured).toBe(true);
     });
 
     it('returns 400 for invalid capability', async () => {
@@ -179,8 +179,8 @@ describe('Media Settings Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(json.data.data.provider).toBe('openai');
-      expect(json.data.data.model).toBe('dall-e-3');
+      expect(json.data.provider).toBe('openai');
+      expect(json.data.model).toBe('dall-e-3');
       expect(mockMediaSettingsRepo.set).toHaveBeenCalled();
     });
 
@@ -278,10 +278,10 @@ describe('Media Settings Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(json.data.data.image_generation).toHaveLength(1);
-      expect(json.data.data.tts).toHaveLength(1);
+      expect(json.data.image_generation).toHaveLength(1);
+      expect(json.data.tts).toHaveLength(1);
       // Providers include isConfigured status
-      expect(json.data.data.image_generation[0].isConfigured).toBe(true);
+      expect(json.data.image_generation[0].isConfigured).toBe(true);
     });
   });
 
@@ -295,8 +295,8 @@ describe('Media Settings Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.data.summary.total).toBe(4);
-      expect(json.data.data.capabilities).toHaveLength(4);
+      expect(json.data.summary.total).toBe(4);
+      expect(json.data.capabilities).toHaveLength(4);
     });
 
     it('shows configured status when provider is set', async () => {
@@ -308,11 +308,11 @@ describe('Media Settings Routes', () => {
       const res = await app.request('/media/status/summary');
       const json = await res.json();
 
-      const configuredCount = json.data.data.capabilities.filter(
+      const configuredCount = json.data.capabilities.filter(
         (c: { isConfigured: boolean }) => c.isConfigured
       ).length;
       expect(configuredCount).toBeGreaterThan(0);
-      expect(json.data.data.summary.configured).toBe(configuredCount);
+      expect(json.data.summary.configured).toBe(configuredCount);
     });
   });
 });

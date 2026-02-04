@@ -439,11 +439,7 @@ costRoutes.get('/export', async (c) => {
     return c.body(exportData);
   }
 
-  return apiResponse(c, { data: JSON.parse(exportData),
-    meta: {
-      requestId: c.get('requestId') ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    }, });
+  return apiResponse(c, JSON.parse(exportData));
 });
 
 /**

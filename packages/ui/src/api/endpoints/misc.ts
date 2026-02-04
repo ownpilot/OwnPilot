@@ -167,8 +167,7 @@ export const dashboardApi = {
 // ---- Media Settings ----
 
 export const mediaSettingsApi = {
-  get: () =>
-    apiClient.get<{ data: CapabilitySettings[] }>('/media-settings').then((r) => r.data ?? []),
+  get: () => apiClient.get<CapabilitySettings[]>('/media-settings'),
   update: (capability: string, data: Record<string, unknown>) =>
     apiClient.post<void>(`/media-settings/${capability}`, data),
   reset: (capability: string) =>
@@ -178,12 +177,9 @@ export const mediaSettingsApi = {
 // ---- Model Configs ----
 
 export const modelConfigsApi = {
-  list: () =>
-    apiClient.get<{ data: MergedModel[]; count: number }>('/model-configs').then((r) => r.data ?? []),
-  availableProviders: () =>
-    apiClient.get<{ data: AvailableProvider[] }>('/model-configs/providers/available').then((r) => r.data ?? []),
-  capabilities: () =>
-    apiClient.get<{ data: CapabilityDef[] }>('/model-configs/capabilities/list').then((r) => r.data ?? []),
+  list: () => apiClient.get<MergedModel[]>('/model-configs'),
+  availableProviders: () => apiClient.get<AvailableProvider[]>('/model-configs/providers/available'),
+  capabilities: () => apiClient.get<CapabilityDef[]>('/model-configs/capabilities/list'),
   syncApply: () => apiClient.post<SyncApplyResult>('/model-configs/sync/apply'),
   syncReset: () => apiClient.post<SyncResetResult>('/model-configs/sync/reset'),
 };
@@ -191,14 +187,12 @@ export const modelConfigsApi = {
 // ---- Local Providers ----
 
 export const localProvidersApi = {
-  list: () =>
-    apiClient.get<{ data: LocalProvider[] }>('/local-providers').then((r) => r.data ?? []),
-  templates: () =>
-    apiClient.get<{ data: LocalProviderTemplate[] }>('/local-providers/templates').then((r) => r.data ?? []),
+  list: () => apiClient.get<LocalProvider[]>('/local-providers'),
+  templates: () => apiClient.get<LocalProviderTemplate[]>('/local-providers/templates'),
   create: (data: { providerName: string; url: string; apiKey?: string }) =>
     apiClient.post<LocalProvider>('/local-providers', data),
   models: (id: string) =>
-    apiClient.get<{ data: Array<{ modelId: string; displayName?: string }> }>(`/local-providers/${id}/models`).then((r) => r.data ?? []),
+    apiClient.get<Array<{ modelId: string; displayName?: string }>>(`/local-providers/${id}/models`),
 };
 
 // ---- File Workspaces ----

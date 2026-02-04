@@ -146,15 +146,15 @@ describe('Model Configs Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       // Should include builtin models (openai 2 + anthropic 1 = 3)
-      expect(json.data.count).toBeGreaterThanOrEqual(3);
+      expect(json.data.length).toBeGreaterThanOrEqual(3);
     });
 
     it('includes isConfigured flag based on API key', async () => {
       const res = await app.request('/models');
       const json = await res.json();
 
-      const openaiModel = json.data.data.find((m: { providerId: string }) => m.providerId === 'openai');
-      const anthropicModel = json.data.data.find((m: { providerId: string }) => m.providerId === 'anthropic');
+      const openaiModel = json.data.find((m: { providerId: string }) => m.providerId === 'openai');
+      const anthropicModel = json.data.find((m: { providerId: string }) => m.providerId === 'anthropic');
 
       expect(openaiModel.isConfigured).toBe(true);   // hasApiKey returns true for openai
       expect(anthropicModel.isConfigured).toBe(false); // hasApiKey returns false for anthropic
@@ -164,15 +164,15 @@ describe('Model Configs Routes', () => {
       const res = await app.request('/models?provider=openai');
       const json = await res.json();
 
-      expect(json.data.data.every((m: { providerId: string }) => m.providerId === 'openai')).toBe(true);
-      expect(json.data.count).toBe(2);
+      expect(json.data.every((m: { providerId: string }) => m.providerId === 'openai')).toBe(true);
+      expect(json.data.length).toBe(2);
     });
 
     it('filters by capability', async () => {
       const res = await app.request('/models?capability=vision');
       const json = await res.json();
 
-      expect(json.data.data.every((m: { capabilities: string[] }) => m.capabilities.includes('vision'))).toBe(true);
+      expect(json.data.every((m: { capabilities: string[] }) => m.capabilities.includes('vision'))).toBe(true);
     });
 
     it('includes user config overrides', async () => {
@@ -182,7 +182,7 @@ describe('Model Configs Routes', () => {
 
       const res = await app.request('/models');
       const json = await res.json();
-      const gpt4 = json.data.data.find((m: { modelId: string }) => m.modelId === 'gpt-4');
+      const gpt4 = json.data.find((m: { modelId: string }) => m.modelId === 'gpt-4');
 
       expect(gpt4.displayName).toBe('Custom GPT-4');
       expect(gpt4.hasOverride).toBe(true);
@@ -194,7 +194,7 @@ describe('Model Configs Routes', () => {
       const res = await app.request('/models?enabled=true');
       const json = await res.json();
 
-      expect(json.data.data.find((m: { modelId: string }) => m.modelId === 'gpt-4')).toBeUndefined();
+      expect(json.data.find((m: { modelId: string }) => m.modelId === 'gpt-4')).toBeUndefined();
     });
 
     it('includes aggregator models when user has enabled the provider', async () => {
@@ -205,7 +205,7 @@ describe('Model Configs Routes', () => {
 
       const res = await app.request('/models');
       const json = await res.json();
-      const llama = json.data.data.find((m: { modelId: string }) => m.modelId === 'meta-llama/llama-3');
+      const llama = json.data.find((m: { modelId: string }) => m.modelId === 'meta-llama/llama-3');
 
       expect(llama).toBeDefined();
       expect(llama.source).toBe('aggregator');
@@ -224,7 +224,7 @@ describe('Model Configs Routes', () => {
 
       const res = await app.request('/models');
       const json = await res.json();
-      const custom = json.data.data.find((m: { modelId: string }) => m.modelId === 'my-model');
+      const custom = json.data.find((m: { modelId: string }) => m.modelId === 'my-model');
 
       expect(custom).toBeDefined();
       expect(custom.source).toBe('custom');
@@ -241,7 +241,7 @@ describe('Model Configs Routes', () => {
 
       const res = await app.request('/models');
       const json = await res.json();
-      const local = json.data.data.find((m: { modelId: string }) => m.modelId === 'llama2');
+      const local = json.data.find((m: { modelId: string }) => m.modelId === 'llama2');
 
       expect(local).toBeDefined();
       expect(local.source).toBe('local');
@@ -270,7 +270,7 @@ describe('Model Configs Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(json.data.data.isCustom).toBe(true);
+      expect(json.data.isCustom).toBe(true);
     });
 
     it('returns 400 when provider or model ID missing', async () => {
@@ -296,14 +296,14 @@ describe('Model Configs Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       // Builtin (openai, anthropic) + aggregator (openrouter)
-      expect(json.data.count).toBeGreaterThanOrEqual(3);
+      expect(json.data.length).toBeGreaterThanOrEqual(3);
     });
 
     it('filters by type', async () => {
       const res = await app.request('/models/providers/list?type=builtin');
       const json = await res.json();
 
-      expect(json.data.data.every((p: { type: string }) => p.type === 'builtin')).toBe(true);
+      expect(json.data.every((p: { type: string }) => p.type === 'builtin')).toBe(true);
     });
 
     it('includes custom providers', async () => {
@@ -313,7 +313,7 @@ describe('Model Configs Routes', () => {
 
       const res = await app.request('/models/providers/list');
       const json = await res.json();
-      const custom = json.data.data.find((p: { id: string }) => p.id === 'my-local');
+      const custom = json.data.find((p: { id: string }) => p.id === 'my-local');
 
       expect(custom).toBeDefined();
       expect(custom.type).toBe('custom');
@@ -329,7 +329,7 @@ describe('Model Configs Routes', () => {
 
       const res = await app.request('/models/providers/list');
       const json = await res.json();
-      const local = json.data.data.find((p: { id: string }) => p.id === 'ollama');
+      const local = json.data.find((p: { id: string }) => p.id === 'ollama');
 
       expect(local).toBeDefined();
       expect(local.type).toBe('local');
@@ -348,16 +348,15 @@ describe('Model Configs Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(json.data.counts).toBeDefined();
-      expect(json.data.counts.total).toBeGreaterThanOrEqual(3);
+      expect(json.data.length).toBeGreaterThanOrEqual(3);
     });
 
     it('includes isConfigured flag based on API key', async () => {
       const res = await app.request('/models/providers/available');
       const json = await res.json();
 
-      const openai = json.data.data.find((p: { id: string }) => p.id === 'openai');
-      const anthropic = json.data.data.find((p: { id: string }) => p.id === 'anthropic');
+      const openai = json.data.find((p: { id: string }) => p.id === 'openai');
+      const anthropic = json.data.find((p: { id: string }) => p.id === 'anthropic');
 
       expect(openai.isConfigured).toBe(true);
       expect(anthropic.isConfigured).toBe(false);
@@ -374,9 +373,9 @@ describe('Model Configs Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.data.id).toBe('openai');
-      expect(json.data.data.models).toBeDefined();
-      expect(json.data.data.models.length).toBeGreaterThanOrEqual(2);
+      expect(json.data.id).toBe('openai');
+      expect(json.data.models).toBeDefined();
+      expect(json.data.models.length).toBeGreaterThanOrEqual(2);
     });
 
     it('returns 404 for unknown provider', async () => {
@@ -575,9 +574,9 @@ describe('Model Configs Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(json.data.data.length).toBeGreaterThanOrEqual(5);
-      expect(json.data.data.find((c: { id: string }) => c.id === 'chat')).toBeDefined();
-      expect(json.data.data.find((c: { id: string }) => c.id === 'vision')).toBeDefined();
+      expect(json.data.length).toBeGreaterThanOrEqual(5);
+      expect(json.data.find((c: { id: string }) => c.id === 'chat')).toBeDefined();
+      expect(json.data.find((c: { id: string }) => c.id === 'vision')).toBeDefined();
     });
   });
 
@@ -591,8 +590,8 @@ describe('Model Configs Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.data.every((m: { providerId: string }) => m.providerId === 'openai')).toBe(true);
-      expect(json.data.count).toBe(2);
+      expect(json.data.every((m: { providerId: string }) => m.providerId === 'openai')).toBe(true);
+      expect(json.data.length).toBe(2);
     });
 
     it('returns empty list for unknown provider', async () => {
@@ -600,7 +599,7 @@ describe('Model Configs Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.count).toBe(0);
+      expect(json.data.length).toBe(0);
     });
   });
 
@@ -614,8 +613,8 @@ describe('Model Configs Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.data.modelId).toBe('gpt-4');
-      expect(json.data.data.providerId).toBe('openai');
+      expect(json.data.modelId).toBe('gpt-4');
+      expect(json.data.providerId).toBe('openai');
     });
 
     it('returns 404 for unknown model', async () => {

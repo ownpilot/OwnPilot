@@ -357,8 +357,7 @@ modelConfigsRoutes.get('/', async (c) => {
     models = models.filter((m) => m.isEnabled);
   }
 
-  return apiResponse(c, { data: models,
-    count: models.length, });
+  return apiResponse(c, models);
 });
 
 /**
@@ -380,8 +379,7 @@ modelConfigsRoutes.post('/', async (c) => {
       isCustom: true,
     });
 
-    return apiResponse(c, { message: 'Model created',
-      data: config, });
+    return apiResponse(c, config);
   } catch (error) {
     log.error('Failed to create model:', error);
     return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: 'Failed to create model' }, 500);
@@ -405,8 +403,7 @@ modelConfigsRoutes.get('/providers/list', async (c) => {
     providers = providers.filter((p) => p.type === type);
   }
 
-  return apiResponse(c, { data: providers,
-    count: providers.length, });
+  return apiResponse(c, providers);
 });
 
 /**
@@ -479,12 +476,7 @@ modelConfigsRoutes.get('/providers/available', async (c) => {
     return a.name.localeCompare(b.name);
   });
 
-  return apiResponse(c, { data: available,
-    counts: {
-      total: available.length,
-      enabled: available.filter((p) => p.isEnabled).length,
-      configured: available.filter((p) => p.isConfigured).length,
-    }, });
+  return apiResponse(c, available);
 });
 
 /**
@@ -503,10 +495,10 @@ modelConfigsRoutes.get('/providers/:id', async (c) => {
   // Get models for this provider
   const models = (await getMergedModels(userId)).filter((m) => m.providerId === providerId);
 
-  return apiResponse(c, { data: {
-      ...provider,
-      models,
-    }, });
+  return apiResponse(c, {
+    ...provider,
+    models,
+  });
 });
 
 /**
@@ -1101,7 +1093,7 @@ modelConfigsRoutes.get('/capabilities/list', async (c) => {
     { id: 'reasoning', name: 'Reasoning', description: 'Chain of thought (o1-style)' },
   ];
 
-  return apiResponse(c, { data: capabilities, });
+  return apiResponse(c, capabilities);
 });
 
 // =============================================================================
@@ -1117,8 +1109,7 @@ modelConfigsRoutes.get('/:provider', async (c) => {
 
   const models = (await getMergedModels(userId)).filter((m) => m.providerId === providerId);
 
-  return apiResponse(c, { data: models,
-    count: models.length, });
+  return apiResponse(c, models);
 });
 
 /**
@@ -1137,7 +1128,7 @@ modelConfigsRoutes.get('/:provider/:model', async (c) => {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Model not found' }, 404);
   }
 
-  return apiResponse(c, { data: model, });
+  return apiResponse(c, model);
 });
 
 /**
