@@ -139,7 +139,7 @@ export interface ComprehensiveProfile {
     home?: { city?: string; country?: string; timezone?: string };
     work?: { city?: string; company?: string };
     current?: string;
-    favoriteplacesa?: string[];
+    favoritePlaces?: string[];
   };
 
   // Lifestyle
