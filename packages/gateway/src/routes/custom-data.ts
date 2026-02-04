@@ -152,7 +152,7 @@ customDataRoutes.get('/tables/:table/records', async (c) => {
     try {
       filter = JSON.parse(filterParam);
     } catch {
-      // Ignore invalid filter
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON in filter parameter' }, 400);
     }
   }
 

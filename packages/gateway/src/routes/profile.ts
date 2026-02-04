@@ -13,6 +13,19 @@ import {
   type PersonalDataCategory,
 } from '@ownpilot/core';
 
+const VALID_CATEGORIES: ReadonlySet<string> = new Set<PersonalDataCategory>([
+  'identity', 'contact', 'occupation', 'education',
+  'location', 'timezone', 'places',
+  'routine', 'food', 'sleep', 'exercise', 'hobbies',
+  'communication', 'technology', 'entertainment', 'style',
+  'health', 'diet', 'wellness',
+  'family', 'friends', 'colleagues', 'pets',
+  'work_style', 'projects', 'skills', 'tools',
+  'goals_short', 'goals_medium', 'goals_long', 'dreams',
+  'history', 'milestones', 'context',
+  'ai_preferences', 'instructions', 'boundaries',
+]);
+
 const app = new Hono();
 
 /**
@@ -47,11 +60,14 @@ app.get('/summary', async (c) => {
  * GET /profile/category/:category - Get entries in a category
  */
 app.get('/category/:category', async (c) => {
-  const category = c.req.param('category') as PersonalDataCategory;
+  const category = c.req.param('category');
+  if (!VALID_CATEGORIES.has(category)) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid category: ${category}` }, 400);
+  }
 
   try {
     const store = await getPersonalMemoryStore(getUserId(c));
-    const entries = await store.getCategory(category);
+    const entries = await store.getCategory(category as PersonalDataCategory);
 
     return apiResponse(c, {
         category,
