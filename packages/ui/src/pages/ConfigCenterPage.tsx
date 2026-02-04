@@ -308,7 +308,7 @@ export function ConfigCenterPage() {
         );
         if (updatedService) {
           setEditingService(updatedService);
-          const targetId = (result as Record<string, unknown>).id as string ?? activeEntryId;
+          const targetId = result.id ?? activeEntryId;
           const targetEntry = updatedService.entries.find(
             (e) => e.id === targetId,
           );

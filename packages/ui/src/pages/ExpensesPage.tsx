@@ -74,7 +74,7 @@ export function ExpensesPage() {
         ? { startDate: `${year}-${selectedMonth}-01`, endDate: `${year}-${selectedMonth}-31`, limit: '50' }
         : { startDate: `${year}-01-01`, endDate: `${year}-12-31`, limit: '50' };
       const listJson = await expensesApi.list(listParams);
-      setExpenses((listJson as Record<string, unknown>).expenses as ExpenseEntry[]);
+      setExpenses(listJson.expenses);
     } catch {
       // API client handles error reporting
     } finally {

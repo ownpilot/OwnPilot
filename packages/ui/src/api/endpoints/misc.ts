@@ -38,6 +38,10 @@ import type {
   ExpenseMonthlyResponse,
   ExpenseSummaryResponse,
   ColumnDefinition,
+  ExpenseEntry,
+  ConfigEntryView,
+  SyncApplyResult,
+  SyncResetResult,
 } from '../types';
 
 // ---- Autonomy ----
@@ -166,7 +170,7 @@ export const mediaSettingsApi = {
   get: () =>
     apiClient.get<{ data: CapabilitySettings[] }>('/media-settings').then((r) => r.data ?? []),
   update: (capability: string, data: Record<string, unknown>) =>
-    apiClient.post<Record<string, unknown>>(`/media-settings/${capability}`, data),
+    apiClient.post<void>(`/media-settings/${capability}`, data),
   reset: (capability: string) =>
     apiClient.delete<void>(`/media-settings/${capability}`),
 };
@@ -180,8 +184,8 @@ export const modelConfigsApi = {
     apiClient.get<{ data: AvailableProvider[] }>('/model-configs/providers/available').then((r) => r.data ?? []),
   capabilities: () =>
     apiClient.get<{ data: CapabilityDef[] }>('/model-configs/capabilities/list').then((r) => r.data ?? []),
-  syncApply: () => apiClient.post<Record<string, unknown>>('/model-configs/sync/apply'),
-  syncReset: () => apiClient.post<Record<string, unknown>>('/model-configs/sync/reset'),
+  syncApply: () => apiClient.post<SyncApplyResult>('/model-configs/sync/apply'),
+  syncReset: () => apiClient.post<SyncResetResult>('/model-configs/sync/reset'),
 };
 
 // ---- Local Providers ----
@@ -192,7 +196,7 @@ export const localProvidersApi = {
   templates: () =>
     apiClient.get<{ data: LocalProviderTemplate[] }>('/local-providers/templates').then((r) => r.data ?? []),
   create: (data: { providerName: string; url: string; apiKey?: string }) =>
-    apiClient.post<Record<string, unknown>>('/local-providers', data),
+    apiClient.post<LocalProvider>('/local-providers', data),
   models: (id: string) =>
     apiClient.get<{ data: Array<{ modelId: string; displayName?: string }> }>(`/local-providers/${id}/models`).then((r) => r.data ?? []),
 };
@@ -223,9 +227,9 @@ export const configServicesApi = {
   categories: () =>
     apiClient.get<{ categories: string[] }>('/config-services/categories'),
   createEntry: (serviceName: string, body: Record<string, unknown>) =>
-    apiClient.post<Record<string, unknown>>(`/config-services/${serviceName}/entries`, body),
+    apiClient.post<ConfigEntryView>(`/config-services/${serviceName}/entries`, body),
   updateEntry: (serviceName: string, entryId: string, body: Record<string, unknown>) =>
-    apiClient.put<Record<string, unknown>>(
+    apiClient.put<ConfigEntryView>(
       `/config-services/${serviceName}/entries/${entryId}`,
       body,
     ),
@@ -245,9 +249,9 @@ export const channelsApi = {
       availableTypes: string[];
     }>('/channels'),
   create: (body: { id: string; type: string; name: string; config: Record<string, unknown> }) =>
-    apiClient.post<Record<string, unknown>>('/channels', body),
+    apiClient.post<Channel>('/channels', body),
   send: (channelId: string, body: Record<string, unknown>) =>
-    apiClient.post<Record<string, unknown>>(`/channels/${channelId}/send`, body),
+    apiClient.post<void>(`/channels/${channelId}/send`, body),
   inbox: (params?: { limit?: number; channelType?: string }) =>
     apiClient.get<{
       messages: ChannelMessage[];
@@ -266,7 +270,7 @@ export const expensesApi = {
   summary: (params: Record<string, string>) =>
     apiClient.get<ExpenseSummaryResponse>(`/expenses/summary`, { params }),
   list: (params: Record<string, string>) =>
-    apiClient.get<Record<string, unknown>>(`/expenses`, { params }),
+    apiClient.get<{ expenses: ExpenseEntry[] }>(`/expenses`, { params }),
   create: (expense: {
     date: string;
     amount: number;
@@ -274,6 +278,6 @@ export const expensesApi = {
     category: string;
     description: string;
     notes?: string;
-  }) => apiClient.post<Record<string, unknown>>(`/expenses`, expense),
+  }) => apiClient.post<ExpenseEntry>(`/expenses`, expense),
   delete: (id: string) => apiClient.delete<void>(`/expenses/${id}`),
 };
