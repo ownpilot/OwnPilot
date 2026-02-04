@@ -18,6 +18,7 @@ import {
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
 import { useDialog } from '../components/ConfirmDialog';
 import { configServicesApi } from '../api';
+import { useToast } from '../components/ToastProvider';
 import type { ConfigEntryView, ConfigServiceView, ConfigServiceStats } from '../api';
 
 
@@ -56,6 +57,7 @@ function getCategoryColor(category: string): string {
 
 export function ConfigCenterPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
 
   // Data state
   const [services, setServices] = useState<ConfigServiceView[]>([]);
@@ -296,6 +298,7 @@ export function ConfigCenterPage() {
         : await configServicesApi.updateEntry(editingService.name, activeEntryId!, body);
 
       setSaveMessage({ type: 'success', text: isCreating ? 'Entry created' : 'Entry updated' });
+      toast.success(isCreating ? 'Entry created' : 'Entry updated');
 
       // Refresh services to get updated data
       await Promise.all([fetchServices(), fetchStats()]);
@@ -336,6 +339,7 @@ export function ConfigCenterPage() {
     fetchServices,
     fetchStats,
     loadEntryIntoForm,
+    toast,
   ]);
 
   // ----------------------------------
@@ -361,6 +365,7 @@ export function ConfigCenterPage() {
       await configServicesApi.deleteEntry(editingService.name, activeEntryId);
 
       setSaveMessage({ type: 'success', text: 'Entry deleted' });
+      toast.success('Entry deleted');
       await Promise.all([fetchServices(), fetchStats()]);
 
       // Refresh modal
@@ -399,6 +404,7 @@ export function ConfigCenterPage() {
     loadEntryIntoForm,
     startNewEntry,
     closeConfigModal,
+    toast,
   ]);
 
   // ----------------------------------
@@ -415,6 +421,7 @@ export function ConfigCenterPage() {
       await configServicesApi.setDefault(editingService.name, activeEntryId);
 
       setSaveMessage({ type: 'success', text: 'Set as default' });
+      toast.success('Set as default');
       await Promise.all([fetchServices(), fetchStats()]);
 
       try {
@@ -442,7 +449,7 @@ export function ConfigCenterPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [editingService, activeEntryId, fetchServices, fetchStats, loadEntryIntoForm]);
+  }, [editingService, activeEntryId, fetchServices, fetchStats, loadEntryIntoForm, toast]);
 
   // ----------------------------------
   // Render

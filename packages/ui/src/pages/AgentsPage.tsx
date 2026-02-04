@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash, Bot, Settings, MessageSquare, Play } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { agentsApi, modelsApi, toolsApi } from '../api';
@@ -17,6 +18,7 @@ import type { Agent, Tool, ModelInfo, AgentDetail } from '../types';
 export function AgentsPage() {
   const navigate = useNavigate();
   const { confirm } = useDialog();
+  const toast = useToast();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -49,6 +51,7 @@ export function AgentsPage() {
 
     try {
       await agentsApi.delete(id);
+      toast.success('Agent deleted');
       setAgents((prev) => prev.filter((a) => a.id !== id));
       if (selectedAgent?.id === id) {
         setSelectedAgent(null);
@@ -56,7 +59,7 @@ export function AgentsPage() {
     } catch {
       // API client handles error reporting
     }
-  }, [confirm, fetchAgents]);
+  }, [confirm, toast, fetchAgents]);
 
   const openEditModal = useCallback((agentId: string) => {
     setEditingAgentId(agentId);
@@ -64,13 +67,14 @@ export function AgentsPage() {
   }, []);
 
   const handleAgentUpdated = useCallback((updatedAgent: Agent) => {
+    toast.success('Agent updated');
     setAgents((prev) => prev.map((a) => (a.id === updatedAgent.id ? updatedAgent : a)));
     if (selectedAgent?.id === updatedAgent.id) {
       setSelectedAgent(updatedAgent);
     }
     setShowEditModal(false);
     setEditingAgentId(null);
-  }, [selectedAgent, fetchAgents]);
+  }, [selectedAgent, toast, fetchAgents]);
 
   return (
     <div className="flex flex-col h-full">
@@ -126,6 +130,7 @@ export function AgentsPage() {
         <CreateAgentModal
           onClose={() => setShowCreateModal(false)}
           onCreated={(agent) => {
+            toast.success('Agent created');
             setAgents((prev) => [...prev, agent]);
             setShowCreateModal(false);
           }}

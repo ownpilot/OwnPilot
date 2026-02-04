@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Container, RefreshCw, ShieldCheck, Shield, XCircle, CheckCircle2, Database, Upload, Download, Trash2, Wrench, Server, AlertCircle, Settings } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
 import { useTheme } from '../hooks/useTheme';
 import { systemApi } from '../api';
 import type { SandboxStatus, DatabaseStatus, BackupInfo, DatabaseStats } from '../api';
@@ -35,7 +36,8 @@ function formatSize(bytes: number): string {
 }
 
 export function SystemPage() {
-  const { confirm, alert: showAlert } = useDialog();
+  const { confirm } = useDialog();
+  const toast = useToast();
   // Theme
   const { theme, setTheme } = useTheme();
 
@@ -133,9 +135,10 @@ export function SystemPage() {
 
     try {
       await systemApi.deleteBackup(filename);
+      toast.success('Backup deleted');
       loadSystemStatus();
     } catch {
-      await showAlert('Failed to delete backup');
+      toast.error('Failed to delete backup');
     }
   };
 
