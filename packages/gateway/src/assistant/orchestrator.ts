@@ -18,6 +18,14 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('Orchestrator');
 
+function safeJsonParse(raw: string, fallback: Record<string, unknown>): Record<string, unknown> {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
 export interface OrchestratorOptions {
   userId: string;
   agentId?: string;
@@ -56,12 +64,16 @@ export async function buildEnhancedSystemPrompt(
   let memoriesUsed = 0;
   let goalsUsed = 0;
 
-  // === MEMORIES SECTION ===
-  const memories = await memoryService.listMemories(options.userId, {
-    limit: maxMemories,
-    orderBy: 'importance',
-  });
+  // === Parallel fetch: memories + goals ===
+  const [memories, goals] = await Promise.all([
+    memoryService.listMemories(options.userId, {
+      limit: maxMemories,
+      orderBy: 'importance',
+    }),
+    goalService.listGoals(options.userId, { status: 'active', limit: maxGoals }),
+  ]);
 
+  // === MEMORIES SECTION ===
   if (memories.length > 0) {
     memoriesUsed = memories.length;
     const memoryLines: string[] = [];
@@ -92,8 +104,6 @@ export async function buildEnhancedSystemPrompt(
   }
 
   // === GOALS SECTION ===
-  const goals = await goalService.listGoals(options.userId, { status: 'active', limit: maxGoals });
-
   if (goals.length > 0) {
     goalsUsed = goals.length;
     const goalLines: string[] = ['## Active Goals'];
@@ -176,7 +186,7 @@ export async function checkToolCallApproval(
   const risk = assessRisk(
     category,
     toolCall.name,
-    JSON.parse(toolCall.arguments || '{}'),
+    safeJsonParse(toolCall.arguments || '{}', {}),
     context,
     config
   );

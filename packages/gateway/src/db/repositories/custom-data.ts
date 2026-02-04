@@ -223,10 +223,15 @@ export class CustomDataRepository extends BaseRepository {
    */
   async deletePluginTables(pluginId: string): Promise<number> {
     const tables = await this.getTablesByPlugin(pluginId);
-    for (const table of tables) {
-      await this.execute('DELETE FROM custom_data_records WHERE table_id = $1', [table.id]);
-      await this.execute('DELETE FROM custom_table_schemas WHERE id = $1', [table.id]);
-    }
+    if (tables.length === 0) return 0;
+
+    const ids = tables.map((t) => t.id);
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(', ');
+
+    // Batch delete: records first (FK), then schemas
+    await this.execute(`DELETE FROM custom_data_records WHERE table_id IN (${placeholders})`, ids);
+    await this.execute(`DELETE FROM custom_table_schemas WHERE id IN (${placeholders})`, ids);
+
     return tables.length;
   }
 

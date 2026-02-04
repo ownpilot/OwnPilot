@@ -505,9 +505,11 @@ You have access to a persistent memory system. Use it wisely:
 async function buildGoalContext(userId = 'default'): Promise<string> {
   const goalService = getServiceRegistry().get(Services.Goal);
 
-  // Get active goals
-  const activeGoals = await goalService.getActive(userId, 5);
-  const nextActions = await goalService.getNextActions(userId, 3);
+  // Get active goals (parallel — independent queries)
+  const [activeGoals, nextActions] = await Promise.all([
+    goalService.getActive(userId, 5),
+    goalService.getNextActions(userId, 3),
+  ]);
 
   const sections: string[] = [];
 

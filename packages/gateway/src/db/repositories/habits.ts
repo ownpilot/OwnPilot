@@ -6,6 +6,15 @@
 
 import { BaseRepository } from './base.js';
 
+function safeParseArray(raw: string | null | undefined): number[] {
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -127,7 +136,7 @@ function rowToHabit(row: HabitRow): Habit {
     name: row.name,
     description: row.description ?? undefined,
     frequency: row.frequency as HabitFrequency,
-    targetDays: JSON.parse(row.target_days || '[]'),
+    targetDays: safeParseArray(row.target_days),
     targetCount: row.target_count,
     unit: row.unit ?? undefined,
     category: row.category ?? undefined,

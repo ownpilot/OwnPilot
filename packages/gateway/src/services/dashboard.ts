@@ -281,8 +281,10 @@ export class DashboardService {
     let todayEvents: CalendarEvent[] = [];
     let upcomingEvents: CalendarEvent[] = [];
     try {
-      todayEvents = await calendarRepo.getToday();
-      upcomingEvents = await calendarRepo.getUpcoming(7);
+      [todayEvents, upcomingEvents] = await Promise.all([
+        calendarRepo.getToday(),
+        calendarRepo.getUpcoming(7),
+      ]);
     } catch (err) {
       log.error('[DashboardService] Failed to load calendar:', err);
     }
@@ -291,8 +293,10 @@ export class DashboardService {
     let activeGoals: Goal[] = [];
     let nextActions: Array<GoalStep & { goalTitle: string }> = [];
     try {
-      activeGoals = await goalService.getActive(this.userId, 10);
-      nextActions = await goalService.getNextActions(this.userId, 5);
+      [activeGoals, nextActions] = await Promise.all([
+        goalService.getActive(this.userId, 10),
+        goalService.getNextActions(this.userId, 5),
+      ]);
     } catch (err) {
       log.error('[DashboardService] Failed to load goals:', err);
     }
@@ -302,8 +306,10 @@ export class DashboardService {
     let allTriggers: Trigger[] = [];
     let triggerHistory: TriggerHistory[] = [];
     try {
-      allTriggers = await triggerService.listTriggers(this.userId, { limit: 100 });
-      triggerHistory = await triggerService.getRecentHistory(this.userId, 10);
+      [allTriggers, triggerHistory] = await Promise.all([
+        triggerService.listTriggers(this.userId, { limit: 100 }),
+        triggerService.getRecentHistory(this.userId, 10),
+      ]);
     } catch (err) {
       log.error('[DashboardService] Failed to load triggers:', err);
     }
@@ -319,9 +325,11 @@ export class DashboardService {
     let importantMemories: ServiceMemoryEntry[] = [];
     let memoryStats: { total: number; recentCount: number } = { total: 0, recentCount: 0 };
     try {
-      recentMemories = await memoryService.getRecentMemories(this.userId, 10);
-      importantMemories = await memoryService.getImportantMemories(this.userId, { threshold: 0.7, limit: 5 });
-      memoryStats = await memoryService.getStats(this.userId);
+      [recentMemories, importantMemories, memoryStats] = await Promise.all([
+        memoryService.getRecentMemories(this.userId, 10),
+        memoryService.getImportantMemories(this.userId, { threshold: 0.7, limit: 5 }),
+        memoryService.getStats(this.userId),
+      ]);
     } catch (err) {
       log.error('[DashboardService] Failed to load memories:', err);
     }
@@ -339,8 +347,10 @@ export class DashboardService {
     let pinnedNotes: Note[] = [];
     let recentNotes: Note[] = [];
     try {
-      pinnedNotes = await notesRepo.getPinned();
-      recentNotes = await notesRepo.getRecent(5);
+      [pinnedNotes, recentNotes] = await Promise.all([
+        notesRepo.getPinned(),
+        notesRepo.getRecent(5),
+      ]);
     } catch (err) {
       log.error('[DashboardService] Failed to load notes:', err);
     }
@@ -349,8 +359,10 @@ export class DashboardService {
     let dailyCosts: CostSummaryData = { totalTokens: 0, totalCost: 0, totalCalls: 0 };
     let monthlyCosts: CostSummaryData = { totalTokens: 0, totalCost: 0, totalCalls: 0 };
     try {
-      dailyCosts = await this.getDailyCosts(costsRepo);
-      monthlyCosts = await this.getMonthlyCosts(costsRepo);
+      [dailyCosts, monthlyCosts] = await Promise.all([
+        this.getDailyCosts(costsRepo),
+        this.getMonthlyCosts(costsRepo),
+      ]);
     } catch (err) {
       log.error('[DashboardService] Failed to load costs:', err);
     }
@@ -780,19 +792,16 @@ Format your response as JSON:
     service: IDatabaseService,
     tables: CustomTableSchema[]
   ): Promise<CustomDataSummary> {
-    let totalRecords = 0;
-    const tableSummaries: CustomTableSummaryItem[] = [];
+    const allStats = await Promise.all(
+      tables.map((t) => service.getTableStats(t.id))
+    );
 
-    for (const t of tables) {
-      const stats = await service.getTableStats(t.id);
-      const recordCount = stats?.recordCount ?? 0;
+    let totalRecords = 0;
+    const tableSummaries: CustomTableSummaryItem[] = tables.map((t, i) => {
+      const recordCount = allStats[i]?.recordCount ?? 0;
       totalRecords += recordCount;
-      tableSummaries.push({
-        id: t.id,
-        name: t.displayName,
-        recordCount,
-      });
-    }
+      return { id: t.id, name: t.displayName, recordCount };
+    });
 
     return {
       tables: tableSummaries,
