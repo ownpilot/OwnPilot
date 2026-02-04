@@ -227,6 +227,12 @@ export function resetSandboxCache(): void {
  * Pull a Docker image if not already available
  */
 export async function ensureImage(image: string): Promise<boolean> {
+  // Validate image name to prevent command injection
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._/:-]*$/.test(image) || image.length > 200) {
+    console.error(`[Sandbox] Invalid Docker image name: ${image.substring(0, 50)}`);
+    return false;
+  }
+
   try {
     // Check if image exists locally
     const { stdout } = await execAsync(`docker images -q ${image}`);
