@@ -139,62 +139,67 @@ export class SandboxExecutor {
       });
 
       // Race against execution timeout
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           reject(new TimeoutError('sandbox', this.limits.maxExecutionTime));
         }, this.limits.maxExecutionTime);
       });
 
-      const value = await Promise.race([executePromise, timeoutPromise]);
-      const executionTime = Date.now() - startTime;
+      try {
+        const value = await Promise.race([executePromise, timeoutPromise]);
+        clearTimeout(timeoutId);
+        const executionTime = Date.now() - startTime;
 
-      this.stats.successfulExecutions++;
-      this.stats.totalExecutionTime += executionTime;
-      this.stats.averageExecutionTime =
-        this.stats.totalExecutionTime / this.stats.totalExecutions;
+        this.stats.successfulExecutions++;
+        this.stats.totalExecutionTime += executionTime;
+        this.stats.averageExecutionTime =
+          this.stats.totalExecutionTime / this.stats.totalExecutions;
 
-      return ok({
-        success: true,
-        value,
-        executionTime,
-        resourceUsage: {
-          networkRequests: 0,
-          fsOperations: 0,
-        },
-      });
-    } catch (error) {
-      const executionTime = Date.now() - startTime;
-      this.stats.failedExecutions++;
-      this.stats.totalExecutionTime += executionTime;
-      this.stats.averageExecutionTime =
-        this.stats.totalExecutionTime / this.stats.totalExecutions;
+        return ok({
+          success: true,
+          value,
+          executionTime,
+          resourceUsage: {
+            networkRequests: 0,
+            fsOperations: 0,
+          },
+        });
+      } catch (error) {
+        clearTimeout(timeoutId);
+        const executionTime = Date.now() - startTime;
+        this.stats.failedExecutions++;
+        this.stats.totalExecutionTime += executionTime;
+        this.stats.averageExecutionTime =
+          this.stats.totalExecutionTime / this.stats.totalExecutions;
 
-      // Check if it was a timeout
-      if (error instanceof TimeoutError) {
-        this.stats.terminatedCount++;
-        return err(error);
+        // Check if it was a timeout
+        if (error instanceof TimeoutError) {
+          this.stats.terminatedCount++;
+          return err(error);
+        }
+
+        // Check for VM timeout (different from our TimeoutError)
+        if (error instanceof Error && error.message.includes('Script execution timed out')) {
+          this.stats.terminatedCount++;
+          return err(new TimeoutError('sandbox:cpu', this.limits.maxCpuTime));
+        }
+
+        // Handle other errors
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = this.debug && error instanceof Error ? error.stack : undefined;
+
+        return ok({
+          success: false,
+          error: errorMessage,
+          stack: errorStack,
+          executionTime,
+          resourceUsage: {
+            networkRequests: 0,
+            fsOperations: 0,
+          },
+        });
       }
-
-      // Check for VM timeout (different from our TimeoutError)
-      if (error instanceof Error && error.message.includes('Script execution timed out')) {
-        this.stats.terminatedCount++;
-        return err(new TimeoutError('sandbox:cpu', this.limits.maxCpuTime));
-      }
-
-      // Handle other errors
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = this.debug && error instanceof Error ? error.stack : undefined;
-
-      return ok({
-        success: false,
-        error: errorMessage,
-        stack: errorStack,
-        executionTime,
-        resourceUsage: {
-          networkRequests: 0,
-          fsOperations: 0,
-        },
-      });
     } finally {
       // Cleanup
       if (this.cleanupFn) {

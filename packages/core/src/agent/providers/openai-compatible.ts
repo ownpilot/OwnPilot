@@ -85,6 +85,7 @@ export class OpenAICompatibleProvider {
   private readonly providerId: string;
   private readonly config: ResolvedProviderConfig;
   private abortController: AbortController | null = null;
+  private requestTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: ResolvedProviderConfig) {
     this.config = config;
@@ -154,6 +155,7 @@ export class OpenAICompatibleProvider {
         `${this.config.baseUrl}/chat/completions`,
         this.createFetchOptions(body)
       );
+      this.clearRequestTimeout();
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -213,6 +215,7 @@ export class OpenAICompatibleProvider {
         `${this.config.baseUrl}/chat/completions`,
         this.createFetchOptions(body)
       );
+      this.clearRequestTimeout();
 
       if (!response.ok || !response.body) {
         yield err(new InternalError(`${this.providerId} stream error: ${response.status}`));
@@ -356,9 +359,17 @@ export class OpenAICompatibleProvider {
    * Cancel ongoing request
    */
   cancel(): void {
+    this.clearRequestTimeout();
     if (this.abortController) {
       this.abortController.abort();
       this.abortController = null;
+    }
+  }
+
+  private clearRequestTimeout(): void {
+    if (this.requestTimeoutId !== null) {
+      clearTimeout(this.requestTimeoutId);
+      this.requestTimeoutId = null;
     }
   }
 
@@ -491,10 +502,11 @@ export class OpenAICompatibleProvider {
   }
 
   private createFetchOptions(body: unknown): RequestInit {
+    this.clearRequestTimeout();
     this.abortController = new AbortController();
     const timeout = this.config.timeout ?? 120000;
 
-    setTimeout(() => {
+    this.requestTimeoutId = setTimeout(() => {
       this.abortController?.abort();
     }, timeout);
 
