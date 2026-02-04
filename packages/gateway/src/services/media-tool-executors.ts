@@ -21,9 +21,15 @@ const FETCH_TIMEOUT_MS = 30_000;
 const MAX_FETCH_SIZE_BYTES = 50 * 1024 * 1024;
 
 /**
- * Fetch a remote URL with timeout and size limits
+ * Fetch a remote URL with timeout, size limits, and scheme validation
  */
 async function fetchWithLimits(url: string): Promise<Buffer> {
+  // Only allow http/https schemes
+  const parsed = new URL(url);
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(`Unsupported URL scheme: ${parsed.protocol} (only http/https allowed)`);
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 

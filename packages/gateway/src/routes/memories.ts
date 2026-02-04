@@ -353,7 +353,7 @@ export async function executeMemoryTool(
       }
 
       case 'recall': {
-        const { query, type, tags, limit = 10 } = params as {
+        const { query, type, tags, limit: rawLimit = 10 } = params as {
           query: string;
           type?: MemoryType;
           tags?: string[];
@@ -364,6 +364,7 @@ export async function executeMemoryTool(
           return { success: false, error: 'query is required' };
         }
 
+        const limit = Math.max(1, Math.min(100, rawLimit));
         const memories = await service.listMemories(userId, {
           search: query,
           type,

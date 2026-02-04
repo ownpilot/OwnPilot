@@ -37,8 +37,10 @@ channelRoutes.get('/messages/inbox', (c) => {
 
   let allMessages: (typeof messageStore extends Map<string, infer T> ? T : never) = [];
 
+  // Cap per-channel to avoid unbounded memory use when aggregating
+  const perChannelCap = limit * 2;
   for (const messages of messageStore.values()) {
-    allMessages = allMessages.concat(messages);
+    allMessages = allMessages.concat(messages.slice(-perChannelCap));
   }
 
   if (filter === 'unread') {
@@ -245,13 +247,19 @@ export function addIncomingMessage(
   if (!messageStore.has(channelId)) {
     messageStore.set(channelId, []);
   }
-  messageStore.get(channelId)!.push({
+  const channel = messageStore.get(channelId)!;
+  channel.push({
     ...message,
     channelId,
     platform,
     read: false,
     replied: false,
   });
+  // Evict oldest messages to cap memory per channel
+  const MAX_PER_CHANNEL = 500;
+  if (channel.length > MAX_PER_CHANNEL) {
+    channel.splice(0, channel.length - MAX_PER_CHANNEL);
+  }
 }
 
 /**

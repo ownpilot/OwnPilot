@@ -183,6 +183,11 @@ async function executeSetConfigEntry(
     return { content: { error: '"data" must be an object with field values.' }, isError: true };
   }
 
+  // Strip prototype pollution keys
+  for (const key of ['__proto__', 'constructor', 'prototype']) {
+    delete data[key];
+  }
+
   const svc = configServicesRepo.getByName(serviceName);
   if (!svc) {
     return {
