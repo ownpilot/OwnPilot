@@ -848,8 +848,8 @@ chatRoutes.post('/', async (c) => {
             requestType: 'chat',
             error: result.error.message,
           });
-        } catch {
-          // Ignore
+        } catch (costErr) {
+          console.warn('[Chat] Failed to log cost metrics:', costErr instanceof Error ? costErr.message : costErr);
         }
 
         await stream.writeSSE({

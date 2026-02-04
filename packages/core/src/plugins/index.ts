@@ -610,7 +610,7 @@ export class PluginRegistry {
             return true;
           }
         } catch {
-          // Ignore
+          // Storage file doesn't exist or write failed
         }
         return false;
       },
@@ -629,7 +629,7 @@ export class PluginRegistry {
         try {
           await fs.unlink(storageFile);
         } catch {
-          // Ignore
+          // File doesn't exist or already deleted
         }
       },
     };

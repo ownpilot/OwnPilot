@@ -525,7 +525,7 @@ export class ChannelServiceImpl implements IChannelService {
           });
         }
       } catch {
-        // Ignore send errors
+        // Best-effort error reply — original error already logged above
       }
     }
   }

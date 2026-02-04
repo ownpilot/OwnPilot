@@ -65,7 +65,7 @@ export function getMigrationStatus(): {
         }
       }
     } catch {
-      // Ignore errors
+      // File doesn't exist or inaccessible — skip
     }
   }
 

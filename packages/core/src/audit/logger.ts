@@ -401,8 +401,8 @@ export class AuditLogger {
         this.previousChecksum = '';
         this.eventCount = 0;
       }
-    } catch {
-      // Ignore rotation errors
+    } catch (error) {
+      console.warn('[AuditLogger] Log rotation failed:', error instanceof Error ? error.message : error);
     }
   }
 
