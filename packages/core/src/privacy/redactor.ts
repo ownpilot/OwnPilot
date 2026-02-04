@@ -159,7 +159,7 @@ export class PIIRedactor {
     }
 
     const first = text.slice(0, keepFirst);
-    const last = text.slice(len - keepLast || len);
+    const last = keepLast > 0 ? text.slice(-keepLast) : '';
     const masked = maskChar.repeat(len - keepFirst - keepLast);
 
     return first + masked + last;

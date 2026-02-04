@@ -271,35 +271,50 @@ export class CapturesRepository extends BaseRepository {
     topTags: Array<{ tag: string; count: number }>;
     processedAs: Record<ProcessedAsType, number>;
   }> {
-    const allCaptures = await this.list({ limit: 10000 });
-    const processed = allCaptures.filter(c => c.processed);
-    const unprocessed = allCaptures.filter(c => !c.processed);
+    // Use SQL aggregation instead of loading all records into memory
+    const [typeRows, processedAsRows, tagRows] = await Promise.all([
+      // Counts by type and processed status
+      this.query<{ type: string; processed: boolean; count: string }>(
+        `SELECT type, processed, COUNT(*) as count FROM captures WHERE user_id = $1 GROUP BY type, processed`,
+        [this.userId]
+      ),
+      // Counts by processed_as_type
+      this.query<{ processed_as_type: string; count: string }>(
+        `SELECT processed_as_type, COUNT(*) as count FROM captures WHERE user_id = $1 AND processed_as_type IS NOT NULL GROUP BY processed_as_type`,
+        [this.userId]
+      ),
+      // Top tags via json_each
+      this.query<{ tag: string; count: string }>(
+        `SELECT value as tag, COUNT(*) as count FROM captures, json_each(captures.tags) WHERE captures.user_id = $1 GROUP BY value ORDER BY count DESC LIMIT 10`,
+        [this.userId]
+      ),
+    ]);
 
+    let total = 0;
+    let processed = 0;
     const byType: Record<string, number> = {};
-    const tagCounts: Record<string, number> = {};
-    const processedAs: Record<string, number> = {};
 
-    for (const capture of allCaptures) {
-      byType[capture.type] = (byType[capture.type] || 0) + 1;
-
-      for (const tag of capture.tags) {
-        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-      }
-
-      if (capture.processedAsType) {
-        processedAs[capture.processedAsType] = (processedAs[capture.processedAsType] || 0) + 1;
-      }
+    for (const row of typeRows) {
+      const count = parseInt(String(row.count), 10);
+      total += count;
+      if (row.processed) processed += count;
+      byType[row.type] = (byType[row.type] || 0) + count;
     }
 
-    const topTags = Object.entries(tagCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([tag, count]) => ({ tag, count }));
+    const processedAs: Record<string, number> = {};
+    for (const row of processedAsRows) {
+      processedAs[row.processed_as_type] = parseInt(String(row.count), 10);
+    }
+
+    const topTags = tagRows.map(row => ({
+      tag: row.tag,
+      count: parseInt(String(row.count), 10),
+    }));
 
     return {
-      total: allCaptures.length,
-      processed: processed.length,
-      unprocessed: unprocessed.length,
+      total,
+      processed,
+      unprocessed: total - processed,
       byType: byType as Record<CaptureType, number>,
       topTags,
       processedAs: processedAs as Record<ProcessedAsType, number>,

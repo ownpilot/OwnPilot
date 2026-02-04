@@ -651,7 +651,7 @@ export class ChannelServiceImpl implements IChannelService {
     } else {
       await api.sendMessage({
         platformChatId: message.platformChatId,
-        text: `Verification failed: ${result.error}\n\nPlease generate a new token in the OwnPilot web interface and try again with /connect YOUR_TOKEN`,
+        text: `Verification failed. Please generate a new token in the OwnPilot web interface and try again with /connect YOUR_TOKEN`,
         replyToId: message.id,
       });
     }
