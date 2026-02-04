@@ -1,39 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { goalsApi, apiClient } from '../api';
+import type { Goal, GoalStep } from '../api';
 import { Target, Plus, Trash2, ChevronRight, CheckCircle2, Circle, AlertTriangle, Pause } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useModalClose } from '../hooks';
-
-interface GoalStep {
-  id: string;
-  goalId: string;
-  title: string;
-  description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'blocked';
-  orderNum: number;
-  dependencies?: string[];
-  result?: string;
-  createdAt: string;
-  completedAt?: string;
-}
-
-interface Goal {
-  id: string;
-  title: string;
-  description?: string;
-  status: 'active' | 'paused' | 'completed' | 'abandoned';
-  priority: number;
-  parentId?: string;
-  dueDate?: string;
-  progress: number;
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-  steps?: GoalStep[];
-}
 
 const statusColors = {
   active: 'bg-primary/10 text-primary',

@@ -1,55 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { triggersApi, apiClient } from '../api';
+import type { Trigger, TriggerConfig, TriggerAction, TriggerHistoryEntry } from '../api';
 import { Zap, Plus, Trash2, Play, Pause, Clock, History } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useModalClose } from '../hooks';
-
-interface TriggerConfig {
-  cron?: string;
-  eventType?: string;
-  condition?: string;
-  webhookPath?: string;
-  timezone?: string;
-  threshold?: number;
-  filters?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-interface TriggerAction {
-  type: 'chat' | 'tool' | 'notification' | 'goal_check' | 'memory_summary';
-  payload: Record<string, unknown>;
-}
-
-interface Trigger {
-  id: string;
-  type: 'schedule' | 'event' | 'condition' | 'webhook';
-  name: string;
-  description: string | null;
-  config: TriggerConfig;
-  action: TriggerAction;
-  enabled: boolean;
-  priority: number;
-  lastFired: string | null;
-  nextFire: string | null;
-  fireCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-type TriggerHistoryStatus = 'success' | 'failure' | 'skipped';
-
-interface TriggerHistoryEntry {
-  id: string;
-  triggerId: string;
-  firedAt: string;
-  status: TriggerHistoryStatus;
-  result?: unknown;
-  error: string | null;
-  durationMs: number | null;
-}
 
 const typeColors = {
   schedule: 'bg-blue-500/10 text-blue-500',
@@ -107,7 +64,7 @@ export function TriggersPage() {
   const fetchHistory = async (triggerId: string) => {
     try {
       const data = await triggersApi.history(triggerId);
-      setHistory(data.history as TriggerHistoryEntry[]);
+      setHistory(data.history);
       setShowHistory(triggerId);
     } catch {
       // API client handles error reporting

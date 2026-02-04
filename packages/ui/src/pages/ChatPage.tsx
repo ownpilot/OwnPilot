@@ -8,6 +8,7 @@ import { useChatStore } from '../hooks/useChatStore';
 import { AlertCircle, Settings, Bot } from '../components/icons';
 import { modelsApi, providersApi, settingsApi, agentsApi, chatApi } from '../api';
 import type { ModelInfo, AgentDetail } from '../types';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 
 export function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -375,7 +376,7 @@ export function ChatPage() {
                 {currentAgent ? `Chat with ${agentDisplayName}` : 'Welcome to OwnPilot'}
               </h3>
 
-              {!isLoadingModels && configuredProviders.length === 0 && localStorage.getItem('ownpilot-setup-complete') !== 'true' ? (
+              {!isLoadingModels && configuredProviders.length === 0 && localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE) !== 'true' ? (
                 <SetupWizard onComplete={() => window.location.reload()} />
               ) : !isLoadingModels && configuredProviders.length === 0 ? (
                 <>

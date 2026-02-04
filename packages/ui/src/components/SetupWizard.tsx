@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { settingsApi } from '../api';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 
 interface SetupStep {
   id: string;
@@ -75,7 +76,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
   };
 
   const handleComplete = () => {
-    localStorage.setItem('ownpilot-setup-complete', 'true');
+    localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETE, 'true');
     onComplete();
   };
 

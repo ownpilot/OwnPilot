@@ -6,28 +6,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useDebouncedValue, useModalClose } from '../hooks';
 import { contactsApi } from '../api';
-
-interface Contact {
-  id: string;
-  name: string;
-  nickname?: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-  jobTitle?: string;
-  avatar?: string;
-  birthday?: string;
-  address?: string;
-  notes?: string;
-  relationship?: string;
-  tags: string[];
-  isFavorite: boolean;
-  socialLinks?: Record<string, string>;
-  customFields?: Record<string, string>;
-  lastContactedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Contact } from '../api';
 
 
 export function ContactsPage() {
