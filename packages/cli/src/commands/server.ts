@@ -30,12 +30,21 @@ interface ServerOptions {
 
 export async function startServer(options: ServerOptions): Promise<void> {
   // Initialize PostgreSQL database first
-  await initializeAdapter();
+  try {
+    await initializeAdapter();
+  } catch (err) {
+    console.error('❌ Database initialization failed:', err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
 
   // Load saved API keys from database into environment (for SDKs)
   await loadApiKeysToEnvironment();
 
   const port = parseInt(options.port, 10);
+  if (!Number.isFinite(port) || port < 1 || port > 65535) {
+    console.error(`❌ Invalid port: ${options.port}`);
+    process.exit(1);
+  }
   const host = options.host;
 
   const config: Partial<GatewayConfig> = {

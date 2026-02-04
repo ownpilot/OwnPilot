@@ -148,6 +148,10 @@ memoriesRoutes.patch('/:id', async (c) => {
     tags?: string[];
   }>();
 
+  if (body.importance !== undefined && (typeof body.importance !== 'number' || body.importance < 0 || body.importance > 1)) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'importance must be a number between 0 and 1' }, 400);
+  }
+
   const service = getServiceRegistry().get(Services.Memory);
   const updated = await service.updateMemory(userId, id, body);
 
@@ -166,6 +170,10 @@ memoriesRoutes.post('/:id/boost', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<{ amount?: number }>().catch((): { amount?: number } => ({}));
   const amount = body.amount ?? 0.1;
+
+  if (typeof amount !== 'number' || amount <= 0 || amount > 1) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'amount must be a number between 0 and 1' }, 400);
+  }
 
   const service = getServiceRegistry().get(Services.Memory);
   const boosted = await service.boostMemory(userId, id, amount);

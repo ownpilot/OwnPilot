@@ -24,7 +24,12 @@ export async function startAll(options: StartOptions): Promise<void> {
   console.log('\n🚀 Starting OwnPilot...\n');
 
   // Initialize PostgreSQL database first
-  await initializeAdapter();
+  try {
+    await initializeAdapter();
+  } catch (err) {
+    console.error('❌ Database initialization failed:', err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
 
   // Load saved API keys from database into environment (for SDKs)
   await loadApiKeysToEnvironment();
@@ -43,6 +48,10 @@ export async function startAll(options: StartOptions): Promise<void> {
 
   // Start HTTP server
   const port = parseInt(options.port, 10);
+  if (!Number.isFinite(port) || port < 1 || port > 65535) {
+    console.error(`❌ Invalid port: ${options.port}`);
+    process.exit(1);
+  }
   const serverConfig: Partial<GatewayConfig> = {
     port,
     host: '0.0.0.0',

@@ -28,7 +28,12 @@ const TELEGRAM_TOKEN_KEY = 'telegram_bot_token';
 
 export async function startBot(options: BotOptions): Promise<void> {
   // Initialize database first
-  await initializeAdapter();
+  try {
+    await initializeAdapter();
+  } catch (err) {
+    console.error('❌ Database initialization failed:', err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
 
   // Load saved API keys from database into environment (for SDKs)
   await loadApiKeysToEnvironment();
@@ -78,8 +83,8 @@ export async function startBot(options: BotOptions): Promise<void> {
   });
 
   // Parse allowed users/chats from CLI options
-  const allowedUserIds = options.users?.split(',').map(Number).filter(Boolean);
-  const allowedChatIds = options.chats?.split(',').map(Number).filter(Boolean);
+  const allowedUserIds = options.users?.split(',').map(Number).filter((n) => Number.isFinite(n));
+  const allowedChatIds = options.chats?.split(',').map(Number).filter((n) => Number.isFinite(n));
 
   // Create bot config
   const config: TelegramConfig = {
@@ -95,24 +100,28 @@ export async function startBot(options: BotOptions): Promise<void> {
 
   // Set up message handler
   bot.onMessage(async (message) => {
-    console.log(`📨 [${message.username ?? message.userId}]: ${message.text}`);
+    try {
+      console.log(`📨 [${message.username ?? message.userId}]: ${message.text}`);
 
-    const result = await agent.chat(message.text);
+      const result = await agent.chat(message.text);
 
-    if (result.ok) {
-      console.log(`🤖 Response: ${result.value.content.substring(0, 100)}...`);
-      await bot.sendMessage({
-        chatId: message.chatId,
-        text: result.value.content,
-        replyToMessageId: message.id,
-      });
-    } else {
-      console.error(`❌ Error: ${result.error.message}`);
-      await bot.sendMessage({
-        chatId: message.chatId,
-        text: `Sorry, I encountered an error: ${result.error.message}`,
-        replyToMessageId: message.id,
-      });
+      if (result.ok) {
+        console.log(`🤖 Response: ${result.value.content.substring(0, 100)}...`);
+        await bot.sendMessage({
+          chatId: message.chatId,
+          text: result.value.content,
+          replyToMessageId: message.id,
+        });
+      } else {
+        console.error(`❌ Error: ${result.error.message}`);
+        await bot.sendMessage({
+          chatId: message.chatId,
+          text: `Sorry, I encountered an error: ${result.error.message}`,
+          replyToMessageId: message.id,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to process message:', err instanceof Error ? err.message : err);
     }
   });
 
