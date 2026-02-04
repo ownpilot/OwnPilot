@@ -20,6 +20,11 @@ import type {
 // Implementation
 // ============================================================================
 
+/** Default interval for automatic cleanup of stale sessions (15 minutes). */
+const CLEANUP_INTERVAL_MS = 15 * 60 * 1000;
+/** Default max age for inactive sessions before cleanup (1 hour). */
+const STALE_SESSION_MAX_AGE_MS = 60 * 60 * 1000;
+
 export class SessionService implements ISessionService {
   private readonly sessions = new Map<string, Session>();
 
@@ -28,6 +33,24 @@ export class SessionService implements ISessionService {
    * Used for fast lookup in getByChannel() and getOrCreate().
    */
   private readonly channelIndex = new Map<string, string>();
+
+  /** Periodic cleanup timer to evict stale closed sessions. */
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    this.cleanupTimer = setInterval(() => {
+      this.cleanup(STALE_SESSION_MAX_AGE_MS);
+    }, CLEANUP_INTERVAL_MS);
+    this.cleanupTimer.unref();
+  }
+
+  /** Stop the automatic cleanup timer (for graceful shutdown). */
+  dispose(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
 
   create(input: CreateSessionInput): Session {
     const session: Session = {
