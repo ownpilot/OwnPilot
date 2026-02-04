@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDialog } from './ConfirmDialog';
-import { Check, AlertCircle, Image, Volume2, Mic, Eye } from './icons';
+import { Check, Image, Volume2, Mic, Eye } from './icons';
+import { useToast } from './ToastProvider';
 import { mediaSettingsApi } from '../api';
 import type { CapabilitySettings } from '../api';
 
@@ -15,11 +16,10 @@ const CAPABILITY_ICONS: Record<MediaCapability, React.ReactNode> = {
 
 export function MediaSettingsTab() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [settings, setSettings] = useState<CapabilitySettings[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [savingCapability, setSavingCapability] = useState<string | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
 
   useEffect(() => {
     loadSettings();
@@ -30,7 +30,7 @@ export function MediaSettingsTab() {
       const data = await mediaSettingsApi.get();
       setSettings(data);
     } catch {
-      setError('Failed to load media settings');
+      toast.error('Failed to load media settings');
     } finally {
       setIsLoading(false);
     }
@@ -73,16 +73,13 @@ export function MediaSettingsTab() {
     model: string | null
   ) => {
     setSavingCapability(capability);
-    setSaved(null);
-    setError(null);
 
     try {
       await mediaSettingsApi.update(capability, { provider, model });
-      setSaved(capability);
-      setTimeout(() => setSaved(null), 2000);
+      toast.success('Setting saved');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save setting';
-      setError(message);
+      toast.error(message);
       await loadSettings();
     } finally {
       setSavingCapability(null);
@@ -96,10 +93,10 @@ export function MediaSettingsTab() {
 
     try {
       await mediaSettingsApi.reset(capability);
+      toast.success('Setting reset');
       await loadSettings();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to reset';
-      setError(message);
+      toast.error(err instanceof Error ? err.message : 'Failed to reset');
     } finally {
       setSavingCapability(null);
     }
@@ -115,20 +112,6 @@ export function MediaSettingsTab() {
 
   return (
     <div className="space-y-6">
-      {/* Error message */}
-      {error && (
-        <div className="p-4 bg-error/10 border border-error/20 rounded-lg flex items-center gap-2 text-error">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm">{error}</span>
-          <button
-            onClick={() => setError(null)}
-            className="ml-auto text-error/60 hover:text-error"
-          >
-            &times;
-          </button>
-        </div>
-      )}
-
       {/* Info banner */}
       <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
         <p className="text-sm text-text-primary dark:text-dark-text-primary">
@@ -143,7 +126,6 @@ export function MediaSettingsTab() {
           const configuredProviders = setting.availableProviders.filter((p) => p.isConfigured);
           const hasConfiguredProviders = configuredProviders.length > 0;
           const isSaving = savingCapability === setting.capability;
-          const isSaved = saved === setting.capability;
 
           // Get models for current provider
           const currentProviderConfig = setting.availableProviders.find(
@@ -171,11 +153,6 @@ export function MediaSettingsTab() {
                       {isSaving && (
                         <span className="text-xs text-text-muted dark:text-dark-text-muted">
                           Saving...
-                        </span>
-                      )}
-                      {isSaved && (
-                        <span className="text-xs text-success flex items-center gap-1">
-                          <Check className="w-3 h-3" /> Saved
                         </span>
                       )}
                     </h4>

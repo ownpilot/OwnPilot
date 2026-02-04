@@ -7,7 +7,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useDialog } from './ConfirmDialog';
-import { Check, AlertCircle, Server, Edit2, Save, X, ExternalLink, Search } from './icons';
+import { Check, Server, Edit2, Save, X, ExternalLink, Search } from './icons';
+import { useToast } from './ToastProvider';
 import { providersApi } from '../api';
 import type { ProviderInfo, UserOverride } from '../types';
 
@@ -21,9 +22,9 @@ const PROVIDER_TYPES = [
 
 export function ProvidersTab() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterConfigured, setFilterConfigured] = useState<'all' | 'configured' | 'unconfigured'>('all');
 
@@ -48,7 +49,7 @@ export function ProvidersTab() {
       const { providers: list } = await providersApi.list();
       setProviders(list as ProviderInfo[]);
     } catch {
-      setError('Failed to load providers');
+      toast.error('Failed to load providers');
     } finally {
       setLoading(false);
     }
@@ -65,8 +66,9 @@ export function ProvidersTab() {
       setProviders((prev) =>
         prev.map((p) => (p.id === providerId ? { ...p, isEnabled: enabled, hasOverride: true } : p))
       );
+      toast.success(enabled ? 'Provider enabled' : 'Provider disabled');
     } catch {
-      setError('Failed to toggle provider');
+      toast.error('Failed to toggle provider');
     }
   };
 
@@ -84,7 +86,7 @@ export function ProvidersTab() {
       });
       setEditingProvider(providerId);
     } catch {
-      setError('Failed to load provider config');
+      toast.error('Failed to load provider config');
     }
   };
 
@@ -101,8 +103,9 @@ export function ProvidersTab() {
       // Refresh providers
       await fetchProviders();
       setEditingProvider(null);
+      toast.success('Provider config saved');
     } catch {
-      setError('Failed to save provider config');
+      toast.error('Failed to save provider config');
     } finally {
       setSaving(false);
     }
@@ -114,8 +117,9 @@ export function ProvidersTab() {
       await providersApi.resetConfig(providerId);
       await fetchProviders();
       setEditingProvider(null);
+      toast.success('Provider reset to default');
     } catch {
-      setError('Failed to reset provider config');
+      toast.error('Failed to reset provider config');
     }
   };
 
@@ -255,17 +259,6 @@ export function ProvidersTab() {
           Configure provider settings like endpoint URLs and types. These settings survive models.dev sync.
         </p>
       </div>
-
-      {/* Error */}
-      {error && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-300">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm">{error}</span>
-          <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* Search and filters */}
       <div className="flex flex-col sm:flex-row gap-4">

@@ -65,7 +65,7 @@ export function CostsPage() {
       setBudget(data.status);
       toast.success('Budget saved');
     } catch {
-      setError('Failed to save budget');
+      toast.error('Failed to save budget');
     } finally {
       setSavingBudget(false);
     }

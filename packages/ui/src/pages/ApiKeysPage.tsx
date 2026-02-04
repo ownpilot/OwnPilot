@@ -117,7 +117,6 @@ export function ApiKeysPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    setError(null);
 
     try {
       const newConfigured = [...configuredProviders];
@@ -142,7 +141,7 @@ export function ApiKeysPage() {
 
       toast.success('Settings saved');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save settings');
+      toast.error(err instanceof Error ? err.message : 'Failed to save settings');
     } finally {
       setIsSaving(false);
     }
@@ -165,7 +164,7 @@ export function ApiKeysPage() {
         await handleDefaultModelChange(newModel);
       }
     } catch {
-      setError('Failed to save default provider');
+      toast.error('Failed to save default provider');
     }
   };
 
@@ -210,7 +209,7 @@ export function ApiKeysPage() {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete API key');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete API key');
     }
   };
 

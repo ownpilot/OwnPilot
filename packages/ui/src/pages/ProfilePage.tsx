@@ -12,12 +12,12 @@ import {
   Brain,
   MessageSquare,
   Globe,
-  Check,
   Plus,
   Download,
   Upload,
 } from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useToast } from '../components/ToastProvider';
 import { profileApi } from '../api';
 import type { ProfileData } from '../api';
 
@@ -52,13 +52,13 @@ const AUTONOMY_DESCRIPTIONS = {
 };
 
 export function ProfilePage() {
+  const toast = useToast();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'quick' | 'advanced' | 'instructions'>('overview');
   const [quickSetup, setQuickSetup] = useState<QuickSetupData>(defaultQuickSetup);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Custom instruction input
   const [newInstruction, setNewInstruction] = useState('');
@@ -94,14 +94,12 @@ export function ProfilePage() {
   const saveQuickSetup = async () => {
     try {
       setIsSaving(true);
-      setSaveSuccess(false);
 
       const result = await profileApi.quickSetup({ ...quickSetup });
       setProfile(result.profile);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      toast.success('Profile saved');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save profile');
+      toast.error(err instanceof Error ? err.message : 'Failed to save profile');
     } finally {
       setIsSaving(false);
     }
@@ -113,9 +111,10 @@ export function ProfilePage() {
     try {
       await profileApi.setData('instructions', `instruction_${Date.now()}`, newInstruction);
       setNewInstruction('');
+      toast.success('Instruction added');
       fetchProfile();
     } catch {
-      setError('Failed to add instruction');
+      toast.error('Failed to add instruction');
     }
   };
 
@@ -125,9 +124,10 @@ export function ProfilePage() {
     try {
       await profileApi.setData('boundaries', `boundary_${Date.now()}`, newBoundary);
       setNewBoundary('');
+      toast.success('Boundary added');
       fetchProfile();
     } catch {
-      setError('Failed to add boundary');
+      toast.error('Failed to add boundary');
     }
   };
 
@@ -142,7 +142,7 @@ export function ProfilePage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      setError('Failed to export profile');
+      toast.error('Failed to export profile');
     }
   };
 
@@ -156,7 +156,7 @@ export function ProfilePage() {
       await profileApi.import(data.entries);
       fetchProfile();
     } catch {
-      setError('Failed to import profile');
+      toast.error('Failed to import profile');
     }
   };
 
@@ -470,16 +470,7 @@ export function ProfilePage() {
               disabled={isSaving}
               className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors disabled:opacity-50"
             >
-              {isSaving ? (
-                'Saving...'
-              ) : saveSuccess ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  Saved!
-                </>
-              ) : (
-                'Save Profile'
-              )}
+              {isSaving ? 'Saving...' : 'Save Profile'}
             </button>
           </div>
         )}

@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useDialog } from './ConfirmDialog';
 import { Check, AlertCircle, ExternalLink, Trash2, RefreshCw, Link, Unlink } from './icons';
+import { useToast } from './ToastProvider';
 import { integrationsApi, authApi } from '../api';
 
 import type { Integration, AvailableIntegration, OAuthConfig } from '../types';
 
 export function IntegrationsTab() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [available, setAvailable] = useState<AvailableIntegration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [showConfig, setShowConfig] = useState(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig>({
@@ -38,7 +39,7 @@ export function IntegrationsTab() {
       setIntegrations(integrationsList);
       setAvailable(availableList);
     } catch {
-      setError('Failed to load integrations');
+      toast.error('Failed to load integrations');
     } finally {
       setIsLoading(false);
     }
@@ -67,8 +68,9 @@ export function IntegrationsTab() {
     try {
       await integrationsApi.delete(integrationId);
       setIntegrations((prev) => prev.filter((i) => i.id !== integrationId));
+      toast.success('Integration disconnected');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to disconnect integration');
+      toast.error(err instanceof Error ? err.message : 'Failed to disconnect integration');
     }
   };
 
@@ -76,9 +78,10 @@ export function IntegrationsTab() {
     setSyncingId(integrationId);
     try {
       await integrationsApi.sync(integrationId);
+      toast.success('Integration synced');
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sync integration');
+      toast.error(err instanceof Error ? err.message : 'Failed to sync integration');
     } finally {
       setSyncingId(null);
     }
@@ -86,7 +89,7 @@ export function IntegrationsTab() {
 
   const handleSaveOAuthConfig = async () => {
     if (!oauthConfig.clientId || !oauthConfig.clientSecret) {
-      setError('Client ID and Client Secret are required');
+      toast.error('Client ID and Client Secret are required');
       return;
     }
 
@@ -95,10 +98,11 @@ export function IntegrationsTab() {
       await authApi.saveGoogleConfig(oauthConfig);
       setShowConfig(false);
       setOauthConfig({ clientId: '', clientSecret: '', redirectUri: '' });
+      toast.success('OAuth configuration saved');
       await checkOAuthStatus();
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save OAuth configuration');
+      toast.error(err instanceof Error ? err.message : 'Failed to save OAuth configuration');
     } finally {
       setIsSavingConfig(false);
     }
@@ -111,10 +115,11 @@ export function IntegrationsTab() {
 
     try {
       await authApi.deleteGoogleConfig();
+      toast.success('OAuth configuration removed');
       await checkOAuthStatus();
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove OAuth configuration');
+      toast.error(err instanceof Error ? err.message : 'Failed to remove OAuth configuration');
     }
   };
 
@@ -176,20 +181,6 @@ export function IntegrationsTab() {
 
   return (
     <div className="space-y-6">
-      {/* Error message */}
-      {error && (
-        <div className="p-4 bg-error/10 border border-error/20 rounded-lg flex items-center gap-2 text-error">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm">{error}</span>
-          <button
-            onClick={() => setError(null)}
-            className="ml-auto text-error/60 hover:text-error"
-          >
-            &times;
-          </button>
-        </div>
-      )}
-
       {/* OAuth Configuration Section */}
       <section className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
         <div className="flex items-center justify-between mb-4">
