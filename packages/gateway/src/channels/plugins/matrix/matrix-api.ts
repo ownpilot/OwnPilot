@@ -113,6 +113,12 @@ export class MatrixChannelAPI implements ChannelPluginAPI {
       throw new Error('Matrix homeserver_url and access_token are required');
     }
 
+    // Clean up any existing client instance (e.g. reconnecting after error)
+    if (this.client) {
+      try { this.client.stopClient(); } catch { /* already stopped */ }
+      this.client = null;
+    }
+
     this.status = 'connecting';
     this.emitConnectionEvent('connecting');
 

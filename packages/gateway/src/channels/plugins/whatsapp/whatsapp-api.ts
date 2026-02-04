@@ -91,6 +91,12 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   async connect(): Promise<void> {
     if (this.status === 'connected') return;
 
+    // Clean up any existing socket instance (e.g. reconnecting after error)
+    if (this.socket) {
+      try { this.socket.end(undefined); } catch { /* already closed */ }
+      this.socket = null;
+    }
+
     this.status = 'connecting';
     this.emitConnectionEvent('connecting');
 
