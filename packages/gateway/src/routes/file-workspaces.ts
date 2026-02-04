@@ -10,6 +10,14 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
+
+/** Sanitize a filename for use in Content-Disposition headers */
+function sanitizeFilename(name: string): string {
+  return name
+    .replace(/[/\\:*?"<>|\r\n]/g, '_')  // Replace path separators, control chars, shell-dangerous chars
+    .replace(/[^\x20-\x7E]/g, '_')       // Replace non-printable / non-ASCII
+    .slice(0, 255);                        // Limit length
+}
 import {
   listSessionWorkspaces,
   getSessionWorkspace,
@@ -150,7 +158,7 @@ app.get('/:id/file/*', async (c) => {
 
     // If download requested, return as binary
     if (download) {
-      const filename = basename(filePath);
+      const filename = sanitizeFilename(basename(filePath));
       return new Response(content, {
         headers: {
           'Content-Disposition': `attachment; filename="${filename}"`,
@@ -261,7 +269,7 @@ app.get('/:id/download', async (c) => {
     const stats = await stat(zipPath);
 
     // Set headers for download
-    const filename = `${workspace.name || workspaceId}.zip`;
+    const filename = sanitizeFilename(`${workspace.name || workspaceId}.zip`);
     c.header('Content-Type', 'application/zip');
     c.header('Content-Disposition', `attachment; filename="${filename}"`);
     c.header('Content-Length', String(stats.size));
