@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { FileText, Plus, Trash2, Pin, Search } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -64,8 +64,8 @@ export function NotesPage() {
     }
   }, [toast, fetchNotes]);
 
-  const pinnedNotes = notes.filter((n) => n.isPinned);
-  const otherNotes = notes.filter((n) => !n.isPinned);
+  const pinnedNotes = useMemo(() => notes.filter((n) => n.isPinned), [notes]);
+  const otherNotes = useMemo(() => notes.filter((n) => !n.isPinned), [notes]);
 
   return (
     <div className="flex flex-col h-full">

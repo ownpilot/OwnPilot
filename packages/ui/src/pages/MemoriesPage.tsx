@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { memoriesApi, apiClient } from '../api';
 import type { Memory } from '../api';
 import { Brain, Plus, Trash2, Search, Star, Filter } from '../components/icons';
@@ -73,8 +73,8 @@ export function MemoriesPage() {
     fetchMemories();
   }, [fetchMemories]);
 
-  const factCount = memories.filter((m) => m.type === 'fact').length;
-  const preferenceCount = memories.filter((m) => m.type === 'preference').length;
+  const factCount = useMemo(() => memories.filter((m) => m.type === 'fact').length, [memories]);
+  const preferenceCount = useMemo(() => memories.filter((m) => m.type === 'preference').length, [memories]);
 
   return (
     <div className="flex flex-col h-full">

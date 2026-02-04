@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Bookmark, Plus, Trash2, Star, ExternalLink, Search, Folder } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -64,8 +64,8 @@ export function BookmarksPage() {
   }, [toast, fetchBookmarks]);
 
   // Get unique folders
-  const folders = Array.from(new Set(bookmarks.map((b) => b.folder).filter(Boolean))) as string[];
-  const favoriteCount = bookmarks.filter((b) => b.isFavorite).length;
+  const folders = useMemo(() => Array.from(new Set(bookmarks.map((b) => b.folder).filter(Boolean))) as string[], [bookmarks]);
+  const favoriteCount = useMemo(() => bookmarks.filter((b) => b.isFavorite).length, [bookmarks]);
 
   return (
     <div className="flex flex-col h-full">

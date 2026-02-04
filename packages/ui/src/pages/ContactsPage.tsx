@@ -61,7 +61,7 @@ export function ContactsPage() {
     }
   }, [toast, fetchContacts]);
 
-  const favoriteCount = contacts.filter((c) => c.isFavorite).length;
+  const favoriteCount = useMemo(() => contacts.filter((c) => c.isFavorite).length, [contacts]);
 
   // Group contacts alphabetically
   const groupedContacts = useMemo(() => contacts.reduce((acc, contact) => {

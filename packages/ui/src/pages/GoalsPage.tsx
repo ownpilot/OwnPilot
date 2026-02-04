@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { goalsApi, apiClient } from '../api';
 import type { Goal, GoalStep } from '../api';
 import { Target, Plus, Trash2, ChevronRight, CheckCircle2, Circle, AlertTriangle, Pause } from '../components/icons';
@@ -80,8 +80,8 @@ export function GoalsPage() {
     }
   }, [toast, fetchGoals]);
 
-  const activeCount = goals.filter((g) => g.status === 'active').length;
-  const completedCount = goals.filter((g) => g.status === 'completed').length;
+  const activeCount = useMemo(() => goals.filter((g) => g.status === 'active').length, [goals]);
+  const completedCount = useMemo(() => goals.filter((g) => g.status === 'completed').length, [goals]);
 
   return (
     <div className="flex flex-col h-full">

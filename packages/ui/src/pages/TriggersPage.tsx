@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { triggersApi, apiClient } from '../api';
 import type { Trigger, TriggerConfig, TriggerAction, TriggerHistoryEntry } from '../api';
 import { Zap, Plus, Trash2, Play, Pause, Clock, History } from '../components/icons';
@@ -103,8 +103,8 @@ export function TriggersPage() {
     }
   }, [toast, fetchTriggers]);
 
-  const enabledCount = triggers.filter((t) => t.enabled).length;
-  const scheduleCount = triggers.filter((t) => t.type === 'schedule').length;
+  const enabledCount = useMemo(() => triggers.filter((t) => t.enabled).length, [triggers]);
+  const scheduleCount = useMemo(() => triggers.filter((t) => t.type === 'schedule').length, [triggers]);
 
   return (
     <div className="flex flex-col h-full">

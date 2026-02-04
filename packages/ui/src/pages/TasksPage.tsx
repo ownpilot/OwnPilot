@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { CheckCircle2, Circle, AlertTriangle, Plus, Trash2, Calendar } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -68,8 +68,8 @@ export function TasksPage() {
     }
   }, [confirm, toast, fetchTasks]);
 
-  const pendingCount = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length;
-  const completedCount = tasks.filter((t) => t.status === 'completed').length;
+  const pendingCount = useMemo(() => tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length, [tasks]);
+  const completedCount = useMemo(() => tasks.filter((t) => t.status === 'completed').length, [tasks]);
 
   return (
     <div className="flex flex-col h-full">

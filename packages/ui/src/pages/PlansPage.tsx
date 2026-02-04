@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { plansApi, apiClient } from '../api';
 import type { Plan, PlanStep, PlanEventType, PlanHistoryEntry } from '../api';
 import {
@@ -143,8 +143,8 @@ export function PlansPage() {
     }
   }, [confirm, toast, fetchPlans]);
 
-  const runningCount = plans.filter((p) => p.status === 'running').length;
-  const completedCount = plans.filter((p) => p.status === 'completed').length;
+  const runningCount = useMemo(() => plans.filter((p) => p.status === 'running').length, [plans]);
+  const completedCount = useMemo(() => plans.filter((p) => p.status === 'completed').length, [plans]);
 
   return (
     <div className="flex flex-col h-full">
