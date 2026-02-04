@@ -345,8 +345,8 @@ expensesRoutes.post('/', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'amount, category, and description are required' }, 400);
   }
 
-  if (typeof body.amount !== 'number' || isNaN(body.amount)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'amount must be a valid number' }, 400);
+  if (typeof body.amount !== 'number' || isNaN(body.amount) || body.amount <= 0) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'amount must be a positive number' }, 400);
   }
 
   const db = await loadExpenseDb();

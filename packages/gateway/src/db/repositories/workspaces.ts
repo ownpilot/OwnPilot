@@ -258,8 +258,8 @@ export class WorkspacesRepository extends BaseRepository {
    */
   async updateContainerStatus(id: string, containerId: string | null, status: ContainerStatus): Promise<boolean> {
     const result = await this.execute(
-      `UPDATE user_workspaces SET container_id = $1, container_status = $2, updated_at = NOW() WHERE id = $3`,
-      [containerId, status, id]
+      `UPDATE user_workspaces SET container_id = $1, container_status = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4`,
+      [containerId, status, id, this.userId]
     );
     return result.changes > 0;
   }

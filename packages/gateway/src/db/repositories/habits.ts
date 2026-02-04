@@ -410,7 +410,7 @@ export class HabitsRepository extends BaseRepository {
 
     // Calculate total completions
     const totalResult = await this.queryOne<{ total: number }>(
-      `SELECT COAESCE(SUM(count), 0) as total FROM habit_logs WHERE habit_id = $1`,
+      `SELECT COALESCE(SUM(count), 0) as total FROM habit_logs WHERE habit_id = $1`,
       [habitId]
     );
     const totalCompletions = totalResult?.total ?? 0;
@@ -561,6 +561,13 @@ export class HabitsRepository extends BaseRepository {
 
     const habits = await this.list({ isArchived: false });
 
+    // Batch-fetch all today's logs in one query instead of N+1
+    const todayLogs = await this.query<HabitLogRow>(
+      `SELECT * FROM habit_logs WHERE date = $1`,
+      [todayStr]
+    );
+    const logsByHabitId = new Map(todayLogs.map((row) => [row.habit_id, rowToHabitLog(row)]));
+
     const results: HabitWithTodayStatus[] = [];
 
     for (const habit of habits) {
@@ -574,7 +581,7 @@ export class HabitsRepository extends BaseRepository {
       }
 
       if (isTargetDay) {
-        const todayLog = await this.getLog(habit.id, todayStr);
+        const todayLog = logsByHabitId.get(habit.id);
         results.push({
           ...habit,
           completedToday: todayLog ? todayLog.count >= habit.targetCount : false,

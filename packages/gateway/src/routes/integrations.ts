@@ -125,10 +125,11 @@ integrationsRoutes.get('/', async (c) => {
  */
 integrationsRoutes.get('/:id', async (c) => {
   const id = c.req.param('id');
+  const userId = getUserId(c);
 
   const integration = await oauthIntegrationsRepo.getById(id);
 
-  if (!integration) {
+  if (!integration || integration.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Integration not found' }, 404);
   }
 
@@ -173,10 +174,11 @@ integrationsRoutes.get('/status/:provider/:service', async (c) => {
  */
 integrationsRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
+  const userId = getUserId(c);
 
   const integration = await oauthIntegrationsRepo.getById(id);
 
-  if (!integration) {
+  if (!integration || integration.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Integration not found' }, 404);
   }
 
@@ -211,10 +213,11 @@ integrationsRoutes.delete('/:id', async (c) => {
  */
 integrationsRoutes.post('/:id/sync', async (c) => {
   const id = c.req.param('id');
+  const userId = getUserId(c);
 
   const integration = await oauthIntegrationsRepo.getById(id);
 
-  if (!integration) {
+  if (!integration || integration.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Integration not found' }, 404);
   }
 
