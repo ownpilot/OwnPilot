@@ -157,7 +157,7 @@ describe('Workspaces Routes', () => {
       mockStorage.createUserStorage.mockResolvedValue('/tmp/user-1/ws-123');
       mockRepo.create.mockResolvedValue({
         id: 'ws-123',
-        userId: 'default-user',
+        userId: 'default',
         name: 'New Workspace',
         description: 'Test',
         status: 'active',
@@ -437,7 +437,7 @@ describe('Workspaces Routes', () => {
       const res = await app.request('/workspaces/ws-123/files?path=src&recursive=true');
 
       expect(res.status).toBe(200);
-      expect(mockStorage.listFiles).toHaveBeenCalledWith('default-user/ws-123', 'src', true);
+      expect(mockStorage.listFiles).toHaveBeenCalledWith('default/ws-123', 'src', true);
     });
 
     it('should return 404 for non-existent workspace', async () => {

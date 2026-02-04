@@ -19,19 +19,9 @@ import {
   DEFAULT_CONTAINER_CONFIG,
   StorageSecurityError,
 } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getIntParam, getUserId } from './helpers.js';
 
 const app = new Hono();
-
-// Default user ID (single-user mode for now, can be extended with auth)
-const DEFAULT_USER_ID = 'default-user';
-
-/**
- * Helper to get user ID from context (for future auth integration)
- */
-function getUserId(c: { get: (key: string) => unknown }): string {
-  return (c.get('userId') as string) || DEFAULT_USER_ID;
-}
 
 // ============================================
 // Workspace CRUD
