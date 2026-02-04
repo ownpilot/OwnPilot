@@ -4,6 +4,7 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { bodyLimit } from 'hono/body-limit';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 
@@ -103,6 +104,12 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
       credentials: true,
     })
   );
+
+  // Body size limit (1 MB default — prevents oversized payloads)
+  app.use('/api/*', bodyLimit({
+    maxSize: 1024 * 1024, // 1 MB
+    onError: (c) => c.json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body exceeds 1 MB limit' } }, 413),
+  }));
 
   // Request ID
   app.use('*', requestId);
