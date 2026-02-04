@@ -139,6 +139,7 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
           onClick={onToggle}
           className="p-3 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
           title="Expand stats panel"
+          aria-label="Expand stats panel"
         >
           <PanelRight className="w-5 h-5 text-text-muted dark:text-dark-text-muted" />
         </button>
@@ -172,6 +173,7 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
           onClick={onToggle}
           className="p-1 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded transition-colors"
           title="Collapse panel"
+          aria-label="Collapse panel"
         >
           <ChevronRight className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
         </button>

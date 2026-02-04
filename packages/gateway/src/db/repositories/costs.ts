@@ -185,9 +185,10 @@ export class CostsRepository extends BaseRepository {
         SUM(total_tokens) as total_tokens,
         SUM(total_cost) as total_cost
       FROM costs
-      WHERE created_at >= NOW() - INTERVAL '${days} days'
+      WHERE created_at >= NOW() - ($1 || ' days')::INTERVAL
       GROUP BY DATE(created_at)
-      ORDER BY date ASC`
+      ORDER BY date ASC`,
+      [days]
     );
 
     return rows.map((row) => ({

@@ -235,7 +235,7 @@ function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
   const style = CONNECTION_STYLES[status];
   return (
     <div className="flex items-center gap-2 px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">
-      <span className={`w-1.5 h-1.5 rounded-full ${style.color} ${style.pulse ? 'animate-pulse' : ''}`} />
+      <span className={`w-1.5 h-1.5 rounded-full ${style.color} ${style.pulse ? 'animate-pulse' : ''}`} aria-hidden="true" />
       <span>{style.label}</span>
     </div>
   );

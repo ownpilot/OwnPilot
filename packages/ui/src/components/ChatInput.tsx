@@ -122,6 +122,7 @@ export function ChatInput({ onSend, onStop, isLoading, placeholder = 'Type a mes
                   type="button"
                   onClick={() => removeAttachment(index)}
                   className="ml-0.5 p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                  aria-label={`Remove ${att.displayName || att.name}`}
                 >
                   <X className="w-3 h-3" />
                 </button>
