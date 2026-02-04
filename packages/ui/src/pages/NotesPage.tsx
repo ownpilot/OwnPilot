@@ -27,7 +27,7 @@ export function NotesPage() {
       }
 
       const data = await notesApi.list(params);
-      setNotes(data as Note[]);
+      setNotes(data);
     } catch {
       // API client handles error reporting
     } finally {

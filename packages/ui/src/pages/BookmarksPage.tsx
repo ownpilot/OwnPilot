@@ -29,7 +29,7 @@ export function BookmarksPage() {
       if (selectedFolder) params.folder = selectedFolder;
 
       const data = await bookmarksApi.list(params);
-      setBookmarks(data as BookmarkItem[]);
+      setBookmarks(data);
     } catch {
       // API client handles error reporting
     } finally {

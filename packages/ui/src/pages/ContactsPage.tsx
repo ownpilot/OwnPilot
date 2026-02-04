@@ -27,7 +27,7 @@ export function ContactsPage() {
       if (filter === 'favorites') params.favorite = 'true';
 
       const data = await contactsApi.list(params);
-      setContacts(data as Contact[]);
+      setContacts(data);
     } catch {
       // API client handles error reporting
     } finally {

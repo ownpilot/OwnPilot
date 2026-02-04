@@ -84,7 +84,7 @@ export function PlansPage() {
       }
 
       const data = await plansApi.list(params);
-      setPlans(data.plans as Plan[]);
+      setPlans(data.plans);
     } catch {
       // API client handles error reporting
     } finally {
@@ -291,7 +291,7 @@ function PlanItem({
       setLoadingSteps(true);
       plansApi.steps(plan.id)
         .then((data) => {
-          if (!cancelled) setSteps(data.steps as PlanStep[]);
+          if (!cancelled) setSteps(data.steps);
         })
         .catch(() => { /* API client handles error */ })
         .finally(() => { if (!cancelled) setLoadingSteps(false); });
@@ -306,7 +306,7 @@ function PlanItem({
       const interval = setInterval(() => {
         plansApi.steps(plan.id)
           .then((data) => {
-            if (!cancelled) setSteps(data.steps as PlanStep[]);
+            if (!cancelled) setSteps(data.steps);
           })
           .catch(() => { /* API client handles error */ });
       }, 2000);

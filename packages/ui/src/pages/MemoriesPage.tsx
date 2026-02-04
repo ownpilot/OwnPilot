@@ -44,7 +44,7 @@ export function MemoriesPage() {
       }
 
       const data = await memoriesApi.list(params);
-      setMemories(data.memories as Memory[]);
+      setMemories(data.memories);
     } catch {
       // API client handles error reporting
     } finally {

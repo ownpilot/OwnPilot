@@ -49,7 +49,7 @@ export function TriggersPage() {
       }
 
       const data = await triggersApi.list(params);
-      setTriggers(data.triggers as Trigger[]);
+      setTriggers(data.triggers);
     } catch {
       // API client handles error reporting
     } finally {
