@@ -150,6 +150,7 @@ export function ExpensesPage() {
               onClick={fetchData}
               className="p-2 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors"
               title="Refresh"
+              aria-label="Refresh expenses"
             >
               <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
@@ -163,6 +164,7 @@ export function ExpensesPage() {
           <button
             onClick={() => setYear((y) => y - 1)}
             className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+            aria-label="Previous year"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -173,6 +175,7 @@ export function ExpensesPage() {
             onClick={() => setYear((y) => y + 1)}
             disabled={year >= new Date().getFullYear()}
             className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors disabled:opacity-50"
+            aria-label="Next year"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -372,6 +375,7 @@ export function ExpensesPage() {
                     onClick={() => handleDeleteExpense(expense.id)}
                     className="p-1.5 text-text-muted hover:text-error transition-colors"
                     title="Delete"
+                    aria-label="Delete expense"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

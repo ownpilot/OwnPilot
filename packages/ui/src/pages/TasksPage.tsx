@@ -179,6 +179,7 @@ function TaskItem({ task, onComplete, onEdit, onDelete }: TaskItemProps) {
         onClick={onComplete}
         className="mt-0.5 flex-shrink-0"
         disabled={isCompleted}
+        aria-label={isCompleted ? 'Task completed' : 'Mark task as complete'}
       >
         {isCompleted ? (
           <CheckCircle2 className="w-5 h-5 text-success" />
@@ -232,6 +233,7 @@ function TaskItem({ task, onComplete, onEdit, onDelete }: TaskItemProps) {
       <button
         onClick={onDelete}
         className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+        aria-label="Delete task"
       >
         <Trash2 className="w-4 h-4" />
       </button>

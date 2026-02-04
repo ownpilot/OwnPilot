@@ -276,6 +276,7 @@ function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite }: Bookmark
             rel="noopener noreferrer"
             className="p-1 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
             onClick={(e) => e.stopPropagation()}
+            aria-label="Open bookmark in new tab"
           >
             <ExternalLink className="w-4 h-4" />
           </a>
@@ -286,12 +287,14 @@ function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite }: Bookmark
                 ? 'text-warning'
                 : 'text-text-muted dark:text-dark-text-muted hover:text-warning'
             }`}
+            aria-label={bookmark.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <Star className={`w-4 h-4 ${bookmark.isFavorite ? 'fill-warning' : ''}`} />
           </button>
           <button
             onClick={onDelete}
             className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+            aria-label="Delete bookmark"
           >
             <Trash2 className="w-4 h-4" />
           </button>

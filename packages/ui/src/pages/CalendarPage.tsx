@@ -263,6 +263,7 @@ function EventItem({ event, onEdit, onDelete }: EventItemProps) {
       <button
         onClick={onDelete}
         className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+        aria-label="Delete event"
       >
         <Trash2 className="w-4 h-4" />
       </button>
@@ -451,6 +452,7 @@ function EventModal({ event, defaultDate, onClose, onSave }: EventModalProps) {
                       color === c.value ? 'ring-2 ring-offset-2 ring-primary' : ''
                     }`}
                     title={c.label}
+                    aria-label={`Set color to ${c.label}`}
                   />
                 ))}
               </div>

@@ -317,6 +317,7 @@ function TriggerItem({ trigger, onEdit, onDelete, onToggle, onFireNow, onViewHis
           onClick={onViewHistory}
           className="p-1 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
           title="View history"
+          aria-label="View trigger history"
         >
           <History className="w-4 h-4" />
         </button>
@@ -324,6 +325,7 @@ function TriggerItem({ trigger, onEdit, onDelete, onToggle, onFireNow, onViewHis
           onClick={onFireNow}
           className="p-1 text-text-muted dark:text-dark-text-muted hover:text-success transition-colors"
           title="Fire now"
+          aria-label="Fire trigger now"
         >
           <Play className="w-4 h-4" />
         </button>
@@ -335,12 +337,14 @@ function TriggerItem({ trigger, onEdit, onDelete, onToggle, onFireNow, onViewHis
               : 'text-text-muted dark:text-dark-text-muted hover:text-success'
           }`}
           title={trigger.enabled ? 'Disable' : 'Enable'}
+          aria-label={trigger.enabled ? 'Disable trigger' : 'Enable trigger'}
         >
           {trigger.enabled ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
         </button>
         <button
           onClick={onDelete}
           className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+          aria-label="Delete trigger"
         >
           <Trash2 className="w-4 h-4" />
         </button>

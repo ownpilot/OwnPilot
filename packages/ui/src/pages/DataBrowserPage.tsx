@@ -345,6 +345,7 @@ export function DataBrowserPage() {
                             onClick={() => setEditingRecord(record)}
                             className="p-1.5 text-text-muted dark:text-dark-text-muted hover:text-primary rounded transition-colors"
                             title="Edit"
+                            aria-label="Edit record"
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
@@ -352,6 +353,7 @@ export function DataBrowserPage() {
                             onClick={() => handleDelete(record.id as string)}
                             className="p-1.5 text-text-muted dark:text-dark-text-muted hover:text-error rounded transition-colors"
                             title="Delete"
+                            aria-label="Delete record"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

@@ -369,6 +369,7 @@ function PlanItem({
         <button
           onClick={onToggle}
           className="mt-1 flex-shrink-0 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
+          aria-label={isExpanded ? 'Collapse plan steps' : 'Expand plan steps'}
         >
           <ChevronRight
             className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -427,6 +428,7 @@ function PlanItem({
             onClick={onViewHistory}
             className="p-1 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
             title="View history"
+            aria-label="View plan history"
           >
             <History className="w-4 h-4" />
           </button>
@@ -435,6 +437,7 @@ function PlanItem({
               onClick={onStart}
               className="p-1 text-text-muted dark:text-dark-text-muted hover:text-success transition-colors"
               title="Start"
+              aria-label="Start plan"
             >
               <Play className="w-4 h-4" />
             </button>
@@ -444,6 +447,7 @@ function PlanItem({
               onClick={onPause}
               className="p-1 text-text-muted dark:text-dark-text-muted hover:text-warning transition-colors"
               title="Pause"
+              aria-label="Pause plan"
             >
               <Pause className="w-4 h-4" />
             </button>
@@ -453,6 +457,7 @@ function PlanItem({
               onClick={onResume}
               className="p-1 text-text-muted dark:text-dark-text-muted hover:text-success transition-colors"
               title="Resume"
+              aria-label="Resume plan"
             >
               <Play className="w-4 h-4" />
             </button>
@@ -462,6 +467,7 @@ function PlanItem({
               onClick={onAbort}
               className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
               title="Abort"
+              aria-label="Abort plan"
             >
               <StopCircle className="w-4 h-4" />
             </button>
@@ -471,6 +477,7 @@ function PlanItem({
               onClick={onRollback}
               className="p-1 text-text-muted dark:text-dark-text-muted hover:text-warning transition-colors"
               title="Rollback to checkpoint"
+              aria-label="Rollback to checkpoint"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -478,6 +485,7 @@ function PlanItem({
           <button
             onClick={onDelete}
             className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+            aria-label="Delete plan"
           >
             <Trash2 className="w-4 h-4" />
           </button>
