@@ -92,7 +92,7 @@ integrationsRoutes.get('/available', async (c) => {
     })
   );
 
-  return apiResponse(c, { data: integrations, });
+  return apiResponse(c, integrations);
 });
 
 /**
@@ -117,7 +117,7 @@ integrationsRoutes.get('/', async (c) => {
     updatedAt: integration.updatedAt,
   }));
 
-  return apiResponse(c, { data: safeIntegrations, });
+  return apiResponse(c, safeIntegrations);
 });
 
 /**
@@ -146,7 +146,7 @@ integrationsRoutes.get('/:id', async (c) => {
     updatedAt: integration.updatedAt,
   };
 
-  return apiResponse(c, { data: safeIntegration, });
+  return apiResponse(c, safeIntegration);
 });
 
 /**
@@ -160,12 +160,12 @@ integrationsRoutes.get('/status/:provider/:service', async (c) => {
   const isConnected = await oauthIntegrationsRepo.isConnected(userId, provider, service);
   const integration = await oauthIntegrationsRepo.getByUserProviderService(userId, provider, service);
 
-  return apiResponse(c, { data: {
-      isConnected,
-      status: integration?.status,
-      email: integration?.email,
-      lastSyncAt: integration?.lastSyncAt,
-    }, });
+  return apiResponse(c, {
+    isConnected,
+    status: integration?.status,
+    email: integration?.email,
+    lastSyncAt: integration?.lastSyncAt,
+  });
 });
 
 /**
@@ -288,8 +288,8 @@ integrationsRoutes.get('/health/summary', async (c) => {
     email: i.email,
   }));
 
-  return apiResponse(c, { data: {
-      summary,
-      integrations: details,
-    }, });
+  return apiResponse(c, {
+    summary,
+    integrations: details,
+  });
 });

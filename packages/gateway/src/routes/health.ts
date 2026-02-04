@@ -88,7 +88,7 @@ healthRoutes.get('/', async (c) => {
  * Liveness probe (Kubernetes)
  */
 healthRoutes.get('/live', (c) => {
-  return c.json({ status: 'ok' });
+  return apiResponse(c, { status: 'ok' });
 });
 
 /**
@@ -96,7 +96,7 @@ healthRoutes.get('/live', (c) => {
  */
 healthRoutes.get('/ready', (c) => {
   // Could check database connections, external services, etc.
-  return c.json({ status: 'ok' });
+  return apiResponse(c, { status: 'ok' });
 });
 
 /**

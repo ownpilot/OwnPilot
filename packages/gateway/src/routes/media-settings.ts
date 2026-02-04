@@ -131,7 +131,7 @@ mediaSettingsRoutes.get('/', async (c) => {
     })
   );
 
-  return apiResponse(c, { data: settings, });
+  return apiResponse(c, settings);
 });
 
 /**
@@ -149,15 +149,15 @@ mediaSettingsRoutes.get('/:capability', async (c) => {
   const current = await mediaSettingsRepo.getEffective(userId, capability);
   const availableProviders = getProvidersWithStatus(capability);
 
-  return apiResponse(c, { data: {
-      capability,
-      name: CAPABILITY_META[capability].name,
-      description: CAPABILITY_META[capability].description,
-      currentProvider: current?.provider || null,
-      currentModel: current?.model || null,
-      config: current?.config || null,
-      availableProviders,
-    }, });
+  return apiResponse(c, {
+    capability,
+    name: CAPABILITY_META[capability].name,
+    description: CAPABILITY_META[capability].description,
+    currentProvider: current?.provider || null,
+    currentModel: current?.model || null,
+    config: current?.config || null,
+    availableProviders,
+  });
 });
 
 /**
@@ -215,12 +215,12 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
       config: body.config,
     });
 
-    return apiResponse(c, { message: `${CAPABILITY_META[capability].name} provider set to ${body.provider}`,
-      data: {
-        capability,
-        provider: body.provider,
-        model: body.model,
-      }, });
+    return apiResponse(c, {
+      message: `${CAPABILITY_META[capability].name} provider set to ${body.provider}`,
+      capability,
+      provider: body.provider,
+      model: body.model,
+    });
   } catch (error) {
     log.error('Failed to save media setting:', error);
     return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: 'Failed to save setting' }, 500);
@@ -260,7 +260,7 @@ mediaSettingsRoutes.get('/providers/all', async (c) => {
     allProviders[capability] = getProvidersWithStatus(capability);
   }
 
-  return apiResponse(c, { data: allProviders, });
+  return apiResponse(c, allProviders);
 });
 
 /**
@@ -292,8 +292,8 @@ mediaSettingsRoutes.get('/status/summary', async (c) => {
     unconfigured: status.filter((s) => !s.isConfigured).length,
   };
 
-  return apiResponse(c, { data: {
-      summary,
-      capabilities: status,
-    }, });
+  return apiResponse(c, {
+    summary,
+    capabilities: status,
+  });
 });

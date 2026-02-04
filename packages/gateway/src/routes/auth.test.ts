@@ -107,8 +107,8 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
-      expect(data.data.data.google.configured).toBe(true);
-      expect(data.data.data.google.redirectUri).toBeDefined();
+      expect(data.data.google.configured).toBe(true);
+      expect(data.data.google.redirectUri).toBeDefined();
     });
 
     it('should return not configured when credentials missing', async () => {
@@ -118,7 +118,7 @@ describe('Auth Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.data.data.google.configured).toBe(false);
+      expect(data.data.google.configured).toBe(false);
     });
 
     it('should use custom redirect URI when configured', async () => {
@@ -132,7 +132,7 @@ describe('Auth Routes', () => {
       const res = await app.request('/auth/status');
 
       const data = await res.json();
-      expect(data.data.data.google.redirectUri).toBe('https://custom.com/callback');
+      expect(data.data.google.redirectUri).toBe('https://custom.com/callback');
     });
   });
 

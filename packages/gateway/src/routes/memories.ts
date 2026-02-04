@@ -63,11 +63,11 @@ memoriesRoutes.post('/', async (c) => {
 
     if (deduplicated) {
       log.info('Memory deduplicated', { userId, memoryId: memory.id, type: memory.type });
-      return apiResponse(c, { data: {
-          memory,
-          message: 'Similar memory exists, boosted importance instead.',
-          deduplicated: true,
-        }, });
+      return apiResponse(c, {
+        memory,
+        message: 'Similar memory exists, boosted importance instead.',
+        deduplicated: true,
+      });
     }
 
     log.info('Memory created', { userId, memoryId: memory.id, type: memory.type, importance: memory.importance });

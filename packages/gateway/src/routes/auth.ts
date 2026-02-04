@@ -127,12 +127,12 @@ async function retrieveOAuthState(stateToken: string): Promise<OAuthState | null
 authRoutes.get('/status', (c) => {
   const googleConfig = getGoogleOAuthConfig();
 
-  return apiResponse(c, { data: {
-      google: {
-        configured: !!googleConfig,
-        redirectUri: googleConfig?.redirectUri,
-      },
-    }, });
+  return apiResponse(c, {
+    google: {
+      configured: !!googleConfig,
+      redirectUri: googleConfig?.redirectUri,
+    },
+  });
 });
 
 /**
