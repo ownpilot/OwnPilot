@@ -8,6 +8,25 @@
 
 // ---- Autonomy ----
 
+export interface AutonomyLevel {
+  level: number;
+  name: string;
+  description: string;
+}
+
+export interface AutonomyConfig {
+  userId: string;
+  level: number;
+  allowedTools: string[];
+  blockedTools: string[];
+  dailyBudget: number;
+  dailySpend: number;
+  maxCostPerAction: number;
+  budgetResetAt: string;
+  notificationThreshold: number;
+  auditEnabled: boolean;
+}
+
 export interface PendingApproval {
   id: string;
   userId: string;
@@ -55,14 +74,50 @@ export interface DatabaseStats {
 
 // ---- Debug / Logs ----
 
-export interface DebugLogEntry {
+interface DebugLogEntryBase {
   timestamp: string;
-  type: 'request' | 'response' | 'tool_call' | 'tool_result' | 'error' | 'retry';
   provider?: string;
   model?: string;
-  data: Record<string, unknown>;
   duration?: number;
 }
+
+export interface ToolCallData {
+  name?: string;
+  id?: string;
+  approved?: boolean;
+  rejectionReason?: string;
+  arguments?: Record<string, unknown>;
+}
+
+export interface ToolResultData {
+  name?: string;
+  toolCallId?: string;
+  success?: boolean;
+  durationMs?: number;
+  resultLength?: number;
+  resultPreview?: string;
+  error?: string;
+}
+
+export interface DebugErrorData {
+  error?: string;
+  stack?: string;
+  context?: string;
+}
+
+export interface RetryData {
+  attempt?: number;
+  maxRetries?: number;
+  delayMs?: number;
+  error?: string;
+}
+
+export type DebugLogEntry =
+  | (DebugLogEntryBase & { type: 'tool_call'; data: ToolCallData })
+  | (DebugLogEntryBase & { type: 'tool_result'; data: ToolResultData })
+  | (DebugLogEntryBase & { type: 'error'; data: DebugErrorData })
+  | (DebugLogEntryBase & { type: 'retry'; data: RetryData })
+  | (DebugLogEntryBase & { type: 'request' | 'response'; data: Record<string, unknown> });
 
 export interface DebugInfo {
   enabled: boolean;

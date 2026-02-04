@@ -95,7 +95,7 @@ export function ProfilePage() {
       setIsSaving(true);
       setSaveSuccess(false);
 
-      const result = await profileApi.quickSetup(quickSetup as unknown as Record<string, unknown>);
+      const result = await profileApi.quickSetup({ ...quickSetup });
       setProfile(result.profile);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);

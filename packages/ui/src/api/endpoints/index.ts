@@ -44,12 +44,18 @@ export {
 
 // Re-export API response types
 export type {
+  AutonomyLevel,
+  AutonomyConfig,
   PendingApproval,
   SandboxStatus,
   DatabaseStatus,
   BackupInfo,
   DatabaseStats,
   DebugLogEntry,
+  ToolCallData,
+  ToolResultData,
+  DebugErrorData,
+  RetryData,
   DebugInfo,
   RequestLog,
   LogDetail,

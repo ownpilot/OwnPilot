@@ -441,12 +441,12 @@ export function AIModelsTab() {
     setIsDiscovering(true);
     setError(null);
     try {
-      const data = await apiClient.post<Record<string, unknown>>(
+      const data = await apiClient.post<{ newModels?: number; models?: unknown[]; providerName?: string }>(
         `/model-configs/providers/${providerId}/discover-models`,
       );
-      const newCount = (data.newModels as number) || 0;
-      const models = (data.models as unknown[]) || [];
-      const providerName = (data.providerName as string) || providerId;
+      const newCount = data.newModels ?? 0;
+      const models = data.models ?? [];
+      const providerName = data.providerName ?? providerId;
       setSuccess(`Discovered ${models.length} models from ${providerName}${newCount > 0 ? ` (${newCount} new)` : ''}`);
       await loadData();
     } catch {

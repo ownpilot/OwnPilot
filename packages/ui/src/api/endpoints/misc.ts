@@ -7,6 +7,8 @@
 import { apiClient } from '../client';
 import type { RequestOptions, StreamOptions } from '../client';
 import type {
+  AutonomyConfig,
+  AutonomyLevel,
   PendingApproval,
   SandboxStatus,
   DatabaseStatus,
@@ -41,7 +43,7 @@ import type {
 // ---- Autonomy ----
 
 export const autonomyApi = {
-  getConfig: () => apiClient.get<Record<string, unknown>>('/autonomy/config'),
+  getConfig: () => apiClient.get<{ config: AutonomyConfig; levels: AutonomyLevel[] }>('/autonomy/config'),
   getApprovals: () =>
     apiClient.get<{ pending: PendingApproval[]; count: number }>('/autonomy/approvals').then((r) => r.pending ?? []),
   setLevel: (level: string) => apiClient.post<void>('/autonomy/level', { level }),

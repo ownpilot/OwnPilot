@@ -60,7 +60,7 @@ export function ChatPage() {
 
       const namesMap: Record<string, string> = {};
       for (const p of providersData.providers) {
-        namesMap[(p as { id: string }).id] = (p as { name: string }).name;
+        namesMap[p.id] = p.name;
       }
       setProviderNames(namesMap);
       setModels(modelsData.models);
@@ -84,7 +84,7 @@ export function ChatPage() {
       // Build provider names lookup
       const namesMap: Record<string, string> = {};
       for (const p of providersData.providers) {
-        namesMap[(p as { id: string }).id] = (p as { name: string }).name;
+        namesMap[p.id] = p.name;
       }
       setProviderNames(namesMap);
 

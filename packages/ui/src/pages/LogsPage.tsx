@@ -674,8 +674,8 @@ export function LogsPage() {
                       {/* Tool call specific info */}
                       {entry.type === 'tool_call' && entry.data && (
                         <div className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">{(entry.data as { name?: string }).name}</span>
-                          {(entry.data as { approved?: boolean }).approved === false && (
+                          <span className="font-medium">{entry.data.name}</span>
+                          {entry.data.approved === false && (
                             <span className="ml-2 text-xs text-red-500">Rejected</span>
                           )}
                         </div>
@@ -684,9 +684,9 @@ export function LogsPage() {
                       {/* Tool result specific info */}
                       {entry.type === 'tool_result' && entry.data && (
                         <div className="mt-1 text-sm">
-                          <span className="font-medium text-gray-700 dark:text-gray-300">{(entry.data as { name?: string }).name}</span>
-                          <span className={`ml-2 text-xs ${(entry.data as { success?: boolean }).success ? 'text-green-500' : 'text-red-500'}`}>
-                            {(entry.data as { success?: boolean }).success ? 'Success' : 'Failed'}
+                          <span className="font-medium text-gray-700 dark:text-gray-300">{entry.data.name}</span>
+                          <span className={`ml-2 text-xs ${entry.data.success ? 'text-green-500' : 'text-red-500'}`}>
+                            {entry.data.success ? 'Success' : 'Failed'}
                           </span>
                           {entry.duration && (
                             <span className="ml-2 text-xs text-gray-500">{formatDuration(entry.duration)}</span>
@@ -697,7 +697,7 @@ export function LogsPage() {
                       {/* Error specific info */}
                       {entry.type === 'error' && entry.data && (
                         <div className="mt-1 text-xs text-red-500 truncate">
-                          {(entry.data as { error?: string }).error}
+                          {entry.data.error}
                         </div>
                       )}
 
@@ -768,28 +768,28 @@ export function LogsPage() {
                         <h4 className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Tool Call</h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div className="text-emerald-600 dark:text-emerald-400">Name</div>
-                          <div className="text-emerald-800 dark:text-emerald-200 font-medium">{(selectedDebugEntry.data as { name?: string }).name}</div>
+                          <div className="text-emerald-800 dark:text-emerald-200 font-medium">{selectedDebugEntry.data.name}</div>
                           <div className="text-emerald-600 dark:text-emerald-400">ID</div>
-                          <div className="text-emerald-800 dark:text-emerald-200 font-mono text-xs">{(selectedDebugEntry.data as { id?: string }).id}</div>
+                          <div className="text-emerald-800 dark:text-emerald-200 font-mono text-xs">{selectedDebugEntry.data.id}</div>
                           <div className="text-emerald-600 dark:text-emerald-400">Approved</div>
-                          <div className={`font-medium ${(selectedDebugEntry.data as { approved?: boolean }).approved ? 'text-green-600' : 'text-red-600'}`}>
-                            {(selectedDebugEntry.data as { approved?: boolean }).approved ? 'Yes' : 'No'}
+                          <div className={`font-medium ${selectedDebugEntry.data.approved ? 'text-green-600' : 'text-red-600'}`}>
+                            {selectedDebugEntry.data.approved ? 'Yes' : 'No'}
                           </div>
-                          {(selectedDebugEntry.data as { rejectionReason?: string }).rejectionReason && (
+                          {selectedDebugEntry.data.rejectionReason && (
                             <>
                               <div className="text-emerald-600 dark:text-emerald-400">Rejection Reason</div>
-                              <div className="text-red-600 dark:text-red-400">{(selectedDebugEntry.data as { rejectionReason?: string }).rejectionReason}</div>
+                              <div className="text-red-600 dark:text-red-400">{selectedDebugEntry.data.rejectionReason}</div>
                             </>
                           )}
                         </div>
                       </div>
 
                       {/* Arguments */}
-                      {(selectedDebugEntry.data as { arguments?: Record<string, unknown> }).arguments && (
+                      {selectedDebugEntry.data.arguments && (
                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
                           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Arguments (Input)</h4>
                           <pre className="p-2 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-60 text-gray-700 dark:text-gray-300">
-                            {JSON.stringify((selectedDebugEntry.data as { arguments?: Record<string, unknown> }).arguments, null, 2)}
+                            {JSON.stringify(selectedDebugEntry.data.arguments, null, 2)}
                           </pre>
                         </div>
                       )}
@@ -799,39 +799,39 @@ export function LogsPage() {
                   {/* Tool Result Specific */}
                   {selectedDebugEntry.type === 'tool_result' && selectedDebugEntry.data && (
                     <>
-                      <div className={`rounded-lg p-4 space-y-2 ${(selectedDebugEntry.data as { success?: boolean }).success ? 'bg-teal-50 dark:bg-teal-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
-                        <h4 className={`text-sm font-medium ${(selectedDebugEntry.data as { success?: boolean }).success ? 'text-teal-700 dark:text-teal-400' : 'text-red-700 dark:text-red-400'}`}>Tool Result</h4>
+                      <div className={`rounded-lg p-4 space-y-2 ${selectedDebugEntry.data.success ? 'bg-teal-50 dark:bg-teal-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
+                        <h4 className={`text-sm font-medium ${selectedDebugEntry.data.success ? 'text-teal-700 dark:text-teal-400' : 'text-red-700 dark:text-red-400'}`}>Tool Result</h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div className="text-teal-600 dark:text-teal-400">Name</div>
-                          <div className="text-teal-800 dark:text-teal-200 font-medium">{(selectedDebugEntry.data as { name?: string }).name}</div>
+                          <div className="text-teal-800 dark:text-teal-200 font-medium">{selectedDebugEntry.data.name}</div>
                           <div className="text-teal-600 dark:text-teal-400">Tool Call ID</div>
-                          <div className="text-teal-800 dark:text-teal-200 font-mono text-xs">{(selectedDebugEntry.data as { toolCallId?: string }).toolCallId}</div>
+                          <div className="text-teal-800 dark:text-teal-200 font-mono text-xs">{selectedDebugEntry.data.toolCallId}</div>
                           <div className="text-teal-600 dark:text-teal-400">Success</div>
-                          <div className={`font-medium ${(selectedDebugEntry.data as { success?: boolean }).success ? 'text-green-600' : 'text-red-600'}`}>
-                            {(selectedDebugEntry.data as { success?: boolean }).success ? 'Yes' : 'No'}
+                          <div className={`font-medium ${selectedDebugEntry.data.success ? 'text-green-600' : 'text-red-600'}`}>
+                            {selectedDebugEntry.data.success ? 'Yes' : 'No'}
                           </div>
                           <div className="text-teal-600 dark:text-teal-400">Duration</div>
-                          <div className="text-teal-800 dark:text-teal-200">{formatDuration((selectedDebugEntry.data as { durationMs?: number }).durationMs)}</div>
+                          <div className="text-teal-800 dark:text-teal-200">{formatDuration(selectedDebugEntry.data.durationMs)}</div>
                           <div className="text-teal-600 dark:text-teal-400">Result Length</div>
-                          <div className="text-teal-800 dark:text-teal-200">{(selectedDebugEntry.data as { resultLength?: number }).resultLength} chars</div>
+                          <div className="text-teal-800 dark:text-teal-200">{selectedDebugEntry.data.resultLength} chars</div>
                         </div>
                       </div>
 
                       {/* Result Preview */}
-                      {(selectedDebugEntry.data as { resultPreview?: string }).resultPreview && (
+                      {selectedDebugEntry.data.resultPreview && (
                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
                           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Result (Output)</h4>
                           <pre className="p-2 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-60 text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                            {(selectedDebugEntry.data as { resultPreview?: string }).resultPreview}
+                            {selectedDebugEntry.data.resultPreview}
                           </pre>
                         </div>
                       )}
 
                       {/* Error if failed */}
-                      {(selectedDebugEntry.data as { error?: string }).error && (
+                      {selectedDebugEntry.data.error && (
                         <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 space-y-2">
                           <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Error</h4>
-                          <div className="text-sm text-red-600 dark:text-red-300">{(selectedDebugEntry.data as { error?: string }).error}</div>
+                          <div className="text-sm text-red-600 dark:text-red-300">{selectedDebugEntry.data.error}</div>
                         </div>
                       )}
                     </>
@@ -851,14 +851,14 @@ export function LogsPage() {
                   {selectedDebugEntry.type === 'error' && (
                     <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 space-y-2">
                       <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Error Details</h4>
-                      <div className="text-sm text-red-600 dark:text-red-300">{(selectedDebugEntry.data as { error?: string }).error}</div>
-                      {(selectedDebugEntry.data as { stack?: string }).stack && (
+                      <div className="text-sm text-red-600 dark:text-red-300">{selectedDebugEntry.data.error}</div>
+                      {selectedDebugEntry.data.stack && (
                         <pre className="mt-2 p-2 bg-red-100 dark:bg-red-900/40 rounded text-xs overflow-auto max-h-40 text-red-700 dark:text-red-300">
-                          {(selectedDebugEntry.data as { stack?: string }).stack}
+                          {selectedDebugEntry.data.stack}
                         </pre>
                       )}
-                      {(selectedDebugEntry.data as { context?: string }).context && (
-                        <div className="text-xs text-red-500 mt-2">Context: {(selectedDebugEntry.data as { context?: string }).context}</div>
+                      {selectedDebugEntry.data.context && (
+                        <div className="text-xs text-red-500 mt-2">Context: {selectedDebugEntry.data.context}</div>
                       )}
                     </div>
                   )}
@@ -870,12 +870,12 @@ export function LogsPage() {
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div className="text-yellow-600 dark:text-yellow-400">Attempt</div>
                         <div className="text-yellow-800 dark:text-yellow-200">
-                          {(selectedDebugEntry.data as { attempt?: number }).attempt} / {(selectedDebugEntry.data as { maxRetries?: number }).maxRetries}
+                          {selectedDebugEntry.data.attempt} / {selectedDebugEntry.data.maxRetries}
                         </div>
                         <div className="text-yellow-600 dark:text-yellow-400">Delay</div>
-                        <div className="text-yellow-800 dark:text-yellow-200">{formatDuration((selectedDebugEntry.data as { delayMs?: number }).delayMs)}</div>
+                        <div className="text-yellow-800 dark:text-yellow-200">{formatDuration(selectedDebugEntry.data.delayMs)}</div>
                         <div className="text-yellow-600 dark:text-yellow-400">Error</div>
-                        <div className="text-yellow-800 dark:text-yellow-200">{(selectedDebugEntry.data as { error?: string }).error}</div>
+                        <div className="text-yellow-800 dark:text-yellow-200">{selectedDebugEntry.data.error}</div>
                       </div>
                     </div>
                   )}

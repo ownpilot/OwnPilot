@@ -14,26 +14,7 @@ import {
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { autonomyApi } from '../api';
-import type { PendingApproval } from '../api';
-
-interface AutonomyLevel {
-  level: number;
-  name: string;
-  description: string;
-}
-
-interface AutonomyConfig {
-  userId: string;
-  level: number;
-  allowedTools: string[];
-  blockedTools: string[];
-  dailyBudget: number;
-  dailySpend: number;
-  maxCostPerAction: number;
-  budgetResetAt: string;
-  notificationThreshold: number;
-  auditEnabled: boolean;
-}
+import type { PendingApproval, AutonomyConfig, AutonomyLevel } from '../api';
 
 
 const levelColors = [
@@ -62,8 +43,7 @@ export function AutonomyPage() {
 
   const fetchConfig = useCallback(async () => {
     try {
-      const data = await autonomyApi.getConfig();
-      const { config: cfg, levels: lvls } = data as { config: AutonomyConfig; levels: AutonomyLevel[] };
+      const { config: cfg, levels: lvls } = await autonomyApi.getConfig();
       setConfig(cfg);
       setLevels(lvls);
     } catch {
