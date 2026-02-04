@@ -406,7 +406,13 @@ export class AgentExecutor {
       agentId: agent.id,
     };
 
-    const result = await this.toolRegistry.execute(toolName, args, toolContext);
+    const timeoutMs = this.config.toolTimeout;
+    const result = await Promise.race([
+      this.toolRegistry.execute(toolName, args, toolContext),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`Tool '${toolName}' timed out after ${timeoutMs}ms`)), timeoutMs)
+      ),
+    ]).catch((err: Error) => ({ ok: false as const, error: err }));
 
     if (result.ok) {
       return { content: result.value.content };
