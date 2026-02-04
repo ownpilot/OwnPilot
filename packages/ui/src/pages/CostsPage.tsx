@@ -53,7 +53,7 @@ export function CostsPage() {
     fetchCosts();
   }, [fetchCosts]);
 
-  const saveBudget = async () => {
+  const saveBudget = useCallback(async () => {
     setSavingBudget(true);
     try {
       const body: Record<string, number> = {};
@@ -69,7 +69,7 @@ export function CostsPage() {
     } finally {
       setSavingBudget(false);
     }
-  };
+  }, [dailyLimit, weeklyLimit, monthlyLimit, toast]);
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(2)}M`;

@@ -69,25 +69,25 @@ export function AutonomyPage() {
     return () => clearInterval(interval);
   }, [fetchConfig, fetchPendingApprovals]);
 
-  const handleLevelChange = async (level: number) => {
+  const handleLevelChange = useCallback(async (level: number) => {
     try {
       await autonomyApi.setLevel(String(level));
       fetchConfig();
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [fetchConfig]);
 
-  const handleBudgetUpdate = async (updates: Partial<AutonomyConfig>) => {
+  const handleBudgetUpdate = useCallback(async (updates: Partial<AutonomyConfig>) => {
     try {
-      await autonomyApi.updateBudget(updates as Record<string, unknown>);
+      await autonomyApi.updateBudget({ ...updates });
       fetchConfig();
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [fetchConfig]);
 
-  const handleAddTool = async (type: "allow" | "block", tool: string) => {
+  const handleAddTool = useCallback(async (type: "allow" | "block", tool: string) => {
     if (!tool.trim()) return;
     try {
       if (type === "allow") {
@@ -101,27 +101,27 @@ export function AutonomyPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [fetchConfig]);
 
-  const handleRemoveTool = async (tool: string) => {
+  const handleRemoveTool = useCallback(async (tool: string) => {
     try {
       await autonomyApi.removeTool(tool);
       fetchConfig();
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [fetchConfig]);
 
-  const handleApproval = async (actionId: string, decision: 'approve' | 'reject') => {
+  const handleApproval = useCallback(async (actionId: string, decision: 'approve' | 'reject') => {
     try {
       await autonomyApi.resolveApproval(actionId, decision);
       fetchPendingApprovals();
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [fetchPendingApprovals]);
 
-  const handleResetConfig = async () => {
+  const handleResetConfig = useCallback(async () => {
     if (!await confirm({ message: 'Are you sure you want to reset autonomy settings to defaults?', variant: 'danger' })) return;
     try {
       await autonomyApi.resetConfig();
@@ -129,7 +129,7 @@ export function AutonomyPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, fetchConfig]);
 
   if (isLoading || !config) {
     return (
