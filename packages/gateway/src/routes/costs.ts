@@ -101,7 +101,7 @@ costRoutes.get('/', async (c) => {
  * GET /costs/usage - Get usage stats for UI dashboard
  */
 costRoutes.get('/usage', async (c) => {
-  const userId = c.req.query('userId');
+  const userId = getUserId(c);
 
   // Get daily stats
   const dailyStart = new Date();
@@ -139,7 +139,7 @@ costRoutes.get('/usage', async (c) => {
  */
 costRoutes.get('/breakdown', async (c) => {
   const period = (c.req.query('period') ?? 'month') as 'day' | 'week' | 'month' | 'year';
-  const userId = c.req.query('userId');
+  const userId = getUserId(c);
 
   const startDate = getPeriodStart(period);
   const endDate = new Date();
@@ -321,7 +321,7 @@ costRoutes.post('/budget', async (c) => {
 costRoutes.get('/history', async (c) => {
   const limit = getIntParam(c, 'limit', 100, 1, 1000);
   const days = getIntParam(c, 'days', 30, 1, 365);
-  const userId = c.req.query('userId');
+  const userId = getUserId(c);
   const provider = c.req.query('provider') as AIProvider | undefined;
   const model = c.req.query('model');
 

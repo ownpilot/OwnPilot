@@ -413,9 +413,9 @@ describe('Autonomy Routes', () => {
     });
 
     it('returns 404 when action not found', async () => {
-      mockApprovalManager.processDecision.mockReturnValue(null);
+      mockApprovalManager.getPendingAction.mockReturnValueOnce(null);
 
-      const res = await app.request('/autonomy/approvals/action-1/approve', {
+      const res = await app.request('/autonomy/approvals/nonexistent/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
