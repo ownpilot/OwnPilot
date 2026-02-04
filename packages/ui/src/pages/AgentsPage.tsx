@@ -4,7 +4,7 @@
  * Create and manage AI agents with provider/model selection
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash, Bot, Settings, MessageSquare, Play } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
@@ -28,10 +28,10 @@ export function AgentsPage() {
     fetchAgents();
   }, []);
 
-  const handleChatWithAgent = (agent: Agent) => {
+  const handleChatWithAgent = useCallback((agent: Agent) => {
     // Navigate to chat with the agent's provider and model
     navigate(`/?agent=${agent.id}&provider=${agent.provider}&model=${agent.model}`);
-  };
+  }, [navigate]);
 
   const fetchAgents = async () => {
     try {
@@ -44,7 +44,7 @@ export function AgentsPage() {
     }
   };
 
-  const deleteAgent = async (id: string) => {
+  const deleteAgent = useCallback(async (id: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this agent?', variant: 'danger' })) return;
 
     try {
@@ -56,21 +56,21 @@ export function AgentsPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, fetchAgents]);
 
-  const openEditModal = (agentId: string) => {
+  const openEditModal = useCallback((agentId: string) => {
     setEditingAgentId(agentId);
     setShowEditModal(true);
-  };
+  }, []);
 
-  const handleAgentUpdated = (updatedAgent: Agent) => {
+  const handleAgentUpdated = useCallback((updatedAgent: Agent) => {
     setAgents((prev) => prev.map((a) => (a.id === updatedAgent.id ? updatedAgent : a)));
     if (selectedAgent?.id === updatedAgent.id) {
       setSelectedAgent(updatedAgent);
     }
     setShowEditModal(false);
     setEditingAgentId(null);
-  };
+  }, [selectedAgent, fetchAgents]);
 
   return (
     <div className="flex flex-col h-full">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   DollarSign,
   TrendingUp,
@@ -55,7 +55,7 @@ export function ExpensesPage() {
     notes: '',
   });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       // Fetch monthly data
@@ -80,13 +80,13 @@ export function ExpensesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [year, selectedMonth]);
 
   useEffect(() => {
     fetchData();
-  }, [year, selectedMonth]);
+  }, [fetchData]);
 
-  const handleAddExpense = async (e: React.FormEvent) => {
+  const handleAddExpense = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await expensesApi.create({
@@ -107,9 +107,9 @@ export function ExpensesPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [newExpense, toast, fetchData]);
 
-  const handleDeleteExpense = async (id: string) => {
+  const handleDeleteExpense = useCallback(async (id: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this expense?', variant: 'danger' })) return;
     try {
       await expensesApi.delete(id);
@@ -118,7 +118,7 @@ export function ExpensesPage() {
     } catch {
       // API client handles error reporting
     }
-  };
+  }, [confirm, toast, fetchData]);
 
   const maxMonthTotal = monthlyData
     ? Math.max(...monthlyData.months.map((m) => m.total), 1)
