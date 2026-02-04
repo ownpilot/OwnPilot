@@ -130,18 +130,20 @@ export class WSGateway {
       log.error('Server error', { error });
     });
 
-    // Start heartbeat
+    // Start heartbeat (unref so timer doesn't block process exit)
     this.heartbeatTimer = setInterval(() => {
       this.heartbeat();
     }, this.config.heartbeatInterval);
+    this.heartbeatTimer.unref();
 
-    // Start cleanup timer
+    // Start cleanup timer (unref so timer doesn't block process exit)
     this.cleanupTimer = setInterval(() => {
       const removed = sessionManager.cleanup(this.config.sessionTimeout);
       if (removed > 0) {
         log.info('Cleaned up stale sessions', { removed });
       }
     }, this.config.sessionTimeout / 2);
+    this.cleanupTimer.unref();
   }
 
   /**

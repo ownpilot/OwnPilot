@@ -340,6 +340,7 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
         JSON.stringify({ op: GatewayOpcode.Heartbeat, d: this.sequence })
       );
     }, intervalMs);
+    this.heartbeatInterval.unref();
   }
 
   private stopHeartbeat(): void {

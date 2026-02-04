@@ -410,7 +410,7 @@ export class ApprovalManager extends EventEmitter {
   }
 
   private startCleanup(): void {
-    // Clean up expired actions every minute
+    // Clean up expired actions every minute (unref so timer doesn't block process exit)
     this.cleanupInterval = setInterval(() => {
       const now = new Date();
       for (const [id, action] of this.pendingActions) {
@@ -422,6 +422,7 @@ export class ApprovalManager extends EventEmitter {
         }
       }
     }, 60000);
+    this.cleanupInterval.unref();
   }
 }
 
