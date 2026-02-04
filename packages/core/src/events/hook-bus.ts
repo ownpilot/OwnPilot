@@ -159,8 +159,9 @@ export class HookBus implements IHookBus {
       return context;
     }
 
-    // Execute handlers sequentially in priority order
-    for (const entry of entries) {
+    // Snapshot entries to prevent concurrent modification if a handler
+    // adds/removes taps during execution.
+    for (const entry of [...entries]) {
       try {
         await entry.handler(context);
       } catch (err) {
