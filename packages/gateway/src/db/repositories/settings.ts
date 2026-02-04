@@ -21,10 +21,19 @@ interface SettingRow {
   updated_at: string;
 }
 
+function safeParseJSON(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    log.warn('[Settings] Corrupt JSON value, returning raw string');
+    return raw;
+  }
+}
+
 function rowToSetting(row: SettingRow): Setting {
   return {
     key: row.key,
-    value: JSON.parse(row.value),
+    value: safeParseJSON(row.value),
     updatedAt: new Date(row.updated_at),
   };
 }
@@ -55,7 +64,7 @@ export class SettingsRepository extends BaseRepository {
    */
   private async loadCache(): Promise<void> {
     const rows = await this.query<SettingRow>('SELECT * FROM settings');
-    settingsCache = new Map(rows.map(row => [row.key, JSON.parse(row.value)]));
+    settingsCache = new Map(rows.map(row => [row.key, safeParseJSON(row.value)]));
     cacheInitialized = true;
   }
 
@@ -75,7 +84,7 @@ export class SettingsRepository extends BaseRepository {
    */
   async getAsync<T = unknown>(key: string): Promise<T | null> {
     const row = await this.queryOne<SettingRow>('SELECT * FROM settings WHERE key = $1', [key]);
-    return row ? (JSON.parse(row.value) as T) : null;
+    return row ? (safeParseJSON(row.value) as T) : null;
   }
 
   /**

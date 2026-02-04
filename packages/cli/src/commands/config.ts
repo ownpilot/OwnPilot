@@ -63,11 +63,17 @@ interface ConfigDeleteOptions {
  * Read a line from stdin
  */
 async function readLine(prompt: string): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const rl = createInterface({
       input: process.stdin,
       output: process.stdout,
     });
+
+    rl.on('error', (err) => {
+      rl.close();
+      reject(err);
+    });
+    rl.on('close', () => resolve(''));
 
     rl.question(prompt, (answer) => {
       rl.close();
