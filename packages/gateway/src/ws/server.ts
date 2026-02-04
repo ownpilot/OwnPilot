@@ -54,6 +54,8 @@ export class WSGateway {
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private cleanupTimer: NodeJS.Timeout | null = null;
   private clientHandler = new ClientEventHandler();
+  private httpServer: (HttpServer | HttpsServer | Http2Server | Http2SecureServer) | null = null;
+  private upgradeHandler: ((...args: unknown[]) => void) | null = null;
 
   constructor(config: WSGatewayConfig = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -93,8 +95,12 @@ export class WSGateway {
 
     this.setupServer();
 
-    // Handle HTTP upgrade requests
-    server.on('upgrade', (request, socket, head) => {
+    // Handle HTTP upgrade requests (store handler for cleanup on stop)
+    this.httpServer = server;
+    this.upgradeHandler = (...args: unknown[]) => {
+      const request = args[0] as IncomingMessage;
+      const socket = args[1] as import('stream').Duplex;
+      const head = args[2] as Buffer;
       const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
 
       if (url.pathname === this.config.path) {
@@ -104,7 +110,8 @@ export class WSGateway {
       } else {
         socket.destroy();
       }
-    });
+    };
+    server.on('upgrade', this.upgradeHandler);
 
     log.info('Gateway attached', { path: this.config.path });
   }
@@ -707,6 +714,13 @@ export class WSGateway {
       if (this.cleanupTimer) {
         clearInterval(this.cleanupTimer);
         this.cleanupTimer = null;
+      }
+
+      // Remove upgrade handler from HTTP server
+      if (this.httpServer && this.upgradeHandler) {
+        this.httpServer.removeListener('upgrade', this.upgradeHandler);
+        this.httpServer = null;
+        this.upgradeHandler = null;
       }
 
       if (!this.wss) {
