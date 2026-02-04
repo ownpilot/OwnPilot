@@ -179,6 +179,7 @@ export function calculateDataHash(data: DailyBriefingData): string {
 class BriefingCache {
   private cache = new Map<string, CacheEntry>();
   private readonly DEFAULT_TTL_MS = 30 * 60 * 1000; // 30 minutes
+  private readonly MAX_ENTRIES = 500;
 
   /**
    * Get cached briefing if valid (not expired and data hasn't changed)
@@ -213,6 +214,23 @@ class BriefingCache {
       dataHash,
       expiresAt: Date.now() + ttl,
     });
+
+    // Proactively prune expired entries to prevent unbounded growth
+    if (this.cache.size > this.MAX_ENTRIES) {
+      this.prune();
+    }
+  }
+
+  /**
+   * Remove expired entries
+   */
+  private prune(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache) {
+      if (now > entry.expiresAt) {
+        this.cache.delete(key);
+      }
+    }
   }
 
   /**

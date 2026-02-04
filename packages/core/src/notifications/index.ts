@@ -450,6 +450,12 @@ class NotificationRateLimiter {
     counts.hour = counts.hour.filter((t) => t > hourAgo);
     counts.day = counts.day.filter((t) => t > dayAgo);
 
+    // Remove stale keys to prevent unbounded Map growth
+    if (counts.minute.length === 0 && counts.hour.length === 0 && counts.day.length === 0) {
+      this.counts.delete(key);
+      return { allowed: true };
+    }
+
     // Check limits
     if (counts.minute.length >= limits.maxPerMinute) {
       return { allowed: false, reason: 'Minute limit exceeded' };
@@ -504,6 +510,7 @@ export class NotificationManager extends EventEmitter {
   private userPrefs: Map<string, UserNotificationPreferences> = new Map();
   private queue: NotificationRequest[] = [];
   private results: Map<string, NotificationResult> = new Map();
+  private readonly MAX_RESULTS = 1000;
   private rateLimiter: NotificationRateLimiter;
   private scheduled: Map<string, { notification: NotificationRequest; timeout: ReturnType<typeof setTimeout> }> = new Map();
   private processing = false;
@@ -572,6 +579,13 @@ export class NotificationManager extends EventEmitter {
       retryCount: 0,
     };
     this.results.set(id, result);
+
+    // Evict oldest results to prevent unbounded growth
+    if (this.results.size > this.MAX_RESULTS) {
+      const iter = this.results.keys();
+      const oldest = iter.next().value;
+      if (oldest) this.results.delete(oldest);
+    }
 
     // Handle scheduled notifications
     if (request.scheduledAt && request.scheduledAt > new Date()) {

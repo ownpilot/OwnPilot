@@ -225,7 +225,10 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
 
       if (config.softLimit) {
         c.header('X-RateLimit-SoftLimit', 'true');
-        timestamps.push(now);
+        // Cap array size to prevent unbounded growth within a single window
+        if (timestamps.length < burstLimit * 2) {
+          timestamps.push(now);
+        }
         requests.set(key, timestamps);
         return next();
       }
