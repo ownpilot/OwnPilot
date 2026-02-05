@@ -1,9 +1,9 @@
 import type { ComponentType } from 'react';
 
-interface EmptyStateProps {
+export interface EmptyStateProps {
   icon: ComponentType<{ className?: string }>;
   title: string;
-  description: string;
+  description?: string;
   action?: {
     label: string;
     onClick: () => void;
@@ -18,9 +18,11 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
         {title}
       </h3>
-      <p className="text-text-muted dark:text-dark-text-muted mb-4">
-        {description}
-      </p>
+      {description && (
+        <p className="text-text-muted dark:text-dark-text-muted mb-4">
+          {description}
+        </p>
+      )}
       {action && (
         <button
           onClick={action.onClick}

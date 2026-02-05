@@ -3,6 +3,7 @@ import { Puzzle, Power, Wrench, Shield, Lock, Check, X, RefreshCw, Settings, Glo
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/ToastProvider';
 import { pluginsApi, apiClient } from '../api';
 import type { PluginInfo, PluginStats } from '../api';
 
@@ -40,6 +41,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function PluginsPage() {
+  const toast = useToast();
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [stats, setStats] = useState<PluginStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,6 +77,7 @@ export function PluginsPage() {
     const action = plugin.status === 'enabled' ? 'disable' : 'enable';
     try {
       await apiClient.post<void>(`/plugins/${plugin.id}/${action}`);
+      toast.success(action === 'enable' ? 'Plugin enabled' : 'Plugin disabled');
       fetchPlugins();
       fetchStats();
     } catch {

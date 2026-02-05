@@ -93,7 +93,7 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
         className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors disabled:opacity-50"
       >
         {isLoading ? (
-          <span className="text-text-muted dark:text-dark-text-muted">Loading...</span>
+          <span className="text-text-muted dark:text-dark-text-muted animate-pulse">Loading...</span>
         ) : (
           <>
             <HardDrive className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />

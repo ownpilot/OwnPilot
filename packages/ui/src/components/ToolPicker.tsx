@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Wrench, Search, X, Database, Table, Bookmark, Calendar, Users, FileText, ListChecks } from './icons';
+import { LoadingSpinner } from './LoadingSpinner';
 import { toolsApi, customToolsApi, customDataApi } from '../api';
 
 // --- Types ---
@@ -454,7 +455,9 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
           {/* Items list */}
           <div className="max-h-72 overflow-y-auto">
             {isLoading ? (
-              <div className="p-4 text-center text-text-muted dark:text-dark-text-muted text-sm">Loading...</div>
+              <div className="p-4">
+                <LoadingSpinner size="sm" message="Loading..." />
+              </div>
             ) : filteredItems.length === 0 ? (
               <div className="p-4 text-center text-text-muted dark:text-dark-text-muted text-sm">{emptyMessage()}</div>
             ) : (

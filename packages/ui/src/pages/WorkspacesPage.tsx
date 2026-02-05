@@ -13,6 +13,7 @@ import {
   ChevronDown,
 } from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
 import { fileWorkspacesApi } from '../api';
 import { useModalClose } from '../hooks';
@@ -236,12 +237,11 @@ export function WorkspacesPage() {
           {isLoading ? (
             <LoadingSpinner message="Loading workspaces..." />
           ) : workspaces.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full p-4">
-              <Folder className="w-12 h-12 text-text-muted dark:text-dark-text-muted mb-3" />
-              <p className="text-sm text-text-muted dark:text-dark-text-muted text-center">
-                No workspaces yet. They will be created automatically during chat sessions.
-              </p>
-            </div>
+            <EmptyState
+              icon={Folder}
+              title="No workspaces yet"
+              description="They will be created automatically during chat sessions."
+            />
           ) : (
             <div className="p-2">
               {workspaces.map((workspace) => (
@@ -374,12 +374,10 @@ export function WorkspacesPage() {
                 {isLoadingFiles ? (
                   <LoadingSpinner size="sm" message="Loading files..." />
                 ) : workspaceFiles.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-32">
-                    <File className="w-10 h-10 text-text-muted dark:text-dark-text-muted mb-2" />
-                    <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                      No files in this {currentPath ? 'folder' : 'workspace'}
-                    </p>
-                  </div>
+                  <EmptyState
+                    icon={File}
+                    title={`No files in this ${currentPath ? 'folder' : 'workspace'}`}
+                  />
                 ) : (
                   <div className="space-y-1">
                     {workspaceFiles.map((file) => (
