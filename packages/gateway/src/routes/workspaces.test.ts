@@ -193,7 +193,7 @@ describe('Workspaces Routes', () => {
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.error.code).toBe('INVALID_INPUT');
-      expect(data.error.message).toContain('name is required');
+      expect(data.error.message).toContain('name');
     });
 
     it('should return 400 when workspace limit exceeded', async () => {

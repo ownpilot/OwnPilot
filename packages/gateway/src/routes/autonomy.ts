@@ -16,6 +16,9 @@ import {
 } from '../autonomy/index.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js';
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const autonomyRoutes = new Hono();
 
 // ============================================================================
@@ -100,7 +103,9 @@ autonomyRoutes.get('/levels', (c) => {
  */
 autonomyRoutes.post('/level', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<{ level: number }>();
+  const rawBody = await c.req.json();
+  const { validateBody, autonomyLevelSchema } = await import('../middleware/validation.js');
+  const body = validateBody(autonomyLevelSchema, rawBody);
 
   if (body.level === undefined || body.level < 0 || body.level > 4) {
     return apiError(c, { code: ERROR_CODES.INVALID_LEVEL, message: 'Level must be between 0 and 4' }, 400);
@@ -126,12 +131,14 @@ autonomyRoutes.post('/level', async (c) => {
  */
 autonomyRoutes.post('/assess', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<{
+  const rawBody = await c.req.json();
+  const { validateBody, autonomyAssessSchema } = await import('../middleware/validation.js');
+  const body = validateBody(autonomyAssessSchema, rawBody) as {
     category: ActionCategory;
     actionType: string;
     params?: Record<string, unknown>;
     context?: Record<string, unknown>;
-  }>();
+  };
 
   if (!body.category || !body.actionType) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'category and actionType are required' }, 400);
@@ -177,13 +184,15 @@ autonomyRoutes.get('/approvals', (c) => {
  */
 autonomyRoutes.post('/approvals/request', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<{
+  const rawBody = await c.req.json();
+  const { validateBody, autonomyApprovalRequestSchema } = await import('../middleware/validation.js');
+  const body = validateBody(autonomyApprovalRequestSchema, rawBody) as {
     category: ActionCategory;
     actionType: string;
     description: string;
     params?: Record<string, unknown>;
     context?: Record<string, unknown>;
-  }>();
+  };
 
   if (!body.category || !body.actionType || !body.description) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'category, actionType, and description are required' }, 400);
@@ -230,7 +239,7 @@ autonomyRoutes.get('/approvals/:id', (c) => {
   const action = manager.getPendingAction(id);
 
   if (!action) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${sanitizeId(id)}` }, 404);
   }
 
   if (action.userId !== userId) {
@@ -246,7 +255,9 @@ autonomyRoutes.get('/approvals/:id', (c) => {
 autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
-  const body = await c.req.json<Omit<ApprovalDecision, 'actionId'>>();
+  const rawBody = await c.req.json();
+  const { validateBody, autonomyDecisionSchema } = await import('../middleware/validation.js');
+  const body = validateBody(autonomyDecisionSchema, rawBody) as Omit<ApprovalDecision, 'actionId'>;
 
   if (!body.decision || !['approve', 'reject', 'modify'].includes(body.decision)) {
     return apiError(c, { code: ERROR_CODES.INVALID_DECISION, message: 'decision must be "approve", "reject", or "modify"' }, 400);
@@ -255,7 +266,7 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   const manager = getApprovalManager();
   const pending = manager.getPendingAction(id);
   if (!pending) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${sanitizeId(id)}` }, 404);
   }
   if (pending.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to decide this action' }, 403);
@@ -267,7 +278,7 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   });
 
   if (!action) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -282,12 +293,14 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
 autonomyRoutes.post('/approvals/:id/approve', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
-  const body = await c.req.json<{ reason?: string; remember?: boolean }>().catch((): { reason?: string; remember?: boolean } => ({}));
+  const rawBody = await c.req.json().catch(() => ({}));
+  const { validateBody, autonomyApproveRejectSchema } = await import('../middleware/validation.js');
+  const body = validateBody(autonomyApproveRejectSchema, rawBody) as { reason?: string; remember?: boolean };
 
   const manager = getApprovalManager();
   const pending = manager.getPendingAction(id);
   if (!pending) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${sanitizeId(id)}` }, 404);
   }
   if (pending.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to approve this action' }, 403);
@@ -312,12 +325,14 @@ autonomyRoutes.post('/approvals/:id/approve', async (c) => {
 autonomyRoutes.post('/approvals/:id/reject', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
-  const body = await c.req.json<{ reason?: string; remember?: boolean }>().catch((): { reason?: string; remember?: boolean } => ({}));
+  const rawBody = await c.req.json().catch(() => ({}));
+  const { validateBody, autonomyApproveRejectSchema } = await import('../middleware/validation.js');
+  const body = validateBody(autonomyApproveRejectSchema, rawBody) as { reason?: string; remember?: boolean };
 
   const manager = getApprovalManager();
   const pending = manager.getPendingAction(id);
   if (!pending) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${sanitizeId(id)}` }, 404);
   }
   if (pending.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to reject this action' }, 403);
@@ -346,7 +361,7 @@ autonomyRoutes.delete('/approvals/:id', (c) => {
   const pending = manager.getPendingAction(id);
 
   if (!pending) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found or already processed: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found or already processed: ${sanitizeId(id)}` }, 404);
   }
   if (pending.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to cancel this action' }, 403);
@@ -367,7 +382,9 @@ autonomyRoutes.delete('/approvals/:id', (c) => {
  */
 autonomyRoutes.post('/tools/allow', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<{ tool: string }>();
+  const rawBody = await c.req.json();
+  const { validateBody, autonomyToolPermissionSchema } = await import('../middleware/validation.js');
+  const body = validateBody(autonomyToolPermissionSchema, rawBody) as { tool: string };
 
   if (!body.tool) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'tool is required' }, 400);
@@ -395,7 +412,9 @@ autonomyRoutes.post('/tools/allow', async (c) => {
  */
 autonomyRoutes.post('/tools/block', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<{ tool: string }>();
+  const rawBody = await c.req.json();
+  const { validateBody, autonomyToolPermissionSchema } = await import('../middleware/validation.js');
+  const body = validateBody(autonomyToolPermissionSchema, rawBody) as { tool: string };
 
   if (!body.tool) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'tool is required' }, 400);

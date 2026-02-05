@@ -61,6 +61,9 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('Agents');
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 /** Safely extract a string[] from unknown config values (DB records, etc.) */
 function safeStringArray(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
@@ -1225,7 +1228,7 @@ agentRoutes.get('/:id', async (c) => {
   const record = await agentsRepo.getById(id);
 
   if (!record) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(id)}` }, 404);
   }
 
   // Resolve tools from config (explicit tools and/or toolGroups)
@@ -1284,14 +1287,14 @@ agentRoutes.patch('/:id', async (c) => {
 
   const existing = await agentsRepo.getById(id);
   if (!existing) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(id)}` }, 404);
   }
 
   // If provider is being changed to a specific provider (not 'default'), validate API key
   if (body.provider && body.provider !== 'default' && body.provider !== existing.provider) {
     const apiKey = await getProviderApiKey(body.provider);
     if (!apiKey) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `API key not configured for provider: ${body.provider}` }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `API key not configured for provider: ${sanitizeId(body.provider)}` }, 400);
     }
   }
 
@@ -1357,7 +1360,7 @@ agentRoutes.delete('/:id', async (c) => {
   const deleted = await agentsRepo.delete(id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(id)}` }, 404);
   }
 
   // Clear from cache
@@ -1375,7 +1378,7 @@ agentRoutes.post('/:id/reset', async (c) => {
   const record = await agentsRepo.getById(id);
 
   if (!record) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(id)}` }, 404);
   }
 
   const agent = await getOrCreateAgentInstance(record);

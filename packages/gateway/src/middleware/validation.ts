@@ -154,6 +154,219 @@ export const updateCustomToolSchema = z.object({
   })).max(10).optional(),
 }).passthrough();
 
+// ─── Autonomy Decision Schemas ───────────────────────────────────
+
+export const autonomyDecisionSchema = z.object({
+  decision: z.enum(['approve', 'reject', 'modify']),
+  reason: z.string().max(2000).optional(),
+  remember: z.boolean().optional(),
+  modifications: z.record(z.string(), z.unknown()).optional(),
+}).passthrough();
+
+export const autonomyApproveRejectSchema = z.object({
+  reason: z.string().max(2000).optional(),
+  remember: z.boolean().optional(),
+}).passthrough();
+
+export const autonomyToolPermissionSchema = z.object({
+  tool: z.string().min(1).max(200),
+}).passthrough();
+
+export const autonomyAssessSchema = z.object({
+  category: z.string().min(1).max(100),
+  actionType: z.string().min(1).max(200),
+  params: z.record(z.string(), z.unknown()).optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
+}).passthrough();
+
+export const autonomyApprovalRequestSchema = z.object({
+  category: z.string().min(1).max(100),
+  actionType: z.string().min(1).max(200),
+  description: z.string().min(1).max(5000),
+  params: z.record(z.string(), z.unknown()).optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
+}).passthrough();
+
+// ─── Goal Schemas ───────────────────────────────────────────────
+
+export const createGoalSchema = z.object({
+  title: z.string().min(1).max(500),
+  description: z.string().max(5000).optional(),
+  status: z.enum(['active', 'paused', 'completed', 'abandoned']).optional(),
+  priority: z.number().int().min(0).max(100).optional(),
+  parentId: z.string().max(200).optional(),
+  dueDate: z.string().max(100).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).passthrough();
+
+export const updateGoalSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  description: z.string().max(5000).optional(),
+  status: z.enum(['active', 'paused', 'completed', 'abandoned']).optional(),
+  priority: z.number().int().min(0).max(100).optional(),
+  dueDate: z.string().max(100).optional(),
+  progress: z.number().min(0).max(100).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).passthrough();
+
+export const createGoalStepSchema = z.object({
+  title: z.string().min(1).max(500),
+  description: z.string().max(5000).optional(),
+  orderNum: z.number().int().min(0).max(10000).optional(),
+  dependencies: z.array(z.string().max(200)).max(50).optional(),
+}).passthrough();
+
+export const createGoalStepsSchema = z.union([
+  z.object({
+    steps: z.array(z.object({
+      title: z.string().min(1).max(500),
+      description: z.string().max(5000).optional(),
+      orderNum: z.number().int().min(0).max(10000).optional(),
+      dependencies: z.array(z.string().max(200)).max(50).optional(),
+    }).passthrough()).min(1).max(100),
+  }).passthrough(),
+  z.object({
+    title: z.string().min(1).max(500),
+    description: z.string().max(5000).optional(),
+    orderNum: z.number().int().min(0).max(10000).optional(),
+    dependencies: z.array(z.string().max(200)).max(50).optional(),
+  }).passthrough(),
+]);
+
+export const updateGoalStepSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  description: z.string().max(5000).optional(),
+  status: z.enum(['pending', 'in_progress', 'completed', 'blocked', 'skipped']).optional(),
+  result: z.string().max(10000).optional(),
+}).passthrough();
+
+export const completeGoalStepSchema = z.object({
+  result: z.string().max(10000).optional(),
+}).passthrough();
+
+// ─── Memory Schemas ─────────────────────────────────────────────
+
+export const createMemorySchema = z.object({
+  type: z.enum(['fact', 'preference', 'conversation', 'event', 'skill']),
+  content: z.string().min(1).max(50000),
+  importance: z.number().min(0).max(1).optional(),
+  tags: z.array(z.string().max(100)).max(50).optional(),
+  source: z.string().max(200).optional(),
+  sourceId: z.string().max(200).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).passthrough();
+
+export const updateMemorySchema = z.object({
+  content: z.string().min(1).max(50000).optional(),
+  importance: z.number().min(0).max(1).optional(),
+  tags: z.array(z.string().max(100)).max(50).optional(),
+}).passthrough();
+
+export const boostMemorySchema = z.object({
+  amount: z.number().min(0).max(1).optional(),
+}).passthrough();
+
+export const decayMemoriesSchema = z.object({
+  daysThreshold: z.number().int().min(1).max(3650).optional(),
+  decayFactor: z.number().min(0).max(1).optional(),
+}).passthrough();
+
+export const cleanupMemoriesSchema = z.object({
+  maxAge: z.number().int().min(1).max(3650).optional(),
+  minImportance: z.number().min(0).max(1).optional(),
+}).passthrough();
+
+// ─── Expense Schemas ────────────────────────────────────────────
+
+const expenseCategoryEnum = z.enum([
+  'food', 'transport', 'utilities', 'entertainment', 'shopping',
+  'health', 'education', 'travel', 'subscription', 'housing', 'other',
+]);
+
+export const createExpenseSchema = z.object({
+  date: z.string().max(100).optional(),
+  amount: z.number().positive(),
+  currency: z.string().max(10).optional(),
+  category: expenseCategoryEnum,
+  description: z.string().min(1).max(1000),
+  paymentMethod: z.string().max(100).optional(),
+  tags: z.array(z.string().max(100)).max(20).optional(),
+  notes: z.string().max(5000).optional(),
+}).passthrough();
+
+export const updateExpenseSchema = z.object({
+  date: z.string().max(100).optional(),
+  amount: z.number().positive().optional(),
+  currency: z.string().max(10).optional(),
+  category: expenseCategoryEnum.optional(),
+  description: z.string().min(1).max(1000).optional(),
+  paymentMethod: z.string().max(100).optional(),
+  tags: z.array(z.string().max(100)).max(20).optional(),
+  notes: z.string().max(5000).optional(),
+}).passthrough();
+
+// ─── Media Settings Schemas ─────────────────────────────────────
+
+export const mediaSettingsSchema = z.object({
+  provider: z.string().min(1).max(100),
+  model: z.string().max(200).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
+}).passthrough();
+
+// ─── Custom Data Schemas ────────────────────────────────────────
+
+const columnDefinitionSchema = z.object({
+  name: z.string().min(1).max(100),
+  type: z.enum(['text', 'number', 'boolean', 'date', 'datetime', 'json']),
+  required: z.boolean().optional(),
+  defaultValue: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
+  description: z.string().max(500).optional(),
+}).passthrough();
+
+export const createCustomTableSchema = z.object({
+  name: z.string().min(1).max(100),
+  displayName: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  columns: z.array(columnDefinitionSchema).min(1).max(100),
+}).passthrough();
+
+export const updateCustomTableSchema = z.object({
+  displayName: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).optional(),
+  columns: z.array(columnDefinitionSchema).min(1).max(100).optional(),
+}).passthrough();
+
+export const createCustomRecordSchema = z.object({
+  data: z.record(z.string(), z.unknown()),
+}).passthrough();
+
+export const updateCustomRecordSchema = z.object({
+  data: z.record(z.string(), z.unknown()),
+}).passthrough();
+
+// ─── Workspace Schemas ──────────────────────────────────────────
+
+const containerConfigSchema = z.object({
+  memoryMB: z.number().min(64).max(2048).optional(),
+  cpuCores: z.number().min(0.25).max(4).optional(),
+  storageGB: z.number().min(1).max(10).optional(),
+  timeoutMs: z.number().min(5000).max(120000).optional(),
+  networkPolicy: z.enum(['none', 'restricted', 'full']).optional(),
+  allowedHosts: z.array(z.string().max(500)).max(50).optional(),
+}).passthrough();
+
+export const createWorkspaceSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+  containerConfig: containerConfigSchema.optional(),
+}).passthrough();
+
+export const updateWorkspaceSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+  containerConfig: containerConfigSchema.optional(),
+}).passthrough();
+
 // ─── Validation Helper ──────────────────────────────────────────
 
 /**

@@ -76,6 +76,12 @@ vi.mock('../middleware/validation.js', () => ({
   validateBody: vi.fn((_schema: unknown, body: unknown) => body),
   autonomyConfigSchema: {},
   autonomyBudgetSchema: {},
+  autonomyLevelSchema: {},
+  autonomyAssessSchema: {},
+  autonomyApprovalRequestSchema: {},
+  autonomyDecisionSchema: {},
+  autonomyApproveRejectSchema: {},
+  autonomyToolPermissionSchema: {},
 }));
 
 // Import after mocks

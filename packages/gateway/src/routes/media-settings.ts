@@ -16,6 +16,9 @@ import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js'
 
 const log = getLog('MediaSettings');
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const mediaSettingsRoutes = new Hono();
 
 // =============================================================================
@@ -143,7 +146,7 @@ mediaSettingsRoutes.get('/:capability', async (c) => {
 
   // Validate capability
   if (!CAPABILITY_META[capability]) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid capability: ${capability}` }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid capability: ${sanitizeId(capability)}` }, 400);
   }
 
   const current = await mediaSettingsRepo.getEffective(userId, capability);
@@ -169,15 +172,17 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
 
   // Validate capability
   if (!CAPABILITY_META[capability]) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid capability: ${capability}` }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid capability: ${sanitizeId(capability)}` }, 400);
   }
 
   try {
-    const body = await c.req.json<{
+    const rawBody = await c.req.json();
+    const { validateBody, mediaSettingsSchema } = await import('../middleware/validation.js');
+    const body = validateBody(mediaSettingsSchema, rawBody) as {
       provider: string;
       model?: string;
       config?: Record<string, unknown>;
-    }>();
+    };
 
     if (!body.provider) {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Provider is required' }, 400);
@@ -188,13 +193,13 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
     const providerExists = availableProviders.some((p) => p.provider === body.provider);
 
     if (!providerExists) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid provider: ${body.provider}. Valid: ${availableProviders.map((p) => p.provider).join(', ')}` }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid provider: ${sanitizeId(body.provider)}. Valid: ${availableProviders.map((p) => p.provider).join(', ')}` }, 400);
     }
 
     // Check if provider is configured (has API key)
     if (!isProviderConfigured(body.provider)) {
       const keyName = PROVIDER_API_KEYS[body.provider];
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Provider ${body.provider} is not configured. Add your ${body.provider} API key in Settings → API Keys (${keyName})` }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Provider ${sanitizeId(body.provider)} is not configured. Add your ${sanitizeId(body.provider)} API key in Settings → API Keys (${keyName})` }, 400);
     }
 
     // Validate model if provided
@@ -202,7 +207,7 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
       const providerOption = availableProviders.find((p) => p.provider === body.provider);
       const modelIds = providerOption?.models?.map((m) => m.id) || [];
       if (providerOption?.models && !modelIds.includes(body.model)) {
-        return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid model: ${body.model}. Valid: ${modelIds.join(', ')}` }, 400);
+        return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid model: ${sanitizeId(body.model)}. Valid: ${modelIds.join(', ')}` }, 400);
       }
     }
 
@@ -216,14 +221,18 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
     });
 
     return apiResponse(c, {
-      message: `${CAPABILITY_META[capability].name} provider set to ${body.provider}`,
+      message: `${CAPABILITY_META[capability].name} provider set to ${sanitizeId(body.provider)}`,
       capability,
       provider: body.provider,
       model: body.model,
     });
   } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Failed to save setting';
+    if (msg.startsWith('Validation failed:')) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: msg }, 400);
+    }
     log.error('Failed to save media setting:', error);
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: 'Failed to save setting' }, 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: msg }, 500);
   }
 });
 
@@ -236,7 +245,7 @@ mediaSettingsRoutes.delete('/:capability', async (c) => {
 
   // Validate capability
   if (!CAPABILITY_META[capability]) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid capability: ${capability}` }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid capability: ${sanitizeId(capability)}` }, 400);
   }
 
   await mediaSettingsRepo.delete(userId, capability);

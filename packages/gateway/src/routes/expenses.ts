@@ -102,6 +102,9 @@ function generateExpenseId(): string {
 // Routes
 // =============================================================================
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const expensesRoutes = new Hono();
 
 /**
@@ -330,7 +333,9 @@ expensesRoutes.get('/monthly', async (c) => {
  * POST /api/v1/expenses - Add a new expense
  */
 expensesRoutes.post('/', async (c) => {
-  const body = await c.req.json<{
+  const rawBody = await c.req.json();
+  const { validateBody, createExpenseSchema } = await import('../middleware/validation.js');
+  const body = validateBody(createExpenseSchema, rawBody) as {
     date?: string;
     amount: number;
     currency?: string;
@@ -339,15 +344,7 @@ expensesRoutes.post('/', async (c) => {
     paymentMethod?: string;
     tags?: string[];
     notes?: string;
-  }>();
-
-  if (body.amount == null || !body.category || !body.description) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'amount, category, and description are required' }, 400);
-  }
-
-  if (typeof body.amount !== 'number' || isNaN(body.amount) || body.amount <= 0) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'amount must be a positive number' }, 400);
-  }
+  };
 
   const db = await loadExpenseDb();
 
@@ -376,13 +373,15 @@ expensesRoutes.post('/', async (c) => {
  */
 expensesRoutes.put('/:id', async (c) => {
   const id = c.req.param('id');
-  const body = await c.req.json<Partial<ExpenseEntry>>();
+  const rawBody = await c.req.json();
+  const { validateBody, updateExpenseSchema } = await import('../middleware/validation.js');
+  const body = validateBody(updateExpenseSchema, rawBody) as Partial<ExpenseEntry>;
 
   const db = await loadExpenseDb();
   const index = db.expenses.findIndex((e) => e.id === id);
 
   if (index === -1) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Expense not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Expense not found: ${sanitizeId(id)}` }, 404);
   }
 
   const existing = db.expenses[index]!;
@@ -409,7 +408,7 @@ expensesRoutes.delete('/:id', async (c) => {
   const index = db.expenses.findIndex((e) => e.id === id);
 
   if (index === -1) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Expense not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Expense not found: ${sanitizeId(id)}` }, 404);
   }
 
   const deleted = db.expenses.splice(index, 1)[0];

@@ -41,6 +41,9 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('Chat');
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const chatRoutes = new Hono();
 
 /**
@@ -536,7 +539,7 @@ chatRoutes.post('/', async (c) => {
     // Use specific agent if agentId provided
     agent = await getAgent(body.agentId);
     if (!agent) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${body.agentId}` }, 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(body.agentId)}` }, 404);
     }
   } else {
     // Use provider/model from request to create chat agent
@@ -551,7 +554,7 @@ chatRoutes.post('/', async (c) => {
   if (body.conversationId) {
     const loaded = agent.loadConversation(body.conversationId);
     if (!loaded) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${body.conversationId}` }, 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(body.conversationId)}` }, 404);
     }
   }
 
@@ -1511,14 +1514,14 @@ chatRoutes.get('/conversations/:id', async (c) => {
   const agent = agentId ? await getAgent(agentId) : await getOrCreateDefaultAgent();
 
   if (!agent) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${agentId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(agentId!)}` }, 404);
   }
 
   const memory = agent.getMemory();
   const conversation = memory.get(id);
 
   if (!conversation) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -1550,7 +1553,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   const agent = agentId ? await getAgent(agentId) : await getOrCreateDefaultAgent();
 
   if (!agent) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${agentId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(agentId!)}` }, 404);
   }
 
   const memory = agent.getMemory();
@@ -1561,7 +1564,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   await chatRepo.deleteConversation(id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, {});
@@ -1617,38 +1620,42 @@ chatRoutes.get('/history/:id', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
 
-  const chatRepo = new ChatRepository(userId);
-  const data = await chatRepo.getConversationWithMessages(id);
+  try {
+    const chatRepo = new ChatRepository(userId);
+    const data = await chatRepo.getConversationWithMessages(id);
 
-  if (!data) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${id}` }, 404);
+    if (!data) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(id)}` }, 404);
+    }
+
+    return apiResponse(c, {
+      conversation: {
+        id: data.conversation.id,
+        title: data.conversation.title,
+        agentId: data.conversation.agentId,
+        agentName: data.conversation.agentName,
+        provider: data.conversation.provider,
+        model: data.conversation.model,
+        messageCount: data.conversation.messageCount,
+        isArchived: data.conversation.isArchived,
+        createdAt: data.conversation.createdAt.toISOString(),
+        updatedAt: data.conversation.updatedAt.toISOString(),
+      },
+      messages: data.messages.map(msg => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        provider: msg.provider,
+        model: msg.model,
+        toolCalls: msg.toolCalls,
+        trace: msg.trace,
+        isError: msg.isError,
+        createdAt: msg.createdAt.toISOString(),
+      })),
+    });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch conversation' }, 500);
   }
-
-  return apiResponse(c, {
-    conversation: {
-      id: data.conversation.id,
-      title: data.conversation.title,
-      agentId: data.conversation.agentId,
-      agentName: data.conversation.agentName,
-      provider: data.conversation.provider,
-      model: data.conversation.model,
-      messageCount: data.conversation.messageCount,
-      isArchived: data.conversation.isArchived,
-      createdAt: data.conversation.createdAt.toISOString(),
-      updatedAt: data.conversation.updatedAt.toISOString(),
-    },
-    messages: data.messages.map(msg => ({
-      id: msg.id,
-      role: msg.role,
-      content: msg.content,
-      provider: msg.provider,
-      model: msg.model,
-      toolCalls: msg.toolCalls,
-      trace: msg.trace,
-      isError: msg.isError,
-      createdAt: msg.createdAt.toISOString(),
-    })),
-  });
 });
 
 /**
@@ -1658,14 +1665,18 @@ chatRoutes.delete('/history/:id', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
 
-  const chatRepo = new ChatRepository(userId);
-  const deleted = await chatRepo.deleteConversation(id);
+  try {
+    const chatRepo = new ChatRepository(userId);
+    const deleted = await chatRepo.deleteConversation(id);
 
-  if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${id}` }, 404);
+    if (!deleted) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(id)}` }, 404);
+    }
+
+    return apiResponse(c, { deleted: true });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Failed to delete conversation' }, 500);
   }
-
-  return apiResponse(c, { deleted: true });
 });
 
 /**
@@ -1676,14 +1687,18 @@ chatRoutes.patch('/history/:id/archive', async (c) => {
   const userId = getUserId(c);
   const body = await c.req.json<{ archived: boolean }>();
 
-  const chatRepo = new ChatRepository(userId);
-  const updated = await chatRepo.updateConversation(id, { isArchived: body.archived });
+  try {
+    const chatRepo = new ChatRepository(userId);
+    const updated = await chatRepo.updateConversation(id, { isArchived: body.archived });
 
-  if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${id}` }, 404);
+    if (!updated) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(id)}` }, 404);
+    }
+
+    return apiResponse(c, { archived: updated.isArchived });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Failed to update conversation' }, 500);
   }
-
-  return apiResponse(c, { archived: updated.isArchived });
 });
 
 // =====================================================
@@ -1753,14 +1768,18 @@ chatRoutes.get('/logs/:id', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
 
-  const logsRepo = new LogsRepository(userId);
-  const log = await logsRepo.getLog(id);
+  try {
+    const logsRepo = new LogsRepository(userId);
+    const log = await logsRepo.getLog(id);
 
-  if (!log) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Log not found: ${id}` }, 404);
+    if (!log) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Log not found: ${sanitizeId(id)}` }, 404);
+    }
+
+    return apiResponse(c, log);
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch log' }, 500);
   }
-
-  return apiResponse(c, log);
 });
 
 /**
