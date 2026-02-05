@@ -17,6 +17,9 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('Database');
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 
 // Tables to export (in dependency order) — also serves as whitelist for SQL operations
 const EXPORT_TABLES = [
@@ -333,7 +336,7 @@ databaseRoutes.post('/restore', async (c) => {
   const backupPath = join(getBackupDir(), basename(body.filename)); // Sanitize path
 
   if (!existsSync(backupPath)) {
-    return apiError(c, { code: ERROR_CODES.BACKUP_NOT_FOUND, message: `Backup file not found: ${body.filename}` }, 404);
+    return apiError(c, { code: ERROR_CODES.BACKUP_NOT_FOUND, message: `Backup file not found: ${sanitizeId(basename(body.filename))}` }, 404);
   }
 
   operationStatus = {
@@ -417,12 +420,12 @@ databaseRoutes.delete('/backup/:filename', (c) => {
   const backupPath = join(getBackupDir(), basename(filename)); // Sanitize path
 
   if (!existsSync(backupPath)) {
-    return apiError(c, { code: ERROR_CODES.BACKUP_NOT_FOUND, message: `Backup file not found: ${filename}` }, 404);
+    return apiError(c, { code: ERROR_CODES.BACKUP_NOT_FOUND, message: `Backup file not found: ${sanitizeId(basename(filename))}` }, 404);
   }
 
   try {
     unlinkSync(backupPath);
-    return apiResponse(c, { message: `Deleted backup: ${filename}` });
+    return apiResponse(c, { message: `Deleted backup: ${sanitizeId(basename(filename))}` });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: err instanceof Error ? err.message : 'Failed to delete backup' }, 500);
   }
