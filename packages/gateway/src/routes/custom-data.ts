@@ -16,6 +16,9 @@ import { getServiceRegistry, Services } from '@ownpilot/core';
 /** Sanitize user-supplied IDs for safe interpolation in error messages */
 const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
+/** Sanitize display text for safe interpolation (allows spaces) */
+const sanitizeText = (text: string) => text.replace(/[^\w\s-]/g, '').slice(0, 200);
+
 export const customDataRoutes = new Hono();
 
 // ============================================================================
@@ -313,7 +316,7 @@ export async function executeCustomDataTool(
         return {
           success: true,
           result: {
-            message: `Created table "${table.displayName}" with ${columns.length} columns.`,
+            message: `Created table "${sanitizeText(table.displayName)}" with ${columns.length} columns.`,
             table,
           },
         };
@@ -357,7 +360,7 @@ export async function executeCustomDataTool(
         return {
           success: true,
           result: {
-            message: `Table "${table.displayName}" has ${table.columns.length} columns and ${stats?.recordCount ?? 0} records.`,
+            message: `Table "${sanitizeText(table.displayName)}" has ${table.columns.length} columns and ${stats?.recordCount ?? 0} records.`,
             table: {
               ...table,
               stats,
@@ -384,7 +387,7 @@ export async function executeCustomDataTool(
         return {
           success: true,
           result: {
-            message: `Deleted table "${displayName}" and all its data.`,
+            message: `Deleted table "${sanitizeText(displayName)}" and all its data.`,
           },
         };
       }
@@ -399,7 +402,7 @@ export async function executeCustomDataTool(
         return {
           success: true,
           result: {
-            message: `Added new record to "${table?.displayName ?? tableId}".`,
+            message: `Added new record to "${sanitizeText(table?.displayName ?? tableId)}".`,
             record,
           },
         };
@@ -421,7 +424,7 @@ export async function executeCustomDataTool(
         return {
           success: true,
           result: {
-            message: `Added ${results.length} record(s) to "${table?.displayName ?? tableId}".`,
+            message: `Added ${results.length} record(s) to "${sanitizeText(table?.displayName ?? tableId)}".`,
             records: results,
             count: results.length,
           },
@@ -440,7 +443,7 @@ export async function executeCustomDataTool(
         return {
           success: true,
           result: {
-            message: `Found ${total} record(s) in "${table?.displayName ?? tableId}". Showing ${records.length}.`,
+            message: `Found ${total} record(s) in "${sanitizeText(table?.displayName ?? tableId)}". Showing ${records.length}.`,
             records: records.map((r) => ({ id: r.id, ...r.data, _createdAt: r.createdAt })),
             total,
             hasMore: offset + records.length < total,
@@ -459,7 +462,7 @@ export async function executeCustomDataTool(
         return {
           success: true,
           result: {
-            message: `Found ${records.length} record(s) matching "${query}" in "${table?.displayName ?? tableId}".`,
+            message: `Found ${records.length} record(s) matching "${sanitizeText(query)}" in "${sanitizeText(table?.displayName ?? tableId)}".`,
             records: records.map((r) => ({ id: r.id, ...r.data, _createdAt: r.createdAt })),
           },
         };

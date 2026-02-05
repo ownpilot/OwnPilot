@@ -403,7 +403,7 @@ autonomyRoutes.post('/tools/allow', async (c) => {
 
   return apiResponse(c, {
     allowedTools: config.allowedTools,
-    message: `Tool "${body.tool}" added to allowed list.`,
+    message: `Tool "${sanitizeId(body.tool)}" added to allowed list.`,
   });
 });
 
@@ -433,7 +433,7 @@ autonomyRoutes.post('/tools/block', async (c) => {
 
   return apiResponse(c, {
     blockedTools: config.blockedTools,
-    message: `Tool "${body.tool}" added to blocked list.`,
+    message: `Tool "${sanitizeId(body.tool)}" added to blocked list.`,
   });
 });
 
@@ -453,7 +453,7 @@ autonomyRoutes.delete('/tools/:tool', (c) => {
   manager.setUserConfig(userId, config);
 
   return apiResponse(c, {
-    message: `Tool "${tool}" removed from allowed/blocked lists.`,
+    message: `Tool "${sanitizeId(tool)}" removed from allowed/blocked lists.`,
   });
 });
 

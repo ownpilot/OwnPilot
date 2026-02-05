@@ -32,6 +32,9 @@ import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam } fr
 /** Sanitize user-supplied IDs for safe interpolation in error messages */
 const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
+/** Sanitize display text for safe interpolation (allows spaces) */
+const sanitizeText = (text: string) => text.replace(/[^\w\s-]/g, '').slice(0, 200);
+
 export const customToolsRoutes = new Hono();
 
 // Create dynamic tool registry for execution, with all built-in tools available via callTool
@@ -1184,7 +1187,7 @@ export async function executeCustomToolTool(
         // Check if tool already exists
         const existing = await repo.getByName(name);
         if (existing) {
-          return { success: false, error: `Tool with name '${name}' already exists` };
+          return { success: false, error: `Tool with name '${sanitizeText(name)}' already exists` };
         }
 
         // Validate code using centralized validator
@@ -1221,7 +1224,7 @@ export async function executeCustomToolTool(
             requiresApproval: true,
             pendingToolId: tool.id,
             result: {
-              message: `Tool '${name}' created but requires user approval before it can be used. It has been flagged for review because it requests dangerous permissions (${permissions?.join(', ')}).`,
+              message: `Tool '${sanitizeText(name)}' created but requires user approval before it can be used. It has been flagged for review because it requests dangerous permissions (${permissions?.map(p => sanitizeId(p)).join(', ')}).`,
               toolId: tool.id,
               status: tool.status,
             },
@@ -1237,7 +1240,7 @@ export async function executeCustomToolTool(
         return {
           success: true,
           result: {
-            message: `Tool '${name}' created successfully and is ready to use.`,
+            message: `Tool '${sanitizeText(name)}' created successfully and is ready to use.`,
             toolId: tool.id,
             status: tool.status,
             description: tool.description,
@@ -1303,7 +1306,7 @@ export async function executeCustomToolTool(
 
         const tool = await repo.getByName(name);
         if (!tool) {
-          return { success: false, error: `Tool '${name}' not found` };
+          return { success: false, error: `Tool '${sanitizeText(name)}' not found` };
         }
 
         // PROTECTION: LLM cannot delete user-created tools
@@ -1311,7 +1314,7 @@ export async function executeCustomToolTool(
         if (tool.createdBy === 'user') {
           return {
             success: false,
-            error: `Cannot delete tool '${name}' - this tool was created by the user and is protected. Only the user can delete it through the UI or API. If the user explicitly asked you to delete it, please inform them they need to delete it manually from the Custom Tools page.`,
+            error: `Cannot delete tool '${sanitizeText(name)}' - this tool was created by the user and is protected. Only the user can delete it through the UI or API. If the user explicitly asked you to delete it, please inform them they need to delete it manually from the Custom Tools page.`,
           };
         }
 
@@ -1320,7 +1323,7 @@ export async function executeCustomToolTool(
           return {
             success: false,
             requiresConfirmation: true,
-            error: `Are you sure you want to delete the tool '${name}'? Call delete_custom_tool again with confirm: true to proceed.`,
+            error: `Are you sure you want to delete the tool '${sanitizeText(name)}'? Call delete_custom_tool again with confirm: true to proceed.`,
           };
         }
 
@@ -1344,8 +1347,8 @@ export async function executeCustomToolTool(
         return {
           success: deleted,
           result: deleted
-            ? { message: `Tool '${name}' deleted successfully.` }
-            : { message: `Failed to delete tool '${name}'.` },
+            ? { message: `Tool '${sanitizeText(name)}' deleted successfully.` }
+            : { message: `Failed to delete tool '${sanitizeText(name)}'.` },
         };
       }
 
@@ -1361,7 +1364,7 @@ export async function executeCustomToolTool(
 
         const tool = await repo.getByName(name);
         if (!tool) {
-          return { success: false, error: `Tool '${name}' not found` };
+          return { success: false, error: `Tool '${sanitizeText(name)}' not found` };
         }
 
         const updated = enabled ? await repo.enable(tool.id) : await repo.disable(tool.id);
@@ -1374,7 +1377,7 @@ export async function executeCustomToolTool(
         return {
           success: true,
           result: {
-            message: `Tool '${name}' ${enabled ? 'enabled' : 'disabled'} successfully.`,
+            message: `Tool '${sanitizeText(name)}' ${enabled ? 'enabled' : 'disabled'} successfully.`,
             status: updated?.status,
           },
         };
@@ -1404,7 +1407,7 @@ export async function executeActiveCustomTool(
   // Find tool by name
   const tool = await repo.getByName(toolName);
   if (!tool) {
-    return { success: false, error: `Custom tool '${toolName}' not found` };
+    return { success: false, error: `Custom tool '${sanitizeText(toolName)}' not found` };
   }
 
   // Check if tool is active
@@ -1414,10 +1417,10 @@ export async function executeActiveCustomTool(
         success: false,
         requiresApproval: true,
         pendingToolId: tool.id,
-        error: `Tool '${toolName}' is pending approval. Please approve it in the Custom Tools page before use.`,
+        error: `Tool '${sanitizeText(toolName)}' is pending approval. Please approve it in the Custom Tools page before use.`,
       };
     }
-    return { success: false, error: `Tool '${toolName}' is ${tool.status}` };
+    return { success: false, error: `Tool '${sanitizeText(toolName)}' is ${sanitizeId(tool.status)}` };
   }
 
   // Ensure tool is registered

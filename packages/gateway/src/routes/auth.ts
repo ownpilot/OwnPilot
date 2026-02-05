@@ -15,6 +15,9 @@ import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js'
 
 const log = getLog('Auth');
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const authRoutes = new Hono();
 
 // ============================================================================
@@ -187,7 +190,7 @@ authRoutes.get('/google/start', async (c) => {
 
   // Validate service
   if (!['gmail', 'calendar', 'drive'].includes(service)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid service: ${service}` }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid service: ${sanitizeId(service)}` }, 400);
   }
 
   // Get OAuth configuration
@@ -369,7 +372,7 @@ authRoutes.post('/google/revoke', async (c) => {
     // Delete from database
     await oauthIntegrationsRepo.delete(integrationId);
 
-    return apiResponse(c, { message: `${integration.service} disconnected successfully`, });
+    return apiResponse(c, { message: `${sanitizeId(integration.service)} disconnected successfully`, });
   } catch (error) {
     log.error('Failed to revoke OAuth:', error);
     return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: 'Failed to disconnect' }, 500);
