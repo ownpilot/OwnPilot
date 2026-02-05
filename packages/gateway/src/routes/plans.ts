@@ -17,6 +17,7 @@ import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES } from './he
 import { getLog } from '../services/log.js';
 
 const log = getLog('Plans');
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 export const plansRoutes = new Hono();
 
 // ============================================================================
@@ -117,7 +118,7 @@ plansRoutes.get('/:id', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
   // Get steps and history
@@ -145,7 +146,7 @@ plansRoutes.patch('/:id', async (c) => {
   const updated = await service.updatePlan(userId, id, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -162,7 +163,7 @@ plansRoutes.delete('/:id', async (c) => {
   const deleted = await service.deletePlan(userId, id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -185,7 +186,7 @@ plansRoutes.post('/:id/execute', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
   if (plan.status === 'running') {
@@ -224,16 +225,21 @@ plansRoutes.post('/:id/pause', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
-  const executor = getPlanExecutor({ userId });
-  const paused = await executor.pause(id);
+  try {
+    const executor = getPlanExecutor({ userId });
+    const paused = await executor.pause(id);
 
-  return apiResponse(c, {
-      paused,
-      message: paused ? 'Plan paused.' : 'Plan was not running.',
-    });
+    return apiResponse(c, {
+        paused,
+        message: paused ? 'Plan paused.' : 'Plan was not running.',
+      });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return apiError(c, { code: ERROR_CODES.PAUSE_ERROR, message: errorMessage }, 500);
+  }
 });
 
 /**
@@ -247,7 +253,7 @@ plansRoutes.post('/:id/resume', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
   if (plan.status !== 'paused') {
@@ -283,16 +289,21 @@ plansRoutes.post('/:id/abort', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
-  const executor = getPlanExecutor({ userId });
-  const aborted = await executor.abort(id);
+  try {
+    const executor = getPlanExecutor({ userId });
+    const aborted = await executor.abort(id);
 
-  return apiResponse(c, {
-      aborted,
-      message: aborted ? 'Plan aborted.' : 'Plan was not running.',
-    });
+    return apiResponse(c, {
+        aborted,
+        message: aborted ? 'Plan aborted.' : 'Plan was not running.',
+      });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return apiError(c, { code: ERROR_CODES.ABORT_ERROR, message: errorMessage }, 500);
+  }
 });
 
 /**
@@ -307,15 +318,25 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
-  const executor = getPlanExecutor({ userId });
-  executor.checkpoint(id, body.data);
+  const dataStr = JSON.stringify(body.data ?? {});
+  if (dataStr.length > 500000) {
+    return apiError(c, { code: ERROR_CODES.PAYLOAD_TOO_LARGE, message: 'Checkpoint data exceeds maximum size (500KB)' }, 400);
+  }
 
-  return apiResponse(c, {
-      message: 'Checkpoint created.',
-    });
+  try {
+    const executor = getPlanExecutor({ userId });
+    executor.checkpoint(id, body.data);
+
+    return apiResponse(c, {
+        message: 'Checkpoint created.',
+      });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return apiError(c, { code: ERROR_CODES.CHECKPOINT_ERROR, message: errorMessage }, 500);
+  }
 });
 
 /**
@@ -329,7 +350,7 @@ plansRoutes.post('/:id/start', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
   if (plan.status === 'running') {
@@ -368,7 +389,7 @@ plansRoutes.post('/:id/rollback', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
   if (!plan.checkpoint) {
@@ -381,6 +402,9 @@ plansRoutes.post('/:id/rollback', async (c) => {
 
     // Reset failed/completed steps back to pending
     const steps = await service.getSteps(userId, id);
+    if (steps.length > 200) {
+      return apiError(c, { code: ERROR_CODES.BATCH_LIMIT_EXCEEDED, message: 'Too many steps in batch update (max 200)' }, 400);
+    }
     for (const step of steps) {
       if (step.status === 'failed' || step.status === 'completed') {
         await service.updateStep(userId, step.id, { status: 'pending', error: undefined, result: undefined });
@@ -417,7 +441,7 @@ plansRoutes.get('/:id/steps', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
   const steps = await service.getSteps(userId, id);
@@ -464,7 +488,7 @@ plansRoutes.get('/:id/steps/:stepId', async (c) => {
   const step = await service.getStep(userId, stepId);
 
   if (!step) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${stepId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${sanitizeId(stepId)}` }, 404);
   }
 
   return apiResponse(c, step);
@@ -486,7 +510,7 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
   const updated = await service.updateStep(userId, stepId, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${stepId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${sanitizeId(stepId)}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -508,7 +532,7 @@ plansRoutes.get('/:id/history', async (c) => {
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plan not found: ${sanitizeId(id)}` }, 404);
   }
 
   const history = await service.getHistory(userId, id, limit);

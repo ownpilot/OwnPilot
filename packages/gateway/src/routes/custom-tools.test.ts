@@ -73,6 +73,67 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     ...original,
     createDynamicToolRegistry: vi.fn(() => mockDynamicRegistry),
     ALL_TOOLS: [],
+    validateToolCode: (code: string) => {
+      // Check for forbidden patterns used in tests
+      const forbidden = [
+        { pattern: /\bprocess\b/, msg: 'forbidden pattern: process access' },
+        { pattern: /\brequire\s*\(/, msg: 'forbidden pattern: require()' },
+        { pattern: /\bimport\s*\(/, msg: 'forbidden pattern: dynamic import()' },
+        { pattern: /\beval\s*\(/i, msg: 'forbidden pattern: eval()' },
+        { pattern: /\bFunction\s*\(/i, msg: 'forbidden pattern: Function()' },
+        { pattern: /\bglobalThis\b/, msg: 'forbidden pattern: globalThis' },
+        { pattern: /__proto__/, msg: 'forbidden pattern: __proto__' },
+        { pattern: /\.constructor\b/, msg: 'forbidden pattern: .constructor' },
+        { pattern: /\bgetPrototypeOf\b/, msg: 'forbidden pattern: getPrototypeOf' },
+        { pattern: /\bsetPrototypeOf\b/, msg: 'forbidden pattern: setPrototypeOf' },
+        { pattern: /\bReflect\.construct\b/, msg: 'forbidden pattern: Reflect.construct' },
+        { pattern: /\bwith\s*\(/, msg: 'forbidden pattern: with()' },
+        { pattern: /\bchild_process\b/, msg: 'forbidden pattern: child_process' },
+        { pattern: /\bexec\s*\(/, msg: 'forbidden pattern: exec()' },
+        { pattern: /\bspawn\s*\(/, msg: 'forbidden pattern: spawn()' },
+        { pattern: /\bdebugger\b/, msg: 'forbidden pattern: debugger' },
+        { pattern: /\bvm\b\s*\.\s*createContext/, msg: 'forbidden pattern: vm.createContext' },
+        { pattern: /\barguments\.callee\b/, msg: 'forbidden pattern: arguments.callee' },
+        { pattern: /\bmodule\.exports\b/, msg: 'forbidden pattern: module.exports' },
+      ];
+      if (code.length > 50_000) {
+        return { valid: false, errors: ['Code exceeds maximum size of 50000 characters'] };
+      }
+      for (const { pattern, msg } of forbidden) {
+        if (pattern.test(code)) {
+          return { valid: false, errors: [msg] };
+        }
+      }
+      return { valid: true, errors: [] };
+    },
+    analyzeToolCode: (code: string) => {
+      const forbidden = [
+        { pattern: /\bprocess\b/, msg: 'forbidden pattern: process access' },
+        { pattern: /\beval\s*\(/i, msg: 'forbidden pattern: eval()' },
+        { pattern: /\brequire\s*\(/, msg: 'forbidden pattern: require()' },
+        { pattern: /\bimport\s*\(/, msg: 'forbidden pattern: dynamic import()' },
+      ];
+      const errors: string[] = [];
+      for (const { pattern, msg } of forbidden) {
+        if (pattern.test(code)) {
+          errors.push(msg);
+        }
+      }
+      const lines = code.split('\n');
+      return {
+        valid: errors.length === 0,
+        errors,
+        warnings: [] as string[],
+        stats: {
+          lineCount: lines.length,
+          hasAsyncCode: /\bawait\b/.test(code),
+          usesFetch: /\bfetch\s*\(/.test(code),
+          usesCallTool: /utils\s*\.\s*callTool\b/.test(code),
+          usesUtils: /\butils\s*\./.test(code),
+          returnsValue: /\breturn\b/.test(code),
+        },
+      };
+    },
   };
 });
 
@@ -86,8 +147,16 @@ vi.mock('../services/api-service-registrar.js', () => ({
 }));
 
 vi.mock('../middleware/validation.js', () => ({
-  validateBody: vi.fn((_schema: unknown, body: unknown) => body),
+  validateBody: vi.fn((_schema: unknown, body: unknown) => {
+    // Minimal validation matching the real Zod schema's name regex
+    const b = body as Record<string, unknown>;
+    if (b.name !== undefined && (typeof b.name !== 'string' || !/^[a-z][a-z0-9_]*$/.test(b.name))) {
+      throw new Error('Validation failed: name: Tool name must be lowercase with underscores');
+    }
+    return body;
+  }),
   createCustomToolSchema: {},
+  updateCustomToolSchema: {},
 }));
 
 // Import after mocks
@@ -550,6 +619,400 @@ describe('Custom Tools Routes', () => {
       expect(json.data.tools).toHaveLength(1);
       expect(json.data.tools[0].name).toBe('test_tool');
       expect(json.data.count).toBe(1);
+    });
+  });
+
+  // ========================================================================
+  // POST /custom-tools/validate
+  // ========================================================================
+
+  describe('POST /custom-tools/validate', () => {
+    it('returns 400 when code field is missing', async () => {
+      const res = await app.request('/custom-tools/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('code is required');
+    });
+
+    it('returns 400 when code is not a string', async () => {
+      const res = await app.request('/custom-tools/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 123 }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('code is required');
+    });
+
+    it('returns valid:true with stats for safe code', async () => {
+      const res = await app.request('/custom-tools/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 'return { result: args.query };' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.valid).toBe(true);
+      expect(json.data.errors).toEqual([]);
+      expect(json.data.stats).toBeDefined();
+      expect(json.data.stats.lineCount).toBeGreaterThan(0);
+      expect(json.data.stats.returnsValue).toBe(true);
+      expect(json.data.warnings).toBeDefined();
+      expect(json.data.recommendations).toBeDefined();
+    });
+
+    it('returns valid:false with errors for dangerous code', async () => {
+      const res = await app.request('/custom-tools/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 'eval("malicious")' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.valid).toBe(false);
+      expect(json.data.errors.length).toBeGreaterThan(0);
+    });
+
+    it('returns stats with correct analysis fields', async () => {
+      const res = await app.request('/custom-tools/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 'const data = await fetch("https://example.com");\nreturn data;' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.stats.hasAsyncCode).toBe(true);
+      expect(json.data.stats.usesFetch).toBe(true);
+      expect(json.data.stats.returnsValue).toBe(true);
+    });
+
+    it('returns warnings and recommendations arrays', async () => {
+      const res = await app.request('/custom-tools/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 'return { ok: true };' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(Array.isArray(json.data.warnings)).toBe(true);
+      expect(Array.isArray(json.data.recommendations)).toBe(true);
+    });
+  });
+
+  // ========================================================================
+  // GET /custom-tools/templates
+  // ========================================================================
+
+  describe('GET /custom-tools/templates', () => {
+    it('returns list of tool templates', async () => {
+      const res = await app.request('/custom-tools/templates');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(Array.isArray(json.data.templates)).toBe(true);
+      expect(json.data.templates.length).toBe(6);
+      expect(json.data.count).toBe(6);
+    });
+
+    it('returns templates with required fields', async () => {
+      const res = await app.request('/custom-tools/templates');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      const template = json.data.templates[0];
+      expect(template.id).toBeDefined();
+      expect(template.name).toBeDefined();
+      expect(template.description).toBeDefined();
+      expect(template.category).toBeDefined();
+      expect(template.code).toBeDefined();
+      expect(template.parameters).toBeDefined();
+      expect(template.permissions).toBeDefined();
+    });
+
+    it('returns categories list', async () => {
+      const res = await app.request('/custom-tools/templates');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(Array.isArray(json.data.categories)).toBe(true);
+      expect(json.data.categories.length).toBeGreaterThan(0);
+    });
+
+    it('filters templates by category', async () => {
+      const res = await app.request('/custom-tools/templates?category=Network');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.templates.length).toBeGreaterThan(0);
+      for (const tpl of json.data.templates) {
+        expect(tpl.category.toLowerCase()).toBe('network');
+      }
+    });
+  });
+
+  // ========================================================================
+  // POST /custom-tools/templates/:templateId/create
+  // ========================================================================
+
+  describe('POST /custom-tools/templates/:templateId/create', () => {
+    it('returns 404 for invalid template ID', async () => {
+      const res = await app.request('/custom-tools/templates/nonexistent/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'my_tool' }),
+      });
+
+      expect(res.status).toBe(404);
+      const json = await res.json();
+      expect(json.error.message).toContain('Template not found');
+    });
+
+    it('creates a tool from a template with default name', async () => {
+      const res = await app.request('/custom-tools/templates/api_fetcher/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(201);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.id).toBe('ct_new');
+    });
+
+    it('creates a tool from a template with custom name', async () => {
+      const res = await app.request('/custom-tools/templates/calculator/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'my_calculator' }),
+      });
+
+      expect(res.status).toBe(201);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(mockRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'my_calculator',
+          category: 'Math',
+          createdBy: 'user',
+          requiresApproval: false,
+        })
+      );
+    });
+
+    it('calls mockRepo.create with template data', async () => {
+      const res = await app.request('/custom-tools/templates/data_transformer/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'my_transformer' }),
+      });
+
+      expect(res.status).toBe(201);
+      expect(mockRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'my_transformer',
+          description: expect.any(String),
+          parameters: expect.objectContaining({ type: 'object' }),
+          code: expect.any(String),
+          category: 'Data',
+          permissions: expect.any(Array),
+          requiresApproval: false,
+          createdBy: 'user',
+        })
+      );
+    });
+
+    it('returns 409 when tool name already exists', async () => {
+      mockRepo.getByName.mockResolvedValueOnce(sampleTool);
+
+      const res = await app.request('/custom-tools/templates/calculator/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'test_tool' }),
+      });
+
+      expect(res.status).toBe(409);
+    });
+  });
+
+  // ========================================================================
+  // Additional security pattern tests for POST /custom-tools
+  // ========================================================================
+
+  describe('POST /custom-tools - security patterns', () => {
+    const dangerousPatterns: Array<{ label: string; code: string }> = [
+      { label: 'eval()', code: 'eval("malicious code")' },
+      { label: 'Function()', code: 'Function("return this")()' },
+      { label: 'globalThis', code: 'globalThis.secret = true' },
+      { label: '__proto__', code: 'obj.__proto__.polluted = true' },
+      { label: '.constructor', code: 'obj.constructor("return this")()' },
+      { label: 'getPrototypeOf', code: 'Object.getPrototypeOf(obj)' },
+      { label: 'setPrototypeOf', code: 'Object.setPrototypeOf(obj, null)' },
+      { label: 'Reflect.construct', code: 'Reflect.construct(Array, [], Object)' },
+      { label: 'with()', code: 'with(obj) { x = 1; }' },
+      { label: 'child_process', code: 'const cp = child_process' },
+      { label: 'exec()', code: 'exec("ls -la")' },
+      { label: 'spawn()', code: 'spawn("node", ["-e", "code"])' },
+      { label: 'debugger', code: 'debugger; return {};' },
+      { label: 'vm.createContext', code: 'vm.createContext({})' },
+      { label: 'arguments.callee', code: 'arguments.callee()' },
+      { label: 'module.exports', code: 'module.exports = {}' },
+    ];
+
+    for (const { label, code } of dangerousPatterns) {
+      it(`rejects code containing ${label}`, async () => {
+        const res = await app.request('/custom-tools', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: 'bad_tool',
+            description: 'Tool with dangerous pattern',
+            parameters: { type: 'object', properties: {} },
+            code,
+          }),
+        });
+
+        expect(res.status).toBe(400);
+        const json = await res.json();
+        expect(json.error.message).toContain('forbidden pattern');
+      });
+    }
+  });
+
+  // ========================================================================
+  // Edge case tests
+  // ========================================================================
+
+  describe('Edge cases', () => {
+    it('PATCH with empty body does not error', async () => {
+      const res = await app.request('/custom-tools/ct_001', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      // Should succeed since update with empty body is valid (no fields changed)
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+    });
+
+    it('POST with code exactly at size limit succeeds', async () => {
+      // 50,000 characters is the max - build safe code at exactly that size
+      const suffix = 'return {};';
+      const padding = 'x'.repeat(50_000 - suffix.length);
+      const code = padding + suffix;
+
+      // Verify our code is exactly at the limit
+      expect(code.length).toBe(50_000);
+
+      const res = await app.request('/custom-tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'large_tool',
+          description: 'Tool with code at size limit',
+          parameters: { type: 'object', properties: {} },
+          code,
+        }),
+      });
+
+      // Code at exactly 50k should be accepted (no forbidden patterns)
+      expect(res.status).toBe(201);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+    });
+
+    it('POST with code exceeding size limit is rejected', async () => {
+      const code = 'a'.repeat(50_001);
+
+      const res = await app.request('/custom-tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'too_large_tool',
+          description: 'Tool with code over size limit',
+          parameters: { type: 'object', properties: {} },
+          code,
+        }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('POST with permissions triggers pending_approval status when createdBy is llm', async () => {
+      mockRepo.create.mockResolvedValueOnce({
+        ...sampleTool,
+        id: 'ct_pending',
+        name: 'dangerous_tool',
+        status: 'pending_approval',
+        permissions: ['network', 'filesystem'],
+        createdBy: 'llm',
+      });
+
+      const res = await app.request('/custom-tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'dangerous_tool',
+          description: 'A tool with dangerous permissions',
+          parameters: { type: 'object', properties: {} },
+          code: 'return { ok: true };',
+          permissions: ['network', 'filesystem'],
+          createdBy: 'llm',
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.status).toBe('pending_approval');
+      expect(json.data.permissions).toContain('network');
+      expect(json.data.permissions).toContain('filesystem');
+    });
+
+    it('PATCH with valid name format is accepted', async () => {
+      const res = await app.request('/custom-tools/ct_001', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'valid_name_123' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.name).toBe('valid_name_123');
+    });
+
+    it('DELETE unregisters tool from dynamic registry', async () => {
+      const res = await app.request('/custom-tools/ct_001', { method: 'DELETE' });
+
+      expect(res.status).toBe(200);
+      expect(mockDynamicRegistry.unregister).toHaveBeenCalledWith('test_tool');
+    });
+
+    it('POST execute records usage after execution', async () => {
+      const res = await app.request('/custom-tools/ct_001/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ arguments: {} }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockRepo.recordUsage).toHaveBeenCalledWith('ct_001');
     });
   });
 });

@@ -50,10 +50,10 @@ vi.mock('../plans/index.js', () => ({
   getPlanExecutor: () => mockPlanExecutor,
 }));
 
-vi.mock('../middleware/validation.js', () => ({
-  validateBody: vi.fn((_schema: unknown, body: unknown) => body),
-  updatePlanStepSchema: {},
-}));
+vi.mock('../middleware/validation.js', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return { ...original };
+});
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
@@ -171,7 +171,7 @@ describe('Plans Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('required');
+      expect(json.error.message).toContain('Validation failed');
     });
   });
 
