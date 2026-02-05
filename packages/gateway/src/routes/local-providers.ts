@@ -13,6 +13,26 @@ import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js';
 
 const log = getLog('LocalProviders');
 
+/**
+ * Validate a baseUrl for local provider (SSRF prevention).
+ * Allows http/https only, blocks cloud metadata endpoints.
+ */
+function isValidBaseUrl(raw: unknown): raw is string {
+  if (typeof raw !== 'string' || raw.length > 2048) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+  // Block cloud metadata endpoints (AWS, GCP, Azure link-local)
+  const host = parsed.hostname;
+  if (host === '169.254.169.254' || host === 'metadata.google.internal') return false;
+  if (host.startsWith('fd00:')) return false;
+  return true;
+}
+
 export const localProvidersRoutes = new Hono();
 
 // =============================================================================
@@ -78,6 +98,10 @@ localProvidersRoutes.post('/', async (c) => {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'name, providerType, and baseUrl are required' }, 400);
     }
 
+    if (!isValidBaseUrl(baseUrl)) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'baseUrl must be a valid http/https URL' }, 400);
+    }
+
     const provider = await localProvidersRepo.createProvider({
       userId,
       name,
@@ -139,6 +163,10 @@ localProvidersRoutes.put('/:id', async (c) => {
 
     const body = await c.req.json();
     const { name, baseUrl, apiKey, discoveryEndpoint, isEnabled } = body;
+
+    if (baseUrl !== undefined && !isValidBaseUrl(baseUrl)) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'baseUrl must be a valid http/https URL' }, 400);
+    }
 
     const updated = await localProvidersRepo.updateProvider(id, {
       name,
@@ -226,6 +254,11 @@ localProvidersRoutes.patch('/:id/set-default', async (c) => {
   const id = c.req.param('id');
 
   try {
+    const existing = await localProvidersRepo.getProvider(id);
+    if (!existing || existing.userId !== userId) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+    }
+
     await localProvidersRepo.setDefault(userId, id);
 
     return apiResponse(c, { message: 'Default local provider updated', });

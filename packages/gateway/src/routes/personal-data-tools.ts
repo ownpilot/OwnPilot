@@ -19,6 +19,9 @@ export interface ToolExecutionResult {
   error?: string;
 }
 
+/** Maximum items allowed in a single batch operation. */
+const MAX_BATCH_SIZE = 100;
+
 /**
  * Execute personal data tool
  */
@@ -131,6 +134,10 @@ export async function executePersonalDataTool(
           return { success: false, error: 'tasks must be an array' };
         }
 
+        if (tasksInput.length > MAX_BATCH_SIZE) {
+          return { success: false, error: `Batch size exceeds maximum of ${MAX_BATCH_SIZE}` };
+        }
+
         const results = [];
         for (const taskInput of tasksInput) {
           let priority = taskInput.priority;
@@ -222,6 +229,10 @@ export async function executePersonalDataTool(
 
         if (!bookmarksInput || !Array.isArray(bookmarksInput)) {
           return { success: false, error: 'bookmarks must be an array' };
+        }
+
+        if (bookmarksInput.length > MAX_BATCH_SIZE) {
+          return { success: false, error: `Batch size exceeds maximum of ${MAX_BATCH_SIZE}` };
         }
 
         const results = [];
@@ -327,6 +338,10 @@ export async function executePersonalDataTool(
           return { success: false, error: 'notes must be an array' };
         }
 
+        if (notesInput.length > MAX_BATCH_SIZE) {
+          return { success: false, error: `Batch size exceeds maximum of ${MAX_BATCH_SIZE}` };
+        }
+
         const results = [];
         for (const input of notesInput) {
           const note = await repo.create({
@@ -418,6 +433,10 @@ export async function executePersonalDataTool(
 
         if (!eventsInput || !Array.isArray(eventsInput)) {
           return { success: false, error: 'events must be an array' };
+        }
+
+        if (eventsInput.length > MAX_BATCH_SIZE) {
+          return { success: false, error: `Batch size exceeds maximum of ${MAX_BATCH_SIZE}` };
         }
 
         const results = [];
@@ -534,6 +553,10 @@ export async function executePersonalDataTool(
 
         if (!contactsInput || !Array.isArray(contactsInput)) {
           return { success: false, error: 'contacts must be an array' };
+        }
+
+        if (contactsInput.length > MAX_BATCH_SIZE) {
+          return { success: false, error: `Batch size exceeds maximum of ${MAX_BATCH_SIZE}` };
         }
 
         const results = [];

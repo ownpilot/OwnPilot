@@ -261,9 +261,10 @@ integrationsRoutes.post('/:id/sync', async (c) => {
           ? new Date(credentials.expiry_date).toISOString()
           : undefined, });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Sync failed';
-      await oauthIntegrationsRepo.updateStatus(id, 'error', errorMessage);
-      return apiError(c, { code: ERROR_CODES.SYNC_ERROR, message: errorMessage }, 500);
+      const internalMessage = error instanceof Error ? error.message : 'Sync failed';
+      log.error('Integration sync failed:', { integrationId: id, error: internalMessage });
+      await oauthIntegrationsRepo.updateStatus(id, 'error', internalMessage);
+      return apiError(c, { code: ERROR_CODES.SYNC_ERROR, message: 'Integration sync failed' }, 500);
     }
   }
 
