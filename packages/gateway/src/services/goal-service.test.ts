@@ -48,6 +48,7 @@ const mockRepo = {
   updateStep: vi.fn(),
   deleteStep: vi.fn(),
   recalculateProgress: vi.fn(),
+  transaction: vi.fn(async <T>(fn: () => Promise<T>) => fn()),
 };
 
 vi.mock('../db/repositories/goals.js', () => ({

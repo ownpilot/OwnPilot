@@ -45,9 +45,16 @@ const mockMediaService = {
   speechToText: vi.fn(),
 };
 
+const noopLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+
 vi.mock('@ownpilot/core', () => ({
   MediaService: vi.fn(),
   createMediaService: vi.fn(() => mockMediaService),
+  getLog: vi.fn(() => noopLogger),
+}));
+
+vi.mock('../workspace/file-workspace.js', () => ({
+  validateWritePath: vi.fn(() => ({ valid: true })),
 }));
 
 const mockMediaSettingsRepo = {
@@ -405,6 +412,8 @@ describe('Media Tool Executors', () => {
       setupConfiguredProvider();
       // Mock fetch for URL-based audio
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers(),
         arrayBuffer: () => Promise.resolve(new ArrayBuffer(100)),
       }));
 

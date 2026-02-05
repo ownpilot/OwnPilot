@@ -166,29 +166,22 @@ describe('Database Routes', () => {
   // ─── Admin Middleware ────────────────────────────────────────
 
   describe('Admin middleware', () => {
-    it('should allow exempt paths without admin key', async () => {
+    it('should require admin key for /status', async () => {
       const res = await app.request('/database/status');
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(403);
     });
 
-    it('should allow /stats without admin key', async () => {
-      // Stats needs connected adapter
-      mockAdapter.queryOne
-        .mockResolvedValueOnce({ size: '10 MB', raw_size: '10000000' })
-        .mockResolvedValueOnce({ active_connections: '5', max_connections: '100' })
-        .mockResolvedValueOnce({ version: 'PostgreSQL 16.0' });
-      mockAdapter.query.mockResolvedValue([]);
-
+    it('should require admin key for /stats', async () => {
       const res = await app.request('/database/stats');
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(403);
     });
 
-    it('should allow /operation/status without admin key', async () => {
+    it('should require admin key for /operation/status', async () => {
       const res = await app.request('/database/operation/status');
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(403);
     });
 
     it('should return 503 when ADMIN_API_KEY not configured', async () => {
@@ -249,7 +242,9 @@ describe('Database Routes', () => {
       mockExistsSync.mockReturnValue(false); // No legacy data
       mockReaddirSync.mockReturnValue([]);
 
-      const res = await app.request('/database/status');
+      const res = await app.request('/database/status', {
+        headers: adminHeaders(),
+      });
 
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -265,7 +260,9 @@ describe('Database Routes', () => {
     it('should return disconnected status', async () => {
       mockAdapter.isConnected.mockReturnValue(false);
 
-      const res = await app.request('/database/status');
+      const res = await app.request('/database/status', {
+        headers: adminHeaders(),
+      });
 
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -280,7 +277,9 @@ describe('Database Routes', () => {
         return false;
       });
 
-      const res = await app.request('/database/status');
+      const res = await app.request('/database/status', {
+        headers: adminHeaders(),
+      });
 
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -293,7 +292,9 @@ describe('Database Routes', () => {
       mockReaddirSync.mockReturnValue(['backup-2024.sql', 'backup-2024.dump', 'other.txt'] as never);
       mockStatSync.mockReturnValue({ size: 2048, mtime: new Date('2024-06-15') });
 
-      const res = await app.request('/database/status');
+      const res = await app.request('/database/status', {
+        headers: adminHeaders(),
+      });
 
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -487,7 +488,9 @@ describe('Database Routes', () => {
         { table_name: 'messages', row_count: '500', size: '2 MB' },
       ]);
 
-      const res = await app.request('/database/stats');
+      const res = await app.request('/database/stats', {
+        headers: adminHeaders(),
+      });
 
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -504,7 +507,9 @@ describe('Database Routes', () => {
     it('should return 500 when not connected', async () => {
       mockAdapter.isConnected.mockReturnValue(false);
 
-      const res = await app.request('/database/stats');
+      const res = await app.request('/database/stats', {
+        headers: adminHeaders(),
+      });
 
       expect(res.status).toBe(500);
       const data = await res.json();
@@ -516,7 +521,9 @@ describe('Database Routes', () => {
 
   describe('GET /database/operation/status', () => {
     it('should return operation status', async () => {
-      const res = await app.request('/database/operation/status');
+      const res = await app.request('/database/operation/status', {
+        headers: adminHeaders(),
+      });
 
       expect(res.status).toBe(200);
       const data = await res.json();

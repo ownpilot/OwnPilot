@@ -48,6 +48,7 @@ const mockRepo = {
   deleteRecord: vi.fn(),
   searchRecords: vi.fn(),
   getTableStats: vi.fn(),
+  transaction: vi.fn(async <T>(fn: () => Promise<T>) => fn()),
 };
 
 vi.mock('../db/repositories/custom-data.js', () => ({
