@@ -208,7 +208,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
   }, [goal.id]);
 
   return (
-    <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg overflow-hidden">
+    <div className="card-elevated card-hover bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg overflow-hidden">
       <div className="flex items-start gap-3 p-4">
         <button
           onClick={onToggle}

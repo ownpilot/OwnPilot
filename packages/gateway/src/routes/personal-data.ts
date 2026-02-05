@@ -94,14 +94,24 @@ tasksRoutes.get('/:id', async (c) => {
 
 tasksRoutes.post('/', async (c) => {
   const repo = new TasksRepository(getUserId(c));
-  const body = await c.req.json<CreateTaskInput>();
+  let body: CreateTaskInput;
+  try {
+    body = await c.req.json<CreateTaskInput>();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
   const task = await repo.create(body);
   return apiResponse(c, task, 201);
 });
 
 tasksRoutes.patch('/:id', async (c) => {
   const repo = new TasksRepository(getUserId(c));
-  const body = await c.req.json<UpdateTaskInput>();
+  let body: UpdateTaskInput;
+  try {
+    body = await c.req.json<UpdateTaskInput>();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
   const task = await repo.update(c.req.param('id'), body);
   if (!task) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
@@ -177,14 +187,24 @@ bookmarksRoutes.get('/:id', async (c) => {
 
 bookmarksRoutes.post('/', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
-  const body = await c.req.json<CreateBookmarkInput>();
+  let body: CreateBookmarkInput;
+  try {
+    body = await c.req.json<CreateBookmarkInput>();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
   const bookmark = await repo.create(body);
   return apiResponse(c, bookmark, 201);
 });
 
 bookmarksRoutes.patch('/:id', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
-  const body = await c.req.json<UpdateBookmarkInput>();
+  let body: UpdateBookmarkInput;
+  try {
+    body = await c.req.json<UpdateBookmarkInput>();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
   const bookmark = await repo.update(c.req.param('id'), body);
   if (!bookmark) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
@@ -260,14 +280,24 @@ notesRoutes.get('/:id', async (c) => {
 
 notesRoutes.post('/', async (c) => {
   const repo = new NotesRepository(getUserId(c));
-  const body = await c.req.json<CreateNoteInput>();
+  let body: CreateNoteInput;
+  try {
+    body = await c.req.json<CreateNoteInput>();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
   const note = await repo.create(body);
   return apiResponse(c, note, 201);
 });
 
 notesRoutes.patch('/:id', async (c) => {
   const repo = new NotesRepository(getUserId(c));
-  const body = await c.req.json<UpdateNoteInput>();
+  let body: UpdateNoteInput;
+  try {
+    body = await c.req.json<UpdateNoteInput>();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
   const note = await repo.update(c.req.param('id'), body);
   if (!note) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
@@ -362,14 +392,24 @@ calendarRoutes.get('/:id', async (c) => {
 
 calendarRoutes.post('/', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
-  const body = await c.req.json<CreateEventInput>();
+  let body: CreateEventInput;
+  try {
+    body = await c.req.json<CreateEventInput>();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
   const event = await repo.create(body);
   return apiResponse(c, event, 201);
 });
 
 calendarRoutes.patch('/:id', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
-  const body = await c.req.json<UpdateEventInput>();
+  let body: UpdateEventInput;
+  try {
+    body = await c.req.json<UpdateEventInput>();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
   const event = await repo.update(c.req.param('id'), body);
   if (!event) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Event not found' }, 404);
@@ -450,14 +490,24 @@ contactsRoutes.get('/:id', async (c) => {
 
 contactsRoutes.post('/', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
-  const body = await c.req.json<CreateContactInput>();
+  let body: CreateContactInput;
+  try {
+    body = await c.req.json<CreateContactInput>();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
   const contact = await repo.create(body);
   return apiResponse(c, contact, 201);
 });
 
 contactsRoutes.patch('/:id', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
-  const body = await c.req.json<UpdateContactInput>();
+  let body: UpdateContactInput;
+  try {
+    body = await c.req.json<UpdateContactInput>();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
   const contact = await repo.update(c.req.param('id'), body);
   if (!contact) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
