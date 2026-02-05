@@ -304,20 +304,20 @@ describe('Workspaces Routes', () => {
     it('should update container config', async () => {
       mockRepo.get.mockResolvedValue({
         id: 'ws-123',
-        containerConfig: { image: 'node:18', maxMemory: '512m' },
+        containerConfig: { memoryMB: 512, cpuCores: 1, storageGB: 2, timeoutMs: 30000, networkPolicy: 'none' },
       });
 
       const res = await app.request('/workspaces/ws-123', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          containerConfig: { maxMemory: '1g' },
+          containerConfig: { memoryMB: 1024 },
         }),
       });
 
       expect(res.status).toBe(200);
       expect(mockRepo.update).toHaveBeenCalledWith('ws-123', {
-        containerConfig: { image: 'node:18', maxMemory: '1g' },
+        containerConfig: { memoryMB: 1024, cpuCores: 1, storageGB: 2, timeoutMs: 30000, networkPolicy: 'none' },
       });
     });
 

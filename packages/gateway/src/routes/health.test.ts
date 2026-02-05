@@ -38,7 +38,7 @@ describe('Health Routes', () => {
       expect(res.status).toBe(200);
 
       const json = await res.json();
-      expect(json.status).toBe('ok');
+      expect(json.data.status).toBe('ok');
     });
   });
 
@@ -48,7 +48,7 @@ describe('Health Routes', () => {
       expect(res.status).toBe(200);
 
       const json = await res.json();
-      expect(json.status).toBe('ok');
+      expect(json.data.status).toBe('ok');
     });
   });
 });
