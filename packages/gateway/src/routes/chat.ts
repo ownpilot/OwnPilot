@@ -501,7 +501,7 @@ async function processStreamingViaBus(
  * Send a chat message
  */
 chatRoutes.post('/', async (c) => {
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, chatMessageSchema } = await import('../middleware/validation.js');
   const body = validateBody(chatMessageSchema, rawBody) as ChatRequest & { provider?: string; model?: string; workspaceId?: string };
 
@@ -1685,7 +1685,7 @@ chatRoutes.delete('/history/:id', async (c) => {
 chatRoutes.patch('/history/:id/archive', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
-  const body = await c.req.json<{ archived: boolean }>();
+  const body = await c.req.json().catch(() => null) as { archived: boolean };
 
   try {
     const chatRepo = new ChatRepository(userId);
@@ -1813,7 +1813,7 @@ chatRoutes.delete('/logs', async (c) => {
  * Call this when starting a "New Chat" to clear conversation memory
  */
 chatRoutes.post('/reset-context', async (c) => {
-  const body = await c.req.json<{ provider?: string; model?: string; clearAll?: boolean }>();
+  const body = await c.req.json().catch(() => null) as { provider?: string; model?: string; clearAll?: boolean };
 
   if (body.clearAll) {
     // Clear all cached chat agents

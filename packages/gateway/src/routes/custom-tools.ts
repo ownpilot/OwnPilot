@@ -242,7 +242,7 @@ customToolsRoutes.get('/:id', async (c) => {
  * Create a new custom tool
  */
 customToolsRoutes.post('/', async (c) => {
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, createCustomToolSchema } = await import('../middleware/validation.js');
   const body = validateBody(createCustomToolSchema, rawBody) as {
     name: string;
@@ -303,7 +303,7 @@ customToolsRoutes.post('/', async (c) => {
  */
 customToolsRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, updateCustomToolSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateCustomToolSchema, rawBody) as {
     name?: string;
@@ -479,7 +479,7 @@ customToolsRoutes.post('/:id/reject', async (c) => {
  */
 customToolsRoutes.post('/:id/execute', async (c) => {
   const id = c.req.param('id');
-  const body = await c.req.json<{ arguments?: Record<string, unknown> }>();
+  const body = await c.req.json().catch(() => null) as { arguments?: Record<string, unknown> };
 
   const repo = createCustomToolsRepo(getUserId(c));
   const tool = await repo.get(id);
@@ -539,14 +539,14 @@ customToolsRoutes.post('/:id/execute', async (c) => {
  * Test a tool without saving (dry run)
  */
 customToolsRoutes.post('/test', async (c) => {
-  const body = await c.req.json<{
+  const body = await c.req.json().catch(() => null) as {
     name: string;
     description: string;
     parameters: CustomToolRecord['parameters'];
     code: string;
     permissions?: ToolPermission[];
     testArguments?: Record<string, unknown>;
-  }>();
+  };
 
   // Validate required fields
   if (!body.name || !body.description || !body.parameters || !body.code) {
@@ -612,11 +612,11 @@ customToolsRoutes.post('/test', async (c) => {
  * LLM can use this to verify tool code before creating it.
  */
 customToolsRoutes.post('/validate', async (c) => {
-  const body = await c.req.json<{
+  const body = await c.req.json().catch(() => null) as {
     code: string;
     name?: string;
     permissions?: string[];
-  }>();
+  };
 
   if (!body.code || typeof body.code !== 'string') {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'code is required' }, 400);
@@ -1013,13 +1013,13 @@ return { rows, count: rows.length, totalBeforeFilter: rows.length };`,
  */
 customToolsRoutes.post('/templates/:templateId/create', async (c) => {
   const templateId = c.req.param('templateId');
-  const body = await c.req.json<{
+  const body = await c.req.json().catch(() => null) as {
     name?: string;
     description?: string;
     code?: string;
     permissions?: ToolPermission[];
     requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
-  }>();
+  };
 
   const template = TOOL_TEMPLATES.find(t => t.id === templateId);
   if (!template) {

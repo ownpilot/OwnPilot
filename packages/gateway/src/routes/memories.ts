@@ -59,7 +59,7 @@ memoriesRoutes.get('/', async (c) => {
  */
 memoriesRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, createMemorySchema } = await import('../middleware/validation.js');
   const body = validateBody(createMemorySchema, rawBody) as unknown as CreateMemoryInput;
 
@@ -149,7 +149,7 @@ memoriesRoutes.get('/:id', async (c) => {
 memoriesRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, updateMemorySchema } = await import('../middleware/validation.js');
   const body = validateBody(updateMemorySchema, rawBody) as {
     content?: string;

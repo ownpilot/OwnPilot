@@ -48,7 +48,7 @@ autonomyRoutes.get('/config', (c) => {
  */
 autonomyRoutes.patch('/config', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
 
   // Validate config update body
   const { validateBody, autonomyConfigSchema } = await import('../middleware/validation.js');
@@ -103,7 +103,7 @@ autonomyRoutes.get('/levels', (c) => {
  */
 autonomyRoutes.post('/level', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, autonomyLevelSchema } = await import('../middleware/validation.js');
   const body = validateBody(autonomyLevelSchema, rawBody);
 
@@ -131,7 +131,7 @@ autonomyRoutes.post('/level', async (c) => {
  */
 autonomyRoutes.post('/assess', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, autonomyAssessSchema } = await import('../middleware/validation.js');
   const body = validateBody(autonomyAssessSchema, rawBody) as {
     category: ActionCategory;
@@ -184,7 +184,7 @@ autonomyRoutes.get('/approvals', (c) => {
  */
 autonomyRoutes.post('/approvals/request', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, autonomyApprovalRequestSchema } = await import('../middleware/validation.js');
   const body = validateBody(autonomyApprovalRequestSchema, rawBody) as {
     category: ActionCategory;
@@ -255,7 +255,7 @@ autonomyRoutes.get('/approvals/:id', (c) => {
 autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, autonomyDecisionSchema } = await import('../middleware/validation.js');
   const body = validateBody(autonomyDecisionSchema, rawBody) as Omit<ApprovalDecision, 'actionId'>;
 
@@ -382,7 +382,7 @@ autonomyRoutes.delete('/approvals/:id', (c) => {
  */
 autonomyRoutes.post('/tools/allow', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, autonomyToolPermissionSchema } = await import('../middleware/validation.js');
   const body = validateBody(autonomyToolPermissionSchema, rawBody) as { tool: string };
 
@@ -412,7 +412,7 @@ autonomyRoutes.post('/tools/allow', async (c) => {
  */
 autonomyRoutes.post('/tools/block', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, autonomyToolPermissionSchema } = await import('../middleware/validation.js');
   const body = validateBody(autonomyToolPermissionSchema, rawBody) as { tool: string };
 
@@ -501,7 +501,7 @@ autonomyRoutes.get('/budget', (c) => {
  */
 autonomyRoutes.patch('/budget', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
 
   // Validate budget update body
   const { validateBody, autonomyBudgetSchema } = await import('../middleware/validation.js');

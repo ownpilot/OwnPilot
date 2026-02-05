@@ -50,7 +50,7 @@ triggersRoutes.get('/', async (c) => {
  */
 triggersRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, createTriggerSchema } = await import('../middleware/validation.js');
   const body = validateBody(createTriggerSchema, rawBody) as unknown as CreateTriggerInput;
 
@@ -153,7 +153,7 @@ triggersRoutes.get('/:id', async (c) => {
 triggersRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = await c.req.json<UpdateTriggerInput>();
+  const body = await c.req.json().catch(() => null) as UpdateTriggerInput;
 
   const service = getServiceRegistry().get(Services.Trigger);
 

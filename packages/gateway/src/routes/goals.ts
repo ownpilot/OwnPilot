@@ -63,7 +63,7 @@ goalsRoutes.get('/', async (c) => {
  */
 goalsRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, createGoalSchema } = await import('../middleware/validation.js');
   const body = validateBody(createGoalSchema, rawBody) as unknown as CreateGoalInput;
 
@@ -152,7 +152,7 @@ goalsRoutes.get('/:id', async (c) => {
 goalsRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, updateGoalSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateGoalSchema, rawBody) as unknown as UpdateGoalInput;
 
@@ -195,7 +195,7 @@ goalsRoutes.delete('/:id', async (c) => {
 goalsRoutes.post('/:id/steps', async (c) => {
   const userId = getUserId(c);
   const goalId = c.req.param('id');
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, createGoalStepsSchema } = await import('../middleware/validation.js');
   const body = validateBody(createGoalStepsSchema, rawBody) as { steps: CreateStepInput[] } | CreateStepInput;
 
@@ -246,7 +246,7 @@ goalsRoutes.get('/:id/steps', async (c) => {
 goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
   const userId = getUserId(c);
   const stepId = c.req.param('stepId');
-  const rawBody = await c.req.json();
+  const rawBody = await c.req.json().catch(() => null);
   const { validateBody, updateGoalStepSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateGoalStepSchema, rawBody) as {
     title?: string;
