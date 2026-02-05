@@ -22,9 +22,6 @@ import {
 } from '@ownpilot/core';
 import { apiResponse, apiError, ERROR_CODES, getIntParam, getUserId } from './helpers.js';
 
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
-
 const app = new Hono();
 
 // ============================================

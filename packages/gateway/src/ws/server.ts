@@ -25,6 +25,17 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('WebSocket');
 
+/** Whitelist of valid client event types (static set, avoid re-creating per message) */
+const VALID_CLIENT_EVENTS = new Set<string>([
+  'chat:send', 'chat:stop', 'chat:retry',
+  'channel:connect', 'channel:disconnect', 'channel:subscribe', 'channel:unsubscribe',
+  'channel:send', 'channel:list',
+  'workspace:create', 'workspace:switch', 'workspace:delete', 'workspace:list',
+  'agent:configure', 'agent:stop',
+  'tool:cancel',
+  'session:ping', 'session:pong',
+]);
+
 export interface WSGatewayConfig {
   /** Port for standalone WebSocket server (if not using HTTP upgrade) */
   port?: number;
@@ -215,6 +226,12 @@ export class WSGateway {
    * Handle incoming WebSocket message
    */
   private handleMessage(sessionId: string, data: RawData): void {
+    // Per-session rate limiting (token bucket)
+    if (!sessionManager.consumeRateLimit(sessionId)) {
+      this.sendError(sessionId, 'RATE_LIMITED', 'Too many messages, slow down');
+      return;
+    }
+
     sessionManager.touch(sessionId);
 
     try {
@@ -226,16 +243,6 @@ export class WSGateway {
       }
 
       // Validate event type against known client events
-      const VALID_CLIENT_EVENTS = new Set<string>([
-        'chat:send', 'chat:stop', 'chat:retry',
-        'channel:connect', 'channel:disconnect', 'channel:subscribe', 'channel:unsubscribe',
-        'channel:send', 'channel:list',
-        'workspace:create', 'workspace:switch', 'workspace:delete', 'workspace:list',
-        'agent:configure', 'agent:stop',
-        'tool:cancel',
-        'session:ping', 'session:pong',
-      ]);
-
       if (!VALID_CLIENT_EVENTS.has(message.type)) {
         this.sendError(sessionId, 'UNKNOWN_EVENT', 'Unknown event type');
         return;
