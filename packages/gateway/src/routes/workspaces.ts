@@ -16,7 +16,6 @@ import {
   type UpdateWorkspaceRequest,
   type ExecuteCodeRequest,
   type ContainerConfig,
-  type ExecutionLanguage,
   DEFAULT_CONTAINER_CONFIG,
   StorageSecurityError,
 } from '@ownpilot/core';
@@ -138,7 +137,12 @@ app.post('/', async (c) => {
   const repo = new WorkspacesRepository(userId);
 
   try {
-    const rawBody = await c.req.json();
+    const rawBody = await c.req.json().catch(() => null);
+
+    if (!rawBody) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Request body is required' }, 400);
+    }
+
     const { validateBody, createWorkspaceSchema } = await import('../middleware/validation.js');
     const body = validateBody(createWorkspaceSchema, rawBody) as CreateWorkspaceRequest;
 
@@ -235,7 +239,12 @@ app.patch('/:id', async (c) => {
   const repo = new WorkspacesRepository(userId);
 
   try {
-    const rawBody = await c.req.json();
+    const rawBody = await c.req.json().catch(() => null);
+
+    if (!rawBody) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Request body is required' }, 400);
+    }
+
     const { validateBody, updateWorkspaceSchema } = await import('../middleware/validation.js');
     const body = validateBody(updateWorkspaceSchema, rawBody) as UpdateWorkspaceRequest;
 
@@ -422,12 +431,16 @@ app.put('/:id/files/*', async (c) => {
       return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
-    const body = await c.req.json();
-    const { content } = body;
+    const body = await c.req.json().catch(() => null);
+    const { workspaceWriteFileSchema } = await import('../middleware/validation.js');
+    const parsed = workspaceWriteFileSchema.safeParse(body);
 
-    if (content === undefined || typeof content !== 'string') {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Content must be a string' }, 400);
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
     }
+
+    const { content } = parsed.data;
 
     const storage = getWorkspaceStorage();
     await storage.writeFile(`${userId}/${workspaceId}`, filePath, content);
@@ -629,16 +642,16 @@ app.post('/:id/execute', async (c) => {
       return apiError(c, { code: ERROR_CODES.DOCKER_UNAVAILABLE, message: 'Docker is not available. Please ensure Docker is installed and running.' }, 503);
     }
 
-    const body = (await c.req.json()) as ExecuteCodeRequest;
+    const rawBody = await c.req.json().catch(() => null);
+    const { workspaceExecuteCodeSchema } = await import('../middleware/validation.js');
+    const parsed = workspaceExecuteCodeSchema.safeParse(rawBody);
 
-    if (!body.code || !body.language) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Code and language are required' }, 400);
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
     }
 
-    const validLanguages: ExecutionLanguage[] = ['python', 'javascript', 'shell'];
-    if (!validLanguages.includes(body.language)) {
-      return apiError(c, { code: ERROR_CODES.INVALID_LANGUAGE, message: `Unsupported language. Supported: ${validLanguages.join(', ')}` }, 400);
-    }
+    const body = parsed.data as ExecuteCodeRequest;
 
     const orchestrator = getOrchestrator();
     const containerConfig: ContainerConfig = workspace.containerConfig;

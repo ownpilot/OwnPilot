@@ -9,7 +9,7 @@ import { Hono } from 'hono';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId } from './helpers.js';
 
 /** Sanitize a filename for use in Content-Disposition headers */
 function sanitizeFilename(name: string): string {
@@ -38,6 +38,8 @@ const app = new Hono();
  * GET /file-workspaces - List all session workspaces
  */
 app.get('/', async (c) => {
+  // TODO: listSessionWorkspaces does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   try {
     const workspaces = listSessionWorkspaces();
 
@@ -54,6 +56,8 @@ app.get('/', async (c) => {
  * POST /file-workspaces - Create a new session workspace
  */
 app.post('/', async (c) => {
+  // TODO: createSessionWorkspace does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   try {
     const body = await c.req.json().catch(() => ({}));
 
@@ -75,6 +79,8 @@ app.post('/', async (c) => {
  * GET /file-workspaces/:id - Get workspace details
  */
 app.get('/:id', async (c) => {
+  // TODO: getSessionWorkspace does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   const workspaceId = c.req.param('id');
 
   try {
@@ -94,6 +100,8 @@ app.get('/:id', async (c) => {
  * DELETE /file-workspaces/:id - Delete a workspace
  */
 app.delete('/:id', async (c) => {
+  // TODO: deleteSessionWorkspace does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   const workspaceId = c.req.param('id');
 
   try {
@@ -113,6 +121,8 @@ app.delete('/:id', async (c) => {
  * GET /file-workspaces/:id/files - List files in workspace
  */
 app.get('/:id/files', async (c) => {
+  // TODO: getSessionWorkspaceFiles does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const path = c.req.query('path') || '';
 
@@ -139,6 +149,8 @@ app.get('/:id/files', async (c) => {
  * GET /file-workspaces/:id/files/* - Read a file
  */
 app.get('/:id/file/*', async (c) => {
+  // TODO: readSessionWorkspaceFile does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const filePath = c.req.path.replace(`/file-workspaces/${workspaceId}/file/`, '');
   const download = c.req.query('download') === 'true';
@@ -186,6 +198,8 @@ app.get('/:id/file/*', async (c) => {
  * PUT /file-workspaces/:id/file/* - Write a file
  */
 app.put('/:id/file/*', async (c) => {
+  // TODO: writeSessionWorkspaceFile does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const filePath = c.req.path.replace(`/file-workspaces/${workspaceId}/file/`, '');
 
@@ -196,12 +210,13 @@ app.put('/:id/file/*', async (c) => {
       return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
     }
 
-    const body = await c.req.json();
-    const { content } = body;
+    const body = await c.req.json().catch(() => null);
 
-    if (content === undefined) {
+    if (!body || body.content === undefined) {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Content is required' }, 400);
     }
+
+    const { content } = body;
 
     writeSessionWorkspaceFile(workspaceId, filePath, content);
 
@@ -221,6 +236,8 @@ app.put('/:id/file/*', async (c) => {
  * DELETE /file-workspaces/:id/file/* - Delete a file
  */
 app.delete('/:id/file/*', async (c) => {
+  // TODO: deleteSessionWorkspaceFile does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const filePath = c.req.path.replace(`/file-workspaces/${workspaceId}/file/`, '');
 
@@ -253,6 +270,8 @@ app.delete('/:id/file/*', async (c) => {
  * GET /file-workspaces/:id/download - Download workspace as ZIP
  */
 app.get('/:id/download', async (c) => {
+  // TODO: zipSessionWorkspace does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   const workspaceId = c.req.param('id');
 
   try {
@@ -292,6 +311,8 @@ app.get('/:id/download', async (c) => {
  * POST /file-workspaces/cleanup - Clean up old workspaces
  */
 app.post('/cleanup', async (c) => {
+  // TODO: cleanupSessionWorkspaces does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   try {
     const body = await c.req.json().catch(() => ({}));
     const raw = Number(body.maxAgeDays) || 7;
@@ -309,6 +330,8 @@ app.post('/cleanup', async (c) => {
  * POST /file-workspaces/session/:sessionId - Get or create workspace for session
  */
 app.post('/session/:sessionId', async (c) => {
+  // TODO: getOrCreateSessionWorkspace does not accept userId yet; needs file-workspace.ts changes to scope by user
+  const _userId = getUserId(c);
   const sessionId = c.req.param('sessionId');
 
   try {

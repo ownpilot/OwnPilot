@@ -564,7 +564,7 @@ describe('Workspaces Routes', () => {
 
       expect(res.status).toBe(400);
       const data = await res.json();
-      expect(data.error.code).toBe('INVALID_LANGUAGE');
+      expect(data.error.code).toBe('INVALID_INPUT');
     });
 
     it('should create container if not exists', async () => {

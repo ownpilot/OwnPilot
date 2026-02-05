@@ -367,6 +367,86 @@ export const updateWorkspaceSchema = z.object({
   containerConfig: containerConfigSchema.optional(),
 }).passthrough();
 
+// ─── Local Provider Schemas ──────────────────────────────────────
+
+export const createLocalProviderSchema = z.object({
+  name: z.string().min(1).max(200),
+  providerType: z.enum(['lmstudio', 'ollama', 'localai', 'vllm', 'custom']),
+  baseUrl: z.string().min(1).max(2048),
+  apiKey: z.string().max(500).optional(),
+  discoveryEndpoint: z.string().max(500).optional(),
+}).passthrough();
+
+export const updateLocalProviderSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  baseUrl: z.string().max(2048).optional(),
+  apiKey: z.string().max(500).optional(),
+  discoveryEndpoint: z.string().max(500).optional(),
+  isEnabled: z.boolean().optional(),
+}).passthrough();
+
+export const toggleEnabledSchema = z.object({
+  enabled: z.boolean(),
+}).passthrough();
+
+// ─── Profile Schemas ────────────────────────────────────────────
+
+export const profileSetDataSchema = z.object({
+  category: z.string().min(1).max(100),
+  key: z.string().min(1).max(200),
+  value: z.unknown(),
+  data: z.record(z.string(), z.unknown()).optional(),
+  confidence: z.number().min(0).max(1).optional(),
+  source: z.enum(['user_stated', 'user_confirmed', 'ai_inferred', 'imported']).optional(),
+  sensitive: z.boolean().optional(),
+}).passthrough();
+
+export const profileDeleteDataSchema = z.object({
+  category: z.string().min(1).max(100),
+  key: z.string().min(1).max(200),
+}).passthrough();
+
+export const profileImportSchema = z.object({
+  entries: z.array(z.record(z.string(), z.unknown())).min(1).max(10000),
+}).passthrough();
+
+export const profileQuickSetupSchema = z.object({
+  name: z.string().max(200).optional(),
+  nickname: z.string().max(200).optional(),
+  location: z.string().max(500).optional(),
+  timezone: z.string().max(100).optional(),
+  occupation: z.string().max(500).optional(),
+  language: z.string().max(100).optional(),
+  communicationStyle: z.string().max(200).optional(),
+  autonomyLevel: z.string().max(100).optional(),
+}).passthrough();
+
+// ─── Provider Config Schemas ────────────────────────────────────
+
+export const providerConfigSchema = z.object({
+  baseUrl: z.string().max(2048).optional(),
+  providerType: z.string().max(100).optional(),
+  isEnabled: z.boolean().optional(),
+  apiKeyEnv: z.string().max(200).optional(),
+  notes: z.string().max(2000).optional(),
+}).passthrough();
+
+// ─── Workspace File & Execute Schemas ───────────────────────────
+
+export const workspaceWriteFileSchema = z.object({
+  content: z.string(),
+}).passthrough();
+
+export const workspaceExecuteCodeSchema = z.object({
+  code: z.string().min(1).max(100000),
+  language: z.enum(['python', 'javascript', 'shell']),
+  timeout: z.number().int().min(1000).max(120000).optional(),
+  files: z.array(z.object({
+    path: z.string().min(1).max(500),
+    content: z.string().max(1000000),
+  })).max(50).optional(),
+}).passthrough();
+
 // ─── Validation Helper ──────────────────────────────────────────
 
 /**

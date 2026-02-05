@@ -91,12 +91,16 @@ localProvidersRoutes.post('/', async (c) => {
   const userId = getUserId(c);
 
   try {
-    const body = await c.req.json();
-    const { name, providerType, baseUrl, apiKey, discoveryEndpoint } = body;
+    const body = await c.req.json().catch(() => null);
+    const { createLocalProviderSchema } = await import('../middleware/validation.js');
+    const parsed = createLocalProviderSchema.safeParse(body);
 
-    if (!name || !providerType || !baseUrl) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'name, providerType, and baseUrl are required' }, 400);
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
     }
+
+    const { name, providerType, baseUrl, apiKey, discoveryEndpoint } = parsed.data;
 
     if (!isValidBaseUrl(baseUrl)) {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'baseUrl must be a valid http/https URL' }, 400);
@@ -161,8 +165,16 @@ localProvidersRoutes.put('/:id', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
     }
 
-    const body = await c.req.json();
-    const { name, baseUrl, apiKey, discoveryEndpoint, isEnabled } = body;
+    const body = await c.req.json().catch(() => null);
+    const { updateLocalProviderSchema } = await import('../middleware/validation.js');
+    const parsed = updateLocalProviderSchema.safeParse(body);
+
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+    }
+
+    const { name, baseUrl, apiKey, discoveryEndpoint, isEnabled } = parsed.data;
 
     if (baseUrl !== undefined && !isValidBaseUrl(baseUrl)) {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'baseUrl must be a valid http/https URL' }, 400);
@@ -221,12 +233,16 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
   const id = c.req.param('id');
 
   try {
-    const body = await c.req.json();
-    const { enabled } = body;
+    const body = await c.req.json().catch(() => null);
+    const { toggleEnabledSchema } = await import('../middleware/validation.js');
+    const parsed = toggleEnabledSchema.safeParse(body);
 
-    if (typeof enabled !== 'boolean') {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'enabled field is required and must be a boolean' }, 400);
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
     }
+
+    const { enabled } = parsed.data;
 
     const existing = await localProvidersRepo.getProvider(id);
     if (!existing || existing.userId !== userId) {
@@ -363,12 +379,16 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
   const modelId = decodeURIComponent(c.req.param('modelId'));
 
   try {
-    const body = await c.req.json();
-    const { enabled } = body;
+    const body = await c.req.json().catch(() => null);
+    const { toggleEnabledSchema } = await import('../middleware/validation.js');
+    const parsed = toggleEnabledSchema.safeParse(body);
 
-    if (typeof enabled !== 'boolean') {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'enabled field is required and must be a boolean' }, 400);
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
     }
+
+    const { enabled } = parsed.data;
 
     // Find the model by provider ID + logical modelId to get its DB record id
     const userId = getUserId(c);
