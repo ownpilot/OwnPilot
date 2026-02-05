@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CodeBlock } from '../../../components/CodeBlock';
+import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import type { ToolItem } from '../types';
 import { toolsApi } from '../../../api';
 
@@ -38,11 +39,7 @@ export function CodeTab({ tool }: CodeTabProps) {
   }, [tool.name]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-sm text-text-muted dark:text-dark-text-muted">Loading source code...</p>
-      </div>
-    );
+    return <LoadingSpinner size="sm" message="Loading source code..." />;
   }
 
   if (error) {
