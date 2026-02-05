@@ -25,14 +25,12 @@ import {
   DEFAULT_ISOLATION_LIMITS,
 } from './isolation.js';
 import type {
-  PluginCapability,
   IsolationConfig,
   PluginRegistryInterface,
   AccessViolation,
   AllowedPluginEvent,
 } from './isolation.js';
 import { unsafePluginId } from '../types/branded.js';
-import type { PluginId } from '../types/branded.js';
 
 // =============================================================================
 // Helpers
@@ -40,7 +38,7 @@ import type { PluginId } from '../types/branded.js';
 
 const pluginA = unsafePluginId('plugin-a');
 const pluginB = unsafePluginId('plugin-b');
-const pluginC = unsafePluginId('plugin-c');
+const _pluginC = unsafePluginId('plugin-c');
 
 function makeIsolationConfig(overrides: Partial<IsolationConfig> = {}): IsolationConfig {
   return {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   PermissionChecker,
   hasPermissionLevel,
@@ -14,7 +14,6 @@ import type {
   PermissionLevel,
   PermissionPolicy,
   ToolPermissionConfig,
-  UserPermissions,
 } from './permissions.js';
 import type { ToolContext } from './types.js';
 
@@ -975,7 +974,7 @@ describe('createPermissionChecker', () => {
   });
 
   it('allows overriding default policy fields', () => {
-    const c = createPermissionChecker({ defaultLevel: 'admin' });
+    const _c = createPermissionChecker({ defaultLevel: 'admin' });
     const ctx = makeContext();
     // With admin default level, write_file should be allowed (if category check passes)
     // Default categories don't include file_write, so let's also override that

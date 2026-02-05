@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { TOOL_MAX_LIMITS, applyToolLimits } from './tool-limits.js';
-import type { ToolLimit } from './tool-limits.js';
 
 // ===========================================================================
 // TOOL_MAX_LIMITS constant

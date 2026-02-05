@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isRetryableError, withRetry, createRetryWrapper } from './retry.js';
-import { TimeoutError, InternalError } from '../types/errors.js';
+import { TimeoutError } from '../types/errors.js';
 import { ok, err } from '../types/result.js';
 import type { Result } from '../types/result.js';
 
