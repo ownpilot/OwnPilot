@@ -63,6 +63,7 @@ function createApp() {
 
 const sampleProvider = {
   id: 'ollama-1',
+  userId: 'default',
   name: 'Ollama',
   providerType: 'ollama',
   baseUrl: 'http://localhost:11434',
@@ -191,6 +192,7 @@ describe('Local Providers Routes', () => {
 
   describe('PUT /local-providers/:id', () => {
     it('updates a provider', async () => {
+      mockLocalProvidersRepo.getProvider.mockResolvedValue(sampleProvider);
       mockLocalProvidersRepo.updateProvider.mockResolvedValue({ ...sampleProvider, name: 'Updated Ollama' });
 
       const res = await app.request('/local-providers/ollama-1', {
@@ -219,6 +221,7 @@ describe('Local Providers Routes', () => {
 
   describe('DELETE /local-providers/:id', () => {
     it('deletes a provider', async () => {
+      mockLocalProvidersRepo.getProvider.mockResolvedValue(sampleProvider);
       mockLocalProvidersRepo.deleteProvider.mockResolvedValue(true);
 
       const res = await app.request('/local-providers/ollama-1', { method: 'DELETE' });
@@ -239,6 +242,7 @@ describe('Local Providers Routes', () => {
 
   describe('PATCH /local-providers/:id/toggle', () => {
     it('toggles provider enabled state', async () => {
+      mockLocalProvidersRepo.getProvider.mockResolvedValue(sampleProvider);
       mockLocalProvidersRepo.updateProvider.mockResolvedValue({ ...sampleProvider, isEnabled: false });
 
       const res = await app.request('/local-providers/ollama-1/toggle', {
@@ -279,6 +283,8 @@ describe('Local Providers Routes', () => {
 
   describe('PATCH /local-providers/:id/set-default', () => {
     it('sets default local provider', async () => {
+      mockLocalProvidersRepo.getProvider.mockResolvedValue(sampleProvider);
+
       const res = await app.request('/local-providers/ollama-1/set-default', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -287,6 +293,16 @@ describe('Local Providers Routes', () => {
 
       expect(res.status).toBe(200);
       expect(mockLocalProvidersRepo.setDefault).toHaveBeenCalledWith('default', 'ollama-1');
+    });
+
+    it('returns 404 when provider not found', async () => {
+      const res = await app.request('/local-providers/nonexistent/set-default', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(404);
     });
   });
 
