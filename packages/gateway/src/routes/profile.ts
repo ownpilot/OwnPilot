@@ -84,15 +84,19 @@ app.get('/category/:category', async (c) => {
  */
 app.post('/data', async (c) => {
   try {
-    const body = await c.req.json();
-    const { category, key, value, data, confidence, source, sensitive } = body;
+    const body = await c.req.json().catch(() => null);
+    const { profileSetDataSchema } = await import('../middleware/validation.js');
+    const parsed = profileSetDataSchema.safeParse(body);
 
-    if (!category || !key || value === undefined) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'category, key, and value are required' }, 400);
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
     }
 
+    const { category, key, value, data, confidence, source, sensitive } = parsed.data;
+
     const store = await getPersonalMemoryStore(getUserId(c));
-    const entry = await store.set(category, key, value, {
+    const entry = await store.set(category as PersonalDataCategory, key, value as string, {
       data,
       confidence,
       source,
@@ -113,15 +117,19 @@ app.post('/data', async (c) => {
  */
 app.delete('/data', async (c) => {
   try {
-    const body = await c.req.json();
-    const { category, key } = body;
+    const body = await c.req.json().catch(() => null);
+    const { profileDeleteDataSchema } = await import('../middleware/validation.js');
+    const parsed = profileDeleteDataSchema.safeParse(body);
 
-    if (!category || !key) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'category and key are required' }, 400);
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
     }
 
+    const { category, key } = parsed.data;
+
     const store = await getPersonalMemoryStore(getUserId(c));
-    const deleted = await store.delete(category, key);
+    const deleted = await store.delete(category as PersonalDataCategory, key);
 
     getMemoryInjector().invalidateCache(getUserId(c));
 
@@ -164,15 +172,24 @@ app.get('/search', async (c) => {
  */
 app.post('/import', async (c) => {
   try {
-    const body = await c.req.json();
-    const { entries } = body;
+    const body = await c.req.json().catch(() => null);
+    const { profileImportSchema } = await import('../middleware/validation.js');
+    const parsed = profileImportSchema.safeParse(body);
 
-    if (!Array.isArray(entries)) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'entries array is required' }, 400);
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
     }
 
+    const { entries } = parsed.data;
+
     const store = await getPersonalMemoryStore(getUserId(c));
-    const imported = await store.importData(entries);
+    const imported = await store.importData(entries as Array<{
+      category: PersonalDataCategory;
+      key: string;
+      value: string;
+      data?: Record<string, unknown>;
+    }>);
 
     getMemoryInjector().invalidateCache(getUserId(c));
 
@@ -208,7 +225,15 @@ app.get('/export', async (c) => {
  */
 app.post('/quick', async (c) => {
   try {
-    const body = await c.req.json();
+    const body = await c.req.json().catch(() => null);
+    const { profileQuickSetupSchema } = await import('../middleware/validation.js');
+    const parsed = profileQuickSetupSchema.safeParse(body);
+
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+    }
+
     const {
       name,
       nickname,
@@ -218,7 +243,7 @@ app.post('/quick', async (c) => {
       language,
       communicationStyle,
       autonomyLevel,
-    } = body;
+    } = parsed.data;
 
     const store = await getPersonalMemoryStore(getUserId(c));
     let count = 0;

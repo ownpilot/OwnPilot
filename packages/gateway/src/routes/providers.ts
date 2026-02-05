@@ -384,8 +384,16 @@ app.put('/:id/config', async (c) => {
   }
 
   try {
-    const body = await c.req.json();
-    const { baseUrl, providerType, isEnabled, apiKeyEnv, notes } = body;
+    const body = await c.req.json().catch(() => null);
+    const { providerConfigSchema } = await import('../middleware/validation.js');
+    const parsed = providerConfigSchema.safeParse(body);
+
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+    }
+
+    const { baseUrl, providerType, isEnabled, apiKeyEnv, notes } = parsed.data;
 
     const updated = await modelConfigsRepo.upsertUserProviderConfig({
       userId,
@@ -440,12 +448,16 @@ app.patch('/:id/toggle', async (c) => {
   }
 
   try {
-    const body = await c.req.json();
-    const { enabled } = body;
+    const body = await c.req.json().catch(() => null);
+    const { toggleEnabledSchema } = await import('../middleware/validation.js');
+    const parsed = toggleEnabledSchema.safeParse(body);
 
-    if (typeof enabled !== 'boolean') {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'enabled must be a boolean' }, 400);
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
     }
+
+    const { enabled } = parsed.data;
 
     await modelConfigsRepo.toggleUserProviderConfig(userId, id, enabled);
     const userConfig = await modelConfigsRepo.getUserProviderConfig(userId, id);

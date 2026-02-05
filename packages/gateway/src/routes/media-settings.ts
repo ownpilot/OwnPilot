@@ -176,7 +176,12 @@ mediaSettingsRoutes.post('/:capability', async (c) => {
   }
 
   try {
-    const rawBody = await c.req.json();
+    const rawBody = await c.req.json().catch(() => null);
+
+    if (!rawBody) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Request body is required' }, 400);
+    }
+
     const { validateBody, mediaSettingsSchema } = await import('../middleware/validation.js');
     const body = validateBody(mediaSettingsSchema, rawBody) as {
       provider: string;
