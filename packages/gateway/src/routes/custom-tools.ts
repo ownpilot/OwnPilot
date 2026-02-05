@@ -268,7 +268,7 @@ customToolsRoutes.post('/', async (c) => {
   // Check if tool name already exists
   const existing = await repo.getByName(body.name);
   if (existing) {
-    return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Tool with name '${body.name}' already exists` }, 409);
+    return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Tool with name '${sanitizeText(body.name)}' already exists` }, 409);
   }
 
   const tool = await repo.create({

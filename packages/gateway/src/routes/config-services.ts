@@ -176,7 +176,7 @@ configServicesRoutes.post('/', async (c) => {
   // Check for duplicate
   const existing = configServicesRepo.getByName(body.name);
   if (existing) {
-    return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Config service '${body.name}' already exists` }, 409);
+    return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Config service '${sanitizeId(body.name)}' already exists` }, 409);
   }
 
   const service = await configServicesRepo.create(body);
