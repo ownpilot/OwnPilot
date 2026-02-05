@@ -74,6 +74,11 @@ vi.mock('../db/repositories/index.js', () => ({
   AVAILABLE_PROVIDERS: mockAvailableProviders,
 }));
 
+vi.mock('../middleware/validation.js', () => ({
+  validateBody: vi.fn((_schema: unknown, body: unknown) => body),
+  mediaSettingsSchema: {},
+}));
+
 // Import after mocks
 const { mediaSettingsRoutes } = await import('./media-settings.js');
 
@@ -203,7 +208,7 @@ describe('Media Settings Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('required');
+      expect(json.error.message).toContain('Provider');
     });
 
     it('returns 400 for invalid provider', async () => {

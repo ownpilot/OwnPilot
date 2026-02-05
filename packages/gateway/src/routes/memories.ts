@@ -18,6 +18,10 @@ import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES } from './he
 import { getLog } from '../services/log.js';
 
 const log = getLog('Memories');
+
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const memoriesRoutes = new Hono();
 
 // ============================================================================
@@ -55,7 +59,9 @@ memoriesRoutes.get('/', async (c) => {
  */
 memoriesRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<CreateMemoryInput>();
+  const rawBody = await c.req.json();
+  const { validateBody, createMemorySchema } = await import('../middleware/validation.js');
+  const body = validateBody(createMemorySchema, rawBody) as unknown as CreateMemoryInput;
 
   try {
     const service = getServiceRegistry().get(Services.Memory);
@@ -131,7 +137,7 @@ memoriesRoutes.get('/:id', async (c) => {
   const memory = await service.getMemory(userId, id);
 
   if (!memory) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, memory);
@@ -143,11 +149,13 @@ memoriesRoutes.get('/:id', async (c) => {
 memoriesRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = await c.req.json<{
+  const rawBody = await c.req.json();
+  const { validateBody, updateMemorySchema } = await import('../middleware/validation.js');
+  const body = validateBody(updateMemorySchema, rawBody) as {
     content?: string;
     importance?: number;
     tags?: string[];
-  }>();
+  };
 
   if (body.importance !== undefined && (typeof body.importance !== 'number' || !Number.isFinite(body.importance) || body.importance < 0 || body.importance > 1)) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'importance must be a finite number between 0 and 1' }, 400);
@@ -157,7 +165,7 @@ memoriesRoutes.patch('/:id', async (c) => {
   const updated = await service.updateMemory(userId, id, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -169,7 +177,9 @@ memoriesRoutes.patch('/:id', async (c) => {
 memoriesRoutes.post('/:id/boost', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = await c.req.json<{ amount?: number }>().catch((): { amount?: number } => ({}));
+  const rawBody = await c.req.json().catch(() => ({}));
+  const { validateBody, boostMemorySchema } = await import('../middleware/validation.js');
+  const body = validateBody(boostMemorySchema, rawBody) as { amount?: number };
   const amount = body.amount ?? 0.1;
 
   if (typeof amount !== 'number' || amount <= 0 || amount > 1) {
@@ -180,7 +190,7 @@ memoriesRoutes.post('/:id/boost', async (c) => {
   const boosted = await service.boostMemory(userId, id, amount);
 
   if (!boosted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -201,7 +211,7 @@ memoriesRoutes.delete('/:id', async (c) => {
 
   if (!deleted) {
     log.warn('Memory not found for deletion', { userId, memoryId: id });
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${sanitizeId(id)}` }, 404);
   }
 
   log.info('Memory deleted', { userId, memoryId: id });
@@ -215,10 +225,12 @@ memoriesRoutes.delete('/:id', async (c) => {
  */
 memoriesRoutes.post('/decay', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<{
+  const rawBody = await c.req.json().catch(() => ({}));
+  const { validateBody, decayMemoriesSchema } = await import('../middleware/validation.js');
+  const body = validateBody(decayMemoriesSchema, rawBody) as {
     daysThreshold?: number;
     decayFactor?: number;
-  }>().catch((): { daysThreshold?: number; decayFactor?: number } => ({}));
+  };
 
   const service = getServiceRegistry().get(Services.Memory);
   const affected = await service.decayMemories(userId, body);
@@ -234,10 +246,12 @@ memoriesRoutes.post('/decay', async (c) => {
  */
 memoriesRoutes.post('/cleanup', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<{
+  const rawBody = await c.req.json().catch(() => ({}));
+  const { validateBody, cleanupMemoriesSchema } = await import('../middleware/validation.js');
+  const body = validateBody(cleanupMemoriesSchema, rawBody) as {
     maxAge?: number;
     minImportance?: number;
-  }>().catch((): { maxAge?: number; minImportance?: number } => ({}));
+  };
 
   const service = getServiceRegistry().get(Services.Memory);
   const deleted = await service.cleanupMemories(userId, body);
@@ -407,7 +421,7 @@ export async function executeMemoryTool(
 
         const memory = await service.getMemory(userId, memoryId, false);
         if (!memory) {
-          return { success: false, error: `Memory not found: ${memoryId}` };
+          return { success: false, error: `Memory not found: ${sanitizeId(memoryId)}` };
         }
 
         await service.deleteMemory(userId, memoryId);
@@ -465,7 +479,7 @@ export async function executeMemoryTool(
 
         const boosted = await service.boostMemory(userId, memoryId, amount);
         if (!boosted) {
-          return { success: false, error: `Memory not found: ${memoryId}` };
+          return { success: false, error: `Memory not found: ${sanitizeId(memoryId)}` };
         }
 
         return {
@@ -494,7 +508,7 @@ export async function executeMemoryTool(
       }
 
       default:
-        return { success: false, error: `Unknown tool: ${toolId}` };
+        return { success: false, error: `Unknown tool: ${sanitizeId(toolId)}` };
     }
   } catch (err) {
     if (err instanceof MemoryServiceError) {

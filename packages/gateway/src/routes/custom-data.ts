@@ -13,6 +13,9 @@ import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { CustomDataServiceError } from '../services/custom-data-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const customDataRoutes = new Hono();
 
 // ============================================================================
@@ -44,12 +47,14 @@ customDataRoutes.get('/tables/by-plugin/:pluginId', async (c) => {
  * POST /custom-data/tables - Create a new custom table
  */
 customDataRoutes.post('/tables', async (c) => {
-  const body = await c.req.json<{
+  const rawBody = await c.req.json();
+  const { validateBody, createCustomTableSchema } = await import('../middleware/validation.js');
+  const body = validateBody(createCustomTableSchema, rawBody) as {
     name: string;
     displayName: string;
     description?: string;
     columns: ColumnDefinition[];
-  }>();
+  };
 
   try {
     const service = getServiceRegistry().get(Services.Database);
@@ -78,7 +83,7 @@ customDataRoutes.get('/tables/:table', async (c) => {
 
   const table = await service.getTable(tableId);
   if (!table) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${tableId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${sanitizeId(tableId)}` }, 404);
   }
 
   const stats = await service.getTableStats(tableId);
@@ -94,17 +99,19 @@ customDataRoutes.get('/tables/:table', async (c) => {
  */
 customDataRoutes.put('/tables/:table', async (c) => {
   const tableId = c.req.param('table');
-  const body = await c.req.json<{
+  const rawBody = await c.req.json();
+  const { validateBody, updateCustomTableSchema } = await import('../middleware/validation.js');
+  const body = validateBody(updateCustomTableSchema, rawBody) as {
     displayName?: string;
     description?: string;
     columns?: ColumnDefinition[];
-  }>();
+  };
 
   const service = getServiceRegistry().get(Services.Database);
   const updated = await service.updateTable(tableId, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${tableId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${sanitizeId(tableId)}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -122,7 +129,7 @@ customDataRoutes.delete('/tables/:table', async (c) => {
     const deleted = await service.deleteTable(tableId);
 
     if (!deleted) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${tableId}` }, 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${sanitizeId(tableId)}` }, 404);
     }
 
     return apiResponse(c, { deleted: true });
@@ -177,7 +184,9 @@ customDataRoutes.get('/tables/:table/records', async (c) => {
  */
 customDataRoutes.post('/tables/:table/records', async (c) => {
   const tableId = c.req.param('table');
-  const body = await c.req.json<{ data: Record<string, unknown> }>();
+  const rawBody = await c.req.json();
+  const { validateBody, createCustomRecordSchema } = await import('../middleware/validation.js');
+  const body = validateBody(createCustomRecordSchema, rawBody) as { data: Record<string, unknown> };
 
   if (!body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'data must be a non-empty object' }, 400);
@@ -224,7 +233,7 @@ customDataRoutes.get('/records/:id', async (c) => {
 
   const record = await service.getRecord(recordId);
   if (!record) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${recordId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${sanitizeId(recordId)}` }, 404);
   }
 
   return apiResponse(c, record);
@@ -235,7 +244,9 @@ customDataRoutes.get('/records/:id', async (c) => {
  */
 customDataRoutes.put('/records/:id', async (c) => {
   const recordId = c.req.param('id');
-  const body = await c.req.json<{ data: Record<string, unknown> }>();
+  const rawBody = await c.req.json();
+  const { validateBody, updateCustomRecordSchema } = await import('../middleware/validation.js');
+  const body = validateBody(updateCustomRecordSchema, rawBody) as { data: Record<string, unknown> };
 
   if (!body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'data must be a non-empty object' }, 400);
@@ -246,7 +257,7 @@ customDataRoutes.put('/records/:id', async (c) => {
     const updated = await service.updateRecord(recordId, body.data);
 
     if (!updated) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${recordId}` }, 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${sanitizeId(recordId)}` }, 404);
     }
 
     return apiResponse(c, updated);
@@ -264,7 +275,7 @@ customDataRoutes.delete('/records/:id', async (c) => {
 
   const deleted = await service.deleteRecord(recordId);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${recordId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${sanitizeId(recordId)}` }, 404);
   }
 
   return apiResponse(c, { deleted: true });
@@ -340,7 +351,7 @@ export async function executeCustomDataTool(
         const { table: tableId } = params as { table: string };
         const table = await service.getTable(tableId);
         if (!table) {
-          return { success: false, error: `Table not found: ${tableId}` };
+          return { success: false, error: `Table not found: ${sanitizeId(tableId)}` };
         }
         const stats = await service.getTableStats(table.id);
         return {
@@ -363,7 +374,7 @@ export async function executeCustomDataTool(
         // Get display name before deletion
         const table = await service.getTable(tableId);
         if (!table) {
-          return { success: false, error: `Table not found: ${tableId}` };
+          return { success: false, error: `Table not found: ${sanitizeId(tableId)}` };
         }
         const displayName = table.displayName;
 
@@ -458,7 +469,7 @@ export async function executeCustomDataTool(
         const { recordId } = params as { recordId: string };
         const record = await service.getRecord(recordId);
         if (!record) {
-          return { success: false, error: `Record not found: ${recordId}` };
+          return { success: false, error: `Record not found: ${sanitizeId(recordId)}` };
         }
         return {
           success: true,
@@ -476,7 +487,7 @@ export async function executeCustomDataTool(
         };
         const updated = await service.updateRecord(recordId, data);
         if (!updated) {
-          return { success: false, error: `Record not found: ${recordId}` };
+          return { success: false, error: `Record not found: ${sanitizeId(recordId)}` };
         }
         return {
           success: true,
@@ -491,7 +502,7 @@ export async function executeCustomDataTool(
         const { recordId } = params as { recordId: string };
         const deleted = await service.deleteRecord(recordId);
         if (!deleted) {
-          return { success: false, error: `Record not found: ${recordId}` };
+          return { success: false, error: `Record not found: ${sanitizeId(recordId)}` };
         }
         return {
           success: true,
@@ -502,7 +513,7 @@ export async function executeCustomDataTool(
       }
 
       default:
-        return { success: false, error: `Unknown tool: ${toolId}` };
+        return { success: false, error: `Unknown tool: ${sanitizeId(toolId)}` };
     }
   } catch (err) {
     if (err instanceof CustomDataServiceError) {

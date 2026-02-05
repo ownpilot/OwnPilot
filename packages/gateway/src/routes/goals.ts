@@ -21,6 +21,10 @@ import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES } from './he
 import { getLog } from '../services/log.js';
 
 const log = getLog('Goals');
+
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const goalsRoutes = new Hono();
 
 // ============================================================================
@@ -59,7 +63,9 @@ goalsRoutes.get('/', async (c) => {
  */
 goalsRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<CreateGoalInput>();
+  const rawBody = await c.req.json();
+  const { validateBody, createGoalSchema } = await import('../middleware/validation.js');
+  const body = validateBody(createGoalSchema, rawBody) as unknown as CreateGoalInput;
 
   try {
     const service = getServiceRegistry().get(Services.Goal);
@@ -134,7 +140,7 @@ goalsRoutes.get('/:id', async (c) => {
   const goalWithSteps = await service.getGoalWithSteps(userId, id);
 
   if (!goalWithSteps) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, goalWithSteps);
@@ -146,13 +152,15 @@ goalsRoutes.get('/:id', async (c) => {
 goalsRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = await c.req.json<UpdateGoalInput>();
+  const rawBody = await c.req.json();
+  const { validateBody, updateGoalSchema } = await import('../middleware/validation.js');
+  const body = validateBody(updateGoalSchema, rawBody) as unknown as UpdateGoalInput;
 
   const service = getServiceRegistry().get(Services.Goal);
   const updated = await service.updateGoal(userId, id, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -169,7 +177,7 @@ goalsRoutes.delete('/:id', async (c) => {
   const deleted = await service.deleteGoal(userId, id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -187,7 +195,9 @@ goalsRoutes.delete('/:id', async (c) => {
 goalsRoutes.post('/:id/steps', async (c) => {
   const userId = getUserId(c);
   const goalId = c.req.param('id');
-  const body = await c.req.json<{ steps: CreateStepInput[] } | CreateStepInput>();
+  const rawBody = await c.req.json();
+  const { validateBody, createGoalStepsSchema } = await import('../middleware/validation.js');
+  const body = validateBody(createGoalStepsSchema, rawBody) as { steps: CreateStepInput[] } | CreateStepInput;
 
   try {
     const service = getServiceRegistry().get(Services.Goal);
@@ -236,18 +246,20 @@ goalsRoutes.get('/:id/steps', async (c) => {
 goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
   const userId = getUserId(c);
   const stepId = c.req.param('stepId');
-  const body = await c.req.json<{
+  const rawBody = await c.req.json();
+  const { validateBody, updateGoalStepSchema } = await import('../middleware/validation.js');
+  const body = validateBody(updateGoalStepSchema, rawBody) as {
     title?: string;
     description?: string;
     status?: StepStatus;
     result?: string;
-  }>();
+  };
 
   const service = getServiceRegistry().get(Services.Goal);
   const updated = await service.updateStep(userId, stepId, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${stepId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${sanitizeId(stepId)}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -260,13 +272,15 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
 goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
   const userId = getUserId(c);
   const stepId = c.req.param('stepId');
-  const body = await c.req.json<{ result?: string }>().catch((): { result?: string } => ({}));
+  const rawBody = await c.req.json().catch(() => ({}));
+  const { validateBody, completeGoalStepSchema } = await import('../middleware/validation.js');
+  const body = validateBody(completeGoalStepSchema, rawBody) as { result?: string };
 
   const service = getServiceRegistry().get(Services.Goal);
   const updated = await service.completeStep(userId, stepId, body.result);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${stepId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${sanitizeId(stepId)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -287,7 +301,7 @@ goalsRoutes.delete('/:goalId/steps/:stepId', async (c) => {
   const deleted = await service.deleteStep(userId, stepId);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${stepId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${sanitizeId(stepId)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -411,7 +425,7 @@ export async function executeGoalTool(
         });
 
         if (!updated) {
-          return { success: false, error: `Goal not found: ${goalId}` };
+          return { success: false, error: `Goal not found: ${sanitizeId(goalId)}` };
         }
 
         return {
@@ -507,7 +521,7 @@ export async function executeGoalTool(
         const updated = await service.completeStep(userId, stepId, result);
 
         if (!updated) {
-          return { success: false, error: `Step not found: ${stepId}` };
+          return { success: false, error: `Step not found: ${sanitizeId(stepId)}` };
         }
 
         return {
@@ -532,7 +546,7 @@ export async function executeGoalTool(
 
         const goalWithSteps = await service.getGoalWithSteps(userId, goalId);
         if (!goalWithSteps) {
-          return { success: false, error: `Goal not found: ${goalId}` };
+          return { success: false, error: `Goal not found: ${sanitizeId(goalId)}` };
         }
 
         const { steps, ...goal } = goalWithSteps;
@@ -575,7 +589,7 @@ export async function executeGoalTool(
       }
 
       default:
-        return { success: false, error: `Unknown tool: ${toolId}` };
+        return { success: false, error: `Unknown tool: ${sanitizeId(toolId)}` };
     }
   } catch (err) {
     if (err instanceof GoalServiceError) {

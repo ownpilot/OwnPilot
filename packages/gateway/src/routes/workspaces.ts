@@ -5,6 +5,7 @@
  * Provides workspace CRUD, file operations, and code execution.
  */
 
+import path from 'node:path';
 import { Hono } from 'hono';
 import { WorkspacesRepository } from '../db/repositories/workspaces.js';
 import {
@@ -21,7 +22,42 @@ import {
 } from '@ownpilot/core';
 import { apiResponse, apiError, ERROR_CODES, getIntParam, getUserId } from './helpers.js';
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 const app = new Hono();
+
+// ============================================
+// Path traversal protection
+// ============================================
+
+/**
+ * Sanitize file paths to prevent directory traversal attacks.
+ * Ensures the resolved path stays within the workspace root.
+ *
+ * Returns the normalized relative path, or null if the path
+ * attempts to escape the workspace directory.
+ */
+function sanitizeFilePath(filePath: string): string | null {
+  // Normalize the path using posix to get consistent forward slashes,
+  // then resolve any ../ sequences
+  const normalized = path.posix.normalize(filePath);
+
+  // Reject if path tries to escape (starts with .. or is exactly '..')
+  if (normalized.startsWith('..') || normalized === '..') {
+    return null;
+  }
+
+  // Strip leading slashes to ensure the path is relative
+  const relative = normalized.replace(/^\/+/, '');
+
+  // After stripping, re-check (e.g. "/../foo" normalizes to "../foo")
+  if (relative.startsWith('..')) {
+    return null;
+  }
+
+  return relative;
+}
 
 // ============================================
 // Container config limits
@@ -105,19 +141,9 @@ app.post('/', async (c) => {
   const repo = new WorkspacesRepository(userId);
 
   try {
-    const body = (await c.req.json()) as CreateWorkspaceRequest;
-
-    if (!body.name || typeof body.name !== 'string') {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace name is required' }, 400);
-    }
-
-    if (body.name.length > 100) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace name too long (max 100 characters)' }, 400);
-    }
-
-    if (body.description && typeof body.description === 'string' && body.description.length > 500) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace description too long (max 500 characters)' }, 400);
-    }
+    const rawBody = await c.req.json();
+    const { validateBody, createWorkspaceSchema } = await import('../middleware/validation.js');
+    const body = validateBody(createWorkspaceSchema, rawBody) as CreateWorkspaceRequest;
 
     // Check workspace limit
     const existingCount = await repo.count();
@@ -156,8 +182,12 @@ app.post('/', async (c) => {
         createdAt: workspace.createdAt.toISOString(),
       }, 201);
   } catch (error) {
-    await repo.logAudit('create', 'workspace', undefined, false, error instanceof Error ? error.message : 'Unknown error');
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_CREATE_ERROR, message: error instanceof Error ? error.message : 'Failed to create workspace' }, 500);
+    const msg = error instanceof Error ? error.message : 'Failed to create workspace';
+    if (msg.startsWith('Validation failed:')) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: msg }, 400);
+    }
+    await repo.logAudit('create', 'workspace', undefined, false, msg);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_CREATE_ERROR, message: msg }, 500);
   }
 });
 
@@ -208,21 +238,15 @@ app.patch('/:id', async (c) => {
   const repo = new WorkspacesRepository(userId);
 
   try {
-    const body = (await c.req.json()) as UpdateWorkspaceRequest;
+    const rawBody = await c.req.json();
+    const { validateBody, updateWorkspaceSchema } = await import('../middleware/validation.js');
+    const body = validateBody(updateWorkspaceSchema, rawBody) as UpdateWorkspaceRequest;
 
     // Check workspace exists and belongs to user
     const existing = await repo.get(workspaceId);
 
     if (!existing) {
       return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
-    }
-
-    // Validate lengths
-    if (body.name && typeof body.name === 'string' && body.name.length > 100) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace name too long (max 100 characters)' }, 400);
-    }
-    if (body.description && typeof body.description === 'string' && body.description.length > 500) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Workspace description too long (max 500 characters)' }, 400);
     }
 
     // Build update input
@@ -246,7 +270,11 @@ app.patch('/:id', async (c) => {
 
     return apiResponse(c, { updated: true });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_UPDATE_ERROR, message: error instanceof Error ? error.message : 'Failed to update workspace' }, 500);
+    const msg = error instanceof Error ? error.message : 'Failed to update workspace';
+    if (msg.startsWith('Validation failed:')) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: msg }, 400);
+    }
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_UPDATE_ERROR, message: msg }, 500);
   }
 });
 
@@ -297,9 +325,15 @@ app.delete('/:id', async (c) => {
 app.get('/:id/files', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const path = c.req.query('path') || '.';
+  const rawPath = c.req.query('path') || '.';
   const recursive = c.req.query('recursive') === 'true';
   const repo = new WorkspacesRepository(userId);
+
+  // Validate path to prevent directory traversal
+  const safePath = rawPath === '.' ? '.' : sanitizeFilePath(rawPath);
+  if (safePath === null) {
+    return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid file path' }, 400);
+  }
 
   try {
     // Verify workspace ownership
@@ -310,10 +344,10 @@ app.get('/:id/files', async (c) => {
     }
 
     const storage = getWorkspaceStorage();
-    const files = await storage.listFiles(`${userId}/${workspaceId}`, path, recursive);
+    const files = await storage.listFiles(`${userId}/${workspaceId}`, safePath, recursive);
 
     return apiResponse(c, {
-        path,
+        path: safePath,
         files,
         count: files.length,
       });
@@ -331,8 +365,14 @@ app.get('/:id/files', async (c) => {
 app.get('/:id/files/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const filePath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
+  const rawPath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
   const repo = new WorkspacesRepository(userId);
+
+  // Validate path to prevent directory traversal
+  const filePath = sanitizeFilePath(rawPath);
+  if (filePath === null) {
+    return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid file path' }, 400);
+  }
 
   try {
     // Verify workspace ownership
@@ -368,8 +408,14 @@ app.get('/:id/files/*', async (c) => {
 app.put('/:id/files/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const filePath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
+  const rawPath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
   const repo = new WorkspacesRepository(userId);
+
+  // Validate path to prevent directory traversal
+  const filePath = sanitizeFilePath(rawPath);
+  if (filePath === null) {
+    return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid file path' }, 400);
+  }
 
   try {
     // Verify workspace ownership
@@ -411,8 +457,14 @@ app.put('/:id/files/*', async (c) => {
 app.delete('/:id/files/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const filePath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
+  const rawPath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
   const repo = new WorkspacesRepository(userId);
+
+  // Validate path to prevent directory traversal
+  const filePath = sanitizeFilePath(rawPath);
+  if (filePath === null) {
+    return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid file path' }, 400);
+  }
 
   try {
     // Verify workspace ownership
