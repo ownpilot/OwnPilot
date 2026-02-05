@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { IsolatedStorage, StorageSecurityError, getStorage, initializeStorage } from './storage.js';
+import { IsolatedStorage, StorageSecurityError, initializeStorage } from './storage.js';
 
 // Mock node:fs
 vi.mock('node:fs', () => ({
