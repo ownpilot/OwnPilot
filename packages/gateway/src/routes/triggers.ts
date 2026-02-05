@@ -14,6 +14,9 @@ import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression, getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
 
+/** Strip non-alphanumeric/dash/underscore chars and cap length to prevent log injection. */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const triggersRoutes = new Hono();
 
 // ============================================================================
@@ -132,7 +135,7 @@ triggersRoutes.get('/:id', async (c) => {
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
   }
 
   // Get recent history for this trigger
@@ -174,7 +177,7 @@ triggersRoutes.patch('/:id', async (c) => {
   const updated = await service.updateTrigger(userId, id, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, updated);
@@ -191,7 +194,7 @@ triggersRoutes.post('/:id/enable', async (c) => {
   const updated = await service.updateTrigger(userId, id, { enabled: true });
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -211,7 +214,7 @@ triggersRoutes.post('/:id/disable', async (c) => {
   const updated = await service.updateTrigger(userId, id, { enabled: false });
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -231,12 +234,19 @@ triggersRoutes.post('/:id/fire', async (c) => {
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
   }
 
   // Fire the trigger using the engine
   const engine = getTriggerEngine({ userId });
-  const result = await engine.fireTrigger(id);
+
+  let result;
+  try {
+    result = await engine.fireTrigger(id);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Trigger execution failed unexpectedly.';
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message }, 500);
+  }
 
   if (!result.success) {
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error || 'Trigger execution failed.' }, 500);
@@ -256,7 +266,7 @@ triggersRoutes.delete('/:id', async (c) => {
   const deleted = await service.deleteTrigger(userId, id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -276,7 +286,7 @@ triggersRoutes.get('/:id/history', async (c) => {
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
   }
 
   const history = await service.getHistoryForTrigger(userId, id, limit);
@@ -297,7 +307,8 @@ triggersRoutes.post('/cleanup', async (c) => {
   const body = await c.req.json<{ maxAgeDays?: number }>().catch((): { maxAgeDays?: number } => ({}));
 
   const service = getServiceRegistry().get(Services.Trigger);
-  const raw = Number(body.maxAgeDays) || 30;
+  let raw = Number(body.maxAgeDays) || 30;
+  if (!Number.isFinite(raw)) raw = 30;
   const maxAgeDays = Math.max(1, Math.min(365, raw));
   const deleted = await service.cleanupHistory(userId, maxAgeDays);
 

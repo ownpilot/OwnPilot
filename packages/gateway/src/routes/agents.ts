@@ -856,6 +856,12 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
       }
 
       try {
+        // Validate tool arguments payload size
+        const argsStr = JSON.stringify(toolArgs ?? {});
+        if (argsStr.length > 100000) {
+          return { content: 'Tool arguments payload too large (max 100KB)', isError: true };
+        }
+
         // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
         const cappedArgs = applyToolLimits(tool_name, toolArgs);
         const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
@@ -906,6 +912,12 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
           }
 
           try {
+            // Validate tool arguments payload size
+            const argsStr = JSON.stringify(toolArgs ?? {});
+            if (argsStr.length > 100000) {
+              return { idx, tool_name, ok: false, content: 'Tool arguments payload too large (max 100KB)' };
+            }
+
             const cappedArgs = applyToolLimits(tool_name, toolArgs);
             const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
             if (result.ok) {
@@ -1123,7 +1135,9 @@ export const agentRoutes = new Hono();
  * List all agents (capped at 100)
  */
 agentRoutes.get('/', async (c) => {
-  const records = (await agentsRepo.getAll()).slice(0, 100);
+  const allRecords = await agentsRepo.getAll();
+  const total = allRecords.length;
+  const records = allRecords.slice(0, 100);
 
   const agentList: AgentInfo[] = records.map((record) => {
     // Resolve tools from config (explicit tools and/or toolGroups)
@@ -1144,7 +1158,7 @@ agentRoutes.get('/', async (c) => {
     };
   });
 
-  return apiResponse(c, agentList);
+  return apiResponse(c, { items: agentList, total, limit: 100, hasMore: total > 100 });
 });
 
 /**
@@ -1524,7 +1538,7 @@ export async function getOrCreateDefaultAgent(): Promise<Agent> {
  * Uses promise-based deduplication to prevent concurrent creation races.
  */
 export async function getOrCreateChatAgent(provider: string, model: string): Promise<Agent> {
-  const cacheKey = `chat:${provider}:${model}`;
+  const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
 
   // Check cache first
   const cached = chatAgentCache.get(cacheKey);
@@ -1697,6 +1711,12 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
       }
 
       try {
+        // Validate tool arguments payload size
+        const argsStr = JSON.stringify(toolArgs ?? {});
+        if (argsStr.length > 100000) {
+          return { content: 'Tool arguments payload too large (max 100KB)', isError: true };
+        }
+
         // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
         const cappedArgs = applyToolLimits(tool_name, toolArgs);
         const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
@@ -1745,6 +1765,12 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
           }
 
           try {
+            // Validate tool arguments payload size
+            const argsStr = JSON.stringify(toolArgs ?? {});
+            if (argsStr.length > 100000) {
+              return { idx, tool_name, ok: false, content: 'Tool arguments payload too large (max 100KB)' };
+            }
+
             const cappedArgs = applyToolLimits(tool_name, toolArgs);
             const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
             if (result.ok) {
@@ -1885,7 +1911,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
  * Call this when user starts a "New Chat"
  */
 export function resetChatAgentContext(provider: string, model: string): boolean {
-  const cacheKey = `chat:${provider}:${model}`;
+  const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
   const agent = chatAgentCache.get(cacheKey);
 
   if (agent) {

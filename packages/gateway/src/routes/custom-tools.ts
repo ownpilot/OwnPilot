@@ -17,7 +17,6 @@ import {
   ALL_TOOLS,
   validateToolCode,
   analyzeToolCode,
-  MAX_TOOL_CODE_SIZE,
   type DynamicToolDefinition,
   type ToolDefinition,
   type ToolContext,
@@ -187,6 +186,35 @@ customToolsRoutes.get('/pending', async (c) => {
       tools,
       count: tools.length,
     });
+});
+
+/**
+ * GET /custom-tools/templates - Get tool templates for safe starting points
+ * NOTE: Must be registered BEFORE /:id to avoid Hono route shadowing
+ */
+customToolsRoutes.get('/templates', (c) => {
+  const category = c.req.query('category');
+
+  let templates = TOOL_TEMPLATES;
+  if (category) {
+    templates = templates.filter(t => t.category.toLowerCase() === category.toLowerCase());
+  }
+
+  return apiResponse(c, {
+    templates: templates.map(t => ({
+      id: t.id,
+      name: t.name,
+      displayName: t.displayName,
+      description: t.description,
+      category: t.category,
+      permissions: t.permissions,
+      parameters: t.parameters,
+      code: t.code,
+      requiredApiKeys: t.requiredApiKeys,
+    })),
+    count: templates.length,
+    categories: [...new Set(TOOL_TEMPLATES.map(t => t.category))],
+  });
 });
 
 /**
@@ -458,30 +486,47 @@ customToolsRoutes.post('/:id/execute', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Tool is not active. Current status: ${tool.status}` }, 400);
   }
 
+  // Validate arguments size to prevent abuse
+  const argsStr = JSON.stringify(body.arguments ?? {});
+  if (argsStr.length > 100000) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Arguments payload too large (max 100KB)' }, 400);
+  }
+
   // Ensure tool is registered
   syncToolToRegistry(tool);
 
   const startTime = Date.now();
-  const result = await executeCustomToolUnified(
-    tool.name,
-    body.arguments ?? {},
-    {
-      conversationId: 'direct-execution',
-      userId: getUserId(c),
-    }
-  );
-  const duration = Date.now() - startTime;
+  try {
+    const result = await executeCustomToolUnified(
+      tool.name,
+      body.arguments ?? {},
+      {
+        conversationId: 'direct-execution',
+        userId: getUserId(c),
+      }
+    );
+    const duration = Date.now() - startTime;
 
-  // Record usage
-  await repo.recordUsage(id);
+    // Record usage
+    await repo.recordUsage(id);
 
-  return apiResponse(c, {
+    return apiResponse(c, {
+        tool: tool.name,
+        result: result.content,
+        isError: result.isError,
+        duration,
+        metadata: result.metadata,
+      });
+  } catch (execError) {
+    const duration = Date.now() - startTime;
+    return apiResponse(c, {
       tool: tool.name,
-      result: result.content,
-      isError: result.isError,
+      result: execError instanceof Error ? execError.message : 'Execution failed',
+      isError: true,
       duration,
-      metadata: result.metadata,
+      metadata: {},
     });
+  }
 });
 
 /**
@@ -522,25 +567,37 @@ customToolsRoutes.post('/test', async (c) => {
   testRegistry.register(testTool);
 
   const startTime = Date.now();
-  const result = await testRegistry.execute(
-    body.name,
-    body.testArguments ?? {},
-    {
-      callId: `test_${Date.now()}`,
-      conversationId: 'test-execution',
-      userId: getUserId(c),
-    }
-  );
-  const duration = Date.now() - startTime;
+  try {
+    const result = await testRegistry.execute(
+      body.name,
+      body.testArguments ?? {},
+      {
+        callId: `test_${Date.now()}`,
+        conversationId: 'test-execution',
+        userId: getUserId(c),
+      }
+    );
+    const duration = Date.now() - startTime;
 
-  return apiResponse(c, {
+    return apiResponse(c, {
+        tool: body.name,
+        result: result.content,
+        isError: result.isError,
+        duration,
+        metadata: result.metadata,
+        testMode: true,
+      });
+  } catch (execError) {
+    const duration = Date.now() - startTime;
+    return apiResponse(c, {
       tool: body.name,
-      result: result.content,
-      isError: result.isError,
+      result: execError instanceof Error ? execError.message : 'Execution failed',
+      isError: true,
       duration,
-      metadata: result.metadata,
+      metadata: {},
       testMode: true,
     });
+  }
 });
 
 /**
@@ -946,34 +1003,6 @@ return { rows, count: rows.length, totalBeforeFilter: rows.length };`,
 ];
 
 /**
- * GET /custom-tools/templates - Get tool templates for safe starting points
- */
-customToolsRoutes.get('/templates', (c) => {
-  const category = c.req.query('category');
-
-  let templates = TOOL_TEMPLATES;
-  if (category) {
-    templates = templates.filter(t => t.category.toLowerCase() === category.toLowerCase());
-  }
-
-  return apiResponse(c, {
-    templates: templates.map(t => ({
-      id: t.id,
-      name: t.name,
-      displayName: t.displayName,
-      description: t.description,
-      category: t.category,
-      permissions: t.permissions,
-      parameters: t.parameters,
-      code: t.code,
-      requiredApiKeys: t.requiredApiKeys,
-    })),
-    count: templates.length,
-    categories: [...new Set(TOOL_TEMPLATES.map(t => t.category))],
-  });
-});
-
-/**
  * POST /custom-tools/templates/:id/create - Create a tool from a template
  */
 customToolsRoutes.post('/templates/:templateId/create', async (c) => {
@@ -1098,6 +1127,32 @@ export async function executeCustomToolTool(
           return { success: false, error: 'Missing required fields: name, description, parameters, code' };
         }
 
+        // Enforce length limits (same as Zod schema)
+        if (typeof name !== 'string' || name.length > 100) {
+          return { success: false, error: 'Tool name must be a string with max 100 characters' };
+        }
+        if (typeof description !== 'string' || description.length > 2000) {
+          return { success: false, error: 'Description must be a string with max 2000 characters' };
+        }
+        if (typeof code !== 'string' || code.length > 50000) {
+          return { success: false, error: 'Code must be a string with max 50000 characters' };
+        }
+        if (category !== undefined && (typeof category !== 'string' || category.length > 50)) {
+          return { success: false, error: 'Category must be a string with max 50 characters' };
+        }
+
+        // Validate permissions enum
+        const VALID_PERMISSIONS = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling'];
+        if (permissions) {
+          if (!Array.isArray(permissions) || permissions.length > 6) {
+            return { success: false, error: 'Permissions must be an array with max 6 entries' };
+          }
+          const invalid = permissions.filter(p => !VALID_PERMISSIONS.includes(p));
+          if (invalid.length > 0) {
+            return { success: false, error: `Invalid permissions: ${invalid.join(', ')}. Allowed: ${VALID_PERMISSIONS.join(', ')}` };
+          }
+        }
+
         // Parse parameters if it's a JSON string
         let parameters: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
         if (typeof parametersInput === 'string') {
@@ -1190,12 +1245,23 @@ export async function executeCustomToolTool(
       case 'list_custom_tools': {
         const { category, status } = params as {
           category?: string;
-          status?: 'active' | 'disabled' | 'pending_approval';
+          status?: string;
         };
+
+        // Validate status enum if provided
+        const VALID_STATUSES = ['active', 'disabled', 'pending_approval', 'rejected'];
+        if (status && !VALID_STATUSES.includes(status)) {
+          return { success: false, error: `Invalid status '${status}'. Allowed: ${VALID_STATUSES.join(', ')}` };
+        }
+
+        // Validate category length
+        if (category && (typeof category !== 'string' || category.length > 50)) {
+          return { success: false, error: 'Category must be a string with max 50 characters' };
+        }
 
         const tools = await repo.list({
           category,
-          status: status as ToolStatus,
+          status: status as ToolStatus | undefined,
         });
 
         const stats = await repo.getStats();
@@ -1225,8 +1291,11 @@ export async function executeCustomToolTool(
       case 'delete_custom_tool': {
         const { name, confirm } = params as { name: string; confirm?: boolean };
 
-        if (!name) {
-          return { success: false, error: 'Tool name is required' };
+        if (!name || typeof name !== 'string' || name.length > 100) {
+          return { success: false, error: 'Tool name must be a non-empty string with max 100 characters' };
+        }
+        if (confirm !== undefined && typeof confirm !== 'boolean') {
+          return { success: false, error: 'confirm must be a boolean' };
         }
 
         const tool = await repo.getByName(name);
@@ -1280,8 +1349,11 @@ export async function executeCustomToolTool(
       case 'toggle_custom_tool': {
         const { name, enabled } = params as { name: string; enabled: boolean };
 
-        if (!name || enabled === undefined) {
-          return { success: false, error: 'Tool name and enabled status are required' };
+        if (!name || typeof name !== 'string' || name.length > 100) {
+          return { success: false, error: 'Tool name must be a non-empty string with max 100 characters' };
+        }
+        if (typeof enabled !== 'boolean') {
+          return { success: false, error: 'enabled must be a boolean value (true or false)' };
         }
 
         const tool = await repo.getByName(name);

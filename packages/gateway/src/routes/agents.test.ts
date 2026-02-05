@@ -253,16 +253,18 @@ describe('Agent Routes', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
-      expect(data.data).toHaveLength(2);
-      expect(data.data[0].id).toBe('agent-1');
-      expect(data.data[0].name).toBe('Agent A');
-      expect(data.data[0].provider).toBe('openai');
-      expect(data.data[0].model).toBe('gpt-4');
+      expect(data.data.items).toHaveLength(2);
+      expect(data.data.total).toBe(2);
+      expect(data.data.hasMore).toBe(false);
+      expect(data.data.items[0].id).toBe('agent-1');
+      expect(data.data.items[0].name).toBe('Agent A');
+      expect(data.data.items[0].provider).toBe('openai');
+      expect(data.data.items[0].model).toBe('gpt-4');
       // Tools should include explicit + toolGroup tools
-      expect(data.data[0].tools).toContain('get_current_time');
-      expect(data.data[0].tools).toContain('save_memory');
-      expect(data.data[0].tools).toContain('search_memories');
-      expect(data.data[0].createdAt).toBe('2024-01-01T00:00:00.000Z');
+      expect(data.data.items[0].tools).toContain('get_current_time');
+      expect(data.data.items[0].tools).toContain('save_memory');
+      expect(data.data.items[0].tools).toContain('search_memories');
+      expect(data.data.items[0].createdAt).toBe('2024-01-01T00:00:00.000Z');
     });
 
     it('should return empty list when no agents exist', async () => {
@@ -273,7 +275,9 @@ describe('Agent Routes', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
-      expect(data.data).toEqual([]);
+      expect(data.data.items).toEqual([]);
+      expect(data.data.total).toBe(0);
+      expect(data.data.hasMore).toBe(false);
     });
 
     it('should resolve toolGroups into individual tool names', async () => {
@@ -288,7 +292,7 @@ describe('Agent Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      const tools: string[] = data.data[0].tools;
+      const tools: string[] = data.data.items[0].tools;
       expect(tools).toContain('get_current_time');
       expect(tools).toContain('calculate');
       expect(tools).toContain('save_memory');
@@ -307,7 +311,7 @@ describe('Agent Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.data[0].tools).toEqual([]);
+      expect(data.data.items[0].tools).toEqual([]);
     });
 
     it('should handle database error', async () => {
