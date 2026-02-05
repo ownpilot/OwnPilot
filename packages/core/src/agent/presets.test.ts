@@ -6,7 +6,7 @@ import {
   createProviderConfigFromPreset,
   getDefaultModelConfig,
 } from './presets.js';
-import type { ProviderPreset } from './presets.js';
+import type { ProviderPreset as _ProviderPreset } from './presets.js';
 
 // ---------------------------------------------------------------------------
 // 1. PROVIDER_PRESETS structure
