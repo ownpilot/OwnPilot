@@ -153,7 +153,7 @@ export const BUILT_IN_PATTERNS: readonly PIIPattern[] = [
   {
     name: 'phone_international',
     category: 'phone',
-    pattern: /\b\+\d{1,3}[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b/g,
+    pattern: /(?<!\w)\+\d{1,3}[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b/g,
     confidence: 0.75,
     severity: 'medium',
   },
