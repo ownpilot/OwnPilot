@@ -112,7 +112,7 @@ goalsRoutes.get('/next-actions', async (c) => {
  */
 goalsRoutes.get('/upcoming', async (c) => {
   const userId = getUserId(c);
-  const days = getIntParam(c, 'days', 7, 1);
+  const days = getIntParam(c, 'days', 7, 1, 365);
 
   const service = getServiceRegistry().get(Services.Goal);
   const goals = await service.getUpcoming(userId, days);

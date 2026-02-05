@@ -432,7 +432,7 @@ costRoutes.post('/record', async (c) => {
  */
 costRoutes.get('/export', async (c) => {
   const format = (c.req.query('format') ?? 'json') as 'json' | 'csv';
-  const days = getIntParam(c, 'days', 30, 1);
+  const days = getIntParam(c, 'days', 30, 1, 365);
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);

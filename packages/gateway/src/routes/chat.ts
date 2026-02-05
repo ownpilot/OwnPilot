@@ -1735,7 +1735,7 @@ chatRoutes.get('/logs', async (c) => {
  */
 chatRoutes.get('/logs/stats', async (c) => {
   const userId = getUserId(c);
-  const days = getIntParam(c, 'days', 7, 1);
+  const days = getIntParam(c, 'days', 7, 1, 365);
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);

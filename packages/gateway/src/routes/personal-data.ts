@@ -51,7 +51,7 @@ tasksRoutes.get('/', async (c) => {
     projectId: c.req.query('projectId'),
     search: c.req.query('search'),
     limit: getOptionalIntParam(c, 'limit', 1, 100),
-    offset: getOptionalIntParam(c, 'offset', 0),
+    offset: getOptionalIntParam(c, 'offset', 0, 10000),
   };
 
   const tasks = await repo.list(query);
@@ -72,7 +72,7 @@ tasksRoutes.get('/overdue', async (c) => {
 
 tasksRoutes.get('/upcoming', async (c) => {
   const repo = new TasksRepository(getUserId(c));
-  const days = getIntParam(c, 'days', 7, 1);
+  const days = getIntParam(c, 'days', 7, 1, 365);
   const tasks = await repo.getUpcoming(days);
   return apiResponse(c, tasks);
 });
@@ -140,7 +140,7 @@ bookmarksRoutes.get('/', async (c) => {
     isFavorite: c.req.query('favorite') === 'true' ? true : undefined,
     search: c.req.query('search'),
     limit: getOptionalIntParam(c, 'limit', 1, 100),
-    offset: getOptionalIntParam(c, 'offset', 0),
+    offset: getOptionalIntParam(c, 'offset', 0, 10000),
   };
 
   const bookmarks = await repo.list(query);
@@ -224,7 +224,7 @@ notesRoutes.get('/', async (c) => {
     isArchived: c.req.query('archived') === 'true' ? true : false,
     search: c.req.query('search'),
     limit: getOptionalIntParam(c, 'limit', 1, 100),
-    offset: getOptionalIntParam(c, 'offset', 0),
+    offset: getOptionalIntParam(c, 'offset', 0, 10000),
   };
 
   const notes = await repo.list(query);
@@ -325,7 +325,7 @@ calendarRoutes.get('/', async (c) => {
     category: c.req.query('category'),
     search: c.req.query('search'),
     limit: getOptionalIntParam(c, 'limit', 1, 100),
-    offset: getOptionalIntParam(c, 'offset', 0),
+    offset: getOptionalIntParam(c, 'offset', 0, 10000),
   };
 
   const events = await repo.list(query);
@@ -340,7 +340,7 @@ calendarRoutes.get('/today', async (c) => {
 
 calendarRoutes.get('/upcoming', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
-  const days = getIntParam(c, 'days', 7, 1);
+  const days = getIntParam(c, 'days', 7, 1, 365);
   const events = await repo.getUpcoming(days);
   return apiResponse(c, events);
 });
@@ -400,7 +400,7 @@ contactsRoutes.get('/', async (c) => {
     isFavorite: c.req.query('favorite') === 'true' ? true : undefined,
     search: c.req.query('search'),
     limit: getOptionalIntParam(c, 'limit', 1, 100),
-    offset: getOptionalIntParam(c, 'offset', 0),
+    offset: getOptionalIntParam(c, 'offset', 0, 10000),
   };
 
   const contacts = await repo.list(query);
@@ -422,7 +422,7 @@ contactsRoutes.get('/recent', async (c) => {
 
 contactsRoutes.get('/birthdays', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
-  const days = getIntParam(c, 'days', 30, 1);
+  const days = getIntParam(c, 'days', 30, 1, 365);
   const contacts = await repo.getUpcomingBirthdays(days);
   return apiResponse(c, contacts);
 });

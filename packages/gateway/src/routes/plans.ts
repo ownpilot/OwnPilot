@@ -36,7 +36,7 @@ plansRoutes.get('/', async (c) => {
   const goalId = c.req.query('goalId');
   const triggerId = c.req.query('triggerId');
   const limit = getIntParam(c, 'limit', 20, 1, 100);
-  const offset = getIntParam(c, 'offset', 0, 0);
+  const offset = getIntParam(c, 'offset', 0, 0, 10000);
 
   const service = getServiceRegistry().get(Services.Plan);
   const plans = await service.listPlans(userId, { status, goalId, triggerId, limit, offset });
