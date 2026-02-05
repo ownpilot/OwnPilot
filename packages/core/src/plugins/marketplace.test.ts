@@ -30,7 +30,7 @@ import {
 } from './marketplace.js';
 import type {
   MarketplaceManifest,
-  SecurityDeclaration,
+  SecurityDeclaration as _SecurityDeclaration,
   RevocationEntry,
 } from './marketplace.js';
 
