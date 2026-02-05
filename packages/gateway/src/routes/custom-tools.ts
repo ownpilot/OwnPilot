@@ -15,6 +15,9 @@ import {
 import {
   createDynamicToolRegistry,
   ALL_TOOLS,
+  validateToolCode,
+  analyzeToolCode,
+  MAX_TOOL_CODE_SIZE,
   type DynamicToolDefinition,
   type ToolDefinition,
   type ToolContext,
@@ -220,21 +223,10 @@ customToolsRoutes.post('/', async (c) => {
     requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
   };
 
-  // Validate code for dangerous patterns
-  const dangerousPatterns = [
-    /process\.exit/i,
-    /require\s*\(/i,
-    /import\s*\(/i,
-    /__dirname/i,
-    /__filename/i,
-    /global\./i,
-    /globalThis\./i,
-  ];
-
-  for (const pattern of dangerousPatterns) {
-    if (pattern.test(body.code)) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code contains forbidden pattern: ${pattern.source}` }, 400);
-    }
+  // Validate code using centralized validator
+  const codeValidation = validateToolCode(body.code);
+  if (!codeValidation.valid) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code validation failed: ${codeValidation.errors[0]}` }, 400);
   }
 
   const repo = createCustomToolsRepo(getUserId(c));
@@ -277,7 +269,9 @@ customToolsRoutes.post('/', async (c) => {
  */
 customToolsRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
-  const body = await c.req.json<{
+  const rawBody = await c.req.json();
+  const { validateBody, updateCustomToolSchema } = await import('../middleware/validation.js');
+  const body = validateBody(updateCustomToolSchema, rawBody) as {
     name?: string;
     description?: string;
     parameters?: CustomToolRecord['parameters'];
@@ -287,31 +281,15 @@ customToolsRoutes.patch('/:id', async (c) => {
     requiresApproval?: boolean;
     metadata?: Record<string, unknown>;
     requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
-  }>();
+  };
 
   const repo = createCustomToolsRepo(getUserId(c));
 
-  // Validate tool name format if provided
-  if (body.name && !/^[a-z][a-z0-9_]*$/.test(body.name)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid tool name format' }, 400);
-  }
-
-  // Validate code if provided
+  // Validate code if provided (centralized validator)
   if (body.code) {
-    const dangerousPatterns = [
-      /process\.exit/i,
-      /require\s*\(/i,
-      /import\s*\(/i,
-      /__dirname/i,
-      /__filename/i,
-      /global\./i,
-      /globalThis\./i,
-    ];
-
-    for (const pattern of dangerousPatterns) {
-      if (pattern.test(body.code)) {
-        return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code contains forbidden pattern: ${pattern.source}` }, 400);
-      }
+    const codeValidation = validateToolCode(body.code);
+    if (!codeValidation.valid) {
+      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code validation failed: ${codeValidation.errors[0]}` }, 400);
     }
   }
 
@@ -524,21 +502,10 @@ customToolsRoutes.post('/test', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Missing required fields: name, description, parameters, code' }, 400);
   }
 
-  // Validate code for dangerous patterns
-  const dangerousPatterns = [
-    /process\.exit/i,
-    /require\s*\(/i,
-    /import\s*\(/i,
-    /__dirname/i,
-    /__filename/i,
-    /global\./i,
-    /globalThis\./i,
-  ];
-
-  for (const pattern of dangerousPatterns) {
-    if (pattern.test(body.code)) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code contains forbidden pattern: ${pattern.source}` }, 400);
-    }
+  // Validate code using centralized validator
+  const codeValidation = validateToolCode(body.code);
+  if (!codeValidation.valid) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code validation failed: ${codeValidation.errors[0]}` }, 400);
   }
 
   // Create temporary registry for testing, with all built-in tools available via callTool
@@ -577,6 +544,495 @@ customToolsRoutes.post('/test', async (c) => {
 });
 
 /**
+ * POST /custom-tools/validate - Deep code analysis for tool review
+ * Returns security validation, warnings, and code statistics.
+ * LLM can use this to verify tool code before creating it.
+ */
+customToolsRoutes.post('/validate', async (c) => {
+  const body = await c.req.json<{
+    code: string;
+    name?: string;
+    permissions?: string[];
+  }>();
+
+  if (!body.code || typeof body.code !== 'string') {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'code is required' }, 400);
+  }
+
+  const analysis = analyzeToolCode(body.code);
+
+  // Additional permission-aware warnings
+  const permissionWarnings: string[] = [];
+  if (analysis.stats.usesFetch && !body.permissions?.includes('network')) {
+    permissionWarnings.push('Code uses fetch() but "network" permission is not requested');
+  }
+
+  return apiResponse(c, {
+    valid: analysis.valid,
+    errors: analysis.errors,
+    warnings: [...analysis.warnings, ...permissionWarnings],
+    stats: analysis.stats,
+    recommendations: generateRecommendations(analysis, body.permissions),
+  });
+});
+
+/**
+ * Generate improvement recommendations based on code analysis
+ */
+function generateRecommendations(
+  analysis: ReturnType<typeof analyzeToolCode>,
+  permissions?: string[]
+): string[] {
+  const recs: string[] = [];
+
+  if (!analysis.stats.returnsValue) {
+    recs.push('Add a return statement to provide output to the LLM');
+  }
+  if (analysis.stats.usesFetch && !analysis.stats.hasAsyncCode) {
+    recs.push('fetch() requires await — make sure to use async/await');
+  }
+  if (analysis.stats.lineCount > 100) {
+    recs.push('Consider splitting complex logic into helper functions within the code');
+  }
+  if (!analysis.stats.usesUtils && (permissions?.includes('network') || analysis.stats.usesFetch)) {
+    recs.push('Use utils.getApiKey("service") to securely retrieve API keys from Config Center');
+  }
+  if (analysis.stats.usesFetch) {
+    recs.push('Wrap fetch() calls in try/catch and validate response.ok before parsing');
+  }
+
+  return recs;
+}
+
+// =============================================================================
+// TOOL TEMPLATES
+// =============================================================================
+
+interface ToolTemplate {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string;
+  category: string;
+  permissions: string[];
+  parameters: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
+  code: string;
+  requiredApiKeys?: Array<{ name: string; displayName?: string; description?: string; category?: string; docsUrl?: string }>;
+}
+
+const TOOL_TEMPLATES: ToolTemplate[] = [
+  {
+    id: 'api_fetcher',
+    name: 'fetch_api_data',
+    displayName: 'API Data Fetcher',
+    description: 'Fetch data from a REST API endpoint with error handling',
+    category: 'Network',
+    permissions: ['network'],
+    parameters: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'API endpoint URL' },
+        method: { type: 'string', description: 'HTTP method', enum: ['GET', 'POST', 'PUT', 'DELETE'] },
+        headers: { type: 'object', description: 'Optional request headers' },
+        body: { type: 'object', description: 'Optional request body (for POST/PUT)' },
+      },
+      required: ['url'],
+    },
+    code: `// API Data Fetcher - Secure REST API client
+const { url, method = 'GET', headers = {}, body: requestBody } = args;
+
+try {
+  const options = {
+    method,
+    headers: { 'Content-Type': 'application/json', ...headers },
+  };
+  if (requestBody && (method === 'POST' || method === 'PUT')) {
+    options.body = JSON.stringify(requestBody);
+  }
+
+  const response = await fetch(url, options);
+
+  if (!response.ok) {
+    return { error: true, status: response.status, message: response.statusText };
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  const data = contentType.includes('json')
+    ? await response.json()
+    : await response.text();
+
+  return { success: true, status: response.status, data };
+} catch (error) {
+  return { error: true, message: String(error) };
+}`,
+  },
+  {
+    id: 'data_transformer',
+    name: 'transform_data',
+    displayName: 'Data Transformer',
+    description: 'Transform and reshape JSON data using mapping rules',
+    category: 'Data',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        data: { type: 'object', description: 'Input data to transform' },
+        mappings: {
+          type: 'array',
+          description: 'Array of {from, to, transform?} mapping rules',
+          items: {
+            type: 'object',
+            properties: {
+              from: { type: 'string', description: 'Source path (dot notation)' },
+              to: { type: 'string', description: 'Target path' },
+              transform: { type: 'string', description: 'Optional: uppercase, lowercase, trim, number, boolean' },
+            },
+          },
+        },
+      },
+      required: ['data', 'mappings'],
+    },
+    code: `// Data Transformer - Reshape JSON with mapping rules
+const { data, mappings } = args;
+const result = {};
+
+for (const { from, to, transform } of mappings) {
+  let value = utils.getPath(data, from);
+
+  if (transform && value !== undefined) {
+    switch (transform) {
+      case 'uppercase': value = String(value).toUpperCase(); break;
+      case 'lowercase': value = String(value).toLowerCase(); break;
+      case 'trim': value = String(value).trim(); break;
+      case 'number': value = Number(value); break;
+      case 'boolean': value = Boolean(value); break;
+    }
+  }
+
+  // Set nested path
+  const parts = to.split('.');
+  let current = result;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!current[parts[i]]) current[parts[i]] = {};
+    current = current[parts[i]];
+  }
+  current[parts[parts.length - 1]] = value;
+}
+
+return result;`,
+  },
+  {
+    id: 'text_formatter',
+    name: 'format_text',
+    displayName: 'Text Formatter',
+    description: 'Format and manipulate text with various operations',
+    category: 'Text',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'Input text' },
+        operations: {
+          type: 'array',
+          description: 'Operations to apply in order: trim, uppercase, lowercase, slugify, camelCase, snakeCase, truncate:N, replace:old:new, prefix:text, suffix:text, lines, words, sentences',
+          items: { type: 'string' },
+        },
+      },
+      required: ['text', 'operations'],
+    },
+    code: `// Text Formatter - Chain text operations
+const { text, operations } = args;
+let result = text;
+
+for (const op of operations) {
+  const [name, ...opArgs] = op.split(':');
+
+  switch (name) {
+    case 'trim': result = result.trim(); break;
+    case 'uppercase': result = result.toUpperCase(); break;
+    case 'lowercase': result = result.toLowerCase(); break;
+    case 'slugify': result = utils.slugify(result); break;
+    case 'camelCase': result = utils.camelCase(result); break;
+    case 'snakeCase': result = utils.snakeCase(result); break;
+    case 'titleCase': result = utils.titleCase(result); break;
+    case 'truncate': result = utils.truncate(result, parseInt(opArgs[0] || '100')); break;
+    case 'replace': result = result.replaceAll(opArgs[0] || '', opArgs[1] || ''); break;
+    case 'prefix': result = (opArgs[0] || '') + result; break;
+    case 'suffix': result = result + (opArgs[0] || ''); break;
+    case 'lines': return result.split('\\n'); // returns array
+    case 'words': return result.trim().split(/\\s+/); // returns array
+    case 'sentences': return result.split(/[.!?]+/).filter(s => s.trim()); // returns array
+    case 'reverse': result = result.split('').reverse().join(''); break;
+    case 'removeDiacritics': result = utils.removeDiacritics(result); break;
+    default: break;
+  }
+}
+
+return result;`,
+  },
+  {
+    id: 'calculator',
+    name: 'calculate',
+    displayName: 'Calculator',
+    description: 'Perform mathematical calculations and statistics',
+    category: 'Math',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        operation: {
+          type: 'string',
+          description: 'Operation: add, subtract, multiply, divide, power, sqrt, percentage, average, sum, min, max, median, round',
+          enum: ['add', 'subtract', 'multiply', 'divide', 'power', 'sqrt', 'percentage', 'average', 'sum', 'min', 'max', 'median', 'round'],
+        },
+        values: { type: 'array', description: 'Array of numbers to operate on', items: { type: 'number' } },
+        decimals: { type: 'number', description: 'Decimal places for rounding (default: 2)' },
+      },
+      required: ['operation', 'values'],
+    },
+    code: `// Calculator - Math operations and statistics
+const { operation, values, decimals = 2 } = args;
+
+if (!values || values.length === 0) {
+  return { error: 'No values provided' };
+}
+
+const round = (n) => utils.round(n, decimals);
+const sorted = [...values].sort((a, b) => a - b);
+
+switch (operation) {
+  case 'add': return { result: round(utils.sum(values)) };
+  case 'subtract': return { result: round(values.reduce((a, b) => a - b)) };
+  case 'multiply': return { result: round(values.reduce((a, b) => a * b)) };
+  case 'divide': {
+    if (values.slice(1).some(v => v === 0)) return { error: 'Division by zero' };
+    return { result: round(values.reduce((a, b) => a / b)) };
+  }
+  case 'power': return { result: round(Math.pow(values[0], values[1] || 2)) };
+  case 'sqrt': return { result: round(Math.sqrt(values[0])) };
+  case 'percentage': return { result: round((values[0] / values[1]) * 100) + '%' };
+  case 'average': return { result: round(utils.avg(values)) };
+  case 'sum': return { result: round(utils.sum(values)) };
+  case 'min': return { result: Math.min(...values) };
+  case 'max': return { result: Math.max(...values) };
+  case 'median': {
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    return { result: round(median) };
+  }
+  case 'round': return { result: round(values[0]) };
+  default: return { error: 'Unknown operation: ' + operation };
+}`,
+  },
+  {
+    id: 'api_with_key',
+    name: 'fetch_with_api_key',
+    displayName: 'API Fetcher with Key',
+    description: 'Fetch from an API that requires an API key from Config Center',
+    category: 'Network',
+    permissions: ['network'],
+    parameters: {
+      type: 'object',
+      properties: {
+        service: { type: 'string', description: 'Config Center service name for the API key' },
+        url: { type: 'string', description: 'API endpoint URL' },
+        queryParams: { type: 'object', description: 'URL query parameters' },
+        authHeader: { type: 'string', description: 'Auth header name (default: Authorization)' },
+        authPrefix: { type: 'string', description: 'Auth value prefix (default: Bearer)' },
+      },
+      required: ['service', 'url'],
+    },
+    requiredApiKeys: [{ name: 'custom_api', displayName: 'Custom API', description: 'API key for the target service' }],
+    code: `// API Fetcher with Config Center key
+const { service, url, queryParams = {}, authHeader = 'Authorization', authPrefix = 'Bearer' } = args;
+
+const apiKey = utils.getApiKey(service);
+if (!apiKey) {
+  return { error: true, message: 'API key not configured. Go to Config Center to add the "' + service + '" API key.' };
+}
+
+try {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(queryParams)) {
+    params.set(k, String(v));
+  }
+  const fullUrl = Object.keys(queryParams).length > 0
+    ? url + '?' + params.toString()
+    : url;
+
+  const response = await fetch(fullUrl, {
+    headers: {
+      [authHeader]: authPrefix ? authPrefix + ' ' + apiKey : apiKey,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    return { error: true, status: response.status, message: response.statusText };
+  }
+
+  const data = await response.json();
+  return { success: true, data };
+} catch (error) {
+  return { error: true, message: String(error) };
+}`,
+  },
+  {
+    id: 'csv_processor',
+    name: 'process_csv',
+    displayName: 'CSV Processor',
+    description: 'Parse, filter, sort, and aggregate CSV data',
+    category: 'Data',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        csv: { type: 'string', description: 'CSV string data' },
+        delimiter: { type: 'string', description: 'Column delimiter (default: comma)' },
+        filter: { type: 'object', description: 'Filter: {column: "name", operator: "eq|neq|gt|lt|contains", value: "..."}' },
+        sortBy: { type: 'string', description: 'Column name to sort by' },
+        sortOrder: { type: 'string', description: 'asc or desc', enum: ['asc', 'desc'] },
+        columns: { type: 'array', description: 'Columns to include in output', items: { type: 'string' } },
+        limit: { type: 'number', description: 'Max rows to return' },
+      },
+      required: ['csv'],
+    },
+    code: `// CSV Processor - Parse, filter, sort, aggregate
+const { csv, delimiter = ',', filter, sortBy, sortOrder = 'asc', columns, limit } = args;
+
+let rows = utils.parseCsv(csv, delimiter);
+if (rows.length === 0) return { rows: [], count: 0 };
+
+// Filter
+if (filter) {
+  const { column, operator, value } = filter;
+  rows = rows.filter(row => {
+    const cellVal = row[column] || '';
+    switch (operator) {
+      case 'eq': return cellVal === String(value);
+      case 'neq': return cellVal !== String(value);
+      case 'gt': return parseFloat(cellVal) > parseFloat(value);
+      case 'lt': return parseFloat(cellVal) < parseFloat(value);
+      case 'contains': return cellVal.toLowerCase().includes(String(value).toLowerCase());
+      default: return true;
+    }
+  });
+}
+
+// Sort
+if (sortBy) {
+  rows.sort((a, b) => {
+    const va = a[sortBy] || '', vb = b[sortBy] || '';
+    const numA = parseFloat(va), numB = parseFloat(vb);
+    const cmp = (!isNaN(numA) && !isNaN(numB)) ? numA - numB : va.localeCompare(vb);
+    return sortOrder === 'desc' ? -cmp : cmp;
+  });
+}
+
+// Select columns
+if (columns && columns.length > 0) {
+  rows = rows.map(row => {
+    const filtered = {};
+    for (const col of columns) { filtered[col] = row[col]; }
+    return filtered;
+  });
+}
+
+// Limit
+if (limit && limit > 0) rows = rows.slice(0, limit);
+
+return { rows, count: rows.length, totalBeforeFilter: rows.length };`,
+  },
+];
+
+/**
+ * GET /custom-tools/templates - Get tool templates for safe starting points
+ */
+customToolsRoutes.get('/templates', (c) => {
+  const category = c.req.query('category');
+
+  let templates = TOOL_TEMPLATES;
+  if (category) {
+    templates = templates.filter(t => t.category.toLowerCase() === category.toLowerCase());
+  }
+
+  return apiResponse(c, {
+    templates: templates.map(t => ({
+      id: t.id,
+      name: t.name,
+      displayName: t.displayName,
+      description: t.description,
+      category: t.category,
+      permissions: t.permissions,
+      parameters: t.parameters,
+      code: t.code,
+      requiredApiKeys: t.requiredApiKeys,
+    })),
+    count: templates.length,
+    categories: [...new Set(TOOL_TEMPLATES.map(t => t.category))],
+  });
+});
+
+/**
+ * POST /custom-tools/templates/:id/create - Create a tool from a template
+ */
+customToolsRoutes.post('/templates/:templateId/create', async (c) => {
+  const templateId = c.req.param('templateId');
+  const body = await c.req.json<{
+    name?: string;
+    description?: string;
+    code?: string;
+    permissions?: ToolPermission[];
+    requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
+  }>();
+
+  const template = TOOL_TEMPLATES.find(t => t.id === templateId);
+  if (!template) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Template not found: ${templateId}` }, 404);
+  }
+
+  // Merge template with overrides
+  const toolName = body.name ?? template.name;
+  const toolCode = body.code ?? template.code;
+
+  // Validate the final code
+  const codeValidation = validateToolCode(toolCode);
+  if (!codeValidation.valid) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code validation failed: ${codeValidation.errors[0]}` }, 400);
+  }
+
+  const repo = createCustomToolsRepo(getUserId(c));
+
+  // Check duplicate
+  const existing = await repo.getByName(toolName);
+  if (existing) {
+    return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Tool with name '${toolName}' already exists` }, 409);
+  }
+
+  const tool = await repo.create({
+    name: toolName,
+    description: body.description ?? template.description,
+    parameters: template.parameters as CustomToolRecord['parameters'],
+    code: toolCode,
+    category: template.category,
+    permissions: (body.permissions ?? template.permissions) as ToolPermission[],
+    requiresApproval: false,
+    createdBy: 'user',
+    requiredApiKeys: body.requiredApiKeys ?? template.requiredApiKeys,
+  });
+
+  // Register config dependencies
+  if (tool.requiredApiKeys?.length) {
+    await registerToolConfigRequirements(tool.name, tool.id, 'custom', tool.requiredApiKeys);
+  }
+
+  syncToolToRegistry(tool);
+  invalidateAgentCache();
+
+  return apiResponse(c, tool, 201);
+});
+
+/**
  * Get active tools for LLM context
  * Returns tools in a format suitable for LLM tool definitions
  */
@@ -611,36 +1067,7 @@ interface ToolExecutionResult {
   pendingToolId?: string;
 }
 
-const MAX_TOOL_CODE_SIZE = 50_000; // 50KB max for tool code
-
-// Dangerous patterns that are not allowed in tool code
-const DANGEROUS_PATTERNS = [
-  /process\.exit/i,
-  /require\s*\(/i,
-  /import\s*\(/i,
-  /__dirname/i,
-  /__filename/i,
-  /global\./i,
-  /globalThis\./i,
-  /\bFunction\s*\(/i,      // Function constructor
-  /\bnew\s+Function\b/i,   // new Function(...)
-  /\beval\s*\(/i,           // eval()
-];
-
-/**
- * Validate tool code for dangerous patterns
- */
-function validateToolCode(code: string): { valid: boolean; error?: string } {
-  if (code.length > MAX_TOOL_CODE_SIZE) {
-    return { valid: false, error: `Tool code exceeds maximum size of ${MAX_TOOL_CODE_SIZE} characters` };
-  }
-  for (const pattern of DANGEROUS_PATTERNS) {
-    if (pattern.test(code)) {
-      return { valid: false, error: `Tool code contains forbidden pattern: ${pattern.source}` };
-    }
-  }
-  return { valid: true };
-}
+// Code validation is now centralized in @ownpilot/core (validateToolCode, MAX_TOOL_CODE_SIZE)
 
 /**
  * Execute custom tool management tools (meta-tools)
@@ -702,10 +1129,10 @@ export async function executeCustomToolTool(
           return { success: false, error: `Tool with name '${name}' already exists` };
         }
 
-        // Validate code
+        // Validate code using centralized validator
         const codeValidation = validateToolCode(code);
         if (!codeValidation.valid) {
-          return { success: false, error: codeValidation.error };
+          return { success: false, error: `Tool code validation failed: ${codeValidation.errors[0]}` };
         }
 
         // Parse required_api_keys

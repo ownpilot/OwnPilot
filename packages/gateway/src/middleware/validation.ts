@@ -115,13 +115,43 @@ export const autonomyBudgetSchema = z.object({
 
 // ─── Custom Tool Schemas ─────────────────────────────────────────
 
+const toolPermissionValues = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling'] as const;
+
 export const createCustomToolSchema = z.object({
   name: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, 'Tool name must be lowercase with underscores'),
   description: z.string().min(1).max(2000),
   code: z.string().min(1).max(50000),
   parameters: z.record(z.string(), z.unknown()).optional(),
   category: z.string().max(50).optional(),
-  permissions: z.array(z.string().max(50)).optional(),
+  permissions: z.array(z.enum(toolPermissionValues)).max(6).optional(),
+  requiresApproval: z.boolean().optional(),
+  createdBy: z.enum(['user', 'llm']).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  requiredApiKeys: z.array(z.object({
+    name: z.string().min(1).max(100),
+    displayName: z.string().max(200).optional(),
+    description: z.string().max(500).optional(),
+    category: z.string().max(50).optional(),
+    docsUrl: z.string().url().max(2000).optional(),
+  })).max(10).optional(),
+}).passthrough();
+
+export const updateCustomToolSchema = z.object({
+  name: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, 'Tool name must be lowercase with underscores').optional(),
+  description: z.string().min(1).max(2000).optional(),
+  code: z.string().min(1).max(50000).optional(),
+  parameters: z.record(z.string(), z.unknown()).optional(),
+  category: z.string().max(50).optional(),
+  permissions: z.array(z.enum(toolPermissionValues)).max(6).optional(),
+  requiresApproval: z.boolean().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  requiredApiKeys: z.array(z.object({
+    name: z.string().min(1).max(100),
+    displayName: z.string().max(200).optional(),
+    description: z.string().max(500).optional(),
+    category: z.string().max(50).optional(),
+    docsUrl: z.string().url().max(2000).optional(),
+  })).max(10).optional(),
 }).passthrough();
 
 // ─── Validation Helper ──────────────────────────────────────────

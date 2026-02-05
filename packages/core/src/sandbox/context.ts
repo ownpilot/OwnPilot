@@ -318,52 +318,17 @@ export function buildSandboxContext(
 /**
  * Validate code before execution
  * Basic static analysis to prevent obvious attacks
+ *
+ * NOTE: Prototype freezing via Object.freeze() is NOT used because buildSandboxContext
+ * passes the HOST's Object/Array/etc. as sandbox globals. Freezing Object.prototype
+ * inside the VM would freeze the HOST's prototype (since Object === host Object).
+ * Instead, the sandbox relies on these layered defenses:
+ *   1. validateCode() — regex-based static analysis blocks obvious attack patterns
+ *   2. codeGeneration: { strings: false } — V8-level block on eval/Function constructor,
+ *      which prevents the constructor chain escape [].constructor.constructor('return X')()
+ *   3. Object.defineProperty on dangerous keys — makes process/require/etc. non-writable
+ *   4. Explicit undefined for dangerous globals in the context object
+ *
+ * Patterns are centralized in code-validator.ts (single source of truth).
  */
-// NOTE: Prototype freezing via Object.freeze() is NOT used because buildSandboxContext
-// passes the HOST's Object/Array/etc. as sandbox globals. Freezing Object.prototype
-// inside the VM would freeze the HOST's prototype (since Object === host Object).
-// Instead, the sandbox relies on these layered defenses:
-//   1. validateCode() — regex-based static analysis blocks obvious attack patterns
-//   2. codeGeneration: { strings: false } — V8-level block on eval/Function constructor,
-//      which prevents the constructor chain escape [].constructor.constructor('return X')()
-//   3. Object.defineProperty on dangerous keys — makes process/require/etc. non-writable
-//   4. Explicit undefined for dangerous globals in the context object
-
-export function validateCode(code: string): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  // Check for dangerous patterns
-  // Uses broad matching to prevent common bypass techniques
-  // (whitespace insertion, Unicode escapes, indirect calls)
-  const dangerousPatterns = [
-    { pattern: /\beval\b/i, message: 'eval() is not allowed' },
-    { pattern: /\bFunction\b(?!\s*\.)/, message: 'Function() constructor is not allowed' },
-    { pattern: /\bimport\s*\(/, message: 'Dynamic import() is not allowed' },
-    { pattern: /\brequire\b/, message: 'require() is not allowed' },
-    { pattern: /\bprocess\b/, message: 'process object access is not allowed' },
-    { pattern: /__proto__/, message: '__proto__ access is not allowed' },
-    { pattern: /\.constructor\b/, message: 'constructor property access is not allowed' },
-    { pattern: /\bconstructor\b/, message: 'constructor access is not allowed' },
-    { pattern: /\bwith\s*\(/, message: 'with statement is not allowed' },
-    { pattern: /\bglobalThis\b/, message: 'globalThis access is not allowed' },
-    { pattern: /\bglobal\b/, message: 'global access is not allowed' },
-    { pattern: /getPrototypeOf/, message: 'getPrototypeOf is not allowed' },
-    { pattern: /setPrototypeOf/, message: 'setPrototypeOf is not allowed' },
-    { pattern: /Reflect\.construct/, message: 'Reflect.construct is not allowed' },
-    { pattern: /Reflect\.apply/, message: 'Reflect.apply is not allowed' },
-    { pattern: /child_process/, message: 'child_process is not allowed' },
-    { pattern: /\bexec\s*\(/, message: 'exec() is not allowed' },
-    { pattern: /\bspawn\s*\(/, message: 'spawn() is not allowed' },
-  ];
-
-  for (const { pattern, message } of dangerousPatterns) {
-    if (pattern.test(code)) {
-      errors.push(message);
-    }
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
-}
+export { validateToolCode as validateCode } from './code-validator.js';

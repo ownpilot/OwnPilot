@@ -8,6 +8,7 @@
 import * as crypto from 'node:crypto';
 import { createSandbox } from '../../sandbox/executor.js';
 import type { SandboxPermissions } from '../../sandbox/types.js';
+import { DANGEROUS_CODE_PATTERNS } from '../../sandbox/code-validator.js';
 import type { PluginId } from '../../types/branded.js';
 import type {
   ToolDefinition,
@@ -616,23 +617,10 @@ export function createDynamicToolRegistry(
         );
       }
 
-      // Validate code doesn't contain dangerous patterns
-      const dangerousPatterns = [
-        /process\.exit/i,
-        /require\s*\(/i,
-        /import\s*\(/i,
-        /__dirname/i,
-        /__filename/i,
-        /global\./i,
-        /globalThis\./i,
-        /\bFunction\s*\(/i,      // Function constructor
-        /\bnew\s+Function\b/i,   // new Function(...)
-        /\beval\s*\(/i,           // eval()
-      ];
-
-      for (const pattern of dangerousPatterns) {
+      // Validate code doesn't contain dangerous patterns (centralized list)
+      for (const { pattern, message } of DANGEROUS_CODE_PATTERNS) {
         if (pattern.test(tool.code)) {
-          throw new Error(`Tool code contains forbidden pattern: ${pattern.source}`);
+          throw new Error(`Tool code validation failed: ${message}`);
         }
       }
 

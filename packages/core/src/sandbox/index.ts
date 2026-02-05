@@ -35,6 +35,17 @@ export {
   validateCode,
 } from './context.js';
 
+// Centralized code validation (single source of truth for dangerous patterns)
+export {
+  DANGEROUS_CODE_PATTERNS,
+  MAX_TOOL_CODE_SIZE,
+  validateToolCode,
+  findFirstDangerousPattern,
+  analyzeToolCode,
+  type CodeValidationPattern,
+  type CodeValidationResult,
+} from './code-validator.js';
+
 // VM-based sandbox (faster, less isolated)
 export {
   SandboxExecutor,
