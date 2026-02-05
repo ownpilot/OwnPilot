@@ -19,6 +19,9 @@ export interface ToolExecutionResult {
   error?: string;
 }
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 /** Maximum items allowed in a single batch operation. */
 const MAX_BATCH_SIZE = 100;
 
@@ -81,7 +84,7 @@ export async function executePersonalDataTool(
         const repo = new TasksRepository(userId);
         const task = await repo.complete(params.taskId as string);
         if (!task) {
-          return { success: false, error: `Task not found: ${params.taskId}` };
+          return { success: false, error: `Task not found: ${sanitizeId(String(params.taskId))}` };
         }
         return {
           success: true,
@@ -97,7 +100,7 @@ export async function executePersonalDataTool(
         const { taskId, ...updates } = params;
         const task = await repo.update(taskId as string, updates);
         if (!task) {
-          return { success: false, error: `Task not found: ${taskId}` };
+          return { success: false, error: `Task not found: ${sanitizeId(String(taskId))}` };
         }
         return {
           success: true,
@@ -112,7 +115,7 @@ export async function executePersonalDataTool(
         const repo = new TasksRepository(userId);
         const deleted = await repo.delete(params.taskId as string);
         if (!deleted) {
-          return { success: false, error: `Task not found: ${params.taskId}` };
+          return { success: false, error: `Task not found: ${sanitizeId(String(params.taskId))}` };
         }
         return {
           success: true,
@@ -208,7 +211,7 @@ export async function executePersonalDataTool(
         const repo = new BookmarksRepository(userId);
         const deleted = await repo.delete(params.bookmarkId as string);
         if (!deleted) {
-          return { success: false, error: `Bookmark not found: ${params.bookmarkId}` };
+          return { success: false, error: `Bookmark not found: ${sanitizeId(String(params.bookmarkId))}` };
         }
         return {
           success: true,
@@ -301,7 +304,7 @@ export async function executePersonalDataTool(
         const { noteId, ...updates } = params;
         const note = await repo.update(noteId as string, updates);
         if (!note) {
-          return { success: false, error: `Note not found: ${noteId}` };
+          return { success: false, error: `Note not found: ${sanitizeId(String(noteId))}` };
         }
         return {
           success: true,
@@ -316,7 +319,7 @@ export async function executePersonalDataTool(
         const repo = new NotesRepository(userId);
         const deleted = await repo.delete(params.noteId as string);
         if (!deleted) {
-          return { success: false, error: `Note not found: ${params.noteId}` };
+          return { success: false, error: `Note not found: ${sanitizeId(String(params.noteId))}` };
         }
         return {
           success: true,
@@ -410,7 +413,7 @@ export async function executePersonalDataTool(
         const repo = new CalendarRepository(userId);
         const deleted = await repo.delete(params.eventId as string);
         if (!deleted) {
-          return { success: false, error: `Event not found: ${params.eventId}` };
+          return { success: false, error: `Event not found: ${sanitizeId(String(params.eventId))}` };
         }
         return {
           success: true,
@@ -513,7 +516,7 @@ export async function executePersonalDataTool(
         const { contactId, ...updates } = params;
         const contact = await repo.update(contactId as string, updates);
         if (!contact) {
-          return { success: false, error: `Contact not found: ${contactId}` };
+          return { success: false, error: `Contact not found: ${sanitizeId(String(contactId))}` };
         }
         return {
           success: true,
@@ -528,7 +531,7 @@ export async function executePersonalDataTool(
         const repo = new ContactsRepository(userId);
         const deleted = await repo.delete(params.contactId as string);
         if (!deleted) {
-          return { success: false, error: `Contact not found: ${params.contactId}` };
+          return { success: false, error: `Contact not found: ${sanitizeId(String(params.contactId))}` };
         }
         return {
           success: true,
@@ -587,7 +590,7 @@ export async function executePersonalDataTool(
       }
 
       default:
-        return { success: false, error: `Unknown tool: ${toolId}` };
+        return { success: false, error: `Unknown tool: ${sanitizeId(toolId)}` };
     }
   } catch (err) {
     return {

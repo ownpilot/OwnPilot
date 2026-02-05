@@ -31,6 +31,9 @@ import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js'
 
 const log = getLog('ModelConfigs');
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const modelConfigsRoutes = new Hono();
 
 // =============================================================================
@@ -694,7 +697,7 @@ modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
   }
 
   if (!baseUrl) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Provider "${providerId}" has no base URL configured. Set a base URL first.` }, 400);
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Provider "${sanitizeId(providerId)}" has no base URL configured. Set a base URL first.` }, 400);
   }
 
   // Resolve API key for authentication (some local providers require it)
@@ -1015,7 +1018,7 @@ modelConfigsRoutes.post('/sync/reset', async (c) => {
       }, });
   } catch (error) {
     log.error('Full reset failed:', error);
-    return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: 'Full reset failed: ' + String(error) }, 500);
+    return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: 'Full reset failed' }, 500);
   }
 });
 
@@ -1025,6 +1028,11 @@ modelConfigsRoutes.post('/sync/reset', async (c) => {
 modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
   const providerId = c.req.param('id');
   const resync = c.req.query('resync') === 'true';
+
+  // Validate providerId to prevent path traversal
+  if (!/^[a-zA-Z0-9_-]+$/.test(providerId)) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid provider ID format' }, 400);
+  }
 
   try {
     const fs = await import('fs');
@@ -1036,7 +1044,7 @@ modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
     const configPath = path.join(__dirname, '..', '..', '..', 'core', 'src', 'agent', 'providers', 'configs', `${providerId}.json`);
 
     if (!fs.existsSync(configPath)) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Provider config '${providerId}' not found` }, 404);
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Provider config '${sanitizeId(providerId)}' not found` }, 404);
     }
 
     // Delete the config file
@@ -1054,8 +1062,8 @@ modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
     clearConfigCache();
 
     return apiResponse(c, { message: resync
-        ? `Deleted and resynced provider '${providerId}'`
-        : `Deleted provider '${providerId}'`,
+        ? `Deleted and resynced provider '${sanitizeId(providerId)}'`
+        : `Deleted provider '${sanitizeId(providerId)}'`,
       data: {
         providerId,
         deleted: true,
