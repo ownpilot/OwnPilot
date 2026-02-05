@@ -7,7 +7,6 @@ import {
   getGroupForTool,
   getToolStats,
 } from './tool-config.js';
-import type { ToolGroupConfig } from './tool-config.js';
 
 // ===========================================================================
 // TOOL_GROUPS constant
