@@ -21,6 +21,9 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('Plugins');
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const pluginsRoutes = new Hono();
 
 function getPluginService(): IPluginService {
@@ -179,7 +182,7 @@ pluginsRoutes.get('/:id', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
   }
 
   // Get detailed tool info
@@ -215,7 +218,7 @@ pluginsRoutes.post('/:id/enable', async (c) => {
   const success = await registry.enable(id);
 
   if (!success) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
   }
 
   await pluginsRepo.updateStatus(id, 'enabled');
@@ -238,7 +241,7 @@ pluginsRoutes.post('/:id/disable', async (c) => {
   const success = await registry.disable(id);
 
   if (!success) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
   }
 
   await pluginsRepo.updateStatus(id, 'disabled');
@@ -260,7 +263,7 @@ pluginsRoutes.put('/:id/config', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
   }
 
   const body = await c.req.json<{ settings: Record<string, unknown> }>();
@@ -289,7 +292,7 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
   }
 
   const body = await c.req.json<{ permissions: PluginPermission[] }>();
@@ -321,7 +324,7 @@ pluginsRoutes.get('/:id/settings', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, {
@@ -341,7 +344,7 @@ pluginsRoutes.put('/:id/settings', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
   }
 
   const body = await c.req.json<{ settings: Record<string, unknown> }>();
@@ -364,7 +367,7 @@ pluginsRoutes.put('/:id/settings', async (c) => {
     try {
       await plugin.lifecycle.onConfigChange(mergedSettings);
     } catch (err) {
-      log.error(`onConfigChange hook failed for ${id}:`, err);
+      log.error(`onConfigChange hook failed for ${sanitizeId(id)}:`, err);
     }
   }
 
@@ -380,7 +383,7 @@ pluginsRoutes.get('/:id/required-services', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
   }
 
   const requiredServices = (plugin.manifest.requiredServices ?? []).map(svc => {
@@ -415,7 +418,7 @@ pluginsRoutes.delete('/:id', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
   }
 
   const name = plugin.manifest.name;

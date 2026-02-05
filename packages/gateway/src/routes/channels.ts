@@ -10,6 +10,9 @@ import { getChannelService } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 import { apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const channelRoutes = new Hono();
 
 // In-memory message store for inbox display
@@ -77,7 +80,7 @@ channelRoutes.post('/messages/:messageId/read', (c) => {
       return apiResponse(c, { messageId, read: true });
     }
   }
-  return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Message ${messageId} not found` }, 404);
+  return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Message ${sanitizeId(messageId)} not found` }, 404);
 });
 
 /**
@@ -168,7 +171,7 @@ channelRoutes.get('/:id', (c) => {
   const api = service.getChannel(pluginId);
 
   if (!api) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Channel ${pluginId} not found` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Channel ${sanitizeId(pluginId)} not found` }, 404);
   }
 
   return apiResponse(c, {
@@ -187,7 +190,7 @@ channelRoutes.post('/:id/send', async (c) => {
   const api = service.getChannel(pluginId);
 
   if (!api) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Channel ${pluginId} not found` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Channel ${sanitizeId(pluginId)} not found` }, 404);
   }
 
   try {

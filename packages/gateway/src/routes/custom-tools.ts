@@ -29,6 +29,9 @@ import {
 } from '../services/api-service-registrar.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam } from './helpers.js'
 
+/** Sanitize user-supplied IDs for safe interpolation in error messages */
+const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+
 export const customToolsRoutes = new Hono();
 
 // Create dynamic tool registry for execution, with all built-in tools available via callTool
@@ -226,7 +229,7 @@ customToolsRoutes.get('/:id', async (c) => {
 
   const tool = await repo.get(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
   }
 
   return apiResponse(c, tool);
@@ -323,7 +326,7 @@ customToolsRoutes.patch('/:id', async (c) => {
 
   const tool = await repo.update(id, body);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
   }
 
   // Re-register config dependencies if changed
@@ -364,7 +367,7 @@ customToolsRoutes.delete('/:id', async (c) => {
 
   const deleted = await repo.delete(id);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
   }
 
   // Invalidate agent cache so tool removal takes effect
@@ -386,7 +389,7 @@ customToolsRoutes.post('/:id/enable', async (c) => {
 
   const tool = await repo.enable(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
   }
 
   syncToolToRegistry(tool);
@@ -406,7 +409,7 @@ customToolsRoutes.post('/:id/disable', async (c) => {
 
   const tool = await repo.disable(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
   }
 
   syncToolToRegistry(tool);
@@ -426,7 +429,7 @@ customToolsRoutes.post('/:id/approve', async (c) => {
 
   const tool = await repo.get(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
   }
 
   if (tool.status !== 'pending_approval') {
@@ -452,7 +455,7 @@ customToolsRoutes.post('/:id/reject', async (c) => {
 
   const tool = await repo.get(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
   }
 
   if (tool.status !== 'pending_approval') {
@@ -479,7 +482,7 @@ customToolsRoutes.post('/:id/execute', async (c) => {
   const tool = await repo.get(id);
 
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${id}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
   }
 
   if (tool.status !== 'active') {
@@ -1017,7 +1020,7 @@ customToolsRoutes.post('/templates/:templateId/create', async (c) => {
 
   const template = TOOL_TEMPLATES.find(t => t.id === templateId);
   if (!template) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Template not found: ${templateId}` }, 404);
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Template not found: ${sanitizeId(templateId)}` }, 404);
   }
 
   // Merge template with overrides
@@ -1378,7 +1381,7 @@ export async function executeCustomToolTool(
       }
 
       default:
-        return { success: false, error: `Unknown custom tool operation: ${toolId}` };
+        return { success: false, error: `Unknown custom tool operation: ${sanitizeId(toolId)}` };
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
