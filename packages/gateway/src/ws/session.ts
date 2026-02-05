@@ -9,6 +9,11 @@
 import type { WebSocket } from 'ws';
 import type { Session, WSMessage, ServerEvents } from './types.js';
 import { getLog } from '../services/log.js';
+import {
+  WS_RATE_LIMIT_MESSAGES_PER_SEC,
+  WS_RATE_LIMIT_BURST,
+  WS_MAX_METADATA_VALUE_BYTES,
+} from '../config/defaults.js';
 
 const log = getLog('SessionManager');
 import {
@@ -19,10 +24,19 @@ import {
 } from '@ownpilot/core';
 
 /**
+ * Token bucket state for per-session rate limiting
+ */
+interface RateLimitBucket {
+  tokens: number;
+  lastRefill: number;
+}
+
+/**
  * Extended session with WebSocket reference
  */
 interface ManagedSession extends Session {
   socket: WebSocket;
+  rateLimitBucket: RateLimitBucket;
 }
 
 /**
@@ -72,6 +86,7 @@ export class SessionManager {
       channels: new Set(),
       metadata: {},
       socket,
+      rateLimitBucket: { tokens: WS_RATE_LIMIT_BURST, lastRefill: Date.now() },
     };
 
     this.sessions.set(id, session);
@@ -105,6 +120,35 @@ export class SessionManager {
       (session as { lastActivityAt: Date }).lastActivityAt = new Date();
     }
     tryGetSessionService()?.touch(sessionId);
+  }
+
+  /**
+   * Check and consume a rate limit token for a session.
+   * Uses a token bucket algorithm: tokens refill at WS_RATE_LIMIT_MESSAGES_PER_SEC
+   * rate, up to WS_RATE_LIMIT_BURST capacity.
+   * Returns true if the message is allowed, false if rate-limited.
+   */
+  consumeRateLimit(sessionId: string): boolean {
+    const session = this.sessions.get(sessionId);
+    if (!session) return false;
+
+    const bucket = session.rateLimitBucket;
+    const now = Date.now();
+    const elapsed = (now - bucket.lastRefill) / 1000; // seconds
+
+    // Refill tokens based on elapsed time
+    bucket.tokens = Math.min(
+      WS_RATE_LIMIT_BURST,
+      bucket.tokens + elapsed * WS_RATE_LIMIT_MESSAGES_PER_SEC
+    );
+    bucket.lastRefill = now;
+
+    if (bucket.tokens < 1) {
+      return false;
+    }
+
+    bucket.tokens -= 1;
+    return true;
   }
 
   /**
@@ -146,6 +190,18 @@ export class SessionManager {
   setMetadata(sessionId: string, key: string, value: unknown): void {
     const session = this.sessions.get(sessionId);
     if (!session) return;
+
+    // Enforce key length limit (max 100 chars)
+    if (key.length > 100) return;
+
+    // Enforce value size limit
+    try {
+      const serialized = JSON.stringify(value);
+      if (serialized && serialized.length > WS_MAX_METADATA_VALUE_BYTES) return;
+    } catch {
+      // Non-serializable value — reject
+      return;
+    }
 
     const meta = session.metadata as Record<string, unknown>;
     // Prevent unbounded metadata key growth

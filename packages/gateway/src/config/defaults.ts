@@ -42,6 +42,15 @@ export const WS_MAX_CONNECTIONS = 50;
 /** Close code for session timeout */
 export const WS_CLOSE_SESSION_TIMEOUT = 4000;
 
+/** Maximum messages per second per session (token bucket refill rate) */
+export const WS_RATE_LIMIT_MESSAGES_PER_SEC = 30;
+
+/** Maximum burst messages (token bucket capacity) */
+export const WS_RATE_LIMIT_BURST = 50;
+
+/** Maximum size (bytes) for a single metadata value */
+export const WS_MAX_METADATA_VALUE_BYTES = 1024;
+
 // ============================================================================
 // Scheduler
 // ============================================================================
