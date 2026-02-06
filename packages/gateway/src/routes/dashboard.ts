@@ -187,18 +187,17 @@ dashboardRoutes.get('/timeline', async (c) => {
 });
 
 /**
- * GET /briefing/stream - Stream AI briefing generation (SSE)
+ * POST /briefing/stream - Stream AI briefing generation (SSE)
  *
- * Query params:
+ * Body (optional):
  * - provider: string - AI provider (uses configured default)
  * - model: string - AI model (uses configured default)
  */
-dashboardRoutes.get('/briefing/stream', async (c) => {
+dashboardRoutes.post('/briefing/stream', async (c) => {
   const userId = getUserId(c);
-  const queryProvider = c.req.query('provider');
-  const queryModel = c.req.query('model');
-  const provider = queryProvider ?? await getDefaultProvider() ?? 'openai';
-  const model = queryModel ?? await getDefaultModel(provider) ?? 'gpt-4o-mini';
+  const body = await c.req.json().catch(() => ({}));
+  const provider = body.provider ?? await getDefaultProvider() ?? 'openai';
+  const model = body.model ?? await getDefaultModel(provider) ?? 'gpt-4o-mini';
 
   const service = new DashboardService(userId);
 
