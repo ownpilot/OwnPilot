@@ -4,6 +4,7 @@
 
 import { apiClient } from '../client';
 import type { StreamOptions } from '../client';
+import type { Conversation, HistoryMessage } from '../types';
 
 export interface ChatRequestBody {
   message: string;
@@ -24,4 +25,36 @@ export const chatApi = {
   /** Reset conversation context */
   resetContext: (provider: string, model: string) =>
     apiClient.post<void>('/chat/reset-context', { provider, model }),
+
+  // ---- Chat History ----
+
+  /** List conversations with pagination and filters */
+  listHistory: (params?: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    agentId?: string;
+    archived?: boolean;
+  }) =>
+    apiClient.get<{
+      conversations: Conversation[];
+      total: number;
+      limit: number;
+      offset: number;
+    }>('/chat/history', { params: params as Record<string, string | number | boolean | undefined> }),
+
+  /** Get a single conversation with all messages */
+  getHistory: (id: string) =>
+    apiClient.get<{
+      conversation: Conversation;
+      messages: HistoryMessage[];
+    }>(`/chat/history/${id}`),
+
+  /** Delete a conversation */
+  deleteHistory: (id: string) =>
+    apiClient.delete<{ deleted: boolean }>(`/chat/history/${id}`),
+
+  /** Archive or unarchive a conversation */
+  archiveHistory: (id: string, archived: boolean) =>
+    apiClient.patch<{ archived: boolean }>(`/chat/history/${id}/archive`, { archived }),
 };

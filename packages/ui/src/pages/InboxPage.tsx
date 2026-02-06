@@ -10,6 +10,7 @@ import { Inbox, Telegram, Globe, RefreshCw, Check } from '../components/icons';
 import { channelsApi } from '../api';
 import type { Channel, ChannelMessage } from '../api';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { MarkdownContent } from '../components/MarkdownContent';
 
 
 // Helper to get channel icon
@@ -325,9 +326,7 @@ export function InboxPage() {
                         )}
 
                         {/* Message content */}
-                        <p className="text-sm whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
+                        <MarkdownContent content={message.content} compact className="text-sm" />
 
                         {/* Timestamp + status */}
                         <div className={`flex items-center gap-1.5 mt-1 ${

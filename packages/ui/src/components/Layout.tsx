@@ -4,6 +4,7 @@ import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
 import {
   MessageSquare,
   Inbox,
+  History,
   Bot,
   Wrench,
   Cpu,
@@ -63,6 +64,7 @@ const mainItems: NavItem[] = [
   { to: '/', icon: MessageSquare, label: 'Chat' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/inbox', icon: Inbox, label: 'Inbox' },
+  { to: '/history', icon: History, label: 'History' },
 ];
 
 // Grouped navigation
