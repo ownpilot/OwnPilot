@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { History, Search, Archive, Trash2, ChevronLeft, Telegram, Globe, Bot, User, Clock, MessageSquare, RefreshCw } from '../components/icons';
+import { History, Search, Archive, Trash2, ChevronLeft, ChevronDown, Telegram, Globe, Bot, User, Clock, MessageSquare, RefreshCw, Check, X } from '../components/icons';
 import { chatApi } from '../api';
 import type { Conversation, HistoryMessage } from '../api';
 import { useGateway } from '../hooks/useWebSocket';
@@ -72,6 +72,10 @@ export function ChatHistoryPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [showArchived, setShowArchived] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showCleanupMenu, setShowCleanupMenu] = useState(false);
+  const cleanupMenuRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedIdRef = useRef<string | null>(null);
@@ -81,6 +85,18 @@ export function ChatHistoryPage() {
 
   // Keep ref in sync for WS callback
   selectedIdRef.current = selectedId;
+
+  // Close cleanup menu on outside click
+  useEffect(() => {
+    if (!showCleanupMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (cleanupMenuRef.current && !cleanupMenuRef.current.contains(e.target as Node)) {
+        setShowCleanupMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showCleanupMenu]);
 
   // Fetch conversations
   const fetchConversations = useCallback(async (searchQuery?: string) => {
@@ -218,6 +234,124 @@ export function ChatHistoryPage() {
     }
   }, [selectedId, confirm, toast]);
 
+  // ---- Bulk operations ----
+
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const toggleSelection = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(conversations.map(c => c.id)));
+  }, [conversations]);
+
+  const deselectAll = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    const ok = await confirm({
+      title: 'Delete Conversations',
+      message: `Permanently delete ${selectedIds.size} conversation${selectedIds.size !== 1 ? 's' : ''}? This cannot be undone.`,
+      confirmText: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    try {
+      const ids = [...selectedIds];
+      await chatApi.bulkDeleteHistory(ids);
+      setConversations(prev => prev.filter(c => !selectedIds.has(c.id)));
+      if (selectedId && selectedIds.has(selectedId)) {
+        setSelectedId(null);
+        setSelectedConv(null);
+        setMessages([]);
+      }
+      toast.success(`Deleted ${ids.length} conversation${ids.length !== 1 ? 's' : ''}`);
+      exitSelectMode();
+    } catch {
+      toast.error('Failed to delete conversations');
+    }
+  }, [selectedIds, selectedId, confirm, toast, exitSelectMode]);
+
+  const handleBulkArchive = useCallback(async (archived: boolean) => {
+    if (selectedIds.size === 0) return;
+    const action = archived ? 'Archive' : 'Unarchive';
+    const ok = await confirm({
+      title: `${action} Conversations`,
+      message: `${action} ${selectedIds.size} conversation${selectedIds.size !== 1 ? 's' : ''}?`,
+      confirmText: action,
+    });
+    if (!ok) return;
+
+    try {
+      const ids = [...selectedIds];
+      await chatApi.bulkArchiveHistory(ids, archived);
+      setConversations(prev => prev.filter(c => !selectedIds.has(c.id)));
+      if (selectedId && selectedIds.has(selectedId)) {
+        setSelectedId(null);
+        setSelectedConv(null);
+        setMessages([]);
+      }
+      toast.success(`${archived ? 'Archived' : 'Unarchived'} ${ids.length} conversation${ids.length !== 1 ? 's' : ''}`);
+      exitSelectMode();
+    } catch {
+      toast.error(`Failed to ${action.toLowerCase()} conversations`);
+    }
+  }, [selectedIds, selectedId, confirm, toast, exitSelectMode]);
+
+  const handleDeleteOld = useCallback(async (days: number) => {
+    setShowCleanupMenu(false);
+    const ok = await confirm({
+      title: 'Delete Old Conversations',
+      message: `Delete all conversations older than ${days} day${days !== 1 ? 's' : ''}? This cannot be undone.`,
+      confirmText: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    try {
+      const result = await chatApi.deleteOldHistory(days);
+      toast.success(`Deleted ${result.deleted} old conversation${result.deleted !== 1 ? 's' : ''}`);
+      fetchConversations(search || undefined);
+    } catch {
+      toast.error('Failed to delete old conversations');
+    }
+  }, [confirm, toast, fetchConversations, search]);
+
+  const handleDeleteAll = useCallback(async () => {
+    setShowCleanupMenu(false);
+    const ok = await confirm({
+      title: 'Delete All Conversations',
+      message: 'Delete ALL conversations? This cannot be undone.',
+      confirmText: 'Delete All',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    try {
+      const result = await chatApi.deleteAllHistory();
+      toast.success(`Deleted ${result.deleted} conversation${result.deleted !== 1 ? 's' : ''}`);
+      setConversations([]);
+      setSelectedId(null);
+      setSelectedConv(null);
+      setMessages([]);
+      exitSelectMode();
+    } catch {
+      toast.error('Failed to delete conversations');
+    }
+  }, [confirm, toast, exitSelectMode]);
+
   if (isLoading) {
     return <LoadingSpinner message="Loading chat history..." />;
   }
@@ -245,6 +379,41 @@ export function ChatHistoryPage() {
             {wsStatus === 'connected' ? 'Live' : 'Offline'}
           </div>
 
+          {/* Cleanup dropdown */}
+          <div className="relative" ref={cleanupMenuRef}>
+            <button
+              onClick={() => setShowCleanupMenu(!showCleanupMenu)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Cleanup
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            {showCleanupMenu && (
+              <div className="absolute right-0 top-full mt-1 w-56 bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg z-20 py-1">
+                <button
+                  onClick={() => handleDeleteOld(7)}
+                  className="w-full text-left px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                >
+                  Delete older than 7 days
+                </button>
+                <button
+                  onClick={() => handleDeleteOld(30)}
+                  className="w-full text-left px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                >
+                  Delete older than 30 days
+                </button>
+                <div className="border-t border-border dark:border-dark-border my-1" />
+                <button
+                  onClick={handleDeleteAll}
+                  className="w-full text-left px-4 py-2 text-sm text-error hover:bg-error/10"
+                >
+                  Delete all conversations
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setShowArchived(!showArchived)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
@@ -255,6 +424,18 @@ export function ChatHistoryPage() {
           >
             <Archive className="w-4 h-4" />
             Archived
+          </button>
+
+          <button
+            onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              selectMode
+                ? 'bg-primary text-white'
+                : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+            }`}
+          >
+            <Check className="w-4 h-4" />
+            Select
           </button>
 
           <button
@@ -270,18 +451,40 @@ export function ChatHistoryPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Conversation List Sidebar */}
         <aside className="w-80 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col overflow-hidden">
-          {/* Search */}
+          {/* Search + Select Mode Header */}
           <div className="p-3 border-b border-border dark:border-dark-border">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
+            {selectMode ? (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                  {selectedIds.size} selected
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={selectedIds.size === conversations.length ? deselectAll : selectAll}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {selectedIds.size === conversations.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                  <button
+                    onClick={exitSelectMode}
+                    className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                  >
+                    <X className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search conversations..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 rounded-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            )}
           </div>
 
           {/* Conversation List */}
@@ -296,53 +499,94 @@ export function ChatHistoryPage() {
                 {conversations.map((conv) => {
                   const source = getSource(conv);
                   const isSelected = selectedId === conv.id;
+                  const isChecked = selectedIds.has(conv.id);
 
                   return (
                     <button
                       key={conv.id}
-                      onClick={() => selectConversation(conv.id)}
+                      onClick={() => selectMode ? toggleSelection(conv.id) : selectConversation(conv.id)}
                       className={`w-full text-left px-4 py-3 transition-colors ${
-                        isSelected
+                        selectMode && isChecked
                           ? 'bg-primary/10'
-                          : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                          : isSelected && !selectMode
+                            ? 'bg-primary/10'
+                            : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className={`text-sm font-medium truncate flex-1 ${
-                          isSelected
-                            ? 'text-primary'
-                            : 'text-text-primary dark:text-dark-text-primary'
-                        }`}>
-                          {conv.title || 'Untitled'}
-                        </h4>
-                        <span className="text-[10px] text-text-muted dark:text-dark-text-muted whitespace-nowrap flex-shrink-0">
-                          {formatDate(conv.updatedAt)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <SourceBadge source={source} />
-                        {conv.agentName && (
-                          <span className="text-[10px] text-text-muted dark:text-dark-text-muted truncate">
-                            {conv.agentName}
-                          </span>
+                      <div className="flex items-start gap-2">
+                        {selectMode && (
+                          <div className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
+                            isChecked
+                              ? 'bg-primary border-primary text-white'
+                              : 'border-border dark:border-dark-border'
+                          }`}>
+                            {isChecked && <Check className="w-3 h-3" />}
+                          </div>
                         )}
-                        <span className="text-[10px] text-text-muted dark:text-dark-text-muted ml-auto flex-shrink-0">
-                          {conv.messageCount} msg{conv.messageCount !== 1 ? 's' : ''}
-                        </span>
-                      </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className={`text-sm font-medium truncate flex-1 ${
+                              (selectMode ? isChecked : isSelected)
+                                ? 'text-primary'
+                                : 'text-text-primary dark:text-dark-text-primary'
+                            }`}>
+                              {conv.title || 'Untitled'}
+                            </h4>
+                            <span className="text-[10px] text-text-muted dark:text-dark-text-muted whitespace-nowrap flex-shrink-0">
+                              {formatDate(conv.updatedAt)}
+                            </span>
+                          </div>
 
-                      {conv.model && (
-                        <div className="text-[10px] text-text-muted dark:text-dark-text-muted mt-1 truncate">
-                          {conv.provider}/{conv.model}
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <SourceBadge source={source} />
+                            {conv.agentName && (
+                              <span className="text-[10px] text-text-muted dark:text-dark-text-muted truncate">
+                                {conv.agentName}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-text-muted dark:text-dark-text-muted ml-auto flex-shrink-0">
+                              {conv.messageCount} msg{conv.messageCount !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+
+                          {conv.model && (
+                            <div className="text-[10px] text-text-muted dark:text-dark-text-muted mt-1 truncate">
+                              {conv.provider}/{conv.model}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </button>
                   );
                 })}
               </div>
             )}
           </div>
+
+          {/* Floating Action Bar */}
+          {selectMode && selectedIds.size > 0 && (
+            <div className="border-t border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary px-4 py-3 flex items-center justify-between">
+              <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                {selectedIds.size} selected
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleBulkArchive(!showArchived)}
+                  className="px-3 py-1.5 text-xs rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary/80 transition-colors"
+                >
+                  <Archive className="w-3.5 h-3.5 inline mr-1" />
+                  {showArchived ? 'Unarchive' : 'Archive'}
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-3 py-1.5 text-xs rounded-lg bg-error text-white hover:bg-error/90 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5 inline mr-1" />
+                  Delete
+                </button>
+              </div>
+            </div>
+          )}
         </aside>
 
         {/* Message Thread */}

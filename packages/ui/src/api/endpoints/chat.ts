@@ -57,4 +57,22 @@ export const chatApi = {
   /** Archive or unarchive a conversation */
   archiveHistory: (id: string, archived: boolean) =>
     apiClient.patch<{ archived: boolean }>(`/chat/history/${id}/archive`, { archived }),
+
+  // ---- Bulk Operations ----
+
+  /** Bulk delete conversations by IDs */
+  bulkDeleteHistory: (ids: string[]) =>
+    apiClient.post<{ deleted: number }>('/chat/history/bulk-delete', { ids }),
+
+  /** Delete all conversations */
+  deleteAllHistory: () =>
+    apiClient.post<{ deleted: number }>('/chat/history/bulk-delete', { all: true }),
+
+  /** Delete conversations older than N days */
+  deleteOldHistory: (olderThanDays: number) =>
+    apiClient.post<{ deleted: number }>('/chat/history/bulk-delete', { olderThanDays }),
+
+  /** Bulk archive/unarchive conversations */
+  bulkArchiveHistory: (ids: string[], archived: boolean) =>
+    apiClient.post<{ updated: number; archived: boolean }>('/chat/history/bulk-archive', { ids, archived }),
 };
