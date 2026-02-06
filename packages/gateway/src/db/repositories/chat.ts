@@ -286,6 +286,49 @@ export class ChatRepository extends BaseRepository {
     return result.changes > 0;
   }
 
+  async deleteConversations(ids: string[]): Promise<number> {
+    if (ids.length === 0) return 0;
+
+    // Delete messages first (they reference conversations)
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(', ');
+    await this.execute(
+      `DELETE FROM messages WHERE conversation_id IN (${placeholders})`,
+      ids
+    );
+
+    // Delete conversations scoped to user
+    const convPlaceholders = ids.map((_, i) => `$${i + 1}`).join(', ');
+    const userParamIdx = ids.length + 1;
+    const result = await this.execute(
+      `DELETE FROM conversations WHERE id IN (${convPlaceholders}) AND user_id = $${userParamIdx}`,
+      [...ids, this.userId]
+    );
+    return result.changes;
+  }
+
+  async deleteOldConversations(olderThanDays: number): Promise<number> {
+    // Find old conversation IDs
+    const rows = await this.query<{ id: string }>(
+      `SELECT id FROM conversations WHERE user_id = $1 AND updated_at < NOW() - INTERVAL '${olderThanDays} days'`,
+      [this.userId]
+    );
+    const ids = rows.map(r => r.id);
+    if (ids.length === 0) return 0;
+    return this.deleteConversations(ids);
+  }
+
+  async archiveConversations(ids: string[], archived: boolean): Promise<number> {
+    if (ids.length === 0) return 0;
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(', ');
+    const archivedIdx = ids.length + 1;
+    const userIdx = ids.length + 2;
+    const result = await this.execute(
+      `UPDATE conversations SET is_archived = $${archivedIdx}, updated_at = NOW() WHERE id IN (${placeholders}) AND user_id = $${userIdx}`,
+      [...ids, archived, this.userId]
+    );
+    return result.changes;
+  }
+
   // Auto-generate title from first user message
   async generateTitle(conversationId: string): Promise<string | null> {
     const messages = await this.getMessages(conversationId, { limit: 1 });

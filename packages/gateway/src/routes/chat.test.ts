@@ -14,6 +14,9 @@ const mockChatRepo = {
   listConversations: vi.fn(),
   getConversationWithMessages: vi.fn(),
   deleteConversation: vi.fn(),
+  deleteConversations: vi.fn(),
+  deleteOldConversations: vi.fn(),
+  archiveConversations: vi.fn(),
   updateConversation: vi.fn(),
   saveConversation: vi.fn(),
   saveMessage: vi.fn(),
@@ -330,6 +333,9 @@ describe('Chat Routes', () => {
     mockChatRepo.listConversations.mockResolvedValue([]);
     mockChatRepo.getConversationWithMessages.mockResolvedValue(null);
     mockChatRepo.deleteConversation.mockResolvedValue(false);
+    mockChatRepo.deleteConversations.mockResolvedValue(0);
+    mockChatRepo.deleteOldConversations.mockResolvedValue(0);
+    mockChatRepo.archiveConversations.mockResolvedValue(0);
     mockChatRepo.updateConversation.mockResolvedValue(null);
 
     mockLogsRepo.list.mockResolvedValue([]);
@@ -851,6 +857,136 @@ describe('Chat Routes', () => {
       const data = await res.json();
       expect(data.data.deleted).toBe(5);
       expect(data.data.mode).toContain('7 days');
+    });
+  });
+
+  // ─── POST /history/bulk-delete ─────────────────────────────────
+
+  describe('POST /chat/history/bulk-delete - Bulk delete', () => {
+    it('should delete conversations by IDs', async () => {
+      mockChatRepo.deleteConversations.mockResolvedValue(3);
+
+      const res = await app.request('/chat/history/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ['conv-1', 'conv-2', 'conv-3'] }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.deleted).toBe(3);
+      expect(mockChatRepo.deleteConversations).toHaveBeenCalledWith(['conv-1', 'conv-2', 'conv-3']);
+    });
+
+    it('should delete all conversations', async () => {
+      const convs = [mockConversation({ id: 'c1' }), mockConversation({ id: 'c2' })];
+      mockChatRepo.listConversations.mockResolvedValue(convs);
+      mockChatRepo.deleteConversations.mockResolvedValue(2);
+
+      const res = await app.request('/chat/history/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.deleted).toBe(2);
+    });
+
+    it('should delete old conversations', async () => {
+      mockChatRepo.deleteOldConversations.mockResolvedValue(5);
+
+      const res = await app.request('/chat/history/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ olderThanDays: 30 }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.deleted).toBe(5);
+      expect(mockChatRepo.deleteOldConversations).toHaveBeenCalledWith(30);
+    });
+
+    it('should return 400 for empty body', async () => {
+      const res = await app.request('/chat/history/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 400 when IDs exceed 500', async () => {
+      const ids = Array.from({ length: 501 }, (_, i) => `conv-${i}`);
+
+      const res = await app.request('/chat/history/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error.message).toContain('500');
+    });
+  });
+
+  // ─── POST /history/bulk-archive ──────────────────────────────
+
+  describe('POST /chat/history/bulk-archive - Bulk archive', () => {
+    it('should archive conversations', async () => {
+      mockChatRepo.archiveConversations.mockResolvedValue(2);
+
+      const res = await app.request('/chat/history/bulk-archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ['conv-1', 'conv-2'], archived: true }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.updated).toBe(2);
+      expect(data.data.archived).toBe(true);
+      expect(mockChatRepo.archiveConversations).toHaveBeenCalledWith(['conv-1', 'conv-2'], true);
+    });
+
+    it('should unarchive conversations', async () => {
+      mockChatRepo.archiveConversations.mockResolvedValue(1);
+
+      const res = await app.request('/chat/history/bulk-archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ['conv-1'], archived: false }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.archived).toBe(false);
+    });
+
+    it('should return 400 for invalid body', async () => {
+      const res = await app.request('/chat/history/bulk-archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ['conv-1'] }), // missing archived
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 400 when IDs exceed 500', async () => {
+      const ids = Array.from({ length: 501 }, (_, i) => `conv-${i}`);
+
+      const res = await app.request('/chat/history/bulk-archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, archived: true }),
+      });
+
+      expect(res.status).toBe(400);
     });
   });
 

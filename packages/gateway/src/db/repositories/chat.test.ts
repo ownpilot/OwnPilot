@@ -931,6 +931,106 @@ describe('ChatRepository', () => {
   });
 
   // =========================================================================
+  // deleteConversations (bulk)
+  // =========================================================================
+
+  describe('deleteConversations', () => {
+    it('should return 0 for empty array', async () => {
+      const result = await repo.deleteConversations([]);
+      expect(result).toBe(0);
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
+    });
+
+    it('should delete messages then conversations and return count', async () => {
+      // DELETE messages
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 5 });
+      // DELETE conversations
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 2 });
+
+      const result = await repo.deleteConversations(['conv-1', 'conv-2']);
+
+      expect(result).toBe(2);
+      expect(mockAdapter.execute).toHaveBeenCalledTimes(2);
+
+      // First call deletes messages
+      const msgSql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(msgSql).toContain('DELETE FROM messages');
+      expect(msgSql).toContain('conversation_id IN');
+
+      // Second call deletes conversations scoped to user
+      const convSql = mockAdapter.execute.mock.calls[1]![0] as string;
+      expect(convSql).toContain('DELETE FROM conversations');
+      expect(convSql).toContain('user_id = $3');
+      const convParams = mockAdapter.execute.mock.calls[1]![1] as unknown[];
+      expect(convParams).toEqual(['conv-1', 'conv-2', 'user-1']);
+    });
+  });
+
+  // =========================================================================
+  // deleteOldConversations
+  // =========================================================================
+
+  describe('deleteOldConversations', () => {
+    it('should return 0 when no old conversations exist', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      const result = await repo.deleteOldConversations(30);
+
+      expect(result).toBe(0);
+    });
+
+    it('should find old IDs and delegate to deleteConversations', async () => {
+      // SELECT old conversation IDs
+      mockAdapter.query.mockResolvedValueOnce([{ id: 'old-1' }, { id: 'old-2' }]);
+      // DELETE messages
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 3 });
+      // DELETE conversations
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 2 });
+
+      const result = await repo.deleteOldConversations(30);
+
+      expect(result).toBe(2);
+      const selectSql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(selectSql).toContain('INTERVAL');
+      expect(selectSql).toContain('30 days');
+    });
+  });
+
+  // =========================================================================
+  // archiveConversations (bulk)
+  // =========================================================================
+
+  describe('archiveConversations', () => {
+    it('should return 0 for empty array', async () => {
+      const result = await repo.archiveConversations([], true);
+      expect(result).toBe(0);
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
+    });
+
+    it('should update is_archived for given IDs scoped to user', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 3 });
+
+      const result = await repo.archiveConversations(['c-1', 'c-2', 'c-3'], true);
+
+      expect(result).toBe(3);
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('UPDATE conversations SET is_archived');
+      expect(sql).toContain('user_id = $5');
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params).toEqual(['c-1', 'c-2', 'c-3', true, 'user-1']);
+    });
+
+    it('should unarchive when archived=false', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+
+      await repo.archiveConversations(['c-1'], false);
+
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params).toContain(false);
+    });
+  });
+
+  // =========================================================================
   // Factory
   // =========================================================================
 

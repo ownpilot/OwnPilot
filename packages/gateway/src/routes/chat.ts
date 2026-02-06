@@ -466,7 +466,7 @@ async function processStreamingViaBus(
   if (lastUsage) {
     try {
       await usageTracker.record({
-        userId: 'anonymous',
+        userId,
         sessionId: conversationId,
         provider: provider as AIProvider,
         model,
@@ -482,7 +482,7 @@ async function processStreamingViaBus(
   } else if (result.response.metadata.error) {
     try {
       await usageTracker.record({
-        userId: 'anonymous',
+        userId,
         provider: provider as AIProvider,
         model,
         inputTokens: 0,
@@ -843,7 +843,7 @@ chatRoutes.post('/', async (c) => {
         // Record failed streaming request
         try {
           await usageTracker.record({
-            userId: 'anonymous',
+            userId: streamUserId,
             provider: provider as AIProvider,
             model,
             inputTokens: 0,
@@ -867,7 +867,7 @@ chatRoutes.post('/', async (c) => {
         // Record successful streaming request
         try {
           await usageTracker.record({
-            userId: 'anonymous',
+            userId: streamUserId,
             sessionId: conversationId,
             provider: provider as AIProvider,
             model,
@@ -1626,6 +1626,70 @@ chatRoutes.get('/history', async (c) => {
     limit,
     offset,
   });
+});
+
+/**
+ * Bulk delete conversations
+ * Body: { ids: string[] } | { all: true } | { olderThanDays: number }
+ */
+chatRoutes.post('/history/bulk-delete', async (c) => {
+  const userId = getUserId(c);
+  const body = await c.req.json().catch(() => null);
+
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Request body is required' }, 400);
+  }
+
+  try {
+    const chatRepo = new ChatRepository(userId);
+    let deleted = 0;
+
+    if (body.all === true) {
+      // Delete all conversations for this user
+      const conversations = await chatRepo.listConversations({ limit: 10000 });
+      const ids = conversations.map(c => c.id);
+      deleted = await chatRepo.deleteConversations(ids);
+    } else if (typeof body.olderThanDays === 'number' && body.olderThanDays > 0) {
+      deleted = await chatRepo.deleteOldConversations(body.olderThanDays);
+    } else if (Array.isArray(body.ids) && body.ids.length > 0) {
+      if (body.ids.length > 500) {
+        return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Maximum 500 IDs per request' }, 400);
+      }
+      deleted = await chatRepo.deleteConversations(body.ids);
+    } else {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Provide ids array, all: true, or olderThanDays' }, 400);
+    }
+
+    return apiResponse(c, { deleted });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Bulk delete failed' }, 500);
+  }
+});
+
+/**
+ * Bulk archive/unarchive conversations
+ * Body: { ids: string[], archived: boolean }
+ */
+chatRoutes.post('/history/bulk-archive', async (c) => {
+  const userId = getUserId(c);
+  const body = await c.req.json().catch(() => null);
+
+  if (!body || !Array.isArray(body.ids) || typeof body.archived !== 'boolean') {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Provide ids array and archived boolean' }, 400);
+  }
+
+  if (body.ids.length > 500) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Maximum 500 IDs per request' }, 400);
+  }
+
+  try {
+    const chatRepo = new ChatRepository(userId);
+    const updated = await chatRepo.archiveConversations(body.ids, body.archived);
+
+    return apiResponse(c, { updated, archived: body.archived });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Bulk archive failed' }, 500);
+  }
 });
 
 /**
