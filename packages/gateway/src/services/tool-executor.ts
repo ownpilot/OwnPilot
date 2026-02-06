@@ -104,6 +104,11 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   // Wire the shared registry reference so custom-tools CRUD operations keep it in sync
   setSharedRegistryForCustomTools(tools);
 
+  // Update dynamic registry's callable tools with the full set (core + gateway providers).
+  // Without this, custom tools calling utils.callTool() can only reach core tools,
+  // not gateway-provided tools like custom data, memory, goals, etc.
+  getCustomToolDynamicRegistry().setCallableTools(tools.getAllTools());
+
   sharedRegistry = tools;
   return tools;
 }

@@ -20,6 +20,7 @@ const mockToolRegistry = {
   setConfigRegistrationHandler: vi.fn(),
   use: vi.fn(),
   registerPluginTools: vi.fn(),
+  getAllTools: vi.fn(() => []),
 };
 
 const mockPluginService = {
