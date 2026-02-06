@@ -73,6 +73,7 @@ describe('File Workspaces Routes', () => {
       expect(data.success).toBe(true);
       expect(data.data.workspaces).toEqual(mockWorkspaces);
       expect(data.data.count).toBe(2);
+      expect(listSessionWorkspaces).toHaveBeenCalledWith('default');
     });
 
     it('should handle empty workspace list', async () => {
@@ -132,6 +133,7 @@ describe('File Workspaces Routes', () => {
       expect(data.data).toEqual(mockWorkspace);
       expect(createSessionWorkspace).toHaveBeenCalledWith({
         name: 'Test Workspace',
+        userId: 'default',
         agentId: 'agent-1',
         sessionId: 'session-1',
         description: 'Test description',
@@ -152,6 +154,7 @@ describe('File Workspaces Routes', () => {
       expect(data.success).toBe(true);
       expect(createSessionWorkspace).toHaveBeenCalledWith({
         name: undefined,
+        userId: 'default',
         agentId: undefined,
         sessionId: undefined,
         description: undefined,
@@ -211,6 +214,26 @@ describe('File Workspaces Routes', () => {
       expect(data.error.code).toBe('WORKSPACE_NOT_FOUND');
     });
 
+    it('should return 404 for workspace owned by different user', async () => {
+      vi.mocked(getSessionWorkspace).mockReturnValue({
+        id: 'ws-123',
+        name: 'Other User Workspace',
+        path: '/tmp/ws-123',
+        userId: 'other-user',
+        createdAt: new Date('2024-01-01').toISOString(),
+        updatedAt: new Date('2024-01-01').toISOString(),
+        size: 0,
+        fileCount: 0,
+      });
+
+      const res = await app.request('/file-workspaces/ws-123');
+
+      expect(res.status).toBe(404);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error.code).toBe('ACCESS_DENIED');
+    });
+
     it('should handle fetch error', async () => {
       vi.mocked(getSessionWorkspace).mockImplementation(() => {
         throw new Error('Fetch failed');
@@ -227,6 +250,7 @@ describe('File Workspaces Routes', () => {
 
   describe('DELETE /file-workspaces/:id - Delete workspace', () => {
     it('should delete workspace successfully', async () => {
+      vi.mocked(getSessionWorkspace).mockReturnValue({ id: 'ws-123', path: '/tmp/ws-123' });
       vi.mocked(deleteSessionWorkspace).mockReturnValue(true);
 
       const res = await app.request('/file-workspaces/ws-123', {
@@ -241,7 +265,7 @@ describe('File Workspaces Routes', () => {
     });
 
     it('should return 404 when workspace not found', async () => {
-      vi.mocked(deleteSessionWorkspace).mockReturnValue(false);
+      vi.mocked(getSessionWorkspace).mockReturnValue(null);
 
       const res = await app.request('/file-workspaces/ws-nonexistent', {
         method: 'DELETE',
@@ -254,6 +278,7 @@ describe('File Workspaces Routes', () => {
     });
 
     it('should handle deletion error', async () => {
+      vi.mocked(getSessionWorkspace).mockReturnValue({ id: 'ws-123', path: '/tmp/ws-123' });
       vi.mocked(deleteSessionWorkspace).mockImplementation(() => {
         throw new Error('Deletion failed');
       });
@@ -609,8 +634,11 @@ describe('File Workspaces Routes', () => {
 
   describe('POST /file-workspaces/cleanup - Cleanup old workspaces', () => {
     it('should cleanup with default max age', async () => {
-      const mockResult = { deletedCount: 3, deletedWorkspaces: ['ws-1', 'ws-2', 'ws-3'] };
-      vi.mocked(cleanupSessionWorkspaces).mockReturnValue(mockResult);
+      const oldDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(); // 10 days old
+      vi.mocked(listSessionWorkspaces).mockReturnValue([
+        { id: 'ws-old', name: 'old', updatedAt: oldDate, createdAt: oldDate, path: '/tmp/ws-old', size: 0, fileCount: 0 },
+      ]);
+      vi.mocked(deleteSessionWorkspace).mockReturnValue(true);
 
       const res = await app.request('/file-workspaces/cleanup', {
         method: 'POST',
@@ -619,13 +647,15 @@ describe('File Workspaces Routes', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
-      expect(data.data).toEqual(mockResult);
-      expect(cleanupSessionWorkspaces).toHaveBeenCalledWith(7);
+      expect(data.data.deleted).toContain('ws-old');
+      expect(listSessionWorkspaces).toHaveBeenCalledWith('default');
     });
 
     it('should cleanup with custom max age', async () => {
-      const mockResult = { deletedCount: 1, deletedWorkspaces: ['ws-old'] };
-      vi.mocked(cleanupSessionWorkspaces).mockReturnValue(mockResult);
+      const recentDate = new Date().toISOString();
+      vi.mocked(listSessionWorkspaces).mockReturnValue([
+        { id: 'ws-new', name: 'new', updatedAt: recentDate, createdAt: recentDate, path: '/tmp/ws-new', size: 0, fileCount: 0 },
+      ]);
 
       const res = await app.request('/file-workspaces/cleanup', {
         method: 'POST',
@@ -635,12 +665,12 @@ describe('File Workspaces Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.data).toEqual(mockResult);
-      expect(cleanupSessionWorkspaces).toHaveBeenCalledWith(30);
+      expect(data.data.kept).toContain('ws-new');
+      expect(data.data.deleted).toEqual([]);
     });
 
     it('should handle cleanup error', async () => {
-      vi.mocked(cleanupSessionWorkspaces).mockImplementation(() => {
+      vi.mocked(listSessionWorkspaces).mockImplementation(() => {
         throw new Error('Cleanup failed');
       });
 
@@ -674,7 +704,7 @@ describe('File Workspaces Routes', () => {
       const data = await res.json();
       expect(data.success).toBe(true);
       expect(data.data).toEqual(mockWorkspace);
-      expect(getOrCreateSessionWorkspace).toHaveBeenCalledWith('session-123', 'agent-1');
+      expect(getOrCreateSessionWorkspace).toHaveBeenCalledWith('session-123', 'agent-1', 'default');
     });
 
     it('should handle empty body', async () => {
@@ -688,7 +718,7 @@ describe('File Workspaces Routes', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
-      expect(getOrCreateSessionWorkspace).toHaveBeenCalledWith('session-456', undefined);
+      expect(getOrCreateSessionWorkspace).toHaveBeenCalledWith('session-456', undefined, 'default');
     });
 
     it('should handle session workspace error', async () => {

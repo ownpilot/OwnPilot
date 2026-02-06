@@ -3,6 +3,7 @@
  *
  * API for managing session-based file workspaces.
  * These are lightweight, isolated directories for agent file operations.
+ * All endpoints are scoped to the authenticated user.
  */
 
 import { Hono } from 'hono';
@@ -31,6 +32,24 @@ import {
   cleanupSessionWorkspaces,
   getOrCreateSessionWorkspace,
 } from '../workspace/file-workspace.js';
+import type { Context } from 'hono';
+import type { SessionWorkspaceInfo } from '../workspace/file-workspace.js';
+
+/** Get workspace and verify it belongs to the requesting user. Returns null with error response if not found/forbidden. */
+function getOwnedWorkspace(c: Context, workspaceId: string, userId: string): SessionWorkspaceInfo | Response {
+  const workspace = getSessionWorkspace(workspaceId);
+
+  if (!workspace) {
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+  }
+
+  // Deny access if workspace has a userId set and it doesn't match
+  if (workspace.userId && workspace.userId !== userId) {
+    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Workspace not found' }, 404);
+  }
+
+  return workspace;
+}
 
 const app = new Hono();
 
@@ -38,10 +57,9 @@ const app = new Hono();
  * GET /file-workspaces - List all session workspaces
  */
 app.get('/', async (c) => {
-  // TODO: listSessionWorkspaces does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   try {
-    const workspaces = listSessionWorkspaces();
+    const workspaces = listSessionWorkspaces(userId);
 
     return apiResponse(c, {
       workspaces,
@@ -56,13 +74,13 @@ app.get('/', async (c) => {
  * POST /file-workspaces - Create a new session workspace
  */
 app.post('/', async (c) => {
-  // TODO: createSessionWorkspace does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   try {
     const body = await c.req.json().catch(() => ({}));
 
     const workspace = createSessionWorkspace({
       name: body.name,
+      userId,
       agentId: body.agentId,
       sessionId: body.sessionId,
       description: body.description,
@@ -79,18 +97,14 @@ app.post('/', async (c) => {
  * GET /file-workspaces/:id - Get workspace details
  */
 app.get('/:id', async (c) => {
-  // TODO: getSessionWorkspace does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   const workspaceId = c.req.param('id');
 
   try {
-    const workspace = getSessionWorkspace(workspaceId);
+    const result = getOwnedWorkspace(c, workspaceId, userId);
+    if (result instanceof Response) return result;
 
-    if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
-    }
-
-    return apiResponse(c, workspace);
+    return apiResponse(c, result);
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.WORKSPACE_FETCH_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch workspace' }, 500);
   }
@@ -100,16 +114,14 @@ app.get('/:id', async (c) => {
  * DELETE /file-workspaces/:id - Delete a workspace
  */
 app.delete('/:id', async (c) => {
-  // TODO: deleteSessionWorkspace does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   const workspaceId = c.req.param('id');
 
   try {
-    const deleted = deleteSessionWorkspace(workspaceId);
+    const result = getOwnedWorkspace(c, workspaceId, userId);
+    if (result instanceof Response) return result;
 
-    if (!deleted) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
-    }
+    deleteSessionWorkspace(workspaceId);
 
     return apiResponse(c, { deleted: true });
   } catch (error) {
@@ -121,17 +133,13 @@ app.delete('/:id', async (c) => {
  * GET /file-workspaces/:id/files - List files in workspace
  */
 app.get('/:id/files', async (c) => {
-  // TODO: getSessionWorkspaceFiles does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const path = c.req.query('path') || '';
 
   try {
-    const workspace = getSessionWorkspace(workspaceId);
-
-    if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
-    }
+    const result = getOwnedWorkspace(c, workspaceId, userId);
+    if (result instanceof Response) return result;
 
     const files = getSessionWorkspaceFiles(workspaceId, path);
 
@@ -149,18 +157,14 @@ app.get('/:id/files', async (c) => {
  * GET /file-workspaces/:id/files/* - Read a file
  */
 app.get('/:id/file/*', async (c) => {
-  // TODO: readSessionWorkspaceFile does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const filePath = c.req.path.replace(`/file-workspaces/${workspaceId}/file/`, '');
   const download = c.req.query('download') === 'true';
 
   try {
-    const workspace = getSessionWorkspace(workspaceId);
-
-    if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
-    }
+    const result = getOwnedWorkspace(c, workspaceId, userId);
+    if (result instanceof Response) return result;
 
     const content = readSessionWorkspaceFile(workspaceId, filePath);
 
@@ -198,17 +202,13 @@ app.get('/:id/file/*', async (c) => {
  * PUT /file-workspaces/:id/file/* - Write a file
  */
 app.put('/:id/file/*', async (c) => {
-  // TODO: writeSessionWorkspaceFile does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const filePath = c.req.path.replace(`/file-workspaces/${workspaceId}/file/`, '');
 
   try {
-    const workspace = getSessionWorkspace(workspaceId);
-
-    if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
-    }
+    const result = getOwnedWorkspace(c, workspaceId, userId);
+    if (result instanceof Response) return result;
 
     const body = await c.req.json().catch(() => null);
 
@@ -236,17 +236,13 @@ app.put('/:id/file/*', async (c) => {
  * DELETE /file-workspaces/:id/file/* - Delete a file
  */
 app.delete('/:id/file/*', async (c) => {
-  // TODO: deleteSessionWorkspaceFile does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   const workspaceId = c.req.param('id');
   const filePath = c.req.path.replace(`/file-workspaces/${workspaceId}/file/`, '');
 
   try {
-    const workspace = getSessionWorkspace(workspaceId);
-
-    if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
-    }
+    const result = getOwnedWorkspace(c, workspaceId, userId);
+    if (result instanceof Response) return result;
 
     const deleted = deleteSessionWorkspaceFile(workspaceId, filePath);
 
@@ -270,16 +266,12 @@ app.delete('/:id/file/*', async (c) => {
  * GET /file-workspaces/:id/download - Download workspace as ZIP
  */
 app.get('/:id/download', async (c) => {
-  // TODO: zipSessionWorkspace does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   const workspaceId = c.req.param('id');
 
   try {
-    const workspace = getSessionWorkspace(workspaceId);
-
-    if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
-    }
+    const result = getOwnedWorkspace(c, workspaceId, userId);
+    if (result instanceof Response) return result;
 
     // Create zip file
     const zipPath = await zipSessionWorkspace(workspaceId);
@@ -288,7 +280,7 @@ app.get('/:id/download', async (c) => {
     const stats = await stat(zipPath);
 
     // Set headers for download
-    const filename = sanitizeFilename(`${workspace.name || workspaceId}.zip`);
+    const filename = sanitizeFilename(`${result.name || workspaceId}.zip`);
     c.header('Content-Type', 'application/zip');
     c.header('Content-Disposition', `attachment; filename="${filename}"`);
     c.header('Content-Length', String(stats.size));
@@ -311,16 +303,30 @@ app.get('/:id/download', async (c) => {
  * POST /file-workspaces/cleanup - Clean up old workspaces
  */
 app.post('/cleanup', async (c) => {
-  // TODO: cleanupSessionWorkspaces does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   try {
     const body = await c.req.json().catch(() => ({}));
     const raw = Number(body.maxAgeDays) || 7;
     const maxAgeDays = Math.max(1, Math.min(365, raw));
 
-    const result = cleanupSessionWorkspaces(maxAgeDays);
+    // Only clean up workspaces owned by the requesting user
+    const userWorkspaces = listSessionWorkspaces(userId);
+    const maxAge = maxAgeDays * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const deleted: string[] = [];
+    const kept: string[] = [];
 
-    return apiResponse(c, result);
+    for (const workspace of userWorkspaces) {
+      const age = now - new Date(workspace.updatedAt).getTime();
+      if (age > maxAge) {
+        deleteSessionWorkspace(workspace.id);
+        deleted.push(workspace.id);
+      } else {
+        kept.push(workspace.id);
+      }
+    }
+
+    return apiResponse(c, { deleted, kept });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.CLEANUP_ERROR, message: error instanceof Error ? error.message : 'Failed to cleanup workspaces' }, 500);
   }
@@ -330,14 +336,13 @@ app.post('/cleanup', async (c) => {
  * POST /file-workspaces/session/:sessionId - Get or create workspace for session
  */
 app.post('/session/:sessionId', async (c) => {
-  // TODO: getOrCreateSessionWorkspace does not accept userId yet; needs file-workspace.ts changes to scope by user
-  const _userId = getUserId(c);
+  const userId = getUserId(c);
   const sessionId = c.req.param('sessionId');
 
   try {
     const body = await c.req.json().catch(() => ({}));
 
-    const workspace = getOrCreateSessionWorkspace(sessionId, body.agentId);
+    const workspace = getOrCreateSessionWorkspace(sessionId, body.agentId, userId);
 
     return apiResponse(c, workspace);
   } catch (error) {
