@@ -537,7 +537,7 @@ CREATE TABLE IF NOT EXISTS oauth_integrations (
 CREATE TABLE IF NOT EXISTS media_provider_settings (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
-  capability TEXT NOT NULL CHECK(capability IN ('image_generation', 'video_generation', 'vision', 'tts', 'stt', 'weather')),
+  capability TEXT NOT NULL CHECK(capability IN ('image_generation', 'vision', 'tts', 'stt', 'weather')),
   provider TEXT NOT NULL,
   model TEXT,
   config JSONB DEFAULT '{}',
@@ -752,20 +752,6 @@ export const MIGRATIONS_SQL = `
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'triggers' AND column_name = 'enabled') THEN
     ALTER TABLE triggers ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT TRUE;
-  END IF;
-END $$;
-
--- =====================================================
--- MEDIA PROVIDER SETTINGS: Add video_generation capability
--- =====================================================
-DO $$ BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.check_constraints
-    WHERE constraint_name = 'media_provider_settings_capability_check'
-  ) THEN
-    ALTER TABLE media_provider_settings DROP CONSTRAINT media_provider_settings_capability_check;
-    ALTER TABLE media_provider_settings ADD CONSTRAINT media_provider_settings_capability_check
-      CHECK(capability IN ('image_generation', 'video_generation', 'vision', 'tts', 'stt', 'weather'));
   END IF;
 END $$;
 
