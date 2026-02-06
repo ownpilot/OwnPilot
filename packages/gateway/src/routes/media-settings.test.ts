@@ -65,6 +65,17 @@ const mockAvailableProviders = {
       requiresApiKey: true,
     },
   ],
+  video_generation: [
+    {
+      provider: 'runway',
+      displayName: 'Runway',
+      models: [
+        { id: 'gen-3-alpha', name: 'Gen-3 Alpha', default: true },
+      ],
+      apiKeyEnv: 'RUNWAY_API_KEY',
+      requiresApiKey: true,
+    },
+  ],
   weather: [],
 };
 
@@ -123,8 +134,8 @@ describe('Media Settings Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
-      // image_generation, vision, tts, stt
-      expect(json.data).toHaveLength(4);
+      // image_generation, video_generation, vision, tts, stt
+      expect(json.data).toHaveLength(5);
       expect(json.data[0].capability).toBe('image_generation');
       expect(json.data[0].name).toBe('Image Generation');
     });
@@ -300,8 +311,8 @@ describe('Media Settings Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.summary.total).toBe(4);
-      expect(json.data.capabilities).toHaveLength(4);
+      expect(json.data.summary.total).toBe(5);
+      expect(json.data.capabilities).toHaveLength(5);
     });
 
     it('shows configured status when provider is set', async () => {

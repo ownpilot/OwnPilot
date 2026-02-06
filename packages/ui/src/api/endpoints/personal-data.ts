@@ -123,4 +123,18 @@ export const triggersApi = {
     apiClient.patch<Trigger>(`/triggers/${id}`, data),
   fire: (id: string) =>
     apiClient.post<Record<string, unknown>>(`/triggers/${id}/fire`),
+  stats: () =>
+    apiClient.get<Record<string, unknown>>('/triggers/stats'),
+  globalHistory: (limit?: number) =>
+    apiClient.get<{ history: TriggerHistoryEntry[]; count: number }>('/triggers/history', {
+      params: limit ? { limit: String(limit) } : undefined,
+    }),
+  due: () =>
+    apiClient.get<{ triggers: Trigger[]; count: number }>('/triggers/due'),
+  engineStatus: () =>
+    apiClient.get<{ running: boolean }>('/triggers/engine/status'),
+  engineStart: () =>
+    apiClient.post<{ running: boolean; message: string }>('/triggers/engine/start'),
+  engineStop: () =>
+    apiClient.post<{ running: boolean; message: string }>('/triggers/engine/stop'),
 };

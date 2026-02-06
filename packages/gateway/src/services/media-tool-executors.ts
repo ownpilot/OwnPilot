@@ -11,6 +11,7 @@ import {
   createMediaService,
   type MediaCapability,
   type MediaProviderConfig,
+  type VideoGenerationOptions,
 } from '@ownpilot/core';
 import { mediaSettingsRepo, settingsRepo } from '../db/repositories/index.js';
 import { validateWritePath } from '../workspace/file-workspace.js';
@@ -108,6 +109,10 @@ async function isProviderConfigured(capability: MediaCapability): Promise<boolea
     elevenlabs: 'elevenlabs_api_key',
     groq: 'groq_api_key',
     deepgram: 'deepgram_api_key',
+    fal: 'fal_api_key',
+    stability: 'stability_api_key',
+    runway: 'runway_api_key',
+    luma: 'luma_api_key',
   };
 
   const keyName = keyMap[setting.provider];
@@ -556,6 +561,65 @@ export const mediaTranslateAudioExecutor: ToolExecutor = async (params, _context
 };
 
 // =============================================================================
+// VIDEO GENERATION EXECUTOR
+// =============================================================================
+
+export const mediaGenerateVideoExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+  const prompt = params.prompt as string;
+  const imageUrl = params.imageUrl as string | undefined;
+  const duration = Math.min(Math.max((params.duration as number) || 4, 2), 16);
+  const aspectRatio = (params.aspectRatio as string) || '16:9';
+
+  // Validate prompt
+  if (!prompt || prompt.trim().length === 0) {
+    return errorResult('Prompt is required for video generation');
+  }
+
+  if (prompt.length > 2000) {
+    return errorResult('Prompt too long. Maximum 2000 characters.');
+  }
+
+  // Check if provider is configured
+  if (!(await isProviderConfigured('video_generation'))) {
+    return errorResult(
+      'No video generation provider configured',
+      'Configure a video generation provider in Settings → Media Settings'
+    );
+  }
+
+  try {
+    const mediaService = await getMediaService();
+
+    const options: VideoGenerationOptions = {
+      prompt,
+      imageUrl,
+      duration,
+      aspectRatio: aspectRatio as '16:9' | '9:16' | '1:1',
+    };
+
+    const result = await mediaService.generateVideo(options);
+
+    return {
+      content: {
+        success: true,
+        provider: result.provider,
+        model: result.model,
+        status: result.status,
+        videoUrl: result.videoUrl,
+        taskId: result.taskId,
+        prompt,
+        duration,
+        aspectRatio,
+      },
+      isError: false,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate video';
+    return errorResult(errorMessage);
+  }
+};
+
+// =============================================================================
 // EXPORT ALL MEDIA EXECUTORS
 // =============================================================================
 
@@ -563,6 +627,8 @@ export const MEDIA_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   // Image tools
   generate_image: mediaGenerateImageExecutor,
   analyze_image: mediaAnalyzeImageExecutor,
+  // Video tools
+  generate_video: mediaGenerateVideoExecutor,
   // Audio tools
   text_to_speech: mediaTTSExecutor,
   speech_to_text: mediaSTTExecutor,

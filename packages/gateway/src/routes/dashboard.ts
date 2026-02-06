@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 import { DashboardService, briefingCache, type AIBriefing } from '../services/dashboard.js';
 import { getLog } from '../services/log.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { getDefaultProvider, getDefaultModel } from './settings.js';
 
 const log = getLog('Dashboard');
 
@@ -20,15 +21,17 @@ export const dashboardRoutes = new Hono();
  * Query params:
  * - refresh: boolean - Force refresh the AI briefing (default: false)
  * - aiOnly: boolean - Only return AI briefing, not raw data (default: false)
- * - provider: string - Override AI provider (default: openai)
- * - model: string - Override AI model (default: gpt-4o-mini)
+ * - provider: string - Override AI provider (uses configured default)
+ * - model: string - Override AI model (uses configured default)
  */
 dashboardRoutes.get('/briefing', async (c) => {
   const userId = getUserId(c);
   const forceRefresh = c.req.query('refresh') === 'true';
   const aiOnly = c.req.query('aiOnly') === 'true';
-  const provider = c.req.query('provider');
-  const model = c.req.query('model');
+  const queryProvider = c.req.query('provider');
+  const queryModel = c.req.query('model');
+  const provider = queryProvider ?? await getDefaultProvider() ?? undefined;
+  const model = queryModel ?? (provider ? await getDefaultModel(provider) ?? undefined : undefined);
 
   const service = new DashboardService(userId);
 
@@ -187,13 +190,15 @@ dashboardRoutes.get('/timeline', async (c) => {
  * GET /briefing/stream - Stream AI briefing generation (SSE)
  *
  * Query params:
- * - provider: string - AI provider (default: openai)
- * - model: string - AI model (default: gpt-4o-mini)
+ * - provider: string - AI provider (uses configured default)
+ * - model: string - AI model (uses configured default)
  */
 dashboardRoutes.get('/briefing/stream', async (c) => {
   const userId = getUserId(c);
-  const provider = c.req.query('provider') ?? 'openai';
-  const model = c.req.query('model') ?? 'gpt-4o-mini';
+  const queryProvider = c.req.query('provider');
+  const queryModel = c.req.query('model');
+  const provider = queryProvider ?? await getDefaultProvider() ?? 'openai';
+  const model = queryModel ?? await getDefaultModel(provider) ?? 'gpt-4o-mini';
 
   const service = new DashboardService(userId);
 

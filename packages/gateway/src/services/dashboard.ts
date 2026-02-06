@@ -492,9 +492,10 @@ export class DashboardService {
     // Build prompt for AI
     const prompt = this.buildBriefingPrompt(data);
 
-    // Use a fast/cheap model for summaries
-    const provider = options?.provider ?? 'openai';
-    const model = options?.model ?? 'gpt-4o-mini';
+    // Use a fast/cheap model for summaries — resolve from user settings
+    const { getDefaultProvider, getDefaultModel } = await import('../routes/settings.js');
+    const provider = options?.provider ?? await getDefaultProvider() ?? 'openai';
+    const model = options?.model ?? await getDefaultModel(provider) ?? 'gpt-4o-mini';
 
     try {
       // Dynamic import to avoid circular dependency

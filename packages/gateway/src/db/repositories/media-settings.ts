@@ -12,7 +12,7 @@ import { randomUUID } from 'node:crypto';
 // Types
 // ============================================================================
 
-export type MediaCapability = 'image_generation' | 'vision' | 'tts' | 'stt' | 'weather';
+export type MediaCapability = 'image_generation' | 'video_generation' | 'vision' | 'tts' | 'stt' | 'weather';
 
 export interface MediaProviderSetting {
   id: string;
@@ -51,6 +51,7 @@ interface MediaSettingRow {
 
 export const DEFAULT_PROVIDERS: Record<MediaCapability, { provider: string; model?: string }> = {
   image_generation: { provider: 'openai', model: 'dall-e-3' },
+  video_generation: { provider: 'runway', model: 'gen-3-alpha' },
   vision: { provider: 'openai', model: 'gpt-4o' },
   tts: { provider: 'openai', model: 'tts-1' },
   stt: { provider: 'openai', model: 'whisper-1' },
@@ -93,6 +94,28 @@ export const AVAILABLE_PROVIDERS: Record<MediaCapability, ProviderOption[]> = {
       requiresApiKey: true,
     },
     {
+      provider: 'fal',
+      displayName: 'fal.ai',
+      models: [
+        { id: 'fal-ai/flux-pro/v1.1', name: 'FLUX Pro v1.1', default: true },
+        { id: 'fal-ai/flux/schnell', name: 'FLUX Schnell' },
+        { id: 'fal-ai/stable-diffusion-v3-medium', name: 'SD3 Medium' },
+      ],
+      apiKeyEnv: 'FAL_API_KEY',
+      requiresApiKey: true,
+    },
+    {
+      provider: 'stability',
+      displayName: 'Stability AI',
+      models: [
+        { id: 'stable-diffusion-xl-1024-v1-0', name: 'SDXL 1.0', default: true },
+        { id: 'sd3-large', name: 'SD3 Large' },
+        { id: 'sd3-medium', name: 'SD3 Medium' },
+      ],
+      apiKeyEnv: 'STABILITY_API_KEY',
+      requiresApiKey: true,
+    },
+    {
       provider: 'replicate',
       displayName: 'Replicate',
       models: [
@@ -100,6 +123,37 @@ export const AVAILABLE_PROVIDERS: Record<MediaCapability, ProviderOption[]> = {
         { id: 'black-forest-labs/flux-schnell', name: 'FLUX Schnell' },
       ],
       apiKeyEnv: 'REPLICATE_API_TOKEN',
+      requiresApiKey: true,
+    },
+  ],
+  video_generation: [
+    {
+      provider: 'runway',
+      displayName: 'Runway',
+      models: [
+        { id: 'gen-3-alpha', name: 'Gen-3 Alpha', default: true },
+        { id: 'gen-3-alpha-turbo', name: 'Gen-3 Alpha Turbo' },
+      ],
+      apiKeyEnv: 'RUNWAY_API_KEY',
+      requiresApiKey: true,
+    },
+    {
+      provider: 'luma',
+      displayName: 'Luma AI',
+      models: [
+        { id: 'dream-machine', name: 'Dream Machine', default: true },
+      ],
+      apiKeyEnv: 'LUMA_API_KEY',
+      requiresApiKey: true,
+    },
+    {
+      provider: 'fal',
+      displayName: 'fal.ai',
+      models: [
+        { id: 'fal-ai/fast-svd-lcm', name: 'Fast SVD LCM', default: true },
+        { id: 'fal-ai/stable-video-diffusion', name: 'Stable Video Diffusion' },
+      ],
+      apiKeyEnv: 'FAL_API_KEY',
       requiresApiKey: true,
     },
   ],
@@ -328,7 +382,7 @@ export class MediaSettingsRepository extends BaseRepository {
     MediaCapability,
     { provider: string; model?: string; config: Record<string, unknown> }
   >> {
-    const capabilities: MediaCapability[] = ['image_generation', 'vision', 'tts', 'stt', 'weather'];
+    const capabilities: MediaCapability[] = ['image_generation', 'video_generation', 'vision', 'tts', 'stt', 'weather'];
     const result: Record<string, { provider: string; model?: string; config: Record<string, unknown> }> = {};
 
     for (const capability of capabilities) {
