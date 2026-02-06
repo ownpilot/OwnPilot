@@ -245,6 +245,17 @@ export class ToolRegistry {
   }
 
   /**
+   * Get all tools as definition+executor pairs.
+   * Used to provide callable tools to dynamic tool sandboxes.
+   */
+  getAllTools(): Array<{ definition: ToolDefinition; executor: ToolExecutor }> {
+    return Array.from(this.tools.values()).map((t) => ({
+      definition: t.definition,
+      executor: t.executor,
+    }));
+  }
+
+  /**
    * Get tools for a specific plugin
    */
   getPluginTools(pluginId: PluginId): readonly RegisteredTool[] {

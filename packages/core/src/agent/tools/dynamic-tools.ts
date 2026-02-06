@@ -93,6 +93,8 @@ export interface DynamicToolRegistry {
   unregister(name: string): boolean;
   /** Check if tool exists */
   has(name: string): boolean;
+  /** Update the callable tools available to custom tool sandboxes via utils.callTool() */
+  setCallableTools(tools: Array<{ definition: ToolDefinition; executor: ToolExecutor }>): void;
 }
 
 // =============================================================================
@@ -769,8 +771,9 @@ async function executeDynamicTool(
  * @deprecated Use ToolRegistry.registerCustomTool() for registering custom/dynamic tools.
  */
 export function createDynamicToolRegistry(
-  callableTools?: Array<{ definition: ToolDefinition; executor: ToolExecutor }>
+  initialCallableTools?: Array<{ definition: ToolDefinition; executor: ToolExecutor }>
 ): DynamicToolRegistry {
+  let callableTools = initialCallableTools;
   const tools = new Map<string, DynamicToolDefinition>();
 
   return {
@@ -843,6 +846,10 @@ export function createDynamicToolRegistry(
 
     has(name: string): boolean {
       return tools.has(name);
+    },
+
+    setCallableTools(newTools: Array<{ definition: ToolDefinition; executor: ToolExecutor }>): void {
+      callableTools = newTools;
     },
   };
 }
