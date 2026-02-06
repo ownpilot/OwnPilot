@@ -197,7 +197,7 @@ export {
   type CaptureQuery,
 } from './captures.js';
 
-// OAuth & Media Settings repositories
+// OAuth repositories
 export {
   OAuthIntegrationsRepository,
   createOAuthIntegrationsRepository,
@@ -209,18 +209,6 @@ export {
   type CreateIntegrationInput,
   type UpdateIntegrationInput,
 } from './oauth-integrations.js';
-
-export {
-  MediaSettingsRepository,
-  createMediaSettingsRepository,
-  mediaSettingsRepo,
-  type MediaProviderSetting,
-  type MediaCapability,
-  type SetMediaProviderInput,
-  type ProviderOption,
-  DEFAULT_PROVIDERS,
-  AVAILABLE_PROVIDERS,
-} from './media-settings.js';
 
 // AI Model Configs repository
 export {

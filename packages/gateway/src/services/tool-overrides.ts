@@ -2,13 +2,12 @@
  * Tool Override Registration
  *
  * Registers custom tool executors that override placeholder implementations
- * when integrations are properly configured (Gmail, Media services, etc.)
+ * when integrations are properly configured (Gmail, etc.)
  */
 
 import type { ToolRegistry, ToolExecutor } from '@ownpilot/core';
 import { GMAIL_TOOL_EXECUTORS } from './gmail-tool-executors.js';
-import { MEDIA_TOOL_EXECUTORS } from './media-tool-executors.js';
-import { oauthIntegrationsRepo, mediaSettingsRepo } from '../db/repositories/index.js';
+import { oauthIntegrationsRepo } from '../db/repositories/index.js';
 import { getLog } from './log.js';
 
 const log = getLog('ToolOverrides');
@@ -19,19 +18,6 @@ const log = getLog('ToolOverrides');
 async function isGmailConfigured(userId = 'default'): Promise<boolean> {
   const integration = await oauthIntegrationsRepo.getByUserProviderService(userId, 'google', 'gmail');
   return integration !== null && integration.status === 'active';
-}
-
-/**
- * Check if any media settings are configured
- */
-async function _hasMediaSettings(): Promise<boolean> {
-  // Check if any media provider is configured (for default user)
-  const capabilities = ['image_generation', 'vision', 'tts', 'stt'] as const;
-  for (const cap of capabilities) {
-    const setting = await mediaSettingsRepo.getEffective('default', cap);
-    if (setting) return true;
-  }
-  return false;
 }
 
 /**
@@ -61,35 +47,15 @@ export async function registerGmailToolOverrides(registry: ToolRegistry, userId 
 }
 
 /**
- * Register Media tool executors if media settings are configured
- */
-export async function registerMediaToolOverrides(registry: ToolRegistry): Promise<number> {
-  let count = 0;
-
-  for (const [toolName, executor] of Object.entries(MEDIA_TOOL_EXECUTORS)) {
-    if (registry.has(toolName)) {
-      if (registry.updateExecutor(toolName, executor)) {
-        count++;
-        log.info(`[tool-overrides] Media executor registered: ${toolName}`);
-      }
-    }
-  }
-
-  return count;
-}
-
-/**
  * Initialize all tool overrides
  * Call this during server startup after tool registry is created
  */
 export async function initializeToolOverrides(registry: ToolRegistry, userId = 'default'): Promise<{
   gmail: number;
-  media: number;
   total: number;
 }> {
   const results = {
     gmail: 0,
-    media: 0,
     total: 0,
   };
 
@@ -100,17 +66,10 @@ export async function initializeToolOverrides(registry: ToolRegistry, userId = '
     log.error('[tool-overrides] Failed to register Gmail overrides:', error);
   }
 
-  // Media overrides (always register - they check settings at runtime)
-  try {
-    results.media = await registerMediaToolOverrides(registry);
-  } catch (error) {
-    log.error('[tool-overrides] Failed to register Media overrides:', error);
-  }
-
-  results.total = results.gmail + results.media;
+  results.total = results.gmail;
 
   if (results.total > 0) {
-    log.info(`[tool-overrides] Registered ${results.total} tool overrides (Gmail: ${results.gmail}, Media: ${results.media})`);
+    log.info(`[tool-overrides] Registered ${results.total} tool overrides (Gmail: ${results.gmail})`);
   }
 
   return results;

@@ -544,25 +544,6 @@ export interface DailyBriefingData {
   };
 }
 
-// ---- Media Settings ----
-
-export interface ProviderWithStatus {
-  id: string;
-  name: string;
-  models: string[];
-  voices?: string[];
-  isConfigured: boolean;
-  apiKeyName: string;
-}
-
-export interface CapabilitySettings {
-  capability: string;
-  name: string;
-  description: string;
-  currentProvider: string | null;
-  currentModel: string | null;
-  availableProviders: ProviderWithStatus[];
-}
 
 // ---- Model Configs / AI Models ----
 

@@ -533,18 +533,6 @@ CREATE TABLE IF NOT EXISTS oauth_integrations (
   UNIQUE(user_id, provider, service)
 );
 
--- Media provider settings (per-capability provider selection)
-CREATE TABLE IF NOT EXISTS media_provider_settings (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL DEFAULT 'default',
-  capability TEXT NOT NULL CHECK(capability IN ('image_generation', 'vision', 'tts', 'stt', 'weather')),
-  provider TEXT NOT NULL,
-  model TEXT,
-  config JSONB DEFAULT '{}',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  UNIQUE(user_id, capability)
-);
 
 -- =====================================================
 -- USER WORKSPACE ISOLATION TABLES
@@ -1266,13 +1254,12 @@ CREATE INDEX IF NOT EXISTS idx_workspace_audit_user ON workspace_audit(user_id);
 CREATE INDEX IF NOT EXISTS idx_workspace_audit_workspace ON workspace_audit(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_workspace_audit_created ON workspace_audit(created_at DESC);
 
--- OAuth & Media settings indexes
+-- OAuth indexes
 CREATE INDEX IF NOT EXISTS idx_oauth_integrations_user ON oauth_integrations(user_id);
 CREATE INDEX IF NOT EXISTS idx_oauth_integrations_provider ON oauth_integrations(user_id, provider);
 CREATE INDEX IF NOT EXISTS idx_oauth_integrations_service ON oauth_integrations(user_id, provider, service);
 CREATE INDEX IF NOT EXISTS idx_oauth_integrations_status ON oauth_integrations(status);
-CREATE INDEX IF NOT EXISTS idx_media_provider_settings_user ON media_provider_settings(user_id);
-CREATE INDEX IF NOT EXISTS idx_media_provider_settings_capability ON media_provider_settings(user_id, capability);
+
 
 -- AI Models management indexes
 CREATE INDEX IF NOT EXISTS idx_user_model_configs_user ON user_model_configs(user_id);

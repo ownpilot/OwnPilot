@@ -43,7 +43,7 @@ import {
   productivityRoutes,
   authRoutes,
   integrationsRoutes,
-  mediaSettingsRoutes,
+
   modelConfigsRoutes,
   dashboardRoutes,
   customToolsRoutes,
@@ -194,8 +194,6 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Integrations (Gmail, Calendar, Drive)
   app.route('/api/v1/integrations', integrationsRoutes);
 
-  // Media Settings (provider routing for image/audio)
-  app.route('/api/v1/media-settings', mediaSettingsRoutes);
 
   // AI Model Configs (model management, custom providers)
   app.route('/api/v1/model-configs', modelConfigsRoutes);
@@ -278,8 +276,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         auth: '/api/v1/auth',
         // Integrations (Gmail, Calendar, Drive)
         integrations: '/api/v1/integrations',
-        // Media Settings (provider routing)
-        mediaSettings: '/api/v1/media-settings',
+
         // AI Model Configs (model management)
         modelConfigs: '/api/v1/model-configs',
         // Dashboard (AI-powered daily briefing)

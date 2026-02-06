@@ -27,7 +27,7 @@ export { pluginsRoutes } from './plugins.js';
 export { productivityRoutes } from './productivity.js';
 export { authRoutes } from './auth.js';
 export { integrationsRoutes } from './integrations.js';
-export { mediaSettingsRoutes } from './media-settings.js';
+
 export { modelConfigsRoutes } from './model-configs.js';
 export { dashboardRoutes } from './dashboard.js';
 export {

@@ -159,8 +159,6 @@ export type {
 // Config Center
 export * from './config-center.js';
 
-// Media Service
-export * from './media-service.js';
 
 // Weather Service
 export * from './weather-service.js';

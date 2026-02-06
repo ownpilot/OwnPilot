@@ -7,5 +7,5 @@ export { ApiKeysPage } from './ApiKeysPage';
 export { ProvidersPage } from './ProvidersPage';
 export { AIModelsPage } from './AIModelsPage';
 export { IntegrationsPage } from './IntegrationsPage';
-export { MediaSettingsPage } from './MediaSettingsPage';
+
 export { SystemPage } from './SystemPage';

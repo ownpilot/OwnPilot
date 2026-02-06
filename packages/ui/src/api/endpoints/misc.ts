@@ -27,7 +27,7 @@ import type {
   ChannelMessage,
   AIBriefing,
   DailyBriefingData,
-  CapabilitySettings,
+
   MergedModel,
   AvailableProvider,
   CapabilityDef,
@@ -164,15 +164,6 @@ export const dashboardApi = {
     apiClient.stream('/dashboard/briefing/stream', {}, options),
 };
 
-// ---- Media Settings ----
-
-export const mediaSettingsApi = {
-  get: () => apiClient.get<CapabilitySettings[]>('/media-settings'),
-  update: (capability: string, data: Record<string, unknown>) =>
-    apiClient.post<void>(`/media-settings/${capability}`, data),
-  reset: (capability: string) =>
-    apiClient.delete<void>(`/media-settings/${capability}`),
-};
 
 // ---- Model Configs ----
 

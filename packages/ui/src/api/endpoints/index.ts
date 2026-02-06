@@ -25,7 +25,7 @@ export {
   configServicesApi,
   channelsApi,
   dashboardApi,
-  mediaSettingsApi,
+
   modelConfigsApi,
   localProvidersApi,
   fileWorkspacesApi,
@@ -87,8 +87,7 @@ export type {
   DailyUsage,
   AIBriefing,
   DailyBriefingData,
-  ProviderWithStatus,
-  CapabilitySettings,
+
   ModelCapability,
   MergedModel,
   AvailableProvider,

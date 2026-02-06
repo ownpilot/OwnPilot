@@ -33,7 +33,7 @@ import {
   Key,
   Globe,
   Server,
-  Image,
+
   Link,
   Container,
   Info,
@@ -121,7 +121,7 @@ const navGroups: NavGroup[] = [
       { to: '/settings/providers', icon: Server, label: 'Providers' },
       { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
       { to: '/settings/integrations', icon: Link, label: 'Integrations' },
-      { to: '/settings/media', icon: Image, label: 'Media' },
+
       { to: '/settings/system', icon: Container, label: 'System' },
     ],
   },

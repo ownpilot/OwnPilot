@@ -1,7 +1,7 @@
 /**
  * Tool Overrides Tests
  *
- * Tests Gmail and Media tool override registration, including
+ * Tests Gmail tool override registration, including
  * integration checking and conditional registration logic.
  */
 
@@ -18,34 +18,19 @@ vi.mock('./gmail-tool-executors.js', () => ({
   },
 }));
 
-vi.mock('./media-tool-executors.js', () => ({
-  MEDIA_TOOL_EXECUTORS: {
-    generate_image: vi.fn(async () => ({ content: 'image generated' })),
-    text_to_speech: vi.fn(async () => ({ content: 'audio generated' })),
-  },
-}));
-
 const mockOauthIntegrationsRepo = {
   getByUserProviderService: vi.fn(),
-};
-
-const mockMediaSettingsRepo = {
-  getEffective: vi.fn(),
 };
 
 vi.mock('../db/repositories/index.js', () => ({
   oauthIntegrationsRepo: {
     getByUserProviderService: (...args: unknown[]) => mockOauthIntegrationsRepo.getByUserProviderService(...args),
   },
-  mediaSettingsRepo: {
-    getEffective: (...args: unknown[]) => mockMediaSettingsRepo.getEffective(...args),
-  },
 }));
 
 import type { ToolRegistry } from '@ownpilot/core';
 import {
   registerGmailToolOverrides,
-  registerMediaToolOverrides,
   initializeToolOverrides,
 } from './tool-overrides.js';
 
@@ -132,47 +117,11 @@ describe('Tool Overrides', () => {
   });
 
   // ========================================================================
-  // registerMediaToolOverrides
-  // ========================================================================
-
-  describe('registerMediaToolOverrides', () => {
-    it('registers Media executors when tools exist in registry', async () => {
-      const registry = createMockRegistry();
-      registry._addTool('generate_image');
-      registry._addTool('text_to_speech');
-
-      const count = await registerMediaToolOverrides(registry as unknown as ToolRegistry);
-
-      expect(count).toBe(2);
-      expect(registry.updateExecutor).toHaveBeenCalledWith('generate_image', expect.any(Function));
-      expect(registry.updateExecutor).toHaveBeenCalledWith('text_to_speech', expect.any(Function));
-    });
-
-    it('returns 0 when no media tools in registry', async () => {
-      const registry = createMockRegistry();
-
-      const count = await registerMediaToolOverrides(registry as unknown as ToolRegistry);
-
-      expect(count).toBe(0);
-    });
-
-    it('handles partial tool availability', async () => {
-      const registry = createMockRegistry();
-      registry._addTool('generate_image');
-      // text_to_speech NOT in registry
-
-      const count = await registerMediaToolOverrides(registry as unknown as ToolRegistry);
-
-      expect(count).toBe(1);
-    });
-  });
-
-  // ========================================================================
   // initializeToolOverrides
   // ========================================================================
 
   describe('initializeToolOverrides', () => {
-    it('registers both Gmail and Media overrides', async () => {
+    it('registers Gmail overrides', async () => {
       mockOauthIntegrationsRepo.getByUserProviderService.mockResolvedValue({
         status: 'active',
       });
@@ -180,14 +129,11 @@ describe('Tool Overrides', () => {
       const registry = createMockRegistry();
       registry._addTool('send_email');
       registry._addTool('read_emails');
-      registry._addTool('generate_image');
-      registry._addTool('text_to_speech');
 
       const result = await initializeToolOverrides(registry as unknown as ToolRegistry, 'user-1');
 
       expect(result.gmail).toBe(2);
-      expect(result.media).toBe(2);
-      expect(result.total).toBe(4);
+      expect(result.total).toBe(2);
     });
 
     it('handles Gmail registration failure gracefully', async () => {
@@ -196,13 +142,11 @@ describe('Tool Overrides', () => {
       );
 
       const registry = createMockRegistry();
-      registry._addTool('generate_image');
 
       const result = await initializeToolOverrides(registry as unknown as ToolRegistry);
 
       expect(result.gmail).toBe(0);
-      expect(result.media).toBe(1);
-      expect(result.total).toBe(1);
+      expect(result.total).toBe(0);
     });
 
     it('returns all zeros when nothing is configured', async () => {
@@ -212,7 +156,7 @@ describe('Tool Overrides', () => {
 
       const result = await initializeToolOverrides(registry as unknown as ToolRegistry);
 
-      expect(result).toEqual({ gmail: 0, media: 0, total: 0 });
+      expect(result).toEqual({ gmail: 0, total: 0 });
     });
   });
 });
