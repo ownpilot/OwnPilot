@@ -7,6 +7,7 @@
 
 import type { MessageMiddleware } from '@ownpilot/core';
 import { ChatRepository } from '../../db/repositories/index.js';
+import { wsGateway } from '../../ws/server.js';
 import { getLog } from '../log.js';
 
 const log = getLog('Middleware:Persistence');
@@ -76,6 +77,14 @@ export function createPersistenceMiddleware(): MessageMiddleware {
       });
 
       log.info(`Saved to history: conversation=${dbConversation.id}`);
+
+      // Broadcast to WS clients so history views update in real-time
+      wsGateway.broadcast('chat:history:updated', {
+        conversationId: dbConversation.id,
+        title: dbConversation.title,
+        source: message.metadata.source ?? 'web',
+        messageCount: dbConversation.messageCount + 2,
+      });
     } catch (err) {
       log.warn('Failed to save chat history', { error: err });
       ctx.addWarning('Persistence failed');

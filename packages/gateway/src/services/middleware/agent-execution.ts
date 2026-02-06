@@ -176,18 +176,16 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
         stages: ['agent-execution'],
       };
 
-      // Store for downstream middleware
+      // Store for downstream middleware (post-processing, persistence, audit)
       ctx.set('pipelineResult', pipelineResult);
-
-      // Continue to post-processing middleware
-      const finalResult = await next();
 
       // Notify stream that pipeline is done
       if (stream?.onDone) {
-        stream.onDone(finalResult);
+        stream.onDone(pipelineResult);
       }
 
-      return finalResult;
+      // Return directly — outer middleware receives this via their next() calls
+      return pipelineResult;
     } catch (error) {
       // Clear direct tools on error too
       if (directTools?.length && agent.clearAdditionalTools) {
