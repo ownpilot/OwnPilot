@@ -42,8 +42,11 @@ export {
   validateToolCode,
   findFirstDangerousPattern,
   analyzeToolCode,
+  calculateSecurityScore,
   type CodeValidationPattern,
   type CodeValidationResult,
+  type SecurityScore,
+  type SecurityScoreCategory,
 } from './code-validator.js';
 
 // VM-based sandbox (faster, less isolated)

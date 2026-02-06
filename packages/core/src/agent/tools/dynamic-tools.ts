@@ -96,6 +96,180 @@ export interface DynamicToolRegistry {
 }
 
 // =============================================================================
+// SECURITY: CALLTOOL WHITELIST
+// =============================================================================
+
+/**
+ * Tools that are ALWAYS blocked from being called by custom tools.
+ * These tools can execute arbitrary code, modify files, or perform
+ * dangerous operations that should never be delegated to sandbox code.
+ */
+const BLOCKED_CALLABLE_TOOLS = new Set([
+  'execute_javascript',
+  'execute_python',
+  'execute_shell',
+  'compile_code',
+  'package_manager',
+  'write_file',
+  'delete_file',
+  'copy_file',
+  'move_file',
+  'send_email',
+  'git_commit',
+  'git_checkout',
+  'git_add',
+  'git_push',
+  'git_reset',
+  'create_tool',
+  'delete_custom_tool',
+  'toggle_custom_tool',
+]);
+
+/**
+ * Tools that require specific permissions to be called.
+ * If the custom tool doesn't have the required permission, the call is blocked.
+ */
+const PERMISSION_GATED_TOOLS: Record<string, DynamicToolPermission> = {
+  http_request: 'network',
+  fetch_web_page: 'network',
+  search_web: 'network',
+  read_file: 'filesystem',
+  list_directory: 'filesystem',
+  get_file_info: 'filesystem',
+};
+
+/**
+ * Check if a custom tool is allowed to call a given built-in tool.
+ */
+function isToolCallAllowed(
+  toolName: string,
+  permissions: DynamicToolPermission[]
+): { allowed: boolean; reason?: string } {
+  // Always blocked
+  if (BLOCKED_CALLABLE_TOOLS.has(toolName)) {
+    return {
+      allowed: false,
+      reason: `Tool '${toolName}' is blocked for security — custom tools cannot invoke code execution, file mutation, email, or git tools`,
+    };
+  }
+
+  // Permission-gated
+  const requiredPerm = PERMISSION_GATED_TOOLS[toolName];
+  if (requiredPerm && !permissions.includes(requiredPerm)) {
+    return {
+      allowed: false,
+      reason: `Tool '${toolName}' requires '${requiredPerm}' permission which this custom tool does not have`,
+    };
+  }
+
+  return { allowed: true };
+}
+
+// =============================================================================
+// SECURITY: SSRF PROTECTION
+// =============================================================================
+
+/**
+ * Check if a URL targets a private/internal network address (SSRF protection).
+ * Blocks: localhost, private IPs, link-local, cloud metadata endpoints, file://, ftp://
+ */
+export function isPrivateUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    const hostname = url.hostname.toLowerCase();
+    const protocol = url.protocol.toLowerCase();
+
+    // Block non-HTTP(S) protocols
+    if (protocol !== 'http:' && protocol !== 'https:') {
+      return true; // file://, ftp://, etc.
+    }
+
+    // Block localhost variants
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname === '::1' ||
+      hostname === '0.0.0.0'
+    ) {
+      return true;
+    }
+
+    // Block private IPv4 ranges
+    const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (ipv4Match) {
+      const [, a, b] = ipv4Match.map(Number);
+      // 10.0.0.0/8
+      if (a === 10) return true;
+      // 172.16.0.0/12
+      if (a === 172 && b! >= 16 && b! <= 31) return true;
+      // 192.168.0.0/16
+      if (a === 192 && b === 168) return true;
+      // 169.254.0.0/16 (link-local)
+      if (a === 169 && b === 254) return true;
+      // Cloud metadata endpoints
+      if (a === 169 && b === 254 && ipv4Match[3] === '169' && ipv4Match[4] === '254') return true;
+      // 100.100.100.200 (Alibaba cloud metadata)
+      if (hostname === '100.100.100.200') return true;
+      // 0.0.0.0/8
+      if (a === 0) return true;
+    }
+
+    // Block cloud metadata hostnames
+    if (hostname === 'metadata.google.internal') return true;
+
+    return false;
+  } catch {
+    // If URL parsing fails, block it
+    return true;
+  }
+}
+
+/**
+ * Create an SSRF-safe fetch wrapper that blocks private/internal URLs.
+ */
+function createSafeFetch(toolName: string): typeof globalThis.fetch {
+  return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
+    if (isPrivateUrl(url)) {
+      throw new Error(
+        `[SSRF blocked] Tool '${toolName}' attempted to access a private/internal URL: ${new URL(url).hostname}. ` +
+        `Only public URLs are allowed.`
+      );
+    }
+    return globalThis.fetch(input, init);
+  };
+}
+
+// =============================================================================
+// SANDBOX UTILITY SIZE LIMITS
+// =============================================================================
+
+/** Maximum input size for utility functions (1MB) */
+const MAX_UTIL_INPUT_SIZE = 1_000_000;
+
+/** Maximum array size for utility functions */
+const MAX_UTIL_ARRAY_SIZE = 100_000;
+
+/**
+ * Assert that a string input doesn't exceed the maximum size.
+ */
+function assertInputSize(input: string, fnName: string): void {
+  if (typeof input === 'string' && input.length > MAX_UTIL_INPUT_SIZE) {
+    throw new Error(`${fnName}: Input exceeds maximum size of ${MAX_UTIL_INPUT_SIZE} characters`);
+  }
+}
+
+/**
+ * Assert that an array doesn't exceed the maximum element count.
+ */
+function assertArraySize(arr: unknown[], fnName: string): void {
+  if (arr.length > MAX_UTIL_ARRAY_SIZE) {
+    throw new Error(`${fnName}: Array exceeds maximum size of ${MAX_UTIL_ARRAY_SIZE} elements`);
+  }
+}
+
+// =============================================================================
 // PERMISSION MAPPING
 // =============================================================================
 
@@ -147,6 +321,7 @@ function createSandboxUtils() {
   return {
     // --- Hashing ---
     hash(text: string, algorithm: string = 'sha256'): string {
+      assertInputSize(text, 'hash');
       return crypto.createHash(algorithm).update(text).digest('hex');
     },
 
@@ -157,9 +332,11 @@ function createSandboxUtils() {
 
     // --- Encoding/Decoding ---
     base64Encode(text: string): string {
+      assertInputSize(text, 'base64Encode');
       return Buffer.from(text).toString('base64');
     },
     base64Decode(text: string): string {
+      assertInputSize(text, 'base64Decode');
       return Buffer.from(text, 'base64').toString('utf-8');
     },
     urlEncode(text: string): string {
@@ -169,9 +346,11 @@ function createSandboxUtils() {
       return decodeURIComponent(text);
     },
     hexEncode(text: string): string {
+      assertInputSize(text, 'hexEncode');
       return Buffer.from(text).toString('hex');
     },
     hexDecode(hex: string): string {
+      assertInputSize(hex, 'hexDecode');
       return Buffer.from(hex, 'hex').toString('utf-8');
     },
 
@@ -213,6 +392,7 @@ function createSandboxUtils() {
 
     // --- Text ---
     slugify(text: string): string {
+      assertInputSize(text, 'slugify');
       return text.toLowerCase().normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9\s-]/g, '')
@@ -267,20 +447,28 @@ function createSandboxUtils() {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     },
     sum(numbers: number[]): number {
+      assertArraySize(numbers, 'sum');
       return numbers.reduce((a, b) => a + b, 0);
     },
     avg(numbers: number[]): number {
+      assertArraySize(numbers, 'avg');
       return numbers.length > 0 ? numbers.reduce((a, b) => a + b, 0) / numbers.length : 0;
     },
 
     // --- Data ---
     parseJson(text: string): unknown {
+      assertInputSize(text, 'parseJson');
       return JSON.parse(text);
     },
     toJson(data: unknown, indent: number = 2): string {
-      return JSON.stringify(data, null, indent);
+      const result = JSON.stringify(data, null, indent);
+      if (result && result.length > MAX_UTIL_INPUT_SIZE) {
+        throw new Error(`toJson: Output exceeds maximum size of ${MAX_UTIL_INPUT_SIZE} characters`);
+      }
+      return result;
     },
     parseCsv(csv: string, delimiter: string = ','): Record<string, string>[] {
+      assertInputSize(csv, 'parseCsv');
       const lines = csv.split('\n').filter(l => l.trim());
       if (lines.length < 2) return [];
       const headers = lines[0]!.split(delimiter).map(h => h.trim());
@@ -319,9 +507,11 @@ function createSandboxUtils() {
 
     // --- Array ---
     unique<T>(arr: T[]): T[] {
+      assertArraySize(arr, 'unique');
       return [...new Set(arr)];
     },
     chunk<T>(arr: T[], size: number): T[][] {
+      assertArraySize(arr, 'chunk');
       const chunks: T[][] = [];
       for (let i = 0; i < arr.length; i += size) {
         chunks.push(arr.slice(i, i + size));
@@ -329,6 +519,7 @@ function createSandboxUtils() {
       return chunks;
     },
     shuffle<T>(arr: T[]): T[] {
+      assertArraySize(arr, 'shuffle');
       const shuffled = [...arr];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -339,9 +530,11 @@ function createSandboxUtils() {
       return shuffled;
     },
     sample<T>(arr: T[], n: number = 1): T[] {
+      assertArraySize(arr, 'sample');
       return this.shuffle(arr).slice(0, n);
     },
     groupBy<T>(arr: T[], key: keyof T): Record<string, T[]> {
+      assertArraySize(arr, 'groupBy');
       return arr.reduce((groups, item) => {
         const groupKey = String(item[key]);
         if (!groups[groupKey]) groups[groupKey] = [];
@@ -377,11 +570,12 @@ async function executeDynamicTool(
   callableTools?: Array<{ definition: ToolDefinition; executor: ToolExecutor }>
 ): Promise<ToolExecutionResult> {
   const pluginId = `dynamic:${tool.name}` as PluginId;
+  const toolPermissions = tool.permissions ?? [];
 
   // Create sandbox with appropriate permissions
   const sandbox = createSandbox({
     pluginId,
-    permissions: mapPermissions(tool.permissions ?? []),
+    permissions: mapPermissions(toolPermissions),
     limits: {
       maxExecutionTime: 30000, // 30 seconds max
       maxCpuTime: 5000,        // 5 seconds CPU time
@@ -397,7 +591,8 @@ async function executeDynamicTool(
         userId: context.userId,
       },
       // Helper functions available to tool code
-      fetch: tool.permissions?.includes('network') ? globalThis.fetch : undefined,
+      // SSRF-safe fetch: blocks private/internal URLs
+      fetch: toolPermissions.includes('network') ? createSafeFetch(tool.name) : undefined,
       console: {
         log: (...logArgs: unknown[]) => console.log(`[DynamicTool:${tool.name}]`, ...logArgs),
         warn: (...logArgs: unknown[]) => console.warn(`[DynamicTool:${tool.name}]`, ...logArgs),
@@ -444,14 +639,26 @@ async function executeDynamicTool(
         },
         /**
          * Call a built-in utility tool by name.
+         * SECURITY: Restricted to safe tools only. Dangerous tools (code execution,
+         * file mutation, email, git) are blocked. Some tools require specific permissions.
          * Usage: const result = await utils.callTool('tool_name', { arg1: 'value' })
          */
         callTool: async (toolName: string, toolArgs: Record<string, unknown> = {}) => {
+          // Security: Check if tool is allowed for this custom tool
+          const check = isToolCallAllowed(toolName, toolPermissions);
+          if (!check.allowed) {
+            throw new Error(check.reason);
+          }
+
           // Search callable tools first (all built-in tools), then fall back to utility tools
           const allTools = callableTools ?? UTILITY_TOOLS;
           const foundTool = allTools.find(t => t.definition.name === toolName);
           if (!foundTool) {
-            const available = allTools.map(t => t.definition.name).join(', ');
+            // Only show allowed tools in the error message
+            const available = allTools
+              .filter(t => isToolCallAllowed(t.definition.name, toolPermissions).allowed)
+              .map(t => t.definition.name)
+              .join(', ');
             throw new Error(`Tool '${toolName}' not found. Available tools: ${available}`);
           }
           const result = await foundTool.executor(toolArgs, context);
@@ -470,14 +677,17 @@ async function executeDynamicTool(
         },
         /**
          * List all available tools that can be called via callTool.
+         * Only shows tools that this custom tool is allowed to call.
          */
         listTools: () => {
           const allTools = callableTools ?? UTILITY_TOOLS;
-          return allTools.map(t => ({
-            name: t.definition.name,
-            description: t.definition.description,
-            parameters: Object.keys(t.definition.parameters.properties || {}),
-          }));
+          return allTools
+            .filter(t => isToolCallAllowed(t.definition.name, toolPermissions).allowed)
+            .map(t => ({
+              name: t.definition.name,
+              description: t.definition.description,
+              parameters: Object.keys(t.definition.parameters.properties || {}),
+            }));
         },
       },
       // Common globals
@@ -654,7 +864,7 @@ The tool will be saved and available for use. Write JavaScript code that:
 - Can use 'fetch' if network permission is granted
 - Should handle errors gracefully
 - Declare API dependencies via 'required_api_keys' so they appear in Config Center for user configuration
-- Has access to 'utils' helper object with: getApiKey(serviceName) to get API keys from Config Center, getServiceConfig(serviceName) to get full service config, getConfigEntry(serviceName, label?) to get a config entry's data, getConfigEntries(serviceName) to get all entries (multi-account), getFieldValue(serviceName, fieldName, label?) to get a resolved field value, callTool(name, args) to invoke any built-in tool (file system, web fetch, pdf, translation, image, email, git, audio, data extraction, weather, utilities, etc.), listTools() to list all available tools, plus hash/uuid/password generation, base64/url/hex encoding, date math (now/dateDiff/dateAdd/formatDate), text transforms (slugify/camelCase/snakeCase/titleCase/truncate), validation (isEmail/isUrl/isJson/isUuid), math (clamp/round/randomInt/sum/avg), data (parseJson/toJson/parseCsv/flatten/getPath), array (unique/chunk/shuffle/sample/groupBy)`,
+- Has access to 'utils' helper object with: getApiKey(serviceName) to get API keys from Config Center, getServiceConfig(serviceName) to get full service config, getConfigEntry(serviceName, label?) to get a config entry's data, getConfigEntries(serviceName) to get all entries (multi-account), getFieldValue(serviceName, fieldName, label?) to get a resolved field value, callTool(name, args) to invoke safe built-in tools (file read, web fetch, pdf, translation, image, data extraction, weather, utilities — code execution and file mutation tools are blocked for security), listTools() to list all available tools, plus hash/uuid/password generation, base64/url/hex encoding, date math (now/dateDiff/dateAdd/formatDate), text transforms (slugify/camelCase/snakeCase/titleCase/truncate), validation (isEmail/isUrl/isJson/isUuid), math (clamp/round/randomInt/sum/avg), data (parseJson/toJson/parseCsv/flatten/getPath), array (unique/chunk/shuffle/sample/groupBy)`,
   parameters: {
     type: 'object',
     properties: {

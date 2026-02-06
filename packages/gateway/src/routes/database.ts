@@ -5,11 +5,10 @@
  */
 
 import { Hono } from 'hono';
-import { createMiddleware } from 'hono/factory';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
-import { apiResponse, apiError, ERROR_CODES, safeKeyCompare } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
@@ -96,35 +95,8 @@ function quoteIdentifier(name: string): string {
 
 export const databaseRoutes = new Hono();
 
-// --- Database Admin Guard ---
-// Requires ADMIN_API_KEY env var to be set. All database admin operations
-// require this key via X-Admin-Key header, regardless of global auth config.
-// Only operation status is exempt (needed for polling long-running ops).
-// /status and /stats expose table names, DB host/port, PG version — require auth.
-// No paths exempt from admin auth — operation status also requires authentication
-const ADMIN_EXEMPT_PATHS: string[] = [];
-
-const requireDatabaseAdmin = createMiddleware(async (c, next) => {
-  const path = new URL(c.req.url).pathname.replace(/.*\/database/, '');
-  if (ADMIN_EXEMPT_PATHS.some(p => path === p || path.startsWith(p))) {
-    return next();
-  }
-
-  const adminKey = process.env.ADMIN_API_KEY;
-  if (!adminKey) {
-    // If ADMIN_API_KEY is not configured, block all admin operations
-    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Database admin operations require ADMIN_API_KEY to be configured' }, 503);
-  }
-
-  const providedKey = c.req.header('X-Admin-Key') ?? '';
-  if (!safeKeyCompare(providedKey, adminKey)) {
-    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Valid X-Admin-Key header required for database admin operations' }, 403);
-  }
-
-  return next();
-});
-
-databaseRoutes.use('*', requireDatabaseAdmin);
+// Database admin routes are protected by the global auth middleware (api-key / jwt / none)
+// configured in app.ts. No additional admin key guard is needed.
 
 // Backup directory
 const getBackupDir = () => {

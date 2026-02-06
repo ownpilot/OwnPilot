@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "anthropic/claude-opus-4-6",
+      "name": "Claude Opus 4.6 (latest)",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-05"
+    },
+    {
       "id": "openai/gpt-5.2",
       "name": "GPT-5.2",
       "contextWindow": 400000,
@@ -25,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-11"
     },
     {

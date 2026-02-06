@@ -17,6 +17,7 @@ import {
   ALL_TOOLS,
   validateToolCode,
   analyzeToolCode,
+  calculateSecurityScore,
   type DynamicToolDefinition,
   type ToolDefinition,
   type ToolContext,
@@ -516,6 +517,9 @@ customToolsRoutes.post('/:id/execute', async (c) => {
     // Record usage
     await repo.recordUsage(id);
 
+    // Record in audit trail
+    recordExecution(id, body.arguments ?? {}, result, duration);
+
     return apiResponse(c, {
         tool: tool.name,
         result: result.content,
@@ -525,14 +529,46 @@ customToolsRoutes.post('/:id/execute', async (c) => {
       });
   } catch (execError) {
     const duration = Date.now() - startTime;
+    const errorResult = {
+      content: execError instanceof Error ? execError.message : 'Execution failed',
+      isError: true as const,
+    };
+
+    // Record failure in audit trail
+    recordExecution(id, body.arguments ?? {}, errorResult, duration);
+
     return apiResponse(c, {
       tool: tool.name,
-      result: execError instanceof Error ? execError.message : 'Execution failed',
+      result: errorResult.content,
       isError: true,
       duration,
       metadata: {},
     });
   }
+});
+
+/**
+ * GET /custom-tools/:id/executions - View execution audit trail
+ */
+customToolsRoutes.get('/:id/executions', async (c) => {
+  const id = c.req.param('id');
+  const repo = createCustomToolsRepo(getUserId(c));
+
+  const tool = await repo.get(id);
+  if (!tool) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
+  }
+
+  const limit = getOptionalIntParam(c, 'limit', 1, 100) ?? 50;
+  const trail = executionAuditTrail.get(id) ?? [];
+  const recent = trail.slice(-limit).reverse(); // Most recent first
+
+  return apiResponse(c, {
+    tool: tool.name,
+    toolId: id,
+    executions: recent,
+    totalRecorded: trail.length,
+  });
 });
 
 /**
@@ -608,7 +644,8 @@ customToolsRoutes.post('/test', async (c) => {
 
 /**
  * POST /custom-tools/validate - Deep code analysis for tool review
- * Returns security validation, warnings, and code statistics.
+ * Returns security validation, warnings, code statistics, security score,
+ * data flow risks, best practices, and suggested permissions.
  * LLM can use this to verify tool code before creating it.
  */
 customToolsRoutes.post('/validate', async (c) => {
@@ -622,7 +659,7 @@ customToolsRoutes.post('/validate', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'code is required' }, 400);
   }
 
-  const analysis = analyzeToolCode(body.code);
+  const analysis = analyzeToolCode(body.code, body.permissions);
 
   // Additional permission-aware warnings
   const permissionWarnings: string[] = [];
@@ -635,7 +672,50 @@ customToolsRoutes.post('/validate', async (c) => {
     errors: analysis.errors,
     warnings: [...analysis.warnings, ...permissionWarnings],
     stats: analysis.stats,
+    securityScore: analysis.securityScore,
+    dataFlowRisks: analysis.dataFlowRisks,
+    bestPractices: analysis.bestPractices,
+    suggestedPermissions: analysis.suggestedPermissions,
     recommendations: generateRecommendations(analysis, body.permissions),
+  });
+});
+
+/**
+ * POST /custom-tools/llm-review - Request LLM security review of tool code
+ * Sends tool code and context to the configured LLM for security assessment.
+ * Returns structured review with risks, improvements, and overall assessment.
+ */
+customToolsRoutes.post('/llm-review', async (c) => {
+  const body = await c.req.json().catch(() => null) as {
+    code: string;
+    name?: string;
+    description?: string;
+    permissions?: string[];
+  };
+
+  if (!body.code || typeof body.code !== 'string') {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'code is required' }, 400);
+  }
+
+  // Run static analysis first
+  const analysis = analyzeToolCode(body.code, body.permissions);
+  const score = calculateSecurityScore(body.code, body.permissions);
+
+  // Build the review prompt for LLM
+  const reviewPrompt = buildLlmReviewPrompt(body.code, body.name, body.description, body.permissions, analysis, score);
+
+  return apiResponse(c, {
+    staticAnalysis: {
+      valid: analysis.valid,
+      errors: analysis.errors,
+      warnings: analysis.warnings,
+      securityScore: score,
+      dataFlowRisks: analysis.dataFlowRisks,
+      bestPractices: analysis.bestPractices,
+      suggestedPermissions: analysis.suggestedPermissions,
+    },
+    llmReviewPrompt: reviewPrompt,
+    note: 'Pass the llmReviewPrompt to your LLM for a detailed security review. The static analysis above provides immediate automated checks.',
   });
 });
 
@@ -664,7 +744,107 @@ function generateRecommendations(
     recs.push('Wrap fetch() calls in try/catch and validate response.ok before parsing');
   }
 
-  return recs;
+  // Add recommendations based on security score
+  if (analysis.securityScore.category === 'dangerous') {
+    recs.push('Security score is low — review permissions and reduce code complexity');
+  }
+
+  // Add recommendations from best practices violations
+  for (const violation of analysis.bestPractices.violated) {
+    recs.push(violation);
+  }
+
+  return [...new Set(recs)]; // Deduplicate
+}
+
+/**
+ * Build a prompt for LLM-based security review of tool code.
+ */
+function buildLlmReviewPrompt(
+  code: string,
+  name?: string,
+  description?: string,
+  permissions?: string[],
+  analysis?: ReturnType<typeof analyzeToolCode>,
+  score?: ReturnType<typeof calculateSecurityScore>
+): string {
+  return `You are a security reviewer for custom tool code that runs in a sandboxed JavaScript VM.
+Review the following tool code for security issues, logic errors, and improvement opportunities.
+
+TOOL: ${name ?? 'unnamed'}
+DESCRIPTION: ${description ?? 'none provided'}
+PERMISSIONS: ${permissions?.join(', ') || 'none'}
+SECURITY SCORE: ${score?.score ?? 'unknown'}/100 (${score?.category ?? 'unknown'})
+STATIC ANALYSIS ERRORS: ${analysis?.errors.length ? analysis.errors.join('; ') : 'none'}
+STATIC ANALYSIS WARNINGS: ${analysis?.warnings.length ? analysis.warnings.join('; ') : 'none'}
+
+CODE:
+\`\`\`javascript
+${code}
+\`\`\`
+
+Please provide:
+1. SECURITY ASSESSMENT: Are there any security risks? (high/medium/low/none)
+2. POTENTIAL RISKS: List specific security concerns
+3. LOGIC REVIEW: Any bugs or logic errors?
+4. IMPROVEMENT SUGGESTIONS: How to make the code safer/better
+5. PERMISSION REVIEW: Are the declared permissions appropriate?
+6. OVERALL VERDICT: safe / needs-review / unsafe`;
+}
+
+// =============================================================================
+// EXECUTION AUDIT TRAIL
+// =============================================================================
+
+/** In-memory execution audit trail (per tool, capped) */
+const executionAuditTrail = new Map<string, Array<{
+  timestamp: string;
+  argsHash: string;
+  resultSummary: string;
+  duration: number;
+  success: boolean;
+  error?: string;
+}>>();
+
+const MAX_AUDIT_ENTRIES_PER_TOOL = 100;
+
+/**
+ * Record a tool execution in the audit trail.
+ */
+function recordExecution(
+  toolId: string,
+  args: Record<string, unknown>,
+  result: { content: unknown; isError: boolean },
+  duration: number
+): void {
+  if (!executionAuditTrail.has(toolId)) {
+    executionAuditTrail.set(toolId, []);
+  }
+  const trail = executionAuditTrail.get(toolId)!;
+
+  // Hash args for privacy (don't store raw arguments)
+  const argsStr = JSON.stringify(args);
+  const argsHash = argsStr.length > 0
+    ? `sha256:${Buffer.from(argsStr).toString('base64').slice(0, 16)}...`
+    : 'empty';
+
+  // Summarize result
+  const resultStr = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+  const resultSummary = resultStr.length > 200 ? resultStr.slice(0, 200) + '...' : resultStr;
+
+  trail.push({
+    timestamp: new Date().toISOString(),
+    argsHash,
+    resultSummary: result.isError ? `ERROR: ${resultSummary}` : resultSummary,
+    duration,
+    success: !result.isError,
+    error: result.isError ? resultSummary : undefined,
+  });
+
+  // Cap entries
+  if (trail.length > MAX_AUDIT_ENTRIES_PER_TOOL) {
+    trail.splice(0, trail.length - MAX_AUDIT_ENTRIES_PER_TOOL);
+  }
 }
 
 // =============================================================================
@@ -938,6 +1118,478 @@ try {
   return { success: true, data };
 } catch (error) {
   return { error: true, message: String(error) };
+}`,
+  },
+  {
+    id: 'json_schema_validator',
+    name: 'validate_json_schema',
+    displayName: 'JSON Schema Validator',
+    description: 'Validate data against a JSON-like schema definition',
+    category: 'Data',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        data: { type: 'object', description: 'Data to validate' },
+        schema: {
+          type: 'object',
+          description: 'Schema: { fieldName: { type: "string|number|boolean|array|object", required?: true, min?: N, max?: N, pattern?: "regex", enum?: [] } }',
+        },
+      },
+      required: ['data', 'schema'],
+    },
+    code: `// JSON Schema Validator - validate data against schema rules
+const { data, schema } = args;
+const errors = [];
+
+for (const [field, rules] of Object.entries(schema)) {
+  const value = data[field];
+  const r = rules;
+
+  if (r.required && (value === undefined || value === null)) {
+    errors.push(field + ' is required');
+    continue;
+  }
+  if (value === undefined || value === null) continue;
+
+  if (r.type && typeof value !== r.type && !(r.type === 'array' && Array.isArray(value))) {
+    errors.push(field + ' must be type ' + r.type + ', got ' + typeof value);
+  }
+  if (r.min !== undefined && typeof value === 'number' && value < r.min) {
+    errors.push(field + ' must be >= ' + r.min);
+  }
+  if (r.max !== undefined && typeof value === 'number' && value > r.max) {
+    errors.push(field + ' must be <= ' + r.max);
+  }
+  if (r.min !== undefined && typeof value === 'string' && value.length < r.min) {
+    errors.push(field + ' must be at least ' + r.min + ' characters');
+  }
+  if (r.max !== undefined && typeof value === 'string' && value.length > r.max) {
+    errors.push(field + ' must be at most ' + r.max + ' characters');
+  }
+  if (r.pattern && typeof value === 'string' && !new RegExp(r.pattern).test(value)) {
+    errors.push(field + ' must match pattern ' + r.pattern);
+  }
+  if (r.enum && !r.enum.includes(value)) {
+    errors.push(field + ' must be one of: ' + r.enum.join(', '));
+  }
+}
+
+return { valid: errors.length === 0, errors, fieldCount: Object.keys(schema).length };`,
+  },
+  {
+    id: 'cron_parser',
+    name: 'parse_cron',
+    displayName: 'Cron Expression Parser',
+    description: 'Parse and describe cron expressions in human-readable format',
+    category: 'Utilities',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        expression: { type: 'string', description: 'Cron expression (5 fields: min hour dom month dow)' },
+      },
+      required: ['expression'],
+    },
+    code: `// Cron Expression Parser
+const { expression } = args;
+const parts = expression.trim().split(/\\s+/);
+if (parts.length !== 5) return { error: 'Cron expression must have 5 fields: minute hour day-of-month month day-of-week' };
+
+const [minute, hour, dom, month, dow] = parts;
+const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const monthNames = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function describeField(val, unit, names) {
+  if (val === '*') return 'every ' + unit;
+  if (val.includes('/')) { const [, step] = val.split('/'); return 'every ' + step + ' ' + unit + 's'; }
+  if (val.includes(',')) return unit + 's ' + val.split(',').map(v => names ? names[parseInt(v)] || v : v).join(', ');
+  if (val.includes('-')) { const [s, e] = val.split('-'); return unit + 's ' + (names ? (names[parseInt(s)] || s) : s) + ' through ' + (names ? (names[parseInt(e)] || e) : e); }
+  return unit + ' ' + (names ? names[parseInt(val)] || val : val);
+}
+
+return {
+  expression,
+  fields: { minute, hour, dayOfMonth: dom, month, dayOfWeek: dow },
+  description: [
+    describeField(minute, 'minute'),
+    describeField(hour, 'hour'),
+    describeField(dom, 'day'),
+    describeField(month, 'month', monthNames),
+    describeField(dow, 'weekday', dayNames),
+  ].join(', '),
+};`,
+  },
+  {
+    id: 'markdown_to_html',
+    name: 'markdown_to_html',
+    displayName: 'Markdown to HTML',
+    description: 'Convert basic Markdown text to HTML',
+    category: 'Text',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        markdown: { type: 'string', description: 'Markdown text to convert' },
+      },
+      required: ['markdown'],
+    },
+    code: `// Markdown to HTML converter (basic subset)
+const { markdown } = args;
+let html = markdown
+  // Headers
+  .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+  .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+  .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+  // Bold and italic
+  .replace(/\\*\\*\\*(.+?)\\*\\*\\*/g, '<strong><em>$1</em></strong>')
+  .replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>')
+  .replace(/\\*(.+?)\\*/g, '<em>$1</em>')
+  // Code blocks
+  .replace(/\`\`\`([\\s\\S]*?)\`\`\`/g, '<pre><code>$1</code></pre>')
+  .replace(/\`(.+?)\`/g, '<code>$1</code>')
+  // Links and images
+  .replace(/!\\[(.+?)\\]\\((.+?)\\)/g, '<img alt="$1" src="$2" />')
+  .replace(/\\[(.+?)\\]\\((.+?)\\)/g, '<a href="$2">$1</a>')
+  // Lists
+  .replace(/^- (.+)$/gm, '<li>$1</li>')
+  .replace(/^\\d+\\. (.+)$/gm, '<li>$1</li>')
+  // Horizontal rule
+  .replace(/^---$/gm, '<hr />')
+  // Blockquote
+  .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+  // Paragraphs (double newlines)
+  .replace(/\\n\\n/g, '</p><p>');
+
+html = '<p>' + html + '</p>';
+// Clean up empty paragraphs
+html = html.replace(/<p><\\/p>/g, '').replace(/<p>(<h[1-6]>)/g, '$1').replace(/(<\\/h[1-6]>)<\\/p>/g, '$1');
+
+return { html, charCount: html.length };`,
+  },
+  {
+    id: 'url_parser',
+    name: 'parse_url',
+    displayName: 'URL Parser & Builder',
+    description: 'Parse URLs into components or build URLs from parts',
+    category: 'Utilities',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'URL to parse (for parse mode)' },
+        mode: { type: 'string', description: 'parse or build', enum: ['parse', 'build'] },
+        parts: { type: 'object', description: 'URL parts for build mode: {protocol, hostname, port, pathname, search, hash}' },
+      },
+      required: ['mode'],
+    },
+    code: `// URL Parser & Builder
+const { url, mode, parts } = args;
+
+if (mode === 'parse') {
+  if (!url) return { error: 'url is required for parse mode' };
+  try {
+    const u = new URL(url);
+    const params = {};
+    u.searchParams.forEach((v, k) => { params[k] = v; });
+    return {
+      href: u.href, protocol: u.protocol, hostname: u.hostname,
+      port: u.port, pathname: u.pathname, search: u.search,
+      hash: u.hash, origin: u.origin, params,
+    };
+  } catch (e) {
+    return { error: 'Invalid URL: ' + String(e) };
+  }
+}
+
+if (mode === 'build') {
+  if (!parts) return { error: 'parts is required for build mode' };
+  const p = parts;
+  let result = (p.protocol || 'https:') + '//' + (p.hostname || 'example.com');
+  if (p.port) result += ':' + p.port;
+  result += (p.pathname || '/');
+  if (p.search) {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(p.search)) params.set(k, String(v));
+    result += '?' + params.toString();
+  }
+  if (p.hash) result += '#' + p.hash;
+  return { url: result };
+}
+
+return { error: 'mode must be "parse" or "build"' };`,
+  },
+  {
+    id: 'string_template',
+    name: 'render_template',
+    displayName: 'String Template Engine',
+    description: 'Simple Mustache-like templating: replace {{key}} with values',
+    category: 'Text',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        template: { type: 'string', description: 'Template string with {{key}} placeholders' },
+        data: { type: 'object', description: 'Key-value pairs for replacement' },
+      },
+      required: ['template', 'data'],
+    },
+    code: `// String Template Engine - {{key}} replacement
+const { template, data } = args;
+
+let result = template;
+const used = [];
+const missing = [];
+
+// Replace all {{key}} and {{key.nested}} patterns
+result = result.replace(/\\{\\{([^}]+)\\}\\}/g, (match, key) => {
+  const trimmed = key.trim();
+  const value = utils.getPath(data, trimmed);
+  if (value !== undefined) {
+    used.push(trimmed);
+    return String(value);
+  }
+  missing.push(trimmed);
+  return match; // Leave unreplaced
+});
+
+return { rendered: result, usedKeys: used, missingKeys: missing };`,
+  },
+  {
+    id: 'data_aggregator',
+    name: 'aggregate_data',
+    displayName: 'Data Aggregator',
+    description: 'Group, count, sum, and average operations on JSON arrays',
+    category: 'Data',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        data: { type: 'array', description: 'Array of objects to aggregate', items: { type: 'object' } },
+        groupBy: { type: 'string', description: 'Field to group by' },
+        operations: {
+          type: 'array', description: 'Operations: [{field: "amount", op: "sum|avg|min|max|count"}]',
+          items: { type: 'object', properties: { field: { type: 'string' }, op: { type: 'string' } } },
+        },
+      },
+      required: ['data', 'operations'],
+    },
+    code: `// Data Aggregator - group, count, sum, avg on arrays
+const { data, groupBy: groupField, operations } = args;
+
+function aggregate(items, ops) {
+  const result = { count: items.length };
+  for (const { field, op } of ops) {
+    const values = items.map(i => parseFloat(i[field])).filter(n => !isNaN(n));
+    switch (op) {
+      case 'sum': result[field + '_sum'] = utils.sum(values); break;
+      case 'avg': result[field + '_avg'] = utils.avg(values); break;
+      case 'min': result[field + '_min'] = values.length ? Math.min(...values) : null; break;
+      case 'max': result[field + '_max'] = values.length ? Math.max(...values) : null; break;
+      case 'count': result[field + '_count'] = values.length; break;
+    }
+  }
+  return result;
+}
+
+if (!groupField) {
+  return { total: aggregate(data, operations) };
+}
+
+const groups = {};
+for (const item of data) {
+  const key = String(item[groupField] ?? 'undefined');
+  if (!groups[key]) groups[key] = [];
+  groups[key].push(item);
+}
+
+const result = {};
+for (const [key, items] of Object.entries(groups)) {
+  result[key] = aggregate(items, operations);
+}
+
+return { groups: result, groupCount: Object.keys(result).length };`,
+  },
+  {
+    id: 'regex_tester',
+    name: 'test_regex',
+    displayName: 'Regex Tester',
+    description: 'Test regex patterns against strings with detailed match information',
+    category: 'Text',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        pattern: { type: 'string', description: 'Regular expression pattern' },
+        flags: { type: 'string', description: 'Regex flags (e.g., "gi")' },
+        text: { type: 'string', description: 'Text to test against' },
+      },
+      required: ['pattern', 'text'],
+    },
+    code: `// Regex Tester - test patterns with match details
+const { pattern, flags = 'g', text } = args;
+
+try {
+  const regex = new RegExp(pattern, flags);
+  const matches = [];
+  let match;
+
+  if (flags.includes('g')) {
+    while ((match = regex.exec(text)) !== null) {
+      matches.push({
+        match: match[0],
+        index: match.index,
+        groups: match.slice(1),
+        namedGroups: match.groups || {},
+      });
+      if (matches.length > 100) break; // Safety limit
+    }
+  } else {
+    match = regex.exec(text);
+    if (match) {
+      matches.push({
+        match: match[0],
+        index: match.index,
+        groups: match.slice(1),
+        namedGroups: match.groups || {},
+      });
+    }
+  }
+
+  return {
+    matches: matches.length > 0,
+    matchCount: matches.length,
+    details: matches,
+    pattern,
+    flags,
+  };
+} catch (e) {
+  return { error: 'Invalid regex: ' + String(e) };
+}`,
+  },
+  {
+    id: 'date_range',
+    name: 'generate_date_range',
+    displayName: 'Date Range Generator',
+    description: 'Generate a range of dates for scheduling and planning',
+    category: 'Utilities',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        start: { type: 'string', description: 'Start date (ISO string or "now")' },
+        end: { type: 'string', description: 'End date (ISO string)' },
+        step: { type: 'string', description: 'Step unit: days, weeks, months', enum: ['days', 'weeks', 'months'] },
+        stepSize: { type: 'number', description: 'Step size (default: 1)' },
+        format: { type: 'string', description: 'Output format: iso, date, unix', enum: ['iso', 'date', 'unix'] },
+      },
+      required: ['start', 'end'],
+    },
+    code: `// Date Range Generator
+const { start, end, step = 'days', stepSize = 1, format = 'iso' } = args;
+
+const startDate = start === 'now' ? new Date() : new Date(start);
+const endDate = new Date(end);
+const dates = [];
+
+if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+  return { error: 'Invalid date format' };
+}
+if (startDate > endDate) return { error: 'Start date must be before end date' };
+
+let current = new Date(startDate);
+while (current <= endDate && dates.length < 1000) {
+  switch (format) {
+    case 'date': dates.push(current.toISOString().split('T')[0]); break;
+    case 'unix': dates.push(current.getTime()); break;
+    default: dates.push(current.toISOString()); break;
+  }
+  switch (step) {
+    case 'weeks': current = new Date(current.getTime() + stepSize * 7 * 86400000); break;
+    case 'months': current = new Date(current.setMonth(current.getMonth() + stepSize)); break;
+    default: current = new Date(current.getTime() + stepSize * 86400000); break;
+  }
+}
+
+return { dates, count: dates.length, start: startDate.toISOString(), end: endDate.toISOString() };`,
+  },
+  {
+    id: 'hash_checksum',
+    name: 'compute_hash',
+    displayName: 'Hash & Checksum',
+    description: 'Compute various hash digests for data integrity verification',
+    category: 'Utilities',
+    permissions: [],
+    parameters: {
+      type: 'object',
+      properties: {
+        data: { type: 'string', description: 'Data to hash' },
+        algorithms: {
+          type: 'array', description: 'Hash algorithms (default: all)', items: { type: 'string' },
+        },
+      },
+      required: ['data'],
+    },
+    code: `// Hash & Checksum - compute multiple hashes
+const { data, algorithms } = args;
+const algos = algorithms || ['md5', 'sha1', 'sha256', 'sha512'];
+const hashes = {};
+
+for (const algo of algos) {
+  try {
+    hashes[algo] = utils.hash(data, algo);
+  } catch (e) {
+    hashes[algo] = 'error: ' + String(e);
+  }
+}
+
+return {
+  hashes,
+  dataLength: data.length,
+  algorithms: Object.keys(hashes),
+};`,
+  },
+  {
+    id: 'env_config',
+    name: 'get_tool_config',
+    displayName: 'Environment-Aware Config',
+    description: 'Template for Config Center integrated tools — reads API keys and service configs',
+    category: 'Config',
+    permissions: ['network'],
+    parameters: {
+      type: 'object',
+      properties: {
+        service: { type: 'string', description: 'Config Center service name' },
+        field: { type: 'string', description: 'Specific field to retrieve (optional)' },
+        action: { type: 'string', description: 'Action: get_key, get_config, list_entries', enum: ['get_key', 'get_config', 'list_entries'] },
+      },
+      required: ['service', 'action'],
+    },
+    requiredApiKeys: [{ name: 'custom_service', displayName: 'Custom Service', description: 'API key for the target service' }],
+    code: `// Environment-Aware Config - Config Center integration
+const { service, field, action } = args;
+
+switch (action) {
+  case 'get_key': {
+    const key = utils.getApiKey(service);
+    if (!key) return { error: true, message: 'No API key configured for "' + service + '". Please add it in Config Center.' };
+    return { configured: true, service, keyPreview: key.slice(0, 4) + '...' + key.slice(-4) };
+  }
+  case 'get_config': {
+    const entry = utils.getConfigEntry(service);
+    if (!entry) return { error: true, message: 'No config found for "' + service + '"' };
+    if (field) {
+      const value = utils.getFieldValue(service, field);
+      return { service, field, value: value !== undefined ? value : null };
+    }
+    return { service, config: entry };
+  }
+  case 'list_entries': {
+    const entries = utils.getConfigEntries(service);
+    return { service, entries: entries.map(e => ({ label: e.label, fields: Object.keys(e.data || {}) })), count: entries.length };
+  }
+  default:
+    return { error: 'Unknown action: ' + action };
 }`,
   },
   {

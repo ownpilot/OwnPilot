@@ -14,6 +14,7 @@ import {
   executeShellSandbox,
 } from '../../sandbox/docker.js';
 import { logSandboxExecution } from '../debug.js';
+import { isCommandBlocked } from '../../security/index.js';
 
 // Environment flag to use relaxed Docker security (bypasses --no-new-privileges flag issues)
 const DOCKER_RELAXED_SECURITY = process.env.DOCKER_SANDBOX_RELAXED_SECURITY === 'true';
@@ -23,34 +24,6 @@ const MAX_EXECUTION_TIME = 30000;
 
 // Security: Maximum output size (1MB)
 const MAX_OUTPUT_SIZE = 1024 * 1024;
-
-// Security: Blocked shell commands
-const BLOCKED_COMMANDS = [
-  'rm -rf /',
-  'rm -rf /*',
-  'mkfs',
-  'dd if=/dev',
-  ':(){:|:&};:',
-  'chmod -R 777 /',
-  'shutdown',
-  'reboot',
-  'halt',
-  'poweroff',
-  'init 0',
-  'init 6',
-  // Windows dangerous commands
-  'format c:',
-  'del /f /s /q c:\\',
-  'rd /s /q c:\\',
-];
-
-/**
- * Check if command is blocked
- */
-function isBlockedCommand(command: string): boolean {
-  const lowerCommand = command.toLowerCase().trim();
-  return BLOCKED_COMMANDS.some((blocked) => lowerCommand.includes(blocked.toLowerCase()));
-}
 
 /**
  * Truncate output if too large
@@ -260,8 +233,8 @@ export const executeShellExecutor: ToolExecutor = async (params, _context): Prom
   const timeout = Math.min((params.timeout as number) || 10000, MAX_EXECUTION_TIME);
   const startTime = Date.now();
 
-  // Security: Block dangerous commands
-  if (isBlockedCommand(command)) {
+  // Security: Block dangerous commands (centralized in security/index.ts)
+  if (isCommandBlocked(command)) {
     logSandboxExecution({
       tool: 'execute_shell',
       language: 'shell',

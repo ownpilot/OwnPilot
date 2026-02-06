@@ -163,72 +163,33 @@ describe('Database Routes', () => {
     process.env = { ...originalEnv };
   });
 
-  // ─── Admin Middleware ────────────────────────────────────────
+  // ─── No Admin Middleware ─────────────────────────────────────
+  // Database routes rely on the global auth middleware configured in app.ts.
+  // No separate admin key guard is applied.
 
-  describe('Admin middleware', () => {
-    it('should require admin key for /status', async () => {
+  describe('Access without admin key', () => {
+    it('should allow /status without X-Admin-Key header', async () => {
+      mockAdapter.queryOne
+        .mockResolvedValueOnce({ size: '15 MB' })
+        .mockResolvedValueOnce({ count: '30' });
+      mockExistsSync.mockReturnValue(false);
+      mockReaddirSync.mockReturnValue([]);
+
       const res = await app.request('/database/status');
 
-      expect(res.status).toBe(403);
+      expect(res.status).toBe(200);
     });
 
-    it('should require admin key for /stats', async () => {
+    it('should allow /stats without X-Admin-Key header', async () => {
+      mockAdapter.queryOne
+        .mockResolvedValueOnce({ size: '50 MB', raw_size: '52428800' })
+        .mockResolvedValueOnce({ active_connections: '3', max_connections: '100' })
+        .mockResolvedValueOnce({ version: 'PostgreSQL 16.1' });
+      mockAdapter.query.mockResolvedValue([]);
+
       const res = await app.request('/database/stats');
 
-      expect(res.status).toBe(403);
-    });
-
-    it('should require admin key for /operation/status', async () => {
-      const res = await app.request('/database/operation/status');
-
-      expect(res.status).toBe(403);
-    });
-
-    it('should return 503 when ADMIN_API_KEY not configured', async () => {
-      delete process.env.ADMIN_API_KEY;
-
-      const res = await app.request('/database/backup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-
-      expect(res.status).toBe(503);
-    });
-
-    it('should return 403 when admin key is missing', async () => {
-      const res = await app.request('/database/backup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-
-      expect(res.status).toBe(403);
-    });
-
-    it('should return 403 when admin key is wrong', async () => {
-      const res = await app.request('/database/backup', {
-        method: 'POST',
-        headers: { 'X-Admin-Key': 'wrong-key', 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-
-      expect(res.status).toBe(403);
-    });
-
-    it('should allow request with correct admin key', async () => {
-      // Use DELETE /backup which requires admin but doesn't set operationStatus
-      mockExistsSync.mockReturnValue(false);
-
-      const res = await app.request('/database/backup/test.sql', {
-        method: 'DELETE',
-        headers: adminHeaders(),
-      });
-
-      // Should pass middleware (404 = file not found, not 403/503)
-      expect(res.status).not.toBe(403);
-      expect(res.status).not.toBe(503);
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(200);
     });
   });
 

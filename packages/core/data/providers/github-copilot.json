@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "claude-opus-4.6",
+      "name": "Claude Opus 4.6",
+      "contextWindow": 128000,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-05"
+    },
+    {
       "id": "gemini-3-flash-preview",
       "name": "Gemini 3 Flash",
       "contextWindow": 128000,
@@ -27,7 +44,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-17"
     },
     {
@@ -288,7 +305,7 @@
     {
       "id": "gpt-4.1",
       "name": "GPT-4.1",
-      "contextWindow": 64000,
+      "contextWindow": 128000,
       "maxOutput": 16384,
       "inputPrice": 0,
       "outputPrice": 0,

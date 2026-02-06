@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "Qwen/Qwen3-Coder-Next",
+      "name": "Qwen3 Coder Next",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.07,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-05"
+    },
+    {
       "id": "moonshotai/Kimi-K2.5-TEE",
       "name": "Kimi K2.5 TEE",
       "contextWindow": 262144,
@@ -26,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-01-27"
     },
     {

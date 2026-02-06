@@ -124,6 +124,10 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         valid: errors.length === 0,
         errors,
         warnings: [] as string[],
+        securityScore: { score: errors.length === 0 ? 90 : 30, category: errors.length === 0 ? 'safe' : 'dangerous', factors: {} },
+        dataFlowRisks: [] as string[],
+        bestPractices: { followed: [] as string[], violated: [] as string[] },
+        suggestedPermissions: [] as string[],
         stats: {
           lineCount: lines.length,
           hasAsyncCode: /\bawait\b/.test(code),
@@ -134,6 +138,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         },
       };
     },
+    calculateSecurityScore: (_code: string, _perms?: string[]) => ({
+      score: 90,
+      category: 'safe',
+      factors: {},
+    }),
   };
 });
 
@@ -724,8 +733,8 @@ describe('Custom Tools Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(Array.isArray(json.data.templates)).toBe(true);
-      expect(json.data.templates.length).toBe(6);
-      expect(json.data.count).toBe(6);
+      expect(json.data.templates.length).toBe(16);
+      expect(json.data.count).toBe(16);
     });
 
     it('returns templates with required fields', async () => {

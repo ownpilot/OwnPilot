@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "claude-opus-4-6",
+      "name": "Claude Opus 4.6",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-05"
+    },
+    {
       "id": "gemini-3-flash-preview",
       "name": "Gemini 3 Flash Preview",
       "contextWindow": 1048576,
@@ -27,7 +44,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-17"
     },
     {
@@ -49,7 +66,7 @@
     },
     {
       "id": "claude-opus-4-5",
-      "name": "Claude Opus 4.5 (latest)",
+      "name": "Claude Opus 4.5",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 0,

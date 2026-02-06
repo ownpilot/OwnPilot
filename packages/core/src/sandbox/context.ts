@@ -222,8 +222,7 @@ export function buildSandboxContext(
     WeakSet,
     Promise,
     Symbol,
-    Proxy,
-    Reflect,
+    // Proxy and Reflect intentionally excluded — can be used for sandbox escape attacks
 
     // String utilities
     encodeURIComponent,
@@ -296,6 +295,7 @@ export function buildSandboxContext(
   const dangerousKeys = [
     'process', 'require', 'module', 'exports', '__dirname', '__filename',
     'global', 'globalThis', 'eval', 'Function', 'Atomics', 'SharedArrayBuffer',
+    'Proxy', 'Reflect',
   ];
   for (const key of dangerousKeys) {
     Object.defineProperty(context, key, {

@@ -1,0 +1,142 @@
+{
+  "id": "berget",
+  "name": "Berget.AI",
+  "type": "openai-compatible",
+  "apiKeyEnv": "BERGET_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "zai-org/GLM-4.7",
+      "name": "GLM 4.7",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.7,
+      "outputPrice": 2.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-19"
+    },
+    {
+      "id": "mistralai/Mistral-Small-3.2-24B-Instruct-2506",
+      "name": "Mistral Small 3.2 24B Instruct 2506",
+      "contextWindow": 32000,
+      "maxOutput": 8192,
+      "inputPrice": 0.3,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-01"
+    },
+    {
+      "id": "intfloat/multilingual-e5-large",
+      "name": "Multilingual-E5-large",
+      "contextWindow": 512,
+      "maxOutput": 1024,
+      "inputPrice": 0.02,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-11"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT-OSS-120B",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.3,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "intfloat/multilingual-e5-large-instruct",
+      "name": "Multilingual-E5-large-instruct",
+      "contextWindow": 512,
+      "maxOutput": 1024,
+      "inputPrice": 0.02,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-27"
+    },
+    {
+      "id": "KBLab/kb-whisper-large",
+      "name": "KB-Whisper-Large",
+      "contextWindow": 480000,
+      "maxOutput": 4800,
+      "inputPrice": 3,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-27"
+    },
+    {
+      "id": "meta-llama/Llama-3.3-70B-Instruct",
+      "name": "Llama 3.3 70B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.9,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-27"
+    },
+    {
+      "id": "BAAI/bge-reranker-v2-m3",
+      "name": "bge-reranker-v2-m3",
+      "contextWindow": 512,
+      "maxOutput": 512,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-23"
+    }
+  ],
+  "baseUrl": "https://api.berget.ai/v1",
+  "docsUrl": "https://api.berget.ai"
+}

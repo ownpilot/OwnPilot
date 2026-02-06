@@ -12,6 +12,24 @@
   },
   "models": [
     {
+      "id": "moonshotai/Kimi-K2.5",
+      "name": "moonshotai/Kimi-K2.5",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0.55,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-27"
+    },
+    {
       "id": "MiniMaxAI/MiniMax-M2.1",
       "name": "MiniMaxAI/MiniMax-M2.1",
       "contextWindow": 197000,
@@ -24,7 +42,7 @@
         "json_mode",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-23"
     },
     {

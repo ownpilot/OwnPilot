@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "qwen/qwen3-coder-next",
+      "name": "Qwen3 Coder Next",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.2,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-03"
+    },
+    {
       "id": "moonshotai/kimi-k2.5",
       "name": "Kimi K2.5",
       "contextWindow": 262144,
@@ -26,7 +42,22 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "deepseek/deepseek-ocr-2",
+      "name": "deepseek/deepseek-ocr-2",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0.03,
+      "outputPrice": 0.03,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-01-27"
     },
     {

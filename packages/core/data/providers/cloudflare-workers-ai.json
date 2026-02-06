@@ -12,1080 +12,136 @@
   },
   "models": [
     {
-      "id": "granite-4.0-h-micro",
-      "name": "@cf/ibm-granite/granite-4.0-h-micro",
-      "contextWindow": 131000,
-      "maxOutput": 0,
+      "id": "@cf/myshell-ai/melotts",
+      "name": "MyShell MeloTTS",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-11-14"
+    },
+    {
+      "id": "@cf/pipecat-ai/smart-turn-v2",
+      "name": "Pipecat Smart Turn v2",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-14"
+    },
+    {
+      "id": "@cf/qwen/qwen3-30b-a3b-fp8",
+      "name": "Qwen3 30B A3B FP8",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.051,
+      "outputPrice": 0.34,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-14"
+    },
+    {
+      "id": "@cf/qwen/qwen3-embedding-0.6b",
+      "name": "Qwen3 Embedding 0.6B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.012,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-14"
+    },
+    {
+      "id": "@cf/deepgram/aura-2-es",
+      "name": "Deepgram Aura 2 (ES)",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-14"
+    },
+    {
+      "id": "@cf/deepgram/aura-2-en",
+      "name": "Deepgram Aura 2 (EN)",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-14"
+    },
+    {
+      "id": "@cf/deepgram/nova-3",
+      "name": "Deepgram Nova 3",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-14"
+    },
+    {
+      "id": "@cf/ibm-granite/granite-4.0-h-micro",
+      "name": "IBM Granite 4.0 H Micro",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
       "inputPrice": 0.017,
       "outputPrice": 0.11,
       "capabilities": [
         "chat",
-        "function_calling",
         "streaming"
       ],
-      "default": true,
-      "releaseDate": "2025-10-07"
+      "default": false,
+      "releaseDate": "2025-10-15"
     },
     {
-      "id": "gemma-sea-lion-v4-27b-it",
-      "name": "@cf/aisingapore/gemma-sea-lion-v4-27b-it",
+      "id": "@cf/pfnet/plamo-embedding-1b",
+      "name": "PLaMo Embedding 1B",
       "contextWindow": 128000,
-      "maxOutput": 0,
-      "inputPrice": 0.35,
-      "outputPrice": 0.56,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-23"
-    },
-    {
-      "id": "aura-1",
-      "name": "@cf/deepgram/aura-1",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0.015,
-      "outputPrice": 0.015,
+      "maxOutput": 16384,
+      "inputPrice": 0.019,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-08-27"
+      "releaseDate": "2025-09-25"
     },
     {
-      "id": "lucid-origin",
-      "name": "@cf/leonardo/lucid-origin",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0.007,
-      "outputPrice": 0.007,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-25"
-    },
-    {
-      "id": "phoenix-1.0",
-      "name": "@cf/leonardo/phoenix-1.0",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0.0058,
-      "outputPrice": 0.0058,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-25"
-    },
-    {
-      "id": "gpt-oss-20b",
-      "name": "@cf/openai/gpt-oss-20b",
+      "id": "@cf/ai4bharat/indictrans2-en-indic-1B",
+      "name": "IndicTrans2 EN-Indic 1B",
       "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0.2,
-      "outputPrice": 0.3,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-04"
-    },
-    {
-      "id": "gpt-oss-120b",
-      "name": "@cf/openai/gpt-oss-120b",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0.35,
-      "outputPrice": 0.75,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-04"
-    },
-    {
-      "id": "nova-3",
-      "name": "@cf/deepgram/nova-3",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0.0052,
-      "outputPrice": 0.0052,
-      "capabilities": [
-        "chat",
-        "audio",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-06-05"
-    },
-    {
-      "id": "qwen3-30b-a3b-fp8",
-      "name": "@cf/qwen/qwen3-30b-a3b-fp8",
-      "contextWindow": 32768,
-      "maxOutput": 0,
-      "inputPrice": 0.051,
-      "outputPrice": 0.34,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-30"
-    },
-    {
-      "id": "llama-4-scout-17b-16e-instruct",
-      "name": "@cf/meta/llama-4-scout-17b-16e-instruct",
-      "contextWindow": 131000,
-      "maxOutput": 131000,
-      "inputPrice": 0.27,
-      "outputPrice": 0.85,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-02"
-    },
-    {
-      "id": "mistral-small-3.1-24b-instruct",
-      "name": "@cf/mistralai/mistral-small-3.1-24b-instruct",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0.35,
-      "outputPrice": 0.56,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-11"
-    },
-    {
-      "id": "qwq-32b",
-      "name": "@cf/qwen/qwq-32b",
-      "contextWindow": 24000,
-      "maxOutput": 24000,
-      "inputPrice": 0.66,
-      "outputPrice": 1,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-05"
-    },
-    {
-      "id": "gemma-3-12b-it",
-      "name": "@cf/google/gemma-3-12b-it",
-      "contextWindow": 80000,
-      "maxOutput": 80000,
-      "inputPrice": 0.35,
-      "outputPrice": 0.56,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-01"
-    },
-    {
-      "id": "deepseek-r1-distill-qwen-32b",
-      "name": "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
-      "contextWindow": 80000,
-      "maxOutput": 80000,
-      "inputPrice": 0.5,
-      "outputPrice": 4.88,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-20"
-    },
-    {
-      "id": "llama-3.3-70b-instruct-fp8-fast",
-      "name": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-      "contextWindow": 24000,
-      "maxOutput": 24000,
-      "inputPrice": 0.29,
-      "outputPrice": 2.25,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-06"
-    },
-    {
-      "id": "qwen2.5-coder-32b-instruct",
-      "name": "@cf/qwen/qwen2.5-coder-32b-instruct",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.66,
-      "outputPrice": 1,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-11-06"
-    },
-    {
-      "id": "whisper-large-v3-turbo",
-      "name": "@cf/openai/whisper-large-v3-turbo",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0.00051,
-      "outputPrice": 0.00051,
-      "capabilities": [
-        "chat",
-        "audio",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-10-01"
-    },
-    {
-      "id": "llama-3.2-11b-vision-instruct",
-      "name": "@cf/meta/llama-3.2-11b-vision-instruct",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0.049,
-      "outputPrice": 0.68,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-09-18"
-    },
-    {
-      "id": "llama-3.2-3b-instruct",
-      "name": "@cf/meta/llama-3.2-3b-instruct",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0.051,
-      "outputPrice": 0.34,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-09-18"
-    },
-    {
-      "id": "llama-3.2-1b-instruct",
-      "name": "@cf/meta/llama-3.2-1b-instruct",
-      "contextWindow": 60000,
-      "maxOutput": 60000,
-      "inputPrice": 0.027,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-09-18"
-    },
-    {
-      "id": "flux-1-schnell",
-      "name": "@cf/black-forest-labs/flux-1-schnell",
-      "contextWindow": 2048,
-      "maxOutput": 0,
-      "inputPrice": 0.000053,
-      "outputPrice": 0.00011,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-31"
-    },
-    {
-      "id": "llama-3.1-8b-instruct-fp8",
-      "name": "@cf/meta/llama-3.1-8b-instruct-fp8",
-      "contextWindow": 32000,
-      "maxOutput": 32000,
-      "inputPrice": 0.15,
-      "outputPrice": 0.29,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-25"
-    },
-    {
-      "id": "llama-3.1-8b-instruct-awq",
-      "name": "@cf/meta/llama-3.1-8b-instruct-awq",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.12,
-      "outputPrice": 0.27,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-25"
-    },
-    {
-      "id": "llama-guard-3-8b",
-      "name": "@cf/meta/llama-guard-3-8b",
-      "contextWindow": 131072,
-      "maxOutput": 0,
-      "inputPrice": 0.48,
-      "outputPrice": 0.03,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-22"
-    },
-    {
-      "id": "melotts",
-      "name": "@cf/myshell-ai/melotts",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0.0002,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-19"
-    },
-    {
-      "id": "llama-3.1-8b-instruct",
-      "name": "@cf/meta/llama-3.1-8b-instruct",
-      "contextWindow": 7968,
-      "maxOutput": 7968,
-      "inputPrice": 0.28,
-      "outputPrice": 0.83,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-18"
-    },
-    {
-      "id": "llama-3.1-8b-instruct-fast",
-      "name": "@cf/meta/llama-3.1-8b-instruct-fast",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0.045,
-      "outputPrice": 0.384,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-18"
-    },
-    {
-      "id": "llama-3.1-70b-instruct",
-      "name": "@cf/meta/llama-3.1-70b-instruct",
-      "contextWindow": 24000,
-      "maxOutput": 24000,
-      "inputPrice": 0.293,
-      "outputPrice": 2.253,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-16"
-    },
-    {
-      "id": "llama-3-8b-instruct-awq",
-      "name": "@cf/meta/llama-3-8b-instruct-awq",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.12,
-      "outputPrice": 0.27,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-05-09"
-    },
-    {
-      "id": "llama-3-8b-instruct",
-      "name": "@cf/meta/llama-3-8b-instruct",
-      "contextWindow": 7968,
-      "maxOutput": 7968,
-      "inputPrice": 0.28,
-      "outputPrice": 0.83,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-17"
-    },
-    {
-      "id": "gemma-2b-it-lora",
-      "name": "@cf/google/gemma-2b-it-lora",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-02"
-    },
-    {
-      "id": "gemma-7b-it-lora",
-      "name": "@cf/google/gemma-7b-it-lora",
-      "contextWindow": 3500,
-      "maxOutput": 3500,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-02"
-    },
-    {
-      "id": "mistral-7b-instruct-v0.2-lora",
-      "name": "@cf/mistral/mistral-7b-instruct-v0.2-lora",
-      "contextWindow": 15000,
-      "maxOutput": 15000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-01"
-    },
-    {
-      "id": "starling-lm-7b-beta",
-      "name": "@hf/nexusflow/starling-lm-7b-beta",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-03-19"
-    },
-    {
-      "id": "hermes-2-pro-mistral-7b",
-      "name": "@hf/nousresearch/hermes-2-pro-mistral-7b",
-      "contextWindow": 24000,
-      "maxOutput": 24000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-03-11"
-    },
-    {
-      "id": "stable-diffusion-v1-5-inpainting",
-      "name": "@cf/runwayml/stable-diffusion-v1-5-inpainting",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-27"
-    },
-    {
-      "id": "stable-diffusion-v1-5-img2img",
-      "name": "@cf/runwayml/stable-diffusion-v1-5-img2img",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-27"
-    },
-    {
-      "id": "stable-diffusion-xl-lightning",
-      "name": "@cf/bytedance/stable-diffusion-xl-lightning",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-20"
-    },
-    {
-      "id": "uform-gen2-qwen-500m",
-      "name": "@cf/unum/uform-gen2-qwen-500m",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-15"
-    },
-    {
-      "id": "gemma-7b-it",
-      "name": "@hf/google/gemma-7b-it",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-13"
-    },
-    {
-      "id": "sqlcoder-7b-2",
-      "name": "@cf/defog/sqlcoder-7b-2",
-      "contextWindow": 10000,
-      "maxOutput": 10000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-05"
-    },
-    {
-      "id": "deepseek-math-7b-instruct",
-      "name": "@cf/deepseek-ai/deepseek-math-7b-instruct",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-05"
-    },
-    {
-      "id": "qwen1.5-14b-chat-awq",
-      "name": "@cf/qwen/qwen1.5-14b-chat-awq",
-      "contextWindow": 7500,
-      "maxOutput": 7500,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-03"
-    },
-    {
-      "id": "qwen1.5-7b-chat-awq",
-      "name": "@cf/qwen/qwen1.5-7b-chat-awq",
-      "contextWindow": 20000,
-      "maxOutput": 20000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-03"
-    },
-    {
-      "id": "qwen1.5-0.5b-chat",
-      "name": "@cf/qwen/qwen1.5-0.5b-chat",
-      "contextWindow": 32000,
-      "maxOutput": 32000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-01-31"
-    },
-    {
-      "id": "qwen1.5-1.8b-chat",
-      "name": "@cf/qwen/qwen1.5-1.8b-chat",
-      "contextWindow": 32000,
-      "maxOutput": 32000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-01-30"
-    },
-    {
-      "id": "discolm-german-7b-v1-awq",
-      "name": "@cf/thebloke/discolm-german-7b-v1-awq",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-01-18"
-    },
-    {
-      "id": "openchat-3.5-0106",
-      "name": "@cf/openchat/openchat-3.5-0106",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-01-07"
-    },
-    {
-      "id": "tinyllama-1.1b-chat-v1.0",
-      "name": "@cf/tinyllama/tinyllama-1.1b-chat-v1.0",
-      "contextWindow": 2048,
-      "maxOutput": 2048,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-12-30"
-    },
-    {
-      "id": "phi-2",
-      "name": "@cf/microsoft/phi-2",
-      "contextWindow": 2048,
-      "maxOutput": 2048,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-12-13"
-    },
-    {
-      "id": "mistral-7b-instruct-v0.2",
-      "name": "@hf/mistral/mistral-7b-instruct-v0.2",
-      "contextWindow": 3072,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-12-11"
-    },
-    {
-      "id": "llamaguard-7b-awq",
-      "name": "@hf/thebloke/llamaguard-7b-awq",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-12-11"
-    },
-    {
-      "id": "dreamshaper-8-lcm",
-      "name": "@cf/lykon/dreamshaper-8-lcm",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-12-06"
-    },
-    {
-      "id": "llava-1.5-7b-hf",
-      "name": "@cf/llava-hf/llava-1.5-7b-hf",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-12-05"
-    },
-    {
-      "id": "una-cybertron-7b-v2-bf16",
-      "name": "@cf/fblgit/una-cybertron-7b-v2-bf16",
-      "contextWindow": 15000,
-      "maxOutput": 15000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-12-02"
-    },
-    {
-      "id": "neural-chat-7b-v3-1-awq",
-      "name": "@hf/thebloke/neural-chat-7b-v3-1-awq",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-11-15"
-    },
-    {
-      "id": "whisper",
-      "name": "@cf/openai/whisper",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0.00045,
-      "outputPrice": 0.00045,
-      "capabilities": [
-        "chat",
-        "audio",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-11-07"
-    },
-    {
-      "id": "deepseek-coder-6.7b-base-awq",
-      "name": "@hf/thebloke/deepseek-coder-6.7b-base-awq",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-11-05"
-    },
-    {
-      "id": "deepseek-coder-6.7b-instruct-awq",
-      "name": "@hf/thebloke/deepseek-coder-6.7b-instruct-awq",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-11-05"
-    },
-    {
-      "id": "openhermes-2.5-mistral-7b-awq",
-      "name": "@hf/thebloke/openhermes-2.5-mistral-7b-awq",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-11-02"
-    },
-    {
-      "id": "zephyr-7b-beta-awq",
-      "name": "@hf/thebloke/zephyr-7b-beta-awq",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-10-27"
-    },
-    {
-      "id": "mistral-7b-instruct-v0.1-awq",
-      "name": "@hf/thebloke/mistral-7b-instruct-v0.1-awq",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-09-27"
-    },
-    {
-      "id": "mistral-7b-instruct-v0.1",
-      "name": "@cf/mistral/mistral-7b-instruct-v0.1",
-      "contextWindow": 2824,
-      "maxOutput": 2824,
-      "inputPrice": 0.11,
-      "outputPrice": 0.19,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-09-27"
-    },
-    {
-      "id": "llama-2-7b-chat-int8",
-      "name": "@cf/meta/llama-2-7b-chat-int8",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.556,
-      "outputPrice": 6.667,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-09-25"
-    },
-    {
-      "id": "llama-2-13b-chat-awq",
-      "name": "@hf/thebloke/llama-2-13b-chat-awq",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-09-19"
-    },
-    {
-      "id": "llama-2-7b-chat-fp16",
-      "name": "@cf/meta/llama-2-7b-chat-fp16",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0.56,
-      "outputPrice": 6.67,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-07-26"
-    },
-    {
-      "id": "stable-diffusion-xl-base-1.0",
-      "name": "@cf/stabilityai/stable-diffusion-xl-base-1.0",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-07-25"
-    },
-    {
-      "id": "llama-2-7b-chat-hf-lora",
-      "name": "@cf/meta-llama/llama-2-7b-chat-hf-lora",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-07-13"
-    },
-    {
-      "id": "falcon-7b-instruct",
-      "name": "@cf/tiiuae/falcon-7b-instruct",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-04-25"
-    },
-    {
-      "id": "whisper-tiny-en",
-      "name": "@cf/openai/whisper-tiny-en",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "audio",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2022-09-26"
-    },
-    {
-      "id": "resnet-50",
-      "name": "@cf/microsoft/resnet-50",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0.0000025,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2022-03-16"
-    },
-    {
-      "id": "bart-large-cnn",
-      "name": "@cf/facebook/bart-large-cnn",
-      "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2022-03-02"
-    },
-    {
-      "id": "m2m100-1.2b",
-      "name": "@cf/meta/m2m100-1.2b",
-      "contextWindow": 0,
-      "maxOutput": 0,
+      "maxOutput": 16384,
       "inputPrice": 0.34,
       "outputPrice": 0.34,
       "capabilities": [
@@ -1093,7 +149,413 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2022-03-02"
+      "releaseDate": "2025-09-25"
+    },
+    {
+      "id": "@cf/aisingapore/gemma-sea-lion-v4-27b-it",
+      "name": "Gemma SEA-LION v4 27B IT",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.35,
+      "outputPrice": 0.56,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-25"
+    },
+    {
+      "id": "@cf/openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.2,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "@cf/openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.35,
+      "outputPrice": 0.75,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "@cf/meta/llama-4-scout-17b-16e-instruct",
+      "name": "Llama 4 Scout 17B 16E Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.27,
+      "outputPrice": 0.85,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-16"
+    },
+    {
+      "id": "@cf/google/gemma-3-12b-it",
+      "name": "Gemma 3 12B IT",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.35,
+      "outputPrice": 0.56,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-11"
+    },
+    {
+      "id": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "name": "Qwen 2.5 Coder 32B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.66,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-11"
+    },
+    {
+      "id": "@cf/qwen/qwq-32b",
+      "name": "QwQ 32B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.66,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-11"
+    },
+    {
+      "id": "@cf/mistralai/mistral-small-3.1-24b-instruct",
+      "name": "Mistral Small 3.1 24B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.35,
+      "outputPrice": 0.56,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-11"
+    },
+    {
+      "id": "@cf/facebook/bart-large-cnn",
+      "name": "BART Large CNN",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-09"
+    },
+    {
+      "id": "@cf/baai/bge-reranker-base",
+      "name": "BGE Reranker Base",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.0031,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-09"
+    },
+    {
+      "id": "@cf/mistral/mistral-7b-instruct-v0.1",
+      "name": "Mistral 7B Instruct v0.1",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.11,
+      "outputPrice": 0.19,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/huggingface/distilbert-sst-2-int8",
+      "name": "DistilBERT SST-2 INT8",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.026,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-3.2-11b-vision-instruct",
+      "name": "Llama 3.2 11B Vision Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.049,
+      "outputPrice": 0.68,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-3.1-8b-instruct-fp8",
+      "name": "Llama 3.1 8B Instruct FP8",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.29,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-2-7b-chat-fp16",
+      "name": "Llama 2 7B Chat FP16",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.56,
+      "outputPrice": 6.67,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-3-8b-instruct",
+      "name": "Llama 3 8B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.28,
+      "outputPrice": 0.83,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-3.1-8b-instruct",
+      "name": "Llama 3.1 8B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.28,
+      "outputPrice": 0.8299999999999998,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/m2m100-1.2b",
+      "name": "M2M100 1.2B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.34,
+      "outputPrice": 0.34,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-3.2-3b-instruct",
+      "name": "Llama 3.2 3B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.051,
+      "outputPrice": 0.34,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "name": "Llama 3.3 70B Instruct FP8 Fast",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.29,
+      "outputPrice": 2.25,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-3-8b-instruct-awq",
+      "name": "Llama 3 8B Instruct AWQ",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.12,
+      "outputPrice": 0.27,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-3.2-1b-instruct",
+      "name": "Llama 3.2 1B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.027,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-guard-3-8b",
+      "name": "Llama Guard 3 8B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.48,
+      "outputPrice": 0.03,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/meta/llama-3.1-8b-instruct-awq",
+      "name": "Llama 3.1 8B Instruct AWQ",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.12,
+      "outputPrice": 0.27,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/baai/bge-m3",
+      "name": "BGE M3",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.012,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/baai/bge-base-en-v1.5",
+      "name": "BGE Base EN v1.5",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.067,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/baai/bge-large-en-v1.5",
+      "name": "BGE Large EN v1.5",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.2,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/baai/bge-small-en-v1.5",
+      "name": "BGE Small EN v1.5",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.02,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
+    },
+    {
+      "id": "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+      "name": "DeepSeek R1 Distill Qwen 32B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.5,
+      "outputPrice": 4.88,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-03"
     }
   ],
   "baseUrl": "https://api.cloudflareworkersai.com/v1",

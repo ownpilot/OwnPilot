@@ -12,24 +12,23 @@
   },
   "models": [
     {
-      "id": "moonshotai/Kimi-K2.5",
-      "name": "Kimi K2.5",
+      "id": "Qwen/Qwen3-Coder-Next-FP8",
+      "name": "Qwen3 Coder Next FP8",
       "contextWindow": 262144,
-      "maxOutput": 32768,
+      "maxOutput": 32000,
       "inputPrice": 0.5,
-      "outputPrice": 2.8,
+      "outputPrice": 1.2,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2026-01-27"
+      "releaseDate": "2026-02-03"
     },
     {
-      "id": "moonshotai/Kimi-K2-5",
+      "id": "moonshotai/Kimi-K2.5",
       "name": "Kimi K2.5",
       "contextWindow": 262144,
       "maxOutput": 32768,
