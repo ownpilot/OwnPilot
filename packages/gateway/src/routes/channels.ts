@@ -6,8 +6,9 @@
  */
 
 import { Hono } from 'hono';
-import { getChannelService } from '@ownpilot/core';
+import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
+import { configServicesRepo } from '../db/repositories/config-services.js';
 import { apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
 
 /** Sanitize user-supplied IDs for safe interpolation in error messages */
@@ -15,57 +16,51 @@ const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 export const channelRoutes = new Hono();
 
-// In-memory message store for inbox display
-const messageStore: Map<
-  string,
-  Array<{
-    id: string;
-    channelId: string;
-    platform: string;
-    sender: { id: string; name: string; avatar?: string };
-    content: string;
-    timestamp: string;
-    read: boolean;
-    replied: boolean;
-  }>
-> = new Map();
+// In-memory read tracking (message IDs that have been read)
+const readMessageIds = new Set<string>();
 
 /**
- * GET /channels/messages/inbox - Get all messages from all channels
+ * GET /channels/messages/inbox - Get all messages from all channels (DB-backed)
  */
-channelRoutes.get('/messages/inbox', (c) => {
-  const filter = c.req.query('filter') ?? 'all';
-  const platform = c.req.query('platform');
-  const limit = getIntParam(c, 'limit', 50, 1, 200);
+channelRoutes.get('/messages/inbox', async (c) => {
+  const channelId = c.req.query('channelId');
+  const limit = getIntParam(c, 'limit', 100, 1, 500);
+  const offset = getIntParam(c, 'offset', 0, 0);
 
-  let allMessages: (typeof messageStore extends Map<string, infer T> ? T : never) = [];
+  try {
+    const messagesRepo = new ChannelMessagesRepository();
+    const dbMessages = await messagesRepo.getAll({ channelId: channelId ?? undefined, limit, offset });
 
-  // Cap per-channel to avoid unbounded memory use when aggregating
-  const perChannelCap = limit * 2;
-  for (const messages of messageStore.values()) {
-    allMessages = allMessages.concat(messages.slice(-perChannelCap));
+    const messages = dbMessages.map((m) => ({
+      id: m.id,
+      channelId: m.channelId,
+      channelType: 'telegram' as const,
+      sender: {
+        id: m.senderId ?? (m.direction === 'outbound' ? 'assistant' : 'unknown'),
+        name: m.senderName ?? (m.direction === 'outbound' ? 'Assistant' : 'Unknown'),
+      },
+      content: m.content,
+      timestamp: m.createdAt.toISOString(),
+      read: m.direction === 'outbound' || readMessageIds.has(m.id),
+      replied: false,
+      direction: m.direction === 'inbound' ? 'incoming' as const : 'outgoing' as const,
+      replyTo: m.replyToId,
+      metadata: m.metadata,
+    }));
+
+    const unreadCount = messages.filter((m) => !m.read).length;
+
+    return apiResponse(c, {
+      messages,
+      total: messages.length,
+      unreadCount,
+    });
+  } catch (error) {
+    return apiError(c, {
+      code: ERROR_CODES.FETCH_FAILED,
+      message: error instanceof Error ? error.message : 'Failed to fetch inbox',
+    }, 500);
   }
-
-  if (filter === 'unread') {
-    allMessages = allMessages.filter((m) => !m.read);
-  } else if (filter === 'unanswered') {
-    allMessages = allMessages.filter((m) => !m.replied);
-  }
-
-  if (platform) {
-    allMessages = allMessages.filter((m) => m.platform === platform);
-  }
-
-  allMessages.sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
-  allMessages = allMessages.slice(0, limit);
-
-  return apiResponse(c, {
-    messages: allMessages,
-    total: allMessages.length,
-    unreadCount: allMessages.filter((m) => !m.read).length,
-  });
 });
 
 /**
@@ -73,14 +68,8 @@ channelRoutes.get('/messages/inbox', (c) => {
  */
 channelRoutes.post('/messages/:messageId/read', (c) => {
   const messageId = c.req.param('messageId');
-  for (const messages of messageStore.values()) {
-    const msg = messages.find((m) => m.id === messageId);
-    if (msg) {
-      msg.read = true;
-      return apiResponse(c, { messageId, read: true });
-    }
-  }
-  return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Message ${sanitizeId(messageId)} not found` }, 404);
+  readMessageIds.add(messageId);
+  return apiResponse(c, { messageId, read: true });
 });
 
 /**
@@ -112,25 +101,27 @@ channelRoutes.get('/', (c) => {
   const channels = service.listChannels();
 
   return apiResponse(c, {
-    channels: channels.map((ch) => ({
-      id: ch.pluginId,
-      platform: ch.platform,
-      name: ch.name,
-      status: ch.status,
-      icon: ch.icon,
-    })),
+    channels: channels.map((ch) => {
+      // Try to get bot info from the channel API (e.g. Telegram username)
+      const api = service.getChannel(ch.pluginId);
+      const botInfo = api && 'getBotInfo' in api && typeof (api as Record<string, unknown>).getBotInfo === 'function'
+        ? (api as unknown as { getBotInfo(): { username?: string; firstName?: string } | null }).getBotInfo()
+        : null;
+
+      return {
+        id: ch.pluginId,
+        type: ch.platform,
+        name: ch.name,
+        status: ch.status,
+        icon: ch.icon,
+        ...(botInfo && { botInfo: { username: botInfo.username, firstName: botInfo.firstName } }),
+      };
+    }),
     summary: {
       total: channels.length,
       connected: channels.filter((c) => c.status === 'connected').length,
     },
-    availablePlatforms: [
-      'telegram',
-      'whatsapp',
-      'discord',
-      'slack',
-      'line',
-      'matrix',
-    ],
+    availablePlatforms: [...new Set(channels.map((ch) => ch.platform))],
   });
 });
 
@@ -195,22 +186,44 @@ channelRoutes.post('/:id/send', async (c) => {
 
   try {
     const body = await c.req.json<{
-      text: string;
-      chatId: string;
+      text?: string;
+      content?: string;
+      chatId?: string;
       replyToId?: string;
     }>();
 
-    if (!body.text || !body.chatId) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'text and chatId are required' }, 400);
+    const text = body.text ?? body.content;
+    let chatId = body.chatId;
+
+    if (!text) {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'text (or content) is required' }, 400);
+    }
+
+    // If chatId not provided, try to use the first allowed_user from Config Center
+    // (in Telegram, private chat ID == user ID)
+    if (!chatId) {
+      const registry = await getDefaultPluginRegistry();
+      const plugin = registry.get(pluginId);
+      const requiredServices = plugin?.manifest.requiredServices as Array<{ name: string }> | undefined;
+      if (requiredServices?.length) {
+        const raw = configServicesRepo.getFieldValue(requiredServices[0]!.name, 'allowed_users');
+        if (typeof raw === 'string' && raw.trim()) {
+          chatId = raw.split(',')[0]!.trim();
+        }
+      }
+    }
+
+    if (!chatId) {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'chatId is required (configure allowed_users in Config Center for auto-resolve)' }, 400);
     }
 
     const messageId = await service.send(pluginId, {
-      platformChatId: body.chatId,
-      text: body.text,
+      platformChatId: chatId,
+      text,
       replyToId: body.replyToId,
     });
 
-    return apiResponse(c, { messageId, pluginId, chatId: body.chatId });
+    return apiResponse(c, { messageId, pluginId, chatId });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.SEND_FAILED, message: error instanceof Error ? error.message : 'Failed to send message' }, 500);
   }
@@ -235,45 +248,45 @@ channelRoutes.get('/:id/messages', async (c) => {
 });
 
 /**
- * Helper: add incoming message to in-memory store
+ * No-op: incoming messages are persisted via ChannelMessagesRepository in service-impl.
+ * Kept for API compatibility with service-impl imports.
  */
 export function addIncomingMessage(
-  channelId: string,
-  platform: string,
-  message: {
+  _channelId: string,
+  _platform: string,
+  _message: {
     id: string;
     sender: { id: string; name: string; avatar?: string };
     content: string;
     timestamp: string;
+    platformChatId?: string;
+    metadata?: Record<string, unknown>;
   }
 ): void {
-  if (!messageStore.has(channelId)) {
-    messageStore.set(channelId, []);
-  }
-  const channel = messageStore.get(channelId)!;
-  channel.push({
-    ...message,
-    channelId,
-    platform,
-    read: false,
-    replied: false,
-  });
-  // Evict oldest messages to cap memory per channel
-  const MAX_PER_CHANNEL = 500;
-  if (channel.length > MAX_PER_CHANNEL) {
-    channel.splice(0, channel.length - MAX_PER_CHANNEL);
-  }
+  // DB persistence handled by ChannelMessagesRepository
 }
 
 /**
- * Helper: mark message as replied
+ * No-op: outgoing messages are persisted via ChannelMessagesRepository in service-impl.
  */
-export function markMessageReplied(messageId: string): void {
-  for (const messages of messageStore.values()) {
-    const msg = messages.find((m) => m.id === messageId);
-    if (msg) {
-      msg.replied = true;
-      break;
-    }
+export function addOutgoingMessage(
+  _channelId: string,
+  _platform: string,
+  _message: {
+    id: string;
+    content: string;
+    timestamp: string;
+    replyTo?: string;
+    platformChatId?: string;
+    metadata?: Record<string, unknown>;
   }
+): void {
+  // DB persistence handled by ChannelMessagesRepository
+}
+
+/**
+ * No-op: replied status tracked in DB via message threading.
+ */
+export function markMessageReplied(_messageId: string): void {
+  // DB persistence handled by ChannelMessagesRepository
 }

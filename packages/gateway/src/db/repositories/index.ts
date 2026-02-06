@@ -22,12 +22,6 @@ export {
 } from './messages.js';
 
 export {
-  ChannelsRepository,
-  createChannelsRepository,
-  type Channel,
-} from './channels.js';
-
-export {
   ChannelMessagesRepository,
   createChannelMessagesRepository,
   type ChannelMessage,

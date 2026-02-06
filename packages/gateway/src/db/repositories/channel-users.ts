@@ -1,7 +1,7 @@
 /**
  * Channel Users Repository (PostgreSQL)
  *
- * Maps platform identities (Telegram user, Discord user, etc.)
+ * Maps platform identities (Telegram user, etc.)
  * to OwnPilot user IDs for cross-channel identity.
  */
 

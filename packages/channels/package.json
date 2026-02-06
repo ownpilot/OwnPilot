@@ -1,7 +1,7 @@
 {
   "name": "@ownpilot/channels",
   "version": "0.1.0",
-  "description": "Communication channels for OwnPilot (Telegram, Discord, etc.)",
+  "description": "Communication channels for OwnPilot (Telegram)",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

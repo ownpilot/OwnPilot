@@ -40,7 +40,7 @@ import {
   executeActiveCustomTool,
   getActiveCustomToolDefinitions,
 } from './custom-tools.js';
-import { CHANNEL_TOOLS, TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool } from '../tools/index.js';
+import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import {
   traceToolCallStart,
@@ -984,11 +984,6 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   }
   log.info(`Registered ${activeCustomToolDefs.length} active custom tools`);
 
-  // Register channel tools
-  for (const { definition, executor } of CHANNEL_TOOLS) {
-    tools.register(definition, executor);
-  }
-
   // Register plugin tools
   const pluginService = getServiceRegistry().get(Services.Plugin);
   const pluginTools = pluginService.getAllTools();
@@ -1027,13 +1022,10 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     log.info(`Removed ${removedStubs} superseded core stubs`);
   }
 
-  // Get tool definitions for prompt injection
-  const channelToolDefs = CHANNEL_TOOLS.map(t => t.definition);
-
   // Separate standard tools (from TOOL_GROUPS) and special tools that bypass filtering
   // Filter getToolDefinitions() to exclude stubs that were unregistered above
   const coreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...channelToolDefs];
+  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS];
 
   // These tools ALWAYS bypass toolGroup filtering:
   // - DYNAMIC_TOOL_DEFINITIONS: Meta-tools for managing custom tools (create_tool, etc.)
@@ -1827,11 +1819,6 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     });
   }
 
-  // Register channel tools
-  for (const { definition, executor } of CHANNEL_TOOLS) {
-    tools.register(definition, executor);
-  }
-
   // Register plugin tools
   const pluginService = getServiceRegistry().get(Services.Plugin);
   const pluginTools = pluginService.getAllTools();
@@ -1862,9 +1849,8 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
 
   // Get tool definitions for prompt injection (including all registered tools)
   // Filter getToolDefinitions() to exclude stubs removed above
-  const channelToolDefs = CHANNEL_TOOLS.map(t => t.definition);
   const chatCoreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...channelToolDefs, ...pluginToolDefs];
+  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs];
 
   // Inject personal memory into system prompt
   const basePrompt = 'You are a helpful personal AI assistant. You help the user with their daily tasks, remember their preferences, and proactively assist them.';

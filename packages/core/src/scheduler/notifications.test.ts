@@ -334,14 +334,14 @@ describe('SchedulerNotificationBridge', () => {
     });
 
     it('uses fallback config from task.notifyChannels for completion', async () => {
-      const task = makeMockTask({ notifyChannels: ['telegram', 'discord'] });
+      const task = makeMockTask({ notifyChannels: ['telegram', 'webhook'] });
       const result = makeMockResult();
 
       await bridge.onTaskComplete(task, result);
 
       expect(handler).toHaveBeenCalledTimes(1);
       const [_event, notification] = handler.mock.calls[0] as [TaskNotificationEvent, NotificationRequest];
-      expect(notification.channels).toEqual(['telegram', 'discord']);
+      expect(notification.channels).toEqual(['telegram', 'webhook']);
     });
 
     it('includes action buttons for failure events', async () => {
@@ -457,13 +457,13 @@ describe('SchedulerNotificationBridge', () => {
       const task = makeMockTask();
       bridge.setTaskNotificationConfig(task.id, {
         triggers: ['on_start'],
-        channels: ['email', 'slack'],
+        channels: ['email', 'webhook'],
       });
 
       await bridge.onTaskStart(task);
 
       const [_event, notification] = handler.mock.calls[0] as [TaskNotificationEvent, NotificationRequest];
-      expect(notification.channels).toEqual(['email', 'slack']);
+      expect(notification.channels).toEqual(['email', 'webhook']);
     });
   });
 
@@ -1023,8 +1023,8 @@ describe('factory functions', () => {
     });
 
     it('accepts custom channels', () => {
-      const config = createDefaultTaskNotificationConfig(['email', 'slack']);
-      expect(config.channels).toEqual(['email', 'slack']);
+      const config = createDefaultTaskNotificationConfig(['email', 'webhook']);
+      expect(config.channels).toEqual(['email', 'webhook']);
     });
   });
 
@@ -1042,8 +1042,8 @@ describe('factory functions', () => {
     });
 
     it('accepts custom channels', () => {
-      const config = createCriticalTaskNotificationConfig(['slack']);
-      expect(config.channels).toEqual(['slack']);
+      const config = createCriticalTaskNotificationConfig(['webhook']);
+      expect(config.channels).toEqual(['webhook']);
     });
   });
 

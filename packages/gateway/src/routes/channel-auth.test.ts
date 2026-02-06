@@ -137,12 +137,12 @@ describe('Channel Auth Routes', () => {
       mockVerificationService.isVerified.mockResolvedValue(false);
       mockChannelUsersRepo.findByPlatform.mockResolvedValue(null);
 
-      const res = await app.request('/auth/status/discord/disc-999');
+      const res = await app.request('/auth/status/telegram/tg-999');
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.data.platform).toBe('discord');
-      expect(data.data.platformUserId).toBe('disc-999');
+      expect(data.data.platform).toBe('telegram');
+      expect(data.data.platformUserId).toBe('tg-999');
       expect(data.data.isVerified).toBe(false);
       expect(data.data.user).toBeNull();
     });

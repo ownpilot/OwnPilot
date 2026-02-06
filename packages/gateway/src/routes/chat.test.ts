@@ -97,6 +97,12 @@ vi.mock('../utils/index.js', () => ({
   }),
 }));
 
+vi.mock('../ws/server.js', () => ({
+  wsGateway: {
+    broadcast: vi.fn(),
+  },
+}));
+
 vi.mock('../services/log.js', () => ({
   getLog: vi.fn(() => ({
     info: vi.fn(),
@@ -131,7 +137,6 @@ vi.mock('./personal-data-tools.js', () => ({
 }));
 
 vi.mock('../tools/index.js', () => ({
-  CHANNEL_TOOLS: [],
   TRIGGER_TOOLS: [],
   executeTriggerTool: vi.fn(),
   PLAN_TOOLS: [],

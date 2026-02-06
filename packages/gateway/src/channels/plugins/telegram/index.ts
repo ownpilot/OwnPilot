@@ -80,7 +80,7 @@ export function buildTelegramChannelPlugin() {
         ...config,
         bot_token:
           config.bot_token ??
-          configServicesRepo.getApiKey('telegram_bot') ??
+          (configServicesRepo.getFieldValue('telegram_bot', 'bot_token') as string) ??
           '',
       };
       return new TelegramChannelAPI(resolvedConfig, 'channel.telegram');

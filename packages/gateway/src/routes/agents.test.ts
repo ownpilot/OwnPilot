@@ -146,7 +146,6 @@ vi.mock('./custom-tools.js', () => ({
 }));
 
 vi.mock('../tools/index.js', () => ({
-  CHANNEL_TOOLS: [],
   TRIGGER_TOOLS: [],
   executeTriggerTool: vi.fn(),
   PLAN_TOOLS: [],

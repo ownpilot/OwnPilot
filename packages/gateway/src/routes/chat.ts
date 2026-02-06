@@ -36,6 +36,7 @@ import { debugLog, type ToolDefinition, hasServiceRegistry, getServiceRegistry, 
 import type { IMessageBus, NormalizedMessage, MessageProcessingResult, StreamCallbacks, ToolEndResult } from '@ownpilot/core';
 import type { StreamChunk, ToolCall } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
+import { wsGateway } from '../ws/server.js';
 import { parseLimit, parseOffset } from '../utils/index.js';
 import { getLog } from '../services/log.js';
 
@@ -978,6 +979,13 @@ chatRoutes.post('/', async (c) => {
           });
 
           log.info(`Saved streaming to history: conversation=${dbConversation.id}, messages=+2`);
+
+          wsGateway.broadcast('chat:history:updated', {
+            conversationId: dbConversation.id,
+            title: dbConversation.title,
+            source: 'web',
+            messageCount: dbConversation.messageCount + 2,
+          });
         } catch (err) {
           log.warn('Failed to save streaming chat history:', err);
         }
@@ -1485,6 +1493,13 @@ chatRoutes.post('/', async (c) => {
     });
 
     log.info(`Saved to history: conversation=${dbConversation.id}, messages=+2`);
+
+    wsGateway.broadcast('chat:history:updated', {
+      conversationId: dbConversation.id,
+      title: dbConversation.title,
+      source: 'web',
+      messageCount: dbConversation.messageCount + 2,
+    });
   } catch (err) {
     // Don't fail the request if history save fails
     log.warn('Failed to save chat history:', err);

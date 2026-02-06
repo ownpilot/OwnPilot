@@ -139,6 +139,34 @@ export class ChannelMessagesRepository extends BaseRepository {
     return rows.map(rowToChannelMessage);
   }
 
+  async getAll(options?: {
+    channelId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<ChannelMessage[]> {
+    const limit = options?.limit ?? 100;
+    const offset = options?.offset ?? 0;
+
+    if (options?.channelId) {
+      const rows = await this.query<ChannelMessageRow>(
+        `SELECT * FROM channel_messages
+         WHERE channel_id = $1
+         ORDER BY created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [options.channelId, limit, offset]
+      );
+      return rows.map(rowToChannelMessage);
+    }
+
+    const rows = await this.query<ChannelMessageRow>(
+      `SELECT * FROM channel_messages
+       ORDER BY created_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    return rows.map(rowToChannelMessage);
+  }
+
   async getRecent(channelId: string, count: number): Promise<ChannelMessage[]> {
     const rows = await this.query<ChannelMessageRow>(
       `SELECT * FROM (

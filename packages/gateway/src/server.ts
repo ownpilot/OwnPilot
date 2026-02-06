@@ -224,6 +224,11 @@ async function main() {
   registry.register(Services.Channel, channelService);
   log.info('Channel Service initialized.');
 
+  // Auto-connect channels that have valid configuration
+  channelService.autoConnectChannels().catch((err) => {
+    log.warn('Channel auto-connect had errors', { error: String(err) });
+  });
+
   // 9. Plugin Service (wraps PluginRegistry)
   registry.register(Services.Plugin, await createPluginService());
 

@@ -23,16 +23,16 @@ const mockChannelApi = (platform: string, status = 'connected') => ({
 });
 
 const telegramApi = mockChannelApi('telegram');
-const discordApi = mockChannelApi('discord');
+const telegram2Api = mockChannelApi('telegram');
 
 const mockService = {
   listChannels: vi.fn(() => [
     { pluginId: 'channel.telegram', platform: 'telegram', name: 'Telegram', status: 'connected', icon: 'telegram' },
-    { pluginId: 'channel.discord', platform: 'discord', name: 'Discord', status: 'connected', icon: 'discord' },
+    { pluginId: 'channel.telegram-2', platform: 'telegram', name: 'Telegram 2', status: 'connected', icon: 'telegram' },
   ]),
   getChannel: vi.fn((id: string) => {
     if (id === 'channel.telegram') return telegramApi;
-    if (id === 'channel.discord') return discordApi;
+    if (id === 'channel.telegram-2') return telegram2Api;
     return undefined;
   }),
   connect: vi.fn(),
@@ -54,6 +54,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 
 const mockChannelMessagesRepo = {
   getByChannel: vi.fn(async () => []),
+  getAll: vi.fn(async () => []),
 };
 
 vi.mock('../db/repositories/channel-messages.js', () => ({
@@ -61,7 +62,7 @@ vi.mock('../db/repositories/channel-messages.js', () => ({
 }));
 
 // Import after mocks
-const { channelRoutes, addIncomingMessage } = await import('./channels.js');
+const { channelRoutes } = await import('./channels.js');
 
 // ---------------------------------------------------------------------------
 // App setup
@@ -86,11 +87,11 @@ describe('Channels Routes', () => {
     vi.clearAllMocks();
     mockService.listChannels.mockReturnValue([
       { pluginId: 'channel.telegram', platform: 'telegram', name: 'Telegram', status: 'connected', icon: 'telegram' },
-      { pluginId: 'channel.discord', platform: 'discord', name: 'Discord', status: 'connected', icon: 'discord' },
+      { pluginId: 'channel.telegram-2', platform: 'telegram', name: 'Telegram 2', status: 'connected', icon: 'telegram' },
     ]);
     mockService.getChannel.mockImplementation((id: string) => {
       if (id === 'channel.telegram') return telegramApi;
-      if (id === 'channel.discord') return discordApi;
+      if (id === 'channel.telegram-2') return telegram2Api;
       return undefined;
     });
     mockService.send.mockResolvedValue('msg-sent-001');
@@ -111,8 +112,7 @@ describe('Channels Routes', () => {
       expect(json.data.total).toBe(2);
       expect(json.data.connected).toBe(2);
       expect(json.data.byPlatform).toBeDefined();
-      expect(json.data.byPlatform.telegram).toBe(1);
-      expect(json.data.byPlatform.discord).toBe(1);
+      expect(json.data.byPlatform.telegram).toBe(2);
     });
   });
 
@@ -129,13 +129,12 @@ describe('Channels Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.channels).toHaveLength(2);
       expect(json.data.channels[0].id).toBe('channel.telegram');
-      expect(json.data.channels[0].platform).toBe('telegram');
-      expect(json.data.channels[1].id).toBe('channel.discord');
+      expect(json.data.channels[0].type).toBe('telegram');
+      expect(json.data.channels[1].id).toBe('channel.telegram-2');
       expect(json.data.summary).toBeDefined();
       expect(json.data.summary.total).toBe(2);
       expect(json.data.summary.connected).toBe(2);
       expect(json.data.availablePlatforms).toContain('telegram');
-      expect(json.data.availablePlatforms).toContain('discord');
     });
   });
 
@@ -319,8 +318,10 @@ describe('Channels Routes', () => {
   // GET /channels/messages/inbox & POST /channels/messages/:messageId/read
   // ========================================================================
 
-  describe('message inbox', () => {
+  describe('message inbox (DB-backed)', () => {
     it('returns inbox with messages structure', async () => {
+      mockChannelMessagesRepo.getAll.mockResolvedValue([]);
+
       const res = await app.request('/channels/messages/inbox');
 
       expect(res.status).toBe(200);
@@ -331,13 +332,20 @@ describe('Channels Routes', () => {
       expect(typeof json.data.total).toBe('number');
     });
 
-    it('includes messages added via addIncomingMessage', async () => {
-      addIncomingMessage('channel.telegram', 'telegram', {
-        id: 'inbox-msg-1',
-        sender: { id: 'user-1', name: 'Alice' },
-        content: 'Hello from Telegram!',
-        timestamp: '2026-01-31T10:00:00Z',
-      });
+    it('returns incoming messages from DB', async () => {
+      mockChannelMessagesRepo.getAll.mockResolvedValue([
+        {
+          id: 'inbox-msg-1',
+          channelId: 'channel.telegram',
+          direction: 'inbound',
+          senderId: 'user-1',
+          senderName: 'Alice',
+          content: 'Hello from Telegram!',
+          contentType: 'text',
+          metadata: {},
+          createdAt: new Date('2026-01-31T10:00:00Z'),
+        },
+      ]);
 
       const res = await app.request('/channels/messages/inbox');
       const json = await res.json();
@@ -345,34 +353,49 @@ describe('Channels Routes', () => {
       const msg = json.data.messages.find((m: { id: string }) => m.id === 'inbox-msg-1');
       expect(msg).toBeDefined();
       expect(msg.content).toBe('Hello from Telegram!');
-      expect(msg.read).toBe(false);
-      expect(msg.replied).toBe(false);
+      expect(msg.direction).toBe('incoming');
+      expect(msg.sender.id).toBe('user-1');
+      expect(msg.sender.name).toBe('Alice');
     });
 
-    it('filters messages by platform', async () => {
-      addIncomingMessage('channel.discord', 'discord', {
-        id: 'inbox-msg-d1',
-        sender: { id: 'user-2', name: 'Bob' },
-        content: 'Discord message',
-        timestamp: '2026-01-31T10:00:05Z',
-      });
+    it('returns outgoing messages from DB', async () => {
+      mockChannelMessagesRepo.getAll.mockResolvedValue([
+        {
+          id: 'outbox-msg-1',
+          channelId: 'channel.telegram',
+          direction: 'outbound',
+          senderId: 'assistant',
+          senderName: 'Assistant',
+          content: 'Hello from Assistant!',
+          contentType: 'text',
+          replyToId: 'inbox-msg-1',
+          metadata: {},
+          createdAt: new Date('2026-01-31T10:00:01Z'),
+        },
+      ]);
 
-      const res = await app.request('/channels/messages/inbox?platform=discord');
+      const res = await app.request('/channels/messages/inbox');
       const json = await res.json();
 
-      expect(
-        json.data.messages.every((m: { platform: string }) => m.platform === 'discord')
-      ).toBe(true);
+      const msg = json.data.messages.find((m: { id: string }) => m.id === 'outbox-msg-1');
+      expect(msg).toBeDefined();
+      expect(msg.content).toBe('Hello from Assistant!');
+      expect(msg.direction).toBe('outgoing');
+      expect(msg.sender.id).toBe('assistant');
+      expect(msg.read).toBe(true);
+    });
+
+    it('passes channelId filter to repository', async () => {
+      mockChannelMessagesRepo.getAll.mockResolvedValue([]);
+
+      await app.request('/channels/messages/inbox?channelId=channel.telegram');
+
+      expect(mockChannelMessagesRepo.getAll).toHaveBeenCalledWith(
+        expect.objectContaining({ channelId: 'channel.telegram' }),
+      );
     });
 
     it('marks a message as read', async () => {
-      addIncomingMessage('channel.telegram', 'telegram', {
-        id: 'inbox-msg-read',
-        sender: { id: 'user-1', name: 'Alice' },
-        content: 'Read me',
-        timestamp: '2026-01-31T10:00:10Z',
-      });
-
       const res = await app.request('/channels/messages/inbox-msg-read/read', {
         method: 'POST',
       });
@@ -383,12 +406,14 @@ describe('Channels Routes', () => {
       expect(json.data.messageId).toBe('inbox-msg-read');
     });
 
-    it('returns 404 when marking unknown message as read', async () => {
-      const res = await app.request('/channels/messages/unknown-msg/read', {
-        method: 'POST',
-      });
+    it('returns 500 on DB failure', async () => {
+      mockChannelMessagesRepo.getAll.mockRejectedValue(new Error('DB error'));
 
-      expect(res.status).toBe(404);
+      const res = await app.request('/channels/messages/inbox');
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('FETCH_FAILED');
     });
   });
 

@@ -142,7 +142,7 @@ describe('Config Services Routes', () => {
     it('returns unique categories', async () => {
       mockConfigServicesRepo.list.mockReturnValue([
         { ...sampleService, category: 'email' },
-        { ...sampleService, name: 'slack', category: 'chat' },
+        { ...sampleService, name: 'telegram', category: 'chat' },
         { ...sampleService, name: 'teams', category: 'chat' },
       ]);
 

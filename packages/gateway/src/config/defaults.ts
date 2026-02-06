@@ -110,17 +110,5 @@ export const RATE_LIMIT_BURST = 750;
 // Channel Plugins
 // ============================================================================
 
-/** Discord auto-reconnect delay (ms) */
-export const DISCORD_RECONNECT_DELAY_MS = 5_000;
-
-/** LINE reply token expiry (ms) — LINE tokens expire at ~30s */
-export const LINE_REPLY_TOKEN_EXPIRY_MS = 25_000;
-
-/** LINE default webhook port */
-export const LINE_WEBHOOK_PORT = 3_100;
-
-/** Matrix typing indicator timeout (ms) */
-export const MATRIX_TYPING_TIMEOUT_MS = 5_000;
-
 /** IMAP connection timeout (ms) */
 export const IMAP_CONNECT_TIMEOUT_MS = 15_000;

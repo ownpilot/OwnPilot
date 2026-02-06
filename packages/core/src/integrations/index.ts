@@ -4,7 +4,7 @@
  * Secure framework for integrating with external services:
  * - Gmail, Google Drive, Google Calendar
  * - Microsoft 365 (Outlook, OneDrive, Calendar)
- * - Telegram, Discord, Slack
+ * - Telegram
  * - Custom webhooks and APIs
  *
  * Security Features:
@@ -41,9 +41,6 @@ export type IntegrationProvider =
   | 'microsoft:teams'
   // Communication
   | 'telegram'
-  | 'discord'
-  | 'slack'
-  | 'whatsapp'
   // Developer
   | 'github'
   | 'gitlab'

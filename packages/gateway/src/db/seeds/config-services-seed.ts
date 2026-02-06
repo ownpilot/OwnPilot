@@ -216,31 +216,6 @@ export const KNOWN_CONFIG_SERVICES: CreateConfigServiceInput[] = [
       { name: 'base_url', label: 'API Base URL', type: 'url', defaultValue: 'https://api.telegram.org', placeholder: 'https://api.telegram.org', order: 1 },
     ],
   },
-  {
-    name: 'discord',
-    displayName: 'Discord Bot',
-    category: 'messaging',
-    description: 'Discord bot for messaging integration.',
-    docsUrl: 'https://discord.com/developers/docs',
-    configSchema: [
-      { name: 'bot_token', label: 'Bot Token', type: 'secret', required: true, envVar: 'DISCORD_BOT_TOKEN', order: 0 },
-      { name: 'application_id', label: 'Application ID', type: 'string', required: false, placeholder: 'e.g. 123456789', description: 'Required for slash commands', order: 1 },
-      { name: 'base_url', label: 'API Base URL', type: 'url', defaultValue: 'https://discord.com/api/v10', placeholder: 'https://discord.com/api/v10', order: 2 },
-    ],
-  },
-  {
-    name: 'slack',
-    displayName: 'Slack Bot',
-    category: 'messaging',
-    description: 'Slack bot for workspace messaging.',
-    docsUrl: 'https://api.slack.com/docs',
-    configSchema: [
-      { name: 'bot_token', label: 'Bot Token', type: 'secret', required: true, envVar: 'SLACK_BOT_TOKEN', description: 'xoxb-... token', order: 0 },
-      { name: 'signing_secret', label: 'Signing Secret', type: 'secret', required: false, envVar: 'SLACK_SIGNING_SECRET', description: 'For verifying webhook requests', order: 1 },
-      { name: 'app_token', label: 'App-Level Token', type: 'secret', required: false, envVar: 'SLACK_APP_TOKEN', description: 'xapp-... token for Socket Mode', order: 2 },
-      { name: 'base_url', label: 'API Base URL', type: 'url', defaultValue: 'https://slack.com/api', placeholder: 'https://slack.com/api', order: 3 },
-    ],
-  },
 ];
 
 // =============================================================================

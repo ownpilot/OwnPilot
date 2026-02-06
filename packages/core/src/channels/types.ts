@@ -31,7 +31,7 @@ export type ChannelConnectionStatus =
 
 /** Normalized user identity from any channel platform. */
 export interface ChannelUser {
-  /** Platform-specific user ID (e.g., Telegram user ID, Discord snowflake) */
+  /** Platform-specific user ID (e.g., Telegram user ID) */
   platformUserId: string;
   /** Platform identifier */
   platform: ChannelPlatform;

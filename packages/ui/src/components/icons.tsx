@@ -264,51 +264,6 @@ export function Telegram(props: IconProps) {
   );
 }
 
-export function Discord(props: IconProps) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-    </svg>
-  );
-}
-
-export function Slack(props: IconProps) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <rect x="13" y="2" width="3" height="8" rx="1.5" />
-      <path d="M19 8.5V10h1.5A1.5 1.5 0 1 0 19 8.5" />
-      <rect x="8" y="14" width="3" height="8" rx="1.5" />
-      <path d="M5 15.5V14H3.5A1.5 1.5 0 1 0 5 15.5" />
-      <rect x="14" y="13" width="8" height="3" rx="1.5" />
-      <path d="M15.5 19H14v1.5a1.5 1.5 0 1 0 1.5-1.5" />
-      <rect x="2" y="8" width="8" height="3" rx="1.5" />
-      <path d="M8.5 5H10V3.5A1.5 1.5 0 1 0 8.5 5" />
-    </svg>
-  );
-}
-
 export function Globe(props: IconProps) {
   return (
     <svg
