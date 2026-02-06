@@ -277,6 +277,7 @@ export interface SessionWorkspaceMeta {
   name: string;
   createdAt: string;
   updatedAt: string;
+  userId?: string;
   agentId?: string;
   sessionId?: string;
   description?: string;
@@ -324,6 +325,7 @@ function validateWorkspaceId(id: string): string {
  */
 export function createSessionWorkspace(options: {
   name?: string;
+  userId?: string;
   agentId?: string;
   sessionId?: string;
   description?: string;
@@ -338,6 +340,7 @@ export function createSessionWorkspace(options: {
     name: options.name || `session-${id}`,
     createdAt: now,
     updatedAt: now,
+    userId: options.userId,
     agentId: options.agentId,
     sessionId: options.sessionId || id,
     description: options.description,
@@ -423,18 +426,18 @@ export function getSessionWorkspace(id: string): SessionWorkspaceInfo | null {
 /**
  * Get or create session workspace
  */
-export function getOrCreateSessionWorkspace(sessionId: string, agentId?: string): SessionWorkspaceInfo {
+export function getOrCreateSessionWorkspace(sessionId: string, agentId?: string, userId?: string): SessionWorkspaceInfo {
   const existing = getSessionWorkspace(sessionId);
   if (existing) {
     return existing;
   }
-  return createSessionWorkspace({ sessionId, agentId });
+  return createSessionWorkspace({ sessionId, agentId, userId });
 }
 
 /**
  * List all session workspaces
  */
-export function listSessionWorkspaces(): SessionWorkspaceInfo[] {
+export function listSessionWorkspaces(userId?: string): SessionWorkspaceInfo[] {
   const workspaceRoot = getDataPaths().workspace;
 
   if (!existsSync(workspaceRoot)) {
@@ -452,6 +455,10 @@ export function listSessionWorkspaces(): SessionWorkspaceInfo[] {
 
     const info = getSessionWorkspace(entry.name);
     if (info) {
+      // Filter by userId when provided (skip legacy workspaces without userId)
+      if (userId && info.userId && info.userId !== userId) {
+        continue;
+      }
       workspaces.push(info);
     }
   }
