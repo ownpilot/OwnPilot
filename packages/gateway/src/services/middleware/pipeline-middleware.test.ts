@@ -234,7 +234,7 @@ describe('Pipeline Middleware', () => {
 
       expect(mockUsageRecord).toHaveBeenCalledWith(
         expect.objectContaining({
-          userId: 'anonymous',
+          userId: 'user-1',
           sessionId: 'conv-123',
           provider: 'openai',
           model: 'gpt-4o',
@@ -262,7 +262,7 @@ describe('Pipeline Middleware', () => {
 
       expect(mockUsageRecord).toHaveBeenCalledWith(
         expect.objectContaining({
-          userId: 'anonymous',
+          userId: 'default',
           provider: 'anthropic',
           model: 'claude-3',
           inputTokens: 0,

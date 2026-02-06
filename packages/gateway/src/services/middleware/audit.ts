@@ -40,7 +40,7 @@ export function createAuditMiddleware(): MessageMiddleware {
     try {
       if (agentResult?.ok && usage) {
         await usageTracker.record({
-          userId: 'anonymous',
+          userId,
           sessionId: conversationId,
           provider: provider as AIProvider,
           model,
@@ -52,7 +52,7 @@ export function createAuditMiddleware(): MessageMiddleware {
         });
       } else if (!agentResult?.ok) {
         await usageTracker.record({
-          userId: 'anonymous',
+          userId,
           provider: provider as AIProvider,
           model,
           inputTokens: 0,
