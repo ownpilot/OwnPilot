@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Folder,
   FolderOpen,
@@ -64,7 +64,21 @@ export function WorkspacesPage() {
   const [currentPath, setCurrentPath] = useState('');
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [showCleanupMenu, setShowCleanupMenu] = useState(false);
+  const cleanupMenuRef = useRef<HTMLDivElement>(null);
   const { onBackdropClick: onDeleteBackdropClick } = useModalClose(() => setDeleteConfirm(null));
+
+  // Close cleanup menu on outside click
+  useEffect(() => {
+    if (!showCleanupMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (cleanupMenuRef.current && !cleanupMenuRef.current.contains(e.target as Node)) {
+        setShowCleanupMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showCleanupMenu]);
 
   useEffect(() => {
     fetchWorkspaces();
@@ -147,10 +161,12 @@ export function WorkspacesPage() {
     }
   };
 
-  const handleCleanup = async () => {
+  const handleCleanup = async (mode: 'empty' | 'old' | 'both', maxAgeDays: number = 7) => {
+    setShowCleanupMenu(false);
     try {
-      await fileWorkspacesApi.cleanup(7);
-      toast.success('Old workspaces cleaned up');
+      const result = await fileWorkspacesApi.cleanup({ mode, maxAgeDays });
+      const label = mode === 'empty' ? 'empty' : mode === 'old' ? 'old' : 'empty + old';
+      toast.success(`Cleaned up ${result.deleted} ${label} workspace${result.deleted !== 1 ? 's' : ''}`);
       fetchWorkspaces();
     } catch {
       // API client handles error reporting
@@ -190,14 +206,38 @@ export function WorkspacesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleCleanup}
-            className="px-3 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors flex items-center gap-2"
-            title="Clean up workspaces older than 7 days"
-          >
-            <Archive className="w-4 h-4" />
-            Cleanup
-          </button>
+          <div className="relative" ref={cleanupMenuRef}>
+            <button
+              onClick={() => setShowCleanupMenu(!showCleanupMenu)}
+              className="px-3 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Archive className="w-4 h-4" />
+              Cleanup
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            {showCleanupMenu && (
+              <div className="absolute right-0 top-full mt-1 w-52 bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg z-20 py-1">
+                <button
+                  onClick={() => handleCleanup('empty')}
+                  className="w-full text-left px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                >
+                  Clean empty workspaces
+                </button>
+                <button
+                  onClick={() => handleCleanup('old', 7)}
+                  className="w-full text-left px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                >
+                  Clean older than 7 days
+                </button>
+                <button
+                  onClick={() => handleCleanup('both', 30)}
+                  className="w-full text-left px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                >
+                  Clean all (empty + 30d)
+                </button>
+              </div>
+            )}
+          </div>
           <button
             onClick={fetchWorkspaces}
             className="p-2 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
@@ -298,6 +338,11 @@ export function WorkspacesPage() {
                       <span className="flex items-center gap-1">
                         <File className="w-3 h-3" />
                         {workspace.fileCount} files
+                      </span>
+                    )}
+                    {workspace.fileCount !== undefined && workspace.fileCount <= 1 && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-warning/10 text-warning">
+                        Empty
                       </span>
                     )}
                   </div>

@@ -29,8 +29,8 @@ import {
   writeSessionWorkspaceFile,
   deleteSessionWorkspaceFile,
   zipSessionWorkspace,
-  cleanupSessionWorkspaces,
   getOrCreateSessionWorkspace,
+  smartCleanupSessionWorkspaces,
 } from '../workspace/file-workspace.js';
 import type { Context } from 'hono';
 import type { SessionWorkspaceInfo } from '../workspace/file-workspace.js';
@@ -306,27 +306,18 @@ app.post('/cleanup', async (c) => {
   const userId = getUserId(c);
   try {
     const body = await c.req.json().catch(() => ({}));
+    const mode: 'empty' | 'old' | 'both' = ['empty', 'old', 'both'].includes(body.mode) ? body.mode : 'old';
     const raw = Number(body.maxAgeDays) || 7;
     const maxAgeDays = Math.max(1, Math.min(365, raw));
 
-    // Only clean up workspaces owned by the requesting user
-    const userWorkspaces = listSessionWorkspaces(userId);
-    const maxAge = maxAgeDays * 24 * 60 * 60 * 1000;
-    const now = Date.now();
-    const deleted: string[] = [];
-    const kept: string[] = [];
+    const result = smartCleanupSessionWorkspaces(mode, maxAgeDays, userId);
 
-    for (const workspace of userWorkspaces) {
-      const age = now - new Date(workspace.updatedAt).getTime();
-      if (age > maxAge) {
-        deleteSessionWorkspace(workspace.id);
-        deleted.push(workspace.id);
-      } else {
-        kept.push(workspace.id);
-      }
-    }
-
-    return apiResponse(c, { deleted, kept });
+    return apiResponse(c, {
+      deleted: result.deleted,
+      kept: result.kept,
+      mode,
+      stats: { deletedEmpty: result.deletedEmpty, deletedOld: result.deletedOld },
+    });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.CLEANUP_ERROR, message: error instanceof Error ? error.message : 'Failed to cleanup workspaces' }, 500);
   }

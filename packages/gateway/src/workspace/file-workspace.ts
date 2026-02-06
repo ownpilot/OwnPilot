@@ -688,6 +688,55 @@ export function cleanupSessionWorkspaces(maxAgeDays: number = 7): { deleted: str
 }
 
 /**
+ * Smart cleanup of session workspaces
+ *
+ * Modes:
+ * - 'empty': delete workspaces with only .meta.json (fileCount <= 1)
+ * - 'old': delete workspaces older than maxAgeDays
+ * - 'both': delete workspaces matching either condition
+ */
+export function smartCleanupSessionWorkspaces(
+  mode: 'empty' | 'old' | 'both' = 'both',
+  maxAgeDays: number = 30,
+  userId?: string,
+): { deleted: number; kept: number; deletedEmpty: number; deletedOld: number } {
+  const workspaces = listSessionWorkspaces(userId);
+  const maxAge = maxAgeDays * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  let deleted = 0;
+  let kept = 0;
+  let deletedEmpty = 0;
+  let deletedOld = 0;
+
+  for (const workspace of workspaces) {
+    const isEmpty = workspace.fileCount <= 1;
+    const age = now - new Date(workspace.updatedAt).getTime();
+    const isOld = age > maxAge;
+
+    let shouldDelete = false;
+    if (mode === 'empty') shouldDelete = isEmpty;
+    else if (mode === 'old') shouldDelete = isOld;
+    else shouldDelete = isEmpty || isOld;
+
+    if (shouldDelete) {
+      deleteSessionWorkspace(workspace.id);
+      deleted++;
+      if (isEmpty) deletedEmpty++;
+      if (isOld) deletedOld++;
+    } else {
+      kept++;
+    }
+  }
+
+  if (deleted > 0) {
+    log.info(`[FileWorkspace] Smart cleanup (${mode}): deleted ${deleted}, kept ${kept} (empty: ${deletedEmpty}, old: ${deletedOld})`);
+  }
+
+  return { deleted, kept, deletedEmpty, deletedOld };
+}
+
+/**
  * Get path for session workspace
  */
 export function getSessionWorkspacePath(sessionId: string, subdir?: WorkspaceSubdir): string {

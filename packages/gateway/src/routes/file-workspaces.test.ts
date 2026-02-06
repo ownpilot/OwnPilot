@@ -20,6 +20,7 @@ vi.mock('../workspace/file-workspace.js', () => ({
   deleteSessionWorkspaceFile: vi.fn(),
   zipSessionWorkspace: vi.fn(),
   cleanupSessionWorkspaces: vi.fn(),
+  smartCleanupSessionWorkspaces: vi.fn(),
   getOrCreateSessionWorkspace: vi.fn(),
 }));
 
@@ -43,8 +44,8 @@ import {
   writeSessionWorkspaceFile,
   deleteSessionWorkspaceFile,
   zipSessionWorkspace,
-  cleanupSessionWorkspaces,
   getOrCreateSessionWorkspace,
+  smartCleanupSessionWorkspaces,
 } from '../workspace/file-workspace.js';
 import { stat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
@@ -632,13 +633,11 @@ describe('File Workspaces Routes', () => {
     });
   });
 
-  describe('POST /file-workspaces/cleanup - Cleanup old workspaces', () => {
-    it('should cleanup with default max age', async () => {
-      const oldDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(); // 10 days old
-      vi.mocked(listSessionWorkspaces).mockReturnValue([
-        { id: 'ws-old', name: 'old', updatedAt: oldDate, createdAt: oldDate, path: '/tmp/ws-old', size: 0, fileCount: 0 },
-      ]);
-      vi.mocked(deleteSessionWorkspace).mockReturnValue(true);
+  describe('POST /file-workspaces/cleanup - Cleanup workspaces', () => {
+    it('should cleanup with default mode (old) and default maxAgeDays (7)', async () => {
+      vi.mocked(smartCleanupSessionWorkspaces).mockReturnValue({
+        deleted: 2, kept: 3, deletedEmpty: 0, deletedOld: 2,
+      });
 
       const res = await app.request('/file-workspaces/cleanup', {
         method: 'POST',
@@ -647,30 +646,67 @@ describe('File Workspaces Routes', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
-      expect(data.data.deleted).toContain('ws-old');
-      expect(listSessionWorkspaces).toHaveBeenCalledWith('default');
+      expect(data.data.deleted).toBe(2);
+      expect(data.data.kept).toBe(3);
+      expect(data.data.mode).toBe('old');
+      expect(data.data.stats).toEqual({ deletedEmpty: 0, deletedOld: 2 });
+      expect(smartCleanupSessionWorkspaces).toHaveBeenCalledWith('old', 7, 'default');
     });
 
-    it('should cleanup with custom max age', async () => {
-      const recentDate = new Date().toISOString();
-      vi.mocked(listSessionWorkspaces).mockReturnValue([
-        { id: 'ws-new', name: 'new', updatedAt: recentDate, createdAt: recentDate, path: '/tmp/ws-new', size: 0, fileCount: 0 },
-      ]);
+    it('should cleanup with empty mode', async () => {
+      vi.mocked(smartCleanupSessionWorkspaces).mockReturnValue({
+        deleted: 1, kept: 4, deletedEmpty: 1, deletedOld: 0,
+      });
 
       const res = await app.request('/file-workspaces/cleanup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ maxAgeDays: 30 }),
+        body: JSON.stringify({ mode: 'empty' }),
       });
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.data.kept).toContain('ws-new');
-      expect(data.data.deleted).toEqual([]);
+      expect(data.data.mode).toBe('empty');
+      expect(data.data.stats.deletedEmpty).toBe(1);
+      expect(smartCleanupSessionWorkspaces).toHaveBeenCalledWith('empty', 7, 'default');
+    });
+
+    it('should cleanup with both mode and custom maxAgeDays', async () => {
+      vi.mocked(smartCleanupSessionWorkspaces).mockReturnValue({
+        deleted: 5, kept: 0, deletedEmpty: 2, deletedOld: 4,
+      });
+
+      const res = await app.request('/file-workspaces/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'both', maxAgeDays: 30 }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.mode).toBe('both');
+      expect(data.data.deleted).toBe(5);
+      expect(smartCleanupSessionWorkspaces).toHaveBeenCalledWith('both', 30, 'default');
+    });
+
+    it('should clamp maxAgeDays to valid range', async () => {
+      vi.mocked(smartCleanupSessionWorkspaces).mockReturnValue({
+        deleted: 0, kept: 0, deletedEmpty: 0, deletedOld: 0,
+      });
+
+      // Test minimum clamp
+      const res = await app.request('/file-workspaces/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxAgeDays: -5 }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(smartCleanupSessionWorkspaces).toHaveBeenCalledWith('old', 1, 'default');
     });
 
     it('should handle cleanup error', async () => {
-      vi.mocked(listSessionWorkspaces).mockImplementation(() => {
+      vi.mocked(smartCleanupSessionWorkspaces).mockImplementation(() => {
         throw new Error('Cleanup failed');
       });
 

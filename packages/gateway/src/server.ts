@@ -203,6 +203,17 @@ async function main() {
   // Initialize file workspace directories (for AI-generated code isolation)
   const workspace = initializeFileWorkspace();
 
+  // Auto-cleanup stale/empty workspaces (fire-and-forget)
+  try {
+    const { smartCleanupSessionWorkspaces } = await import('./workspace/file-workspace.js');
+    const cleanup = smartCleanupSessionWorkspaces('both', 30);
+    if (cleanup.deleted > 0) {
+      log.info(`Boot cleanup: removed ${cleanup.deleted} workspaces (${cleanup.deletedEmpty} empty, ${cleanup.deletedOld} old)`);
+    }
+  } catch (err) {
+    log.warn('Workspace auto-cleanup failed', { error: String(err) });
+  }
+
   const config = loadConfig();
   const app = createApp(config);
 

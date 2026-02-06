@@ -199,8 +199,11 @@ export const fileWorkspacesApi = {
   /** Returns URL for browser download (not an API call) */
   downloadUrl: (id: string) => `/api/v1/file-workspaces/${id}/download`,
   delete: (id: string) => apiClient.delete<void>(`/file-workspaces/${id}`),
-  cleanup: (maxAgeDays: number) =>
-    apiClient.post<void>('/file-workspaces/cleanup', { maxAgeDays }),
+  cleanup: (options?: { mode?: 'empty' | 'old' | 'both'; maxAgeDays?: number }) =>
+    apiClient.post<{ deleted: number; kept: number; mode: string; stats: { deletedEmpty: number; deletedOld: number } }>(
+      '/file-workspaces/cleanup',
+      { mode: options?.mode ?? 'old', maxAgeDays: options?.maxAgeDays ?? 7 },
+    ),
 };
 
 // ---- Config Services ----
