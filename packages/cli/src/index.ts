@@ -120,7 +120,7 @@ configCmd
 // Channel commands for multi-channel management
 const channelCmd = program
   .command('channel')
-  .description('Manage messaging channels (Telegram, Discord, Slack, etc.)');
+  .description('Manage messaging channels (Telegram)');
 
 channelCmd
   .command('list')

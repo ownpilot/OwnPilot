@@ -22,8 +22,6 @@ const workspaces = new Map<string, WorkspaceConfig>();
 // Simulated channels (would come from channel store)
 const availableChannels = [
   { id: 'tg-1', name: 'Personal Bot', type: 'telegram' },
-  { id: 'dc-1', name: 'Dev Server', type: 'discord' },
-  { id: 'sl-1', name: 'Work Team', type: 'slack' },
 ];
 
 // Available providers and models

@@ -124,7 +124,7 @@ describe('ChannelUsersRepository', () => {
     it('returns all channel users for an ownpilot user', async () => {
       mockAdapter.query.mockResolvedValueOnce([
         makeUserRow({ id: 'cu-1', platform: 'telegram' }),
-        makeUserRow({ id: 'cu-2', platform: 'discord' }),
+        makeUserRow({ id: 'cu-2', platform: 'telegram' }),
       ]);
 
       const result = await repo.findByOwnpilotUser('user-1');
@@ -288,7 +288,7 @@ describe('ChannelUsersRepository', () => {
       );
 
       const result = await repo.findOrCreate({
-        platform: 'discord',
+        platform: 'telegram',
         platformUserId: '67890',
       });
 
@@ -405,13 +405,13 @@ describe('ChannelUsersRepository', () => {
     it('combines platform and isVerified filters', async () => {
       mockAdapter.query.mockResolvedValueOnce([]);
 
-      await repo.list({ platform: 'discord', isVerified: false });
+      await repo.list({ platform: 'telegram', isVerified: false });
 
       const sql = mockAdapter.query.mock.calls[0][0] as string;
       expect(sql).toContain('platform = $');
       expect(sql).toContain('is_verified = $');
       const params = mockAdapter.query.mock.calls[0][1] as unknown[];
-      expect(params).toContain('discord');
+      expect(params).toContain('telegram');
       expect(params).toContain(false);
     });
 

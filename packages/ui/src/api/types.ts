@@ -365,7 +365,7 @@ export interface Channel {
 export interface ChannelMessage {
   id: string;
   channelId: string;
-  channelType: 'telegram' | 'discord' | 'slack' | 'matrix' | 'webchat' | 'whatsapp' | 'signal';
+  channelType: 'telegram';
   sender: {
     id: string;
     name: string;
@@ -379,6 +379,34 @@ export interface ChannelMessage {
   direction: 'incoming' | 'outgoing';
   replyTo?: string;
   metadata?: Record<string, unknown>;
+}
+
+// ---- Chat History ----
+
+export interface Conversation {
+  id: string;
+  title: string;
+  agentId?: string;
+  agentName?: string;
+  provider?: string;
+  model?: string;
+  messageCount: number;
+  isArchived: boolean;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HistoryMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string;
+  provider?: string;
+  model?: string;
+  toolCalls?: Array<{ id: string; name: string; arguments: Record<string, unknown> }>;
+  trace?: Record<string, unknown>;
+  isError?: boolean;
+  createdAt: string;
 }
 
 // ---- Expenses ----

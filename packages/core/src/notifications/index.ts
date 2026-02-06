@@ -3,8 +3,6 @@
  *
  * Multi-channel notification delivery:
  * - Telegram
- * - Discord
- * - Slack
  * - Email
  * - Push notifications
  * - Webhooks
@@ -31,8 +29,6 @@ import { ok, err } from '../types/result.js';
  */
 export type NotificationChannel =
   | 'telegram'
-  | 'discord'
-  | 'slack'
   | 'email'
   | 'push'
   | 'webhook'
@@ -63,7 +59,7 @@ export interface NotificationContent {
   body: string;
   /** HTML body (for email) */
   htmlBody?: string;
-  /** Markdown body (for Telegram/Discord) */
+  /** Markdown body (for Telegram) */
   markdownBody?: string;
   /** Embedded data */
   data?: Record<string, unknown>;
@@ -232,135 +228,6 @@ export class TelegramChannelHandler implements ChannelHandler {
 }
 
 /**
- * Discord channel handler
- */
-export class DiscordChannelHandler implements ChannelHandler {
-  channel: NotificationChannel = 'discord';
-
-  async send(
-    notification: NotificationRequest,
-    userPrefs: UserNotificationPreferences,
-    config: ChannelConfig
-  ): Promise<Result<void, string>> {
-    const webhookUrl = userPrefs.channelSettings?.discord?.webhookUrl ??
-      config.credentials.webhookUrl;
-
-    if (!webhookUrl) {
-      return err('No Discord webhook URL configured');
-    }
-
-    try {
-      // Format as Discord embed
-      const embed = {
-        title: notification.content.title,
-        description: notification.content.body,
-        color: this.getPriorityColor(notification.priority),
-        timestamp: new Date().toISOString(),
-      };
-
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ embeds: [embed] }),
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        return err(`Discord webhook error: ${error}`);
-      }
-
-      return ok(undefined);
-    } catch (error) {
-      return err(`Failed to send Discord: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  validateConfig(config: ChannelConfig): Result<void, string> {
-    if (!config.credentials.webhookUrl) {
-      return err('Discord webhook URL is required');
-    }
-    return ok(undefined);
-  }
-
-  private getPriorityColor(priority: NotificationPriority): number {
-    switch (priority) {
-      case 'urgent': return 0xff0000; // Red
-      case 'high': return 0xffa500; // Orange
-      case 'normal': return 0x00ff00; // Green
-      case 'low': return 0x808080; // Gray
-    }
-  }
-}
-
-/**
- * Slack channel handler
- */
-export class SlackChannelHandler implements ChannelHandler {
-  channel: NotificationChannel = 'slack';
-
-  async send(
-    notification: NotificationRequest,
-    userPrefs: UserNotificationPreferences,
-    config: ChannelConfig
-  ): Promise<Result<void, string>> {
-    const webhookUrl = userPrefs.channelSettings?.slack?.webhookUrl ??
-      config.credentials.webhookUrl;
-
-    if (!webhookUrl) {
-      return err('No Slack webhook URL configured');
-    }
-
-    try {
-      // Format as Slack blocks
-      const blocks: Array<Record<string, unknown>> = [
-        {
-          type: 'header',
-          text: { type: 'plain_text', text: notification.content.title },
-        },
-        {
-          type: 'section',
-          text: { type: 'mrkdwn', text: notification.content.body },
-        },
-      ];
-
-      // Add action buttons if present
-      if (notification.content.actions?.length) {
-        blocks.push({
-          type: 'actions',
-          elements: notification.content.actions.map((action) => ({
-            type: 'button',
-            text: { type: 'plain_text', text: action.label },
-            url: action.url,
-          })),
-        });
-      }
-
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blocks }),
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        return err(`Slack webhook error: ${error}`);
-      }
-
-      return ok(undefined);
-    } catch (error) {
-      return err(`Failed to send Slack: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  validateConfig(config: ChannelConfig): Result<void, string> {
-    if (!config.credentials.webhookUrl) {
-      return err('Slack webhook URL is required');
-    }
-    return ok(undefined);
-  }
-}
-
-/**
  * Webhook channel handler (generic)
  */
 export class WebhookChannelHandler implements ChannelHandler {
@@ -521,8 +388,6 @@ export class NotificationManager extends EventEmitter {
 
     // Register default handlers
     this.registerHandler(new TelegramChannelHandler());
-    this.registerHandler(new DiscordChannelHandler());
-    this.registerHandler(new SlackChannelHandler());
     this.registerHandler(new WebhookChannelHandler());
   }
 

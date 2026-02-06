@@ -44,11 +44,6 @@ export async function channelAdd(): Promise<void> {
     message: 'Select channel type:',
     choices: [
       { name: 'Telegram', value: 'telegram', description: 'Telegram bot via Bot API' },
-      { name: 'Discord', value: 'discord', description: 'Discord bot' },
-      { name: 'Slack', value: 'slack', description: 'Slack bot via Socket Mode' },
-      { name: 'Matrix', value: 'matrix', description: 'Matrix chat protocol' },
-      { name: 'WhatsApp', value: 'whatsapp', description: 'WhatsApp Business API' },
-      { name: 'WebChat', value: 'webchat', description: 'Embedded web widget' },
     ],
   });
 
@@ -81,66 +76,8 @@ export async function channelAdd(): Promise<void> {
       break;
     }
 
-    case 'discord': {
-      config.botToken = await input({
-        message: 'Bot token:',
-      });
-      config.applicationId = await input({
-        message: 'Application ID:',
-      });
+    default:
       break;
-    }
-
-    case 'slack': {
-      config.botToken = await input({
-        message: 'Bot token (xoxb-...):',
-      });
-      config.appToken = await input({
-        message: 'App token for Socket Mode (xapp-...):',
-      });
-      break;
-    }
-
-    case 'matrix': {
-      config.homeserverUrl = await input({
-        message: 'Homeserver URL:',
-        default: 'https://matrix.org',
-      });
-      config.accessToken = await input({
-        message: 'Access token:',
-      });
-      config.userId = await input({
-        message: 'User ID (@user:server):',
-      });
-      break;
-    }
-
-    case 'whatsapp': {
-      config.phoneNumberId = await input({
-        message: 'Phone number ID:',
-      });
-      config.businessAccountId = await input({
-        message: 'Business Account ID:',
-      });
-      config.accessToken = await input({
-        message: 'Access token:',
-      });
-      break;
-    }
-
-    case 'webchat': {
-      const customOrigins = await confirm({
-        message: 'Restrict to specific origins?',
-        default: false,
-      });
-
-      if (customOrigins) {
-        config.allowedOrigins = await input({
-          message: 'Allowed origins (comma-separated):',
-        });
-      }
-      break;
-    }
   }
 
   // Generate ID

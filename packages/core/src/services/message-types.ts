@@ -70,7 +70,7 @@ export interface MessageMetadata {
   /** Channel plugin ID (for channel messages) */
   readonly channelPluginId?: string;
 
-  /** Platform name (telegram, discord, etc.) */
+  /** Platform name (e.g. telegram) */
   readonly platform?: string;
 
   /** Platform-specific message ID */

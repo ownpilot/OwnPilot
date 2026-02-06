@@ -121,7 +121,7 @@ class WorkspaceInstance implements Workspace {
         id: message.senderId,
         name: message.senderName,
       },
-      timestamp: message.timestamp,
+      timestamp: message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp),
       attachments: message.attachments?.map((a) => ({
         id: randomUUID(),
         type: a.type,

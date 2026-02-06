@@ -41,7 +41,7 @@ export interface Channel {
 }
 
 /**
- * Incoming message from any channel
+ * Channel message (incoming or outgoing) broadcast via WebSocket
  */
 export interface IncomingMessage {
   readonly id: string;
@@ -50,7 +50,8 @@ export interface IncomingMessage {
   readonly senderId: string;
   readonly senderName?: string;
   readonly content: string;
-  readonly timestamp: Date;
+  readonly timestamp: Date | string;
+  readonly direction?: 'incoming' | 'outgoing';
   readonly replyToId?: string;
   readonly attachments?: Attachment[];
   readonly metadata?: Record<string, unknown>;
@@ -144,6 +145,7 @@ export interface ServerEvents {
   'chat:stream:chunk': { sessionId: string; messageId: string; chunk: string };
   'chat:stream:end': { sessionId: string; messageId: string; fullContent: string };
   'chat:error': { sessionId: string; error: string };
+  'chat:history:updated': { conversationId: string; title: string | null; source: string; messageCount: number };
 
   // Agent events
   'agent:state': { agentId: string; state: AgentState; task?: string };

@@ -22,6 +22,7 @@ import {
   createEvent,
 } from '@ownpilot/core';
 import { getLog } from '../../../services/log.js';
+import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../../utils/message-utils.js';
 
 const log = getLog('Telegram');
 
@@ -142,26 +143,37 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     }
 
     const chatId = message.platformChatId;
-    const options: Record<string, unknown> = {};
+    const parts = splitMessage(message.text, PLATFORM_MESSAGE_LIMITS.telegram!);
+    let lastMessageId = '';
 
-    // Parse mode
-    if (this.config.parse_mode) {
-      options.parse_mode = this.config.parse_mode;
-    }
+    for (let i = 0; i < parts.length; i++) {
+      const options: Record<string, unknown> = {};
 
-    // Reply-to
-    if (message.replyToId) {
-      // replyToId could be "pluginId:messageId" format
-      const msgId = message.replyToId.includes(':')
-        ? message.replyToId.split(':').pop()
-        : message.replyToId;
-      if (msgId && !isNaN(Number(msgId))) {
-        options.reply_parameters = { message_id: Number(msgId) };
+      // Parse mode
+      if (this.config.parse_mode) {
+        options.parse_mode = this.config.parse_mode;
+      }
+
+      // Only first part gets reply_parameters
+      if (i === 0 && message.replyToId) {
+        const msgId = message.replyToId.includes(':')
+          ? message.replyToId.split(':').pop()
+          : message.replyToId;
+        if (msgId && !isNaN(Number(msgId))) {
+          options.reply_parameters = { message_id: Number(msgId) };
+        }
+      }
+
+      const sent = await this.bot.api.sendMessage(chatId, parts[i]!, options);
+      lastMessageId = String(sent.message_id);
+
+      // Small delay between split messages
+      if (parts.length > 1 && i < parts.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
 
-    const sent = await this.bot.api.sendMessage(chatId, message.text, options);
-    return String(sent.message_id);
+    return lastMessageId;
   }
 
   getStatus(): ChannelConnectionStatus {
@@ -170,6 +182,17 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
 
   getPlatform(): ChannelPlatform {
     return 'telegram';
+  }
+
+  /** Get bot info (username, first name) after connection. */
+  getBotInfo(): { username?: string; firstName?: string } | null {
+    if (!this.bot) return null;
+    try {
+      const info = this.bot.botInfo;
+      return { username: info.username, firstName: info.first_name };
+    } catch {
+      return null;
+    }
   }
 
   async sendTyping(platformChatId: string): Promise<void> {

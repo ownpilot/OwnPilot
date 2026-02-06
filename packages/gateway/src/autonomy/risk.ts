@@ -140,7 +140,7 @@ const TOOL_RISK_FACTORS: Record<string, string[]> = {
   // Communication tools
   send_email: ['email_send', 'external_api', 'affects_others'],
   send_notification: ['notification_send'],
-  send_channel_message: ['notification_send', 'external_api'],
+  channel_telegram_send: ['notification_send', 'external_api'],
 
   // External tools
   web_fetch: ['external_api'],

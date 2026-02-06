@@ -75,6 +75,8 @@ export type {
   CustomRecord,
   Channel,
   ChannelMessage,
+  Conversation,
+  HistoryMessage,
   ExpenseEntry,
   ExpenseMonthData,
   ExpenseCategoryInfo,

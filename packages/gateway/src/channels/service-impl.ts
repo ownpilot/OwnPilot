@@ -39,10 +39,13 @@ import {
   type ChannelSessionsRepository,
 } from '../db/repositories/channel-sessions.js';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
+import { configServicesRepo } from '../db/repositories/config-services.js';
 import {
   getChannelVerificationService,
   type ChannelVerificationService,
 } from './auth/verification.js';
+import { wsGateway } from '../ws/server.js';
+import { addIncomingMessage, addOutgoingMessage, markMessageReplied } from '../routes/channels.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('ChannelService');
@@ -304,6 +307,12 @@ export class ChannelServiceImpl implements IChannelService {
     } catch (emitErr) {
       log.debug('EventBus not available for CONNECTED event', { error: emitErr });
     }
+
+    // Broadcast connection status to WebSocket clients
+    wsGateway.broadcast('channel:status', {
+      channelId: channelPluginId,
+      status: 'connected',
+    });
   }
 
   async disconnect(channelPluginId: string): Promise<void> {
@@ -331,6 +340,12 @@ export class ChannelServiceImpl implements IChannelService {
     } catch (emitErr) {
       log.debug('EventBus not available for DISCONNECTED event', { error: emitErr });
     }
+
+    // Broadcast disconnection status to WebSocket clients
+    wsGateway.broadcast('channel:status', {
+      channelId: channelPluginId,
+      status: 'disconnected',
+    });
   }
 
   async resolveUser(
@@ -338,6 +353,49 @@ export class ChannelServiceImpl implements IChannelService {
     platformUserId: string
   ): Promise<string | null> {
     return this.verificationService.resolveUser(platform, platformUserId);
+  }
+
+  /**
+   * Auto-connect all channel plugins that have valid configuration.
+   * Fire-and-forget — errors are logged but don't block boot.
+   */
+  async autoConnectChannels(): Promise<void> {
+    const channels = this.getChannelPlugins();
+
+    for (const plugin of channels) {
+      const api = getChannelApi(plugin);
+      const manifest = plugin.manifest;
+
+      // Skip already-connected channels
+      if (api.getStatus() === 'connected') continue;
+
+      // Check if the required service has a configured API key
+      const requiredServices = manifest.requiredServices as
+        | Array<{ name: string }>
+        | undefined;
+      if (!requiredServices || requiredServices.length === 0) continue;
+
+      const serviceName = requiredServices[0]!.name;
+
+      if (!configServicesRepo.isAvailable(serviceName)) {
+        log.debug('Skipping auto-connect (service not configured)', {
+          pluginId: manifest.id,
+          service: serviceName,
+        });
+        continue;
+      }
+
+      try {
+        log.info('Auto-connecting channel...', { pluginId: manifest.id });
+        await this.connect(manifest.id);
+        log.info('Channel auto-connected', { pluginId: manifest.id });
+      } catch (error) {
+        log.warn('Channel auto-connect failed', {
+          pluginId: manifest.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
   }
 
   // ==========================================================================
@@ -374,18 +432,40 @@ export class ChannelServiceImpl implements IChannelService {
         return;
       }
 
-      // 4. Check verification
+      // 4. Check verification (auto-verify whitelisted users)
       if (!channelUser.isVerified) {
-        // Send verification prompt
-        const api = this.getChannel(message.channelPluginId);
-        if (api) {
-          await api.sendMessage({
-            platformChatId: message.platformChatId,
-            text: `Welcome! To use this assistant, you need to verify your identity.\n\nGenerate a verification token in the OwnPilot web interface, then send:\n/connect YOUR_TOKEN`,
-            replyToId: message.id,
+        // Check if user is in the plugin's allowed_users whitelist
+        const plugin = this.pluginRegistry.get(message.channelPluginId);
+        const allowedUsers = plugin
+          ? this.getPluginAllowedUsers(plugin)
+          : [];
+
+        if (allowedUsers.length > 0 && allowedUsers.includes(message.sender.platformUserId)) {
+          // Auto-verify: user is explicitly whitelisted in Config Center
+          const verificationSvc = getChannelVerificationService();
+          await verificationSvc.verifyViaWhitelist(
+            message.platform,
+            message.sender.platformUserId,
+            message.sender.displayName,
+          );
+          // Update local reference so the rest of the pipeline proceeds
+          channelUser.isVerified = true;
+          log.info('Auto-verified whitelisted user', {
+            platform: message.platform,
+            userId: message.sender.platformUserId,
           });
+        } else {
+          // Send verification prompt
+          const api = this.getChannel(message.channelPluginId);
+          if (api) {
+            await api.sendMessage({
+              platformChatId: message.platformChatId,
+              text: `Welcome! To use this assistant, you need to verify your identity.\n\nGenerate a verification token in the OwnPilot web interface, then send:\n/connect YOUR_TOKEN`,
+              replyToId: message.id,
+            });
+          }
+          return;
         }
-        return;
       }
 
       // 5. Save incoming message
@@ -410,6 +490,43 @@ export class ChannelServiceImpl implements IChannelService {
       } catch (error) {
         log.warn('Failed to save incoming message', { error });
       }
+
+      // 5a. Add to inbox store
+      addIncomingMessage(message.channelPluginId, message.platform, {
+        id: message.id,
+        sender: {
+          id: message.sender.platformUserId,
+          name: message.sender.displayName,
+          avatar: message.sender.avatarUrl,
+        },
+        content: message.text,
+        timestamp: message.timestamp.toISOString(),
+        platformChatId: message.platformChatId,
+        metadata: message.metadata as Record<string, unknown> | undefined,
+      });
+
+      // 5b. Broadcast incoming message to WebSocket clients
+      wsGateway.broadcast('channel:message', {
+        message: {
+          id: message.id,
+          channelId: message.channelPluginId,
+          channelType: message.platform,
+          senderId: message.sender.platformUserId,
+          senderName: message.sender.displayName,
+          content: message.text,
+          timestamp: message.timestamp,
+          direction: 'incoming',
+          replyToId: message.replyToId,
+          metadata: message.metadata as Record<string, unknown> | undefined,
+        },
+      });
+
+      // 5c. System notification for new message
+      wsGateway.broadcast('system:notification', {
+        type: 'info',
+        message: `New message from ${message.sender.displayName} on ${message.platform}`,
+        action: 'channel:message',
+      });
 
       // 6. Find or create session -> conversation
       let session = await this.sessionsRepo.findActive(
@@ -484,7 +601,10 @@ export class ChannelServiceImpl implements IChannelService {
         responseText = await this.processDirectAgent(message);
       }
 
-      // 8. Send response
+      // 8. Send response (guard against empty text — Telegram rejects it)
+      if (!responseText || !responseText.trim()) {
+        responseText = '(No response generated)';
+      }
       const sentMessageId = await api.sendMessage({
         platformChatId: message.platformChatId,
         text: responseText,
@@ -510,9 +630,43 @@ export class ChannelServiceImpl implements IChannelService {
         log.warn('Failed to save outgoing message', { error });
       }
 
+      // 8a. Add outgoing message to inbox store
+      addOutgoingMessage(message.channelPluginId, message.platform, {
+        id: `${message.channelPluginId}:${sentMessageId}`,
+        content: responseText,
+        timestamp: new Date().toISOString(),
+        replyTo: message.id,
+        platformChatId: message.platformChatId,
+      });
+
+      // 8b. Mark original message as replied in inbox
+      markMessageReplied(message.id);
+
+      // 8c. Broadcast outgoing message to WebSocket clients
+      wsGateway.broadcast('channel:message', {
+        message: {
+          id: `${message.channelPluginId}:${sentMessageId}`,
+          channelId: message.channelPluginId,
+          channelType: message.platform,
+          senderId: 'assistant',
+          senderName: 'Assistant',
+          content: responseText,
+          timestamp: new Date().toISOString(),
+          direction: 'outgoing',
+          replyToId: message.id,
+        },
+      });
+
       log.info('Responded to user', { displayName: message.sender.displayName, platform: message.platform });
     } catch (error) {
       log.error('Error processing message', { error });
+
+      // Build a helpful error message
+      const errMsg = error instanceof Error ? error.message : String(error);
+      const isProviderError = /provider|model|api.?key|unauthorized|401|no.*configured/i.test(errMsg);
+      const userMessage = isProviderError
+        ? 'No AI provider configured. Please set up an API key (e.g. OpenAI, Anthropic) in OwnPilot Settings or Config Center.'
+        : `Sorry, I encountered an error: ${errMsg.substring(0, 200)}`;
 
       // Try to send error reply
       try {
@@ -520,7 +674,7 @@ export class ChannelServiceImpl implements IChannelService {
         if (api) {
           await api.sendMessage({
             platformChatId: message.platformChatId,
-            text: 'Sorry, I encountered an error processing your message.',
+            text: userMessage,
             replyToId: message.id,
           });
         }
@@ -624,6 +778,23 @@ export class ChannelServiceImpl implements IChannelService {
     return this.pluginRegistry
       .getAll()
       .filter((p) => p.status === 'enabled' && isChannelPlugin(p));
+  }
+
+  /**
+   * Get allowed user IDs from a channel plugin's Config Center entry.
+   */
+  private getPluginAllowedUsers(plugin: Plugin): string[] {
+    const requiredServices = plugin.manifest.requiredServices as
+      | Array<{ name: string }>
+      | undefined;
+    if (!requiredServices || requiredServices.length === 0) return [];
+
+    const serviceName = requiredServices[0]!.name;
+    const entry = configServicesRepo.getDefaultEntry(serviceName);
+    const raw = entry?.data?.allowed_users;
+    if (typeof raw !== 'string' || !raw.trim()) return [];
+
+    return raw.split(',').map(s => s.trim()).filter(Boolean);
   }
 
   private async handleConnectCommand(
