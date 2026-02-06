@@ -56,10 +56,6 @@ const PROVIDER_API_KEYS: Record<string, string> = {
   elevenlabs: 'elevenlabs_api_key',
   groq: 'groq_api_key',
   deepgram: 'deepgram_api_key',
-  fal: 'fal_api_key',
-  stability: 'stability_api_key',
-  runway: 'runway_api_key',
-  luma: 'luma_api_key',
 };
 
 // =============================================================================
@@ -69,11 +65,7 @@ const PROVIDER_API_KEYS: Record<string, string> = {
 const CAPABILITY_META: Record<MediaCapability, { name: string; description: string }> = {
   image_generation: {
     name: 'Image Generation',
-    description: 'Generate images from text descriptions (DALL-E, FLUX, Imagen, Stable Diffusion)',
-  },
-  video_generation: {
-    name: 'Video Generation',
-    description: 'Generate videos from text or images (Runway, Luma, fal.ai)',
+    description: 'Generate images from text descriptions (DALL-E, FLUX, Imagen)',
   },
   vision: {
     name: 'Vision / Image Analysis',
@@ -124,7 +116,7 @@ function getProvidersWithStatus(capability: MediaCapability): ProviderWithStatus
 mediaSettingsRoutes.get('/', async (c) => {
   const userId = getUserId(c);
 
-  const capabilities: MediaCapability[] = ['image_generation', 'video_generation', 'vision', 'tts', 'stt'];
+  const capabilities: MediaCapability[] = ['image_generation', 'vision', 'tts', 'stt'];
 
   const settings: CapabilitySettings[] = await Promise.all(
     capabilities.map(async (capability) => {
@@ -271,7 +263,7 @@ mediaSettingsRoutes.delete('/:capability', async (c) => {
  * (Useful for populating UI dropdowns)
  */
 mediaSettingsRoutes.get('/providers/all', async (c) => {
-  const capabilities: MediaCapability[] = ['image_generation', 'video_generation', 'vision', 'tts', 'stt'];
+  const capabilities: MediaCapability[] = ['image_generation', 'vision', 'tts', 'stt'];
 
   const allProviders: Record<MediaCapability, ProviderWithStatus[]> = {} as Record<
     MediaCapability,
@@ -290,7 +282,7 @@ mediaSettingsRoutes.get('/providers/all', async (c) => {
  */
 mediaSettingsRoutes.get('/status/summary', async (c) => {
   const userId = getUserId(c);
-  const capabilities: MediaCapability[] = ['image_generation', 'video_generation', 'vision', 'tts', 'stt'];
+  const capabilities: MediaCapability[] = ['image_generation', 'vision', 'tts', 'stt'];
 
   const status = await Promise.all(
     capabilities.map(async (capability) => {

@@ -33,7 +33,7 @@ async function getOpenAI(): Promise<any> {
 // Types
 // =============================================================================
 
-export type MediaCapability = 'image_generation' | 'video_generation' | 'vision' | 'tts' | 'stt';
+export type MediaCapability = 'image_generation' | 'vision' | 'tts' | 'stt';
 
 export interface MediaProviderConfig {
   provider: string;
@@ -117,22 +117,6 @@ export interface STTResult {
   }>;
   language?: string;
   duration?: number;
-  model: string;
-  provider: string;
-}
-
-// Video Generation Types
-export interface VideoGenerationOptions {
-  prompt: string;
-  imageUrl?: string; // Optional reference image for image-to-video
-  duration?: number; // Duration in seconds (typically 4-16)
-  aspectRatio?: '16:9' | '9:16' | '1:1';
-}
-
-export interface VideoGenerationResult {
-  videoUrl?: string;
-  taskId?: string; // For async generation workflows
-  status: 'completed' | 'processing' | 'failed';
   model: string;
   provider: string;
 }
@@ -710,242 +694,6 @@ async function deepgramSTT(
   };
 }
 
-/**
- * fal.ai Image Generation
- */
-async function falGenerateImage(
-  apiKey: string,
-  options: ImageGenerationOptions,
-  model: string = 'fal-ai/flux-pro/v1.1'
-): Promise<ImageGenerationResult> {
-  const response = await fetch(`https://queue.fal.run/${model}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Key ${apiKey}`,
-    },
-    body: JSON.stringify({
-      prompt: options.prompt,
-      image_size: options.size === '1024x1792' ? 'portrait_16_9' : options.size === '1792x1024' ? 'landscape_16_9' : 'square_hd',
-      num_images: options.n || 1,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`fal.ai API error: ${error}`);
-  }
-
-  const data = await response.json() as { images?: Array<{ url?: string }> };
-
-  return {
-    images: data.images?.map((img) => ({
-      url: img.url,
-    })) || [],
-    model,
-    provider: 'fal',
-  };
-}
-
-/**
- * Stability AI Image Generation
- */
-async function stabilityGenerateImage(
-  apiKey: string,
-  options: ImageGenerationOptions,
-  model: string = 'stable-diffusion-xl-1024-v1-0'
-): Promise<ImageGenerationResult> {
-  const isSD3 = model.startsWith('sd3');
-  const endpoint = isSD3
-    ? 'https://api.stability.ai/v2beta/stable-image/generate/sd3'
-    : `https://api.stability.ai/v1/generation/${model}/text-to-image`;
-
-  const body = isSD3
-    ? {
-        prompt: options.prompt,
-        output_format: 'png',
-        aspect_ratio: options.size === '1024x1792' ? '9:16' : options.size === '1792x1024' ? '16:9' : '1:1',
-        model,
-      }
-    : {
-        text_prompts: [{ text: options.prompt, weight: 1 }],
-        cfg_scale: 7,
-        height: 1024,
-        width: 1024,
-        samples: options.n || 1,
-        steps: 30,
-      };
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Stability API error: ${error}`);
-  }
-
-  const data = await response.json() as {
-    artifacts?: Array<{ base64: string }>;
-    image?: string;
-  };
-
-  if (isSD3 && data.image) {
-    return {
-      images: [{ base64: data.image }],
-      model,
-      provider: 'stability',
-    };
-  }
-
-  return {
-    images: data.artifacts?.map((a) => ({
-      base64: a.base64,
-    })) || [],
-    model,
-    provider: 'stability',
-  };
-}
-
-/**
- * Runway Video Generation
- */
-async function runwayGenerateVideo(
-  apiKey: string,
-  options: VideoGenerationOptions,
-  model: string = 'gen-3-alpha'
-): Promise<VideoGenerationResult> {
-  const body: Record<string, unknown> = {
-    promptText: options.prompt,
-    model,
-    duration: options.duration || 4,
-    ratio: options.aspectRatio === '9:16' ? '9:16' : options.aspectRatio === '1:1' ? '1:1' : '16:9',
-  };
-
-  if (options.imageUrl) {
-    body.promptImage = options.imageUrl;
-  }
-
-  const response = await fetch('https://api.dev.runwayml.com/v1/image_to_video', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'X-Runway-Version': '2024-11-06',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Runway API error: ${error}`);
-  }
-
-  const data = await response.json() as { id?: string; status?: string; output?: string[] };
-
-  return {
-    videoUrl: data.output?.[0],
-    taskId: data.id,
-    status: data.status === 'SUCCEEDED' ? 'completed' : 'processing',
-    model,
-    provider: 'runway',
-  };
-}
-
-/**
- * Luma AI Video Generation (Dream Machine)
- */
-async function lumaGenerateVideo(
-  apiKey: string,
-  options: VideoGenerationOptions,
-  model: string = 'dream-machine'
-): Promise<VideoGenerationResult> {
-  const body: Record<string, unknown> = {
-    prompt: options.prompt,
-    aspect_ratio: options.aspectRatio === '9:16' ? '9:16' : options.aspectRatio === '1:1' ? '1:1' : '16:9',
-  };
-
-  if (options.imageUrl) {
-    body.keyframes = { frame0: { type: 'image', url: options.imageUrl } };
-  }
-
-  const response = await fetch('https://api.lumalabs.ai/dream-machine/v1/generations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Luma API error: ${error}`);
-  }
-
-  const data = await response.json() as {
-    id?: string;
-    state?: string;
-    video?: { url?: string };
-  };
-
-  return {
-    videoUrl: data.video?.url,
-    taskId: data.id,
-    status: data.state === 'completed' ? 'completed' : 'processing',
-    model,
-    provider: 'luma',
-  };
-}
-
-/**
- * fal.ai Video Generation
- */
-async function falGenerateVideo(
-  apiKey: string,
-  options: VideoGenerationOptions,
-  model: string = 'fal-ai/fast-svd-lcm'
-): Promise<VideoGenerationResult> {
-  const body: Record<string, unknown> = {
-    prompt: options.prompt,
-    num_frames: Math.min((options.duration || 4) * 8, 128),
-  };
-
-  if (options.imageUrl) {
-    body.image_url = options.imageUrl;
-  }
-
-  const response = await fetch(`https://queue.fal.run/${model}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Key ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`fal.ai API error: ${error}`);
-  }
-
-  const data = await response.json() as { video?: { url?: string }; request_id?: string };
-
-  return {
-    videoUrl: data.video?.url,
-    taskId: data.request_id,
-    status: data.video?.url ? 'completed' : 'processing',
-    model,
-    provider: 'fal',
-  };
-}
-
 // =============================================================================
 // Media Service Class
 // =============================================================================
@@ -979,10 +727,6 @@ export class MediaService {
         return fireworksGenerateImage(apiKey, options, providerConfig.model);
       case 'google':
         return googleGenerateImage(apiKey, options, providerConfig.model);
-      case 'fal':
-        return falGenerateImage(apiKey, options, providerConfig.model);
-      case 'stability':
-        return stabilityGenerateImage(apiKey, options, providerConfig.model);
       default:
         throw new Error(`Unsupported image generation provider: ${providerConfig.provider}`);
     }
@@ -1068,33 +812,6 @@ export class MediaService {
   }
 
   /**
-   * Generate video using configured provider
-   */
-  async generateVideo(options: VideoGenerationOptions): Promise<VideoGenerationResult> {
-    const providerConfig = await this.config.getProviderConfig('video_generation');
-
-    if (!providerConfig) {
-      throw new Error('No video generation provider configured');
-    }
-
-    const apiKey = await this.getApiKeyForProvider(providerConfig.provider, 'video_generation');
-    if (!apiKey) {
-      throw new Error(`API key not found for ${providerConfig.provider}`);
-    }
-
-    switch (providerConfig.provider) {
-      case 'runway':
-        return runwayGenerateVideo(apiKey, options, providerConfig.model);
-      case 'luma':
-        return lumaGenerateVideo(apiKey, options, providerConfig.model);
-      case 'fal':
-        return falGenerateVideo(apiKey, options, providerConfig.model);
-      default:
-        throw new Error(`Unsupported video generation provider: ${providerConfig.provider}`);
-    }
-  }
-
-  /**
    * Get API key for provider
    */
   private async getApiKeyForProvider(provider: string, _capability: MediaCapability): Promise<string | undefined> {
@@ -1107,10 +824,6 @@ export class MediaService {
       elevenlabs: 'elevenlabs_api_key',
       groq: 'groq_api_key',
       deepgram: 'deepgram_api_key',
-      fal: 'fal_api_key',
-      stability: 'stability_api_key',
-      runway: 'runway_api_key',
-      luma: 'luma_api_key',
     };
 
     const keyName = keyMap[provider];
@@ -1139,14 +852,6 @@ export const IMAGE_GENERATION_PROVIDERS = [
   { id: 'openai', name: 'OpenAI', models: ['dall-e-3', 'dall-e-2'] },
   { id: 'fireworks', name: 'Fireworks', models: ['flux-1-schnell-fp8', 'flux-1-dev-fp8', 'flux-1-pro'] },
   { id: 'google', name: 'Google', models: ['imagen-3.0-generate-001'] },
-  { id: 'fal', name: 'fal.ai', models: ['fal-ai/flux-pro/v1.1', 'fal-ai/flux/schnell', 'fal-ai/stable-diffusion-v3-medium'] },
-  { id: 'stability', name: 'Stability AI', models: ['stable-diffusion-xl-1024-v1-0', 'sd3-large', 'sd3-medium'] },
-];
-
-export const VIDEO_GENERATION_PROVIDERS = [
-  { id: 'runway', name: 'Runway', models: ['gen-3-alpha', 'gen-3-alpha-turbo'] },
-  { id: 'luma', name: 'Luma AI', models: ['dream-machine'] },
-  { id: 'fal', name: 'fal.ai', models: ['fal-ai/fast-svd-lcm', 'fal-ai/stable-video-diffusion'] },
 ];
 
 export const VISION_PROVIDERS = [
@@ -1168,7 +873,6 @@ export const STT_PROVIDERS = [
 
 export const ALL_MEDIA_PROVIDERS = {
   image_generation: IMAGE_GENERATION_PROVIDERS,
-  video_generation: VIDEO_GENERATION_PROVIDERS,
   vision: VISION_PROVIDERS,
   tts: TTS_PROVIDERS,
   stt: STT_PROVIDERS,

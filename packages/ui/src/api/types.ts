@@ -546,18 +546,11 @@ export interface DailyBriefingData {
 
 // ---- Media Settings ----
 
-export interface ProviderModel {
+export interface ProviderWithStatus {
   id: string;
   name: string;
-  default?: boolean;
-}
-
-export interface ProviderWithStatus {
-  provider: string;
-  displayName: string;
-  models?: ProviderModel[];
-  apiKeyEnv: string;
-  requiresApiKey: boolean;
+  models: string[];
+  voices?: string[];
   isConfigured: boolean;
   apiKeyName: string;
 }
