@@ -146,6 +146,8 @@ function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
         } else if (event.newStatus === 'disabled') {
           registry.unregisterPluginTools(pluginId);
         }
+        // Keep dynamic registry's callable tools in sync
+        getCustomToolDynamicRegistry().setCallableTools(registry.getAllTools());
       } catch (err) {
         log.warn('[tool-executor] Plugin status event handler failed', { error: err });
       }
@@ -203,6 +205,8 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
 
       if (tools.length > 0) {
         log.info(`[tool-executor] Synced ${tools.length} custom tool(s) into shared registry`);
+        // Refresh callable tools so newly synced tools are available via utils.callTool()
+        dynamicRegistry.setCallableTools(registry.getAllTools());
       }
     })
     .catch((err) => {
