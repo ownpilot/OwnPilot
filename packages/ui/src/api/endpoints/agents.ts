@@ -6,7 +6,10 @@ import { apiClient } from '../client';
 import type { Agent, AgentDetail } from '../../types';
 
 export const agentsApi = {
-  list: () => apiClient.get<Agent[]>('/agents'),
+  list: async () => {
+    const data = await apiClient.get<{ items: Agent[] }>('/agents');
+    return data.items;
+  },
   get: (id: string) => apiClient.get<AgentDetail>(`/agents/${id}`),
   create: (agent: {
     name: string;
