@@ -188,12 +188,11 @@ describe('createAgentExecutionMiddleware', () => {
       });
     });
 
-    it('should set pipelineResult in context and call next', async () => {
+    it('should set pipelineResult in context and return it directly', async () => {
       const agent = createAgent();
       const ctx = createContext({ store: { agent } });
       const msg = createMessage();
-      const nextResult = createNextResult();
-      const next = vi.fn().mockResolvedValue(nextResult);
+      const next = vi.fn().mockResolvedValue(createNextResult());
 
       const result = await middleware(msg, ctx, next);
 
@@ -201,8 +200,10 @@ describe('createAgentExecutionMiddleware', () => {
         streamed: false,
         stages: ['agent-execution'],
       }));
-      expect(next).toHaveBeenCalledOnce();
-      expect(result).toBe(nextResult);
+      // Agent-execution is the innermost middleware; it returns its own result
+      // instead of calling next() (which would return empty content)
+      expect(next).not.toHaveBeenCalled();
+      expect(result.response.content).toBe('Hello user');
     });
 
     it('should use randomUUID when result.value has no id', async () => {
@@ -598,18 +599,22 @@ describe('createAgentExecutionMiddleware', () => {
       expect(mockCheckToolCallApproval).not.toHaveBeenCalled();
     });
 
-    it('should call stream.onDone after pipeline completes', async () => {
+    it('should call stream.onDone with pipelineResult', async () => {
       const agent = createAgent();
       const onDone = vi.fn();
       const stream: StreamCallbacks = { onDone };
       const ctx = createContext({ store: { agent, stream } });
       const msg = createMessage();
-      const nextResult = createNextResult();
-      const next = vi.fn().mockResolvedValue(nextResult);
+      const next = vi.fn().mockResolvedValue(createNextResult());
 
       await middleware(msg, ctx, next);
 
-      expect(onDone).toHaveBeenCalledWith(nextResult);
+      expect(onDone).toHaveBeenCalledWith(expect.objectContaining({
+        response: expect.objectContaining({
+          content: 'Hello user',
+          role: 'assistant',
+        }),
+      }));
     });
 
     it('should call stream.onError when agent throws', async () => {
