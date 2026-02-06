@@ -23,8 +23,16 @@ import {
 } from '@ownpilot/core';
 import { getLog } from '../../../services/log.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../../utils/message-utils.js';
+import { markdownToTelegramHtml } from '../../utils/markdown-telegram.js';
 
 const log = getLog('Telegram');
+
+/** Detect Telegram "can't parse entities" errors so we can retry as plain text. */
+function isParseEntityError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.toLowerCase();
+  return msg.includes("can't parse entities") || msg.includes('can\'t find end of the entity');
+}
 
 // ============================================================================
 // Types
@@ -143,7 +151,14 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     }
 
     const chatId = message.platformChatId;
-    const parts = splitMessage(message.text, PLATFORM_MESSAGE_LIMITS.telegram!);
+
+    // Convert Markdown → Telegram HTML when parse_mode is HTML
+    let textToSend = message.text;
+    if (this.config.parse_mode === 'HTML') {
+      textToSend = markdownToTelegramHtml(message.text);
+    }
+
+    const parts = splitMessage(textToSend, PLATFORM_MESSAGE_LIMITS.telegram!);
     let lastMessageId = '';
 
     for (let i = 0; i < parts.length; i++) {
@@ -164,7 +179,22 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         }
       }
 
-      const sent = await this.bot.api.sendMessage(chatId, parts[i]!, options);
+      let sent;
+      try {
+        sent = await this.bot.api.sendMessage(chatId, parts[i]!, options);
+      } catch (err) {
+        // If Telegram rejects the formatting, retry as plain text
+        if (options.parse_mode && isParseEntityError(err)) {
+          log.warn('[Telegram] Parse entity error, retrying without parse_mode', {
+            parseMode: options.parse_mode,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          const { parse_mode: _, ...plainOptions } = options;
+          sent = await this.bot.api.sendMessage(chatId, parts[i]!, plainOptions);
+        } else {
+          throw err;
+        }
+      }
       lastMessageId = String(sent.message_id);
 
       // Small delay between split messages
