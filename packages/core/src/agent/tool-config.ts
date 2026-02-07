@@ -519,6 +519,49 @@ export const FAMILIAR_TOOLS = new Set([
   'send_email',
 ]);
 
+// =============================================================================
+// TOOL CATEGORY CAPABILITIES — natural-language summaries for system prompt
+// =============================================================================
+
+/**
+ * Capability descriptions for categorical prompt injection.
+ * Maps each TOOL_GROUPS key to a concise summary of what those tools do.
+ * Used by PromptComposer to generate compact tool descriptions instead of
+ * listing every tool name.
+ */
+export const TOOL_CATEGORY_CAPABILITIES: Record<string, string> = {
+  core: 'Get current time, perform calculations, generate UUIDs',
+  filesystem: 'Read, write, list, search, move, and delete files in the workspace',
+  tasks: 'Create, list, update, complete, and delete todo items with priorities and due dates',
+  bookmarks: 'Save, list, and organize web bookmarks/URLs',
+  notes: 'Create, list, update, and delete text notes',
+  calendar: 'Schedule events, list upcoming appointments, manage calendar',
+  contacts: 'Store and manage contact information (name, phone, email)',
+  customData: 'Create custom database tables with any schema; CRUD records; search and query',
+  memory: 'Persistently remember facts about the user; search and manage memories',
+  goals: 'Track long-term objectives, decompose into steps, monitor progress',
+  textUtils: 'Parse/format JSON, text stats, search-replace, case conversion, slugify',
+  dateTime: 'Format dates, calculate date differences, date arithmetic',
+  conversion: 'Unit/currency conversion, base64/URL encoding, hashing, CSV/JSON/Markdown transforms',
+  generation: 'Generate random numbers, strings, passwords, lorem ipsum',
+  extraction: 'Extract URLs, emails, and numbers from text',
+  validation: 'Validate emails, URLs, and test regex patterns',
+  listOps: 'Sort, deduplicate, and format lists/tables',
+  mathStats: 'Percentages, statistical calculations (mean/median/std), word counts',
+  codeExecution: 'Execute JavaScript, Python, or shell commands (sandboxed)',
+  webFetch: 'HTTP requests, web page fetching, web search, JSON API calls',
+  email: 'Send, receive, search, read, and reply to emails',
+  weather: 'Current weather conditions and multi-day forecasts',
+  git: 'Git operations: status, diff, log, commit, branch, checkout',
+  image: 'Analyze images (OCR/vision), generate images (DALL-E), edit/resize',
+  audio: 'Text-to-speech, speech-to-text transcription, audio processing',
+  pdf: 'Read PDF content, create PDFs, get PDF metadata',
+  translation: 'Translate text between languages, detect language',
+  vectorSearch: 'Semantic search with embeddings, vector collections, similarity scoring',
+  dataExtraction: 'Extract structured data, named entities, tables from text; summarize',
+  customTools: 'Create, list, enable/disable, and delete user-created custom tools',
+};
+
 /**
  * Tool statistics
  */

@@ -32,7 +32,7 @@ import {
   traceError as recordTraceError,
   getTraceSummary,
 } from '../tracing/index.js';
-import { debugLog, type ToolDefinition, type JSONSchemaProperty, hasServiceRegistry, getServiceRegistry, Services, FAMILIAR_TOOLS } from '@ownpilot/core';
+import { debugLog, type ToolDefinition, hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
 import type { IMessageBus, NormalizedMessage, MessageProcessingResult, StreamCallbacks, ToolEndResult } from '@ownpilot/core';
 import type { StreamChunk, ToolCall } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
@@ -48,80 +48,43 @@ const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 export const chatRoutes = new Hono();
 
 /**
- * Format a JSON schema property as a concise inline type string.
- * Example: `{ title: string, priority?: "low"|"medium"|"high", due_date?: string }`
- */
-function formatInlineSchema(tool: ToolDefinition): string {
-  const props = tool.parameters.properties;
-  const required = new Set(tool.parameters.required ?? []);
-  const parts: string[] = [];
-
-  for (const [name, schema] of Object.entries(props)) {
-    const opt = required.has(name) ? '' : '?';
-    let typeStr: string;
-    if (schema.enum && schema.enum.length <= 5) {
-      typeStr = schema.enum.map(v => `"${v}"`).join('|');
-    } else {
-      typeStr = schema.type;
-    }
-    parts.push(`${name}${opt}: ${typeStr}`);
-  }
-
-  return `{ ${parts.join(', ')} }`;
-}
-
-/**
- * Build an enriched tool catalog for the first message.
+ * Build a minimal first-message context addendum.
  *
- * Grouped by category. Familiar tools (~25 most-used) get inline parameter
- * schemas so the LLM can call use_tool directly. Other tools show a brief
- * description only — the LLM can use search_tools to get full docs.
+ * The system prompt already contains categorical capabilities and familiar
+ * tool quick-references. This function only appends dynamic context that
+ * cannot be known at system-prompt composition time:
+ * - Custom data tables (user-created dynamic tables)
+ * - Active custom/user-created tools
  */
 async function buildToolCatalog(allTools: readonly ToolDefinition[]): Promise<string> {
-  // Skip meta-tools from the catalog (they're always available)
+  const lines: string[] = [];
+
+  // 1. List active custom/user-created tools (if any)
   const skipTools = new Set(['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool']);
-  const tools = allTools.filter(t => !skipTools.has(t.name));
-
-  // Group by category
-  const groups: Record<string, ToolDefinition[]> = {};
-  for (const t of tools) {
-    const cat = t.category || 'Other';
-    if (!groups[cat]) groups[cat] = [];
-    groups[cat].push(t);
-  }
-
-  const lines: string[] = [
-    '',
-    '---',
-    '## TOOL CATALOG',
-    '',
-  ];
-
-  // Sort categories for consistent output
-  const sortedCats = Object.keys(groups).sort();
-  for (const cat of sortedCats) {
-    const catTools = groups[cat]!;
-    lines.push(`[${cat}]`);
-    for (const t of catTools) {
+  const customTools = allTools.filter(
+    t => !skipTools.has(t.name) && (t.category === 'Custom' || t.category === 'User' || t.category === 'Dynamic Tools')
+  );
+  if (customTools.length > 0) {
+    lines.push('');
+    lines.push('---');
+    lines.push('## Active Custom Tools');
+    for (const t of customTools) {
       const brief = t.brief ?? t.description.slice(0, 80);
-      if (FAMILIAR_TOOLS.has(t.name)) {
-        // Familiar tools: show brief + inline params
-        lines.push(`  ${t.name} — ${brief}`);
-        lines.push(`    ${formatInlineSchema(t)}`);
-      } else {
-        // Other tools: brief only
-        lines.push(`  ${t.name} — ${brief}`);
-      }
+      lines.push(`  ${t.name} — ${brief}`);
     }
   }
 
-  // Fetch custom data tables
+  // 2. Fetch custom data tables
   try {
     const service = getServiceRegistry().get(Services.Database);
     const tables = await service.listTables();
     if (tables.length > 0) {
+      if (lines.length === 0) {
+        lines.push('');
+        lines.push('---');
+      }
       lines.push('');
-      lines.push('[Custom Data Tables]');
+      lines.push('## Custom Data Tables');
       for (const t of tables) {
         const display = t.displayName && t.displayName !== t.name ? `${t.displayName} (${t.name})` : t.name;
         lines.push(`  ${display}`);
@@ -620,8 +583,10 @@ chatRoutes.post('/', async (c) => {
     try {
       const allToolDefs = agent.getAllToolDefinitions();
       const catalog = await buildToolCatalog(allToolDefs);
-      chatMessage = body.message + catalog;
-      log.info(`Tool catalog injected: ${allToolDefs.length} tools`);
+      if (catalog) {
+        chatMessage = body.message + catalog;
+        log.info('Tool context injected: custom tools/tables');
+      }
     } catch (err) {
       log.warn('Failed to build tool catalog:', err);
     }

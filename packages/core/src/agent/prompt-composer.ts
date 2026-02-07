@@ -13,6 +13,7 @@
 
 import type { ToolDefinition } from './types.js';
 import type { UserProfile } from '../memory/conversation.js';
+import { TOOL_GROUPS, FAMILIAR_TOOLS, TOOL_CATEGORY_CAPABILITIES } from './tool-config.js';
 
 // =============================================================================
 // Types
@@ -246,33 +247,83 @@ function formatUserProfile(profile: UserProfile): string {
 }
 
 /**
- * Format tools for prompt
+ * Map a display category name to its TOOL_GROUPS key.
+ * Falls back to lowercase concatenation.
+ */
+function categoryToGroupId(category: string): string {
+  for (const [id, group] of Object.entries(TOOL_GROUPS)) {
+    if (group.name === category) return id;
+  }
+  return category.toLowerCase().replace(/[\s&]+/g, '');
+}
+
+/**
+ * Format tools for prompt — categorical capabilities + usage strategy + familiar tools
  */
 function formatTools(tools: readonly ToolDefinition[]): string {
   if (tools.length === 0) {
     return 'No tools available.';
   }
 
-  // Count tools per category
+  // Group tools by category and count
   const categoryCounts = new Map<string, number>();
   for (const tool of tools) {
     const category = tool.category ?? 'General';
     categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
   }
 
-  const categories = Array.from(categoryCounts.entries())
-    .map(([cat, count]) => `${cat} (${count})`)
-    .join(', ');
+  // Build categorical capabilities
+  const capabilityLines: string[] = [];
+  for (const [category, count] of categoryCounts.entries()) {
+    const groupId = categoryToGroupId(category);
+    const capability = TOOL_CATEGORY_CAPABILITIES[groupId] ?? `${category} operations`;
+    capabilityLines.push(`- **${category}** (${count}): ${capability}`);
+  }
 
-  return [
-    `${tools.length} tools across: ${categories}`,
-    '',
-    '### Tool Usage',
-    '- Familiar tools (catalog shows params): call use_tool directly.',
-    '- Other tools: search_tools("keyword") → use_tool.',
-    '- Multiple tools: use batch_use_tool for parallel execution.',
-    '- On error, read the error message for correct params and retry.',
-  ].join('\n');
+  // Build familiar tools quick-reference
+  const familiarToolLines: string[] = [];
+  for (const tool of tools) {
+    if (FAMILIAR_TOOLS.has(tool.name)) {
+      const brief = tool.brief ?? tool.description.slice(0, 60);
+      familiarToolLines.push(`  ${tool.name} — ${brief}`);
+    }
+  }
+
+  const sections: string[] = [];
+
+  // 1. Overview
+  sections.push(`${tools.length} tools available across ${categoryCounts.size} categories:`);
+  sections.push('');
+  sections.push(capabilityLines.join('\n'));
+
+  // 2. Strategy section
+  sections.push('');
+  sections.push('### How to Use Tools');
+  sections.push('');
+  sections.push('**Discovery flow:**');
+  sections.push('1. For common tasks (see Familiar Tools below), call `use_tool` directly.');
+  sections.push('2. For unfamiliar tasks, call `search_tools("keyword")` — results include parameter docs.');
+  sections.push('3. For detailed parameter info, call `get_tool_help("tool_name")` or pass `tool_names` array for batch lookup.');
+  sections.push('');
+  sections.push('**Parallel execution:**');
+  sections.push('- Use `batch_use_tool` with an array of `{ tool_name, arguments }` for independent operations. Faster than sequential calls.');
+  sections.push('');
+  sections.push('**Error handling:**');
+  sections.push('- On error, read the error message — it shows the correct parameter schema. Fix and retry.');
+  sections.push('- Tool not found → use `search_tools` to discover the correct name.');
+  sections.push('');
+  sections.push('**Custom tools:**');
+  sections.push('- Users may have custom tools. Use `search_tools` to discover them.');
+  sections.push('- Use `create_tool` to build new reusable tools when needed.');
+
+  // 3. Familiar tools quick-reference
+  if (familiarToolLines.length > 0) {
+    sections.push('');
+    sections.push('### Familiar Tools (call directly via use_tool)');
+    sections.push(familiarToolLines.join('\n'));
+  }
+
+  return sections.join('\n');
 }
 
 /**

@@ -322,7 +322,7 @@ describe('PromptComposer', () => {
 
     // --- Tools ---
 
-    it('should include tools section with category counts', () => {
+    it('should include tools section with categorical capabilities', () => {
       const tools = [
         makeTool('read_file', 'File'),
         makeTool('write_file', 'File'),
@@ -330,16 +330,21 @@ describe('PromptComposer', () => {
       ];
       const result = composer.compose(baseContext({ tools }));
       expect(result).toContain('## Available Tools');
-      expect(result).toContain('3 tools across:');
-      expect(result).toContain('File (2)');
-      expect(result).toContain('Web (1)');
+      expect(result).toContain('3 tools available across 2 categories');
+      expect(result).toContain('**File** (2)');
+      expect(result).toContain('**Web** (1)');
     });
 
-    it('should include tool usage instructions', () => {
+    it('should include tool usage strategy instructions', () => {
       const result = composer.compose(baseContext({ tools: [makeTool('test_tool')] }));
-      expect(result).toContain('### Tool Usage');
+      expect(result).toContain('### How to Use Tools');
       expect(result).toContain('search_tools');
       expect(result).toContain('use_tool');
+      expect(result).toContain('Discovery flow');
+      expect(result).toContain('Parallel execution');
+      expect(result).toContain('batch_use_tool');
+      expect(result).toContain('Error handling');
+      expect(result).toContain('Custom tools');
     });
 
     it('should handle empty tools list (no section)', () => {
@@ -349,7 +354,18 @@ describe('PromptComposer', () => {
 
     it('should use "General" category for tools without a category', () => {
       const result = composer.compose(baseContext({ tools: [makeTool('some_tool')] }));
-      expect(result).toContain('General (1)');
+      expect(result).toContain('**General** (1)');
+    });
+
+    it('should show familiar tools in quick-reference section', () => {
+      const tools = [
+        { name: 'add_task', description: 'Create a new todo item', brief: 'Create a new todo', parameters: { type: 'object' as const, properties: {} }, category: 'Tasks' },
+        { name: 'obscure_tool', description: 'Does something rare', parameters: { type: 'object' as const, properties: {} }, category: 'Other' },
+      ];
+      const result = composer.compose(baseContext({ tools }));
+      expect(result).toContain('### Familiar Tools');
+      expect(result).toContain('add_task');
+      expect(result).not.toContain('obscure_tool —'); // obscure_tool appears in category but not in familiar section
     });
 
     it('should include automation section when automation tools present', () => {

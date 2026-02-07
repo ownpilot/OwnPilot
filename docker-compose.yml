@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database (optional, for production)
+  # PostgreSQL Database
   postgres:
     image: pgvector/pgvector:pg16
     container_name: ownpilot-postgres
@@ -39,36 +39,28 @@ services:
       - NODE_ENV=production
       - PORT=8080
       - HOST=0.0.0.0
-      - DATA_DIR=/app/data
-      # Database configuration
-      - DB_TYPE=${DB_TYPE:-sqlite}
+      - OWNPILOT_DATA_DIR=/app/data
+      # Database
       - DATABASE_URL=${DATABASE_URL:-}
       - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
       - POSTGRES_PORT=5432
       - POSTGRES_USER=${POSTGRES_USER:-ownpilot}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ownpilot_secret}
       - POSTGRES_DB=${POSTGRES_DB:-ownpilot}
-      # API Keys
-      # - OPENAI_API_KEY=${OPENAI_API_KEY}
-      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      # - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      # - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       # Telegram
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS}
-      - TELEGRAM_ALLOWED_CHATS=${TELEGRAM_ALLOWED_CHATS}
-      # System
-      - SYSTEM_PROMPT=${SYSTEM_PROMPT:-You are a helpful AI assistant.}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      # Auth & Security
       - AUTH_TYPE=${AUTH_TYPE:-none}
-      - API_KEYS=${API_KEYS}
-      - JWT_SECRET=${JWT_SECRET}
+      - API_KEYS=${API_KEYS:-}
+      - JWT_SECRET=${JWT_SECRET:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      # Rate Limiting
       - RATE_LIMIT_DISABLED=${RATE_LIMIT_DISABLED:-false}
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
-      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
-      # Autonomy settings
-      - DEFAULT_AUTONOMY_LEVEL=${DEFAULT_AUTONOMY_LEVEL:-1}
-      - ENABLE_PROACTIVE_TRIGGERS=${ENABLE_PROACTIVE_TRIGGERS:-false}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-500}
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
       - gateway-data:/app/data
     healthcheck:
