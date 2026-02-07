@@ -32,7 +32,7 @@ import {
   traceError as recordTraceError,
   getTraceSummary,
 } from '../tracing/index.js';
-import { debugLog, type ToolDefinition, hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
+import { debugLog, type ToolDefinition, type JSONSchemaProperty, hasServiceRegistry, getServiceRegistry, Services, FAMILIAR_TOOLS } from '@ownpilot/core';
 import type { IMessageBus, NormalizedMessage, MessageProcessingResult, StreamCallbacks, ToolEndResult } from '@ownpilot/core';
 import type { StreamChunk, ToolCall } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
@@ -48,36 +48,71 @@ const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 export const chatRoutes = new Hono();
 
 /**
- * Build a compact tool catalog for the first message.
- * Lists all available tool names grouped by category + custom data tables.
- * Sent only once at the start of a chat so the LLM knows what exists.
+ * Format a JSON schema property as a concise inline type string.
+ * Example: `{ title: string, priority?: "low"|"medium"|"high", due_date?: string }`
+ */
+function formatInlineSchema(tool: ToolDefinition): string {
+  const props = tool.parameters.properties;
+  const required = new Set(tool.parameters.required ?? []);
+  const parts: string[] = [];
+
+  for (const [name, schema] of Object.entries(props)) {
+    const opt = required.has(name) ? '' : '?';
+    let typeStr: string;
+    if (schema.enum && schema.enum.length <= 5) {
+      typeStr = schema.enum.map(v => `"${v}"`).join('|');
+    } else {
+      typeStr = schema.type;
+    }
+    parts.push(`${name}${opt}: ${typeStr}`);
+  }
+
+  return `{ ${parts.join(', ')} }`;
+}
+
+/**
+ * Build an enriched tool catalog for the first message.
+ *
+ * Grouped by category. Familiar tools (~25 most-used) get inline parameter
+ * schemas so the LLM can call use_tool directly. Other tools show a brief
+ * description only — the LLM can use search_tools to get full docs.
  */
 async function buildToolCatalog(allTools: readonly ToolDefinition[]): Promise<string> {
-  // Skip meta-tools from the catalog
-  const skipTools = new Set(['search_tools', 'get_tool_help', 'use_tool']);
+  // Skip meta-tools from the catalog (they're always available)
+  const skipTools = new Set(['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool']);
   const tools = allTools.filter(t => !skipTools.has(t.name));
 
   // Group by category
-  const groups: Record<string, string[]> = {};
+  const groups: Record<string, ToolDefinition[]> = {};
   for (const t of tools) {
-    const cat = t.category || 'other';
+    const cat = t.category || 'Other';
     if (!groups[cat]) groups[cat] = [];
-    groups[cat].push(t.name);
+    groups[cat].push(t);
   }
 
   const lines: string[] = [
     '',
     '---',
-    '[TOOL CATALOG — Complete list of available tools. This catalog is sent once at the start of the chat.]',
+    '## TOOL CATALOG',
     '',
-    'AVAILABLE TOOLS (call via use_tool or directly if attached):',
   ];
 
   // Sort categories for consistent output
   const sortedCats = Object.keys(groups).sort();
   for (const cat of sortedCats) {
-    const toolNames = groups[cat]!.sort();
-    lines.push(`  [${cat}] ${toolNames.join(', ')}`);
+    const catTools = groups[cat]!;
+    lines.push(`[${cat}]`);
+    for (const t of catTools) {
+      const brief = t.brief ?? t.description.slice(0, 80);
+      if (FAMILIAR_TOOLS.has(t.name)) {
+        // Familiar tools: show brief + inline params
+        lines.push(`  ${t.name} — ${brief}`);
+        lines.push(`    ${formatInlineSchema(t)}`);
+      } else {
+        // Other tools: brief only
+        lines.push(`  ${t.name} — ${brief}`);
+      }
+    }
   }
 
   // Fetch custom data tables
@@ -86,23 +121,15 @@ async function buildToolCatalog(allTools: readonly ToolDefinition[]): Promise<st
     const tables = await service.listTables();
     if (tables.length > 0) {
       lines.push('');
-      lines.push('CUSTOM DATA TABLES:');
+      lines.push('[Custom Data Tables]');
       for (const t of tables) {
         const display = t.displayName && t.displayName !== t.name ? `${t.displayName} (${t.name})` : t.name;
-        lines.push(`  • ${display}`);
+        lines.push(`  ${display}`);
       }
     }
   } catch {
     // Custom data not available — skip
   }
-
-  lines.push('');
-  lines.push('IMPORTANT: This catalog only lists tool NAMES. You do NOT know how to call these tools.');
-  lines.push('Before executing any tool, you MUST look up its parameters first:');
-  lines.push('  1. search_tools("keyword", include_params=true) → find tools + get parameter docs');
-  lines.push('  2. OR get_tool_help("tool_name") → get parameter docs for a known tool name');
-  lines.push('  3. THEN use_tool("tool_name", {parameters}) → execute with correct parameters');
-  lines.push('NEVER guess parameters — always look them up first.');
 
   return lines.join('\n');
 }

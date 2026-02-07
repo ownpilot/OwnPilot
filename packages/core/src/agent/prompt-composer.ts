@@ -125,7 +125,7 @@ const PROMPT_SECTIONS = {
 {{userInfo}}`,
 
   workspace: `## File System Access
-You have access to file system tools (read_file, write_file, list_directory, etc.).
+You have file system tools for reading, writing, listing, searching, and downloading files.
 
 **Allowed directories for file operations:**
 {{allowedDirs}}
@@ -159,23 +159,10 @@ The user has provided the following instructions. Always follow them:
   conversationContext: `## Conversation Context
 {{contextInfo}}`,
 
-  autonomyGuidelines: `## Autonomy Guidelines
-Your autonomy level is set to: {{level}}
-
-{{guidelines}}`,
-
   automation: `## Automation
 You can create **triggers** (recurring automated actions) and **plans** (multi-step workflows).
 Use search_tools("trigger") or search_tools("plan") to discover automation tools.
 Use get_tool_help with tool_names array to get parameter docs for multiple tools at once.`,
-};
-
-const AUTONOMY_GUIDELINES: Record<string, string> = {
-  none: 'Ask for explicit permission before taking any action.',
-  low: 'You can perform read-only operations freely. Ask permission for any modifications.',
-  medium: 'You can perform most operations freely. Ask permission for destructive or irreversible actions.',
-  high: 'You can perform almost all operations autonomously. Only ask for truly destructive actions.',
-  full: 'You have full autonomy. Take action immediately to accomplish tasks. The user trusts your judgment.',
 };
 
 // =============================================================================
@@ -266,7 +253,7 @@ function formatTools(tools: readonly ToolDefinition[]): string {
     return 'No tools available.';
   }
 
-  // Count tools per category (don't list individual names — too verbose for system prompt)
+  // Count tools per category
   const categoryCounts = new Map<string, number>();
   for (const tool of tools) {
     const category = tool.category ?? 'General';
@@ -278,31 +265,13 @@ function formatTools(tools: readonly ToolDefinition[]): string {
     .join(', ');
 
   return [
-    `${tools.length} tools available across: ${categories}`,
+    `${tools.length} tools across: ${categories}`,
     '',
-    '### Tool Workflow — MANDATORY',
-    'You do NOT know how these tools work. You MUST look up parameters before calling any tool.',
-    '',
-    '**Recommended (2 calls):** search with params → execute',
-    '1. **search_tools({ query: "keyword", include_params: true })** → find tools AND get their exact parameters',
-    '2. **use_tool("tool_name", { params })** → execute with the correct parameters',
-    '   OR **batch_use_tool({ calls: [...] })** → execute multiple tools in parallel',
-    '',
-    '**Alternative (3 calls):** search → help → execute',
-    '1. **search_tools("keyword")** → find tool names',
-    '2. **get_tool_help("tool_name")** or **get_tool_help({ tool_names: ["a", "b"] })** → read exact parameters',
-    '3. **use_tool** or **batch_use_tool** → execute',
-    '',
-    '### Rules (STRICT)',
-    '- **NEVER guess or assume tool parameters.** You cannot know the parameter schema without checking. Always call get_tool_help or search_tools(include_params=true) BEFORE executing a tool for the first time in a conversation.',
-    '- **NEVER guess tool names** — always search or refer to the TOOL CATALOG.',
-    '- Use **batch_use_tool** when you need results from multiple tools — runs them in parallel.',
-    '- On error, read the error message carefully (it shows correct parameters) and retry.',
-    '- Search uses AND matching: "send email" finds tools with both words.',
-    '- Use "all" to list every tool.',
-    '',
-    'If a user message has an `[ATTACHED CONTEXT]` block, follow its tool instructions directly.',
-    'After tool calls, always provide a text summary of results.',
+    '### Tool Usage',
+    '- Familiar tools (catalog shows params): call use_tool directly.',
+    '- Other tools: search_tools("keyword") → use_tool.',
+    '- Multiple tools: use batch_use_tool for parallel execution.',
+    '- On error, read the error message for correct params and retry.',
   ].join('\n');
 }
 
@@ -417,18 +386,6 @@ export class PromptComposer {
         sections.push(PROMPT_SECTIONS.capabilities.replace('{{capabilitiesList}}', capsList));
       }
 
-      // 5b. Autonomy guidelines
-      if (context.capabilities.autonomyLevel) {
-        const level = context.capabilities.autonomyLevel;
-        const guidelines = AUTONOMY_GUIDELINES[level];
-        if (guidelines) {
-          sections.push(
-            PROMPT_SECTIONS.autonomyGuidelines
-              .replace('{{level}}', level.toUpperCase())
-              .replace('{{guidelines}}', guidelines)
-          );
-        }
-      }
     }
 
     // 6. Time context

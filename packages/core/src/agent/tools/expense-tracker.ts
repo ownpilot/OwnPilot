@@ -178,6 +178,7 @@ async function exportToCsv(expenses: ExpenseEntry[], filePath: string): Promise<
  */
 export const addExpenseTool: ToolDefinition = {
   name: 'add_expense',
+  brief: 'Record a purchase, payment, or transaction',
   description: 'Add a new expense entry to the tracker. Use this to record purchases, payments, or any financial transaction.',
   parameters: {
     type: 'object',
@@ -264,6 +265,7 @@ export const addExpenseExecutor: ToolExecutor = async (args, _context): Promise<
  */
 export const batchAddExpensesTool: ToolDefinition = {
   name: 'batch_add_expenses',
+  brief: 'Add multiple expenses at once',
   description: 'Add multiple expenses at once. Use this for bulk import or adding several transactions efficiently.',
   parameters: {
     type: 'object',
@@ -380,6 +382,7 @@ export const batchAddExpensesExecutor: ToolExecutor = async (args, _context): Pr
  */
 export const parseReceiptTool: ToolDefinition = {
   name: 'parse_receipt',
+  brief: 'Extract expense data from a receipt image',
   description: 'Parse expense information from a receipt image. Returns extracted data that can be used with add_expense. Requires a vision-capable model. Provide either "imagePath" (file path) or "imageBase64" (base64 data) — at least one is required.',
   parameters: {
     type: 'object',
@@ -443,6 +446,7 @@ export const parseReceiptExecutor: ToolExecutor = async (args, _context): Promis
  */
 export const queryExpensesTool: ToolDefinition = {
   name: 'query_expenses',
+  brief: 'Query and filter expenses with aggregations',
   description: 'Query and filter expenses from the tracker. Returns matching expenses with optional aggregations.',
   parameters: {
     type: 'object',
@@ -589,6 +593,7 @@ export const queryExpensesExecutor: ToolExecutor = async (args, _context): Promi
  */
 export const exportExpensesTool: ToolDefinition = {
   name: 'export_expenses',
+  brief: 'Export expenses to CSV or JSON',
   description: 'Export expenses to CSV or JSON file for external use (Excel, spreadsheets, etc.)',
   parameters: {
     type: 'object',
@@ -674,6 +679,7 @@ export const exportExpensesExecutor: ToolExecutor = async (args, _context): Prom
  */
 export const expenseSummaryTool: ToolDefinition = {
   name: 'expense_summary',
+  brief: 'Get totals by category and spending trends',
   description: 'Get a summary of expenses for a time period. Shows totals by category, trends, and insights.',
   parameters: {
     type: 'object',
@@ -858,6 +864,7 @@ function generateInsights(
  */
 export const deleteExpenseTool: ToolDefinition = {
   name: 'delete_expense',
+  brief: 'Delete an expense entry by ID',
   description: 'Delete an expense entry by ID',
   parameters: {
     type: 'object',

@@ -21,6 +21,7 @@ import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types
 
 export const getCurrentDateTimeTool: ToolDefinition = {
   name: 'get_current_datetime',
+  brief: 'Get current date, time, timezone, and day of week',
   description: `Get the current date and time. Call this whenever the user asks "what time is it", "what day is today", or when you need to know the current time for scheduling, deadlines, or time-sensitive responses. Returns ISO, formatted, and unix timestamp.`,
   category: 'Utilities',
   parameters: {
@@ -124,6 +125,7 @@ function getWeekNumber(date: Date): number {
 
 export const calculateTool: ToolDefinition = {
   name: 'calculate',
+  brief: 'Evaluate math expressions with functions and percentages',
   description: `Perform mathematical calculations. Call this whenever the user asks to compute, calculate, or do math. Supports arithmetic (+,-,*,/), percentages ("15% of 250"), powers (2^10), and functions (sqrt, sin, cos, log, abs, floor, ceil, round). Returns the numeric result.`,
   category: 'Utilities',
   parameters: {
@@ -225,6 +227,7 @@ export const calculateExecutor: ToolExecutor = async (args): Promise<ToolExecuti
 
 export const convertUnitsTool: ToolDefinition = {
   name: 'convert_units',
+  brief: 'Convert between length, weight, temp, volume, data units',
   description: `Convert between units of measurement. Call this when the user asks to convert kg to lb, km to miles, celsius to fahrenheit, liters to gallons, GB to MB, etc. Supports: length, weight, temperature, volume, area, speed, time, and data storage units.`,
   category: 'Utilities',
   parameters: {
@@ -426,6 +429,7 @@ export const convertUnitsExecutor: ToolExecutor = async (args): Promise<ToolExec
 
 export const generateUuidTool: ToolDefinition = {
   name: 'generate_uuid',
+  brief: 'Generate one or more unique UUIDs',
   description: 'Generate a unique ID (UUID v4). Call this when the user needs a unique identifier, reference code, or tracking ID. Can generate multiple UUIDs at once.',
   category: 'Utilities',
   parameters: {
@@ -474,6 +478,7 @@ export const generateUuidExecutor: ToolExecutor = async (args): Promise<ToolExec
 
 export const generatePasswordTool: ToolDefinition = {
   name: 'generate_password',
+  brief: 'Generate secure random passwords with strength rating',
   description: 'Generate a secure random password. Call this when the user asks for a password, passphrase, or secure random string. Configurable length, character types, and strength indicator.',
   category: 'Utilities',
   parameters: {
@@ -570,6 +575,7 @@ export const generatePasswordExecutor: ToolExecutor = async (args): Promise<Tool
 
 export const generateRandomNumberTool: ToolDefinition = {
   name: 'random_number',
+  brief: 'Generate random numbers in a range',
   description: 'Generate random numbers. Call this when the user wants a random number, dice roll, coin flip, lottery numbers, or random selection from a range. Supports integer and decimal output.',
   category: 'Utilities',
   parameters: {
@@ -637,6 +643,7 @@ export const generateRandomNumberExecutor: ToolExecutor = async (args): Promise<
 
 export const hashTextTool: ToolDefinition = {
   name: 'hash_text',
+  brief: 'Hash text with MD5, SHA-1, SHA-256, or SHA-512',
   description: 'Generate a cryptographic hash of text. Call this when the user wants to hash a string, verify integrity, or create a checksum. Supports MD5, SHA-1, SHA-256, SHA-512.',
   category: 'Utilities',
   parameters: {
@@ -681,6 +688,7 @@ export const hashTextExecutor: ToolExecutor = async (args): Promise<ToolExecutio
 
 export const encodeDecodeTool: ToolDefinition = {
   name: 'encode_decode',
+  brief: 'Encode/decode text: Base64, URL, HTML, or Hex',
   description: 'Encode or decode text. Call this when the user wants to convert text to/from Base64, URL-encode, HTML-encode, or Hex. Useful for encoding data for APIs, URLs, or debugging encoded strings.',
   category: 'Utilities',
   parameters: {
@@ -775,6 +783,7 @@ export const encodeDecodeExecutor: ToolExecutor = async (args): Promise<ToolExec
 
 export const countTextTool: ToolDefinition = {
   name: 'count_text',
+  brief: 'Count words, characters, sentences, lines in text',
   description: 'Count characters, words, sentences, lines, and paragraphs in text. Call this when the user asks "how many words", "character count", word count, or needs text length stats. Also estimates reading time.',
   category: 'Utilities',
   parameters: {
@@ -824,6 +833,7 @@ export const countTextExecutor: ToolExecutor = async (args): Promise<ToolExecuti
 
 export const extractFromTextTool: ToolDefinition = {
   name: 'extract_from_text',
+  brief: 'Extract URLs, emails, phones, dates from text',
   description: 'Extract structured data from text: URLs, email addresses, phone numbers, dates, numbers, hashtags, or @mentions. Call this when the user pastes text and wants to pull out specific data points.',
   category: 'Utilities',
   parameters: {
@@ -889,8 +899,9 @@ export const extractFromTextExecutor: ToolExecutor = async (args): Promise<ToolE
 // VALIDATION TOOLS
 // =============================================================================
 
-export const validateTool: ToolDefinition = {
-  name: 'validate',
+export const validateDataTool: ToolDefinition = {
+  name: 'validate_data',
+  brief: 'Check if email, URL, JSON, IBAN, UUID, IP is valid',
   description: 'Validate data format correctness. Call this when the user wants to check if an email, URL, phone number, credit card, IBAN, TC Kimlik, JSON, UUID, or IP address is valid. Returns valid/invalid with details.',
   category: 'Utilities',
   parameters: {
@@ -1022,7 +1033,7 @@ function validateTcKimlik(tcNo: string): { valid: boolean; reason?: string } {
   return { valid: true };
 }
 
-export const validateExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+export const validateDataExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
   try {
     const value = args.value as string;
     const type = args.type as string;
@@ -1093,6 +1104,7 @@ export const validateExecutor: ToolExecutor = async (args): Promise<ToolExecutio
 
 export const transformTextTool: ToolDefinition = {
   name: 'transform_text',
+  brief: 'Transform text case, slugify, camelCase, trim, reverse',
   description: `Transform text format. Call this when the user wants to convert text case (uppercase, lowercase, title case), create URL slugs, convert naming conventions (camelCase, snake_case, kebab-case, PascalCase), trim whitespace, reverse text, remove accents/diacritics, or truncate text.`,
   category: 'Utilities',
   parameters: {
@@ -1239,6 +1251,7 @@ export const transformTextExecutor: ToolExecutor = async (args): Promise<ToolExe
 
 export const dateDiffTool: ToolDefinition = {
   name: 'date_diff',
+  brief: 'Calculate difference between two dates',
   description: `Calculate the difference between two dates. Call this when the user asks "how many days between", "how long until", "how old is", or any date comparison. Returns difference in days, hours, weeks, months, years.`,
   category: 'Utilities',
   parameters: {
@@ -1333,6 +1346,7 @@ export const dateDiffExecutor: ToolExecutor = async (args): Promise<ToolExecutio
 
 export const dateAddTool: ToolDefinition = {
   name: 'date_add',
+  brief: 'Add or subtract time from a date',
   description: `Add or subtract time from a date. Call this when the user asks "what date is 30 days from now", "3 weeks ago", "next month", or needs to calculate future/past dates. Use "now" as date for current time.`,
   category: 'Utilities',
   parameters: {
@@ -1426,6 +1440,7 @@ export const dateAddExecutor: ToolExecutor = async (args): Promise<ToolExecution
 
 export const formatJsonTool: ToolDefinition = {
   name: 'format_json',
+  brief: 'Prettify, minify, query, or flatten JSON data',
   description: `Format, minify, or query JSON data. Call this when the user wants to prettify JSON, minify it, extract a value by path (e.g. "user.name"), list keys, flatten nested objects, or sort keys alphabetically.`,
   category: 'Utilities',
   parameters: {
@@ -1570,6 +1585,7 @@ function sortObjectKeys(obj: unknown): unknown {
 
 export const parseCsvTool: ToolDefinition = {
   name: 'parse_csv',
+  brief: 'Parse CSV/TSV text into structured JSON',
   description: `Parse CSV/TSV text into structured JSON data. Call this when the user pastes CSV data or wants to convert tabular text into objects. Handles quoted fields, custom delimiters (comma, tab, semicolon), and header rows.`,
   category: 'Utilities',
   parameters: {
@@ -1672,6 +1688,7 @@ export const parseCsvExecutor: ToolExecutor = async (args): Promise<ToolExecutio
 
 export const generateCsvTool: ToolDefinition = {
   name: 'generate_csv',
+  brief: 'Convert JSON array to CSV text',
   description: `Generate CSV text from JSON data. Call this when the user wants to convert a JSON array into CSV format for export or sharing. Handles object arrays (with headers) and nested data.`,
   category: 'Utilities',
   parameters: {
@@ -1761,6 +1778,7 @@ export const generateCsvExecutor: ToolExecutor = async (args): Promise<ToolExecu
 
 export const arrayOperationsTool: ToolDefinition = {
   name: 'array_operations',
+  brief: 'Sort, deduplicate, shuffle, chunk, or aggregate arrays',
   description: `Perform operations on a list/array of items. Call this when the user wants to sort a list, remove duplicates, shuffle, split into chunks, pick random samples, or calculate sum/average/min/max of numbers. Input is a JSON array string.`,
   category: 'Utilities',
   parameters: {
@@ -1915,8 +1933,9 @@ export const arrayOperationsExecutor: ToolExecutor = async (args): Promise<ToolE
 // STATISTICS TOOLS
 // =============================================================================
 
-export const statisticsTool: ToolDefinition = {
-  name: 'statistics',
+export const calculateStatisticsTool: ToolDefinition = {
+  name: 'calculate_statistics',
+  brief: 'Calculate mean, median, mode, std dev, percentiles',
   description: `Calculate statistics for a set of numbers. Call this when the user wants mean, median, mode, standard deviation, variance, percentiles, quartiles, or a statistical summary. Accepts JSON array or comma-separated numbers.`,
   category: 'Utilities',
   parameters: {
@@ -1935,7 +1954,7 @@ export const statisticsTool: ToolDefinition = {
   },
 };
 
-export const statisticsExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+export const calculateStatisticsExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
   try {
     const numbersInput = args.numbers as string;
     const percentile = args.percentile as number | undefined;
@@ -2036,6 +2055,7 @@ export const statisticsExecutor: ToolExecutor = async (args): Promise<ToolExecut
 
 export const compareTextTool: ToolDefinition = {
   name: 'compare_text',
+  brief: 'Diff two texts and show similarity percentage',
   description: `Compare two texts and show differences. Call this when the user wants to diff two versions, check similarity, or find what changed between texts. Compares by lines, words, or characters and shows added/removed/common parts.`,
   category: 'Utilities',
   parameters: {
@@ -2115,8 +2135,9 @@ export const compareTextExecutor: ToolExecutor = async (args): Promise<ToolExecu
 // REGEX TOOLS
 // =============================================================================
 
-export const regexTool: ToolDefinition = {
-  name: 'regex',
+export const runRegexTool: ToolDefinition = {
+  name: 'run_regex',
+  brief: 'Test, match, replace, or split text with regex',
   description: `Test, match, or replace text using regular expressions. Call this when you need pattern matching, find-and-replace, text splitting by pattern, or when the user asks to extract data matching a specific pattern. Supports test, match, match_all, replace, and split operations.`,
   category: 'Utilities',
   parameters: {
@@ -2148,7 +2169,7 @@ export const regexTool: ToolDefinition = {
   },
 };
 
-export const regexExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+export const runRegexExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
   try {
     const text = args.text as string;
     const pattern = args.pattern as string;
@@ -2221,8 +2242,9 @@ export const regexExecutor: ToolExecutor = async (args): Promise<ToolExecutionRe
 // SYSTEM INFO TOOL
 // =============================================================================
 
-export const systemInfoTool: ToolDefinition = {
-  name: 'system_info',
+export const getSystemInfoTool: ToolDefinition = {
+  name: 'get_system_info',
+  brief: 'Get OS, Node version, memory, and CPU stats',
   description: `Get system information: OS platform, architecture, Node.js version, memory usage, and CPU stats. Call this when the user asks about the system, server status, or when you need platform-specific context for recommendations. Read-only and safe.`,
   category: 'Utilities',
   parameters: {
@@ -2241,7 +2263,7 @@ export const systemInfoTool: ToolDefinition = {
   },
 };
 
-export const systemInfoExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+export const getSystemInfoExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
   try {
     const include = (args.include as string[]) || ['platform'];
     const includeAll = include.includes('all');
@@ -2305,7 +2327,7 @@ export const UTILITY_TOOLS: Array<{ definition: ToolDefinition; executor: ToolEx
   { definition: dateAddTool, executor: dateAddExecutor },
   // Calculation & Statistics
   { definition: calculateTool, executor: calculateExecutor },
-  { definition: statisticsTool, executor: statisticsExecutor },
+  { definition: calculateStatisticsTool, executor: calculateStatisticsExecutor },
   // Unit Conversion
   { definition: convertUnitsTool, executor: convertUnitsExecutor },
   // Random Generation
@@ -2320,16 +2342,16 @@ export const UTILITY_TOOLS: Array<{ definition: ToolDefinition; executor: ToolEx
   { definition: extractFromTextTool, executor: extractFromTextExecutor },
   { definition: transformTextTool, executor: transformTextExecutor },
   { definition: compareTextTool, executor: compareTextExecutor },
-  { definition: regexTool, executor: regexExecutor },
+  { definition: runRegexTool, executor: runRegexExecutor },
   // Data Processing
   { definition: formatJsonTool, executor: formatJsonExecutor },
   { definition: parseCsvTool, executor: parseCsvExecutor },
   { definition: generateCsvTool, executor: generateCsvExecutor },
   { definition: arrayOperationsTool, executor: arrayOperationsExecutor },
   // Validation
-  { definition: validateTool, executor: validateExecutor },
+  { definition: validateDataTool, executor: validateDataExecutor },
   // System
-  { definition: systemInfoTool, executor: systemInfoExecutor },
+  { definition: getSystemInfoTool, executor: getSystemInfoExecutor },
 ];
 
 /**

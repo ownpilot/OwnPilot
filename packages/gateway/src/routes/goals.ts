@@ -576,7 +576,7 @@ export async function executeGoalTool(
         };
       }
 
-      case 'goal_stats': {
+      case 'get_goal_stats': {
         const stats = await service.getStats(userId);
 
         return {

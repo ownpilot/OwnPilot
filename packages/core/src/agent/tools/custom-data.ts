@@ -17,6 +17,7 @@ import type { ToolDefinition } from '../types.js';
  */
 export const listCustomTablesTool: ToolDefinition = {
   name: 'list_custom_tables',
+  brief: 'List all custom data tables',
   description: `List all custom data tables available for storing user data.
 Use this to see what tables exist before adding or querying data.
 Returns table names, descriptions, column counts, and record counts.
@@ -35,6 +36,7 @@ bookmarks, tasks, notes, calendar, contacts, expenses, memories, goals, schedule
  */
 export const describeCustomTableTool: ToolDefinition = {
   name: 'describe_custom_table',
+  brief: 'Get columns and types for a custom table',
   description: `Get detailed information about a custom table including its columns and data types.
 Use this before adding or querying records to understand the table structure.`,
   parameters: {
@@ -54,6 +56,7 @@ Use this before adding or querying records to understand the table structure.`,
  */
 export const createCustomTableTool: ToolDefinition = {
   name: 'create_custom_table',
+  brief: 'Create a new table with specified columns',
   description: `Create a new custom data table with specified columns.
 Use this ONLY for truly custom data types that don't have built-in support.
 
@@ -124,6 +127,7 @@ Column types: text, number, boolean, date, json`,
  */
 export const deleteCustomTableTool: ToolDefinition = {
   name: 'delete_custom_table',
+  brief: 'Delete a custom table and all its data',
   description: `Delete a custom table and ALL its data. This is irreversible!
 Only use when the user explicitly asks to delete a table.`,
   parameters: {
@@ -151,6 +155,7 @@ Only use when the user explicitly asks to delete a table.`,
  */
 export const addCustomRecordTool: ToolDefinition = {
   name: 'add_custom_record',
+  brief: 'Add a record to a custom table',
   description: `Add a new record to a custom data table.
 Use describe_custom_table first to know what columns exist.
 The data object should match the table's column schema.`,
@@ -175,6 +180,7 @@ The data object should match the table's column schema.`,
  */
 export const batchAddCustomRecordsTool: ToolDefinition = {
   name: 'batch_add_custom_records',
+  brief: 'Add multiple records to a table at once',
   description: `Add multiple records to a custom data table at once.
 Use this for bulk imports or adding multiple items efficiently.
 All records must be for the same table.`,
@@ -203,6 +209,7 @@ All records must be for the same table.`,
  */
 export const listCustomRecordsTool: ToolDefinition = {
   name: 'list_custom_records',
+  brief: 'List records with optional filters',
   description: `List records from a custom data table with optional filtering.
 Use this to show the user their data or to find specific records.`,
   parameters: {
@@ -234,6 +241,7 @@ Use this to show the user their data or to find specific records.`,
  */
 export const searchCustomRecordsTool: ToolDefinition = {
   name: 'search_custom_records',
+  brief: 'Search records using a text query',
   description: `Search for records in a custom table using a text query.
 Searches across all text columns for matching content.`,
   parameters: {
@@ -261,6 +269,7 @@ Searches across all text columns for matching content.`,
  */
 export const getCustomRecordTool: ToolDefinition = {
   name: 'get_custom_record',
+  brief: 'Get a single record by ID',
   description: `Get a single record by its ID.
 Use this to fetch details of a specific record.`,
   parameters: {
@@ -280,6 +289,7 @@ Use this to fetch details of a specific record.`,
  */
 export const updateCustomRecordTool: ToolDefinition = {
   name: 'update_custom_record',
+  brief: 'Update a record with new data',
   description: `Update an existing record with new data.
 Only the provided fields will be updated, others remain unchanged.`,
   parameters: {
@@ -303,6 +313,7 @@ Only the provided fields will be updated, others remain unchanged.`,
  */
 export const deleteCustomRecordTool: ToolDefinition = {
   name: 'delete_custom_record',
+  brief: 'Delete a record from a custom table',
   description: `Delete a record from a custom table.
 Use this when the user wants to remove specific data.`,
   parameters: {

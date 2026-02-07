@@ -11,6 +11,7 @@ import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools
 
 export const extractStructuredDataTool: ToolDefinition = {
   name: 'extract_structured_data',
+  brief: 'Extract structured JSON from unstructured text',
   description: 'Extract structured data from unstructured text using AI. Useful for parsing receipts, invoices, emails, etc.',
   parameters: {
     type: 'object',
@@ -296,6 +297,7 @@ function getTemplateSchema(template: string): Record<string, unknown> {
 
 export const extractEntitiesTool: ToolDefinition = {
   name: 'extract_entities',
+  brief: 'Extract people, orgs, locations, dates from text',
   description: 'Extract named entities from text (people, organizations, locations, dates, etc.)',
   parameters: {
     type: 'object',
@@ -392,6 +394,7 @@ export const extractEntitiesExecutor: ToolExecutor = async (params, _context): P
 
 export const extractTableDataTool: ToolDefinition = {
   name: 'extract_table_data',
+  brief: 'Extract tabular data from text or HTML',
   description: 'Extract tabular data from text or HTML',
   parameters: {
     type: 'object',
@@ -632,6 +635,7 @@ function parseTextTable(content: string, delimiter: string | undefined, hasHeade
 
 export const summarizeTextTool: ToolDefinition = {
   name: 'summarize_text',
+  brief: 'Generate a summary of long text content',
   description: 'Generate a summary of long text content',
   parameters: {
     type: 'object',

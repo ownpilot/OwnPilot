@@ -131,8 +131,8 @@ const TOOL_RISK_FACTORS: Record<string, string[]> = {
   run_script: ['code_execution', 'system_command'],
 
   // Data tools
-  remember: ['data_modification'],
-  forget: ['data_deletion'],
+  create_memory: ['data_modification'],
+  delete_memory: ['data_deletion'],
   create_goal: ['data_modification'],
   update_goal: ['data_modification'],
   delete_goal: ['data_deletion'],

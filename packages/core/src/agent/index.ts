@@ -53,6 +53,7 @@ export {
 export {
   TOOL_GROUPS,
   DEFAULT_ENABLED_GROUPS,
+  FAMILIAR_TOOLS,
   getEnabledTools,
   getToolGroups,
   getGroupForTool,

@@ -864,6 +864,7 @@ export function createDynamicToolRegistry(
  */
 export const createToolDefinition: ToolDefinition = {
   name: 'create_tool',
+  brief: 'Create a new custom tool with JavaScript code',
   description: `Create a new reusable tool that can be called in future conversations.
 The tool will be saved and available for use. Write JavaScript code that:
 - Receives arguments via the 'args' object
@@ -946,6 +947,7 @@ The tool will be saved and available for use. Write JavaScript code that:
  */
 export const listToolsDefinition: ToolDefinition = {
   name: 'list_custom_tools',
+  brief: 'List all user-created custom tools',
   description: 'List all custom tools that have been created',
   parameters: {
     type: 'object',
@@ -969,6 +971,7 @@ export const listToolsDefinition: ToolDefinition = {
  */
 export const deleteToolDefinition: ToolDefinition = {
   name: 'delete_custom_tool',
+  brief: 'Delete an LLM-created custom tool',
   description:
     'Delete a custom tool by name. IMPORTANT: Can only delete LLM-created tools. User-created tools are protected and cannot be deleted by the LLM.',
   parameters: {
@@ -994,6 +997,7 @@ export const deleteToolDefinition: ToolDefinition = {
  */
 export const toggleToolDefinition: ToolDefinition = {
   name: 'toggle_custom_tool',
+  brief: 'Enable or disable a custom tool',
   description: 'Enable or disable a custom tool',
   parameters: {
     type: 'object',
@@ -1022,13 +1026,14 @@ export const toggleToolDefinition: ToolDefinition = {
  */
 export const searchToolsDefinition: ToolDefinition = {
   name: 'search_tools',
-  description: 'Search for available tools by keyword or intent. Uses word-by-word AND matching: "email send" finds send_email. Use "all" to list every tool. Set include_params=true to also get full parameter docs (skips the need for get_tool_help).',
+  brief: 'Find tools by keyword and get their parameter docs',
+  description: 'Search for tools by keyword or intent. AND matching: "email send" finds send_email. Use "all" to list every tool. Returns parameter docs by default.',
   parameters: {
     type: 'object',
     properties: {
       query: {
         type: 'string',
-        description: 'Search keywords (e.g. "email", "send email", "task add", "file read"). Multiple words use AND logic. Use "all" to list everything.',
+        description: 'Search keywords (e.g. "email", "send email", "task add"). Multiple words use AND logic. Use "all" to list everything.',
       },
       category: {
         type: 'string',
@@ -1036,7 +1041,7 @@ export const searchToolsDefinition: ToolDefinition = {
       },
       include_params: {
         type: 'boolean',
-        description: 'If true, include full parameter documentation for each matched tool. Saves a separate get_tool_help call. Default: false.',
+        description: 'Include full parameter docs for matched tools. Default: true.',
       },
     },
     required: ['query'],
@@ -1050,17 +1055,18 @@ export const searchToolsDefinition: ToolDefinition = {
  */
 export const getToolHelpDefinition: ToolDefinition = {
   name: 'get_tool_help',
-  description: 'Get detailed parameter info and usage for one or more tools. Accepts a single tool_name or an array of tool_names for batch lookup. Call this after search_tools to learn exactly how to call tools.',
+  brief: 'Get parameter docs for one or more tools by name',
+  description: 'Get parameter info for one or more tools. Accepts tool_name (single) or tool_names (array).',
   parameters: {
     type: 'object',
     properties: {
       tool_name: {
         type: 'string',
-        description: 'Exact tool name from search_tools results (e.g. "add_task", "remember", "search_web"). Use this for a single tool.',
+        description: 'Exact tool name (e.g. "add_task", "search_web").',
       },
       tool_names: {
         type: 'array',
-        description: 'Array of exact tool names to get help for multiple tools at once (e.g. ["add_task", "list_tasks", "complete_task"]). More efficient than calling get_tool_help multiple times.',
+        description: 'Array of tool names for batch lookup (e.g. ["add_task", "list_tasks"]).',
         items: { type: 'string' },
       },
     },
@@ -1075,17 +1081,18 @@ export const getToolHelpDefinition: ToolDefinition = {
  */
 export const useToolDefinition: ToolDefinition = {
   name: 'use_tool',
-  description: 'Execute a tool by its exact name. MANDATORY: You MUST call get_tool_help or search_tools(include_params=true) BEFORE using any tool for the first time. You cannot know the correct parameters without checking — NEVER guess. Errors include parameter docs — read them and retry.',
+  brief: 'Execute any tool by name with arguments',
+  description: 'Execute a tool by name. For familiar tools (catalog shows params), call directly. For others, check params via search_tools first. Errors show correct params — read and retry.',
   parameters: {
     type: 'object',
     properties: {
       tool_name: {
         type: 'string',
-        description: 'Exact tool name (from search_tools results or TOOL CATALOG). Do NOT guess or invent names.',
+        description: 'Exact tool name from TOOL CATALOG or search_tools results.',
       },
       arguments: {
         type: 'object',
-        description: 'Arguments matching the tool parameters. You MUST look up parameters via get_tool_help or search_tools(include_params=true) before calling this.',
+        description: 'Tool arguments. Must match the tool parameter schema.',
       },
     },
     required: ['tool_name', 'arguments'],
@@ -1099,19 +1106,20 @@ export const useToolDefinition: ToolDefinition = {
  */
 export const batchUseToolDefinition: ToolDefinition = {
   name: 'batch_use_tool',
-  description: 'Execute multiple tools in parallel and return all results at once. Much faster than calling use_tool sequentially. MANDATORY: You MUST look up parameters for each tool via get_tool_help or search_tools(include_params=true) BEFORE calling this.',
+  brief: 'Execute multiple tools in parallel',
+  description: 'Execute multiple tools in parallel. Faster than sequential use_tool calls.',
   parameters: {
     type: 'object',
     properties: {
       calls: {
         type: 'array',
-        description: 'Array of tool calls. Each item: { tool_name: "exact_name", arguments: { ... } }',
+        description: 'Array of { tool_name, arguments } objects.',
         items: {
           type: 'object',
           properties: {
             tool_name: {
               type: 'string',
-              description: 'Exact tool name (from search_tools or TOOL CATALOG)',
+              description: 'Exact tool name',
             },
             arguments: {
               type: 'object',

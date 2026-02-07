@@ -30,6 +30,7 @@ const MAX_OUTPUT_SIZE = 100000;
 
 export const gitStatusTool: ToolDefinition = {
   name: 'git_status',
+  brief: 'Show staged, modified, and untracked files',
   description: 'Get the current git repository status including staged, modified, and untracked files',
   parameters: {
     type: 'object',
@@ -141,6 +142,7 @@ function parseGitStatus(output: string, short: boolean): Record<string, unknown>
 
 export const gitDiffTool: ToolDefinition = {
   name: 'git_diff',
+  brief: 'Show changes between commits or working tree',
   description: 'Show changes between commits, working tree, and staging area',
   parameters: {
     type: 'object',
@@ -229,6 +231,7 @@ function parseDiffStats(diff: string): Record<string, number> {
 
 export const gitLogTool: ToolDefinition = {
   name: 'git_log',
+  brief: 'Show commit history',
   description: 'Show commit history',
   parameters: {
     type: 'object',
@@ -332,6 +335,7 @@ export const gitLogExecutor: ToolExecutor = async (params, _context): Promise<To
 
 export const gitCommitTool: ToolDefinition = {
   name: 'git_commit',
+  brief: 'Create a commit with staged changes',
   description: 'Create a new commit with staged changes',
   parameters: {
     type: 'object',
@@ -406,6 +410,7 @@ export const gitCommitExecutor: ToolExecutor = async (params, _context): Promise
 
 export const gitAddTool: ToolDefinition = {
   name: 'git_add',
+  brief: 'Stage files for commit',
   description: 'Stage files for commit',
   parameters: {
     type: 'object',
@@ -468,6 +473,7 @@ export const gitAddExecutor: ToolExecutor = async (params, _context): Promise<To
 
 export const gitBranchTool: ToolDefinition = {
   name: 'git_branch',
+  brief: 'List, create, or delete branches',
   description: 'List, create, or delete branches',
   parameters: {
     type: 'object',
@@ -572,6 +578,7 @@ export const gitBranchExecutor: ToolExecutor = async (params, _context): Promise
 
 export const gitCheckoutTool: ToolDefinition = {
   name: 'git_checkout',
+  brief: 'Switch branches or restore files',
   description: 'Switch branches or restore files',
   parameters: {
     type: 'object',

@@ -62,6 +62,28 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('Agents');
 
+/**
+ * Base system prompt used for all agents.
+ * Structured to establish identity, behavior, and output expectations.
+ */
+const BASE_SYSTEM_PROMPT = `You are OwnPilot, a privacy-first personal AI assistant.
+
+## Identity
+- You run on the user's own infrastructure. Their data never leaves their server.
+- You have persistent memory across conversations and learn user preferences over time.
+- You execute tools to take real actions: manage tasks, files, emails, calendar, etc.
+
+## Behavior
+- Be concise. Elaborate only when asked or when the task requires it.
+- Act proactively: if the user says "remind me X tomorrow", create the task immediately.
+- When ambiguous, make a reasonable assumption and state it.
+- If a tool fails, read the error, fix params, retry once before reporting failure.
+- After tool operations, summarize what you did in 1-2 sentences.
+
+## Output
+- Markdown for structured content; plain text for simple answers.
+- Bulleted lists for multiple items. Include dates, numbers, specifics.`;
+
 /** Sanitize user-supplied IDs for safe interpolation in error messages */
 const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
@@ -794,14 +816,14 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
         return { content: `No tools found for "${query}". Tips:\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"` };
       }
 
-      // When include_params is true, return full parameter docs for each match
-      if (include_params) {
+      // include_params defaults to true — return full parameter docs unless explicitly false
+      if (include_params !== false) {
         const sections = matches.map(d => formatFullToolHelp(tools, d.name));
         return { content: [`Found ${matches.length} tool(s) for "${query}" (with parameters):`, '', ...sections.join('\n\n---\n\n').split('\n')].join('\n') };
       }
 
       const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
-      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines, '', 'Tip: Add include_params=true to get full parameter docs, or use get_tool_help(tool_name).'].join('\n') };
+      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines].join('\n') };
     });
   }
 
@@ -1509,7 +1531,7 @@ export async function getOrCreateDefaultAgent(): Promise<Agent> {
       record = await agentsRepo.create({
         id: defaultId,
         name: 'Personal Assistant',
-        systemPrompt: 'You are a helpful personal AI assistant. You help the user with their daily tasks, remember their preferences, and proactively assist them.',
+        systemPrompt: BASE_SYSTEM_PROMPT,
         provider,
         model,
         config: {
@@ -1641,14 +1663,14 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
         return { content: `No tools found for "${query}". Tips:\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"` };
       }
 
-      // When include_params is true, return full parameter docs for each match
-      if (include_params) {
+      // include_params defaults to true — return full parameter docs unless explicitly false
+      if (include_params !== false) {
         const sections = matches.map(d => formatFullToolHelp(tools, d.name));
         return { content: [`Found ${matches.length} tool(s) for "${query}" (with parameters):`, '', ...sections.join('\n\n---\n\n').split('\n')].join('\n') };
       }
 
       const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
-      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines, '', 'Tip: Add include_params=true to get full parameter docs, or use get_tool_help(tool_name).'].join('\n') };
+      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines].join('\n') };
     });
   }
 
@@ -1857,7 +1879,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs];
 
   // Inject personal memory into system prompt
-  const basePrompt = 'You are a helpful personal AI assistant. You help the user with their daily tasks, remember their preferences, and proactively assist them.';
+  const basePrompt = BASE_SYSTEM_PROMPT;
   const { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
     userId: 'default',
     tools: toolDefs,

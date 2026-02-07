@@ -786,8 +786,8 @@ describe('useToolDefinition', () => {
     expect(useToolDefinition.parameters.properties.arguments.type).toBe('object');
   });
 
-  it('description mentions MANDATORY', () => {
-    expect(useToolDefinition.description).toContain('MANDATORY');
+  it('description mentions familiar tools', () => {
+    expect(useToolDefinition.description).toContain('familiar tools');
   });
 });
 

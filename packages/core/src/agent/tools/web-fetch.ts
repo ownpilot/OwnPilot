@@ -163,6 +163,7 @@ function extractMetadata(html: string): Record<string, string> {
 
 export const httpRequestTool: ToolDefinition = {
   name: 'http_request',
+  brief: 'Make HTTP requests (GET, POST, PUT, DELETE)',
   description: 'Make HTTP requests to external APIs and websites. Supports GET, POST, PUT, PATCH, DELETE methods.',
   parameters: {
     type: 'object',
@@ -305,6 +306,7 @@ export const httpRequestExecutor: ToolExecutor = async (params, _context): Promi
 
 export const fetchWebPageTool: ToolDefinition = {
   name: 'fetch_web_page',
+  brief: 'Fetch a web page and extract text content',
   description: 'Fetch a web page and extract its content, metadata, and links',
   parameters: {
     type: 'object',
@@ -432,6 +434,7 @@ export const fetchWebPageExecutor: ToolExecutor = async (params, _context): Prom
 
 export const searchWebTool: ToolDefinition = {
   name: 'search_web',
+  brief: 'Search the web via DuckDuckGo',
   description: 'Search the web using DuckDuckGo. Returns search results with titles, URLs, and snippets.',
   parameters: {
     type: 'object',
@@ -533,7 +536,8 @@ export const searchWebExecutor: ToolExecutor = async (params, _context): Promise
 // ============================================================================
 
 export const jsonApiTool: ToolDefinition = {
-  name: 'json_api',
+  name: 'call_json_api',
+  brief: 'Make a JSON API request with auto-serialization',
   description: 'Simplified tool for making JSON API requests. Automatically handles JSON serialization.',
   parameters: {
     type: 'object',

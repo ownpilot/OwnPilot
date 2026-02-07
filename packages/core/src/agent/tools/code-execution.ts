@@ -50,6 +50,7 @@ const DOCKER_REQUIRED_ERROR = {
 
 export const executeJavaScriptTool: ToolDefinition = {
   name: 'execute_javascript',
+  brief: 'Run JavaScript/Node.js in Docker sandbox',
   description: 'Execute JavaScript/Node.js code in a Docker sandboxed environment. Requires Docker to be running.',
   parameters: {
     type: 'object',
@@ -130,6 +131,7 @@ export const executeJavaScriptExecutor: ToolExecutor = async (params, _context):
 
 export const executePythonTool: ToolDefinition = {
   name: 'execute_python',
+  brief: 'Run Python code in Docker sandbox',
   description: 'Execute Python code in a Docker sandboxed environment. Requires Docker to be running.',
   parameters: {
     type: 'object',
@@ -210,6 +212,7 @@ export const executePythonExecutor: ToolExecutor = async (params, _context): Pro
 
 export const executeShellTool: ToolDefinition = {
   name: 'execute_shell',
+  brief: 'Run shell commands in Docker sandbox',
   description: 'Execute a shell command in a Docker sandboxed environment. Requires Docker to be running. Blocked commands include: rm -rf /, mkfs, dd if=/dev, fork bombs, chmod -R 777 /, shutdown/reboot/halt, format c:, and similar destructive operations.',
   parameters: {
     type: 'object',
@@ -308,6 +311,7 @@ export const executeShellExecutor: ToolExecutor = async (params, _context): Prom
 
 export const compileCodeTool: ToolDefinition = {
   name: 'compile_code',
+  brief: 'Compile source code (disabled for security)',
   description: 'Compile source code. Currently disabled for security - use Docker-based build tools instead.',
   parameters: {
     type: 'object',
@@ -344,6 +348,7 @@ export const compileCodeExecutor: ToolExecutor = async (_params, _context): Prom
 
 export const packageManagerTool: ToolDefinition = {
   name: 'package_manager',
+  brief: 'Run package manager commands (disabled)',
   description: 'Run package manager commands. Currently disabled for security - use Docker-based build tools instead.',
   parameters: {
     type: 'object',

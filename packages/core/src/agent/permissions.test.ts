@@ -905,7 +905,7 @@ describe('PermissionChecker', () => {
 
 describe('DEFAULT_TOOL_PERMISSIONS', () => {
   it('contains file_read tools', () => {
-    for (const tool of ['read_file', 'list_directory', 'search_files', 'file_info']) {
+    for (const tool of ['read_file', 'list_directory', 'search_files', 'get_file_info']) {
       expect(DEFAULT_TOOL_PERMISSIONS[tool]).toBeDefined();
       expect(DEFAULT_TOOL_PERMISSIONS[tool].category).toBe('file_read');
       expect(DEFAULT_TOOL_PERMISSIONS[tool].level).toBe('read');
@@ -927,7 +927,7 @@ describe('DEFAULT_TOOL_PERMISSIONS', () => {
   });
 
   it('contains network_read tools', () => {
-    for (const tool of ['http_request', 'fetch_web_page', 'search_web', 'json_api']) {
+    for (const tool of ['http_request', 'fetch_web_page', 'search_web', 'call_json_api']) {
       expect(DEFAULT_TOOL_PERMISSIONS[tool]).toBeDefined();
       expect(DEFAULT_TOOL_PERMISSIONS[tool].category).toBe('network_read');
     }

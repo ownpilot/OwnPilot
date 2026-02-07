@@ -66,6 +66,7 @@ const DEEPL_CONFIG_REQUIREMENT = {
 
 export const translateTextTool: ToolDefinition = {
   name: 'translate_text',
+  brief: 'Translate text between 40+ languages',
   description: 'Translate text between languages using AI. Supports 40+ languages with automatic source language detection.',
   parameters: {
     type: 'object',
@@ -238,6 +239,7 @@ function detectLanguage(text: string): string {
 
 export const detectLanguageTool: ToolDefinition = {
   name: 'detect_language',
+  brief: 'Detect the language of given text',
   description: 'Detect the language of a given text',
   parameters: {
     type: 'object',
@@ -338,6 +340,7 @@ function getAlternativeCandidates(text: string, primary: string): Array<{ code: 
 
 export const listLanguagesTool: ToolDefinition = {
   name: 'list_languages',
+  brief: 'List all supported translation languages',
   description: 'List all supported languages for translation',
   parameters: {
     type: 'object',
@@ -381,6 +384,7 @@ export const listLanguagesExecutor: ToolExecutor = async (params, _context): Pro
 
 export const batchTranslateTool: ToolDefinition = {
   name: 'batch_translate',
+  brief: 'Translate multiple texts at once',
   description: 'Translate multiple texts at once',
   parameters: {
     type: 'object',

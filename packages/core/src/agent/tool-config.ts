@@ -126,7 +126,7 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     name: 'Memory',
     description: 'Persistent AI memory for user context',
     defaultEnabled: true,
-    tools: ['remember', 'recall', 'forget', 'list_memories'],
+    tools: ['create_memory', 'search_memories', 'delete_memory', 'list_memories'],
   },
 
   goals: {
@@ -286,7 +286,7 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     name: 'Web Fetch',
     description: 'HTTP requests and web scraping',
     defaultEnabled: false,
-    tools: ['http_request', 'fetch_web_page', 'search_web', 'json_api'],
+    tools: ['http_request', 'fetch_web_page', 'search_web', 'call_json_api'],
   },
 
   email: {
@@ -329,7 +329,7 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     name: 'Audio',
     description: 'Text-to-speech and transcription',
     defaultEnabled: false,
-    tools: ['text_to_speech', 'speech_to_text', 'translate_audio', 'audio_info', 'split_audio'],
+    tools: ['text_to_speech', 'speech_to_text', 'translate_audio', 'get_audio_info', 'split_audio'],
   },
 
   pdf: {
@@ -337,7 +337,7 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     name: 'PDF',
     description: 'PDF reading and creation',
     defaultEnabled: false,
-    tools: ['read_pdf', 'create_pdf', 'pdf_info'],
+    tools: ['read_pdf', 'create_pdf', 'get_pdf_info'],
   },
 
   // =========================================================================
@@ -466,6 +466,58 @@ export function getGroupForTool(toolName: string): ToolGroupConfig | undefined {
   }
   return undefined;
 }
+
+// =============================================================================
+// FAMILIAR TOOLS — inline parameter schemas in system prompt tool catalog
+// =============================================================================
+
+/**
+ * Tools whose parameter schemas are shown inline in the tool catalog.
+ * These are the ~25 most frequently used tools. The LLM can call them
+ * directly via use_tool without first calling search_tools or get_tool_help.
+ */
+export const FAMILIAR_TOOLS = new Set([
+  // Tasks & Personal Data
+  'add_task',
+  'list_tasks',
+  'complete_task',
+  'add_note',
+  'list_notes',
+  'add_calendar_event',
+  'list_calendar_events',
+  'add_bookmark',
+
+  // Memory (renamed)
+  'create_memory',
+  'search_memories',
+  'delete_memory',
+
+  // Goals
+  'create_goal',
+  'list_goals',
+  'update_goal',
+
+  // File System
+  'read_file',
+  'write_file',
+  'list_directory',
+  'search_files',
+
+  // Web
+  'search_web',
+  'fetch_web_page',
+
+  // Utilities
+  'get_current_datetime',
+  'calculate',
+  'convert_units',
+
+  // Weather
+  'get_weather',
+
+  // Email
+  'send_email',
+]);
 
 /**
  * Tool statistics

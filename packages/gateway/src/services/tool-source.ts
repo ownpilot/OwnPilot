@@ -176,20 +176,20 @@ const CORE_FILE_TOOLS: Record<string, string[]> = {
   'utility-tools': [
     'get_current_datetime', 'calculate', 'convert_units', 'generate_uuid',
     'generate_password', 'random_number', 'hash_text', 'encode_decode',
-    'count_text', 'extract_from_text', 'validate', 'transform_text',
+    'count_text', 'extract_from_text', 'validate_data', 'transform_text',
     'date_diff', 'date_add', 'format_json', 'parse_csv', 'generate_csv',
-    'array_operations', 'statistics', 'compare_text', 'regex', 'system_info',
+    'array_operations', 'calculate_statistics', 'compare_text', 'run_regex', 'get_system_info',
   ],
   'file-system': [
     'read_file', 'write_file', 'list_directory', 'search_files',
-    'download_file', 'file_info', 'delete_file', 'copy_file',
+    'download_file', 'get_file_info', 'delete_file', 'copy_file',
   ],
   'code-execution': [
     'execute_javascript', 'execute_python', 'execute_shell',
     'compile_code', 'package_manager',
   ],
   'web-fetch': [
-    'http_request', 'fetch_web_page', 'search_web', 'json_api',
+    'http_request', 'fetch_web_page', 'search_web', 'call_json_api',
   ],
   'expense-tracker': [
     'add_expense', 'batch_add_expenses', 'parse_receipt',
@@ -199,7 +199,7 @@ const CORE_FILE_TOOLS: Record<string, string[]> = {
     'create_scheduled_task', 'list_scheduled_tasks', 'update_scheduled_task',
     'delete_scheduled_task', 'get_task_history', 'trigger_task',
   ],
-  'pdf-tools': ['read_pdf', 'create_pdf', 'pdf_info'],
+  'pdf-tools': ['read_pdf', 'create_pdf', 'get_pdf_info'],
   'translation-tools': [
     'translate_text', 'detect_language', 'list_languages', 'batch_translate',
   ],
@@ -217,7 +217,7 @@ const CORE_FILE_TOOLS: Record<string, string[]> = {
   ],
   'audio-tools': [
     'text_to_speech', 'speech_to_text', 'translate_audio',
-    'audio_info', 'split_audio',
+    'get_audio_info', 'split_audio',
   ],
   'vector-search-tools': [
     'create_embedding', 'semantic_search', 'upsert_vectors',

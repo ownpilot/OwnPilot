@@ -34,13 +34,13 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   // ─────────────────────────────────────────────
   // MEMORY
   // ─────────────────────────────────────────────
-  remember: ['save', 'store', 'note', 'memorize', 'remember', 'keep'],
-  batch_remember: ['batch', 'bulk save', 'multiple save', 'remember batch'],
-  recall: ['retrieve', 'search memory', 'remember', 'find', 'query'],
-  forget: ['delete memory', 'remove', 'clear', 'forget'],
+  create_memory: ['save', 'store', 'note', 'memorize', 'remember', 'keep'],
+  batch_create_memories: ['batch', 'bulk save', 'multiple save', 'remember batch'],
+  search_memories: ['retrieve', 'search memory', 'remember', 'find', 'query'],
+  delete_memory: ['delete memory', 'remove', 'clear', 'forget'],
   list_memories: ['memories', 'records', 'list', 'show'],
-  boost_memory: ['priority', 'boost', 'highlight', 'important'],
-  memory_stats: ['stats', 'memory info', 'status', 'statistics'],
+  update_memory_importance: ['priority', 'boost', 'highlight', 'important'],
+  get_memory_stats: ['stats', 'memory info', 'status', 'statistics'],
 
   // ─────────────────────────────────────────────
   // TASKS / TODO
@@ -105,7 +105,7 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   list_directory: ['folder', 'directory', 'ls', 'list', 'files'],
   search_files: ['file search', 'find', 'grep', 'search'],
   download_file: ['download', 'fetch', 'get file'],
-  file_info: ['file info', 'size', 'detail', 'metadata'],
+  get_file_info: ['file info', 'size', 'detail', 'metadata'],
   delete_file: ['file delete', 'remove file'],
   copy_file: ['file copy', 'duplicate', 'move'],
 
@@ -115,7 +115,7 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   http_request: ['api', 'http', 'rest', 'request', 'endpoint', 'fetch', 'call'],
   fetch_web_page: ['web', 'page', 'site', 'url', 'scrape', 'read', 'html'],
   search_web: ['search', 'google', 'internet', 'web search', 'find', 'query', 'information'],
-  json_api: ['json', 'api', 'rest', 'data', 'endpoint', 'service'],
+  call_json_api: ['json', 'api', 'rest', 'data', 'endpoint', 'service'],
 
   // ─────────────────────────────────────────────
   // CODE EXECUTION
@@ -141,7 +141,7 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   text_to_speech: ['audio', 'speak', 'tts', 'voice', 'speech synthesis'],
   speech_to_text: ['transcribe', 'stt', 'listen', 'audio to text', 'transcript'],
   translate_audio: ['audio translate', 'language'],
-  audio_info: ['audio info', 'duration', 'format', 'detail'],
+  get_audio_info: ['audio info', 'duration', 'format', 'detail'],
   split_audio: ['audio split', 'cut', 'segment'],
 
   // ─────────────────────────────────────────────
@@ -149,7 +149,7 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   // ─────────────────────────────────────────────
   read_pdf: ['pdf', 'document', 'read', 'file', 'extract text'],
   create_pdf: ['create pdf', 'document create', 'report'],
-  pdf_info: ['pdf info', 'document info', 'page count', 'size'],
+  get_pdf_info: ['pdf info', 'document info', 'page count', 'size'],
 
   // ─────────────────────────────────────────────
   // TRANSLATION
@@ -169,7 +169,7 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   get_next_actions: ['next action', 'what to do', 'suggestion'],
   complete_step: ['step complete', 'finish', 'mark progress'],
   get_goal_details: ['goal detail', 'info', 'status'],
-  goal_stats: ['goal stats', 'progress', 'report'],
+  get_goal_stats: ['goal stats', 'progress', 'report'],
 
   // ─────────────────────────────────────────────
   // SCHEDULER
@@ -234,7 +234,7 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   encode_decode: ['encode', 'decode', 'base64', 'url encode'],
   count_text: ['count', 'word count', 'character', 'line'],
   extract_from_text: ['extract', 'regex', 'pattern', 'find', 'parse'],
-  validate: ['validate', 'check', 'valid', 'email', 'url', 'phone'],
+  validate_data: ['validate', 'check', 'valid', 'email', 'url', 'phone'],
   transform_text: ['transform', 'uppercase', 'lowercase', 'trim', 'replace'],
   date_diff: ['date diff', 'how many days', 'duration', 'difference'],
   date_add: ['date add', 'add days', 'next', 'previous'],
@@ -242,10 +242,10 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   parse_csv: ['csv parse', 'table', 'excel', 'read data'],
   generate_csv: ['csv generate', 'create table', 'export'],
   array_operations: ['array', 'list', 'sort', 'filter', 'unique'],
-  statistics: ['statistics', 'average', 'mean', 'median', 'std', 'sum'],
+  calculate_statistics: ['statistics', 'average', 'mean', 'median', 'std', 'sum'],
   compare_text: ['compare', 'diff', 'similarity'],
-  regex: ['regex', 'regular expression', 'pattern', 'match'],
-  system_info: ['system', 'info', 'platform', 'os', 'memory', 'cpu'],
+  run_regex: ['regex', 'regular expression', 'pattern', 'match'],
+  get_system_info: ['system', 'info', 'platform', 'os', 'memory', 'cpu'],
 
   // ─────────────────────────────────────────────
   // DYNAMIC TOOLS (meta)

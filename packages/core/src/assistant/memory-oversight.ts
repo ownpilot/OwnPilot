@@ -209,7 +209,7 @@ export const EXPORT_MEMORIES_TOOL: ToolDefinition = {
  * Memory statistics tool
  */
 export const MEMORY_STATS_TOOL: ToolDefinition = {
-  name: 'memory_stats',
+  name: 'get_memory_stats',
   description: 'Get statistics about your stored memories',
   parameters: {
     type: 'object',

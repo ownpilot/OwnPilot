@@ -87,7 +87,7 @@ describe('WEB_FETCH_TOOLS', () => {
 
   it('contains correct tool names', () => {
     const names = WEB_FETCH_TOOLS.map((t) => t.definition.name);
-    expect(names).toEqual(['http_request', 'fetch_web_page', 'search_web', 'json_api']);
+    expect(names).toEqual(['http_request', 'fetch_web_page', 'search_web', 'call_json_api']);
   });
 
   it('each entry has a definition and an executor function', () => {
@@ -152,7 +152,7 @@ describe('searchWebTool definition', () => {
 
 describe('jsonApiTool definition', () => {
   it('has name "json_api"', () => {
-    expect(jsonApiTool.name).toBe('json_api');
+    expect(jsonApiTool.name).toBe('call_json_api');
   });
 
   it('requires url', () => {
