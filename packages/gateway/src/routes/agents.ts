@@ -30,6 +30,7 @@ import {
   type AIProvider,
   type ToolExecutionResult as CoreToolResult,
   type WorkspaceContext,
+  unsafeToolId,
 } from '@ownpilot/core';
 import { executeMemoryTool } from './memories.js';
 import { executeGoalTool } from './goals.js';
@@ -318,6 +319,13 @@ function buildExampleValue(schema: Record<string, unknown>, name: string): unkno
   return '...';
 }
 
+/** Shape of a JSON Schema object stored in ToolDefinition.parameters (trusted internal data).
+ * Uses Record<string, unknown> for properties to stay compatible with formatParamSchema/buildExampleValue. */
+interface ToolParameterSchema {
+  properties?: Record<string, Record<string, unknown>>;
+  required?: string[];
+}
+
 /**
  * Build full tool help text for error recovery.
  * Includes description, parameters with nested schemas, and a ready-to-use example.
@@ -325,10 +333,8 @@ function buildExampleValue(schema: Record<string, unknown>, name: string): unkno
 function buildToolHelpText(tools: ToolRegistry, toolName: string): string {
   const def = tools.getDefinition(toolName);
   if (!def?.parameters) return '';
-  const params = def.parameters as unknown as {
-    properties?: Record<string, Record<string, unknown>>;
-    required?: string[];
-  };
+  // Safe: def.parameters is a JSON Schema object with properties/required fields
+  const params = def.parameters as unknown as ToolParameterSchema;
   if (!params.properties) return '';
 
   const requiredSet = new Set(params.required || []);
@@ -362,10 +368,8 @@ function formatFullToolHelp(tools: ToolRegistry, toolName: string): string {
   const def = tools.getDefinition(toolName);
   if (!def) return `Tool '${toolName}' not found.`;
 
-  const params = def.parameters as unknown as {
-    properties?: Record<string, Record<string, unknown>>;
-    required?: string[];
-  };
+  // Safe: def.parameters is a JSON Schema object with properties/required fields
+  const params = def.parameters as unknown as ToolParameterSchema;
 
   const lines = [
     `## ${def.name}`,
@@ -1074,7 +1078,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // This prevents 100+ tool schemas from consuming ~20K+ tokens per request.
   // All tools remain registered in the ToolRegistry and can be executed via use_tool proxy.
   const metaToolFilter = ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'].map(
-    n => n as unknown as import('@ownpilot/core').ToolId
+    n => unsafeToolId(n)
   );
 
   const config: AgentConfig = {
@@ -1866,7 +1870,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
 
   // Only expose meta-tools to the API to prevent token bloat from 100+ tool schemas.
   const chatMetaToolFilter = ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'].map(
-    n => n as unknown as import('@ownpilot/core').ToolId
+    n => unsafeToolId(n)
   );
 
   // Create agent config

@@ -624,7 +624,7 @@ export class ChannelServiceImpl implements IChannelService {
           content: responseText,
           contentType: 'text',
           replyToId: message.id,
-          metadata: message.metadata,
+          metadata: { ...message.metadata, platformChatId: message.platformChatId },
         });
       } catch (error) {
         log.warn('Failed to save outgoing message', { error });

@@ -230,7 +230,7 @@ databaseRoutes.post('/backup', async (c) => {
   // Build pg_dump command
   const args = [
     '-h', config.postgresHost || 'localhost',
-    '-p', String(config.postgresPort || 5432),
+    '-p', String(config.postgresPort),
     '-U', config.postgresUser || 'ownpilot',
     '-d', config.postgresDatabase || 'ownpilot',
     '-f', backupPath,
@@ -324,7 +324,7 @@ databaseRoutes.post('/restore', async (c) => {
   const args = isCustomFormat
     ? [
         '-h', config.postgresHost || 'localhost',
-        '-p', String(config.postgresPort || 5432),
+        '-p', String(config.postgresPort),
         '-U', config.postgresUser || 'ownpilot',
         '-d', config.postgresDatabase || 'ownpilot',
         '--clean', // Drop objects before recreating
@@ -333,7 +333,7 @@ databaseRoutes.post('/restore', async (c) => {
       ]
     : [
         '-h', config.postgresHost || 'localhost',
-        '-p', String(config.postgresPort || 5432),
+        '-p', String(config.postgresPort),
         '-U', config.postgresUser || 'ownpilot',
         '-d', config.postgresDatabase || 'ownpilot',
         '-f', backupPath,

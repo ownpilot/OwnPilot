@@ -1,14 +1,14 @@
 /**
  * Database Adapter Types
  *
- * Abstract interface for database operations supporting both SQLite and PostgreSQL
+ * Database Adapter abstract interface (PostgreSQL)
  */
 
 import { getLog } from '../../services/log.js';
 
 const log = getLog('DbAdapter');
 
-export type DatabaseType = 'sqlite' | 'postgres';
+export type DatabaseType = 'postgres';
 
 /**
  * Query result row - generic object
@@ -110,9 +110,6 @@ export interface DatabaseAdapter {
  */
 export interface DatabaseConfig {
   type: DatabaseType;
-  // SQLite options
-  sqlitePath?: string;
-  sqliteInMemory?: boolean;
   // PostgreSQL options
   postgresUrl?: string;
   postgresHost?: string;
@@ -127,7 +124,7 @@ export interface DatabaseConfig {
 
 /**
  * Get database configuration from environment
- * Always returns PostgreSQL configuration (SQLite is deprecated)
+ * Always returns PostgreSQL configuration
  *
  * In production (NODE_ENV=production), DATABASE_URL or explicit PostgreSQL env vars are required.
  * In development, defaults are used for local Docker Compose setup.

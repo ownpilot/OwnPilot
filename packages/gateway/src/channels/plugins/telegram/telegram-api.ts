@@ -56,6 +56,8 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
   private readonly pluginId: string;
   private allowedUsers: Set<string> = new Set();
   private allowedChats: Set<string> = new Set();
+  /** Maps platformMessageId → chatId for recent outgoing messages (edit/delete support) */
+  private messageChatMap = new Map<string, string>();
 
   constructor(config: Record<string, unknown>, pluginId: string) {
     this.config = config as unknown as TelegramChannelConfig;
@@ -196,6 +198,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         }
       }
       lastMessageId = String(sent.message_id);
+      this.messageChatMap.set(lastMessageId, chatId);
 
       // Small delay between split messages
       if (parts.length > 1 && i < parts.length - 1) {
@@ -232,14 +235,27 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     });
   }
 
-  async editMessage(_platformMessageId: string, _newText: string): Promise<void> {
-    // editMessage requires chat_id which we don't track per message.
-    // This is a known limitation - would need message-to-chat mapping.
-    log.warn('[Telegram] editMessage not yet supported (requires chat_id tracking)');
+  async editMessage(platformMessageId: string, newText: string): Promise<void> {
+    if (!this.bot) throw new Error('Telegram bot is not connected');
+    const chatId = this.messageChatMap.get(platformMessageId);
+    if (!chatId) {
+      log.warn('[Telegram] editMessage: no chatId found for message', { platformMessageId });
+      return;
+    }
+    const options: Record<string, unknown> = {};
+    if (this.config.parse_mode) options.parse_mode = this.config.parse_mode;
+    await this.bot.api.editMessageText(chatId, Number(platformMessageId), newText, options);
   }
 
-  async deleteMessage(_platformMessageId: string): Promise<void> {
-    log.warn('[Telegram] deleteMessage not yet supported (requires chat_id tracking)');
+  async deleteMessage(platformMessageId: string): Promise<void> {
+    if (!this.bot) throw new Error('Telegram bot is not connected');
+    const chatId = this.messageChatMap.get(platformMessageId);
+    if (!chatId) {
+      log.warn('[Telegram] deleteMessage: no chatId found for message', { platformMessageId });
+      return;
+    }
+    await this.bot.api.deleteMessage(chatId, Number(platformMessageId));
+    this.messageChatMap.delete(platformMessageId);
   }
 
   async resolveUser(_platformUserId: string): Promise<ChannelUser | null> {

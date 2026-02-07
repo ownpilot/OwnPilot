@@ -62,12 +62,14 @@ import {
 const DEFAULT_CONFIG: GatewayConfig = {
   port: 8080,
   host: '0.0.0.0',
-  // Default to localhost only - add your domain in production config
+  // Default to localhost only. In production, set the CORS_ORIGINS env var
+  // (comma-separated list of allowed origins, e.g. "https://my-domain.com,https://app.my-domain.com")
   corsOrigins: [
     'http://localhost:3000',
     'http://localhost:5173',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:5173',
+    ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean) : []),
   ],
   rateLimit: {
     windowMs: 60000, // 1 minute
@@ -105,10 +107,11 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     })
   );
 
-  // Body size limit (1 MB default — prevents oversized payloads)
+  // Body size limit (configurable via BODY_SIZE_LIMIT env var, default 1 MB)
+  const maxBodySize = parseInt(process.env.BODY_SIZE_LIMIT ?? '1048576', 10);
   app.use('/api/*', bodyLimit({
-    maxSize: 1024 * 1024, // 1 MB
-    onError: (c) => c.json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body exceeds 1 MB limit' } }, 413),
+    maxSize: maxBodySize,
+    onError: (c) => c.json({ error: { code: 'PAYLOAD_TOO_LARGE', message: `Request body exceeds ${Math.round(maxBodySize / 1024 / 1024)} MB limit` } }, 413),
   }));
 
   // Request ID

@@ -79,6 +79,7 @@ vi.mock('@ownpilot/core', () => ({
     goals: { tools: ['create_goal', 'list_goals'] },
   } as Record<string, { tools: string[] }>,
   getProviderConfig: vi.fn(() => null),
+  unsafeToolId: vi.fn((id: string) => id),
 }));
 
 vi.mock('../db/repositories/index.js', () => ({

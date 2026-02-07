@@ -217,7 +217,7 @@ async function main() {
   const config = loadConfig();
   const app = createApp(config);
 
-  const port = config.port ?? 3000;
+  const port = config.port ?? 8080;
   const host = config.host ?? '0.0.0.0';
 
   // Initialize plugins (registers built-in plugins)
