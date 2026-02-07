@@ -50,7 +50,7 @@ import { gatewayConfigCenter } from './services/config-center-impl.js';
 import { startTriggerEngine, initializeDefaultTriggers } from './triggers/index.js';
 import { seedExamplePlans } from './db/seeds/plans-seed.js';
 import { createChannelServiceImpl } from './channels/service-impl.js';
-import { initServiceRegistry, Services, getEventSystem, setChannelService } from '@ownpilot/core';
+import { initServiceRegistry, Services, getEventSystem, setChannelService, setModuleResolver } from '@ownpilot/core';
 import { createLogService } from './services/log-service-impl.js';
 import { createSessionService } from './services/session-service-impl.js';
 import { createMessageBus } from './services/message-bus-impl.js';
@@ -122,6 +122,9 @@ function loadConfig(): Partial<GatewayConfig> {
  * Start the server
  */
 async function main() {
+  // ── Module resolver (allows core tools to import gateway's npm packages) ──
+  setModuleResolver((name) => import(name));
+
   // ── ServiceRegistry ──────────────────────────────────────────────────────
   const registry = initServiceRegistry();
 

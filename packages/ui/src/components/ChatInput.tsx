@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type KeyboardEvent, type FormEvent } from 'react';
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef, type KeyboardEvent, type FormEvent } from 'react';
 import { Send, StopCircle, X } from './icons';
 import { ToolPicker, type ResourceAttachment, type ResourceType } from './ToolPicker';
 
@@ -7,6 +7,10 @@ interface ChatInputProps {
   onStop?: () => void;
   isLoading?: boolean;
   placeholder?: string;
+}
+
+export interface ChatInputHandle {
+  setValue: (text: string) => void;
 }
 
 // --- Chip color mapping ---
@@ -49,10 +53,18 @@ function buildContextBlock(attachments: ResourceAttachment[]): string {
   return lines.join('\n');
 }
 
-export function ChatInput({ onSend, onStop, isLoading, placeholder = 'Type a message...' }: ChatInputProps) {
+export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput({ onSend, onStop, isLoading, placeholder = 'Type a message...' }, ref) {
   const [value, setValue] = useState('');
   const [attachments, setAttachments] = useState<ResourceAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    setValue: (text: string) => {
+      setValue(text);
+      // Focus and trigger resize after value update
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    },
+  }));
 
   // Auto-resize textarea
   useEffect(() => {
@@ -172,4 +184,4 @@ export function ChatInput({ onSend, onStop, isLoading, placeholder = 'Type a mes
       )}
     </form>
   );
-}
+});

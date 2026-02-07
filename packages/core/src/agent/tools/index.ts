@@ -7,6 +7,7 @@
 // EXPORTS - All tool modules
 // =============================================================================
 
+export { setModuleResolver, tryImport } from './module-resolver.js';
 export * from './file-system.js';
 export * from './code-execution.js';
 export * from './web-fetch.js';

@@ -232,6 +232,7 @@ const CORE_FILE_TOOLS: Record<string, string[]> = {
   'dynamic-tools': [
     'create_tool', 'list_custom_tools', 'delete_custom_tool',
     'toggle_custom_tool', 'search_tools', 'get_tool_help', 'use_tool',
+    'inspect_tool_source', 'update_custom_tool',
   ],
 };
 

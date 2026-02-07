@@ -2035,6 +2035,86 @@ export async function executeCustomToolTool(
         };
       }
 
+      case 'update_custom_tool': {
+        const { name, description, parameters, code, category, permissions } = params as {
+          name: string;
+          description?: string;
+          parameters?: string;
+          code?: string;
+          category?: string;
+          permissions?: ToolPermission[];
+        };
+
+        if (!name || typeof name !== 'string' || name.length > 100) {
+          return { success: false, error: 'Tool name must be a non-empty string with max 100 characters' };
+        }
+
+        const tool = await repo.getByName(name);
+        if (!tool) {
+          return { success: false, error: `Tool '${sanitizeText(name)}' not found` };
+        }
+
+        // Build update object (only provided fields)
+        const updateFields: Record<string, unknown> = {};
+
+        if (description !== undefined && typeof description === 'string' && description.trim()) {
+          updateFields.description = description.trim();
+        }
+
+        if (code !== undefined && typeof code === 'string' && code.trim()) {
+          const codeValidation = validateToolCode(code);
+          if (!codeValidation.valid) {
+            return { success: false, error: `Tool code validation failed: ${codeValidation.errors[0]}` };
+          }
+          updateFields.code = code;
+        }
+
+        if (parameters !== undefined) {
+          try {
+            const parsed = typeof parameters === 'string' ? JSON.parse(parameters) : parameters;
+            if (!parsed || typeof parsed !== 'object' || parsed.type !== 'object') {
+              return { success: false, error: 'Parameters must be a valid JSON Schema with type "object"' };
+            }
+            updateFields.parameters = parsed;
+          } catch {
+            return { success: false, error: 'Failed to parse parameters JSON' };
+          }
+        }
+
+        if (category !== undefined && typeof category === 'string' && category.trim()) {
+          updateFields.category = category.trim();
+        }
+
+        if (permissions !== undefined && Array.isArray(permissions)) {
+          updateFields.permissions = permissions;
+        }
+
+        if (Object.keys(updateFields).length === 0) {
+          return { success: false, error: 'No fields provided to update. Provide at least one of: description, parameters, code, category, permissions.' };
+        }
+
+        const updated = await repo.update(tool.id, updateFields);
+        if (!updated) {
+          return { success: false, error: `Failed to update tool '${sanitizeText(name)}'` };
+        }
+
+        // Re-sync to dynamic registry
+        syncToolToRegistry(updated);
+
+        // Invalidate agent cache so tool changes take effect
+        invalidateAgentCache();
+
+        return {
+          success: true,
+          result: {
+            message: `Tool '${sanitizeText(name)}' updated successfully (v${updated.version}).`,
+            version: updated.version,
+            status: updated.status,
+            updatedFields: Object.keys(updateFields),
+          },
+        };
+      }
+
       default:
         return { success: false, error: `Unknown custom tool operation: ${sanitizeId(toolId)}` };
     }

@@ -4,6 +4,7 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import { tryImport } from './module-resolver.js';
 
 // Maximum image size for analysis (10MB)
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
@@ -505,7 +506,7 @@ export const resizeImageExecutor: ToolExecutor = async (params, _context): Promi
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let sharp: any = null; // Optional dependency - dynamically imported
     try {
-      sharp = (await import(/* webpackIgnore: true */ 'sharp' as string)).default;
+      sharp = (await tryImport('sharp') as Record<string, unknown>).default;
     } catch {
       return {
         content: {

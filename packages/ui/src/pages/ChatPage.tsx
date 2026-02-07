@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ChatInput } from '../components/ChatInput';
+import { ChatInput, type ChatInputHandle } from '../components/ChatInput';
 import { MessageList } from '../components/MessageList';
+import { SuggestionChips } from '../components/SuggestionChips';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
 import { SetupWizard } from '../components/SetupWizard';
 import { useChatStore } from '../hooks/useChatStore';
@@ -26,13 +27,16 @@ export function ChatPage() {
     setModel,
     setAgentId,
     setWorkspaceId,
+    suggestions,
     sendMessage,
     retryLastMessage,
     clearMessages,
     cancelRequest,
+    clearSuggestions,
   } = useChatStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<ChatInputHandle>(null);
   const [showProviderMenu, setShowProviderMenu] = useState(false);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
@@ -179,7 +183,7 @@ export function ChatPage() {
   // Auto-scroll to bottom when new messages or streaming content arrives
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingContent, progressEvents]);
+  }, [messages, streamingContent, progressEvents, suggestions]);
 
   // Group models by provider (only configured providers)
   const modelsByProvider = models.reduce<Record<string, ModelInfo[]>>((acc, m) => {
@@ -516,7 +520,7 @@ export function ChatPage() {
                 {/* Streaming text */}
                 {streamingContent && (
                   <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <div className="whitespace-pre-wrap">{streamingContent}</div>
+                    <div className="whitespace-pre-wrap">{streamingContent.replace(/<suggestions>[\s\S]*$/, '').trimEnd()}</div>
                     <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
                   </div>
                 )}
@@ -535,6 +539,15 @@ export function ChatPage() {
               </div>
             )}
 
+            {!isLoading && suggestions.length > 0 && messages.length > 0 && (
+              <div className="px-4">
+                <SuggestionChips
+                  suggestions={suggestions}
+                  onSelect={(s) => { clearSuggestions(); chatInputRef.current?.setValue(s.detail); }}
+                />
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </>
         )}
@@ -549,7 +562,7 @@ export function ChatPage() {
 
       {/* Input */}
       <div className="px-6 py-4 border-t border-border dark:border-dark-border">
-        <ChatInput onSend={sendMessage} onStop={cancelRequest} isLoading={isLoading} />
+        <ChatInput ref={chatInputRef} onSend={sendMessage} onStop={cancelRequest} isLoading={isLoading} />
       </div>
     </div>
   );

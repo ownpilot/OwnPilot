@@ -835,8 +835,8 @@ describe('DYNAMIC_TOOL_DEFINITIONS', () => {
     expect(DYNAMIC_TOOL_DEFINITIONS.length).toBeGreaterThan(0);
   });
 
-  it('contains exactly 8 definitions', () => {
-    expect(DYNAMIC_TOOL_DEFINITIONS).toHaveLength(8);
+  it('contains exactly 10 definitions', () => {
+    expect(DYNAMIC_TOOL_DEFINITIONS).toHaveLength(10);
   });
 
   it('includes all expected tool names', () => {
@@ -849,6 +849,8 @@ describe('DYNAMIC_TOOL_DEFINITIONS', () => {
     expect(names).toContain('list_custom_tools');
     expect(names).toContain('delete_custom_tool');
     expect(names).toContain('toggle_custom_tool');
+    expect(names).toContain('inspect_tool_source');
+    expect(names).toContain('update_custom_tool');
   });
 
   it('each definition has name, description, parameters, and category', () => {

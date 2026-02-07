@@ -4,6 +4,7 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import { tryImport } from './module-resolver.js';
 
 // Supported audio formats
 const SUPPORTED_INPUT_FORMATS = ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm', 'ogg', 'flac'];
@@ -430,7 +431,7 @@ export const audioInfoExecutor: ToolExecutor = async (params, _context): Promise
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let musicMetadata: any;
     try {
-      musicMetadata = await import(/* webpackIgnore: true */ 'music-metadata' as string);
+      musicMetadata = await tryImport('music-metadata');
     } catch {
       // music-metadata not installed
     }

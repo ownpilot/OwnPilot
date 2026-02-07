@@ -4,6 +4,7 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import { tryImport } from './module-resolver.js';
 
 // ============================================================================
 // READ PDF TOOL
@@ -62,7 +63,7 @@ export const readPdfExecutor: ToolExecutor = async (params, _context): Promise<T
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let pdfParse: any = null; // Optional dependency - dynamically imported
     try {
-      pdfParse = (await import(/* webpackIgnore: true */ 'pdf-parse' as string)).default;
+      pdfParse = (await tryImport('pdf-parse') as Record<string, unknown>).default;
     } catch {
       // pdf-parse not installed, use basic extraction
     }
@@ -214,7 +215,7 @@ export const createPdfExecutor: ToolExecutor = async (params, _context): Promise
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let PDFDocument: any = null; // Optional dependency - dynamically imported
     try {
-      PDFDocument = (await import(/* webpackIgnore: true */ 'pdfkit' as string)).default;
+      PDFDocument = (await tryImport('pdfkit') as Record<string, unknown>).default;
     } catch {
       // pdfkit not installed
     }
@@ -362,7 +363,7 @@ export const pdfInfoExecutor: ToolExecutor = async (params, _context): Promise<T
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let pdfParse: any = null; // Optional dependency - dynamically imported
     try {
-      pdfParse = (await import(/* webpackIgnore: true */ 'pdf-parse' as string)).default;
+      pdfParse = (await tryImport('pdf-parse') as Record<string, unknown>).default;
     } catch {
       // pdf-parse not installed
     }

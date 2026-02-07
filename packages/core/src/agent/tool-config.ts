@@ -388,6 +388,8 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
       'list_custom_tools',
       'delete_custom_tool',
       'toggle_custom_tool',
+      'inspect_tool_source',
+      'update_custom_tool',
     ],
   },
 };
@@ -559,7 +561,7 @@ export const TOOL_CATEGORY_CAPABILITIES: Record<string, string> = {
   translation: 'Translate text between languages, detect language',
   vectorSearch: 'Semantic search with embeddings, vector collections, similarity scoring',
   dataExtraction: 'Extract structured data, named entities, tables from text; summarize',
-  customTools: 'Create, list, enable/disable, and delete user-created custom tools',
+  customTools: 'Create, list, enable/disable, delete, inspect source code, and update user-created custom tools',
 };
 
 /**

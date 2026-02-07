@@ -37,7 +37,7 @@ import type { IMessageBus, NormalizedMessage, MessageProcessingResult, StreamCal
 import type { StreamChunk, ToolCall } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
 import { wsGateway } from '../ws/server.js';
-import { parseLimit, parseOffset } from '../utils/index.js';
+import { parseLimit, parseOffset, extractSuggestions } from '../utils/index.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Chat');
@@ -219,6 +219,9 @@ async function processStreamingViaBus(
   const { agent, chatMessage, body, provider, model, userId, agentId, conversationId } = params;
   const streamStartTime = performance.now();
 
+  // Content accumulated for suggestion extraction on stream completion
+  let streamedContent = '';
+
   // Trace data accumulated during streaming
   let lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
   const traceToolCalls: Array<{
@@ -233,6 +236,9 @@ async function processStreamingViaBus(
   // Build StreamCallbacks that write SSE events
   const streamCallbacks: StreamCallbacks = {
     onChunk(chunk: StreamChunk) {
+      // Accumulate content for suggestion extraction
+      if (chunk.content) streamedContent += chunk.content;
+
       const data: StreamChunkResponse & { trace?: Record<string, unknown> } = {
         id: chunk.id,
         conversationId,
@@ -253,8 +259,10 @@ async function processStreamingViaBus(
           : undefined,
       };
 
-      // Add trace info when stream is done
+      // Add trace info and extract suggestions when stream is done
       if (chunk.done) {
+        const { suggestions } = extractSuggestions(streamedContent);
+        if (suggestions.length > 0) data.suggestions = suggestions;
         const streamDuration = Math.round(performance.now() - streamStartTime);
         data.trace = {
           duration: streamDuration,
@@ -628,6 +636,9 @@ chatRoutes.post('/', async (c) => {
         agent.setAdditionalTools(body.directTools);
       }
 
+      // Content accumulated for suggestion extraction on stream completion
+      let legacyStreamedContent = '';
+
       // Collect tool execution info for trace
       const traceToolCalls: Array<{
         name: string;
@@ -666,6 +677,9 @@ chatRoutes.post('/', async (c) => {
           };
         },
         onChunk: async (chunk) => {
+          // Accumulate content for suggestion extraction
+          if (chunk.content) legacyStreamedContent += chunk.content;
+
           const data: StreamChunkResponse & { trace?: Record<string, unknown> } = {
             id: chunk.id,
             conversationId,
@@ -686,8 +700,10 @@ chatRoutes.post('/', async (c) => {
               : undefined,
           };
 
-          // Add trace info when stream is done
+          // Add trace info and extract suggestions when stream is done
           if (chunk.done) {
+            const { suggestions } = extractSuggestions(legacyStreamedContent);
+            if (suggestions.length > 0) data.suggestions = suggestions;
             const streamDuration = Math.round(performance.now() - streamStartTime);
             data.trace = {
               duration: streamDuration,
@@ -1019,14 +1035,15 @@ chatRoutes.post('/', async (c) => {
 
     const conversation = agent.getConversation();
     const busUsage = busResult.response.metadata.tokens as { input: number; output: number } | undefined;
+    const { content: busCleanContent, suggestions: busSuggestions } = extractSuggestions(busResult.response.content);
 
     return c.json({
       success: true,
       data: {
         id: busResult.response.id,
         conversationId: conversation.id,
-        message: busResult.response.content,
-        response: busResult.response.content,
+        message: busCleanContent,
+        response: busCleanContent,
         model,
         toolCalls: (busResult.response.metadata.toolCalls as Array<{ id: string; name: string; arguments: Record<string, unknown> }>) ?? undefined,
         usage: busUsage
@@ -1037,6 +1054,7 @@ chatRoutes.post('/', async (c) => {
             }
           : undefined,
         finishReason: 'stop',
+        suggestions: busSuggestions.length > 0 ? busSuggestions : undefined,
         trace: {
           duration: processingTime,
           toolCalls: [],
@@ -1390,13 +1408,15 @@ chatRoutes.post('/', async (c) => {
       }
     : undefined;
 
+  const { content: legacyCleanContent, suggestions: legacySuggestions } = extractSuggestions(result.value.content);
+
   const response = {
     success: true,
     data: {
       id: result.value.id,
       conversationId: conversation.id,
-      message: result.value.content,
-      response: result.value.content,
+      message: legacyCleanContent,
+      response: legacyCleanContent,
       model,
       toolCalls: result.value.toolCalls?.map((tc) => ({
         id: tc.id,
@@ -1411,6 +1431,7 @@ chatRoutes.post('/', async (c) => {
           }
         : undefined,
       finishReason: result.value.finishReason,
+      suggestions: legacySuggestions.length > 0 ? legacySuggestions : undefined,
       // Include trace info for debugging
       trace: traceInfo,
     },
@@ -1444,11 +1465,11 @@ chatRoutes.post('/', async (c) => {
       model,
     });
 
-    // Save assistant message
+    // Save assistant message (use cleaned content without suggestions tag)
     await chatRepo.addMessage({
       conversationId: dbConversation.id,
       role: 'assistant',
-      content: result.value.content,
+      content: legacyCleanContent,
       provider,
       model,
       toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,

@@ -84,9 +84,10 @@ services:
     container_name: ownpilot-ui
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${UI_PORT:-5173}:${UI_PORT:-5173}"
     environment:
-      - VITE_API_URL=http://gateway:8080
+      - UI_PORT=${UI_PORT:-5173}
+      - VITE_API_URL=http://gateway:${PORT:-8080}
     depends_on:
       - gateway
     networks:

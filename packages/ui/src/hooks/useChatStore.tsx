@@ -45,6 +45,8 @@ interface ChatState {
   workspaceId: string | null;
   streamingContent: string;
   progressEvents: ProgressEvent[];
+  /** Follow-up suggestions from the latest AI response */
+  suggestions: Array<{ title: string; detail: string }>;
 }
 
 interface ChatStore extends ChatState {
@@ -56,6 +58,7 @@ interface ChatStore extends ChatState {
   retryLastMessage: () => Promise<void>;
   clearMessages: () => void;
   cancelRequest: () => void;
+  clearSuggestions: () => void;
 }
 
 const ChatContext = createContext<ChatStore | null>(null);
@@ -71,6 +74,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [streamingContent, setStreamingContent] = useState('');
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
+  const [suggestions, setSuggestions] = useState<Array<{ title: string; detail: string }>>([]);
 
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -85,6 +89,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setProgressEvents([]);
     }
   }, []);
+
+  const clearSuggestions = useCallback(() => setSuggestions([]), []);
 
   const sendMessage = useCallback(
     async (content: string, directToolsOrRetry?: string[] | boolean, isRetryArg?: boolean) => {
@@ -104,6 +110,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setStreamingContent('');
       setProgressEvents([]);
+      setSuggestions([]);
 
       // Get current messages for history (need fresh reference)
       let currentMessages: Message[] = [];
@@ -223,6 +230,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                         usage: data.usage,
                         finishReason: data.finishReason,
                         trace: data.trace,
+                        suggestions: data.suggestions,
                       };
                     }
                   } else if (data.error) {
@@ -245,7 +253,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: accumulatedContent || finalResponse?.response || '',
+            content: (accumulatedContent || finalResponse?.response || '').replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '').trimEnd(),
             timestamp: new Date().toISOString(),
             toolCalls: finalResponse?.toolCalls,
             provider,
@@ -253,6 +261,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             trace: finalResponse?.trace,
           };
           setMessages((prev) => [...prev, assistantMessage]);
+
+          // Set follow-up suggestions from the response
+          if (finalResponse?.suggestions?.length) {
+            setSuggestions(finalResponse.suggestions);
+          }
 
         } else {
           // Non-streaming fallback
@@ -279,6 +292,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             trace: data.data.trace,
           };
           setMessages((prev) => [...prev, assistantMessage]);
+
+          // Set follow-up suggestions from the response
+          if (data.data.suggestions?.length) {
+            setSuggestions(data.data.suggestions);
+          }
         }
       } catch (err) {
         // Ignore abort errors
@@ -328,6 +346,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setLastFailedMessage(null);
     setStreamingContent('');
     setProgressEvents([]);
+    setSuggestions([]);
   }, [cancelRequest]);
 
   const value: ChatStore = {
@@ -341,6 +360,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     workspaceId,
     streamingContent,
     progressEvents,
+    suggestions,
     setProvider,
     setModel,
     setAgentId,
@@ -349,6 +369,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     retryLastMessage,
     clearMessages,
     cancelRequest,
+    clearSuggestions,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

@@ -150,6 +150,8 @@ export interface ChatResponse {
     totalTokens: number;
   };
   finishReason?: string;
+  /** AI-generated follow-up suggestions */
+  suggestions?: Array<{ title: string; detail: string }>;
 }
 
 export interface StreamChunk {

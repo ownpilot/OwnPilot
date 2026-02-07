@@ -1135,6 +1135,55 @@ export const batchUseToolDefinition: ToolDefinition = {
   category: 'System',
 };
 
+/**
+ * inspect_tool_source — View source code of any tool (built-in or custom).
+ * Lets the LLM understand how a tool works before improving or replacing it.
+ */
+export const inspectToolSourceDefinition: ToolDefinition = {
+  name: 'inspect_tool_source',
+  brief: 'View source code of any tool (built-in or custom)',
+  description: 'Get the implementation source code of a tool. For built-in tools, returns TypeScript source. For custom tools, returns JavaScript code, parameters, and metadata. Use this to understand how a tool works before improving or replacing it.',
+  parameters: {
+    type: 'object',
+    properties: {
+      tool_name: {
+        type: 'string',
+        description: 'Exact name of the tool to inspect',
+      },
+    },
+    required: ['tool_name'],
+  },
+  category: 'Meta',
+};
+
+/**
+ * update_custom_tool — Update code or config of an existing custom tool.
+ * Allows iterative improvement of custom tools without delete/recreate.
+ */
+export const updateCustomToolDefinition: ToolDefinition = {
+  name: 'update_custom_tool',
+  brief: 'Update code or config of an existing custom tool',
+  description: 'Update an existing custom tool. Can change code, description, parameters, category, or permissions. Use this after inspect_tool_source to improve a custom tool.',
+  parameters: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: 'Name of the custom tool to update' },
+      description: { type: 'string', description: 'New description (optional)' },
+      parameters: { type: 'string', description: 'New JSON Schema parameters as JSON string (optional)' },
+      code: { type: 'string', description: 'New JavaScript code (optional)' },
+      category: { type: 'string', description: 'New category (optional)' },
+      permissions: {
+        type: 'array',
+        description: 'New permissions array (optional)',
+        items: { type: 'string', enum: ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling'] },
+      },
+    },
+    required: ['name'],
+  },
+  category: 'Meta',
+  requiresConfirmation: true,
+};
+
 export const DYNAMIC_TOOL_DEFINITIONS: ToolDefinition[] = [
   searchToolsDefinition,
   getToolHelpDefinition,
@@ -1144,6 +1193,8 @@ export const DYNAMIC_TOOL_DEFINITIONS: ToolDefinition[] = [
   listToolsDefinition,
   deleteToolDefinition,
   toggleToolDefinition,
+  inspectToolSourceDefinition,
+  updateCustomToolDefinition,
 ];
 
 export const DYNAMIC_TOOL_NAMES = DYNAMIC_TOOL_DEFINITIONS.map((t) => t.name);

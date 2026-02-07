@@ -112,6 +112,8 @@ export interface ChatResponse {
   finishReason: string;
   /** Debug trace information */
   trace?: TraceInfo;
+  /** AI-generated follow-up suggestions */
+  suggestions?: Array<{ title: string; detail: string }>;
 }
 
 /**
@@ -144,6 +146,8 @@ export interface StreamChunkResponse {
   done: boolean;
   finishReason?: string;
   usage?: UsageStats;
+  /** Follow-up suggestions (only present on done event) */
+  suggestions?: Array<{ title: string; detail: string }>;
 }
 
 /**

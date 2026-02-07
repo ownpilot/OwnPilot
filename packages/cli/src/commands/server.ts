@@ -50,7 +50,7 @@ export async function startServer(options: ServerOptions): Promise<void> {
   const config: Partial<GatewayConfig> = {
     port,
     host,
-    corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? ['http://localhost:5173'],
+    corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? [`http://localhost:${process.env.UI_PORT || '5173'}`],
   };
 
   // Configure auth from database

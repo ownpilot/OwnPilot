@@ -4,6 +4,7 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import { tryImport } from './module-resolver.js';
 
 // ============================================================================
 // SEND EMAIL TOOL
@@ -130,7 +131,7 @@ export const sendEmailExecutor: ToolExecutor = async (params, _context): Promise
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let _nodemailer: any = null; // Optional dependency - dynamically imported
   try {
-    _nodemailer = await import(/* webpackIgnore: true */ 'nodemailer' as string);
+    _nodemailer = await tryImport('nodemailer');
   } catch {
     return {
       content: {
@@ -287,15 +288,15 @@ export const listEmailsExecutor: ToolExecutor = async (params, _context): Promis
   const since = params.since as string | undefined;
   const before = params.before as string | undefined;
 
-  // Try to use imap-simple or similar
-  let _imapSimple: unknown;
+  // Try to use imapflow
+  let _imapflow: unknown;
   try {
-    _imapSimple = await import(/* webpackIgnore: true */ 'imap-simple' as string);
+    _imapflow = await tryImport('imapflow');
   } catch {
     return {
       content: {
-        error: 'imap-simple library not installed',
-        suggestion: 'Install with: pnpm add imap-simple @types/imap-simple',
+        error: 'imapflow library not installed',
+        suggestion: 'Install with: pnpm add imapflow',
         query: {
           folder,
           limit,

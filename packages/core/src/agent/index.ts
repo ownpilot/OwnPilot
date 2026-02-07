@@ -131,6 +131,9 @@ export {
   type DynamicToolRegistry,
   type DynamicToolDefinition,
   type DynamicToolPermission,
+  // Module resolver for pnpm strict mode
+  setModuleResolver,
+  tryImport,
   // Tool search tags
   TOOL_SEARCH_TAGS,
   // Tool max limits

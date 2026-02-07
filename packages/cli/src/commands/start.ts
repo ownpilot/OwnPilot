@@ -55,7 +55,7 @@ export async function startAll(options: StartOptions): Promise<void> {
   const serverConfig: Partial<GatewayConfig> = {
     port,
     host: '0.0.0.0',
-    corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? ['http://localhost:5173'],
+    corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? [`http://localhost:${process.env.UI_PORT || '5173'}`],
     auth: { type: 'none' },
   };
 

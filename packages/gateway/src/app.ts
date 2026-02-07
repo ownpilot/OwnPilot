@@ -64,13 +64,14 @@ const DEFAULT_CONFIG: GatewayConfig = {
   host: '0.0.0.0',
   // Default to localhost only. In production, set the CORS_ORIGINS env var
   // (comma-separated list of allowed origins, e.g. "https://my-domain.com,https://app.my-domain.com")
-  corsOrigins: [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:5173',
-    ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean) : []),
-  ],
+  corsOrigins: (() => {
+    const uiPort = process.env.UI_PORT || '5173';
+    return [
+      `http://localhost:${uiPort}`,
+      `http://127.0.0.1:${uiPort}`,
+      ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean) : []),
+    ];
+  })(),
   rateLimit: {
     windowMs: 60000, // 1 minute
     maxRequests: 500, // More relaxed for self-hosted

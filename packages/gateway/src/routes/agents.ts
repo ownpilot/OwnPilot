@@ -41,6 +41,8 @@ import {
   executeActiveCustomTool,
   getActiveCustomToolDefinitions,
 } from './custom-tools.js';
+import { getToolSource } from '../services/tool-source.js';
+import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import {
@@ -93,10 +95,16 @@ All personal data is stored in a local database and persists across conversation
 
 **Always use tools to access data.** Never fabricate, assume, or recall data from conversation history alone. Call the appropriate list/search tool to get the current state — data changes between conversations.
 
+## Tool Improvement
+- Use \`inspect_tool_source\` to view any tool's source code before suggesting improvements.
+- For built-in tools: create an improved custom tool with \`create_tool\` that handles additional edge cases, better formatting, or extra features.
+- For custom tools: use \`update_custom_tool\` to improve the existing code directly.
+- Always explain what you improved and why before making changes.
+
 ## Memory Protocol
-- When the user shares personal facts, preferences, or important events, save them with \`create_memory\`.
 - Before answering questions about the user, call \`search_memories\` to recall relevant context.
 - Search before creating to avoid duplicate memories.
+- When you detect memorizable information (personal facts, preferences, events), do NOT save automatically. Instead, include a memory-save suggestion in your follow-up suggestions so the user can confirm.
 
 ## Behavior
 - Be concise. Elaborate only when asked or when the task requires it.
@@ -106,7 +114,20 @@ All personal data is stored in a local database and persists across conversation
 
 ## Output
 - Markdown for structured content; plain text for simple answers.
-- Bulleted lists for multiple items. Include dates, numbers, specifics.`;
+- Bulleted lists for multiple items. Include dates, numbers, specifics.
+
+## Follow-Up Suggestions
+At the end of every response, include 2-3 contextual follow-up suggestions.
+Format as a JSON array of objects inside a <suggestions> tag as the very last thing:
+
+<suggestions>[{"title":"Short label","detail":"Full message to send"},{"title":"Another","detail":"Another detailed message"}]</suggestions>
+
+Rules:
+- title: concise chip label (under 40 chars)
+- detail: the full message placed in the input for the user to review and send (under 200 chars)
+- Max 5 suggestions, specific and actionable, not generic
+- If you detected memorizable information, include a suggestion like {"title":"Remember this","detail":"Remember that I prefer dark roast coffee"}
+- The <suggestions> tag must always be the very last thing in your response`;
 
 /** Sanitize user-supplied IDs for safe interpolation in error messages */
 const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
@@ -765,8 +786,8 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
-    // search_tools, get_tool_help and use_tool have special executors (registered below)
-    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool' || toolDef.name === 'batch_use_tool') continue;
+    // These tools have special executors registered separately below
+    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool' || toolDef.name === 'batch_use_tool' || toolDef.name === 'inspect_tool_source') continue;
 
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
@@ -780,7 +801,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
         traceDbRead('custom_tools', 'select');
       } else if (toolDef.name === 'delete_custom_tool') {
         traceDbWrite('custom_tools', 'delete');
-      } else if (toolDef.name === 'toggle_custom_tool') {
+      } else if (toolDef.name === 'toggle_custom_tool' || toolDef.name === 'update_custom_tool') {
         traceDbWrite('custom_tools', 'update');
       }
 
@@ -848,6 +869,81 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
       const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
       return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines].join('\n') };
+    });
+  }
+
+  // Register inspect_tool_source — view source code of any tool
+  const inspectToolSourceDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'inspect_tool_source');
+  if (inspectToolSourceDef) {
+    tools.register(inspectToolSourceDef, async (args): Promise<CoreToolResult> => {
+      const { tool_name } = args as { tool_name: string };
+      if (!tool_name || typeof tool_name !== 'string') {
+        return { content: 'Provide a "tool_name" parameter.', isError: true };
+      }
+
+      const customToolsRepo = createCustomToolsRepo(userId);
+
+      // 1. Check if it's a custom tool
+      const customTool = await customToolsRepo.getByName(tool_name);
+      if (customTool) {
+        const sections: string[] = [
+          `## Tool: ${customTool.name}`,
+          `**Category:** ${customTool.category ?? 'Custom'}`,
+          `**Type:** custom (v${customTool.version}, created by ${customTool.createdBy})`,
+          `**Status:** ${customTool.status}`,
+          '',
+          '### Description',
+          customTool.description,
+          '',
+          '### Parameters',
+          '```json',
+          JSON.stringify(customTool.parameters, null, 2),
+          '```',
+          '',
+          '### Source Code',
+          '```javascript',
+          customTool.code,
+          '```',
+        ];
+        if (customTool.permissions?.length) {
+          sections.push('', `**Permissions:** ${customTool.permissions.join(', ')}`);
+        }
+        sections.push('', '### Improvement Tips', '- You can update this tool directly with `update_custom_tool`.');
+        return { content: sections.join('\n') };
+      }
+
+      // 2. Check if it's a built-in tool
+      const def = tools.getDefinition(tool_name);
+      if (def) {
+        const source = getToolSource(tool_name);
+        const sections: string[] = [
+          `## Tool: ${def.name}`,
+          `**Category:** ${def.category ?? 'Unknown'}`,
+          `**Type:** built-in`,
+          '',
+          '### Description',
+          def.description,
+          '',
+          '### Parameters',
+          '```json',
+          JSON.stringify(def.parameters, null, 2),
+          '```',
+        ];
+        if (source) {
+          sections.push('', '### Source Code', '```typescript', source, '```');
+        } else {
+          sections.push('', '*Source code not available for this tool.*');
+        }
+        sections.push('', '### Improvement Tips', '- Built-in tools cannot be modified directly. Use `create_tool` to create an improved custom version that overrides or extends this tool.');
+        return { content: sections.join('\n') };
+      }
+
+      // 3. Not found — suggest similar tools
+      const similar = findSimilarTools(tools, tool_name);
+      const hint = similar.length > 0
+        ? `\n\nDid you mean one of these?\n${similar.map(s => `  - ${s}`).join('\n')}`
+        : '\n\nUse search_tools("keyword") to find the correct tool name.';
+      return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
     });
   }
 
@@ -1633,8 +1729,8 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
 
   // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
-    // search_tools, get_tool_help and use_tool have special executors (registered below)
-    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool' || toolDef.name === 'batch_use_tool') continue;
+    // These tools have special executors registered separately below
+    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool' || toolDef.name === 'batch_use_tool' || toolDef.name === 'inspect_tool_source') continue;
 
     tools.register(toolDef, async (args): Promise<CoreToolResult> => {
       const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
@@ -1695,6 +1791,81 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
 
       const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
       return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines].join('\n') };
+    });
+  }
+
+  // Register inspect_tool_source — view source code of any tool
+  const chatInspectToolSourceDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'inspect_tool_source');
+  if (chatInspectToolSourceDef) {
+    tools.register(chatInspectToolSourceDef, async (args): Promise<CoreToolResult> => {
+      const { tool_name } = args as { tool_name: string };
+      if (!tool_name || typeof tool_name !== 'string') {
+        return { content: 'Provide a "tool_name" parameter.', isError: true };
+      }
+
+      const customToolsRepo = createCustomToolsRepo(userId);
+
+      // 1. Check if it's a custom tool
+      const customTool = await customToolsRepo.getByName(tool_name);
+      if (customTool) {
+        const sections: string[] = [
+          `## Tool: ${customTool.name}`,
+          `**Category:** ${customTool.category ?? 'Custom'}`,
+          `**Type:** custom (v${customTool.version}, created by ${customTool.createdBy})`,
+          `**Status:** ${customTool.status}`,
+          '',
+          '### Description',
+          customTool.description,
+          '',
+          '### Parameters',
+          '```json',
+          JSON.stringify(customTool.parameters, null, 2),
+          '```',
+          '',
+          '### Source Code',
+          '```javascript',
+          customTool.code,
+          '```',
+        ];
+        if (customTool.permissions?.length) {
+          sections.push('', `**Permissions:** ${customTool.permissions.join(', ')}`);
+        }
+        sections.push('', '### Improvement Tips', '- You can update this tool directly with `update_custom_tool`.');
+        return { content: sections.join('\n') };
+      }
+
+      // 2. Check if it's a built-in tool
+      const def = tools.getDefinition(tool_name);
+      if (def) {
+        const source = getToolSource(tool_name);
+        const sections: string[] = [
+          `## Tool: ${def.name}`,
+          `**Category:** ${def.category ?? 'Unknown'}`,
+          `**Type:** built-in`,
+          '',
+          '### Description',
+          def.description,
+          '',
+          '### Parameters',
+          '```json',
+          JSON.stringify(def.parameters, null, 2),
+          '```',
+        ];
+        if (source) {
+          sections.push('', '### Source Code', '```typescript', source, '```');
+        } else {
+          sections.push('', '*Source code not available for this tool.*');
+        }
+        sections.push('', '### Improvement Tips', '- Built-in tools cannot be modified directly. Use `create_tool` to create an improved custom version that overrides or extends this tool.');
+        return { content: sections.join('\n') };
+      }
+
+      // 3. Not found — suggest similar tools
+      const similar = findSimilarTools(tools, tool_name);
+      const hint = similar.length > 0
+        ? `\n\nDid you mean one of these?\n${similar.map(s => `  - ${s}`).join('\n')}`
+        : '\n\nUse search_tools("keyword") to find the correct tool name.';
+      return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
     });
   }
 
