@@ -17,6 +17,7 @@ import type { ToolDefinition } from '../types.js';
  */
 export const createGoalTool: ToolDefinition = {
   name: 'create_goal',
+  brief: 'Create a goal to track a long-term objective',
   description: `Create a new goal to track long-term objectives.
 Use this when the user:
 - Expresses a desire to achieve something
@@ -59,6 +60,7 @@ Priority is 1-10 (10 = most important).`,
  */
 export const listGoalsTool: ToolDefinition = {
   name: 'list_goals',
+  brief: 'List goals filtered by status',
   description: `List current goals, optionally filtered by status.
 Use this to:
 - Review what the user is working towards
@@ -86,6 +88,7 @@ Use this to:
  */
 export const updateGoalTool: ToolDefinition = {
   name: 'update_goal',
+  brief: 'Update goal status, progress, or details',
   description: `Update a goal's status, progress, or details.
 Use this when:
 - User reports progress on a goal
@@ -134,6 +137,7 @@ Use this when:
  */
 export const decomposeGoalTool: ToolDefinition = {
   name: 'decompose_goal',
+  brief: 'Break a goal into ordered, actionable steps',
   description: `Break down a goal into actionable steps.
 Use this to help the user:
 - Plan how to achieve a goal
@@ -176,6 +180,7 @@ Steps are ordered and can have dependencies.`,
  */
 export const getNextActionsTool: ToolDefinition = {
   name: 'get_next_actions',
+  brief: 'Get next actionable steps across active goals',
   description: `Get the next actionable steps across all active goals.
 Returns steps that:
 - Belong to active goals
@@ -200,6 +205,7 @@ Use this to help the user decide what to work on next.`,
  */
 export const completeStepTool: ToolDefinition = {
   name: 'complete_step',
+  brief: 'Mark a goal step as completed',
   description: `Mark a goal step as completed.
 Use this when the user reports completing a task related to a goal.
 This automatically updates the parent goal's progress.`,
@@ -224,6 +230,7 @@ This automatically updates the parent goal's progress.`,
  */
 export const getGoalDetailsTool: ToolDefinition = {
   name: 'get_goal_details',
+  brief: 'Get full details and steps for a goal',
   description: `Get detailed information about a specific goal including its steps.
 Use this to review a goal's full context and progress.`,
   parameters: {
@@ -241,8 +248,9 @@ Use this to review a goal's full context and progress.`,
 /**
  * Get goal statistics
  */
-export const goalStatsTool: ToolDefinition = {
-  name: 'goal_stats',
+export const getGoalStatsTool: ToolDefinition = {
+  name: 'get_goal_stats',
+  brief: 'Get goal count, completion rates, and trends',
   description: `Get statistics about the user's goals.
 Shows total goals, completion rates, and trends.
 Useful for motivation and progress reviews.`,
@@ -265,7 +273,7 @@ export const GOAL_TOOLS: ToolDefinition[] = [
   getNextActionsTool,
   completeStepTool,
   getGoalDetailsTool,
-  goalStatsTool,
+  getGoalStatsTool,
 ];
 
 /**

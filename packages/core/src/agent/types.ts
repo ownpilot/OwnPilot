@@ -181,6 +181,8 @@ export interface ToolDefinition {
   readonly name: string;
   /** Human-readable description */
   readonly description: string;
+  /** Short 5-12 word summary for tool catalog (shown in system prompt) */
+  readonly brief?: string;
   /** JSON Schema for parameters */
   readonly parameters: {
     readonly type: 'object';

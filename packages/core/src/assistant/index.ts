@@ -228,7 +228,7 @@ export function classifyIntent(message: string, _context: ConversationContext): 
         intent: 'memory',
         confidence: 0.80,
         entities: {},
-        suggestedTools: ['remember', 'recall'],
+        suggestedTools: ['create_memory', 'search_memories'],
       };
     }
   }

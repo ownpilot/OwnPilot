@@ -40,6 +40,7 @@ const STABILITY_IMAGE_CONFIG = {
 
 export const analyzeImageTool: ToolDefinition = {
   name: 'analyze_image',
+  brief: 'Describe, OCR, or answer questions about an image',
   description: 'Analyze an image using AI vision capabilities. Can describe content, extract text (OCR), detect objects, and answer questions about images.',
   parameters: {
     type: 'object',
@@ -212,6 +213,7 @@ export const analyzeImageExecutor: ToolExecutor = async (params, _context): Prom
 
 export const generateImageTool: ToolDefinition = {
   name: 'generate_image',
+  brief: 'Generate an image from a text description',
   description: 'Generate an image from a text description using AI (DALL-E or similar)',
   parameters: {
     type: 'object',
@@ -316,6 +318,7 @@ function getStyleDescription(style: string): string {
 
 export const editImageTool: ToolDefinition = {
   name: 'edit_image',
+  brief: 'Edit an image using AI inpainting',
   description: 'Edit an existing image using AI (inpainting/outpainting)',
   parameters: {
     type: 'object',
@@ -378,6 +381,7 @@ export const editImageExecutor: ToolExecutor = async (params, _context): Promise
 
 export const imageVariationTool: ToolDefinition = {
   name: 'image_variation',
+  brief: 'Generate variations of an existing image',
   description: 'Generate variations of an existing image',
   parameters: {
     type: 'object',
@@ -441,6 +445,7 @@ export const imageVariationExecutor: ToolExecutor = async (params, _context): Pr
 
 export const resizeImageTool: ToolDefinition = {
   name: 'resize_image',
+  brief: 'Resize an image to specified dimensions',
   description: 'Resize an image to specified dimensions',
   parameters: {
     type: 'object',

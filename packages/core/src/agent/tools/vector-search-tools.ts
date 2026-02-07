@@ -47,6 +47,7 @@ const QDRANT_CONFIG = {
 
 export const createEmbeddingTool: ToolDefinition = {
   name: 'create_embedding',
+  brief: 'Generate vector embeddings for text',
   description: 'Generate vector embeddings for text using AI models. Useful for semantic search and similarity comparisons. Provide either "text" (single string) or "texts" (array for batch) — at least one is required.',
   parameters: {
     type: 'object',
@@ -131,6 +132,7 @@ export const createEmbeddingExecutor: ToolExecutor = async (params, _context): P
 
 export const semanticSearchTool: ToolDefinition = {
   name: 'semantic_search',
+  brief: 'Search for semantically similar content',
   description: 'Search for semantically similar content in a vector store',
   parameters: {
     type: 'object',
@@ -209,6 +211,7 @@ export const semanticSearchExecutor: ToolExecutor = async (params, _context): Pr
 
 export const upsertVectorsTool: ToolDefinition = {
   name: 'upsert_vectors',
+  brief: 'Insert or update vectors in a collection',
   description: 'Insert or update vectors in a collection. Provide either "vectors" (pre-computed embeddings) or "texts" (will be auto-embedded) — at least one is required alongside "collection".',
   parameters: {
     type: 'object',
@@ -301,6 +304,7 @@ export const upsertVectorsExecutor: ToolExecutor = async (params, _context): Pro
 
 export const deleteVectorsTool: ToolDefinition = {
   name: 'delete_vectors',
+  brief: 'Delete vectors from a collection',
   description: 'Delete vectors from a collection',
   parameters: {
     type: 'object',
@@ -378,6 +382,7 @@ export const deleteVectorsExecutor: ToolExecutor = async (params, _context): Pro
 
 export const listCollectionsTool: ToolDefinition = {
   name: 'list_vector_collections',
+  brief: 'List all vector collections',
   description: 'List all vector collections/indexes. Optionally include statistics like vector count.',
   parameters: {
     type: 'object',
@@ -411,6 +416,7 @@ export const listCollectionsExecutor: ToolExecutor = async (params, _context): P
 
 export const createCollectionTool: ToolDefinition = {
   name: 'create_vector_collection',
+  brief: 'Create a new vector collection',
   description: 'Create a new vector collection/index',
   parameters: {
     type: 'object',
@@ -480,6 +486,7 @@ export const createCollectionExecutor: ToolExecutor = async (params, _context): 
 
 export const similarityScoreTool: ToolDefinition = {
   name: 'similarity_score',
+  brief: 'Calculate similarity between two texts or vectors',
   description: 'Calculate similarity between two texts or two vectors. Provide either (text1 + text2) for text comparison or (vector1 + vector2) for direct vector comparison.',
   parameters: {
     type: 'object',

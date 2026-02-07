@@ -154,10 +154,17 @@ export async function buildEnhancedSystemPrompt(
   const autonomyLevelNames = ['Manual', 'Assisted', 'Supervised', 'Autonomous', 'Full'];
   const levelName = autonomyLevelNames[config.level] ?? 'Unknown';
 
+  const autonomyBehavior: Record<number, string> = {
+    0: 'Ask for explicit permission before taking any action.',
+    1: 'Perform read-only operations freely. Ask permission for any modifications.',
+    2: 'Perform most operations freely. Ask permission for destructive or irreversible actions.',
+    3: 'Operate autonomously. Only ask for truly destructive actions.',
+    4: 'Full autonomy. Take action immediately. The user trusts your judgment.',
+  };
+
   sections.push(
     `\n---\n## Autonomy Level: ${levelName}\n` +
-      `- You can ${config.level >= 2 ? 'automatically' : 'suggest'} executing low-risk actions.\n` +
-      `- ${config.level >= 3 ? 'You can execute' : 'Ask for approval for'} high-risk actions.\n` +
+      `${autonomyBehavior[config.level] ?? autonomyBehavior[2]}\n` +
       `- Daily budget remaining: $${(config.dailyBudget - config.dailySpend).toFixed(2)}`
   );
 

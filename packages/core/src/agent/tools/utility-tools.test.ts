@@ -10,7 +10,7 @@ import {
   encodeDecodeExecutor,
   countTextExecutor,
   extractFromTextExecutor,
-  validateExecutor,
+  validateDataExecutor,
   transformTextExecutor,
   dateDiffExecutor,
   dateAddExecutor,
@@ -18,10 +18,10 @@ import {
   parseCsvExecutor,
   generateCsvExecutor,
   arrayOperationsExecutor,
-  statisticsExecutor,
+  calculateStatisticsExecutor,
   compareTextExecutor,
-  regexExecutor,
-  systemInfoExecutor,
+  runRegexExecutor,
+  getSystemInfoExecutor,
   UTILITY_TOOLS,
   UTILITY_TOOL_NAMES,
 } from './utility-tools.js';
@@ -1017,19 +1017,19 @@ describe('extractFromTextExecutor', () => {
 });
 
 // =============================================================================
-// validateExecutor
+// validateDataExecutor
 // =============================================================================
 
-describe('validateExecutor', () => {
+describe('validateDataExecutor', () => {
   describe('email validation', () => {
     it('validates a correct email', async () => {
-      const result = await validateExecutor({ value: 'user@example.com', type: 'email' });
+      const result = await validateDataExecutor({ value: 'user@example.com', type: 'email' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
     });
 
     it('rejects an invalid email', async () => {
-      const result = await validateExecutor({ value: 'not-an-email', type: 'email' });
+      const result = await validateDataExecutor({ value: 'not-an-email', type: 'email' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
       expect(data.reason).toContain('Invalid email');
@@ -1038,13 +1038,13 @@ describe('validateExecutor', () => {
 
   describe('url validation', () => {
     it('validates a correct URL', async () => {
-      const result = await validateExecutor({ value: 'https://example.com', type: 'url' });
+      const result = await validateDataExecutor({ value: 'https://example.com', type: 'url' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
     });
 
     it('rejects an invalid URL', async () => {
-      const result = await validateExecutor({ value: 'not a url', type: 'url' });
+      const result = await validateDataExecutor({ value: 'not a url', type: 'url' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
     });
@@ -1052,13 +1052,13 @@ describe('validateExecutor', () => {
 
   describe('json validation', () => {
     it('validates valid JSON', async () => {
-      const result = await validateExecutor({ value: '{"key": "value"}', type: 'json' });
+      const result = await validateDataExecutor({ value: '{"key": "value"}', type: 'json' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
     });
 
     it('rejects invalid JSON', async () => {
-      const result = await validateExecutor({ value: '{invalid}', type: 'json' });
+      const result = await validateDataExecutor({ value: '{invalid}', type: 'json' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
     });
@@ -1066,13 +1066,13 @@ describe('validateExecutor', () => {
 
   describe('uuid validation', () => {
     it('validates a correct UUID v4', async () => {
-      const result = await validateExecutor({ value: '550e8400-e29b-41d4-a716-446655440000', type: 'uuid' });
+      const result = await validateDataExecutor({ value: '550e8400-e29b-41d4-a716-446655440000', type: 'uuid' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
     });
 
     it('rejects an invalid UUID', async () => {
-      const result = await validateExecutor({ value: 'not-a-uuid', type: 'uuid' });
+      const result = await validateDataExecutor({ value: 'not-a-uuid', type: 'uuid' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
     });
@@ -1080,21 +1080,21 @@ describe('validateExecutor', () => {
 
   describe('ip validation', () => {
     it('validates IPv4', async () => {
-      const result = await validateExecutor({ value: '192.168.1.1', type: 'ip' });
+      const result = await validateDataExecutor({ value: '192.168.1.1', type: 'ip' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
       expect(data.version).toBe('IPv4');
     });
 
     it('validates IPv6', async () => {
-      const result = await validateExecutor({ value: '2001:0db8:85a3:0000:0000:8a2e:0370:7334', type: 'ip' });
+      const result = await validateDataExecutor({ value: '2001:0db8:85a3:0000:0000:8a2e:0370:7334', type: 'ip' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
       expect(data.version).toBe('IPv6');
     });
 
     it('rejects invalid IP', async () => {
-      const result = await validateExecutor({ value: '999.999.999.999', type: 'ip' });
+      const result = await validateDataExecutor({ value: '999.999.999.999', type: 'ip' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
     });
@@ -1102,14 +1102,14 @@ describe('validateExecutor', () => {
 
   describe('phone validation', () => {
     it('validates a phone number with 10+ digits', async () => {
-      const result = await validateExecutor({ value: '+1 (555) 123-4567', type: 'phone' });
+      const result = await validateDataExecutor({ value: '+1 (555) 123-4567', type: 'phone' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
       expect(data.normalized).toBe('15551234567');
     });
 
     it('rejects too-short phone number', async () => {
-      const result = await validateExecutor({ value: '12345', type: 'phone' });
+      const result = await validateDataExecutor({ value: '12345', type: 'phone' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
     });
@@ -1118,7 +1118,7 @@ describe('validateExecutor', () => {
   describe('credit card validation', () => {
     it('validates a valid Visa card (Luhn)', async () => {
       // Test number: 4111111111111111 (well-known Visa test)
-      const result = await validateExecutor({ value: '4111111111111111', type: 'credit_card' });
+      const result = await validateDataExecutor({ value: '4111111111111111', type: 'credit_card' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
       expect(data.type).toBe('Visa');
@@ -1126,14 +1126,14 @@ describe('validateExecutor', () => {
 
     it('validates Mastercard', async () => {
       // Test number: 5500000000000004
-      const result = await validateExecutor({ value: '5500000000000004', type: 'credit_card' });
+      const result = await validateDataExecutor({ value: '5500000000000004', type: 'credit_card' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
       expect(data.type).toBe('Mastercard');
     });
 
     it('rejects invalid card (Luhn fails)', async () => {
-      const result = await validateExecutor({ value: '1234567890123456', type: 'credit_card' });
+      const result = await validateDataExecutor({ value: '1234567890123456', type: 'credit_card' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
       expect(data.reason).toContain('Luhn');
@@ -1143,21 +1143,21 @@ describe('validateExecutor', () => {
   describe('iban validation', () => {
     it('validates a correct IBAN', async () => {
       // GB82 WEST 1234 5698 7654 32 is a well-known test IBAN
-      const result = await validateExecutor({ value: 'GB82 WEST 1234 5698 7654 32', type: 'iban' });
+      const result = await validateDataExecutor({ value: 'GB82 WEST 1234 5698 7654 32', type: 'iban' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
       expect(data.country).toBe('GB');
     });
 
     it('rejects too-short IBAN', async () => {
-      const result = await validateExecutor({ value: 'GB82', type: 'iban' });
+      const result = await validateDataExecutor({ value: 'GB82', type: 'iban' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
       expect(data.reason).toContain('length');
     });
 
     it('rejects IBAN with invalid checksum', async () => {
-      const result = await validateExecutor({ value: 'GB00 WEST 1234 5698 7654 32', type: 'iban' });
+      const result = await validateDataExecutor({ value: 'GB00 WEST 1234 5698 7654 32', type: 'iban' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
       expect(data.reason).toContain('checksum');
@@ -1166,14 +1166,14 @@ describe('validateExecutor', () => {
 
   describe('tc_kimlik validation', () => {
     it('rejects TC Kimlik not 11 digits', async () => {
-      const result = await validateExecutor({ value: '12345', type: 'tc_kimlik' });
+      const result = await validateDataExecutor({ value: '12345', type: 'tc_kimlik' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
       expect(data.reason).toContain('11 digits');
     });
 
     it('rejects TC Kimlik starting with 0', async () => {
-      const result = await validateExecutor({ value: '01234567890', type: 'tc_kimlik' });
+      const result = await validateDataExecutor({ value: '01234567890', type: 'tc_kimlik' });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
       expect(data.reason).toContain('cannot start with 0');
@@ -1181,7 +1181,7 @@ describe('validateExecutor', () => {
   });
 
   it('returns error for unknown validation type', async () => {
-    const result = await validateExecutor({ value: 'test', type: 'unknown' });
+    const result = await validateDataExecutor({ value: 'test', type: 'unknown' });
     const data = parseContent(result.content);
     expect(data.valid).toBe(false);
     expect(data.reason).toContain('Unknown validation type');
@@ -1189,7 +1189,7 @@ describe('validateExecutor', () => {
 
   it('truncates long value in result', async () => {
     const longValue = 'a'.repeat(100);
-    const result = await validateExecutor({ value: longValue, type: 'email' });
+    const result = await validateDataExecutor({ value: longValue, type: 'email' });
     const data = parseContent(result.content);
     expect((data.value as string).length).toBe(50);
   });
@@ -1761,12 +1761,12 @@ describe('arrayOperationsExecutor', () => {
 });
 
 // =============================================================================
-// statisticsExecutor
+// calculateStatisticsExecutor
 // =============================================================================
 
-describe('statisticsExecutor', () => {
+describe('calculateStatisticsExecutor', () => {
   it('calculates basic statistics', async () => {
-    const result = await statisticsExecutor({ numbers: '[1,2,3,4,5]' });
+    const result = await calculateStatisticsExecutor({ numbers: '[1,2,3,4,5]' });
     const data = parseContent(result.content);
     expect(data.count).toBe(5);
     expect(data.sum).toBe(15);
@@ -1778,20 +1778,20 @@ describe('statisticsExecutor', () => {
   });
 
   it('calculates median for even count', async () => {
-    const result = await statisticsExecutor({ numbers: '[1,2,3,4]' });
+    const result = await calculateStatisticsExecutor({ numbers: '[1,2,3,4]' });
     const data = parseContent(result.content);
     expect(data.median).toBe(2.5);
   });
 
   it('calculates standard deviation', async () => {
-    const result = await statisticsExecutor({ numbers: '[2,4,4,4,5,5,7,9]' });
+    const result = await calculateStatisticsExecutor({ numbers: '[2,4,4,4,5,5,7,9]' });
     const data = parseContent(result.content);
     expect(data.standardDeviation).toBeTypeOf('number');
     expect(data.variance).toBeTypeOf('number');
   });
 
   it('calculates quartiles', async () => {
-    const result = await statisticsExecutor({ numbers: '[1,2,3,4,5,6,7,8,9,10]' });
+    const result = await calculateStatisticsExecutor({ numbers: '[1,2,3,4,5,6,7,8,9,10]' });
     const data = parseContent(result.content);
     const quartiles = data.quartiles as Record<string, number>;
     expect(quartiles.q1).toBeTypeOf('number');
@@ -1800,7 +1800,7 @@ describe('statisticsExecutor', () => {
   });
 
   it('calculates requested percentile', async () => {
-    const result = await statisticsExecutor({ numbers: '[1,2,3,4,5,6,7,8,9,10]', percentile: 90 });
+    const result = await calculateStatisticsExecutor({ numbers: '[1,2,3,4,5,6,7,8,9,10]', percentile: 90 });
     const data = parseContent(result.content);
     expect(data.requestedPercentile).toBeDefined();
     const pct = data.requestedPercentile as Record<string, number>;
@@ -1809,25 +1809,25 @@ describe('statisticsExecutor', () => {
   });
 
   it('parses comma-separated numbers', async () => {
-    const result = await statisticsExecutor({ numbers: '1, 2, 3, 4, 5' });
+    const result = await calculateStatisticsExecutor({ numbers: '1, 2, 3, 4, 5' });
     const data = parseContent(result.content);
     expect(data.count).toBe(5);
     expect(data.mean).toBe(3);
   });
 
   it('returns error for no valid numbers', async () => {
-    const result = await statisticsExecutor({ numbers: 'abc, def' });
+    const result = await calculateStatisticsExecutor({ numbers: 'abc, def' });
     expect(result.isError).toBe(true);
   });
 
   it('returns "no mode" when all values are unique', async () => {
-    const result = await statisticsExecutor({ numbers: '[1,2,3,4,5]' });
+    const result = await calculateStatisticsExecutor({ numbers: '[1,2,3,4,5]' });
     const data = parseContent(result.content);
     expect(data.mode).toBe('no mode');
   });
 
   it('detects mode when values repeat', async () => {
-    const result = await statisticsExecutor({ numbers: '[1,2,2,3]' });
+    const result = await calculateStatisticsExecutor({ numbers: '[1,2,2,3]' });
     const data = parseContent(result.content);
     expect(data.mode).toEqual([2]);
   });
@@ -1885,24 +1885,24 @@ describe('compareTextExecutor', () => {
 });
 
 // =============================================================================
-// regexExecutor
+// runRegexExecutor
 // =============================================================================
 
-describe('regexExecutor', () => {
+describe('runRegexExecutor', () => {
   it('tests a pattern', async () => {
-    const result = await regexExecutor({ text: 'hello world', pattern: 'hello', operation: 'test' });
+    const result = await runRegexExecutor({ text: 'hello world', pattern: 'hello', operation: 'test' });
     const data = parseContent(result.content);
     expect(data.result).toBe(true);
   });
 
   it('tests a non-matching pattern', async () => {
-    const result = await regexExecutor({ text: 'hello world', pattern: 'xyz', operation: 'test' });
+    const result = await runRegexExecutor({ text: 'hello world', pattern: 'xyz', operation: 'test' });
     const data = parseContent(result.content);
     expect(data.result).toBe(false);
   });
 
   it('matches a pattern', async () => {
-    const result = await regexExecutor({ text: 'hello world', pattern: '(\\w+)\\s(\\w+)', operation: 'match' });
+    const result = await runRegexExecutor({ text: 'hello world', pattern: '(\\w+)\\s(\\w+)', operation: 'match' });
     const data = parseContent(result.content);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const match = data.result as any;
@@ -1911,7 +1911,7 @@ describe('regexExecutor', () => {
   });
 
   it('matches all occurrences', async () => {
-    const result = await regexExecutor({ text: 'cat bat hat', pattern: '[a-z]at', operation: 'match_all', flags: 'g' });
+    const result = await runRegexExecutor({ text: 'cat bat hat', pattern: '[a-z]at', operation: 'match_all', flags: 'g' });
     const data = parseContent(result.content);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const matches = data.result as any[];
@@ -1919,34 +1919,34 @@ describe('regexExecutor', () => {
   });
 
   it('replaces text', async () => {
-    const result = await regexExecutor({ text: 'hello world', pattern: 'world', operation: 'replace', replacement: 'vitest', flags: 'g' });
+    const result = await runRegexExecutor({ text: 'hello world', pattern: 'world', operation: 'replace', replacement: 'vitest', flags: 'g' });
     const data = parseContent(result.content);
     expect(data.result).toBe('hello vitest');
   });
 
   it('splits text', async () => {
-    const result = await regexExecutor({ text: 'a,b,,c', pattern: ',+', operation: 'split' });
+    const result = await runRegexExecutor({ text: 'a,b,,c', pattern: ',+', operation: 'split' });
     const data = parseContent(result.content);
     expect(data.result).toEqual(['a', 'b', 'c']);
   });
 
   it('returns error for too-long pattern', async () => {
-    const result = await regexExecutor({ text: 'test', pattern: 'a'.repeat(1001), operation: 'test' });
+    const result = await runRegexExecutor({ text: 'test', pattern: 'a'.repeat(1001), operation: 'test' });
     expect(result.isError).toBe(true);
   });
 
   it('returns error for invalid regex', async () => {
-    const result = await regexExecutor({ text: 'test', pattern: '(unclosed', operation: 'test' });
+    const result = await runRegexExecutor({ text: 'test', pattern: '(unclosed', operation: 'test' });
     expect(result.isError).toBe(true);
   });
 
   it('returns error for unknown operation', async () => {
-    const result = await regexExecutor({ text: 'test', pattern: 'test', operation: 'unknown' });
+    const result = await runRegexExecutor({ text: 'test', pattern: 'test', operation: 'unknown' });
     expect(result.isError).toBe(true);
   });
 
   it('auto-adds g flag for match_all', async () => {
-    const result = await regexExecutor({ text: 'aa', pattern: 'a', operation: 'match_all' });
+    const result = await runRegexExecutor({ text: 'aa', pattern: 'a', operation: 'match_all' });
     const data = parseContent(result.content);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((data.result as any[]).length).toBe(2);
@@ -1954,12 +1954,12 @@ describe('regexExecutor', () => {
 });
 
 // =============================================================================
-// systemInfoExecutor
+// getSystemInfoExecutor
 // =============================================================================
 
-describe('systemInfoExecutor', () => {
+describe('getSystemInfoExecutor', () => {
   it('returns platform info by default', async () => {
-    const result = await systemInfoExecutor({});
+    const result = await getSystemInfoExecutor({});
     const data = parseContent(result.content);
     expect(data.platform).toBeDefined();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1970,25 +1970,25 @@ describe('systemInfoExecutor', () => {
   });
 
   it('returns memory info when requested', async () => {
-    const result = await systemInfoExecutor({ include: ['memory'] });
+    const result = await getSystemInfoExecutor({ include: ['memory'] });
     const data = parseContent(result.content);
     expect(data.memory).toBeDefined();
   });
 
   it('returns cpu info when requested', async () => {
-    const result = await systemInfoExecutor({ include: ['cpu'] });
+    const result = await getSystemInfoExecutor({ include: ['cpu'] });
     const data = parseContent(result.content);
     expect(data.cpu).toBeDefined();
   });
 
   it('returns env info when requested', async () => {
-    const result = await systemInfoExecutor({ include: ['env'] });
+    const result = await getSystemInfoExecutor({ include: ['env'] });
     const data = parseContent(result.content);
     expect(data.env).toBeDefined();
   });
 
   it('returns everything with "all"', async () => {
-    const result = await systemInfoExecutor({ include: ['all'] });
+    const result = await getSystemInfoExecutor({ include: ['all'] });
     const data = parseContent(result.content);
     expect(data.platform).toBeDefined();
     expect(data.memory).toBeDefined();
@@ -1997,7 +1997,7 @@ describe('systemInfoExecutor', () => {
   });
 
   it('always includes timestamp', async () => {
-    const result = await systemInfoExecutor({});
+    const result = await getSystemInfoExecutor({});
     const data = parseContent(result.content);
     expect(data.timestamp).toBeTypeOf('string');
   });
@@ -2046,9 +2046,9 @@ describe('UTILITY_TOOL_NAMES export', () => {
     expect(UTILITY_TOOL_NAMES).toContain('generate_uuid');
     expect(UTILITY_TOOL_NAMES).toContain('generate_password');
     expect(UTILITY_TOOL_NAMES).toContain('hash_text');
-    expect(UTILITY_TOOL_NAMES).toContain('validate');
+    expect(UTILITY_TOOL_NAMES).toContain('validate_data');
     expect(UTILITY_TOOL_NAMES).toContain('transform_text');
-    expect(UTILITY_TOOL_NAMES).toContain('statistics');
-    expect(UTILITY_TOOL_NAMES).toContain('regex');
+    expect(UTILITY_TOOL_NAMES).toContain('calculate_statistics');
+    expect(UTILITY_TOOL_NAMES).toContain('run_regex');
   });
 });

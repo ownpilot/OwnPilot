@@ -302,7 +302,7 @@ describe('getGroupForTool', () => {
   });
 
   it('finds the correct group for a memory tool', () => {
-    const group = getGroupForTool('remember');
+    const group = getGroupForTool('create_memory');
     expect(group).toBeDefined();
     expect(group?.id).toBe('memory');
   });

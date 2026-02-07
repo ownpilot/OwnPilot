@@ -284,7 +284,7 @@ export async function executeMemoryTool(
 
   try {
     switch (toolId) {
-      case 'remember': {
+      case 'create_memory': {
         const { content, type, importance, tags } = params as {
           content: string;
           type: MemoryType;
@@ -327,7 +327,7 @@ export async function executeMemoryTool(
         };
       }
 
-      case 'batch_remember': {
+      case 'batch_create_memories': {
         const { memories: memoriesInput } = params as {
           memories: Array<{
             content: string;
@@ -366,7 +366,7 @@ export async function executeMemoryTool(
         };
       }
 
-      case 'recall': {
+      case 'search_memories': {
         const { query, type, tags, limit: rawLimit = 10 } = params as {
           query: string;
           type?: MemoryType;
@@ -412,7 +412,7 @@ export async function executeMemoryTool(
         };
       }
 
-      case 'forget': {
+      case 'delete_memory': {
         const { memoryId } = params as { memoryId: string };
 
         if (!memoryId) {
@@ -467,7 +467,7 @@ export async function executeMemoryTool(
         };
       }
 
-      case 'boost_memory': {
+      case 'update_memory_importance': {
         const { memoryId, amount = 0.1 } = params as {
           memoryId: string;
           amount?: number;
@@ -495,7 +495,7 @@ export async function executeMemoryTool(
         };
       }
 
-      case 'memory_stats': {
+      case 'get_memory_stats': {
         const stats = await service.getStats(userId);
 
         return {

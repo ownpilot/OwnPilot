@@ -26,7 +26,7 @@ describe('TOOL_MAX_LIMITS', () => {
       'list_contacts',
       'list_bookmarks',
       'query_expenses',
-      'recall',
+      'search_memories',
       'list_memories',
       'list_goals',
       'get_next_actions',

@@ -136,6 +136,7 @@ function resolveFilePath(filePath: string, workspaceDir?: string): string {
  */
 export const readFileTool: ToolDefinition = {
   name: 'read_file',
+  brief: 'Read file contents as text',
   description: 'Read the contents of a file. Returns the file content as text.',
   parameters: {
     type: 'object',
@@ -222,6 +223,7 @@ export const readFileExecutor: ToolExecutor = async (args, context): Promise<Too
  */
 export const writeFileTool: ToolDefinition = {
   name: 'write_file',
+  brief: 'Write or create a file with given content',
   description: 'Write content to a file. Creates the file if it does not exist.',
   parameters: {
     type: 'object',
@@ -301,6 +303,7 @@ export const writeFileExecutor: ToolExecutor = async (args, context): Promise<To
  */
 export const listDirectoryTool: ToolDefinition = {
   name: 'list_directory',
+  brief: 'List files and subdirectories in a path',
   description: 'List files and directories in a path. Returns file names, sizes, and types.',
   parameters: {
     type: 'object',
@@ -414,6 +417,7 @@ export const listDirectoryExecutor: ToolExecutor = async (args, context): Promis
  */
 export const searchFilesTool: ToolDefinition = {
   name: 'search_files',
+  brief: 'Search for text content across files',
   description: 'Search for text content in files. Returns matching files and lines.',
   parameters: {
     type: 'object',
@@ -551,6 +555,7 @@ export const searchFilesExecutor: ToolExecutor = async (args, context): Promise<
  */
 export const downloadFileTool: ToolDefinition = {
   name: 'download_file',
+  brief: 'Download a file from a URL to local disk',
   description: 'Download a file from a URL and save it locally.',
   parameters: {
     type: 'object',
@@ -632,7 +637,8 @@ export const downloadFileExecutor: ToolExecutor = async (args, context): Promise
  * File info tool
  */
 export const fileInfoTool: ToolDefinition = {
-  name: 'file_info',
+  name: 'get_file_info',
+  brief: 'Get file size, type, and modification date',
   description: 'Get detailed information about a file or directory.',
   parameters: {
     type: 'object',
@@ -683,6 +689,7 @@ export const fileInfoExecutor: ToolExecutor = async (args, context): Promise<Too
  */
 export const deleteFileTool: ToolDefinition = {
   name: 'delete_file',
+  brief: 'Delete a file or directory',
   description: 'Delete a file or directory.',
   parameters: {
     type: 'object',
@@ -740,6 +747,7 @@ export const deleteFileExecutor: ToolExecutor = async (args, context): Promise<T
  */
 export const copyFileTool: ToolDefinition = {
   name: 'copy_file',
+  brief: 'Copy or move a file or directory',
   description: 'Copy or move a file or directory.',
   parameters: {
     type: 'object',

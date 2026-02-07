@@ -330,16 +330,16 @@ describe('PromptComposer', () => {
       ];
       const result = composer.compose(baseContext({ tools }));
       expect(result).toContain('## Available Tools');
-      expect(result).toContain('3 tools available across');
+      expect(result).toContain('3 tools across:');
       expect(result).toContain('File (2)');
       expect(result).toContain('Web (1)');
     });
 
-    it('should include tool workflow mandatory instructions', () => {
+    it('should include tool usage instructions', () => {
       const result = composer.compose(baseContext({ tools: [makeTool('test_tool')] }));
-      expect(result).toContain('Tool Workflow');
-      expect(result).toContain('MANDATORY');
+      expect(result).toContain('### Tool Usage');
       expect(result).toContain('search_tools');
+      expect(result).toContain('use_tool');
     });
 
     it('should handle empty tools list (no section)', () => {
@@ -412,20 +412,10 @@ describe('PromptComposer', () => {
       expect(result).toContain('Access to external services: GitHub, Slack');
     });
 
-    it('should include autonomy guidelines', () => {
+    it('should skip autonomyLevel in capabilities output', () => {
       const caps: AgentCapabilities = { autonomyLevel: 'high' };
       const result = composer.compose(baseContext({ capabilities: caps }));
-      expect(result).toContain('## Autonomy Guidelines');
-      expect(result).toContain('HIGH');
-      expect(result).toContain('almost all operations autonomously');
-    });
-
-    it('should include correct guidelines for each autonomy level', () => {
-      const levels: Array<AgentCapabilities['autonomyLevel']> = ['none', 'low', 'medium', 'high', 'full'];
-      for (const level of levels) {
-        const result = composer.compose(baseContext({ capabilities: { autonomyLevel: level } }));
-        expect(result).toContain(`set to: ${level!.toUpperCase()}`);
-      }
+      expect(result).not.toContain('## Autonomy Guidelines');
     });
 
     // --- Time context ---

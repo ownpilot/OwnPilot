@@ -653,7 +653,7 @@ ${personalityText}
       { keywords: ['file', 'read', 'document'], tools: ['read_file', 'write_file', 'list_directory'] },
       { keywords: ['web', 'fetch', 'http', 'api'], tools: ['http_request', 'fetch_web_page'] },
       { keywords: ['code', 'program', 'script'], tools: ['execute_javascript'] },
-      { keywords: ['remember', 'memory'], tools: ['remember', 'recall'] },
+      { keywords: ['remember', 'memory'], tools: ['create_memory', 'search_memories'] },
     ];
 
     for (const mapping of toolMappings) {

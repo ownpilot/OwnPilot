@@ -11,6 +11,7 @@ import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools
 
 export const readPdfTool: ToolDefinition = {
   name: 'read_pdf',
+  brief: 'Extract text from a PDF file',
   description: 'Extract text content from a PDF file. Supports multi-page PDFs with page selection.',
   parameters: {
     type: 'object',
@@ -153,6 +154,7 @@ function extractTablesFromText(text: string): Array<{ rows: string[][] }> {
 
 export const createPdfTool: ToolDefinition = {
   name: 'create_pdf',
+  brief: 'Create a PDF from text, HTML, or markdown',
   description: 'Create a PDF document from text, HTML, or markdown content',
   parameters: {
     type: 'object',
@@ -330,7 +332,8 @@ function convertMarkdownToText(markdown: string): string {
 // ============================================================================
 
 export const pdfInfoTool: ToolDefinition = {
-  name: 'pdf_info',
+  name: 'get_pdf_info',
+  brief: 'Get PDF page count, title, author metadata',
   description: 'Get metadata and information about a PDF file without reading its full content. Returns file size, page count, title, author, and other document properties.',
   parameters: {
     type: 'object',

@@ -122,7 +122,7 @@ describe('FILE_SYSTEM_TOOLS', () => {
       'list_directory',
       'search_files',
       'download_file',
-      'file_info',
+      'get_file_info',
       'delete_file',
       'copy_file',
     ]);
@@ -181,7 +181,7 @@ describe('Tool definitions', () => {
   });
 
   it('fileInfoTool has required path parameter', () => {
-    expect(fileInfoTool.name).toBe('file_info');
+    expect(fileInfoTool.name).toBe('get_file_info');
     expect(fileInfoTool.parameters.required).toEqual(['path']);
   });
 

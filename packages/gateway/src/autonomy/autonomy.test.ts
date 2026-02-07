@@ -884,7 +884,7 @@ describe('Risk Assessment', () => {
     it('should include backup suggestion for Data Deletion factor', () => {
       const result = assessRisk(
         'data_modification',
-        'forget',
+        'delete_memory',
         {},
         emptyContext,
         makeConfig({ level: AutonomyLevel.FULL })

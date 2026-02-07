@@ -58,6 +58,7 @@ function getWeatherService(context?: { getApiKey?: (name: string) => string | un
 
 export const getWeatherTool: ToolDefinition = {
   name: 'get_weather',
+  brief: 'Get current temperature, humidity, wind for a location',
   description:
     'Get current weather conditions for a location. Returns temperature, humidity, wind, and conditions.',
   parameters: {
@@ -156,6 +157,7 @@ export const getWeatherExecutor: ToolExecutor = async (params, context): Promise
 
 export const getWeatherForecastTool: ToolDefinition = {
   name: 'get_weather_forecast',
+  brief: 'Get multi-day weather forecast for a location',
   description:
     'Get weather forecast for the next several days. Returns daily highs, lows, conditions, and rain chance.',
   parameters: {

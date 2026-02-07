@@ -371,14 +371,14 @@ export const TOOL_CATEGORIES = {
     'list_directory',
     'search_files',
     'download_file',
-    'file_info',
+    'get_file_info',
     'delete_file',
     'copy_file',
   ],
   'PDF': [
     'read_pdf',
     'create_pdf',
-    'pdf_info',
+    'get_pdf_info',
   ],
 
   // Code & Development
@@ -404,7 +404,7 @@ export const TOOL_CATEGORIES = {
     'http_request',
     'fetch_web_page',
     'search_web',
-    'json_api',
+    'call_json_api',
   ],
 
   // Communication
@@ -429,7 +429,7 @@ export const TOOL_CATEGORIES = {
     'text_to_speech',
     'speech_to_text',
     'translate_audio',
-    'audio_info',
+    'get_audio_info',
     'split_audio',
   ],
 
@@ -485,13 +485,13 @@ export const TOOL_CATEGORIES = {
 
   // Memory & Goals
   'Memory': [
-    'remember',
-    'batch_remember',
-    'recall',
-    'forget',
+    'create_memory',
+    'batch_create_memories',
+    'search_memories',
+    'delete_memory',
     'list_memories',
-    'boost_memory',
-    'memory_stats',
+    'update_memory_importance',
+    'get_memory_stats',
   ],
   'Goals': [
     'create_goal',
@@ -501,7 +501,7 @@ export const TOOL_CATEGORIES = {
     'get_next_actions',
     'complete_step',
     'get_goal_details',
-    'goal_stats',
+    'get_goal_stats',
   ],
 
   // Meta - Dynamic Tool Management
@@ -518,7 +518,7 @@ export const TOOL_CATEGORIES = {
     'date_diff',
     'date_add',
     'calculate',
-    'statistics',
+    'calculate_statistics',
     'convert_units',
     'generate_uuid',
     'generate_password',
@@ -529,13 +529,13 @@ export const TOOL_CATEGORIES = {
     'extract_from_text',
     'transform_text',
     'compare_text',
-    'regex',
+    'run_regex',
     'format_json',
     'parse_csv',
     'generate_csv',
     'array_operations',
-    'validate',
-    'system_info',
+    'validate_data',
+    'get_system_info',
   ],
 } as const;
 

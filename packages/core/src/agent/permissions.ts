@@ -131,7 +131,7 @@ export const DEFAULT_TOOL_PERMISSIONS: Record<string, ToolPermissionConfig> = {
     category: 'file_read',
     description: 'Search for text in files',
   },
-  file_info: {
+  get_file_info: {
     level: 'read',
     category: 'file_read',
     description: 'Get file metadata',
@@ -216,7 +216,7 @@ export const DEFAULT_TOOL_PERMISSIONS: Record<string, ToolPermissionConfig> = {
     rateLimit: 20,
     description: 'Search the web',
   },
-  json_api: {
+  call_json_api: {
     level: 'read',
     category: 'network_read',
     description: 'Call JSON APIs',

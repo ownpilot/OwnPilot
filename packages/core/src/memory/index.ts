@@ -994,7 +994,7 @@ export async function getDefaultMemoryStore(): Promise<SecureMemoryStore> {
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../agent/types.js';
 
 export const rememberTool: ToolDefinition = {
-  name: 'remember',
+  name: 'create_memory',
   description: 'Store information in long-term memory. Use this to remember facts, preferences, or important details about the user.',
   parameters: {
     type: 'object',
@@ -1023,7 +1023,7 @@ export const rememberTool: ToolDefinition = {
 };
 
 export const recallTool: ToolDefinition = {
-  name: 'recall',
+  name: 'search_memories',
   description: 'Retrieve information from long-term memory. Use this to recall facts, preferences, or context.',
   parameters: {
     type: 'object',
@@ -1052,7 +1052,7 @@ export const recallTool: ToolDefinition = {
 };
 
 export const forgetTool: ToolDefinition = {
-  name: 'forget',
+  name: 'delete_memory',
   description: 'Remove information from memory. Use with caution - this permanently deletes the memory.',
   parameters: {
     type: 'object',

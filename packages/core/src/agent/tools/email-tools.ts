@@ -43,6 +43,7 @@ const IMAP_CONFIG_REQUIREMENT = {
 
 export const sendEmailTool: ToolDefinition = {
   name: 'send_email',
+  brief: 'Send email via SMTP with HTML and attachments',
   description: 'Send an email using configured SMTP server. Supports HTML content, attachments, and CC/BCC.',
   parameters: {
     type: 'object',
@@ -238,6 +239,7 @@ export const sendEmailExecutor: ToolExecutor = async (params, _context): Promise
 
 export const listEmailsTool: ToolDefinition = {
   name: 'list_emails',
+  brief: 'List inbox emails via IMAP with filters',
   description: 'List emails from inbox using IMAP. All parameters are optional filters. Returns emails sorted by date.',
   parameters: {
     type: 'object',
@@ -334,6 +336,7 @@ export const listEmailsExecutor: ToolExecutor = async (params, _context): Promis
 
 export const readEmailTool: ToolDefinition = {
   name: 'read_email',
+  brief: 'Read a specific email body and attachments',
   description: 'Read a specific email by ID, including full body and attachments',
   parameters: {
     type: 'object',
@@ -394,6 +397,7 @@ export const readEmailExecutor: ToolExecutor = async (params, _context): Promise
 
 export const deleteEmailTool: ToolDefinition = {
   name: 'delete_email',
+  brief: 'Delete or trash an email',
   description: 'Delete or move an email to trash',
   parameters: {
     type: 'object',
@@ -443,6 +447,7 @@ export const deleteEmailExecutor: ToolExecutor = async (params, _context): Promi
 
 export const searchEmailsTool: ToolDefinition = {
   name: 'search_emails',
+  brief: 'Search emails with advanced criteria',
   description: 'Search emails using advanced criteria',
   parameters: {
     type: 'object',
@@ -503,6 +508,7 @@ export const searchEmailsExecutor: ToolExecutor = async (params, _context): Prom
 
 export const replyEmailTool: ToolDefinition = {
   name: 'reply_email',
+  brief: 'Reply to an existing email',
   description: 'Reply to an existing email',
   parameters: {
     type: 'object',

@@ -314,6 +314,7 @@ async function getScheduler(): Promise<Scheduler> {
  */
 export const createScheduledTaskTool: ToolDefinition = {
   name: 'create_scheduled_task',
+  brief: 'Schedule a one-time or recurring automated task',
   description: `Create a new scheduled task. Supports both ONE-TIME and RECURRING schedules with natural language:
 
 ONE-TIME:
@@ -506,6 +507,7 @@ export const createScheduledTaskExecutor: ToolExecutor = async (
  */
 export const listScheduledTasksTool: ToolDefinition = {
   name: 'list_scheduled_tasks',
+  brief: 'List all scheduled tasks and next run times',
   description: 'List all scheduled tasks. Shows task names, schedules, and next run times.',
   parameters: {
     type: 'object',
@@ -584,6 +586,7 @@ export const listScheduledTasksExecutor: ToolExecutor = async (
  */
 export const updateScheduledTaskTool: ToolDefinition = {
   name: 'update_scheduled_task',
+  brief: 'Update schedule, enable/disable a task',
   description: 'Update an existing scheduled task. Can change schedule, enable/disable, or modify notification channels.',
   parameters: {
     type: 'object',
@@ -695,6 +698,7 @@ export const updateScheduledTaskExecutor: ToolExecutor = async (
  */
 export const deleteScheduledTaskTool: ToolDefinition = {
   name: 'delete_scheduled_task',
+  brief: 'Delete a scheduled task permanently',
   description: 'Delete a scheduled task. This action cannot be undone.',
   parameters: {
     type: 'object',
@@ -755,6 +759,7 @@ export const deleteScheduledTaskExecutor: ToolExecutor = async (
  */
 export const getTaskHistoryTool: ToolDefinition = {
   name: 'get_task_history',
+  brief: 'Get execution history for a scheduled task',
   description: 'Get execution history for a scheduled task. Shows past runs, results, and any errors.',
   parameters: {
     type: 'object',
@@ -830,6 +835,7 @@ export const getTaskHistoryExecutor: ToolExecutor = async (
  */
 export const triggerTaskTool: ToolDefinition = {
   name: 'trigger_task',
+  brief: 'Manually trigger a scheduled task now',
   description: 'Manually trigger a scheduled task to run immediately, regardless of its schedule.',
   parameters: {
     type: 'object',

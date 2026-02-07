@@ -17,6 +17,7 @@ import type { ToolDefinition } from '../types.js';
 
 export const addTaskTool: ToolDefinition = {
   name: 'add_task',
+  brief: 'Create a task with title, priority, and due date',
   description: `Add a new task/todo item. Use this for any task, todo, or action item the user wants to track.
 This is the PREFERRED tool for todos - do NOT create custom tables for tasks.`,
   parameters: {
@@ -50,6 +51,7 @@ This is the PREFERRED tool for todos - do NOT create custom tables for tasks.`,
 
 export const listTasksTool: ToolDefinition = {
   name: 'list_tasks',
+  brief: 'List tasks filtered by status, priority, or date',
   description: `List user's tasks with optional filtering. Returns tasks sorted by due date.`,
   parameters: {
     type: 'object',
@@ -83,6 +85,7 @@ export const listTasksTool: ToolDefinition = {
 
 export const completeTaskTool: ToolDefinition = {
   name: 'complete_task',
+  brief: 'Mark a task as completed by ID',
   description: `Mark a task as completed.`,
   parameters: {
     type: 'object',
@@ -98,6 +101,7 @@ export const completeTaskTool: ToolDefinition = {
 
 export const updateTaskTool: ToolDefinition = {
   name: 'update_task',
+  brief: 'Update a task title, priority, due date, or status',
   description: `Update an existing task's details.`,
   parameters: {
     type: 'object',
@@ -139,6 +143,7 @@ export const updateTaskTool: ToolDefinition = {
 
 export const deleteTaskTool: ToolDefinition = {
   name: 'delete_task',
+  brief: 'Delete a task permanently by ID',
   description: `Delete a task permanently.`,
   parameters: {
     type: 'object',
@@ -154,6 +159,7 @@ export const deleteTaskTool: ToolDefinition = {
 
 export const batchAddTasksTool: ToolDefinition = {
   name: 'batch_add_tasks',
+  brief: 'Create multiple tasks at once',
   description: `Add multiple tasks at once. Use this for bulk task creation instead of calling add_task multiple times.
 Efficient for importing task lists, creating recurring task patterns, or adding multiple related items.`,
   parameters: {
@@ -201,6 +207,7 @@ Efficient for importing task lists, creating recurring task patterns, or adding 
 
 export const addBookmarkTool: ToolDefinition = {
   name: 'add_bookmark',
+  brief: 'Save a URL with title and tags',
   description: `Save a URL as a bookmark. Use this for any website, article, or link the user wants to save.
 This is the PREFERRED tool for bookmarks - do NOT create custom tables for bookmarks.`,
   parameters: {
@@ -238,6 +245,7 @@ This is the PREFERRED tool for bookmarks - do NOT create custom tables for bookm
 
 export const listBookmarksTool: ToolDefinition = {
   name: 'list_bookmarks',
+  brief: 'List bookmarks with optional tag/search filter',
   description: `List user's bookmarks with optional filtering.`,
   parameters: {
     type: 'object',
@@ -265,6 +273,7 @@ export const listBookmarksTool: ToolDefinition = {
 
 export const deleteBookmarkTool: ToolDefinition = {
   name: 'delete_bookmark',
+  brief: 'Delete a bookmark by ID',
   description: `Delete a bookmark.`,
   parameters: {
     type: 'object',
@@ -280,6 +289,7 @@ export const deleteBookmarkTool: ToolDefinition = {
 
 export const batchAddBookmarksTool: ToolDefinition = {
   name: 'batch_add_bookmarks',
+  brief: 'Save multiple bookmarks at once',
   description: `Add multiple bookmarks at once. Use this for bulk bookmark import or saving multiple related links.
 Efficient for importing browser bookmarks or saving research links.`,
   parameters: {
@@ -331,6 +341,7 @@ Efficient for importing browser bookmarks or saving research links.`,
 
 export const addNoteTool: ToolDefinition = {
   name: 'add_note',
+  brief: 'Create a text note with optional tags',
   description: `Create a new note. Use this for any text content the user wants to save.
 This is the PREFERRED tool for notes - do NOT create custom tables for notes.`,
   parameters: {
@@ -364,6 +375,7 @@ This is the PREFERRED tool for notes - do NOT create custom tables for notes.`,
 
 export const listNotesTool: ToolDefinition = {
   name: 'list_notes',
+  brief: 'List notes with optional tag/search filter',
   description: `List user's notes with optional filtering.`,
   parameters: {
     type: 'object',
@@ -391,6 +403,7 @@ export const listNotesTool: ToolDefinition = {
 
 export const updateNoteTool: ToolDefinition = {
   name: 'update_note',
+  brief: 'Update a note title, content, or tags',
   description: `Update an existing note.`,
   parameters: {
     type: 'object',
@@ -418,6 +431,7 @@ export const updateNoteTool: ToolDefinition = {
 
 export const deleteNoteTool: ToolDefinition = {
   name: 'delete_note',
+  brief: 'Delete a note permanently by ID',
   description: `Delete a note permanently.`,
   parameters: {
     type: 'object',
@@ -433,6 +447,7 @@ export const deleteNoteTool: ToolDefinition = {
 
 export const batchAddNotesTool: ToolDefinition = {
   name: 'batch_add_notes',
+  brief: 'Create multiple notes at once',
   description: `Add multiple notes at once. Use this for bulk note creation or importing notes.
 Efficient for creating a series of related notes or importing from external sources.`,
   parameters: {
@@ -480,6 +495,7 @@ Efficient for creating a series of related notes or importing from external sour
 
 export const addEventTool: ToolDefinition = {
   name: 'add_calendar_event',
+  brief: 'Create a calendar event with date, time, location',
   description: `Create a calendar event. Use this for appointments, meetings, or any scheduled activity.
 This is the PREFERRED tool for events - do NOT create custom tables for calendar data.`,
   parameters: {
@@ -524,6 +540,7 @@ This is the PREFERRED tool for events - do NOT create custom tables for calendar
 
 export const listEventsTool: ToolDefinition = {
   name: 'list_calendar_events',
+  brief: 'List events for a date range',
   description: `List calendar events with optional filtering.`,
   parameters: {
     type: 'object',
@@ -555,6 +572,7 @@ export const listEventsTool: ToolDefinition = {
 
 export const deleteEventTool: ToolDefinition = {
   name: 'delete_calendar_event',
+  brief: 'Delete a calendar event by ID',
   description: `Delete a calendar event.`,
   parameters: {
     type: 'object',
@@ -570,6 +588,7 @@ export const deleteEventTool: ToolDefinition = {
 
 export const batchAddEventsTool: ToolDefinition = {
   name: 'batch_add_calendar_events',
+  brief: 'Create multiple calendar events at once',
   description: `Add multiple calendar events at once. Use this for bulk event creation.
 Efficient for importing events, creating recurring patterns, or scheduling multiple meetings.`,
   parameters: {
@@ -628,6 +647,7 @@ Efficient for importing events, creating recurring patterns, or scheduling multi
 
 export const addContactTool: ToolDefinition = {
   name: 'add_contact',
+  brief: 'Add a contact with name, phone, email',
   description: `Add a new contact. Use this for storing people's contact information.
 This is the PREFERRED tool for contacts - do NOT create custom tables for contacts.`,
   parameters: {
@@ -680,6 +700,7 @@ This is the PREFERRED tool for contacts - do NOT create custom tables for contac
 
 export const listContactsTool: ToolDefinition = {
   name: 'list_contacts',
+  brief: 'List contacts with optional search filter',
   description: `List contacts with optional filtering.`,
   parameters: {
     type: 'object',
@@ -711,6 +732,7 @@ export const listContactsTool: ToolDefinition = {
 
 export const updateContactTool: ToolDefinition = {
   name: 'update_contact',
+  brief: 'Update a contact name, phone, email, or notes',
   description: `Update an existing contact's information.`,
   parameters: {
     type: 'object',
@@ -746,6 +768,7 @@ export const updateContactTool: ToolDefinition = {
 
 export const deleteContactTool: ToolDefinition = {
   name: 'delete_contact',
+  brief: 'Delete a contact by ID',
   description: `Delete a contact.`,
   parameters: {
     type: 'object',
@@ -761,6 +784,7 @@ export const deleteContactTool: ToolDefinition = {
 
 export const batchAddContactsTool: ToolDefinition = {
   name: 'batch_add_contacts',
+  brief: 'Add multiple contacts at once',
   description: `Add multiple contacts at once. Use this for bulk contact import.
 Efficient for importing contacts from external sources or adding multiple people at once.`,
   parameters: {

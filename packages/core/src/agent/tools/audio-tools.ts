@@ -41,6 +41,7 @@ const ELEVENLABS_CONFIG = {
 
 export const textToSpeechTool: ToolDefinition = {
   name: 'text_to_speech',
+  brief: 'Convert text to spoken audio',
   description: 'Convert text to spoken audio using AI voices. Supports multiple languages and voice styles.',
   parameters: {
     type: 'object',
@@ -156,6 +157,7 @@ function estimateDuration(text: string, speed: number): string {
 
 export const speechToTextTool: ToolDefinition = {
   name: 'speech_to_text',
+  brief: 'Transcribe audio to text (Whisper)',
   description: 'Transcribe audio to text using AI (Whisper). Supports multiple languages and audio formats.',
   parameters: {
     type: 'object',
@@ -299,6 +301,7 @@ export const speechToTextExecutor: ToolExecutor = async (params, _context): Prom
 
 export const translateAudioTool: ToolDefinition = {
   name: 'translate_audio',
+  brief: 'Translate audio from any language to English',
   description: 'Translate audio from any language to English text',
   parameters: {
     type: 'object',
@@ -387,7 +390,8 @@ export const translateAudioExecutor: ToolExecutor = async (params, _context): Pr
 // ============================================================================
 
 export const audioInfoTool: ToolDefinition = {
-  name: 'audio_info',
+  name: 'get_audio_info',
+  brief: 'Get audio file duration, format, sample rate',
   description: 'Get information about an audio file (duration, format, sample rate)',
   parameters: {
     type: 'object',
@@ -472,6 +476,7 @@ export const audioInfoExecutor: ToolExecutor = async (params, _context): Promise
 
 export const splitAudioTool: ToolDefinition = {
   name: 'split_audio',
+  brief: 'Split audio into smaller segments',
   description: 'Split an audio file into smaller segments (useful for transcription of long files)',
   parameters: {
     type: 'object',

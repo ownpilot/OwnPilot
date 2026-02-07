@@ -44,7 +44,7 @@ export const TOOL_MAX_LIMITS: Record<string, ToolLimit> = {
   // ─────────────────────────────────────────────
   // MEMORY
   // ─────────────────────────────────────────────
-  recall:         { paramName: 'limit', maxValue: 50,  defaultValue: 10 },
+  search_memories: { paramName: 'limit', maxValue: 50,  defaultValue: 10 },
   list_memories:  { paramName: 'limit', maxValue: 50,  defaultValue: 20 },
 
   // ─────────────────────────────────────────────

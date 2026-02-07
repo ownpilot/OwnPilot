@@ -15,8 +15,9 @@ import type { ToolDefinition } from '../types.js';
 /**
  * Remember a fact, preference, or event
  */
-export const rememberTool: ToolDefinition = {
-  name: 'remember',
+export const createMemoryTool: ToolDefinition = {
+  name: 'create_memory',
+  brief: 'Store a fact, preference, or event in persistent memory',
   description: `Store important information in persistent memory for future reference.
 Use this to save:
 - Facts about the user (name, job, preferences)
@@ -54,8 +55,9 @@ Memory persists across conversations. Be selective - only remember truly importa
 /**
  * Batch remember multiple facts, preferences, or events
  */
-export const batchRememberTool: ToolDefinition = {
-  name: 'batch_remember',
+export const batchCreateMemoriesTool: ToolDefinition = {
+  name: 'batch_create_memories',
+  brief: 'Store multiple memories at once',
   description: `Store multiple pieces of information in persistent memory at once.
 Use this for bulk memory creation - more efficient than calling remember multiple times.
 Useful for onboarding, importing user data, or storing multiple related facts.`,
@@ -98,8 +100,9 @@ Useful for onboarding, importing user data, or storing multiple related facts.`,
 /**
  * Recall information from memory
  */
-export const recallTool: ToolDefinition = {
-  name: 'recall',
+export const searchMemoriesTool: ToolDefinition = {
+  name: 'search_memories',
+  brief: 'Search persistent memory by keyword or intent',
   description: `Search persistent memory for relevant information.
 Use this to:
 - Answer questions about the user
@@ -137,8 +140,9 @@ Returns matching memories sorted by relevance and importance.`,
 /**
  * Forget a specific memory
  */
-export const forgetTool: ToolDefinition = {
-  name: 'forget',
+export const deleteMemoryTool: ToolDefinition = {
+  name: 'delete_memory',
+  brief: 'Remove a specific memory by ID',
   description: `Remove a specific memory. Use with caution.
 Only use when:
 - User explicitly asks to forget something
@@ -161,6 +165,7 @@ Only use when:
  */
 export const listMemoriesTool: ToolDefinition = {
   name: 'list_memories',
+  brief: 'List recent memories, optionally filtered by type',
   description: `List recent memories, optionally filtered by type.
 Use this to review what has been remembered about the user.`,
   parameters: {
@@ -187,8 +192,9 @@ Use this to review what has been remembered about the user.`,
 /**
  * Update a memory's importance
  */
-export const boostMemoryTool: ToolDefinition = {
-  name: 'boost_memory',
+export const updateMemoryImportanceTool: ToolDefinition = {
+  name: 'update_memory_importance',
+  brief: 'Increase a memory importance score',
   description: `Increase a memory's importance when it becomes more relevant.
 Use this when:
 - User mentions the topic again
@@ -213,8 +219,9 @@ Use this when:
 /**
  * Get memory statistics
  */
-export const memoryStatsTool: ToolDefinition = {
-  name: 'memory_stats',
+export const getMemoryStatsTool: ToolDefinition = {
+  name: 'get_memory_stats',
+  brief: 'Get memory count, type breakdown, avg importance',
   description: `Get statistics about stored memories.
 Shows total count, breakdown by type, and average importance.
 Useful for understanding the memory system state.`,
@@ -230,13 +237,13 @@ Useful for understanding the memory system state.`,
 // ============================================================================
 
 export const MEMORY_TOOLS: ToolDefinition[] = [
-  rememberTool,
-  batchRememberTool,
-  recallTool,
-  forgetTool,
+  createMemoryTool,
+  batchCreateMemoriesTool,
+  searchMemoriesTool,
+  deleteMemoryTool,
   listMemoriesTool,
-  boostMemoryTool,
-  memoryStatsTool,
+  updateMemoryImportanceTool,
+  getMemoryStatsTool,
 ];
 
 /**
