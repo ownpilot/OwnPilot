@@ -22,7 +22,6 @@ import {
   PERSONAL_DATA_TOOLS,
   DYNAMIC_TOOL_DEFINITIONS,
   TOOL_SEARCH_TAGS,
-  TOOL_MAX_LIMITS,
   applyToolLimits,
   TOOL_GROUPS,
   getProviderConfig as coreGetProviderConfig,
