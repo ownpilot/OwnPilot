@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Container, RefreshCw, ShieldCheck, Shield, XCircle, CheckCircle2, Database, Upload, Download, Trash2, Wrench, Server, AlertCircle, Settings } from '../components/icons';
+import { Container, RefreshCw, ShieldCheck, Shield, XCircle, CheckCircle2, Database, Upload, Download, Trash2, Wrench, Server, AlertCircle, Settings, Terminal } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -257,7 +257,11 @@ export function SystemPage() {
                         Code Execution
                       </p>
                       <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                        Python, JavaScript, Shell execution in sandbox
+                        {sandboxStatus.dockerAvailable
+                          ? 'Python, JavaScript, Shell execution in Docker sandbox'
+                          : sandboxStatus.codeExecutionEnabled
+                            ? 'Python, JavaScript, Shell execution on host (local mode)'
+                            : 'Code execution disabled (Docker required)'}
                       </p>
                     </div>
                   </div>
@@ -266,11 +270,37 @@ export function SystemPage() {
                   </span>
                 </div>
 
+                {/* Execution Mode */}
+                {sandboxStatus.executionMode && (
+                  <div className="flex items-center justify-between p-4 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Terminal className="w-5 h-5 text-info" />
+                      <div>
+                        <p className="font-medium text-text-primary dark:text-dark-text-primary">
+                          Execution Mode
+                        </p>
+                        <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                          {sandboxStatus.executionMode === 'docker'
+                            ? 'Docker only (most secure, requires Docker)'
+                            : sandboxStatus.executionMode === 'local'
+                              ? 'Local execution (runs on host, no Docker needed)'
+                              : 'Auto (Docker preferred, local fallback)'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary font-mono">
+                      {sandboxStatus.executionMode}
+                    </span>
+                  </div>
+                )}
+
                 {/* Security Mode */}
                 <div className="flex items-center justify-between p-4 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
                   <div className="flex items-center gap-3">
                     {sandboxStatus.securityMode === 'strict' ? (
                       <ShieldCheck className="w-5 h-5 text-success" />
+                    ) : sandboxStatus.securityMode === 'local' ? (
+                      <Shield className="w-5 h-5 text-info" />
                     ) : (
                       <Shield className="w-5 h-5 text-warning" />
                     )}
@@ -280,13 +310,25 @@ export function SystemPage() {
                       </p>
                       <p className="text-sm text-text-muted dark:text-dark-text-muted">
                         {sandboxStatus.securityMode === 'strict'
-                          ? 'Full isolation with --no-new-privileges'
-                          : 'Relaxed mode (some flags disabled)'}
+                          ? 'Full Docker isolation with --no-new-privileges'
+                          : sandboxStatus.securityMode === 'local'
+                            ? 'Local execution with timeout, output limits, and env sanitization'
+                            : sandboxStatus.securityMode === 'disabled'
+                              ? 'Code execution disabled'
+                              : 'Relaxed Docker mode (some flags disabled)'}
                       </p>
                     </div>
                   </div>
-                  <span className={`text-sm font-medium ${sandboxStatus.securityMode === 'strict' ? 'text-success' : 'text-warning'}`}>
-                    {sandboxStatus.securityMode === 'strict' ? 'Strict' : 'Relaxed'}
+                  <span className={`text-sm font-medium ${
+                    sandboxStatus.securityMode === 'strict' ? 'text-success'
+                    : sandboxStatus.securityMode === 'local' ? 'text-info'
+                    : sandboxStatus.securityMode === 'disabled' ? 'text-error'
+                    : 'text-warning'
+                  }`}>
+                    {sandboxStatus.securityMode === 'strict' ? 'Strict'
+                      : sandboxStatus.securityMode === 'local' ? 'Local'
+                      : sandboxStatus.securityMode === 'disabled' ? 'Disabled'
+                      : 'Relaxed'}
                   </span>
                 </div>
               </div>
@@ -296,17 +338,36 @@ export function SystemPage() {
               </div>
             )}
 
-            {/* Docker Not Available Warning */}
+            {/* Docker Not Available — info message depending on execution mode */}
             {sandboxStatus && !sandboxStatus.dockerAvailable && (
-              <div className="mt-4 p-4 bg-error/10 border border-error/20 rounded-lg">
+              <div className={`mt-4 p-4 rounded-lg ${
+                sandboxStatus.codeExecutionEnabled
+                  ? 'bg-info/10 border border-info/20'
+                  : 'bg-error/10 border border-error/20'
+              }`}>
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-error shrink-0 mt-0.5" />
+                  <AlertCircle className={`w-5 h-5 shrink-0 mt-0.5 ${
+                    sandboxStatus.codeExecutionEnabled ? 'text-info' : 'text-error'
+                  }`} />
                   <div>
-                    <p className="font-medium text-error">Docker Required for Code Execution</p>
-                    <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
-                      Code execution tools (execute_python, execute_javascript, execute_shell) require Docker for security isolation.
-                      Without Docker, all code execution is disabled.
-                    </p>
+                    {sandboxStatus.codeExecutionEnabled ? (
+                      <>
+                        <p className="font-medium text-info">Running Without Docker</p>
+                        <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
+                          Code execution is running locally on the host machine. Security measures include
+                          timeout enforcement, output limits, command blocking, and environment sanitization.
+                          For full isolation, install Docker.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium text-error">Docker Required for Code Execution</p>
+                        <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
+                          Code execution is disabled because EXECUTION_MODE=docker but Docker is not available.
+                          Set EXECUTION_MODE=auto or EXECUTION_MODE=local to enable local execution without Docker.
+                        </p>
+                      </>
+                    )}
                     <a
                       href="https://docs.docker.com/get-docker/"
                       target="_blank"

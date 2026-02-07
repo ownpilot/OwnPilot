@@ -22,6 +22,8 @@ export interface ProgressEvent {
     success: boolean;
     preview: string;
     durationMs: number;
+    sandboxed?: boolean;
+    executionMode?: 'docker' | 'local' | 'auto';
   };
   data?: Record<string, unknown>;
   timestamp: string;

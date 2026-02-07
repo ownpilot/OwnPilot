@@ -6,6 +6,7 @@
  */
 
 import { isDockerAvailable, checkSandboxHealth, type SandboxHealthStatus } from '../sandbox/docker.js';
+import { getExecutionMode, type ExecutionMode } from '../sandbox/execution-mode.js';
 
 /**
  * Security configuration
@@ -21,6 +22,10 @@ export interface SecurityConfig {
   tempDirs: string[];
   /** Block dangerous shell commands */
   blockDangerousCommands: boolean;
+  /** Execution mode for code tools */
+  executionMode: ExecutionMode;
+  /** Require approval for local execution (default: true) */
+  requireLocalApproval: boolean;
 }
 
 /**
@@ -59,10 +64,12 @@ export function isProduction(): boolean {
  * Returns warnings/errors for insecure configurations
  */
 export async function validateSecurityConfig(): Promise<SecurityStatus> {
+  const executionMode = getExecutionMode();
+
   const status: SecurityStatus = {
     isSecure: true,
     dockerAvailable: false,
-    dockerRequired: true, // Docker is ALWAYS required - no bypass possible
+    dockerRequired: executionMode === 'docker', // Only strictly required in docker mode
     unsafeExecutionEnabled: false, // This option has been removed - always false
     homeAccessEnabled: process.env.ALLOW_HOME_DIR_ACCESS === 'true',
     warnings: [],
@@ -102,18 +109,37 @@ export async function validateSecurityConfig(): Promise<SecurityStatus> {
       );
     }
 
-    if (!status.dockerAvailable) {
+    if (!status.dockerAvailable && executionMode === 'docker') {
       status.warnings.push(
         'WARNING: Docker not available. Code execution tools will be DISABLED.'
       );
     }
+
+    if (!status.dockerAvailable && executionMode === 'auto') {
+      status.warnings.push(
+        'WARNING: Docker not available. Code execution will use LOCAL mode with user approval.'
+      );
+    }
+
+    if (executionMode === 'local') {
+      status.warnings.push(
+        'WARNING: EXECUTION_MODE=local — Code execution runs directly on host (with approval).'
+      );
+    }
   }
 
-  // Docker is required in ALL environments for code execution
+  // Docker availability info (severity depends on mode)
   if (!status.dockerAvailable) {
-    status.errors.push(
-      'Docker is not available. Code execution (execute_javascript, execute_python, execute_shell) will be disabled.'
-    );
+    if (executionMode === 'docker') {
+      status.errors.push(
+        'Docker is not available. Code execution (execute_javascript, execute_python, execute_shell) will be disabled.'
+      );
+    } else {
+      // auto or local — Docker absence is info, not error
+      status.warnings.push(
+        `Docker not available. Execution mode: ${executionMode} — local execution with approval is available.`
+      );
+    }
   }
 
   // Get detailed sandbox health if Docker is available
@@ -139,9 +165,14 @@ export async function enforceSecurityConfig(): Promise<void> {
   console.log('\n' + '═'.repeat(60));
   console.log('🔒 SECURITY STATUS');
   console.log('═'.repeat(60));
+  const execMode = getExecutionMode();
+  const modeDesc = execMode === 'auto' ? 'auto (Docker preferred, local fallback with approval)'
+    : execMode === 'local' ? 'local (direct execution with approval)'
+    : 'docker (sandbox only)';
+
   console.log(`Environment: ${isProduction() ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-  console.log(`Docker Available: ${status.dockerAvailable ? '✅ Yes (code execution enabled)' : '❌ No (code execution DISABLED)'}`);
-  console.log(`Docker Required: ✅ Always (no bypass possible)`);
+  console.log(`Execution Mode: ${modeDesc}`);
+  console.log(`Docker Available: ${status.dockerAvailable ? '✅ Yes' : '❌ No'}${execMode === 'docker' && !status.dockerAvailable ? ' (code execution DISABLED)' : ''}`);
   console.log(`Home Access: ${status.homeAccessEnabled ? '⚠️ ENABLED' : '✅ Disabled'}`);
   console.log(`Overall Status: ${status.isSecure ? '✅ SECURE' : '❌ INSECURE'}`);
 
@@ -167,8 +198,10 @@ export async function enforceSecurityConfig(): Promise<void> {
 }
 
 /**
- * Check if code execution is allowed
- * Returns true ONLY if Docker is available - no bypass is possible
+ * Check if code execution is allowed.
+ * With execution mode support:
+ * - 'docker': only if Docker available
+ * - 'local'/'auto': always allowed (local fallback with approval)
  */
 export async function isCodeExecutionAllowed(): Promise<{
   allowed: boolean;
@@ -176,6 +209,7 @@ export async function isCodeExecutionAllowed(): Promise<{
   reason: string;
 }> {
   const dockerAvailable = await isDockerAvailable();
+  const executionMode = getExecutionMode();
 
   if (dockerAvailable) {
     return {
@@ -185,11 +219,20 @@ export async function isCodeExecutionAllowed(): Promise<{
     };
   }
 
-  // Docker is REQUIRED - no exceptions, no bypass
+  // Docker not available — check execution mode
+  if (executionMode === 'local' || executionMode === 'auto') {
+    return {
+      allowed: true,
+      sandboxed: false,
+      reason: `Local execution available (mode: ${executionMode}, requires user approval)`,
+    };
+  }
+
+  // Docker-only mode, Docker not available
   return {
     allowed: false,
     sandboxed: false,
-    reason: 'Docker is REQUIRED for code execution. Please install and start Docker.',
+    reason: 'Docker is required for code execution in docker mode. Install Docker or set EXECUTION_MODE=auto.',
   };
 }
 
@@ -203,37 +246,65 @@ export function getDefaultSecurityConfig(): SecurityConfig {
     workspaceDir: process.env.WORKSPACE_DIR ?? process.cwd(),
     tempDirs: ['/tmp', 'C:\\Temp', process.env.TEMP ?? ''].filter(Boolean),
     blockDangerousCommands: true,
+    executionMode: getExecutionMode(),
+    requireLocalApproval: true,
   };
 }
 
 /**
- * Blocked shell commands for security
+ * Critical pattern for regex-based security blocking
  */
-export const BLOCKED_COMMANDS = [
-  'rm -rf /',
-  'rm -rf /*',
-  'mkfs',
-  'dd if=/dev',
-  ':(){:|:&};:',
-  'chmod -R 777 /',
-  'shutdown',
-  'reboot',
-  'halt',
-  'poweroff',
-  'init 0',
-  'init 6',
-  // Windows dangerous commands
-  'format c:',
-  'del /f /s /q c:\\',
-  'rd /s /q c:\\',
+export interface CriticalPattern {
+  readonly pattern: RegExp;
+  readonly description: string;
+}
+
+/**
+ * Critical patterns that are ALWAYS blocked regardless of permission settings.
+ * Regex-based for robust matching (no simple substring bypass).
+ */
+export const CRITICAL_PATTERNS: readonly CriticalPattern[] = [
+  // Filesystem destruction
+  { pattern: /\brm\s+(-\w*r\w*\s+)?(-\w*f\w*\s+)?\/(\s|$|\*)/i, description: 'Recursive delete from root' },
+  { pattern: /\brm\s+-\w*rf\w*\s+\//i, description: 'Force recursive delete' },
+  { pattern: /\bmkfs\b/i, description: 'Filesystem format' },
+  { pattern: /\bdd\s+if=\/dev\/(zero|random|urandom)/i, description: 'Raw disk overwrite' },
+  // Fork bombs
+  { pattern: /:\(\)\s*\{.*:\|:.*\}/s, description: 'Fork bomb (bash)' },
+  // System control
+  { pattern: /\b(shutdown|reboot|halt|poweroff)\s/i, description: 'System shutdown/reboot' },
+  { pattern: /\binit\s+[06]\b/i, description: 'Init level change' },
+  { pattern: /\bchmod\s+(-\w+\s+)?777\s+\//i, description: 'Recursive chmod 777 on root' },
+  // Credential/sensitive access
+  { pattern: />\s*\/etc\/(passwd|shadow)/i, description: 'System file overwrite' },
+  // Windows destructive
+  { pattern: /\bformat\s+[a-z]:/i, description: 'Drive format (Windows)' },
+  { pattern: /\bdel\s+\/[fsq]+.*[a-z]:\\/i, description: 'Recursive force delete (Windows)' },
+  { pattern: /\brd\s+\/s\s+\/q\s+[a-z]:\\/i, description: 'Directory tree delete (Windows)' },
+  { pattern: /\breg\s+delete\s+HK(LM|CR)/i, description: 'Registry deletion' },
+  // Remote code execution
+  { pattern: /\b(curl|wget)\s+[^|]*\|\s*(ba)?sh\b/i, description: 'Remote code pipe to shell' },
+  { pattern: /\/dev\/tcp\//i, description: 'Bash reverse shell' },
+  { pattern: /\bnc\s+-\w*e\b/i, description: 'Netcat shell' },
 ];
 
 /**
- * Check if a command is blocked for security
+ * Check code against critical patterns (Layer 1 security).
+ * These are ALWAYS blocked regardless of user permission settings.
+ */
+export function checkCriticalPatterns(code: string): { blocked: boolean; reason?: string } {
+  for (const { pattern, description } of CRITICAL_PATTERNS) {
+    if (pattern.test(code)) {
+      return { blocked: true, reason: description };
+    }
+  }
+  return { blocked: false };
+}
+
+/**
+ * Check if a command is blocked for security.
+ * Backward-compatible wrapper around checkCriticalPatterns().
  */
 export function isCommandBlocked(command: string): boolean {
-  const lowerCommand = command.toLowerCase().trim();
-  return BLOCKED_COMMANDS.some((blocked) =>
-    lowerCommand.includes(blocked.toLowerCase())
-  );
+  return checkCriticalPatterns(command).blocked;
 }

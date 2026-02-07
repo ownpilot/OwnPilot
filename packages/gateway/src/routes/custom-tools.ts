@@ -1800,10 +1800,10 @@ export async function executeCustomToolTool(
         }
 
         // Validate permissions enum
-        const VALID_PERMISSIONS = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling'];
+        const VALID_PERMISSIONS = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local'];
         if (permissions) {
-          if (!Array.isArray(permissions) || permissions.length > 6) {
-            return { success: false, error: 'Permissions must be an array with max 6 entries' };
+          if (!Array.isArray(permissions) || permissions.length > 7) {
+            return { success: false, error: 'Permissions must be an array with max 7 entries' };
           }
           const invalid = permissions.filter(p => !VALID_PERMISSIONS.includes(p));
           if (invalid.length > 0) {

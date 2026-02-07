@@ -35,7 +35,12 @@ export type {
   MemoryConfig,
   AgentConfig,
   AgentState,
+  PermissionMode,
+  ExecutionCategory,
+  ExecutionPermissions,
 } from './types.js';
+
+export { DEFAULT_EXECUTION_PERMISSIONS } from './types.js';
 
 // Provider
 export { type IProvider, BaseProvider, createProvider } from './provider.js';
@@ -60,6 +65,20 @@ export {
   getToolStats,
   type ToolGroupConfig,
 } from './tool-config.js';
+
+// Tool Validation (anti-hallucination)
+export {
+  validateToolCall,
+  validateAgainstSchema,
+  findSimilarToolNames,
+  formatParamSchema,
+  buildExampleValue,
+  buildToolHelpText,
+  formatFullToolHelp,
+  validateRequiredParams,
+  type ToolCallValidation,
+  type ToolValidationError,
+} from './tool-validation.js';
 
 // Tools - Extended (File System, Code Execution, Web Fetch)
 export {

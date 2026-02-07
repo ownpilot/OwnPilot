@@ -201,6 +201,7 @@ describe('Tool Executor', () => {
       });
       expect(mockToolRegistry.execute).toHaveBeenCalledWith('some_tool', { arg1: 'val' }, {
         conversationId: 'system-execution',
+        executionPermissions: undefined,
       });
     });
 

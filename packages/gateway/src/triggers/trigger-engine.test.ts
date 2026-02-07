@@ -59,6 +59,18 @@ vi.mock('../services/tool-executor.js', () => ({
   hasTool: vi.fn(),
 }));
 
+vi.mock('../db/repositories/execution-permissions.js', () => ({
+  executionPermissionsRepo: {
+    get: vi.fn(async () => ({
+      execute_javascript: 'allowed',
+      execute_python: 'allowed',
+      execute_shell: 'allowed',
+      compile_code: 'allowed',
+      package_manager: 'allowed',
+    })),
+  },
+}));
+
 vi.mock('../services/log.js', () => ({
   getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }));
@@ -491,6 +503,7 @@ describe('TriggerEngine', () => {
           'web_search',
           expect.objectContaining({ query: 'vitest' }),
           'default',
+          expect.any(Object),
         );
       });
 

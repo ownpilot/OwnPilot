@@ -70,6 +70,10 @@ export * from './agent-executor/index.js';
 // Agent Builder
 export * from './agent-builder/index.js';
 
+// Security (critical pattern blocking, code risk analysis)
+export * from './security/index.js';
+export * from './security/code-analyzer.js';
+
 // Channels (unified multi-platform messaging)
 export * from './channels/index.js';
 

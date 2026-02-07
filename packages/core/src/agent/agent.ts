@@ -295,7 +295,9 @@ export class Agent {
 
             const result = await this.tools.executeToolCall(
               toolCall,
-              this.state.conversation.id
+              this.state.conversation.id,
+              undefined,
+              { requestApproval: this.config.requestApproval, executionPermissions: this.config.executionPermissions },
             );
 
             const durationMs = Date.now() - startTime;
@@ -493,6 +495,21 @@ export class Agent {
    */
   setWorkspaceDir(dir: string | undefined): void {
     this.tools.setWorkspaceDir(dir);
+  }
+
+  /**
+   * Set per-category execution permissions (persistent from DB).
+   * undefined = backward compat (non-chat contexts use default behavior).
+   */
+  setExecutionPermissions(permissions: import('./types.js').ExecutionPermissions | undefined): void {
+    (this.config as { executionPermissions?: import('./types.js').ExecutionPermissions }).executionPermissions = permissions;
+  }
+
+  /**
+   * Set the approval callback at runtime (used by chat route for SSE-based approval).
+   */
+  setRequestApproval(fn: ((category: string, actionType: string, description: string, params: Record<string, unknown>) => Promise<boolean>) | undefined): void {
+    (this.config as { requestApproval?: typeof fn }).requestApproval = fn;
   }
 
   /**

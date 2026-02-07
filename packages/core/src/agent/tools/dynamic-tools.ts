@@ -8,7 +8,8 @@
 import * as crypto from 'node:crypto';
 import { createSandbox } from '../../sandbox/executor.js';
 import type { SandboxPermissions } from '../../sandbox/types.js';
-import { DANGEROUS_CODE_PATTERNS } from '../../sandbox/code-validator.js';
+import { validateToolCodeWithPermissions } from '../../sandbox/code-validator.js';
+import { createScopedFs, createScopedExec } from '../../sandbox/scoped-apis.js';
 import type { PluginId } from '../../types/branded.js';
 import type {
   ToolDefinition,
@@ -29,7 +30,8 @@ export type DynamicToolPermission =
   | 'database'
   | 'shell'
   | 'email'
-  | 'scheduling';
+  | 'scheduling'
+  | 'local';
 
 import type { ConfigFieldDefinition } from '../../services/config-center.js';
 
@@ -297,6 +299,15 @@ function mapPermissions(permissions: DynamicToolPermission[]): Partial<SandboxPe
         sandboxPermissions.fsWrite = true;
         break;
       case 'shell':
+        sandboxPermissions.spawn = true;
+        break;
+      case 'local':
+        // 'local' enables host-machine access via scoped APIs (fs, exec).
+        // Actual API injection happens in executeDynamicTool() based on
+        // 'local' + 'filesystem' or 'local' + 'shell' combos.
+        // Grant underlying sandbox permissions so the VM can use them.
+        sandboxPermissions.fsRead = true;
+        sandboxPermissions.fsWrite = true;
         sandboxPermissions.spawn = true;
         break;
       case 'database':
@@ -713,6 +724,14 @@ async function executeDynamicTool(
       encodeURI,
       decodeURI,
       setTimeout: undefined, // explicitly blocked in sandbox
+      // Scoped filesystem API (requires 'local' + 'filesystem' permissions)
+      fs: toolPermissions.includes('local') && toolPermissions.includes('filesystem')
+        ? createScopedFs(context.workspaceDir ?? process.cwd())
+        : undefined,
+      // Scoped shell execution API (requires 'local' + 'shell' permissions)
+      exec: toolPermissions.includes('local') && toolPermissions.includes('shell')
+        ? createScopedExec(context.workspaceDir ?? process.cwd()).exec
+        : undefined,
     },
     debug: false,
   });
@@ -830,11 +849,10 @@ export function createDynamicToolRegistry(
         );
       }
 
-      // Validate code doesn't contain dangerous patterns (centralized list)
-      for (const { pattern, message } of DANGEROUS_CODE_PATTERNS) {
-        if (pattern.test(tool.code)) {
-          throw new Error(`Tool code validation failed: ${message}`);
-        }
+      // Validate code against dangerous patterns (permission-aware)
+      const codeValidation = validateToolCodeWithPermissions(tool.code, tool.permissions);
+      if (!codeValidation.valid) {
+        throw new Error(`Tool code validation failed: ${codeValidation.errors.join('; ')}`);
       }
 
       tools.set(tool.name, tool);
@@ -898,10 +916,10 @@ The tool will be saved and available for use. Write JavaScript code that:
       },
       permissions: {
         type: 'array',
-        description: 'Required permissions: "network", "filesystem", "database"',
+        description: 'Required permissions. Use "local" with "filesystem" or "shell" to access workspace files or run commands on the host machine.',
         items: {
           type: 'string',
-          enum: ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling'],
+          enum: ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local'],
         },
       },
       required_api_keys: {
@@ -1175,7 +1193,7 @@ export const updateCustomToolDefinition: ToolDefinition = {
       permissions: {
         type: 'array',
         description: 'New permissions array (optional)',
-        items: { type: 'string', enum: ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling'] },
+        items: { type: 'string', enum: ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local'] },
       },
     },
     required: ['name'],

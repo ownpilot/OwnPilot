@@ -724,6 +724,20 @@ CREATE TABLE IF NOT EXISTS custom_data_records (
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- =====================================================
+-- EXECUTION PERMISSIONS (granular code execution security)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS execution_permissions (
+  user_id TEXT PRIMARY KEY,
+  execute_javascript TEXT NOT NULL DEFAULT 'blocked' CHECK(execute_javascript IN ('blocked','prompt','allowed')),
+  execute_python TEXT NOT NULL DEFAULT 'blocked' CHECK(execute_python IN ('blocked','prompt','allowed')),
+  execute_shell TEXT NOT NULL DEFAULT 'blocked' CHECK(execute_shell IN ('blocked','prompt','allowed')),
+  compile_code TEXT NOT NULL DEFAULT 'blocked' CHECK(compile_code IN ('blocked','prompt','allowed')),
+  package_manager TEXT NOT NULL DEFAULT 'blocked' CHECK(package_manager IN ('blocked','prompt','allowed')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
 `;
 
 /**

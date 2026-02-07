@@ -19,7 +19,7 @@ import {
   createPluginSecurityMiddleware,
   createPluginId,
 } from '@ownpilot/core';
-import type { ToolDefinition, ToolContext, DynamicToolDefinition } from '@ownpilot/core';
+import type { ToolDefinition, ToolContext, DynamicToolDefinition, ExecutionPermissions } from '@ownpilot/core';
 import { gatewayConfigCenter } from './config-center-impl.js';
 import { registerToolConfigRequirements } from './api-service-registrar.js';
 import {
@@ -223,10 +223,11 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
 export async function executeTool(
   toolName: string,
   args: Record<string, unknown>,
-  userId = 'default'
+  userId = 'default',
+  executionPermissions?: ExecutionPermissions,
 ): Promise<ToolExecutionResult> {
   const start = Date.now();
-  const result = await executeToolInternal(toolName, args, userId);
+  const result = await executeToolInternal(toolName, args, userId, executionPermissions);
 
   // Audit log (fire-and-forget)
   if (hasServiceRegistry()) {
@@ -252,6 +253,7 @@ async function executeToolInternal(
   toolName: string,
   args: Record<string, unknown>,
   userId: string,
+  executionPermissions?: ExecutionPermissions,
 ): Promise<ToolExecutionResult> {
   const tools = getSharedToolRegistry(userId);
 
@@ -260,6 +262,7 @@ async function executeToolInternal(
     try {
       const result = await tools.execute(toolName, args, {
         conversationId: 'system-execution',
+        executionPermissions,
       });
 
       if (result.ok) {

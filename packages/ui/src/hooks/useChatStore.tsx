@@ -15,6 +15,8 @@ import {
   type ReactNode,
 } from 'react';
 import type { Message, ChatResponse, ApiResponse } from '../types';
+import type { ApprovalRequest } from '../api';
+import { executionPermissionsApi } from '../api';
 
 // Progress event types from the stream
 export interface ProgressEvent {
@@ -29,6 +31,8 @@ export interface ProgressEvent {
     success: boolean;
     preview: string;
     durationMs: number;
+    sandboxed?: boolean;
+    executionMode?: 'docker' | 'local' | 'auto';
   };
   data?: Record<string, unknown>;
   timestamp: string;
@@ -47,6 +51,8 @@ interface ChatState {
   progressEvents: ProgressEvent[];
   /** Follow-up suggestions from the latest AI response */
   suggestions: Array<{ title: string; detail: string }>;
+  /** Pending approval request from SSE (real-time code execution approval) */
+  pendingApproval: ApprovalRequest | null;
 }
 
 interface ChatStore extends ChatState {
@@ -59,6 +65,7 @@ interface ChatStore extends ChatState {
   clearMessages: () => void;
   cancelRequest: () => void;
   clearSuggestions: () => void;
+  resolveApproval: (approved: boolean) => void;
 }
 
 const ChatContext = createContext<ChatStore | null>(null);
@@ -75,6 +82,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [streamingContent, setStreamingContent] = useState('');
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
   const [suggestions, setSuggestions] = useState<Array<{ title: string; detail: string }>>([]);
+  const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null);
 
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -91,6 +99,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearSuggestions = useCallback(() => setSuggestions([]), []);
+
+  const resolveApproval = useCallback((approved: boolean) => {
+    const approval = pendingApproval;
+    if (!approval) return;
+    setPendingApproval(null);
+    executionPermissionsApi.resolveApproval(approval.approvalId, approved).catch(() => {
+      // If the resolve call fails, the backend will timeout and auto-reject
+    });
+  }, [pendingApproval]);
 
   const sendMessage = useCallback(
     async (content: string, directToolsOrRetry?: string[] | boolean, isRetryArg?: boolean) => {
@@ -209,7 +226,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                   const data = JSON.parse(dataStr);
 
                   // Handle different event types
-                  if (data.type === 'status' || data.type === 'tool_start' || data.type === 'tool_end') {
+                  if (data.type === 'approval_required') {
+                    // Real-time approval request from backend
+                    setPendingApproval({
+                      approvalId: data.approvalId,
+                      category: data.category,
+                      description: data.description,
+                      code: data.code,
+                      riskAnalysis: data.riskAnalysis,
+                    });
+                  } else if (data.type === 'status' || data.type === 'tool_start' || data.type === 'tool_end') {
                     // Progress event
                     const progressEvent: ProgressEvent = data;
                     setProgressEvents(prev => [...prev, progressEvent]);
@@ -327,6 +353,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
           setStreamingContent('');
           setProgressEvents([]);
+          setPendingApproval(null);
           abortControllerRef.current = null;
         }
       }
@@ -347,6 +374,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setStreamingContent('');
     setProgressEvents([]);
     setSuggestions([]);
+    setPendingApproval(null);
   }, [cancelRequest]);
 
   const value: ChatStore = {
@@ -361,6 +389,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     streamingContent,
     progressEvents,
     suggestions,
+    pendingApproval,
     setProvider,
     setModel,
     setAgentId,
@@ -370,6 +399,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     clearMessages,
     cancelRequest,
     clearSuggestions,
+    resolveApproval,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

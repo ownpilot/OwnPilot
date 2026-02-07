@@ -6,7 +6,9 @@ import { SuggestionChips } from '../components/SuggestionChips';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
 import { SetupWizard } from '../components/SetupWizard';
 import { useChatStore } from '../hooks/useChatStore';
-import { AlertCircle, Settings, Bot } from '../components/icons';
+import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
+import { ExecutionApprovalDialog } from '../components/ExecutionApprovalDialog';
+import { AlertCircle, AlertTriangle, Settings, Bot } from '../components/icons';
 import { modelsApi, providersApi, settingsApi, agentsApi, chatApi } from '../api';
 import type { ModelInfo, AgentDetail } from '../types';
 import { STORAGE_KEYS } from '../constants/storage-keys';
@@ -28,11 +30,13 @@ export function ChatPage() {
     setAgentId,
     setWorkspaceId,
     suggestions,
+    pendingApproval,
     sendMessage,
     retryLastMessage,
     clearMessages,
     cancelRequest,
     clearSuggestions,
+    resolveApproval,
   } = useChatStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -486,6 +490,16 @@ export function ChatPage() {
             {/* Streaming content and progress */}
             {isLoading && (streamingContent || progressEvents.length > 0) && (
               <div className="mt-4 p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
+                {/* Local execution warning banner */}
+                {progressEvents.some(e => e.type === 'tool_end' && e.result?.sandboxed === false) && (
+                  <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <span className="text-xs text-amber-600 dark:text-amber-400">
+                      Code is executing directly on your local machine without Docker sandbox.
+                    </span>
+                  </div>
+                )}
+
                 {/* Progress events */}
                 {progressEvents.length > 0 && (
                   <div className="mb-3 space-y-1">
@@ -510,6 +524,11 @@ export function ChatPage() {
                               {event.result?.success ? '✓' : '✗'} {event.tool?.name}
                               <span className="opacity-60 ml-1">({event.result?.durationMs}ms)</span>
                             </span>
+                            {event.result?.sandboxed === false && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded font-semibold leading-4">
+                                LOCAL
+                              </span>
+                            )}
                           </>
                         )}
                       </div>
@@ -562,8 +581,17 @@ export function ChatPage() {
 
       {/* Input */}
       <div className="px-6 py-4 border-t border-border dark:border-dark-border">
+        <ExecutionSecurityPanel />
         <ChatInput ref={chatInputRef} onSend={sendMessage} onStop={cancelRequest} isLoading={isLoading} />
       </div>
+
+      {/* Execution Approval Dialog */}
+      {pendingApproval && (
+        <ExecutionApprovalDialog
+          approval={pendingApproval}
+          onResolve={resolveApproval}
+        />
+      )}
     </div>
   );
 }

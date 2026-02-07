@@ -72,6 +72,15 @@ export interface AgentConfig {
   memoryOptions?: Omit<MemoryInjectionOptions, 'userId' | 'tools'>;
   /** Enable dynamic prompts with memory */
   enableDynamicPrompts?: boolean;
+  /** Per-category execution permissions (persistent in DB) */
+  executionPermissions?: import('./types.js').ExecutionPermissions;
+  /** Callback to request user approval for sensitive operations (e.g. local code execution) */
+  requestApproval?: (
+    category: string,
+    actionType: string,
+    description: string,
+    params: Record<string, unknown>,
+  ) => Promise<boolean>;
 }
 
 export interface OrchestratorContext {
@@ -574,6 +583,7 @@ export class AgentOrchestrator {
         callId: toolCall.id,
         conversationId: context.id,
         userId: context.metadata.userId as string | undefined,
+        requestApproval: this.config.requestApproval,
       };
       const result = await executor(args, toolContext);
       record.result = result.content;

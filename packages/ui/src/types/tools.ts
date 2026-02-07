@@ -5,7 +5,7 @@
  */
 
 export type ToolStatus = 'active' | 'disabled' | 'pending_approval' | 'rejected';
-export type ToolPermission = 'network' | 'filesystem' | 'database' | 'shell' | 'email' | 'scheduling';
+export type ToolPermission = 'network' | 'filesystem' | 'database' | 'shell' | 'email' | 'scheduling' | 'local';
 
 export interface CustomTool {
   id: string;

@@ -6,6 +6,38 @@ import type { PluginId, ToolId } from '../types/branded.js';
 import type { ApiServiceConfig, ConfigEntry, ConfigFieldDefinition } from '../services/config-center.js';
 
 /**
+ * Permission mode for execution categories
+ */
+export type PermissionMode = 'blocked' | 'prompt' | 'allowed';
+
+/**
+ * Execution category for granular permission control
+ */
+export type ExecutionCategory = 'execute_javascript' | 'execute_python' | 'execute_shell' | 'compile_code' | 'package_manager';
+
+/**
+ * Per-category execution permissions (persistent in DB)
+ */
+export interface ExecutionPermissions {
+  readonly execute_javascript: PermissionMode;
+  readonly execute_python: PermissionMode;
+  readonly execute_shell: PermissionMode;
+  readonly compile_code: PermissionMode;
+  readonly package_manager: PermissionMode;
+}
+
+/**
+ * Default execution permissions — all blocked for safety
+ */
+export const DEFAULT_EXECUTION_PERMISSIONS: ExecutionPermissions = {
+  execute_javascript: 'blocked',
+  execute_python: 'blocked',
+  execute_shell: 'blocked',
+  compile_code: 'blocked',
+  package_manager: 'blocked',
+};
+
+/**
  * Supported AI providers (Updated January 2026)
  */
 export type AIProvider =
@@ -237,6 +269,9 @@ export interface ToolContext {
   readonly signal?: AbortSignal;
   /** Workspace directory for file operations (overrides WORKSPACE_DIR) */
   readonly workspaceDir?: string;
+  /** Per-category execution permissions (persistent in DB).
+   *  undefined = backward compat (non-chat contexts use default behavior). */
+  readonly executionPermissions?: ExecutionPermissions;
   /** Tool source for source-aware middleware */
   readonly source?: ToolSource;
   /** Tool trust level for security decisions */
@@ -251,6 +286,13 @@ export interface ToolContext {
   readonly getConfigEntries?: (serviceName: string) => ConfigEntry[];
   /** Get a resolved field value from a service config entry */
   readonly getFieldValue?: (serviceName: string, fieldName: string, entryLabel?: string) => unknown;
+  /** Request user approval for sensitive operations (e.g. local code execution) */
+  readonly requestApproval?: (
+    category: string,
+    actionType: string,
+    description: string,
+    params: Record<string, unknown>,
+  ) => Promise<boolean>;
 }
 
 /**
@@ -463,6 +505,15 @@ export interface AgentConfig {
   readonly maxToolCalls?: number;
   /** Memory configuration */
   readonly memory?: MemoryConfig;
+  /** Per-category execution permissions (persistent in DB) */
+  readonly executionPermissions?: ExecutionPermissions;
+  /** Callback to request user approval for sensitive operations (e.g. local code execution) */
+  readonly requestApproval?: (
+    category: string,
+    actionType: string,
+    description: string,
+    params: Record<string, unknown>,
+  ) => Promise<boolean>;
 }
 
 /**

@@ -3,7 +3,7 @@
  */
 
 import { Hono } from 'hono';
-import { VERSION, getSandboxStatus, resetSandboxCache, ensureImage } from '@ownpilot/core';
+import { VERSION, getSandboxStatus, resetSandboxCache, ensureImage, getExecutionMode } from '@ownpilot/core';
 import type { HealthCheck } from '../types/index.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
@@ -26,6 +26,7 @@ healthRoutes.get('/', async (c) => {
   } catch {
     sandboxStatus = null;
   }
+  const executionMode = getExecutionMode();
 
   // Get PostgreSQL database status
   const config = getDatabaseConfig();
@@ -57,10 +58,12 @@ healthRoutes.get('/', async (c) => {
     },
     {
       name: 'docker',
-      status: sandboxStatus?.dockerAvailable ? 'pass' : 'fail',
+      status: sandboxStatus?.dockerAvailable ? 'pass' : executionMode !== 'docker' ? 'warn' : 'fail',
       message: sandboxStatus?.dockerAvailable
         ? `Docker available (v${sandboxStatus.dockerVersion ?? 'unknown'})`
-        : 'Docker not available - code execution disabled',
+        : executionMode !== 'docker'
+          ? `Docker not available - using local execution (mode: ${executionMode})`
+          : 'Docker not available - code execution disabled',
     },
   ];
 
@@ -77,8 +80,11 @@ healthRoutes.get('/', async (c) => {
     sandbox: {
       dockerAvailable: sandboxStatus?.dockerAvailable ?? false,
       dockerVersion: sandboxStatus?.dockerVersion ?? null,
-      codeExecutionEnabled: sandboxStatus?.dockerAvailable ?? false,
-      securityMode: sandboxStatus?.relaxedSecurityRequired ? 'relaxed' : 'strict',
+      codeExecutionEnabled: (sandboxStatus?.dockerAvailable ?? false) || executionMode !== 'docker',
+      executionMode,
+      securityMode: sandboxStatus?.dockerAvailable
+        ? (sandboxStatus?.relaxedSecurityRequired ? 'relaxed' : 'strict')
+        : executionMode !== 'docker' ? 'local' : 'disabled',
     },
   });
 });

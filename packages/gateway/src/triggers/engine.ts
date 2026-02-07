@@ -15,7 +15,8 @@ import {
   type EventConfig,
 } from '../db/repositories/triggers.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
-import { getNextRunTime, getServiceRegistry, Services, type ITriggerService, type IGoalService, type IMemoryService } from '@ownpilot/core';
+import { getNextRunTime, getServiceRegistry, Services, type ITriggerService, type IGoalService, type IMemoryService, type ExecutionPermissions } from '@ownpilot/core';
+import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('TriggerEngine');
@@ -258,8 +259,14 @@ export class TriggerEngine {
         return { success: false, error: `Tool '${toolName}' not found` };
       }
 
+      // Load user's execution permissions; 'prompt' → 'blocked' for triggers (no UI)
+      const userPerms = await executionPermissionsRepo.get(this.config.userId);
+      const triggerPerms = Object.fromEntries(
+        Object.entries(userPerms).map(([k, v]) => [k, v === 'prompt' ? 'blocked' : v])
+      ) as ExecutionPermissions;
+
       log.info('Executing tool', { toolName });
-      const result = await executeTool(toolName, toolArgs, this.config.userId);
+      const result = await executeTool(toolName, toolArgs, this.config.userId, triggerPerms);
 
       return {
         success: result.success,

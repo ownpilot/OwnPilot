@@ -149,6 +149,83 @@ export function validateToolCode(code: string): CodeValidationResult {
 }
 
 /**
+ * Patterns that can be relaxed when 'local' permission is granted.
+ * Maps permission combos to the patterns they unlock.
+ */
+const LOCAL_RELAXED_PATTERNS: ReadonlyArray<{
+  /** Required permissions (all must be present alongside 'local') */
+  requires: readonly string[];
+  /** Pattern messages to allow (matched against CodeValidationPattern.message) */
+  allowedMessages: readonly string[];
+}> = [
+  {
+    // local + filesystem: allow require('fs'), require('path')
+    requires: ['filesystem'],
+    allowedMessages: [
+      'require() is not allowed',  // needed for fs, path
+    ],
+  },
+  {
+    // local + shell: allow exec/spawn (used through scoped exec API)
+    requires: ['shell'],
+    allowedMessages: [
+      'require() is not allowed',        // needed for child_process
+      'child_process module is not allowed',
+      'exec() is not allowed',
+      'spawn() is not allowed',
+      'execSync is not allowed',
+      'spawnSync is not allowed',
+    ],
+  },
+];
+
+/**
+ * Validate tool code with permission-aware pattern relaxation.
+ * When 'local' permission is active, certain patterns are allowed
+ * based on which other permissions are also granted.
+ *
+ * Always blocks: eval, Function, process.exit, prototype manipulation,
+ * globalThis, debugger, WebAssembly, etc.
+ */
+export function validateToolCodeWithPermissions(
+  code: string,
+  permissions: string[] = [],
+): CodeValidationResult {
+  // If 'local' not in permissions, use standard validation
+  if (!permissions.includes('local')) {
+    return validateToolCode(code);
+  }
+
+  const errors: string[] = [];
+
+  // Size check
+  if (code.length > MAX_TOOL_CODE_SIZE) {
+    errors.push(`Code exceeds maximum size of ${MAX_TOOL_CODE_SIZE} characters`);
+  }
+
+  // Build the set of messages to allow based on permissions
+  const allowedMessages = new Set<string>();
+  for (const relaxation of LOCAL_RELAXED_PATTERNS) {
+    if (relaxation.requires.every(p => permissions.includes(p))) {
+      for (const msg of relaxation.allowedMessages) {
+        allowedMessages.add(msg);
+      }
+    }
+  }
+
+  // Pattern checks with permission-aware filtering
+  for (const { pattern, message } of DANGEROUS_CODE_PATTERNS) {
+    if (pattern.test(code)) {
+      // Skip if this pattern is relaxed by current permissions
+      if (allowedMessages.has(message)) continue;
+      errors.push(message);
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
  * Quick check: does code contain any dangerous pattern?
  * Returns the first matching pattern's message, or null if clean.
  * Faster than validateToolCode when you only need pass/fail.

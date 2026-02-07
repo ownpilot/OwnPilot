@@ -34,6 +34,15 @@ vi.mock('../../sandbox/executor.js', () => ({
 
 vi.mock('../../sandbox/code-validator.js', () => ({
   DANGEROUS_CODE_PATTERNS: mockDangerousPatterns,
+  validateToolCodeWithPermissions: (code: string, _permissions?: string[]) => {
+    const errors: string[] = [];
+    for (const { pattern, message } of mockDangerousPatterns) {
+      if (pattern.test(code)) {
+        errors.push(message);
+      }
+    }
+    return { valid: errors.length === 0, errors };
+  },
 }));
 
 vi.mock('./utility-tools.js', () => ({

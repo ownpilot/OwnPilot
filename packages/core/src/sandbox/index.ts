@@ -62,6 +62,36 @@ export {
   createWorkerSandbox,
 } from './worker-sandbox.js';
 
+// Execution mode configuration
+export {
+  getExecutionMode,
+  getExecutionModeConfig,
+  isLanguageAllowed,
+  type ExecutionMode,
+  type ExecutionModeConfig,
+} from './execution-mode.js';
+
+// Local executor (direct host execution with security constraints)
+export {
+  executeJavaScriptLocal,
+  executePythonLocal,
+  executeShellLocal,
+  type LocalExecOptions,
+} from './local-executor.js';
+
+// Scoped APIs (workspace-jailed fs/exec for custom tools)
+export {
+  createScopedFs,
+  createScopedExec,
+  type ScopedFs,
+  type ScopedExec,
+} from './scoped-apis.js';
+
+// Permission-aware code validation
+export {
+  validateToolCodeWithPermissions,
+} from './code-validator.js';
+
 // Docker-based sandbox (real isolation for untrusted code)
 export {
   isDockerAvailable,

@@ -29,6 +29,7 @@ const PERMISSION_LABELS: Record<ToolPermission, string> = {
   shell: 'Shell',
   email: 'Email',
   scheduling: 'Scheduling',
+  local: 'Local Execution',
 };
 
 export function CustomToolsPage() {

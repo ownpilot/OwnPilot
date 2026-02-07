@@ -26,6 +26,10 @@ import {
   applyToolLimits,
   TOOL_GROUPS,
   getProviderConfig as coreGetProviderConfig,
+  findSimilarToolNames,
+  formatFullToolHelp,
+  buildToolHelpText,
+  validateRequiredParams,
   type AgentConfig,
   type AIProvider,
   type ToolExecutionResult as CoreToolResult,
@@ -61,6 +65,7 @@ import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/reposito
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
+import { getApprovalManager } from '../autonomy/index.js';
 
 const log = getLog('Agents');
 
@@ -242,271 +247,13 @@ function registerGatewayTools(
 }
 
 // =============================================================================
-// Shared meta-tool helpers (used by both named-agent and chat-agent executors)
+// Shared meta-tool helpers — imported from @ownpilot/core/agent/tool-validation
+// findSimilarToolNames, formatFullToolHelp, buildToolHelpText, validateRequiredParams
 // =============================================================================
 
-/**
- * Find similar tool names via substring/fuzzy matching.
- * Returns up to 5 suggestions sorted by relevance.
- */
+/** Compatibility wrapper: old 2-arg signature → new 3-arg from core */
 function findSimilarTools(tools: ToolRegistry, query: string): string[] {
-  const allDefs = tools.getDefinitions();
-  const q = query.toLowerCase().replace(/[_\-]/g, ' ');
-  const qWords = q.split(/\s+/).filter(Boolean);
-
-  const scored = allDefs
-    .filter(d => d.name !== 'search_tools' && d.name !== 'get_tool_help' && d.name !== 'use_tool' && d.name !== 'batch_use_tool')
-    .map(d => {
-      const name = d.name.toLowerCase();
-      const nameWords = name.replace(/[_\-]/g, ' ');
-      let score = 0;
-
-      // Exact substring match in name
-      if (name.includes(q.replace(/ /g, '_'))) score += 10;
-      if (nameWords.includes(q)) score += 8;
-
-      // Word-level matches
-      for (const w of qWords) {
-        if (name.includes(w)) score += 3;
-        if (d.description.toLowerCase().includes(w)) score += 1;
-      }
-
-      // Levenshtein-like: shared prefix
-      const minLen = Math.min(q.length, name.length);
-      let prefix = 0;
-      for (let i = 0; i < minLen; i++) {
-        if (q[i] === name[i]) prefix++;
-        else break;
-      }
-      if (prefix >= 3) score += prefix;
-
-      return { name: d.name, score };
-    })
-    .filter(s => s.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5);
-
-  return scored.map(s => s.name);
-}
-
-/**
- * Recursively format a JSON Schema parameter for human-readable help output.
- * Handles nested objects, arrays with item schemas, enums, defaults.
- */
-function formatParamSchema(
-  name: string,
-  schema: Record<string, unknown>,
-  requiredSet: Set<string>,
-  indent: string = '  ',
-): string[] {
-  const lines: string[] = [];
-  const req = requiredSet.has(name) ? ' (REQUIRED)' : ' (optional)';
-  const type = schema.type as string || 'any';
-  const desc = schema.description ? ` — ${schema.description}` : '';
-  const dflt = schema.default !== undefined ? ` [default: ${JSON.stringify(schema.default)}]` : '';
-
-  if (Array.isArray(schema.enum)) {
-    const enumVals = (schema.enum as string[]).map(v => JSON.stringify(v)).join(' | ');
-    lines.push(`${indent}• ${name}: ${enumVals}${req}${desc}${dflt}`);
-  } else if (type === 'array') {
-    const items = schema.items as Record<string, unknown> | undefined;
-    if (items?.type === 'object' && items.properties) {
-      // Array of objects — show nested structure
-      lines.push(`${indent}• ${name}: array of objects${req}${desc}`);
-      const itemProps = items.properties as Record<string, Record<string, unknown>>;
-      const itemRequired = new Set<string>((items.required as string[]) || []);
-      for (const [propName, propSchema] of Object.entries(itemProps)) {
-        lines.push(...formatParamSchema(propName, propSchema, itemRequired, indent + '    '));
-      }
-    } else {
-      const itemType = items ? (items.type as string || 'any') : 'any';
-      lines.push(`${indent}• ${name}: array of ${itemType}${req}${desc}${dflt}`);
-    }
-  } else if (type === 'object' && schema.properties) {
-    // Nested object with defined properties
-    lines.push(`${indent}• ${name}: object${req}${desc}`);
-    const nestedProps = schema.properties as Record<string, Record<string, unknown>>;
-    const nestedRequired = new Set<string>((schema.required as string[]) || []);
-    for (const [propName, propSchema] of Object.entries(nestedProps)) {
-      lines.push(...formatParamSchema(propName, propSchema, nestedRequired, indent + '    '));
-    }
-  } else {
-    lines.push(`${indent}• ${name}: ${type}${req}${desc}${dflt}`);
-  }
-
-  return lines;
-}
-
-/**
- * Build a realistic example value for a parameter based on its JSON Schema.
- */
-function buildExampleValue(schema: Record<string, unknown>, name: string): unknown {
-  if (Array.isArray(schema.enum) && schema.enum.length > 0) {
-    return schema.enum[0];
-  }
-  const type = schema.type as string;
-  if (type === 'array') {
-    const items = schema.items as Record<string, unknown> | undefined;
-    if (items?.type === 'object' && items.properties) {
-      // Build one example item with its required fields
-      const itemProps = items.properties as Record<string, Record<string, unknown>>;
-      const itemRequired = new Set<string>((items.required as string[]) || []);
-      const example: Record<string, unknown> = {};
-      for (const [propName, propSchema] of Object.entries(itemProps)) {
-        if (itemRequired.has(propName) || Object.keys(itemProps).length <= 3) {
-          example[propName] = buildExampleValue(propSchema, propName);
-        }
-      }
-      return [example];
-    }
-    return ['...'];
-  }
-  if (type === 'object') {
-    if (schema.properties) {
-      const nestedProps = schema.properties as Record<string, Record<string, unknown>>;
-      const nestedRequired = new Set<string>((schema.required as string[]) || []);
-      const example: Record<string, unknown> = {};
-      for (const [propName, propSchema] of Object.entries(nestedProps)) {
-        if (nestedRequired.has(propName)) {
-          example[propName] = buildExampleValue(propSchema, propName);
-        }
-      }
-      return example;
-    }
-    return {};
-  }
-  if (type === 'number' || type === 'integer') return 0;
-  if (type === 'boolean') return true;
-  // String — try to generate a meaningful placeholder
-  if (name.includes('email') || name === 'to' || name === 'replyTo') return 'user@example.com';
-  if (name.includes('path') || name.includes('file')) return '/path/to/file';
-  if (name.includes('url') || name.includes('link')) return 'https://example.com';
-  if (name.includes('date')) return '2025-01-01';
-  if (name.includes('id')) return 'some-id';
-  return '...';
-}
-
-/** Shape of a JSON Schema object stored in ToolDefinition.parameters (trusted internal data).
- * Uses Record<string, unknown> for properties to stay compatible with formatParamSchema/buildExampleValue. */
-interface ToolParameterSchema {
-  properties?: Record<string, Record<string, unknown>>;
-  required?: string[];
-}
-
-/**
- * Build full tool help text for error recovery.
- * Includes description, parameters with nested schemas, and a ready-to-use example.
- */
-function buildToolHelpText(tools: ToolRegistry, toolName: string): string {
-  const def = tools.getDefinition(toolName);
-  if (!def?.parameters) return '';
-  // Safe: def.parameters is a JSON Schema object with properties/required fields
-  const params = def.parameters as unknown as ToolParameterSchema;
-  if (!params.properties) return '';
-
-  const requiredSet = new Set(params.required || []);
-  const lines = [
-    `\n\n--- TOOL HELP (${toolName}) ---`,
-    def.description,
-    '',
-    'Parameters:',
-  ];
-
-  const exampleArgs: Record<string, unknown> = {};
-
-  for (const [name, schema] of Object.entries(params.properties)) {
-    lines.push(...formatParamSchema(name, schema, requiredSet));
-    if (requiredSet.has(name)) {
-      exampleArgs[name] = buildExampleValue(schema, name);
-    }
-  }
-
-  lines.push('');
-  lines.push(`Example: use_tool("${toolName}", ${JSON.stringify(exampleArgs)})`);
-  lines.push('Fix your parameters and retry immediately.');
-  return lines.join('\n');
-}
-
-/**
- * Build comprehensive help output for get_tool_help.
- * Richer than buildToolHelpText — includes ALL parameters (not just required) in example.
- */
-function formatFullToolHelp(tools: ToolRegistry, toolName: string): string {
-  const def = tools.getDefinition(toolName);
-  if (!def) return `Tool '${toolName}' not found.`;
-
-  // Safe: def.parameters is a JSON Schema object with properties/required fields
-  const params = def.parameters as unknown as ToolParameterSchema;
-
-  const lines = [
-    `## ${def.name}`,
-    def.description,
-    '',
-  ];
-
-  if (!params?.properties || Object.keys(params.properties).length === 0) {
-    lines.push('No parameters required.');
-    lines.push('');
-    lines.push('### Example');
-    lines.push(`use_tool("${def.name}", {})`);
-    return lines.join('\n');
-  }
-
-  const requiredSet = new Set(params.required || []);
-  const requiredNames = Object.keys(params.properties).filter(n => requiredSet.has(n));
-  const optionalNames = Object.keys(params.properties).filter(n => !requiredSet.has(n));
-
-  // Required parameters first
-  if (requiredNames.length > 0) {
-    lines.push('### Required Parameters');
-    for (const name of requiredNames) {
-      lines.push(...formatParamSchema(name, params.properties[name]!, requiredSet));
-    }
-    lines.push('');
-  }
-
-  // Optional parameters
-  if (optionalNames.length > 0) {
-    lines.push('### Optional Parameters');
-    for (const name of optionalNames) {
-      lines.push(...formatParamSchema(name, params.properties[name]!, requiredSet));
-    }
-    lines.push('');
-  }
-
-  // Build example with required params
-  const exampleArgs: Record<string, unknown> = {};
-  for (const name of requiredNames) {
-    exampleArgs[name] = buildExampleValue(params.properties[name]!, name);
-  }
-
-  lines.push('### Example Call');
-  lines.push(`use_tool("${def.name}", ${JSON.stringify(exampleArgs, null, 2)})`);
-
-  // Add tool-specific max limit info if available
-  const toolLimit = TOOL_MAX_LIMITS[toolName];
-  if (toolLimit) {
-    lines.push('');
-    lines.push(`Note: "${toolLimit.paramName}" parameter is capped at max ${toolLimit.maxValue} (default: ${toolLimit.defaultValue}).`);
-  }
-
-  return lines.join('\n');
-}
-
-/**
- * Validate required parameters are present before tool execution.
- * Returns null if valid, or an error message string if invalid.
- */
-function validateRequiredParams(tools: ToolRegistry, toolName: string, args: Record<string, unknown>): string | null {
-  const def = tools.getDefinition(toolName);
-  if (!def?.parameters) return null;
-  const required = def.parameters.required as string[] | undefined;
-  if (!required || required.length === 0) return null;
-
-  const missing = required.filter(p => args[p] === undefined || args[p] === null);
-  if (missing.length === 0) return null;
-
-  return `Missing required parameter(s): ${missing.join(', ')}`;
+  return findSimilarToolNames(tools, query, 5);
 }
 
 /**
@@ -986,7 +733,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // On failure, auto-includes tool parameter help so LLM can self-correct
   const useToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
   if (useToolDef) {
-    tools.register(useToolDef, async (args): Promise<CoreToolResult> => {
+    tools.register(useToolDef, async (args, context): Promise<CoreToolResult> => {
       const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
 
       // Check if tool exists — suggest similar names if not
@@ -1013,7 +760,8 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
         // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
         const cappedArgs = applyToolLimits(tool_name, toolArgs);
-        const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
+        // Forward the parent context so inner tools inherit executionPermissions, requestApproval, etc.
+        const result = await tools.execute(tool_name, cappedArgs, context);
         if (result.ok) {
           return result.value;
         }
@@ -1029,7 +777,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Register batch_use_tool — parallel execution of multiple tools
   const batchUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'batch_use_tool');
   if (batchUseToolDef) {
-    tools.register(batchUseToolDef, async (args): Promise<CoreToolResult> => {
+    tools.register(batchUseToolDef, async (args, context): Promise<CoreToolResult> => {
       const { calls } = args as { calls: Array<{ tool_name: string; arguments: Record<string, unknown> }> };
 
       if (!calls?.length) {
@@ -1068,7 +816,8 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
             }
 
             const cappedArgs = applyToolLimits(tool_name, toolArgs);
-            const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
+            // Forward the parent context so inner tools inherit executionPermissions, etc.
+            const result = await tools.execute(tool_name, cappedArgs, context);
             if (result.ok) {
               return { idx, tool_name, ok: true, content: typeof result.value.content === 'string' ? result.value.content : JSON.stringify(result.value.content, null, 2) };
             }
@@ -1239,6 +988,23 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     maxTurns: (record.config.maxTurns as number) ?? 25,
     maxToolCalls: (record.config.maxToolCalls as number) ?? 200,
     tools: metaToolFilter,
+    // Bridge to ApprovalManager for local code execution approval
+    requestApproval: async (category, actionType, description, params) => {
+      const approvalMgr = getApprovalManager();
+      const result = await approvalMgr.requestApproval(
+        'default', // userId — agent record doesn't carry user context
+        category as import('../autonomy/types.js').ActionCategory,
+        actionType,
+        description,
+        params,
+      );
+      // null = auto-approved (low risk or remembered decision)
+      if (!result) return true;
+      // ApprovalRequest with rejected status = denied
+      if (result.action.status === 'rejected') return false;
+      // Pending = no real-time UI for in-tool approval, default deny
+      return false;
+    },
   };
 
   const agent = createAgent(config, { tools });
@@ -1908,7 +1674,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // On failure, auto-includes tool parameter help so LLM can self-correct
   const chatUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
   if (chatUseToolDef) {
-    tools.register(chatUseToolDef, async (args): Promise<CoreToolResult> => {
+    tools.register(chatUseToolDef, async (args, context): Promise<CoreToolResult> => {
       const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
 
       // Check if tool exists — suggest similar names if not
@@ -1935,7 +1701,8 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
 
         // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
         const cappedArgs = applyToolLimits(tool_name, toolArgs);
-        const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
+        // Forward the parent context so inner tools inherit executionPermissions, requestApproval, etc.
+        const result = await tools.execute(tool_name, cappedArgs, context);
         if (result.ok) {
           return result.value;
         }
@@ -1951,7 +1718,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // Register batch_use_tool — parallel execution of multiple tools
   const chatBatchUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'batch_use_tool');
   if (chatBatchUseToolDef) {
-    tools.register(chatBatchUseToolDef, async (args): Promise<CoreToolResult> => {
+    tools.register(chatBatchUseToolDef, async (args, context): Promise<CoreToolResult> => {
       const { calls } = args as { calls: Array<{ tool_name: string; arguments: Record<string, unknown> }> };
 
       if (!calls?.length) {
@@ -1988,7 +1755,8 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
             }
 
             const cappedArgs = applyToolLimits(tool_name, toolArgs);
-            const result = await tools.execute(tool_name, cappedArgs, {} as import('@ownpilot/core').ToolContext);
+            // Forward the parent context so inner tools inherit executionPermissions, etc.
+            const result = await tools.execute(tool_name, cappedArgs, context);
             if (result.ok) {
               return { idx, tool_name, ok: true, content: typeof result.value.content === 'string' ? result.value.content : JSON.stringify(result.value.content, null, 2) };
             }
@@ -2107,6 +1875,20 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     maxTurns: 25,
     maxToolCalls: 200,
     tools: chatMetaToolFilter,
+    // Bridge to ApprovalManager for local code execution approval
+    requestApproval: async (category, actionType, description, params) => {
+      const approvalMgr = getApprovalManager();
+      const result = await approvalMgr.requestApproval(
+        'default',
+        category as import('../autonomy/types.js').ActionCategory,
+        actionType,
+        description,
+        params,
+      );
+      if (!result) return true;
+      if (result.action.status === 'rejected') return false;
+      return false;
+    },
   };
 
   // Create and cache the agent

@@ -25,6 +25,7 @@ import type {
   ToolConfigRequirement,
 } from './types.js';
 import { logToolCall, logToolResult } from './debug.js';
+import { validateToolCall } from './tool-validation.js';
 import type { ConfigCenter } from '../services/config-center.js';
 import {
   getEventBus,
@@ -502,7 +503,8 @@ export class ToolRegistry {
   async executeToolCall(
     toolCall: ToolCall,
     conversationId: string,
-    userId?: string
+    userId?: string,
+    extraContext?: Partial<Pick<ToolContext, 'requestApproval' | 'executionPermissions'>>,
   ): Promise<ToolResult> {
     const startTime = Date.now();
     let args: Record<string, unknown>;
@@ -526,17 +528,58 @@ export class ToolRegistry {
       };
     }
 
+    // Validate tool call (existence + fuzzy name match + parameter schema)
+    const validation = validateToolCall(this, toolCall.name, args);
+
+    let effectiveName = toolCall.name;
+
+    if (!validation.valid) {
+      if (validation.correctedName) {
+        // Auto-corrected tool name — re-validate params against corrected tool
+        effectiveName = validation.correctedName;
+        const revalidation = validateToolCall(this, effectiveName, args);
+        if (!revalidation.valid) {
+          const errorContent = `Error: Tool '${toolCall.name}' auto-corrected to '${effectiveName}', but parameter errors remain: ${revalidation.errors.map(e => e.message).join('; ')}${revalidation.helpText ?? ''}`;
+          logToolResult({
+            toolCallId: toolCall.id,
+            name: toolCall.name,
+            success: false,
+            resultPreview: errorContent.substring(0, 500),
+            resultLength: errorContent.length,
+            durationMs: Date.now() - startTime,
+            error: 'Parameter validation failed',
+          });
+          return { toolCallId: toolCall.id, content: errorContent, isError: true };
+        }
+      } else {
+        // Tool not found or param errors — return helpful error
+        const errorContent = `Error: ${validation.errors.map(e => e.message).join('; ')}${validation.helpText ?? ''}`;
+        logToolResult({
+          toolCallId: toolCall.id,
+          name: toolCall.name,
+          success: false,
+          resultPreview: errorContent.substring(0, 500),
+          resultLength: errorContent.length,
+          durationMs: Date.now() - startTime,
+          error: 'Tool call validation failed',
+        });
+        return { toolCallId: toolCall.id, content: errorContent, isError: true };
+      }
+    }
+
     // Log the tool call with arguments
     logToolCall({
       id: toolCall.id,
-      name: toolCall.name,
+      name: effectiveName,
       arguments: args,
       approved: true, // It's already approved if we're here
     });
 
-    const result = await this.execute(toolCall.name, args, {
+    const result = await this.execute(effectiveName, args, {
       conversationId,
       userId,
+      requestApproval: extraContext?.requestApproval,
+      executionPermissions: extraContext?.executionPermissions,
     });
 
     const durationMs = Date.now() - startTime;

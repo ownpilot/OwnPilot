@@ -36,6 +36,8 @@ import { debugLog, type ToolDefinition, hasServiceRegistry, getServiceRegistry, 
 import type { IMessageBus, NormalizedMessage, MessageProcessingResult, StreamCallbacks, ToolEndResult } from '@ownpilot/core';
 import type { StreamChunk, ToolCall } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
+import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
+import { createApprovalRequest, generateApprovalId } from '../services/execution-approval.js';
 import { wsGateway } from '../ws/server.js';
 import { parseLimit, parseOffset, extractSuggestions } from '../utils/index.js';
 import { getLog } from '../services/log.js';
@@ -390,6 +392,17 @@ async function processStreamingViaBus(
         delete traceEntry.startTime;
       }
 
+      // Detect local execution metadata from result content
+      let sandboxed: boolean | undefined;
+      let executionMode: string | undefined;
+      try {
+        const parsed = JSON.parse(result.content);
+        if (typeof parsed === 'object' && parsed !== null && 'sandboxed' in parsed) {
+          sandboxed = parsed.sandboxed;
+          executionMode = parsed.executionMode;
+        }
+      } catch { /* not JSON or no sandbox info */ }
+
       sseStream.writeSSE({
         data: JSON.stringify({
           type: 'tool_end',
@@ -401,6 +414,8 @@ async function processStreamingViaBus(
             success: !(result.isError ?? false),
             preview: result.content.substring(0, 500),
             durationMs: result.durationMs,
+            ...(sandboxed !== undefined && { sandboxed }),
+            ...(executionMode && { executionMode }),
           },
           timestamp: new Date().toISOString(),
         }),
@@ -585,6 +600,10 @@ chatRoutes.post('/', async (c) => {
     // Continue without workspace - use global default
   }
 
+  // Load persistent execution permissions from DB
+  const execPermissions = await executionPermissionsRepo.get(getUserId(c));
+  agent.setExecutionPermissions(execPermissions);
+
   // Build tool catalog for the first message (sent only once per chat)
   let chatMessage = body.message;
   if (body.includeToolList) {
@@ -610,16 +629,38 @@ chatRoutes.post('/', async (c) => {
         const streamAgentId = body.agentId ?? `chat-${provider}`;
         const streamUserId = getUserId(c);
 
-        await processStreamingViaBus(streamBus, stream, {
-          agent: agent!,
-          chatMessage,
-          body,
-          provider,
-          model,
-          userId: streamUserId,
-          agentId: streamAgentId,
-          conversationId,
+        // Wire real-time approval for 'prompt' mode execution
+        agent.setRequestApproval(async (_category, actionType, description, params) => {
+          const approvalId = generateApprovalId();
+          await stream.writeSSE({
+            data: JSON.stringify({
+              type: 'approval_required',
+              approvalId,
+              category: actionType,
+              description,
+              code: params.code,
+              riskAnalysis: params.riskAnalysis,
+            }),
+            event: 'approval',
+          });
+          return createApprovalRequest(approvalId);
         });
+
+        try {
+          await processStreamingViaBus(streamBus, stream, {
+            agent: agent!,
+            chatMessage,
+            body,
+            provider,
+            model,
+            userId: streamUserId,
+            agentId: streamAgentId,
+            conversationId,
+          });
+        } finally {
+          agent.setRequestApproval(undefined);
+          agent.setExecutionPermissions(undefined);
+        }
       });
     }
 
@@ -630,6 +671,23 @@ chatRoutes.post('/', async (c) => {
       const streamAgentId = body.agentId ?? `chat-${provider}`;
       const streamUserId = getUserId(c);
       let lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+
+      // Wire real-time approval for 'prompt' mode execution
+      agent.setRequestApproval(async (_category, actionType, description, params) => {
+        const approvalId = generateApprovalId();
+        await stream.writeSSE({
+          data: JSON.stringify({
+            type: 'approval_required',
+            approvalId,
+            category: actionType,
+            description,
+            code: params.code,
+            riskAnalysis: params.riskAnalysis,
+          }),
+          event: 'approval',
+        });
+        return createApprovalRequest(approvalId);
+      });
 
       // Expose direct tools to LLM if requested (from picker selection)
       if (body.directTools?.length) {
@@ -810,6 +868,17 @@ chatRoutes.post('/', async (c) => {
             delete traceEntry.startTime;
           }
 
+          // Detect local execution metadata from result content
+          let sandboxed: boolean | undefined;
+          let executionMode: string | undefined;
+          try {
+            const parsed = JSON.parse(result.content);
+            if (typeof parsed === 'object' && parsed !== null && 'sandboxed' in parsed) {
+              sandboxed = parsed.sandboxed;
+              executionMode = parsed.executionMode;
+            }
+          } catch { /* not JSON or no sandbox info */ }
+
           await stream.writeSSE({
             data: JSON.stringify({
               type: 'tool_end',
@@ -821,6 +890,8 @@ chatRoutes.post('/', async (c) => {
                 success: !(result.isError ?? false),
                 preview: result.content.substring(0, 500),
                 durationMs: result.durationMs,
+                ...(sandboxed !== undefined && { sandboxed }),
+                ...(executionMode && { executionMode }),
               },
               timestamp: new Date().toISOString(),
             }),
@@ -844,6 +915,10 @@ chatRoutes.post('/', async (c) => {
       if (body.directTools?.length) {
         agent.clearAdditionalTools();
       }
+
+      // Reset execution permissions and approval callback
+      agent.setRequestApproval(undefined);
+      agent.setExecutionPermissions(undefined);
 
       const streamLatency = Math.round(performance.now() - streamStartTime);
 
@@ -1026,6 +1101,9 @@ chatRoutes.post('/', async (c) => {
       conversationId: body.conversationId ?? agent.getConversation().id,
     });
 
+    // Reset local execution permission
+    agent.setExecutionPermissions(undefined);
+
     const processingTime = Math.round(performance.now() - startTime);
 
     // Check for errors
@@ -1169,6 +1247,9 @@ chatRoutes.post('/', async (c) => {
     if (body.directTools?.length) {
       agent.clearAdditionalTools();
     }
+
+    // Reset local execution permission
+    agent.setExecutionPermissions(undefined);
 
     // Record model call
     if (result.ok) {

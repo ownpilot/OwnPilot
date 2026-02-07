@@ -9,6 +9,7 @@ import {
   File,
   Globe,
   Terminal,
+  AlertTriangle,
 } from './icons';
 import { CodeBlock } from './CodeBlock';
 
@@ -50,6 +51,7 @@ function ToolCallCard({ toolCall, onRerun }: ToolCallCardProps) {
   // Note: getToolIcon is available for future use
   const category = getToolCategory(toolCall.name);
   const status = toolCall.status ?? (toolCall.error ? 'error' : 'success');
+  const localExec = isLocalExecution(toolCall.result);
 
   return (
     <div className="rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary overflow-hidden">
@@ -80,6 +82,12 @@ function ToolCallCard({ toolCall, onRerun }: ToolCallCardProps) {
             <span className="px-2 py-0.5 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted rounded">
               {category}
             </span>
+            {localExec && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded font-medium">
+                <AlertTriangle className="w-3 h-3" />
+                LOCAL
+              </span>
+            )}
           </div>
           {toolCall.duration !== undefined && (
             <span className="text-xs text-text-muted dark:text-dark-text-muted">
@@ -121,6 +129,16 @@ function ToolCallCard({ toolCall, onRerun }: ToolCallCardProps) {
               </div>
             )}
           </div>
+
+          {/* Local Execution Warning */}
+          {localExec && (
+            <div className="px-4 py-2 bg-amber-500/5 border-b border-amber-500/20 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                This code ran directly on your local machine without Docker sandbox isolation.
+              </span>
+            </div>
+          )}
 
           {/* Result */}
           <div className="px-4 py-3">
@@ -213,7 +231,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   }
 
   // Code execution results
-  if ((toolName.startsWith('execute_') || toolName === 'compile_code') && typeof result === 'object') {
+  if ((toolName.startsWith('execute_') || toolName === 'compile_code' || toolName === 'package_manager') && typeof result === 'object') {
     return (
       <div className="space-y-3">
         {result.stdout && (
@@ -393,6 +411,32 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+/**
+ * Detect if a tool result indicates local (non-sandboxed) execution.
+ * Checks both object and JSON string results.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic tool output
+function isLocalExecution(result: any): boolean {
+  if (!result) return false;
+
+  // Direct object with sandboxed field
+  if (typeof result === 'object' && 'sandboxed' in result) {
+    return result.sandboxed === false;
+  }
+
+  // JSON string result — try parsing
+  if (typeof result === 'string') {
+    try {
+      const parsed = JSON.parse(result);
+      if (typeof parsed === 'object' && parsed !== null && 'sandboxed' in parsed) {
+        return parsed.sandboxed === false;
+      }
+    } catch { /* not JSON */ }
+  }
+
+  return false;
 }
 
 function detectLanguage(path: string): string {

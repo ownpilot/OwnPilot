@@ -2,11 +2,16 @@
  * Code Execution Tools
  * Safe code execution for Node.js, Python, and shell commands
  *
- * SECURITY: Code execution REQUIRES Docker sandbox for isolation.
- * Without Docker, ALL code execution is blocked - no exceptions.
+ * Supports Docker sandbox (preferred) and local execution (with user approval).
+ * Execution mode is controlled by EXECUTION_MODE env var:
+ * - 'docker': Docker only (most secure)
+ * - 'local': Local only (requires approval)
+ * - 'auto': Try Docker first, fall back to local with approval (default)
  */
 
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import type { ToolDefinition, ToolExecutor, ToolExecutionResult, ToolContext } from '../tools.js';
+import type { ExecutionCategory } from '../types.js';
+import type { SandboxResult } from '../../sandbox/docker.js';
 import {
   isDockerAvailable,
   executePythonSandbox,
@@ -14,7 +19,14 @@ import {
   executeShellSandbox,
 } from '../../sandbox/docker.js';
 import { logSandboxExecution } from '../debug.js';
-import { isCommandBlocked } from '../../security/index.js';
+import { checkCriticalPatterns, isCommandBlocked } from '../../security/index.js';
+import { analyzeCodeRisk } from '../../security/code-analyzer.js';
+import { getExecutionMode } from '../../sandbox/execution-mode.js';
+import {
+  executeJavaScriptLocal,
+  executePythonLocal,
+  executeShellLocal,
+} from '../../sandbox/local-executor.js';
 
 // Environment flag to use relaxed Docker security (bypasses --no-new-privileges flag issues)
 const DOCKER_RELAXED_SECURITY = process.env.DOCKER_SANDBOX_RELAXED_SECURITY === 'true';
@@ -34,15 +46,126 @@ function truncateOutput(output: string, maxSize: number = MAX_OUTPUT_SIZE): stri
   return truncated + `\n\n... [Output truncated at ${maxSize} bytes]`;
 }
 
-/**
- * Standard error message when Docker is not available
- */
 const DOCKER_REQUIRED_ERROR = {
-  error: 'Docker is REQUIRED for code execution. This is a security requirement and cannot be bypassed.',
+  error: 'Docker is required for code execution in this mode.',
   reason: 'Code execution without Docker sandbox would allow arbitrary code to run on the host system.',
-  solution: 'Please install and start Docker: https://docs.docker.com/get-docker/',
+  solution: 'Install Docker (https://docs.docker.com/get-docker/) or set EXECUTION_MODE=auto to allow local fallback with user approval.',
   securityNote: 'This restriction exists to protect your system from malicious code.',
 };
+
+/**
+ * Format a local execution result into a ToolExecutionResult.
+ */
+function formatLocalResult(result: SandboxResult, language: string): ToolExecutionResult {
+  return {
+    content: {
+      stdout: truncateOutput(result.stdout),
+      stderr: truncateOutput(result.stderr),
+      exitCode: result.exitCode,
+      sandboxed: false,
+      executionMode: 'local',
+      language,
+      error: result.error,
+    },
+    isError: !result.success,
+  };
+}
+
+/**
+ * Layered permission check for local code execution (Layers 1-4).
+ *
+ * Layer 1: Critical pattern blocklist (regex, ALWAYS blocks)
+ * Layer 2: Code risk analysis (for display in approval dialog)
+ * Layer 3: Per-category permission check (blocked/prompt/allowed)
+ * Layer 4: Real-time user approval (when mode is 'prompt')
+ *
+ * Returns { allowed: true } to proceed, or { allowed: false, error } to block.
+ */
+async function checkLocalPermission(
+  category: ExecutionCategory,
+  code: string,
+  language: 'javascript' | 'python' | 'shell',
+  context: ToolContext,
+): Promise<{ allowed: boolean; error?: ToolExecutionResult }> {
+  const permissions = context.executionPermissions;
+
+  // undefined = non-chat context (CLI, direct API) → backward compat, allow
+  if (permissions === undefined) {
+    return { allowed: true };
+  }
+
+  const mode = permissions[category] ?? 'blocked';
+
+  // Layer 1: Critical pattern check (ALWAYS blocks, even if 'allowed')
+  const critical = checkCriticalPatterns(code);
+  if (critical.blocked) {
+    return {
+      allowed: false,
+      error: {
+        content: {
+          error: 'Blocked by security policy',
+          reason: critical.reason,
+          severity: 'critical',
+        },
+        isError: true,
+      },
+    };
+  }
+
+  // Layer 3: Per-category permission check
+  if (mode === 'blocked') {
+    return {
+      allowed: false,
+      error: {
+        content: {
+          error: `${category} is blocked in Execution Security settings.`,
+          solution: 'Open the Execution Security panel above the chat input and change the permission level.',
+          currentLevel: 'blocked',
+        },
+        isError: true,
+      },
+    };
+  }
+
+  if (mode === 'prompt') {
+    // Layer 2: Risk analysis for display
+    const risk = analyzeCodeRisk(code, language);
+
+    // Layer 4: Real-time approval
+    if (!context.requestApproval) {
+      return {
+        allowed: false,
+        error: {
+          content: {
+            error: `${category} requires approval but no approval channel available.`,
+            solution: 'Set to "allowed" in Execution Security settings for automated contexts.',
+          },
+          isError: true,
+        },
+      };
+    }
+
+    const approved = await context.requestApproval(
+      'code_execution',
+      category,
+      `Execute ${language} code locally (no Docker sandbox)`,
+      { code: code.slice(0, 2000), riskAnalysis: risk },
+    );
+
+    if (!approved) {
+      return {
+        allowed: false,
+        error: {
+          content: { error: `${category} execution rejected by user.` },
+          isError: true,
+        },
+      };
+    }
+  }
+
+  // 'allowed' or approved 'prompt' → proceed
+  return { allowed: true };
+}
 
 // ============================================================================
 // EXECUTE JAVASCRIPT TOOL
@@ -50,8 +173,8 @@ const DOCKER_REQUIRED_ERROR = {
 
 export const executeJavaScriptTool: ToolDefinition = {
   name: 'execute_javascript',
-  brief: 'Run JavaScript/Node.js in Docker sandbox',
-  description: 'Execute JavaScript/Node.js code in a Docker sandboxed environment. Requires Docker to be running.',
+  brief: 'Run JavaScript/Node.js code',
+  description: 'Execute JavaScript/Node.js code. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows.',
   parameters: {
     type: 'object',
     properties: {
@@ -69,14 +192,35 @@ export const executeJavaScriptTool: ToolDefinition = {
   },
 };
 
-export const executeJavaScriptExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const executeJavaScriptExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
   const code = params.code as string;
   const timeout = Math.min((params.timeout as number) || 10000, MAX_EXECUTION_TIME);
   const startTime = Date.now();
 
-  // SECURITY: Docker is MANDATORY - no exceptions
+  const mode = getExecutionMode();
   const dockerReady = await isDockerAvailable();
-  if (!dockerReady) {
+
+  // Local execution path (when Docker is not available or mode is 'local')
+  if (mode === 'local' || (mode === 'auto' && !dockerReady)) {
+    const permCheck = await checkLocalPermission('execute_javascript', code, 'javascript', context);
+    if (!permCheck.allowed) return permCheck.error!;
+    const localResult = await executeJavaScriptLocal(code, { timeout });
+    logSandboxExecution({
+      tool: 'execute_javascript',
+      language: 'javascript',
+      sandboxed: false,
+      codePreview: code.slice(0, 100),
+      exitCode: localResult.exitCode,
+      durationMs: Date.now() - startTime,
+      success: localResult.success,
+      error: localResult.error,
+      timedOut: localResult.timedOut,
+    });
+    return formatLocalResult(localResult, 'javascript');
+  }
+
+  // Docker-only mode but Docker not available
+  if (mode === 'docker' && !dockerReady) {
     logSandboxExecution({
       tool: 'execute_javascript',
       language: 'javascript',
@@ -87,13 +231,10 @@ export const executeJavaScriptExecutor: ToolExecutor = async (params, _context):
       success: false,
       error: 'Docker not available',
     });
-    return {
-      content: DOCKER_REQUIRED_ERROR,
-      isError: true,
-    };
+    return { content: DOCKER_REQUIRED_ERROR, isError: true };
   }
 
-  // Execute in Docker sandbox
+  // Docker execution path
   const result = await executeJavaScriptSandbox(code, { timeout, relaxedSecurity: DOCKER_RELAXED_SECURITY });
   const durationMs = Date.now() - startTime;
 
@@ -131,8 +272,8 @@ export const executeJavaScriptExecutor: ToolExecutor = async (params, _context):
 
 export const executePythonTool: ToolDefinition = {
   name: 'execute_python',
-  brief: 'Run Python code in Docker sandbox',
-  description: 'Execute Python code in a Docker sandboxed environment. Requires Docker to be running.',
+  brief: 'Run Python code',
+  description: 'Execute Python code. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows.',
   parameters: {
     type: 'object',
     properties: {
@@ -150,14 +291,35 @@ export const executePythonTool: ToolDefinition = {
   },
 };
 
-export const executePythonExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const executePythonExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
   const code = params.code as string;
   const timeout = Math.min((params.timeout as number) || 10000, MAX_EXECUTION_TIME);
   const startTime = Date.now();
 
-  // SECURITY: Docker is MANDATORY - no exceptions
+  const mode = getExecutionMode();
   const dockerReady = await isDockerAvailable();
-  if (!dockerReady) {
+
+  // Local execution path
+  if (mode === 'local' || (mode === 'auto' && !dockerReady)) {
+    const permCheck = await checkLocalPermission('execute_python', code, 'python', context);
+    if (!permCheck.allowed) return permCheck.error!;
+    const localResult = await executePythonLocal(code, { timeout });
+    logSandboxExecution({
+      tool: 'execute_python',
+      language: 'python',
+      sandboxed: false,
+      codePreview: code.slice(0, 100),
+      exitCode: localResult.exitCode,
+      durationMs: Date.now() - startTime,
+      success: localResult.success,
+      error: localResult.error,
+      timedOut: localResult.timedOut,
+    });
+    return formatLocalResult(localResult, 'python');
+  }
+
+  // Docker-only mode but Docker not available
+  if (mode === 'docker' && !dockerReady) {
     logSandboxExecution({
       tool: 'execute_python',
       language: 'python',
@@ -168,13 +330,10 @@ export const executePythonExecutor: ToolExecutor = async (params, _context): Pro
       success: false,
       error: 'Docker not available',
     });
-    return {
-      content: DOCKER_REQUIRED_ERROR,
-      isError: true,
-    };
+    return { content: DOCKER_REQUIRED_ERROR, isError: true };
   }
 
-  // Execute in Docker sandbox
+  // Docker execution path
   const result = await executePythonSandbox(code, { timeout, relaxedSecurity: DOCKER_RELAXED_SECURITY });
   const durationMs = Date.now() - startTime;
 
@@ -212,8 +371,8 @@ export const executePythonExecutor: ToolExecutor = async (params, _context): Pro
 
 export const executeShellTool: ToolDefinition = {
   name: 'execute_shell',
-  brief: 'Run shell commands in Docker sandbox',
-  description: 'Execute a shell command in a Docker sandboxed environment. Requires Docker to be running. Blocked commands include: rm -rf /, mkfs, dd if=/dev, fork bombs, chmod -R 777 /, shutdown/reboot/halt, format c:, and similar destructive operations.',
+  brief: 'Run shell commands',
+  description: 'Execute a shell command. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows. Blocked commands include: rm -rf /, mkfs, dd if=/dev, fork bombs, chmod -R 777 /, shutdown/reboot/halt, format c:, and similar destructive operations.',
   parameters: {
     type: 'object',
     properties: {
@@ -231,7 +390,7 @@ export const executeShellTool: ToolDefinition = {
   },
 };
 
-export const executeShellExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const executeShellExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
   const command = params.command as string;
   const timeout = Math.min((params.timeout as number) || 10000, MAX_EXECUTION_TIME);
   const startTime = Date.now();
@@ -254,9 +413,30 @@ export const executeShellExecutor: ToolExecutor = async (params, _context): Prom
     };
   }
 
-  // SECURITY: Docker is MANDATORY - no exceptions
+  const mode = getExecutionMode();
   const dockerReady = await isDockerAvailable();
-  if (!dockerReady) {
+
+  // Local execution path
+  if (mode === 'local' || (mode === 'auto' && !dockerReady)) {
+    const permCheck = await checkLocalPermission('execute_shell', command, 'shell', context);
+    if (!permCheck.allowed) return permCheck.error!;
+    const localResult = await executeShellLocal(command, { timeout });
+    logSandboxExecution({
+      tool: 'execute_shell',
+      language: 'shell',
+      sandboxed: false,
+      command,
+      exitCode: localResult.exitCode,
+      durationMs: Date.now() - startTime,
+      success: localResult.success,
+      error: localResult.error,
+      timedOut: localResult.timedOut,
+    });
+    return formatLocalResult(localResult, 'shell');
+  }
+
+  // Docker-only mode but Docker not available
+  if (mode === 'docker' && !dockerReady) {
     logSandboxExecution({
       tool: 'execute_shell',
       language: 'shell',
@@ -267,10 +447,7 @@ export const executeShellExecutor: ToolExecutor = async (params, _context): Prom
       success: false,
       error: 'Docker not available',
     });
-    return {
-      content: DOCKER_REQUIRED_ERROR,
-      isError: true,
-    };
+    return { content: DOCKER_REQUIRED_ERROR, isError: true };
   }
 
   // Execute in Docker sandbox
@@ -311,8 +488,8 @@ export const executeShellExecutor: ToolExecutor = async (params, _context): Prom
 
 export const compileCodeTool: ToolDefinition = {
   name: 'compile_code',
-  brief: 'Compile source code (disabled for security)',
-  description: 'Compile source code. Currently disabled for security - use Docker-based build tools instead.',
+  brief: 'Compile source code',
+  description: 'Compile source code using a specified compiler. Requires local execution mode (no Docker sandbox). Supported compilers: tsc, gcc, g++, rustc, go, javac.',
   parameters: {
     type: 'object',
     properties: {
@@ -325,20 +502,89 @@ export const compileCodeTool: ToolDefinition = {
         description: 'Compiler to use',
         enum: ['tsc', 'gcc', 'g++', 'rustc', 'go', 'javac'],
       },
+      args: {
+        type: 'string',
+        description: 'Additional compiler arguments (e.g., "-o output", "--outDir dist")',
+      },
+      timeout: {
+        type: 'number',
+        description: 'Execution timeout in milliseconds (max 60000)',
+        default: 30000,
+      },
     },
     required: ['filePath'],
   },
 };
 
-export const compileCodeExecutor: ToolExecutor = async (_params, _context): Promise<ToolExecutionResult> => {
-  // Compilation requires host access - disabled for security
+/** Allowed compilers — prevents arbitrary command injection */
+const ALLOWED_COMPILERS = new Set(['tsc', 'gcc', 'g++', 'rustc', 'go', 'javac']);
+
+export const compileCodeExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+  const filePath = params.filePath as string;
+  const compiler = (params.compiler as string) || 'tsc';
+  const extraArgs = (params.args as string) || '';
+  const timeout = Math.min((params.timeout as number) || 30000, 60000);
+  const startTime = Date.now();
+
+  if (!ALLOWED_COMPILERS.has(compiler)) {
+    return { content: { error: `Unknown compiler: ${compiler}. Allowed: ${[...ALLOWED_COMPILERS].join(', ')}` }, isError: true };
+  }
+
+  const mode = getExecutionMode();
+  const dockerReady = await isDockerAvailable();
+
+  // Compilation requires local access — Docker can't access host files
+  if (mode === 'docker' && !dockerReady) {
+    return { content: DOCKER_REQUIRED_ERROR, isError: true };
+  }
+
+  if (mode === 'docker') {
+    return {
+      content: {
+        error: 'compile_code requires local execution mode.',
+        reason: 'Docker sandbox cannot access host filesystem for compilation.',
+        solution: 'Set EXECUTION_MODE=auto or EXECUTION_MODE=local to enable compilation.',
+      },
+      isError: true,
+    };
+  }
+
+  // Build the compile command
+  let command: string;
+  if (compiler === 'go') {
+    command = `go build ${extraArgs} ${filePath}`.trim();
+  } else {
+    command = `${compiler} ${extraArgs} ${filePath}`.trim();
+  }
+
+  const permCheck = await checkLocalPermission('compile_code', command, 'shell', context);
+  if (!permCheck.allowed) return permCheck.error!;
+
+  const localResult = await executeShellLocal(command, { timeout });
+  logSandboxExecution({
+    tool: 'compile_code',
+    language: 'shell',
+    sandboxed: false,
+    command,
+    exitCode: localResult.exitCode,
+    durationMs: Date.now() - startTime,
+    success: localResult.success,
+    error: localResult.error,
+    timedOut: localResult.timedOut,
+  });
+
   return {
     content: {
-      error: 'compile_code is disabled for security reasons.',
-      reason: 'Compilation requires direct host system access which bypasses sandbox isolation.',
-      alternative: 'Use execute_shell with Docker to run build commands, or use a CI/CD pipeline.',
+      stdout: truncateOutput(localResult.stdout),
+      stderr: truncateOutput(localResult.stderr),
+      exitCode: localResult.exitCode,
+      compiler,
+      filePath,
+      sandboxed: false,
+      executionMode: 'local',
+      error: localResult.error,
     },
-    isError: true,
+    isError: !localResult.success,
   };
 };
 
@@ -348,8 +594,8 @@ export const compileCodeExecutor: ToolExecutor = async (_params, _context): Prom
 
 export const packageManagerTool: ToolDefinition = {
   name: 'package_manager',
-  brief: 'Run package manager commands (disabled)',
-  description: 'Run package manager commands. Currently disabled for security - use Docker-based build tools instead.',
+  brief: 'Run package manager commands',
+  description: 'Run package manager commands (npm, yarn, pnpm, pip). Requires local execution mode. Supports install, uninstall, update, list, run scripts, and other standard commands.',
   parameters: {
     type: 'object',
     properties: {
@@ -360,22 +606,98 @@ export const packageManagerTool: ToolDefinition = {
       },
       command: {
         type: 'string',
-        description: 'Command to run',
+        description: 'Subcommand to run (e.g., "install", "install lodash", "run build", "list --depth=0")',
+      },
+      timeout: {
+        type: 'number',
+        description: 'Execution timeout in milliseconds (max 120000, default 60000). Package installations may need more time.',
+        default: 60000,
       },
     },
     required: ['manager', 'command'],
   },
 };
 
-export const packageManagerExecutor: ToolExecutor = async (_params, _context): Promise<ToolExecutionResult> => {
-  // Package managers require host access - disabled for security
+/** Allowed package managers — prevents arbitrary command injection */
+const ALLOWED_MANAGERS = new Set(['npm', 'yarn', 'pnpm', 'pip']);
+
+/** Package manager subcommands that are blocked for safety */
+const BLOCKED_PM_SUBCOMMANDS = new Set([
+  'publish',    // Don't accidentally publish packages
+  'unpublish',  // Don't remove published packages
+  'login',      // Don't handle auth tokens
+  'logout',
+  'adduser',
+  'token',
+  'owner',
+  'access',
+]);
+
+export const packageManagerExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+  const manager = params.manager as string;
+  const subcommand = params.command as string;
+  const timeout = Math.min((params.timeout as number) || 60000, 120000);
+  const startTime = Date.now();
+
+  if (!ALLOWED_MANAGERS.has(manager)) {
+    return { content: { error: `Unknown package manager: ${manager}. Allowed: ${[...ALLOWED_MANAGERS].join(', ')}` }, isError: true };
+  }
+
+  // Check for blocked subcommands
+  const firstWord = subcommand.trim().split(/\s+/)[0]?.toLowerCase();
+  if (firstWord && BLOCKED_PM_SUBCOMMANDS.has(firstWord)) {
+    return { content: { error: `Subcommand '${firstWord}' is blocked for safety. Blocked: ${[...BLOCKED_PM_SUBCOMMANDS].join(', ')}` }, isError: true };
+  }
+
+  const mode = getExecutionMode();
+  const dockerReady = await isDockerAvailable();
+
+  if (mode === 'docker' && !dockerReady) {
+    return { content: DOCKER_REQUIRED_ERROR, isError: true };
+  }
+
+  if (mode === 'docker') {
+    return {
+      content: {
+        error: 'package_manager requires local execution mode.',
+        reason: 'Docker sandbox cannot access host filesystem for package management.',
+        solution: 'Set EXECUTION_MODE=auto or EXECUTION_MODE=local to enable package management.',
+      },
+      isError: true,
+    };
+  }
+
+  // Build the command
+  const command = `${manager} ${subcommand}`.trim();
+
+  const permCheck = await checkLocalPermission('package_manager', command, 'shell', context);
+  if (!permCheck.allowed) return permCheck.error!;
+
+  const localResult = await executeShellLocal(command, { timeout });
+  logSandboxExecution({
+    tool: 'package_manager',
+    language: 'shell',
+    sandboxed: false,
+    command,
+    exitCode: localResult.exitCode,
+    durationMs: Date.now() - startTime,
+    success: localResult.success,
+    error: localResult.error,
+    timedOut: localResult.timedOut,
+  });
+
   return {
     content: {
-      error: 'package_manager is disabled for security reasons.',
-      reason: 'Package managers require direct host system access which bypasses sandbox isolation.',
-      alternative: 'Use execute_shell with Docker to run package manager commands in a container.',
+      stdout: truncateOutput(localResult.stdout),
+      stderr: truncateOutput(localResult.stderr),
+      exitCode: localResult.exitCode,
+      manager,
+      subcommand,
+      sandboxed: false,
+      executionMode: 'local',
+      error: localResult.error,
     },
-    isError: true,
+    isError: !localResult.success,
   };
 };
 

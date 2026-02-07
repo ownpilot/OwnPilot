@@ -644,12 +644,12 @@ describe('createCustomToolSchema', () => {
   });
 
   it('accepts all valid permission values', () => {
-    const allPermissions = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling'] as const;
+    const allPermissions = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local'] as const;
     expect(createCustomToolSchema.safeParse({ ...validTool, permissions: [...allPermissions] }).success).toBe(true);
   });
 
-  it('rejects permissions array over 6 items', () => {
-    const tooMany = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'network'] as const;
+  it('rejects permissions array over 7 items', () => {
+    const tooMany = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local', 'network'] as const;
     expect(createCustomToolSchema.safeParse({ ...validTool, permissions: [...tooMany] }).success).toBe(false);
   });
 

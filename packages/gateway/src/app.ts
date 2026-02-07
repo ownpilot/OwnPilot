@@ -53,6 +53,7 @@ import {
   localProvidersRoutes,
   channelAuthRoutes,
   debugRoutes,
+  executionPermissionsRoutes,
 } from './routes/index.js';
 
 /**
@@ -216,6 +217,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   // Config Center (centralized config management)
   app.route('/api/v1/config-services', configServicesRoutes);
+
+  // Execution Permissions (granular code execution security)
+  app.route('/api/v1/execution-permissions', executionPermissionsRoutes);
 
   // Local AI Providers (LM Studio, Ollama, etc.)
   app.route('/api/v1/local-providers', localProvidersRoutes);

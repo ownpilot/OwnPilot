@@ -50,7 +50,8 @@ export interface SandboxStatus {
   dockerAvailable: boolean;
   dockerVersion: string | null;
   codeExecutionEnabled: boolean;
-  securityMode: 'strict' | 'relaxed';
+  executionMode?: 'docker' | 'local' | 'auto';
+  securityMode: 'strict' | 'relaxed' | 'local' | 'disabled';
 }
 
 export interface DatabaseStatus {
