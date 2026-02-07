@@ -223,12 +223,8 @@ if ($hasDocker -and $hasCompose) {
 Write-Section "Telegram Bot (Optional)"
 
 Write-Info "Get a bot token from @BotFather on Telegram."
+Write-Info "Allowed users/chats are configured in the Config Center UI after setup."
 $telegramToken = Ask-Secret -Prompt "Telegram bot token (Enter to skip)" -Default ""
-
-$telegramUsers = ""
-if (-not [string]::IsNullOrWhiteSpace($telegramToken)) {
-    $telegramUsers = Ask -Prompt "Allowed Telegram user IDs (comma-separated, empty = all)" -Default ""
-}
 
 # ─── Generate .env ────────────────────────────────────────────────────────────
 Write-Section "Generating .env"
@@ -263,7 +259,6 @@ JWT_SECRET=$jwtSecret
 # ===========================================
 # Database (PostgreSQL)
 # ===========================================
-DB_TYPE=postgres
 POSTGRES_HOST=$pgHost
 POSTGRES_PORT=$pgPort
 POSTGRES_USER=$pgUser
@@ -272,24 +267,25 @@ POSTGRES_DB=$pgDb
 # DATABASE_URL=postgresql://${pgUser}:${pgPassword}@${pgHost}:${pgPort}/${pgDb}
 
 # ===========================================
-# Data Storage
-# ===========================================
-DATA_DIR=./data
-
-# ===========================================
 # Telegram Bot
 # ===========================================
 TELEGRAM_BOT_TOKEN=$telegramToken
-TELEGRAM_ALLOWED_USERS=$telegramUsers
 
 # ===========================================
-# Defaults (change as needed)
+# Rate Limiting
 # ===========================================
 RATE_LIMIT_DISABLED=false
-RATE_LIMIT_SOFT=true
-DEFAULT_AUTONOMY_LEVEL=1
-ENABLE_PROACTIVE_TRIGGERS=false
-ENABLE_PII_REDACTION=true
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX=500
+
+# ===========================================
+# Security & Encryption
+# ===========================================
+ENCRYPTION_KEY=
+
+# ===========================================
+# Logging
+# ===========================================
 LOG_LEVEL=info
 DB_VERBOSE=false
 "@

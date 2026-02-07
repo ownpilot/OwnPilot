@@ -191,12 +191,8 @@ fi
 section "Telegram Bot (Optional)"
 
 info "Get a bot token from @BotFather on Telegram."
+info "Allowed users/chats are configured in the Config Center UI after setup."
 ask_secret "Telegram bot token (Enter to skip)" "" TELEGRAM_BOT_TOKEN
-
-TELEGRAM_ALLOWED_USERS=""
-if [[ -n "$TELEGRAM_BOT_TOKEN" ]]; then
-  ask "Allowed Telegram user IDs (comma-separated, empty = all)" "" TELEGRAM_ALLOWED_USERS
-fi
 
 # ─── Generate .env ────────────────────────────────────────────────────────────
 section "Generating .env"
@@ -229,7 +225,6 @@ JWT_SECRET=${JWT_SECRET}
 # ===========================================
 # Database (PostgreSQL)
 # ===========================================
-DB_TYPE=postgres
 POSTGRES_HOST=${POSTGRES_HOST}
 POSTGRES_PORT=${POSTGRES_PORT}
 POSTGRES_USER=${POSTGRES_USER}
@@ -238,24 +233,25 @@ POSTGRES_DB=${POSTGRES_DB}
 # DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
 
 # ===========================================
-# Data Storage
-# ===========================================
-DATA_DIR=./data
-
-# ===========================================
 # Telegram Bot
 # ===========================================
 TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS}
 
 # ===========================================
-# Defaults (change as needed)
+# Rate Limiting
 # ===========================================
 RATE_LIMIT_DISABLED=false
-RATE_LIMIT_SOFT=true
-DEFAULT_AUTONOMY_LEVEL=1
-ENABLE_PROACTIVE_TRIGGERS=false
-ENABLE_PII_REDACTION=true
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX=500
+
+# ===========================================
+# Security & Encryption
+# ===========================================
+ENCRYPTION_KEY=
+
+# ===========================================
+# Logging
+# ===========================================
 LOG_LEVEL=info
 DB_VERBOSE=false
 ENVFILE
