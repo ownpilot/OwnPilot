@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { formatNumber } from '../utils/formatters';
 import { costsApi } from '../api';
 import type { CostSummary, BudgetStatus, ProviderBreakdown, DailyUsage } from '../api';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -70,12 +71,6 @@ export function CostsPage() {
       setSavingBudget(false);
     }
   }, [dailyLimit, weeklyLimit, monthlyLimit, toast]);
-
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(2)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
-  };
 
   if (loading && !summary) {
     return <LoadingSpinner message="Loading cost data..." />;

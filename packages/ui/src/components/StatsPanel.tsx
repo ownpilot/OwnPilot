@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { formatNumber } from '../utils/formatters';
 import { useGateway } from '../hooks/useWebSocket';
 import {
   Activity,
@@ -55,12 +56,6 @@ function StatCard({ icon: Icon, label, value, subValue, color = 'text-primary', 
       </div>
     </div>
   );
-}
-
-function formatNumber(num: number): string {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
 }
 
 function formatCurrency(amount: number): string {

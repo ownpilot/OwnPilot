@@ -16,6 +16,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
 import { fileWorkspacesApi } from '../api';
+import { formatBytes } from '../utils/formatters';
 import { useModalClose } from '../hooks';
 import type { FileWorkspaceInfo, WorkspaceFile } from '../api';
 
@@ -24,14 +25,6 @@ interface WorkspaceStats {
   total: number;
   totalSize: number;
   totalFiles: number;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 function formatDate(dateStr: string): string {

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { formatNumber as formatNumberBase } from '../utils/formatters';
 import { Cpu, Check, AlertCircle, ExternalLink, Zap, Eye, Code, MessageSquare } from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { modelsApi, providersApi } from '../api';
@@ -40,11 +41,7 @@ const CAPABILITY_ICONS: Record<string, { icon: typeof Zap; label: string }> = {
   audio: { icon: MessageSquare, label: 'Audio' },
 };
 
-function formatNumber(num: number): string {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
-  return num.toString();
-}
+const formatNumber = (num: number) => formatNumberBase(num, { kDecimals: 0 });
 
 function formatPrice(price: number): string {
   if (price < 0.01) return `$${price.toFixed(4)}`;
