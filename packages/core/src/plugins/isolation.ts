@@ -15,6 +15,7 @@ import { EventEmitter } from 'node:events';
 import type { PluginId } from '../types/branded.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
+import { getLog } from '../services/get-log.js';
 
 // =============================================================================
 // Types
@@ -320,9 +321,7 @@ export class IsolationEnforcer {
     // Block plugin if too many violations
     if (pluginViolations >= this.maxViolations) {
       this.blockedPlugins.add(violation.pluginId);
-      console.error(
-        `[SECURITY] Plugin ${violation.pluginId} blocked after ${pluginViolations} violations`
-      );
+      getLog('Security').error(`Plugin ${violation.pluginId} blocked after ${pluginViolations} violations`);
     }
   }
 
@@ -703,7 +702,7 @@ export class PluginIsolatedEvents implements IsolatedEvents {
 
   on(event: AllowedPluginEvent, handler: (data: unknown) => void): () => void {
     if (!this.allowedEvents.has(event)) {
-      console.warn(`[Plugin:${this.pluginId}] Attempted to subscribe to disallowed event: ${event}`);
+      getLog(`Plugin:${this.pluginId}`).warn(`Attempted to subscribe to disallowed event: ${event}`);
       return () => {};
     }
 
@@ -811,20 +810,20 @@ export class PluginIsolatedLogger implements IsolatedLogger {
       this.logs.shift();
     }
 
-    // Also output to console with prefix
-    const prefix = `[Plugin:${this.pluginId}]`;
+    // Also output via structured logger
+    const pluginLog = getLog(`Plugin:${this.pluginId}`);
     switch (level) {
       case 'debug':
-        console.debug(prefix, sanitizedMessage, sanitizedData ?? '');
+        pluginLog.debug(sanitizedMessage, sanitizedData);
         break;
       case 'info':
-        console.info(prefix, sanitizedMessage, sanitizedData ?? '');
+        pluginLog.info(sanitizedMessage, sanitizedData);
         break;
       case 'warn':
-        console.warn(prefix, sanitizedMessage, sanitizedData ?? '');
+        pluginLog.warn(sanitizedMessage, sanitizedData);
         break;
       case 'error':
-        console.error(prefix, sanitizedMessage, sanitizedData ?? '');
+        pluginLog.error(sanitizedMessage, sanitizedData);
         break;
     }
   }
