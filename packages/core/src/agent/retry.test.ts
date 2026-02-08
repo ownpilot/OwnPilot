@@ -405,7 +405,7 @@ describe('withRetry', () => {
     await flushTimers();
     await promise;
 
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('[Retry]'));
+    expect(console.log).toHaveBeenCalledWith('[Retry]', expect.stringContaining('Attempt'));
   });
 });
 

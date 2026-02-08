@@ -11,6 +11,9 @@
 import type { EventType, EventPayload } from './event-map.js';
 import type { TypedEvent, EventHandler, Unsubscribe, EventCategory } from './types.js';
 import { deriveCategory } from './types.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('EventBus');
 
 // ============================================================================
 // Interface
@@ -141,8 +144,8 @@ export class EventBus implements IEventBus {
     }
     const set = this.categoryHandlers.get(category)!;
     if (set.size >= MAX_LISTENERS_PER_EVENT) {
-      console.warn(
-        `[EventBus] Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for category "${category}". ` +
+      log.warn(
+        `Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for category "${category}". ` +
         `Handler not added. Possible memory leak.`,
       );
       return () => {};
@@ -163,8 +166,8 @@ export class EventBus implements IEventBus {
     }
     const set = this.patternHandlers.get(pattern)!;
     if (set.size >= MAX_LISTENERS_PER_EVENT) {
-      console.warn(
-        `[EventBus] Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for pattern "${pattern}". ` +
+      log.warn(
+        `Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for pattern "${pattern}". ` +
         `Handler not added. Possible memory leak.`,
       );
       return () => {};
@@ -210,8 +213,8 @@ export class EventBus implements IEventBus {
     }
     const set = this.handlers.get(type)!;
     if (set.size >= MAX_LISTENERS_PER_EVENT) {
-      console.warn(
-        `[EventBus] Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for "${type}". ` +
+      log.warn(
+        `Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for "${type}". ` +
         `Handler not added. Possible memory leak.`,
       );
       return () => {};
@@ -265,11 +268,11 @@ export class EventBus implements IEventBus {
       const result = handler(event);
       if (result && typeof (result as Promise<void>).catch === 'function') {
         (result as Promise<void>).catch((err) => {
-          console.error(`[EventBus] Async handler error for "${event.type}":`, err);
+          log.error(`Async handler error for "${event.type}":`, err);
         });
       }
     } catch (err) {
-      console.error(`[EventBus] Handler error for "${event.type}":`, err);
+      log.error(`Handler error for "${event.type}":`, err);
     }
   }
 

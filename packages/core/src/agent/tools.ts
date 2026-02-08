@@ -9,6 +9,9 @@ import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 import { ValidationError, NotFoundError, PluginError } from '../types/errors.js';
 import { createToolId, type ToolId, type PluginId } from '../types/branded.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('ToolRegistry');
 import type {
   ToolDefinition,
   ToolExecutor,
@@ -143,7 +146,7 @@ export class ToolRegistry {
     // Auto-register config requirements (fire-and-forget)
     if (definition.configRequirements?.length && this._onConfigRegistration) {
       this._onConfigRegistration(definition.name, toolId, source, definition.configRequirements)
-        .catch(e => console.warn(`[ToolRegistry] Config registration failed for ${definition.name}:`, e));
+        .catch(e => log.warn(`Config registration failed for ${definition.name}:`, e));
     }
 
     return ok(toolId);
@@ -296,7 +299,7 @@ export class ToolRegistry {
       getApiKey: this._configCenter
         ? (serviceName: string) => {
             if (isRestricted && allowedServices && !allowedServices.includes(serviceName)) {
-              console.warn(`[ToolRegistry] Tool '${name}' tried to access undeclared service '${serviceName}'`);
+              log.warn(`Tool '${name}' tried to access undeclared service '${serviceName}'`);
               return undefined;
             }
             return this._configCenter!.getApiKey(serviceName);

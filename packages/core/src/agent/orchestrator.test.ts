@@ -1816,7 +1816,7 @@ describe('AgentOrchestrator', () => {
 
   describe('execute - verbose logging', () => {
     it('should log tool calls when verbose is true', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
       const toolExecutor = makeExecutor('result');
       const provider = makeMockProvider([
         {
@@ -1836,16 +1836,15 @@ describe('AgentOrchestrator', () => {
       await orchestrator.execute('Test');
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Tool] my_tool:'),
-        expect.anything(),
-        '->',
+        '[Orchestrator]',
+        expect.stringContaining('Tool my_tool:'),
         expect.anything(),
       );
       consoleSpy.mockRestore();
     });
 
     it('should not log when verbose is false', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
       const toolExecutor = makeExecutor('result');
       const provider = makeMockProvider([
         {
@@ -1865,7 +1864,7 @@ describe('AgentOrchestrator', () => {
       await orchestrator.execute('Test');
 
       const toolLogs = consoleSpy.mock.calls.filter(
-        args => typeof args[0] === 'string' && args[0].includes('[Tool]'),
+        args => typeof args[0] === 'string' && args[0].includes('[Orchestrator]'),
       );
       expect(toolLogs).toHaveLength(0);
       consoleSpy.mockRestore();
