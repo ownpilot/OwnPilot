@@ -187,6 +187,7 @@ describe('IsolationEnforcer', () => {
 
       expect(enforcer.isBlocked(pluginA)).toBe(true);
       expect(spy).toHaveBeenCalledWith(
+        '[Security]',
         expect.stringContaining('Plugin plugin-a blocked after 3 violations'),
       );
 
@@ -966,6 +967,7 @@ describe('PluginIsolatedEvents', () => {
       const unsub = events.on('forbidden:event' as AllowedPluginEvent, handler);
 
       expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining('[Plugin:'),
         expect.stringContaining('Attempted to subscribe to disallowed event'),
       );
       expect(typeof unsub).toBe('function');
@@ -1109,6 +1111,7 @@ describe('PluginIsolatedLogger', () => {
   beforeEach(() => {
     logger = new PluginIsolatedLogger(pluginA);
     vi.spyOn(console, 'debug').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'info').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -1124,16 +1127,14 @@ describe('PluginIsolatedLogger', () => {
       expect(console.debug).toHaveBeenCalledWith(
         '[Plugin:plugin-a]',
         'debug message',
-        '',
       );
     });
 
     it('should log info messages', () => {
       logger.info('info message');
-      expect(console.info).toHaveBeenCalledWith(
+      expect(console.log).toHaveBeenCalledWith(
         '[Plugin:plugin-a]',
         'info message',
-        '',
       );
     });
 
@@ -1142,7 +1143,6 @@ describe('PluginIsolatedLogger', () => {
       expect(console.warn).toHaveBeenCalledWith(
         '[Plugin:plugin-a]',
         'warning message',
-        '',
       );
     });
 
@@ -1151,13 +1151,12 @@ describe('PluginIsolatedLogger', () => {
       expect(console.error).toHaveBeenCalledWith(
         '[Plugin:plugin-a]',
         'error message',
-        '',
       );
     });
 
     it('should pass data to console output', () => {
       logger.info('with data', { count: 42 });
-      expect(console.info).toHaveBeenCalledWith(
+      expect(console.log).toHaveBeenCalledWith(
         '[Plugin:plugin-a]',
         'with data',
         expect.objectContaining({ count: 42 }),

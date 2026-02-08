@@ -7,6 +7,9 @@
 
 import { isDockerAvailable, checkSandboxHealth, type SandboxHealthStatus } from '../sandbox/docker.js';
 import { getExecutionMode, type ExecutionMode } from '../sandbox/execution-mode.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('Security');
 
 /**
  * Security configuration
@@ -162,31 +165,22 @@ export async function enforceSecurityConfig(): Promise<void> {
   const status = await validateSecurityConfig();
 
   // Log security status
-  console.log('\n' + '═'.repeat(60));
-  console.log('🔒 SECURITY STATUS');
-  console.log('═'.repeat(60));
   const execMode = getExecutionMode();
   const modeDesc = execMode === 'auto' ? 'auto (Docker preferred, local fallback with approval)'
     : execMode === 'local' ? 'local (direct execution with approval)'
     : 'docker (sandbox only)';
 
-  console.log(`Environment: ${isProduction() ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-  console.log(`Execution Mode: ${modeDesc}`);
-  console.log(`Docker Available: ${status.dockerAvailable ? '✅ Yes' : '❌ No'}${execMode === 'docker' && !status.dockerAvailable ? ' (code execution DISABLED)' : ''}`);
-  console.log(`Home Access: ${status.homeAccessEnabled ? '⚠️ ENABLED' : '✅ Disabled'}`);
-  console.log(`Overall Status: ${status.isSecure ? '✅ SECURE' : '❌ INSECURE'}`);
+  const dockerInfo = `${status.dockerAvailable ? 'Yes' : 'No'}${execMode === 'docker' && !status.dockerAvailable ? ' (code execution DISABLED)' : ''}`;
 
-  // Print warnings
+  log.info(`Status: ${status.isSecure ? 'SECURE' : 'INSECURE'} | Env: ${isProduction() ? 'PRODUCTION' : 'DEVELOPMENT'} | Mode: ${modeDesc} | Docker: ${dockerInfo} | Home Access: ${status.homeAccessEnabled ? 'ENABLED' : 'Disabled'}`);
+
   for (const warning of status.warnings) {
-    console.log(`\n⚠️  ${warning}`);
+    log.warn(warning);
   }
 
-  // Print errors and potentially exit in production
   for (const error of status.errors) {
-    console.error(`\n❌ ${error}`);
+    log.error(error);
   }
-
-  console.log('═'.repeat(60) + '\n');
 
   // In production, throw error for critical security issues
   if (isProduction() && status.errors.length > 0) {

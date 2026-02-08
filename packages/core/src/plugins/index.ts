@@ -13,6 +13,9 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor } from '../agent/types.js';
 import type { PluginId } from '../types/branded.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('PluginRegistry');
 import type { ConfigFieldDefinition } from '../services/config-center.js';
 import {
   getEventSystem,
@@ -343,11 +346,11 @@ export class PluginRegistry {
    * Initialize the registry
    */
   async initialize(): Promise<void> {
-    console.log(`[PluginRegistry] Creating storage directory: ${this.storageDir}`);
+    log.info(`Creating storage directory: ${this.storageDir}`);
     await fs.mkdir(this.storageDir, { recursive: true });
-    console.log('[PluginRegistry] Storage directory ready.');
+    log.info('Storage directory ready.');
     await this.loadInstalledPlugins();
-    console.log('[PluginRegistry] Installed plugins loaded.');
+    log.info('Installed plugins loaded.');
   }
 
   /**
@@ -363,7 +366,7 @@ export class PluginRegistry {
       }
       // Basic version check (in production, use semver)
       if (dep.manifest.version !== depVersion && depVersion !== '*') {
-        console.warn(`Dependency version mismatch: ${depId} (want ${depVersion}, have ${dep.manifest.version})`);
+        log.warn(`Dependency version mismatch: ${depId} (want ${depVersion}, have ${dep.manifest.version})`);
       }
     }
 
@@ -400,7 +403,7 @@ export class PluginRegistry {
       try {
         await plugin.lifecycle.onLoad();
       } catch (err) {
-        console.error(`[PluginRegistry] onLoad failed for ${manifest.id}:`, err);
+        log.error(`onLoad failed for ${manifest.id}:`, err);
         this.plugins.delete(manifest.id);
         this.handlers = this.handlers.filter(h => !plugin.handlers.includes(h));
         throw err;
@@ -412,12 +415,12 @@ export class PluginRegistry {
       try {
         await plugin.lifecycle.onEnable();
       } catch (err) {
-        console.error(`[PluginRegistry] onEnable failed for ${manifest.id}:`, err);
+        log.error(`onEnable failed for ${manifest.id}:`, err);
         plugin.status = 'error';
       }
     }
 
-    console.log(`[PluginRegistry] Registered plugin: ${manifest.name} v${manifest.version}`);
+    log.info(`Registered plugin: ${manifest.name} v${manifest.version}`);
     return plugin;
     }); // end withLock
   }
@@ -461,7 +464,7 @@ export class PluginRegistry {
       try {
         await plugin.lifecycle.onEnable();
       } catch (err) {
-        console.error(`[PluginRegistry] onEnable failed for ${id}:`, err);
+        log.error(`onEnable failed for ${id}:`, err);
         plugin.status = 'error';
         return false;
       }
@@ -487,7 +490,7 @@ export class PluginRegistry {
       try {
         await plugin.lifecycle.onDisable();
       } catch (err) {
-        console.error(`[PluginRegistry] onDisable failed for ${id}:`, err);
+        log.error(`onDisable failed for ${id}:`, err);
       }
     }
 
@@ -520,7 +523,7 @@ export class PluginRegistry {
       try {
         await plugin.lifecycle.onUnload();
       } catch (err) {
-        console.error(`[PluginRegistry] onUnload failed for ${id}:`, err);
+        log.error(`onUnload failed for ${id}:`, err);
       }
     }
 
@@ -657,7 +660,7 @@ export class PluginRegistry {
         try {
           await fs.writeFile(storageFile, JSON.stringify(data, null, 2), 'utf-8');
         } catch (err) {
-          console.error(`[PluginStorage] Failed to write ${storageFile}:`, err);
+          log.error(`Storage write failed: ${storageFile}`, err);
           throw err;
         }
       },
@@ -701,13 +704,13 @@ export class PluginRegistry {
    * Create logger for a plugin
    */
   private createLogger(pluginId: string): PluginLogger {
-    const prefix = `[Plugin:${pluginId}]`;
+    const pluginLog = getLog(`Plugin:${pluginId}`);
 
     return {
-      debug: (message, ...args) => console.debug(prefix, message, ...args),
-      info: (message, ...args) => console.info(prefix, message, ...args),
-      warn: (message, ...args) => console.warn(prefix, message, ...args),
-      error: (message, ...args) => console.error(prefix, message, ...args),
+      debug: (message, ...args) => pluginLog.debug(message, args.length ? args : undefined),
+      info: (message, ...args) => pluginLog.info(message, args.length ? args : undefined),
+      warn: (message, ...args) => pluginLog.warn(message, args.length ? args : undefined),
+      error: (message, ...args) => pluginLog.error(message, args.length ? args : undefined),
     };
   }
 
