@@ -55,6 +55,7 @@ import {
   debugRoutes,
   executionPermissionsRoutes,
 } from './routes/index.js';
+import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST } from './config/defaults.js';
 
 /**
  * Default configuration
@@ -74,9 +75,9 @@ const DEFAULT_CONFIG: GatewayConfig = {
     ];
   })(),
   rateLimit: {
-    windowMs: 60000, // 1 minute
-    maxRequests: 500, // More relaxed for self-hosted
-    burstLimit: 750, // Allow 50% burst
+    windowMs: RATE_LIMIT_WINDOW_MS,
+    maxRequests: RATE_LIMIT_MAX_REQUESTS,
+    burstLimit: RATE_LIMIT_BURST,
     softLimit: false, // Enforce rate limits
     excludePaths: ['/health', '/api/v1/health', '/api/v1/chat/stream'],
   },

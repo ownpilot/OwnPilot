@@ -17,6 +17,7 @@ import {
   PLAN_STALL_RETRY_MS,
   PLAN_MAX_BACKOFF_MS,
   PLAN_MAX_LOOP_ITERATIONS,
+  PLAN_STEP_TIMEOUT_MS,
 } from '../config/defaults.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
 import { getServiceRegistry, Services, type IPlanService } from '@ownpilot/core';
@@ -100,7 +101,7 @@ export class PlanExecutor extends EventEmitter {
     this.config = {
       userId: config.userId ?? 'default',
       maxConcurrent: config.maxConcurrent ?? 5,
-      defaultTimeout: config.defaultTimeout ?? 60000,
+      defaultTimeout: config.defaultTimeout ?? PLAN_STEP_TIMEOUT_MS,
       verbose: config.verbose ?? false,
       autonomyLevel: config.autonomyLevel ?? 1,
     };

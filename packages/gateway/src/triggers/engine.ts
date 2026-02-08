@@ -18,7 +18,7 @@ import { executeTool, hasTool } from '../services/tool-executor.js';
 import { getNextRunTime, getServiceRegistry, Services, type ITriggerService, type IGoalService, type IMemoryService, type ExecutionPermissions } from '@ownpilot/core';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { getLog } from '../services/log.js';
-import { MS_PER_DAY } from '../config/defaults.js';
+import { MS_PER_DAY, TRIGGER_POLL_INTERVAL_MS, TRIGGER_CONDITION_CHECK_MS } from '../config/defaults.js';
 
 const log = getLog('TriggerEngine');
 
@@ -68,8 +68,8 @@ export class TriggerEngine {
 
   constructor(config: TriggerEngineConfig = {}) {
     this.config = {
-      pollIntervalMs: config.pollIntervalMs ?? 60000, // 1 minute
-      conditionCheckIntervalMs: config.conditionCheckIntervalMs ?? 300000, // 5 minutes
+      pollIntervalMs: config.pollIntervalMs ?? TRIGGER_POLL_INTERVAL_MS,
+      conditionCheckIntervalMs: config.conditionCheckIntervalMs ?? TRIGGER_CONDITION_CHECK_MS,
       enabled: config.enabled ?? true,
       userId: config.userId ?? 'default',
     };

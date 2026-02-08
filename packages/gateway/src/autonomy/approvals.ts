@@ -16,6 +16,7 @@ import {
   DEFAULT_AUTONOMY_CONFIG,
 } from './types.js';
 import { assessRisk } from './risk.js';
+import { SCHEDULER_DEFAULT_TIMEOUT_MS } from '../config/defaults.js';
 
 // ============================================================================
 // Approval Manager
@@ -49,7 +50,7 @@ export class ApprovalManager extends EventEmitter {
   constructor(config: ApprovalManagerConfig = {}) {
     super();
     this.config = {
-      defaultTimeout: config.defaultTimeout ?? 300000, // 5 minutes
+      defaultTimeout: config.defaultTimeout ?? SCHEDULER_DEFAULT_TIMEOUT_MS,
       maxPendingPerUser: config.maxPendingPerUser ?? 50,
       autoApproveLowRisk: config.autoApproveLowRisk ?? false,
     };
