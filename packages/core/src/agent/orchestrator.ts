@@ -9,6 +9,9 @@ import { ToolRegistry } from './tools.js';
 import type { Message, ToolCall } from './types.js';
 import { injectMemoryIntoPrompt, type MemoryInjectionOptions } from './memory-injector.js';
 import { getEventSystem } from '../events/index.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('Orchestrator');
 
 /**
  * LLM Provider interface for orchestrator
@@ -330,17 +333,17 @@ export class AgentOrchestrator {
       });
 
       if (this.config.verbose) {
-        console.log(`[Orchestrator] Dynamic prompt composed (${result.promptLength} chars)`);
-        console.log(`[Orchestrator] - User profile: ${result.userProfile ? 'included' : 'not available'}`);
-        console.log(`[Orchestrator] - Tools: ${result.toolCount}`);
-        console.log(`[Orchestrator] - Instructions: ${result.instructionCount}`);
+        log.debug(`Dynamic prompt composed (${result.promptLength} chars)`);
+        log.debug(`- User profile: ${result.userProfile ? 'included' : 'not available'}`);
+        log.debug(`- Tools: ${result.toolCount}`);
+        log.debug(`- Instructions: ${result.instructionCount}`);
       }
 
       return result.systemPrompt;
     } catch (error) {
       // Fall back to base prompt if memory injection fails
       if (this.config.verbose) {
-        console.warn('[Orchestrator] Memory injection failed, using base prompt:', error);
+        log.warn('Memory injection failed, using base prompt:', error);
       }
       return this.config.systemPrompt;
     }
@@ -545,7 +548,7 @@ export class AgentOrchestrator {
         ? parsed as Record<string, unknown>
         : {};
     } catch {
-      console.warn(`[Orchestrator] Failed to parse tool arguments for "${toolName}":`, toolCall.arguments);
+      log.warn(`Failed to parse tool arguments for "${toolName}":`, toolCall.arguments);
       args = {};
       // Return early with error so the AI can see what went wrong
       return {
@@ -609,7 +612,7 @@ export class AgentOrchestrator {
     });
 
     if (this.config.verbose) {
-      console.log(`[Tool] ${toolName}:`, args, '->', record.result);
+      log.debug(`Tool ${toolName}:`, { args, result: record.result });
     }
 
     return record;

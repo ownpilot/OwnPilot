@@ -12,6 +12,9 @@
 
 import type { HookType, HookPayload } from './hook-map.js';
 import type { HookContext, HookHandler, Unsubscribe } from './types.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('HookBus');
 
 // ============================================================================
 // Interface
@@ -118,8 +121,8 @@ export class HookBus implements IHookBus {
 
     const entries = this.hooks.get(hook)!;
     if (entries.length >= MAX_TAPS_PER_HOOK) {
-      console.warn(
-        `[HookBus] Max taps (${MAX_TAPS_PER_HOOK}) reached for "${hook}". ` +
+      log.warn(
+        `Max taps (${MAX_TAPS_PER_HOOK}) reached for "${hook}". ` +
         `Handler not added. Possible memory leak.`,
       );
       return () => {};
@@ -165,7 +168,7 @@ export class HookBus implements IHookBus {
       try {
         await entry.handler(context);
       } catch (err) {
-        console.error(`[HookBus] Handler error for "${hook}":`, err);
+        log.error(`Handler error for "${hook}":`, err);
       }
     }
 

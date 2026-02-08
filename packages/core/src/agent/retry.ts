@@ -7,6 +7,9 @@
 import type { Result } from '../types/result.js';
 import { err } from '../types/result.js';
 import { InternalError, TimeoutError } from '../types/errors.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('Retry');
 
 /**
  * Retry configuration
@@ -144,8 +147,8 @@ export async function withRetry<T>(
         const delayMs = calculateDelay(attempt, initialDelayMs, maxDelayMs, backoffMultiplier, addJitter);
 
         onRetry(attempt + 1, result.error, delayMs);
-        console.log(`[Retry] Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delayMs}ms...`);
-        console.log(`[Retry] Error: ${result.error instanceof Error ? result.error.message : String(result.error)}`);
+        log.info(`Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delayMs}ms...`);
+        log.info(`Error: ${result.error instanceof Error ? result.error.message : String(result.error)}`);
 
         await sleep(delayMs);
         continue;
@@ -161,8 +164,8 @@ export async function withRetry<T>(
         const delayMs = calculateDelay(attempt, initialDelayMs, maxDelayMs, backoffMultiplier, addJitter);
 
         onRetry(attempt + 1, error, delayMs);
-        console.log(`[Retry] Attempt ${attempt + 1}/${maxRetries} threw exception, retrying in ${delayMs}ms...`);
-        console.log(`[Retry] Error: ${error instanceof Error ? error.message : String(error)}`);
+        log.info(`Attempt ${attempt + 1}/${maxRetries} threw exception, retrying in ${delayMs}ms...`);
+        log.info(`Error: ${error instanceof Error ? error.message : String(error)}`);
 
         await sleep(delayMs);
         continue;
