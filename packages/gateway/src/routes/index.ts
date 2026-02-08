@@ -8,7 +8,7 @@ export { chatRoutes } from './chat.js';
 export { toolsRoutes } from './tools.js';
 export { settingsRoutes, hasApiKey, getApiKey, getApiKeySource } from './settings.js';
 export { channelRoutes } from './channels.js';
-export { costRoutes, usageTracker, budgetManager } from './costs.js';
+export { costRoutes, usageTracker } from './costs.js';
 export { modelsRoutes } from './models.js';
 export { providersRoutes } from './providers.js';
 export { profileRoutes } from './profile.js';

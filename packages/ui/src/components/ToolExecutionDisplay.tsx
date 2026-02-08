@@ -7,8 +7,6 @@ import {
   ChevronRight,
   Clock,
   File,
-  Globe,
-  Terminal,
   AlertTriangle,
 } from './icons';
 import { CodeBlock } from './CodeBlock';
@@ -48,7 +46,6 @@ function ToolCallCard({ toolCall, onRerun }: ToolCallCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showArgs, setShowArgs] = useState(false);
 
-  // Note: getToolIcon is available for future use
   const category = getToolCategory(toolCall.name);
   const status = toolCall.status ?? (toolCall.error ? 'error' : 'success');
   const localExec = isLocalExecution(toolCall.result);
@@ -370,20 +367,6 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
       maxHeight="300px"
     />
   );
-}
-
-// Helper functions - exported for potential reuse
-export function getToolIcon(name: string) {
-  if (name.startsWith('read_') || name.startsWith('write_') || name.includes('file') || name.includes('directory')) {
-    return File;
-  }
-  if (name.startsWith('execute_') || name.includes('compile') || name.includes('package')) {
-    return Terminal;
-  }
-  if (name.includes('http') || name.includes('web') || name.includes('fetch') || name.includes('api')) {
-    return Globe;
-  }
-  return Wrench;
 }
 
 function getToolCategory(name: string): string {

@@ -200,7 +200,3 @@ export const ERROR_CODES = {
 // Type for error codes
 export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
 
-// Helper function to check if a string is a valid error code
-export function isValidErrorCode(code: string): code is ErrorCode {
-  return Object.values(ERROR_CODES).includes(code as ErrorCode);
-}
