@@ -13,6 +13,7 @@ import { Worker } from 'node:worker_threads';
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
 import type { PluginId } from '../types/branded.js';
+import { getLog } from '../services/get-log.js';
 import { createPluginId } from '../types/branded.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
@@ -852,7 +853,7 @@ export class SecurePluginRuntime extends EventEmitter {
 
       case 'log':
         if (this.config.debug) {
-          console.log(`[Plugin:${pluginId}] ${msg.level}: ${msg.message}`, msg.data ?? '');
+          getLog(`Plugin:${pluginId}`).info(`${msg.level}: ${msg.message}`, msg.data ?? '');
         }
         break;
 

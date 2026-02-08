@@ -1288,10 +1288,11 @@ describe('SecurePluginRuntime', () => {
         message: 'hello from plugin',
       });
 
-      // The source calls: console.log(`[Plugin:${pluginId}] ${msg.level}: ${msg.message}`, msg.data ?? '')
+      // getLog('Plugin:test-plugin').info('info: hello from plugin', '') → console.log('[Plugin:test-plugin]', 'info: hello from plugin')
+      // Note: empty string data is falsy, so fallback logger omits it
       expect(debugSpy).toHaveBeenCalledWith(
-        '[Plugin:test-plugin] info: hello from plugin',
-        '',
+        '[Plugin:test-plugin]',
+        'info: hello from plugin',
       );
 
       debugSpy.mockRestore();

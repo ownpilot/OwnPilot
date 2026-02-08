@@ -7,6 +7,9 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('AgentBuilder');
 
 // =============================================================================
 // Types
@@ -439,7 +442,7 @@ Return ONLY the system prompt, no explanations.`;
           return response;
         }
       } catch {
-        console.warn('[InteractiveAgentBuilder] LLM generation failed, using template');
+        log.warn('LLM generation failed, using template');
       }
     }
 

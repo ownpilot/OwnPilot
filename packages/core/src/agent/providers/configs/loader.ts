@@ -6,6 +6,9 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getLog } from '../../../services/get-log.js';
+
+const log = getLog('ProviderLoader');
 import type {
   ProviderConfig,
   ModelConfig,
@@ -53,7 +56,7 @@ export function loadProviderConfigs(): Map<string, ProviderConfig> {
         configCache.set(config.id, config);
       }
     } catch (error) {
-      console.warn(`Failed to load provider config: ${file}`, error);
+      log.warn(`Failed to load provider config: ${file}`, error);
     }
   }
 
@@ -375,7 +378,7 @@ export function loadCustomProviderConfig(filePath: string): ProviderConfig | nul
 
     return config;
   } catch (error) {
-    console.warn(`Failed to load custom provider config: ${filePath}`, error);
+    log.warn(`Failed to load custom provider config: ${filePath}`, error);
     return null;
   }
 }

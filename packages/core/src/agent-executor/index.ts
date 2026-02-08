@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import type { Message, ToolCall, ToolResult, ToolDefinition } from '../agent/types.js';
 import type { ToolRegistry } from '../agent/tools.js';
 import type { DataGateway, DataStoreType } from '../data-gateway/index.js';
+import { getLog } from '../services/get-log.js';
 
 // =============================================================================
 // Types
@@ -469,7 +470,7 @@ export class AgentExecutor {
    */
   private log(message: string): void {
     if (this.config.enableLogging) {
-      console.log(`[AgentExecutor] ${message}`);
+      getLog('AgentExecutor').info(message);
     }
   }
 }

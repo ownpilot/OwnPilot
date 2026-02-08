@@ -7,6 +7,9 @@
 
 import { google, type gmail_v1 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('Gmail');
 
 // =============================================================================
 // Types
@@ -251,7 +254,7 @@ export class GmailClient {
           headers.push(header);
         } catch (error) {
           // Skip messages we can't fetch
-          console.warn(`Failed to fetch message ${msg.id}:`, error);
+          log.warn(`Failed to fetch message ${msg.id}:`, error);
         }
       }
     }

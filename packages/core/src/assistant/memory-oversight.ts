@@ -12,6 +12,9 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolContext } from '../agent/types.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('MemoryOversight');
 import type {
   ConversationMemoryStore,
   MemoryEntry,
@@ -847,11 +850,11 @@ export class MemoryCleaner {
     }
 
     // Run immediately
-    this.runCleanup().catch(console.error);
+    this.runCleanup().catch(e => log.error('Cleanup failed:', e));
 
     // Then run periodically
     this.cleanupInterval = setInterval(() => {
-      this.runCleanup().catch(console.error);
+      this.runCleanup().catch(e => log.error('Cleanup failed:', e));
     }, intervalMs);
   }
 

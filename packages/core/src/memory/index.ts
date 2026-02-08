@@ -13,6 +13,10 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('SecureMemory');
+
 import {
   createHash,
   randomBytes,
@@ -317,13 +321,13 @@ export class SecureMemoryStore {
     // Start purge timer
     if (this.config.purgeInterval > 0) {
       this.purgeTimer = setInterval(() => {
-        this.purgeExpired().catch(console.error);
+        this.purgeExpired().catch(e => log.error('Purge failed:', e));
       }, this.config.purgeInterval);
       this.purgeTimer.unref();
     }
 
     this.initialized = true;
-    console.log('[SecureMemory] Initialized with', this.entries.size, 'entries');
+    log.info(`Initialized with ${this.entries.size} entries`);
   }
 
   /**
@@ -837,8 +841,8 @@ export class SecureMemoryStore {
       if (options.expiresAt) entry.metadata.expiresAt = options.expiresAt as string;
 
       // Save synchronously in this context
-      this.saveEntries().catch(console.error);
-      this.logAudit('update', userId, memoryId, entry.type, true).catch(console.error);
+      this.saveEntries().catch(e => log.error('Save failed:', e));
+      this.logAudit('update', userId, memoryId, entry.type, true).catch(e => log.error('Audit log failed:', e));
 
       return memoryId;
     } finally {
@@ -882,7 +886,7 @@ export class SecureMemoryStore {
 
     if (purged > 0) {
       await this.saveEntries();
-      console.log('[SecureMemory] Purged', purged, 'expired entries');
+      log.info(`Purged ${purged} expired entries`);
     }
 
     return purged;

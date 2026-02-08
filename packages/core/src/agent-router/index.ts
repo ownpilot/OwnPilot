@@ -6,6 +6,9 @@
  */
 
 import type { Message } from '../agent/types.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('AgentRouter');
 
 // =============================================================================
 // Types
@@ -217,7 +220,7 @@ Select the best agent to handle this request.`;
 
       return this.fallbackResult(message, 'Could not parse LLM response');
     } catch (error) {
-      console.error('[AgentRouter] LLM routing failed:', error);
+      log.error('LLM routing failed:', error);
       return this.routeWithRules(message, context);
     }
   }
