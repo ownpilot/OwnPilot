@@ -55,13 +55,7 @@ export class ProviderService implements IProviderService {
     // Provider configs are loaded from data/providers/*.json
     try {
       // Return a basic list of known popular providers
-      // Full list comes from PROVIDER_IDS in core
-      const knownProviders = [
-        'openai', 'anthropic', 'google', 'azure', 'groq',
-        'deepseek', 'mistral', 'cohere', 'ollama-cloud',
-        'fireworks-ai', 'togetherai', 'openrouter', 'xai',
-      ];
-      return knownProviders.map(id => ({
+      return Array.from(ProviderService.KNOWN_PROVIDERS).map(id => ({
         id,
         name: id,
         isAvailable: true, // Full availability check would need async API key check

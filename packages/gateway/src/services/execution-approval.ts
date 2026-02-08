@@ -52,9 +52,4 @@ export function generateApprovalId(): string {
   return `approval_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/**
- * Get count of pending approvals (for debugging)
- */
-export function getPendingApprovalCount(): number {
-  return pendingApprovals.size;
-}
+
