@@ -14,7 +14,6 @@ export {
   type RiskFactor,
   type ActionCategory,
   type PendingAction,
-  type ActionContext,
   type AutonomyConfig,
   type TimeRestriction,
   type ApprovalRequest,

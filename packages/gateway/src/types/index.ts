@@ -303,11 +303,3 @@ export interface AuthConfig {
   jwtSecret?: string;
 }
 
-/**
- * Request context (available in handlers)
- */
-export interface RequestContext {
-  requestId: string;
-  userId?: string;
-  startTime: number;
-}

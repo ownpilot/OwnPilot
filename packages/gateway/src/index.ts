@@ -26,7 +26,6 @@ export type {
   GatewayConfig,
   RateLimitConfig,
   AuthConfig,
-  RequestContext,
 } from './types/index.js';
 
 // Middleware

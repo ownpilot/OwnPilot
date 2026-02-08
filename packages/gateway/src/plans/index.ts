@@ -8,7 +8,6 @@ export {
   PlanExecutor,
   getPlanExecutor,
   type ExecutorConfig,
-  type StepExecutionContext,
   type StepHandler,
   type StepResult,
   type ExecutionResult,

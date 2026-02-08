@@ -41,7 +41,7 @@ export interface ExecutorConfig {
   autonomyLevel?: number;
 }
 
-export interface StepExecutionContext {
+interface StepExecutionContext {
   plan: Plan;
   step: PlanStep;
   previousResults: Map<string, unknown>;
