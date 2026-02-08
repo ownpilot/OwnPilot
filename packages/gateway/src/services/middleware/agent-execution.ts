@@ -159,7 +159,7 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
           toolCalls: result.value?.toolCalls?.map(tc => ({
             id: tc.id,
             name: tc.name,
-            arguments: tc.arguments ? JSON.parse(tc.arguments) : {},
+            arguments: tc.arguments ? (() => { try { return JSON.parse(tc.arguments); } catch { return {}; } })() : {},
           })),
           tokens: result.value?.usage
             ? { input: result.value.usage.promptTokens, output: result.value.usage.completionTokens }

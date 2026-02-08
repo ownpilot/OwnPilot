@@ -445,7 +445,9 @@ costRoutes.get('/export', async (c) => {
     return c.body(exportData);
   }
 
-  return apiResponse(c, JSON.parse(exportData));
+  let parsed: unknown;
+  try { parsed = JSON.parse(exportData); } catch { return apiError(c, { code: ERROR_CODES.ERROR, message: 'Failed to format export data' }, 500); }
+  return apiResponse(c, parsed);
 });
 
 /**

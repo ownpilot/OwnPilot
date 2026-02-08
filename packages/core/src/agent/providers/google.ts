@@ -662,7 +662,7 @@ export class GoogleProvider {
             const functionCallPart: Record<string, unknown> = {
               functionCall: {
                 name: tc.name,
-                args: tc.arguments ? JSON.parse(tc.arguments) : {},
+                args: tc.arguments ? (() => { try { return JSON.parse(tc.arguments); } catch { return {}; } })() : {},
               },
             };
 

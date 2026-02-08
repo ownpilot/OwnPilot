@@ -908,12 +908,13 @@ chatRoutes.post('/', async (c) => {
         },
         onToolStart: async (toolCall) => {
           // Extract the real tool name from use_tool calls for better logs
-          const parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined;
+          let parsedArgs: Record<string, unknown> | undefined;
+          try { parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined; } catch { parsedArgs = undefined; }
           const displayName = toolCall.name === 'use_tool' && parsedArgs?.tool_name
-            ? parsedArgs.tool_name
+            ? String(parsedArgs.tool_name)
             : toolCall.name;
           const displayArgs = toolCall.name === 'use_tool' && parsedArgs?.arguments
-            ? parsedArgs.arguments
+            ? parsedArgs.arguments as Record<string, unknown>
             : parsedArgs;
 
           // Add to trace collection with real tool name
@@ -1303,9 +1304,14 @@ chatRoutes.post('/', async (c) => {
     const result = await agent.chat(chatMessage, {
       onBeforeToolCall: async (toolCall) => {
         // Parse arguments if it's a string
-        const toolArgs = typeof toolCall.arguments === 'string'
-          ? JSON.parse(toolCall.arguments) as Record<string, unknown>
-          : toolCall.arguments as Record<string, unknown>;
+        let toolArgs: Record<string, unknown>;
+        try {
+          toolArgs = typeof toolCall.arguments === 'string'
+            ? JSON.parse(toolCall.arguments) as Record<string, unknown>
+            : toolCall.arguments as Record<string, unknown>;
+        } catch {
+          toolArgs = {};
+        }
         const toolStart = traceToolCallStart(toolCall.name, toolArgs);
 
         const approval = await checkToolCallApproval(userId, toolCall, {
@@ -1588,11 +1594,11 @@ chatRoutes.post('/', async (c) => {
       message: legacyCleanContent,
       response: legacyCleanContent,
       model,
-      toolCalls: result.value.toolCalls?.map((tc) => ({
-        id: tc.id,
-        name: tc.name,
-        arguments: JSON.parse(tc.arguments),
-      })),
+      toolCalls: result.value.toolCalls?.map((tc) => {
+        let args: unknown;
+        try { args = JSON.parse(tc.arguments); } catch { args = {}; }
+        return { id: tc.id, name: tc.name, arguments: args };
+      }),
       usage: result.value.usage
         ? {
             promptTokens: result.value.usage.promptTokens,
