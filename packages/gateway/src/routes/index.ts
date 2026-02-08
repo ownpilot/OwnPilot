@@ -7,7 +7,7 @@ export { agentRoutes, getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, g
 export { chatRoutes } from './chat.js';
 export { toolsRoutes } from './tools.js';
 export { settingsRoutes, hasApiKey, getApiKey, getApiKeySource } from './settings.js';
-export { channelRoutes, addIncomingMessage, markMessageReplied } from './channels.js';
+export { channelRoutes } from './channels.js';
 export { costRoutes, usageTracker, budgetManager } from './costs.js';
 export { modelsRoutes } from './models.js';
 export { providersRoutes } from './providers.js';

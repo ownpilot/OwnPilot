@@ -45,7 +45,6 @@ import {
   type ChannelVerificationService,
 } from './auth/verification.js';
 import { wsGateway } from '../ws/server.js';
-import { addIncomingMessage, addOutgoingMessage, markMessageReplied } from '../routes/channels.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('ChannelService');
@@ -491,19 +490,7 @@ export class ChannelServiceImpl implements IChannelService {
         log.warn('Failed to save incoming message', { error });
       }
 
-      // 5a. Add to inbox store
-      addIncomingMessage(message.channelPluginId, message.platform, {
-        id: message.id,
-        sender: {
-          id: message.sender.platformUserId,
-          name: message.sender.displayName,
-          avatar: message.sender.avatarUrl,
-        },
-        content: message.text,
-        timestamp: message.timestamp.toISOString(),
-        platformChatId: message.platformChatId,
-        metadata: message.metadata as Record<string, unknown> | undefined,
-      });
+
 
       // 5b. Broadcast incoming message to WebSocket clients
       wsGateway.broadcast('channel:message', {
@@ -630,19 +617,7 @@ export class ChannelServiceImpl implements IChannelService {
         log.warn('Failed to save outgoing message', { error });
       }
 
-      // 8a. Add outgoing message to inbox store
-      addOutgoingMessage(message.channelPluginId, message.platform, {
-        id: `${message.channelPluginId}:${sentMessageId}`,
-        content: responseText,
-        timestamp: new Date().toISOString(),
-        replyTo: message.id,
-        platformChatId: message.platformChatId,
-      });
-
-      // 8b. Mark original message as replied in inbox
-      markMessageReplied(message.id);
-
-      // 8c. Broadcast outgoing message to WebSocket clients
+      // 8a. Broadcast outgoing message to WebSocket clients
       wsGateway.broadcast('channel:message', {
         message: {
           id: `${message.channelPluginId}:${sentMessageId}`,
