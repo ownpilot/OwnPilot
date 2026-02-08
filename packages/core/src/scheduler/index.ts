@@ -10,8 +10,11 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { getLog } from '../services/get-log.js';
 
 import type { SchedulerNotificationBridge, TaskNotificationConfig } from './notifications.js';
+
+const log = getLog('Scheduler');
 
 // =============================================================================
 // Types
@@ -484,14 +487,14 @@ export class Scheduler {
     this.isRunning = true;
     this.checkTimer = setInterval(() => {
       try {
-        this.checkAndRunTasks().catch(console.error);
+        this.checkAndRunTasks().catch(e => log.error('checkAndRunTasks failed:', e));
       } catch (err) {
-        console.error('[Scheduler] checkAndRunTasks threw synchronously:', err);
+        log.error('checkAndRunTasks threw synchronously:', err);
       }
     }, this.config.checkInterval);
     this.checkTimer.unref();
 
-    console.log('[Scheduler] Started with check interval:', this.config.checkInterval, 'ms');
+    log.info('Started with check interval: ' + this.config.checkInterval + 'ms');
   }
 
   /**
@@ -509,7 +512,7 @@ export class Scheduler {
       this.notificationBridge.clearAllReminders();
     }
 
-    console.log('[Scheduler] Stopped');
+    log.info('Stopped');
   }
 
   /**
@@ -547,7 +550,7 @@ export class Scheduler {
       this.notificationBridge.scheduleReminder(newTask, nextRunDate);
     }
 
-    console.log('[Scheduler] Added task:', newTask.name, 'Next run:', newTask.nextRun, task.oneTime ? '(one-time)' : '');
+    log.info(`Added task: ${newTask.name} Next run: ${newTask.nextRun} ${task.oneTime ? '(one-time)' : ''}`);
     return newTask;
   }
 
@@ -644,12 +647,12 @@ export class Scheduler {
       const nextRunDate = new Date(task.nextRun);
       if (now >= nextRunDate) {
         // Task is due
-        console.log('[Scheduler] Running task:', task.name, task.oneTime ? '(one-time)' : '');
+        log.info(`Running task: ${task.name} ${task.oneTime ? '(one-time)' : ''}`);
 
         try {
           await this.executeTask(task);
         } catch (error) {
-          console.error('[Scheduler] Task failed:', task.name, error);
+          log.error(`Task failed: ${task.name}`, error);
         }
 
         // Handle one-time vs recurring tasks
@@ -657,7 +660,7 @@ export class Scheduler {
           // One-time task: disable after execution
           task.enabled = false;
           task.nextRun = undefined;
-          console.log('[Scheduler] One-time task completed and disabled:', task.name);
+          log.info(`One-time task completed and disabled: ${task.name}`);
         } else {
           // Recurring task: calculate next run from cron
           const newNextRun = getNextRunTime(task.cron, now);
@@ -689,7 +692,7 @@ export class Scheduler {
       try {
         await this.notificationBridge.onTaskStart(task);
       } catch (err) {
-        console.error('[Scheduler] Failed to send start notification:', err);
+        log.error('Failed to send start notification:', err);
       }
     }
 
@@ -745,7 +748,7 @@ export class Scheduler {
       try {
         await this.notificationBridge.onTaskComplete(task, result);
       } catch (err) {
-        console.error('[Scheduler] Failed to send completion notification:', err);
+        log.error('Failed to send completion notification:', err);
       }
     }
 
@@ -796,7 +799,7 @@ export class Scheduler {
       const content = await fs.readFile(this.config.tasksFilePath, 'utf-8');
       const tasks = JSON.parse(content) as ScheduledTask[];
       this.tasks = new Map(tasks.map(t => [t.id, t]));
-      console.log('[Scheduler] Loaded', this.tasks.size, 'tasks');
+      log.info(`Loaded ${this.tasks.size} tasks`);
     } catch {
       // File doesn't exist or is invalid
       this.tasks = new Map();

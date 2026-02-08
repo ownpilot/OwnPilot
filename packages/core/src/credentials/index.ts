@@ -10,6 +10,9 @@
  */
 
 import { createHash, randomBytes, createCipheriv, createDecipheriv, pbkdf2Sync } from 'node:crypto';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('Credentials');
 
 // =============================================================================
 // Types
@@ -506,7 +509,7 @@ export class UserCredentialStore {
 
     // In production, this would write to a secure audit log
     if (process.env.NODE_ENV === 'development') {
-      console.log('[Credential Audit]', JSON.stringify(logEntry));
+      log.debug('Audit:', logEntry);
     }
   }
 }

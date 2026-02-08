@@ -9,6 +9,9 @@ import { promises as fs } from 'node:fs';
 import { join, resolve, relative, basename, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import type { FileInfo, StorageUsage } from './types.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('Storage');
 
 /**
  * Security error for access violations
@@ -100,7 +103,7 @@ export class IsolatedStorage {
       );
     }
 
-    console.log(`[Storage] Created user storage for: ${userId}`);
+    log.info(`Created user storage for: ${userId}`);
     return workspacePath;
   }
 
@@ -128,7 +131,7 @@ export class IsolatedStorage {
     }
 
     await fs.rm(userPath, { recursive: true, force: true });
-    console.log(`[Storage] Deleted user storage for: ${userId}`);
+    log.info(`Deleted user storage for: ${userId}`);
   }
 
   /**

@@ -15,8 +15,10 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
+import { getLog } from '../services/get-log.js';
 
 const execAsync = promisify(exec);
+const log = getLog('Sandbox');
 
 // Sandbox configuration
 export interface SandboxConfig {
@@ -153,7 +155,7 @@ export async function testSecurityFlags(): Promise<boolean> {
         errorMsg.includes('no-new-privileges') ||
         errorMsg.includes('security-opt') ||
         errorMsg.includes('invalid argument')) {
-      console.log('[Sandbox] Security flags not supported, using relaxed security mode');
+      log.info('Security flags not supported, using relaxed security mode');
       securityFlagsSupported = false;
       return false;
     }
@@ -241,7 +243,7 @@ export function resetSandboxCache(): void {
 export async function ensureImage(image: string): Promise<boolean> {
   // Validate image name to prevent command injection
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._/:-]*$/.test(image) || image.length > 200) {
-    console.error(`[Sandbox] Invalid Docker image name: ${image.substring(0, 50)}`);
+    log.error(`Invalid Docker image name: ${image.substring(0, 50)}`);
     return false;
   }
 
@@ -253,11 +255,11 @@ export async function ensureImage(image: string): Promise<boolean> {
     }
 
     // Pull the image
-    console.log(`[Sandbox] Pulling Docker image: ${image}`);
+    log.info(`Pulling Docker image: ${image}`);
     await execAsync(`docker pull ${image}`, { timeout: 300000 }); // 5 min timeout for pull
     return true;
   } catch (error) {
-    console.error(`[Sandbox] Failed to pull image ${image}:`, error);
+    log.error(`Failed to pull image ${image}:`, error);
     return false;
   }
 }
@@ -290,7 +292,7 @@ export async function executeInSandbox(
     // First run - test security flags
     const flagsSupported = await testSecurityFlags();
     if (!flagsSupported) {
-      console.log('[Sandbox] Auto-enabling relaxed security mode due to Docker compatibility');
+      log.info('Auto-enabling relaxed security mode due to Docker compatibility');
       useRelaxedSecurity = true;
     }
   } else if (!useRelaxedSecurity && securityFlagsSupported === false) {

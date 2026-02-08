@@ -13,6 +13,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import { type Result, ok, err } from '../types/result.js';
 import { createAuditEventId } from '../types/branded.js';
 import { InternalError, ValidationError } from '../types/errors.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('AuditLogger');
 import {
   type AuditEvent,
   type AuditEventInput,
@@ -402,7 +405,7 @@ export class AuditLogger {
         this.eventCount = 0;
       }
     } catch (error) {
-      console.warn('[AuditLogger] Log rotation failed:', error instanceof Error ? error.message : error);
+      log.warn('Log rotation failed:', error instanceof Error ? error.message : error);
     }
   }
 
@@ -421,7 +424,7 @@ export class AuditLogger {
     const color = colors[event.severity];
 
     const errorSuffix = event.details?.error ? ` error="${event.details.error}"` : '';
-    console.log(
+    log.info(
       `${color}[${event.severity.toUpperCase()}]${reset} ` +
         `${event.timestamp} ${event.type} ` +
         `actor=${event.actor.type}:${event.actor.id} ` +

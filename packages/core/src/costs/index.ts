@@ -18,6 +18,9 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { EventEmitter } from 'node:events';
+import { getLog } from '../services/get-log.js';
+
+const costLog = getLog('Costs');
 
 // =============================================================================
 // Types
@@ -1194,7 +1197,7 @@ export class BudgetManager extends EventEmitter {
 
     // Listen for usage events
     this.tracker.on('usage', (record: UsageRecord) => {
-      this.checkBudget(record).catch(console.error);
+      this.checkBudget(record).catch(e => costLog.error('Budget check failed:', e));
     });
   }
 

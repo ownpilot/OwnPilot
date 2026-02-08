@@ -7,6 +7,9 @@
 
 import { spawn, execSync, execFileSync, type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('Workspace');
 import type {
   ContainerConfig,
   ContainerStatus,
@@ -86,11 +89,11 @@ export async function ensureImage(image: string): Promise<boolean> {
   } catch {
     // Try to pull the image
     try {
-      console.log(`[Workspace] Pulling Docker image: ${validImage}`);
+      log.info(`Pulling Docker image: ${validImage}`);
       execFileSync('docker', ['pull', validImage], { stdio: 'inherit', timeout: 300000 });
       return true;
     } catch (err) {
-      console.error(`[Workspace] Failed to pull image ${validImage}:`, err);
+      log.error(`Failed to pull image ${validImage}:`, err);
       return false;
     }
   }
@@ -218,13 +221,11 @@ export class UserContainerOrchestrator {
         lastActivityAt: new Date(),
       });
 
-      console.log(
-        `[Workspace] Container created: ${containerId.substring(0, 12)} for user ${userId}`
-      );
+      log.info(`Container created: ${containerId.substring(0, 12)} for user ${userId}`);
 
       return containerId;
     } catch (err) {
-      console.error('[Workspace] Failed to create container:', err);
+      log.error('Failed to create container:', err);
       throw new Error(
         `Failed to create container: ${err instanceof Error ? err.message : String(err)}`
       );
@@ -371,7 +372,7 @@ export class UserContainerOrchestrator {
         stdio: 'ignore',
       });
       this.containers.delete(containerId);
-      console.log(`[Workspace] Container stopped: ${containerId.substring(0, 12)}`);
+      log.info(`Container stopped: ${containerId.substring(0, 12)}`);
     } catch {
       // Container might already be stopped
       this.containers.delete(containerId);
