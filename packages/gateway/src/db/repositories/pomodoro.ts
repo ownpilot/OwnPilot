@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository } from './base.js';
+import { MS_PER_DAY } from '../../config/defaults.js';
 
 // =============================================================================
 // Types
@@ -414,7 +415,7 @@ export class PomodoroRepository extends BaseRepository {
 
       // Allow for today or yesterday to count as start
       if (i === 0) {
-        const diffDays = Math.floor((today.getTime() - statDate.getTime()) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.floor((today.getTime() - statDate.getTime()) / MS_PER_DAY);
         if (diffDays > 1) return 0; // Streak is broken
       }
 
@@ -474,7 +475,7 @@ export class PomodoroRepository extends BaseRepository {
       if (lastDate === null) {
         currentRun = 1;
       } else {
-        const diffDays = Math.floor((statDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.floor((statDate.getTime() - lastDate.getTime()) / MS_PER_DAY);
         if (diffDays === 1) {
           currentRun++;
         } else {

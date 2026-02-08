@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository } from './base.js';
+import { MS_PER_DAY } from '../../config/defaults.js';
 
 function safeParseArray(raw: string | null | undefined): number[] {
   if (!raw) return [];
@@ -462,7 +463,7 @@ export class HabitsRepository extends BaseRepository {
           tempStreak = 1;
         } else {
           // Check if consecutive (accounting for non-target days)
-          const daysDiff = Math.floor((logDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+          const daysDiff = Math.floor((logDate.getTime() - lastDate.getTime()) / MS_PER_DAY);
 
           let missedTargetDays = 0;
           for (let i = 1; i < daysDiff; i++) {
@@ -498,7 +499,7 @@ export class HabitsRepository extends BaseRepository {
       const lastLogDate = new Date(lastDate);
       lastLogDate.setHours(0, 0, 0, 0);
 
-      const daysSince = Math.floor((today.getTime() - lastLogDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysSince = Math.floor((today.getTime() - lastLogDate.getTime()) / MS_PER_DAY);
 
       if (daysSince <= 1 || (daysSince > 1 && !isTargetDay(yesterday))) {
         currentStreak = tempStreak;

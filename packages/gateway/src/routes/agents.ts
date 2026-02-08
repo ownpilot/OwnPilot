@@ -65,6 +65,7 @@ import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getD
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
 import { getApprovalManager } from '../autonomy/index.js';
+import { TOOL_ARGS_MAX_SIZE } from '../config/defaults.js';
 
 const log = getLog('Agents');
 
@@ -755,7 +756,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
       try {
         // Validate tool arguments payload size
         const argsStr = JSON.stringify(toolArgs ?? {});
-        if (argsStr.length > 100000) {
+        if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
           return { content: 'Tool arguments payload too large (max 100KB)', isError: true };
         }
 
@@ -812,7 +813,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
           try {
             // Validate tool arguments payload size
             const argsStr = JSON.stringify(toolArgs ?? {});
-            if (argsStr.length > 100000) {
+            if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
               return { idx, tool_name, ok: false, content: 'Tool arguments payload too large (max 100KB)' };
             }
 
@@ -1706,7 +1707,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
       try {
         // Validate tool arguments payload size
         const argsStr = JSON.stringify(toolArgs ?? {});
-        if (argsStr.length > 100000) {
+        if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
           return { content: 'Tool arguments payload too large (max 100KB)', isError: true };
         }
 
@@ -1761,7 +1762,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
           try {
             // Validate tool arguments payload size
             const argsStr = JSON.stringify(toolArgs ?? {});
-            if (argsStr.length > 100000) {
+            if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
               return { idx, tool_name, ok: false, content: 'Tool arguments payload too large (max 100KB)' };
             }
 

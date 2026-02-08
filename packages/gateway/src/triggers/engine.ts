@@ -18,6 +18,7 @@ import { executeTool, hasTool } from '../services/tool-executor.js';
 import { getNextRunTime, getServiceRegistry, Services, type ITriggerService, type IGoalService, type IMemoryService, type ExecutionPermissions } from '@ownpilot/core';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { getLog } from '../services/log.js';
+import { MS_PER_DAY } from '../config/defaults.js';
 
 const log = getLog('TriggerEngine');
 
@@ -192,7 +193,7 @@ export class TriggerEngine {
     this.registerActionHandler('goal_check', async (payload) => {
       const goals = await this.goalService.getActive(this.config.userId,5);
       const staleGoals = goals.filter((g) => {
-        const daysSinceUpdate = (Date.now() - g.updatedAt.getTime()) / (1000 * 60 * 60 * 24);
+        const daysSinceUpdate = (Date.now() - g.updatedAt.getTime()) / MS_PER_DAY;
         return daysSinceUpdate > (payload.staleDays as number ?? 3);
       });
 
@@ -396,7 +397,7 @@ export class TriggerEngine {
         const goals = await this.goalService.getActive(this.config.userId,10);
         const staleDays = threshold || 3;
         const hasStaleGoals = goals.some((g) => {
-          const daysSinceUpdate = (Date.now() - g.updatedAt.getTime()) / (1000 * 60 * 60 * 24);
+          const daysSinceUpdate = (Date.now() - g.updatedAt.getTime()) / MS_PER_DAY;
           return daysSinceUpdate > staleDays;
         });
         return hasStaleGoals;
