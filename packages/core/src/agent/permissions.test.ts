@@ -821,7 +821,7 @@ describe('PermissionChecker', () => {
     });
 
     it('sanitizes sensitive keys (password, token, key, secret, apiKey, credentials)', () => {
-      const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {});
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
 
@@ -835,21 +835,21 @@ describe('PermissionChecker', () => {
       });
 
       expect(spy).toHaveBeenCalled();
-      const loggedJson = spy.mock.calls[0][1] as string;
-      const parsed = JSON.parse(loggedJson);
-      expect(parsed.args.password).toBe('[REDACTED]');
-      expect(parsed.args.token).toBe('[REDACTED]');
-      expect(parsed.args.secret).toBe('[REDACTED]');
-      expect(parsed.args.apiKey).toBe('[REDACTED]');
-      expect(parsed.args.credentials).toBe('[REDACTED]');
-      expect(parsed.args.normalArg).toBe('visible');
+      // getLog('Permission').debug('Audit:', logEntry) → console.debug('[Permission]', 'Audit:', logEntry)
+      const loggedData = spy.mock.calls[0][2] as Record<string, unknown>;
+      expect((loggedData.args as Record<string, string>).password).toBe('[REDACTED]');
+      expect((loggedData.args as Record<string, string>).token).toBe('[REDACTED]');
+      expect((loggedData.args as Record<string, string>).secret).toBe('[REDACTED]');
+      expect((loggedData.args as Record<string, string>).apiKey).toBe('[REDACTED]');
+      expect((loggedData.args as Record<string, string>).credentials).toBe('[REDACTED]');
+      expect((loggedData.args as Record<string, string>).normalArg).toBe('visible');
 
       process.env.NODE_ENV = originalEnv;
       spy.mockRestore();
     });
 
     it('truncates long string values', () => {
-      const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {});
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
 
@@ -858,26 +858,24 @@ describe('PermissionChecker', () => {
         longField: longValue,
       });
 
-      const loggedJson = spy.mock.calls[0][1] as string;
-      const parsed = JSON.parse(loggedJson);
-      expect(parsed.args.longField).toContain('truncated');
-      expect(parsed.args.longField.length).toBeLessThan(longValue.length);
+      const loggedData = spy.mock.calls[0][2] as Record<string, unknown>;
+      expect((loggedData.args as Record<string, string>).longField).toContain('truncated');
+      expect((loggedData.args as Record<string, string>).longField.length).toBeLessThan(longValue.length);
 
       process.env.NODE_ENV = originalEnv;
       spy.mockRestore();
     });
 
     it('handles undefined args', () => {
-      const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {});
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
 
       // Should not throw
       checker.recordUsage('read_file', ctx, { allowed: true }, undefined);
 
-      const loggedJson = spy.mock.calls[0][1] as string;
-      const parsed = JSON.parse(loggedJson);
-      expect(parsed.args).toBeUndefined();
+      const loggedData = spy.mock.calls[0][2] as Record<string, unknown>;
+      expect(loggedData.args).toBeUndefined();
 
       process.env.NODE_ENV = originalEnv;
       spy.mockRestore();
@@ -1107,11 +1105,11 @@ describe('withPermissionCheck', () => {
     const wrapped = withPermissionCheck('write_file', executor, c);
 
     await wrapped({ path: '/test', content: 'data' }, makeContext());
+    // getLog('Permission').info(msg) → console.log('[Permission]', msg)
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[Permission]')
+      '[Permission]',
+      expect.stringContaining('write_file')
     );
-    const loggedMessage = logSpy.mock.calls[0][0] as string;
-    expect(loggedMessage).toContain('write_file');
     // Executor still gets called
     expect(executor).toHaveBeenCalled();
 

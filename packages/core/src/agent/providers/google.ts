@@ -8,6 +8,9 @@
 import type { Result } from '../../types/result.js';
 import { ok, err } from '../../types/result.js';
 import { InternalError, TimeoutError, ValidationError } from '../../types/errors.js';
+import { getLog } from '../../services/get-log.js';
+
+const log = getLog('Google');
 import type {
   ProviderConfig as LegacyProviderConfig,
   CompletionRequest,
@@ -171,7 +174,7 @@ export class GoogleProvider {
       // Log retry attempt
       lastError = error;
       logRetry(attempt, RETRY_CONFIG.maxRetries, error, delay);
-      console.log(`🔄 [Google] Retry ${attempt}/${RETRY_CONFIG.maxRetries} after ${delay}ms - ${error.message}`);
+      log.info(`Retry ${attempt}/${RETRY_CONFIG.maxRetries} after ${delay}ms - ${error.message}`);
 
       // Wait before retry
       await sleep(delay);

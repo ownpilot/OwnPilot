@@ -11,6 +11,9 @@ import type {
   ToolCall,
   ToolResult,
 } from './types.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('Memory');
 
 /**
  * Default memory configuration
@@ -357,7 +360,7 @@ export class ConversationMemory {
       this.conversations.set(conversation.id, conversation);
       return conversation;
     } catch (error) {
-      console.warn('[Memory] Failed to import conversation:', error instanceof Error ? error.message : error);
+      log.warn('Failed to import conversation:', error instanceof Error ? error.message : error);
       return undefined;
     }
   }
