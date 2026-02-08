@@ -737,13 +737,6 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     tools.register(useToolDef, async (args, context): Promise<CoreToolResult> => {
       const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
 
-      // Diagnostic: log every use_tool call (especially useful for execution tools)
-      const isExecTool = ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager'].includes(tool_name);
-      if (isExecTool) {
-        const perms = context.executionPermissions;
-        console.log(`[use_tool] EXECUTION TOOL CALLED: ${tool_name} | perms.enabled=${perms?.enabled} | perms.mode=${perms?.mode} | perm=${perms?.[tool_name as keyof typeof perms]} | hasRequestApproval=${!!context.requestApproval} | userId=${context.userId}`);
-      }
-
       // Check if tool exists — suggest similar names if not
       if (!tools.has(tool_name)) {
         const similar = findSimilarTools(tools, tool_name);
@@ -1694,13 +1687,6 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   if (chatUseToolDef) {
     tools.register(chatUseToolDef, async (args, context): Promise<CoreToolResult> => {
       const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
-
-      // Diagnostic: log every use_tool call (especially useful for execution tools)
-      const isExecTool = ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager'].includes(tool_name);
-      if (isExecTool) {
-        const perms = context.executionPermissions;
-        console.log(`[chat:use_tool] EXECUTION TOOL CALLED: ${tool_name} | perms.enabled=${perms?.enabled} | perms.mode=${perms?.mode} | perm=${perms?.[tool_name as keyof typeof perms]} | hasRequestApproval=${!!context.requestApproval} | userId=${context.userId}`);
-      }
 
       // Check if tool exists — suggest similar names if not
       if (!tools.has(tool_name)) {

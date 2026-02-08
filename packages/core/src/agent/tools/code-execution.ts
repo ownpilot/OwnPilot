@@ -21,6 +21,11 @@ import {
 } from '../../sandbox/docker.js';
 import { logSandboxExecution } from '../debug.js';
 import { checkCriticalPatterns, isCommandBlocked } from '../../security/index.js';
+
+/** Debug logging for execution security — only active when DEBUG_EXEC_SECURITY env is set */
+const EXEC_DEBUG = typeof process !== 'undefined' && !!process.env.DEBUG_EXEC_SECURITY;
+const securityLog = EXEC_DEBUG ? (...args: unknown[]) => console.log('[ExecSecurity]', ...args) : () => {};
+const securityWarn = EXEC_DEBUG ? (...args: unknown[]) => console.warn('[ExecSecurity]', ...args) : () => {};
 import { analyzeCodeRisk } from '../../security/code-analyzer.js';
 import { getExecutionMode } from '../../sandbox/execution-mode.js';
 import {
@@ -113,11 +118,11 @@ async function checkExecutionPermission(
 ): Promise<{ allowed: boolean; error?: ToolExecutionResult }> {
   const permissions = context.executionPermissions;
 
-  console.log(`[ExecSecurity] checkPermission: category=${category}, enabled=${permissions?.enabled}, mode=${permissions?.mode}, permLevel=${permissions?.[category]}, hasRequestApproval=${!!context.requestApproval}, userId=${context.userId}`);
+  securityLog(`checkPermission: category=${category}, enabled=${permissions?.enabled}, mode=${permissions?.mode}, permLevel=${permissions?.[category]}, hasRequestApproval=${!!context.requestApproval}, userId=${context.userId}`);
 
   // Layer 0: Master switch — instant reject when disabled
   if (permissions && permissions.enabled === false) {
-    console.log(`[ExecSecurity] ${category}: BLOCKED by master switch (enabled=false)`);
+    securityLog(`${category}: BLOCKED by master switch (enabled=false)`);
     return { allowed: false, error: EXECUTION_DISABLED_ERROR };
   }
 
@@ -126,11 +131,11 @@ async function checkExecutionPermission(
   if (permissions === undefined) {
     if (!context.userId && !context.requestApproval) {
       // CLI or direct API — no user session, no approval channel → backward compat
-      console.log(`[ExecSecurity] ${category}: ALLOWED (CLI/API backward compat, no userId, no requestApproval)`);
+      securityLog(`${category}: ALLOWED (CLI/API backward compat, no userId, no requestApproval)`);
       return { allowed: true };
     }
     // Web/chat context but permissions failed to load → block for safety
-    console.warn(`[ExecSecurity] ${category}: permissions=undefined in user context (userId=${context.userId}) → blocked`);
+    securityWarn(`${category}: permissions=undefined in user context (userId=${context.userId}) → blocked`);
     return {
       allowed: false,
       error: {
@@ -144,7 +149,7 @@ async function checkExecutionPermission(
   }
 
   const mode = permissions[category] ?? 'blocked';
-  console.log(`[ExecSecurity] ${category}: resolved permission mode = '${mode}'`);
+  securityLog(`${category}: resolved permission mode = '${mode}'`);
 
   // Layer 1: Critical pattern check (ALWAYS blocks, even if 'allowed')
   const critical = checkCriticalPatterns(code);
@@ -183,7 +188,7 @@ async function checkExecutionPermission(
 
     // Layer 4: Real-time approval
     if (!context.requestApproval) {
-      console.warn(`[ExecSecurity] ${category}: mode=prompt but NO requestApproval callback — blocking`);
+      securityWarn(`${category}: mode=prompt but NO requestApproval callback — blocking`);
       return {
         allowed: false,
         error: {
@@ -196,7 +201,7 @@ async function checkExecutionPermission(
       };
     }
 
-    console.log(`[ExecSecurity] ${category}: mode=prompt, requesting user approval via SSE...`);
+    securityLog(`${category}: mode=prompt, requesting user approval via SSE...`);
     const execEnv = sandboxed ? 'in Docker sandbox' : 'locally (no Docker sandbox)';
     const approved = await context.requestApproval(
       'code_execution',
@@ -205,7 +210,7 @@ async function checkExecutionPermission(
       { code: code.slice(0, 2000), riskAnalysis: risk },
     );
 
-    console.log(`[ExecSecurity] ${category}: user approval result = ${approved}`);
+    securityLog(`${category}: user approval result = ${approved}`);
     if (!approved) {
       return {
         allowed: false,
@@ -218,7 +223,7 @@ async function checkExecutionPermission(
   }
 
   // 'allowed' or approved 'prompt' → proceed
-  console.log(`[ExecSecurity] ${category}: ALLOWED (mode=${mode})`);
+  securityLog(`${category}: ALLOWED (mode=${mode})`);
   return { allowed: true };
 }
 
