@@ -12,15 +12,13 @@ import {
   CalendarRepository,
   ContactsRepository,
 } from '../db/repositories/index.js';
+import { sanitizeId } from './helpers.js';
 
 export interface ToolExecutionResult {
   success: boolean;
   result?: unknown;
   error?: string;
 }
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 /** Maximum items allowed in a single batch operation. */
 const MAX_BATCH_SIZE = 100;

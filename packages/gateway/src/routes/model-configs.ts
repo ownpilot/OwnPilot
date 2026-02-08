@@ -27,12 +27,9 @@ import {
 } from '@ownpilot/core';
 import { hasApiKey, getApiKey } from './settings.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js'
 
 const log = getLog('ModelConfigs');
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 export const modelConfigsRoutes = new Hono();
 

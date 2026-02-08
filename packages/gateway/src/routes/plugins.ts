@@ -14,15 +14,12 @@ import {
   type IPluginService,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Plugins');
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 export const pluginsRoutes = new Hono();
 

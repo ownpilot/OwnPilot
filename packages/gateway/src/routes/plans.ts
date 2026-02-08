@@ -13,11 +13,10 @@ import {
 } from '../db/repositories/plans.js';
 import { getPlanExecutor } from '../plans/index.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId } from './helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Plans');
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 export const plansRoutes = new Hono();
 
 // ============================================================================

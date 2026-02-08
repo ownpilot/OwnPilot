@@ -28,10 +28,7 @@ import {
   registerToolConfigRequirements,
   unregisterDependencies,
 } from '../services/api-service-registrar.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam } from './helpers.js'
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam, sanitizeId } from './helpers.js'
 
 /** Sanitize display text for safe interpolation (allows spaces) */
 const sanitizeText = (text: string) => text.replace(/[^\w\s-]/g, '').slice(0, 200);

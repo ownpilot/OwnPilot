@@ -60,7 +60,7 @@ import type {
   UpdateAgentRequest,
   AgentInfo,
 } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js'
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
@@ -136,7 +136,6 @@ Rules:
 - The <suggestions> tag must always be the very last thing in your response`;
 
 /** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 /** Safely extract a string[] from unknown config values (DB records, etc.) */
 function safeStringArray(value: unknown): string[] | undefined {

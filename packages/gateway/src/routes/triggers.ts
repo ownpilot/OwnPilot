@@ -12,10 +12,7 @@ import {
 } from '../db/repositories/triggers.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression, getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
-
-/** Strip non-alphanumeric/dash/underscore chars and cap length to prevent log injection. */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId } from './helpers.js';
 
 export const triggersRoutes = new Hono();
 

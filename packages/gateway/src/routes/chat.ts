@@ -8,7 +8,7 @@ import type {
   ChatRequest,
   StreamChunkResponse,
 } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, sanitizeId } from './helpers.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
@@ -43,9 +43,6 @@ import { parseLimit, parseOffset, extractSuggestions } from '../utils/index.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Chat');
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 export const chatRoutes = new Hono();
 

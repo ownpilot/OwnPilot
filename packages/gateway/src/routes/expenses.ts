@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getIntParam, sanitizeId } from './helpers.js';
 
 // =============================================================================
 // Types
@@ -101,9 +101,6 @@ function generateExpenseId(): string {
 // =============================================================================
 // Routes
 // =============================================================================
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 export const expensesRoutes = new Hono();
 

@@ -10,10 +10,7 @@ import { Hono } from 'hono';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import type { CreateConfigServiceInput, UpdateConfigServiceInput, CreateConfigEntryInput, UpdateConfigEntryInput } from '../db/repositories/config-services.js';
 import type { ConfigServiceDefinition, ConfigEntry, ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js'
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+import { apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js'
 
 export const configServicesRoutes = new Hono();
 

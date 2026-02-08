@@ -8,16 +8,13 @@ import { Hono } from 'hono';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Database');
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 
 // Tables to export (in dependency order) — also serves as whitelist for SQL operations

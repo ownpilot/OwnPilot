@@ -9,10 +9,7 @@ import { Hono } from 'hono';
 import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+import { apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId } from './helpers.js';
 
 export const channelRoutes = new Hono();
 

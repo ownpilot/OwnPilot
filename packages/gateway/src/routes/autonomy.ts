@@ -14,10 +14,7 @@ import {
   type ActionCategory,
   type ApprovalDecision,
 } from '../autonomy/index.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js';
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
+import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js';
 
 export const autonomyRoutes = new Hono();
 

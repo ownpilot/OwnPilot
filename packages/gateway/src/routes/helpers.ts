@@ -174,3 +174,11 @@ export function apiError(
   };
   return c.json(response, status);
 }
+
+/**
+ * Sanitize a user-provided ID string for safe use in database queries.
+ * Strips all characters except word chars and hyphens, then truncates to 100 chars.
+ */
+export function sanitizeId(id: string): string {
+  return id.replace(/[^\w-]/g, '').slice(0, 100);
+}

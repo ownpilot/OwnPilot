@@ -11,12 +11,9 @@ import { google } from 'googleapis';
 import { settingsRepo, oauthIntegrationsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js'
 
 const log = getLog('Auth');
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 export const authRoutes = new Hono();
 

@@ -17,13 +17,10 @@ import type {
 } from '../db/repositories/goals.js';
 import { GoalServiceError } from '../services/goal-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId } from './helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Goals');
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 export const goalsRoutes = new Hono();
 

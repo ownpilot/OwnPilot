@@ -8,13 +8,10 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId } from './helpers.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { CustomDataServiceError } from '../services/custom-data-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-
-/** Sanitize user-supplied IDs for safe interpolation in error messages */
-const sanitizeId = (id: string) => id.replace(/[^\w-]/g, '').slice(0, 100);
 
 /** Sanitize display text for safe interpolation (allows spaces) */
 const sanitizeText = (text: string) => text.replace(/[^\w\s-]/g, '').slice(0, 200);
