@@ -1742,10 +1742,9 @@ customToolsRoutes.get('/active/definitions', async (c) => {
 // META-TOOL EXECUTORS (For LLM to create/manage custom tools)
 // =============================================================================
 
-interface ToolExecutionResult {
-  success: boolean;
-  result?: unknown;
-  error?: string;
+import type { ToolExecutionResult as BaseToolExecutionResult } from '../services/tool-executor.js';
+
+interface ToolExecutionResult extends BaseToolExecutionResult {
   requiresApproval?: boolean;
   requiresConfirmation?: boolean;
   pendingToolId?: string;

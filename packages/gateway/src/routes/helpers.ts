@@ -182,3 +182,18 @@ export function apiError(
 export function sanitizeId(id: string): string {
   return id.replace(/[^\w-]/g, '').slice(0, 100);
 }
+
+/**
+ * Return a standardized validation error response from a Zod safeParse failure.
+ *
+ * Replaces the repeated pattern:
+ *   const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+ *   return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+ */
+export function zodValidationError(
+  c: Context,
+  issues: ReadonlyArray<{ path: PropertyKey[]; message: string }>,
+) {
+  const summary = issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+  return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${summary}` }, 400);
+}

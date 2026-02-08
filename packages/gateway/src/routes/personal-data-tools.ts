@@ -13,12 +13,7 @@ import {
   ContactsRepository,
 } from '../db/repositories/index.js';
 import { sanitizeId } from './helpers.js';
-
-export interface ToolExecutionResult {
-  success: boolean;
-  result?: unknown;
-  error?: string;
-}
+import type { ToolExecutionResult } from '../services/tool-executor.js';
 
 /** Maximum items allowed in a single batch operation. */
 const MAX_BATCH_SIZE = 100;

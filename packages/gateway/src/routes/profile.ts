@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES, getUserId } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, zodValidationError } from './helpers.js';
 import {
   getPersonalMemoryStore,
   getMemoryInjector,
@@ -89,8 +89,7 @@ app.post('/data', async (c) => {
     const parsed = profileSetDataSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const { category, key, value, data, confidence, source, sensitive } = parsed.data;
@@ -122,8 +121,7 @@ app.delete('/data', async (c) => {
     const parsed = profileDeleteDataSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const { category, key } = parsed.data;
@@ -177,8 +175,7 @@ app.post('/import', async (c) => {
     const parsed = profileImportSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const { entries } = parsed.data;
@@ -230,8 +227,7 @@ app.post('/quick', async (c) => {
     const parsed = profileQuickSetupSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const {

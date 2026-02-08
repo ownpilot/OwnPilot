@@ -7,7 +7,7 @@
 
 import { Hono } from 'hono';
 import { loadProviderConfig, PROVIDER_IDS } from '@ownpilot/core';
-import { apiResponse, apiError, getUserId, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getUserId, ERROR_CODES, zodValidationError } from './helpers.js';
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
@@ -389,8 +389,7 @@ app.put('/:id/config', async (c) => {
     const parsed = providerConfigSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const { baseUrl, providerType, isEnabled, apiKeyEnv, notes } = parsed.data;
@@ -453,8 +452,7 @@ app.patch('/:id/toggle', async (c) => {
     const parsed = toggleEnabledSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const { enabled } = parsed.data;

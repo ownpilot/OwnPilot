@@ -285,11 +285,7 @@ customDataRoutes.delete('/records/:id', async (c) => {
 // Tool Executors for AI
 // ============================================================================
 
-export interface ToolExecutionResult {
-  success: boolean;
-  result?: unknown;
-  error?: string;
-}
+import type { ToolExecutionResult } from '../services/tool-executor.js';
 
 /**
  * Execute custom data tool - delegates to CustomDataService

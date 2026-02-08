@@ -310,11 +310,7 @@ goalsRoutes.delete('/:goalId/steps/:stepId', async (c) => {
 // Tool Executor
 // ============================================================================
 
-export interface ToolExecutionResult {
-  success: boolean;
-  result?: unknown;
-  error?: string;
-}
+import type { ToolExecutionResult } from '../services/tool-executor.js';
 
 /**
  * Execute goal tool - delegates to GoalService
