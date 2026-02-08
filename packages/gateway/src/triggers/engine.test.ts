@@ -54,6 +54,8 @@ vi.mock('../services/tool-executor.js', () => ({
 vi.mock('../db/repositories/execution-permissions.js', () => ({
   executionPermissionsRepo: {
     get: vi.fn(async () => ({
+      enabled: true,
+      mode: 'local',
       execute_javascript: 'allowed',
       execute_python: 'allowed',
       execute_shell: 'allowed',

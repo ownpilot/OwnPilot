@@ -637,9 +637,17 @@ export class ToolRegistry {
     conversationId: string,
     userId?: string
   ): Promise<readonly ToolResult[]> {
-    return Promise.all(
+    const settled = await Promise.allSettled(
       toolCalls.map((tc) => this.executeToolCall(tc, conversationId, userId))
     );
+    return settled.map((outcome, i) => {
+      if (outcome.status === 'fulfilled') return outcome.value;
+      return {
+        toolCallId: toolCalls[i]?.id ?? 'unknown',
+        content: `Tool execution failed: ${outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason)}`,
+        isError: true,
+      };
+    });
   }
 
   /**

@@ -462,6 +462,8 @@ const MAX_BATCH_TOOL_CALLS = 20;
 const agentCache = new Map<string, Agent>();
 const agentConfigCache = new Map<string, AgentConfig>();
 const chatAgentCache = new Map<string, Agent>(); // Chat agents keyed by provider:model
+const MAX_AGENT_CACHE_SIZE = 100;
+const MAX_CHAT_AGENT_CACHE_SIZE = 20;
 
 // In-flight creation promises to prevent duplicate concurrent creation
 const pendingAgents = new Map<string, Promise<Agent>>();
@@ -735,6 +737,13 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     tools.register(useToolDef, async (args, context): Promise<CoreToolResult> => {
       const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
 
+      // Diagnostic: log every use_tool call (especially useful for execution tools)
+      const isExecTool = ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager'].includes(tool_name);
+      if (isExecTool) {
+        const perms = context.executionPermissions;
+        console.log(`[use_tool] EXECUTION TOOL CALLED: ${tool_name} | perms.enabled=${perms?.enabled} | perms.mode=${perms?.mode} | perm=${perms?.[tool_name as keyof typeof perms]} | hasRequestApproval=${!!context.requestApproval} | userId=${context.userId}`);
+      }
+
       // Check if tool exists — suggest similar names if not
       if (!tools.has(tool_name)) {
         const similar = findSimilarTools(tools, tool_name);
@@ -853,7 +862,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Register active custom tools (user-created dynamic tools)
   const activeCustomToolDefs = await getActiveCustomToolDefinitions(userId);
   for (const toolDef of activeCustomToolDefs) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+    tools.register(toolDef, async (args, _context): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
 
       const result = await executeActiveCustomTool(toolDef.name, args as Record<string, unknown>, userId, {
@@ -885,10 +894,10 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   let pluginOverrides = 0;
   for (const { definition, executor } of pluginTools) {
-    const wrappedExecutor = async (args: unknown): Promise<CoreToolResult> => {
+    const wrappedExecutor = async (args: unknown, context: import('@ownpilot/core').ToolContext): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(definition.name, args as Record<string, unknown>);
       try {
-        const result = await executor(args as Record<string, unknown>, {} as import('@ownpilot/core').ToolContext);
+        const result = await executor(args as Record<string, unknown>, context);
         traceToolCallEnd(definition.name, startTime, !result.isError, result.content, result.isError ? String(result.content) : undefined);
         return result;
       } catch (error) {
@@ -1007,6 +1016,16 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   };
 
   const agent = createAgent(config, { tools });
+
+  // Evict oldest entry if cache is at capacity
+  if (agentCache.size >= MAX_AGENT_CACHE_SIZE) {
+    const oldestKey = agentCache.keys().next().value;
+    if (oldestKey) {
+      agentCache.delete(oldestKey);
+      agentConfigCache.delete(oldestKey);
+    }
+  }
+
   agentCache.set(record.id, agent);
   agentConfigCache.set(record.id, config);
 
@@ -1497,7 +1516,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     // These tools have special executors registered separately below
     if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool' || toolDef.name === 'batch_use_tool' || toolDef.name === 'inspect_tool_source') continue;
 
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+    tools.register(toolDef, async (args, _context): Promise<CoreToolResult> => {
       const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
       if (result.success) {
         return {
@@ -1676,6 +1695,13 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     tools.register(chatUseToolDef, async (args, context): Promise<CoreToolResult> => {
       const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
 
+      // Diagnostic: log every use_tool call (especially useful for execution tools)
+      const isExecTool = ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager'].includes(tool_name);
+      if (isExecTool) {
+        const perms = context.executionPermissions;
+        console.log(`[chat:use_tool] EXECUTION TOOL CALLED: ${tool_name} | perms.enabled=${perms?.enabled} | perms.mode=${perms?.mode} | perm=${perms?.[tool_name as keyof typeof perms]} | hasRequestApproval=${!!context.requestApproval} | userId=${context.userId}`);
+      }
+
       // Check if tool exists — suggest similar names if not
       if (!tools.has(tool_name)) {
         const similar = findSimilarTools(tools, tool_name);
@@ -1791,7 +1817,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // Register active custom tools (user-created dynamic tools)
   const activeCustomToolDefs = await getActiveCustomToolDefinitions(userId);
   for (const toolDef of activeCustomToolDefs) {
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+    tools.register(toolDef, async (args, _context): Promise<CoreToolResult> => {
       const result = await executeActiveCustomTool(toolDef.name, args as Record<string, unknown>, userId, {
         callId: `call_${Date.now()}`,
         conversationId: `chat_${provider}_${model}`,
@@ -1813,9 +1839,9 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   const pluginToolDefs: typeof MEMORY_TOOLS = [];
 
   for (const { definition, executor } of pluginTools) {
-    const wrappedExecutor = async (args: unknown): Promise<CoreToolResult> => {
+    const wrappedExecutor = async (args: unknown, context: import('@ownpilot/core').ToolContext): Promise<CoreToolResult> => {
       try {
-        const result = await executor(args as Record<string, unknown>, {} as import('@ownpilot/core').ToolContext);
+        const result = await executor(args as Record<string, unknown>, context);
         return result;
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -1890,7 +1916,12 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     },
   };
 
-  // Create and cache the agent
+  // Create and cache the agent (evict oldest if at capacity)
+  if (chatAgentCache.size >= MAX_CHAT_AGENT_CACHE_SIZE) {
+    const oldestKey = chatAgentCache.keys().next().value;
+    if (oldestKey) chatAgentCache.delete(oldestKey);
+  }
+
   const agent = createAgent(config, { tools });
   chatAgentCache.set(cacheKey, agent);
 

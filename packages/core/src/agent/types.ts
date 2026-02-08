@@ -19,6 +19,10 @@ export type ExecutionCategory = 'execute_javascript' | 'execute_python' | 'execu
  * Per-category execution permissions (persistent in DB)
  */
 export interface ExecutionPermissions {
+  /** Master switch — when false, ALL execution is blocked */
+  readonly enabled: boolean;
+  /** Execution environment mode: 'local' | 'docker' | 'auto' */
+  readonly mode: 'local' | 'docker' | 'auto';
   readonly execute_javascript: PermissionMode;
   readonly execute_python: PermissionMode;
   readonly execute_shell: PermissionMode;
@@ -27,9 +31,11 @@ export interface ExecutionPermissions {
 }
 
 /**
- * Default execution permissions — all blocked for safety
+ * Default execution permissions — disabled and all blocked for safety
  */
 export const DEFAULT_EXECUTION_PERMISSIONS: ExecutionPermissions = {
+  enabled: false,
+  mode: 'local',
   execute_javascript: 'blocked',
   execute_python: 'blocked',
   execute_shell: 'blocked',

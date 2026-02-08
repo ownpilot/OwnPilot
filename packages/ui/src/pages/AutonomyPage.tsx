@@ -74,7 +74,7 @@ export function AutonomyPage() {
 
   const handleLevelChange = useCallback(async (level: number) => {
     try {
-      await autonomyApi.setLevel(String(level));
+      await autonomyApi.setLevel(level);
       fetchConfig();
       toast.success("Autonomy level updated");
     } catch {

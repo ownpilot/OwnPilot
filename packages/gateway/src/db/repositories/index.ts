@@ -280,6 +280,11 @@ export {
   type CreateLocalModelInput,
 } from './local-providers.js';
 
+// Execution permissions repository
+export {
+  executionPermissionsRepo,
+} from './execution-permissions.js';
+
 // Workspaces repository
 export {
   WorkspacesRepository,

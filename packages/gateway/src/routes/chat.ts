@@ -32,7 +32,7 @@ import {
   traceError as recordTraceError,
   getTraceSummary,
 } from '../tracing/index.js';
-import { debugLog, type ToolDefinition, hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
+import { debugLog, type ToolDefinition, hasServiceRegistry, getServiceRegistry, Services, DEFAULT_EXECUTION_PERMISSIONS, type ExecutionPermissions } from '@ownpilot/core';
 import type { IMessageBus, NormalizedMessage, MessageProcessingResult, StreamCallbacks, ToolEndResult } from '@ownpilot/core';
 import type { StreamChunk, ToolCall } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
@@ -97,6 +97,70 @@ async function buildToolCatalog(allTools: readonly ToolDefinition[]): Promise<st
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Build execution context for the system prompt.
+ * Moved from user message to system prompt so AI models treat it as core instructions.
+ */
+const PERM_LABELS: Record<string, string> = {
+  blocked: 'Blocked', prompt: 'Ask', allowed: 'Allow',
+};
+const MODE_LABELS: Record<string, string> = {
+  local: 'Local (host machine)',
+  docker: 'Docker sandbox',
+  auto: 'Auto (Docker if available, else local)',
+};
+
+const EXEC_CATEGORIES = ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager'] as const;
+
+function buildExecutionSystemPrompt(perms: ExecutionPermissions): string {
+  if (!perms.enabled) {
+    return '\n\n## Code Execution\nCode execution is DISABLED. Do not call execute_javascript, execute_python, execute_shell, compile_code, or package_manager — they will all fail. If the user asks you to run code, explain that code execution is turned off and they can enable it in the Execution Security panel.';
+  }
+
+  const modeDesc = MODE_LABELS[perms.mode] ?? perms.mode;
+
+  const catLines = EXEC_CATEGORIES
+    .map(k => `- \`${k}\`: **${PERM_LABELS[perms[k]] ?? perms[k]}**`)
+    .join('\n');
+
+  const allowedTools = EXEC_CATEGORIES.filter(k => perms[k] === 'allowed' || perms[k] === 'prompt');
+
+  let section = `\n\n## Code Execution`;
+  section += `\nCode execution is **ENABLED**. Environment: ${modeDesc}.`;
+  section += `\n\n### How to run code`;
+  section += `\nWhen the user asks you to run, execute, test, or try code, you MUST use the appropriate execution tool via use_tool. Do NOT just explain the code — actually run it.`;
+  section += `\n\nExamples:`;
+  section += `\n- JavaScript: \`use_tool(tool_name="execute_javascript", arguments={"code": "console.log('hello')"})\``;
+  section += `\n- Python: \`use_tool(tool_name="execute_python", arguments={"code": "print('hello')"})\``;
+  section += `\n- Shell: \`use_tool(tool_name="execute_shell", arguments={"command": "echo hello"})\``;
+  section += `\n\n### Permission levels`;
+  section += `\n${catLines}`;
+
+  if (allowedTools.length > 0) {
+    section += `\n\nYou have permission to use: ${allowedTools.map(t => `\`${t}\``).join(', ')}.`;
+  }
+
+  section += `\n\n- **Allow** = runs immediately, go ahead and use it`;
+  section += `\n- **Ask** = will pause for user approval before running`;
+  section += `\n- **Blocked** = will fail, do not attempt`;
+
+  if (perms.mode === 'docker') {
+    section += '\n\nNote: compile_code and package_manager are unavailable in Docker mode (they require host access).';
+  }
+
+  return section;
+}
+
+/**
+ * Short execution hint for user message (supplements system prompt).
+ */
+function buildExecutionMessageHint(perms: ExecutionPermissions): string {
+  if (!perms.enabled) return '';
+  const allowed = EXEC_CATEGORIES.filter(k => perms[k] === 'allowed' || perms[k] === 'prompt');
+  if (allowed.length === 0) return '';
+  return `\n[Code execution: ON. Available tools: ${allowed.join(', ')}]`;
 }
 
 /**
@@ -590,7 +654,7 @@ chatRoutes.post('/', async (c) => {
     const workspaceInfo = `\n\n## File Operations\nYour workspace directory for file operations is: \`${wsContext.workspaceDir}\`\nWhen creating files, use relative paths (e.g., "script.py") and they will be saved in your workspace.\nFull workspace path: ${wsContext.workspaceDir}`;
 
     // Remove any old workspace info and add new one
-    const promptWithoutOldWs = currentPrompt.replace(/\n\n## File Operations[\s\S]*?(?=\n\n##|$)/g, '');
+    const promptWithoutOldWs = currentPrompt.replace(/\n\n## File Operations[\s\S]*?(?=\n\n## [^#]|$)/g, '');
     const updatedPrompt = promptWithoutOldWs + workspaceInfo;
     agent.updateSystemPrompt(updatedPrompt);
 
@@ -600,9 +664,27 @@ chatRoutes.post('/', async (c) => {
     // Continue without workspace - use global default
   }
 
-  // Load persistent execution permissions from DB
-  const execPermissions = await executionPermissionsRepo.get(getUserId(c));
+  // Load persistent execution permissions from DB (fail-safe: use all-blocked defaults)
+  let execPermissions;
+  try {
+    execPermissions = await executionPermissionsRepo.get(getUserId(c));
+  } catch (err) {
+    log.warn('[ExecSecurity] Failed to load permissions, using all-blocked defaults:', err);
+    execPermissions = { ...DEFAULT_EXECUTION_PERMISSIONS };
+  }
   agent.setExecutionPermissions(execPermissions);
+  log.info(`[ExecSecurity] Loaded permissions: enabled=${execPermissions.enabled}, mode=${execPermissions.mode}, js=${execPermissions.execute_javascript}, py=${execPermissions.execute_python}, sh=${execPermissions.execute_shell}, compile=${execPermissions.compile_code}, pkg=${execPermissions.package_manager}`);
+
+  // Inject execution context into SYSTEM PROMPT (AI treats this as core instructions)
+  {
+    const currentPrompt = agent.getConversation().systemPrompt || '';
+    // Strip old execution context section and add fresh one
+    // Match until next level-2 heading (## followed by space+non-#) or end of string
+    const promptWithoutExec = currentPrompt.replace(/\n\n## Code Execution[\s\S]*?(?=\n\n## [^#]|$)/g, '');
+    const execSection = buildExecutionSystemPrompt(execPermissions);
+    agent.updateSystemPrompt(promptWithoutExec + execSection);
+    log.info(`[ExecSecurity] Injected execution context into system prompt (enabled=${execPermissions.enabled})`);
+  }
 
   // Build tool catalog for the first message (sent only once per chat)
   let chatMessage = body.message;
@@ -619,6 +701,9 @@ chatRoutes.post('/', async (c) => {
     }
   }
 
+  // Add short execution hint to user message (supplements system prompt)
+  chatMessage += buildExecutionMessageHint(execPermissions);
+
   // Handle streaming
   if (body.stream) {
     // ── MessageBus Streaming Path ──────────────────────────────────────────
@@ -632,6 +717,7 @@ chatRoutes.post('/', async (c) => {
         // Wire real-time approval for 'prompt' mode execution
         agent.setRequestApproval(async (_category, actionType, description, params) => {
           const approvalId = generateApprovalId();
+          log.info(`[ExecSecurity] Approval requested: ${actionType} (id=${approvalId})`);
           await stream.writeSSE({
             data: JSON.stringify({
               type: 'approval_required',
@@ -643,8 +729,10 @@ chatRoutes.post('/', async (c) => {
             }),
             event: 'approval',
           });
+          log.info(`[ExecSecurity] SSE approval event sent, waiting for user response...`);
           return createApprovalRequest(approvalId);
         });
+        log.info(`[ExecSecurity] SSE requestApproval callback wired on agent (MessageBus path)`);
 
         try {
           await processStreamingViaBus(streamBus, stream, {
@@ -1101,8 +1189,9 @@ chatRoutes.post('/', async (c) => {
       conversationId: body.conversationId ?? agent.getConversation().id,
     });
 
-    // Reset local execution permission
+    // Reset execution state
     agent.setExecutionPermissions(undefined);
+    agent.setRequestApproval(undefined);
 
     const processingTime = Math.round(performance.now() - startTime);
 

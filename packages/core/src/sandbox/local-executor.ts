@@ -150,13 +150,16 @@ export async function executeJavaScriptLocal(
 
     child.on('error', (err) => {
       clearTimeout(timer);
+      const isNotFound = (err as NodeJS.ErrnoException).code === 'ENOENT';
       resolve({
         success: false,
         stdout: truncateOutput(stdout, maxOutput),
         stderr: truncateOutput(stderr, maxOutput),
         exitCode: null,
         executionTimeMs: Date.now() - startTime,
-        error: `Failed to start process: ${err.message}`,
+        error: isNotFound
+          ? "Node.js not found. Install Node.js and ensure 'node' is on your PATH."
+          : `Failed to start process: ${err.message}`,
       });
     });
 
@@ -220,13 +223,16 @@ export async function executePythonLocal(
 
     child.on('error', (err) => {
       clearTimeout(timer);
+      const isNotFound = (err as NodeJS.ErrnoException).code === 'ENOENT';
       resolve({
         success: false,
         stdout: truncateOutput(stdout, maxOutput),
         stderr: truncateOutput(stderr, maxOutput),
         exitCode: null,
         executionTimeMs: Date.now() - startTime,
-        error: `Failed to start process: ${err.message}. Is ${pythonCmd} installed?`,
+        error: isNotFound
+          ? `Python not found. Install Python and ensure '${pythonCmd}' is on your PATH.`
+          : `Failed to start process: ${err.message}`,
       });
     });
 
@@ -302,13 +308,16 @@ export async function executeShellLocal(
 
     child.on('error', (err) => {
       clearTimeout(timer);
+      const isNotFound = (err as NodeJS.ErrnoException).code === 'ENOENT';
       resolve({
         success: false,
         stdout: truncateOutput(stdout, maxOutput),
         stderr: truncateOutput(stderr, maxOutput),
         exitCode: null,
         executionTimeMs: Date.now() - startTime,
-        error: `Failed to start process: ${err.message}`,
+        error: isNotFound
+          ? `Shell '${shell}' not found. Ensure it is installed and on your PATH.`
+          : `Failed to start process: ${err.message}`,
       });
     });
 

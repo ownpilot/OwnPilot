@@ -87,7 +87,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Cancel any ongoing request
+  // Cancel any ongoing request (also rejects pending approval if any)
   const cancelRequest = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -96,7 +96,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setStreamingContent('');
       setProgressEvents([]);
     }
-  }, []);
+    // Reject any pending execution approval so the backend doesn't hang
+    if (pendingApproval) {
+      executionPermissionsApi.resolveApproval(pendingApproval.approvalId, false).catch(() => {});
+      setPendingApproval(null);
+    }
+  }, [pendingApproval]);
 
   const clearSuggestions = useCallback(() => setSuggestions([]), []);
 
@@ -228,6 +233,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                   // Handle different event types
                   if (data.type === 'approval_required') {
                     // Real-time approval request from backend
+                    console.log('[ExecSecurity] Received approval_required SSE event:', data.approvalId, data.category);
                     setPendingApproval({
                       approvalId: data.approvalId,
                       category: data.category,
@@ -353,7 +359,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
           setStreamingContent('');
           setProgressEvents([]);
-          setPendingApproval(null);
+          // NOTE: Do NOT clear pendingApproval here — the approval dialog has its own
+          // 120s timeout, and resolveApproval() / clearMessages() handle cleanup.
+          // Clearing here would dismiss the dialog before the user can respond.
           abortControllerRef.current = null;
         }
       }

@@ -6,7 +6,11 @@ import { apiClient } from '../client';
 
 export type PermissionMode = 'blocked' | 'prompt' | 'allowed';
 
+export type ExecutionMode = 'local' | 'docker' | 'auto';
+
 export interface ExecutionPermissions {
+  enabled: boolean;
+  mode: ExecutionMode;
   execute_javascript: PermissionMode;
   execute_python: PermissionMode;
   execute_shell: PermissionMode;

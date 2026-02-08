@@ -584,6 +584,7 @@ export class AgentOrchestrator {
         conversationId: context.id,
         userId: context.metadata.userId as string | undefined,
         requestApproval: this.config.requestApproval,
+        executionPermissions: this.config.executionPermissions,
       };
       const result = await executor(args, toolContext);
       record.result = result.content;

@@ -259,11 +259,17 @@ export class TriggerEngine {
         return { success: false, error: `Tool '${toolName}' not found` };
       }
 
-      // Load user's execution permissions; 'prompt' → 'blocked' for triggers (no UI)
+      // Load user's execution permissions; 'prompt' → 'blocked' for triggers (no UI for approval)
       const userPerms = await executionPermissionsRepo.get(this.config.userId);
-      const triggerPerms = Object.fromEntries(
-        Object.entries(userPerms).map(([k, v]) => [k, v === 'prompt' ? 'blocked' : v])
-      ) as ExecutionPermissions;
+      const triggerPerms = {
+        ...userPerms,
+        // Downgrade 'prompt' to 'blocked' for category permissions only
+        execute_javascript: userPerms.execute_javascript === 'prompt' ? 'blocked' : userPerms.execute_javascript,
+        execute_python: userPerms.execute_python === 'prompt' ? 'blocked' : userPerms.execute_python,
+        execute_shell: userPerms.execute_shell === 'prompt' ? 'blocked' : userPerms.execute_shell,
+        compile_code: userPerms.compile_code === 'prompt' ? 'blocked' : userPerms.compile_code,
+        package_manager: userPerms.package_manager === 'prompt' ? 'blocked' : userPerms.package_manager,
+      } as ExecutionPermissions;
 
       log.info('Executing tool', { toolName });
       const result = await executeTool(toolName, toolArgs, this.config.userId, triggerPerms);

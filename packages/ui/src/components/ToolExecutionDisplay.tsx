@@ -183,7 +183,7 @@ interface ToolResultDisplayProps {
 
 function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   // File system tools - show file content
-  if (toolName === 'read_file' && typeof result === 'object' && result.content) {
+  if (toolName === 'read_file' && typeof result === 'object' && result !== null && result.content) {
     return (
       <div className="space-y-2">
         {result.path && (
@@ -203,7 +203,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   }
 
   // Directory listing
-  if (toolName === 'list_directory' && typeof result === 'object' && result.files) {
+  if (toolName === 'list_directory' && typeof result === 'object' && result !== null && result.files) {
     return (
       <div className="space-y-1">
         {result.files.map((file: { isDirectory?: boolean; name?: string; size?: number }, i: number) => (
@@ -231,7 +231,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   }
 
   // Code execution results
-  if ((toolName.startsWith('execute_') || toolName === 'compile_code' || toolName === 'package_manager') && typeof result === 'object') {
+  if ((toolName.startsWith('execute_') || toolName === 'compile_code' || toolName === 'package_manager') && typeof result === 'object' && result !== null) {
     return (
       <div className="space-y-3">
         {result.stdout && (
@@ -276,7 +276,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   }
 
   // Web fetch results
-  if ((toolName === 'fetch_web_page' || toolName === 'http_request') && typeof result === 'object') {
+  if ((toolName === 'fetch_web_page' || toolName === 'http_request') && typeof result === 'object' && result !== null) {
     return (
       <div className="space-y-3">
         {result.status && (
@@ -288,7 +288,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
             }`}>
               {result.status}
             </span>
-            {result.url && (
+            {isSafeUrl(result.url) && (
               <a
                 href={result.url}
                 target="_blank"
@@ -325,13 +325,13 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   }
 
   // Search results
-  if (toolName === 'search_web' && typeof result === 'object' && result.results) {
+  if (toolName === 'search_web' && typeof result === 'object' && result !== null && result.results) {
     return (
       <div className="space-y-2">
         {result.results.map((item: { url?: string; title?: string; description?: string; snippet?: string }, i: number) => (
           <a
             key={i}
-            href={item.url}
+            href={isSafeUrl(item.url) ? item.url : '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="block p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded hover:bg-primary/10 transition-colors"
@@ -437,6 +437,17 @@ function isLocalExecution(result: any): boolean {
   }
 
   return false;
+}
+
+/** Only allow http/https URLs to prevent javascript: XSS */
+function isSafeUrl(url: unknown): url is string {
+  if (typeof url !== 'string') return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 function detectLanguage(path: string): string {

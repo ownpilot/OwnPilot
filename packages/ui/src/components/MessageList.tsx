@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Bot, Copy, Check, RefreshCw } from './icons';
+import { User, Bot, Copy, Check, RefreshCw, ChevronRight, ChevronDown, Wrench } from './icons';
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { TraceDisplay } from './TraceDisplay';
 import { MarkdownContent } from './MarkdownContent';
@@ -35,6 +35,7 @@ interface MessageBubbleProps {
 function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [toolCallsExpanded, setToolCallsExpanded] = useState(false);
   const isUser = message.role === 'user';
   const isError = message.isError;
 
@@ -149,46 +150,82 @@ function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
           </span>
         </div>
 
-        {/* Tool calls - Enhanced Display with results from trace */}
-        {message.toolCalls && message.toolCalls.length > 0 && (
-          <div className={`mt-3 ${isUser ? 'text-left' : ''}`}>
-            <ToolExecutionDisplay
-              toolCalls={message.toolCalls.map((call) => {
-                // Find matching trace info for this tool call (has arguments and result)
+        {/* Tool Calls - Collapsible container */}
+        {(() => {
+          // Merge tool calls from message.toolCalls and trace
+          const toolCallItems = message.toolCalls?.length
+            ? message.toolCalls.map((call) => {
                 const traceInfo = message.trace?.toolCalls?.find(tc => tc.name === call.name);
-                const args = typeof call.arguments === 'string' ? JSON.parse(call.arguments) : call.arguments;
-
+                let args: Record<string, unknown>;
+                try {
+                  args = typeof call.arguments === 'string' ? JSON.parse(call.arguments) : (call.arguments ?? {});
+                } catch {
+                  args = {};
+                }
                 return {
                   id: call.id,
                   name: call.name,
                   arguments: traceInfo?.arguments || args,
                   result: call.result || traceInfo?.result,
-                  status: traceInfo?.success === false ? 'error' :
-                          (call.result !== undefined || traceInfo?.result !== undefined) ? 'success' : 'pending',
+                  status: (traceInfo?.success === false ? 'error' :
+                          (call.result !== undefined || traceInfo?.result !== undefined) ? 'success' : 'pending') as 'error' | 'success' | 'pending',
                   duration: traceInfo?.duration,
                   error: traceInfo?.error,
                 };
-              })}
-            />
-          </div>
-        )}
-
-        {/* Show trace tool calls even if no toolCalls in message (for tool results from orchestration) */}
-        {!message.toolCalls?.length && message.trace?.toolCalls && message.trace.toolCalls.length > 0 && (
-          <div className={`mt-3 ${isUser ? 'text-left' : ''}`}>
-            <ToolExecutionDisplay
-              toolCalls={message.trace.toolCalls.map((tc, idx) => ({
+              })
+            : message.trace?.toolCalls?.length
+            ? message.trace.toolCalls.map((tc, idx) => ({
                 id: `trace-${idx}`,
                 name: tc.name,
                 arguments: tc.arguments || {},
                 result: tc.result,
-                status: tc.success === false ? 'error' : tc.result !== undefined ? 'success' : 'pending',
+                status: (tc.success === false ? 'error' : tc.result !== undefined ? 'success' : 'pending') as 'error' | 'success' | 'pending',
                 duration: tc.duration,
                 error: tc.error,
-              }))}
-            />
-          </div>
-        )}
+              }))
+            : [];
+
+          if (toolCallItems.length === 0) return null;
+
+          const successCount = toolCallItems.filter(t => t.status === 'success').length;
+          const errorCount = toolCallItems.filter(t => t.status === 'error').length;
+
+          return (
+            <div className={`mt-3 ${isUser ? 'text-left' : ''}`}>
+              <div className="rounded-lg border border-border dark:border-dark-border bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50 overflow-hidden text-sm">
+                <button
+                  onClick={() => setToolCallsExpanded(!toolCallsExpanded)}
+                  className="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                >
+                  <div className="text-text-muted dark:text-dark-text-muted">
+                    {toolCallsExpanded
+                      ? <ChevronDown className="w-4 h-4" />
+                      : <ChevronRight className="w-4 h-4" />
+                    }
+                  </div>
+                  <Wrench className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
+                  <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
+                    Tool Calls
+                  </span>
+                  <div className="flex items-center gap-2 ml-auto text-xs">
+                    <span className={`${errorCount > 0 ? 'text-yellow-500' : 'text-green-500'}`}>
+                      {successCount}/{toolCallItems.length}
+                    </span>
+                    {errorCount > 0 && (
+                      <span className="text-red-500">{errorCount} failed</span>
+                    )}
+                  </div>
+                </button>
+
+                {toolCallsExpanded && (
+                  <div className="border-t border-border dark:border-dark-border p-2">
+                    <ToolExecutionDisplay toolCalls={toolCallItems} />
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Debug/Trace Info - only for assistant messages */}
         {!isUser && message.trace && (

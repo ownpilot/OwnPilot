@@ -71,6 +71,7 @@ const DEFAULT_CONFIG: Required<SandboxConfig> = {
 };
 
 let dockerAvailable: boolean | null = null;
+let dockerCheckPromise: Promise<boolean> | null = null;
 let securityFlagsSupported: boolean | null = null;
 let lastHealthCheck: SandboxHealthStatus | null = null;
 
@@ -95,14 +96,25 @@ export async function isDockerAvailable(): Promise<boolean> {
     return dockerAvailable;
   }
 
-  try {
-    await execAsync('docker info', { timeout: 5000 });
-    dockerAvailable = true;
-    return true;
-  } catch {
-    dockerAvailable = false;
-    return false;
+  // Deduplicate concurrent checks — only one Docker probe runs at a time
+  if (dockerCheckPromise) {
+    return dockerCheckPromise;
   }
+
+  dockerCheckPromise = (async () => {
+    try {
+      await execAsync('docker info', { timeout: 5000 });
+      dockerAvailable = true;
+      return true;
+    } catch {
+      dockerAvailable = false;
+      return false;
+    } finally {
+      dockerCheckPromise = null;
+    }
+  })();
+
+  return dockerCheckPromise;
 }
 
 /**

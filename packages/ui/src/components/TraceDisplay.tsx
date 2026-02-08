@@ -5,7 +5,6 @@ import {
   Check,
   XCircle,
   Clock,
-  Wrench,
   Database,
   Brain,
   Zap,
@@ -27,8 +26,6 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
   const [showModal, setShowModal] = useState(false);
 
   // Calculate summary stats
-  const toolCallCount = trace.toolCalls.length;
-  const successfulTools = trace.toolCalls.filter((t) => t.success).length;
   const totalInputTokens = trace.modelCalls.reduce((sum, m) => sum + (m.inputTokens ?? 0), 0);
   const totalOutputTokens = trace.modelCalls.reduce((sum, m) => sum + (m.outputTokens ?? 0), 0);
   const totalTokens = trace.modelCalls.reduce((sum, m) => sum + (m.tokens ?? (m.inputTokens ?? 0) + (m.outputTokens ?? 0)), 0);
@@ -63,19 +60,6 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                 <Clock className="w-3 h-3" />
                 {trace.duration}ms
               </span>
-
-              {toolCallCount > 0 && (
-                <span
-                  className={`flex items-center gap-1 ${
-                    successfulTools === toolCallCount
-                      ? 'text-green-500'
-                      : 'text-yellow-500'
-                  }`}
-                >
-                  <Wrench className="w-3 h-3" />
-                  {successfulTools}/{toolCallCount}
-                </span>
-              )}
 
               {totalTokens > 0 && (
                 <span className="flex items-center gap-1 text-blue-500" title={`${totalInputTokens} in / ${totalOutputTokens} out`}>
@@ -121,17 +105,6 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
         {/* Expanded content */}
         {isExpanded && (
           <div className="border-t border-border dark:border-dark-border divide-y divide-border dark:divide-dark-border">
-            {/* Tool Calls */}
-            {trace.toolCalls.length > 0 && (
-              <TraceSection title="Tool Calls" icon={<Wrench className="w-4 h-4" />}>
-                <div className="space-y-2">
-                  {trace.toolCalls.map((tool, i) => (
-                    <ToolCallItem key={i} tool={tool} />
-                  ))}
-                </div>
-              </TraceSection>
-            )}
-
             {/* Model Calls */}
             {trace.modelCalls.length > 0 && (
               <TraceSection title="Model Calls" icon={<Brain className="w-4 h-4" />}>
@@ -534,75 +507,3 @@ function EventsSection({ events, toolCalls = [] }: EventsSectionProps) {
   );
 }
 
-interface ToolCallItemProps {
-  tool: TraceInfo['toolCalls'][0];
-}
-
-function ToolCallItem({ tool }: ToolCallItemProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const hasDetails = tool.arguments || tool.result;
-
-  return (
-    <div className="rounded bg-bg-secondary dark:bg-dark-bg-secondary overflow-hidden">
-      <button
-        onClick={() => hasDetails && setIsExpanded(!isExpanded)}
-        className={`w-full flex items-center gap-2 px-2 py-1.5 ${
-          hasDetails ? 'cursor-pointer hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary' : 'cursor-default'
-        }`}
-      >
-        {tool.success ? (
-          <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
-        ) : (
-          <XCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
-        )}
-        <span className="font-mono text-xs text-text-primary dark:text-dark-text-primary">
-          {tool.name}
-        </span>
-        {hasDetails && (
-          <span className="text-text-muted dark:text-dark-text-muted">
-            {isExpanded ? (
-              <ChevronDown className="w-3 h-3" />
-            ) : (
-              <ChevronRight className="w-3 h-3" />
-            )}
-          </span>
-        )}
-        {tool.duration !== undefined && (
-          <span className="text-xs text-text-muted dark:text-dark-text-muted ml-auto">
-            {tool.duration}ms
-          </span>
-        )}
-        {tool.error && (
-          <span className="text-xs text-red-500 whitespace-pre-wrap break-all">
-            {tool.error}
-          </span>
-        )}
-      </button>
-
-      {isExpanded && hasDetails && (
-        <div className="border-t border-border dark:border-dark-border px-2 py-2 space-y-2">
-          {tool.arguments && Object.keys(tool.arguments).length > 0 && (
-            <div>
-              <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
-                Arguments:
-              </div>
-              <pre className="text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary p-2 rounded overflow-x-auto text-text-primary dark:text-dark-text-primary whitespace-pre-wrap break-all">
-                {JSON.stringify(tool.arguments, null, 2)}
-              </pre>
-            </div>
-          )}
-          {tool.result && (
-            <div>
-              <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
-                Result:
-              </div>
-              <pre className="text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary p-2 rounded overflow-x-auto text-text-primary dark:text-dark-text-primary whitespace-pre-wrap break-all">
-                {tool.result}
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}

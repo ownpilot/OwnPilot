@@ -11,6 +11,7 @@
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult, ToolContext } from '../tools.js';
 import type { ExecutionCategory } from '../types.js';
+import type { ExecutionMode } from '../../sandbox/execution-mode.js';
 import type { SandboxResult } from '../../sandbox/docker.js';
 import {
   isDockerAvailable,
@@ -49,9 +50,30 @@ function truncateOutput(output: string, maxSize: number = MAX_OUTPUT_SIZE): stri
 const DOCKER_REQUIRED_ERROR = {
   error: 'Docker is required for code execution in this mode.',
   reason: 'Code execution without Docker sandbox would allow arbitrary code to run on the host system.',
-  solution: 'Install Docker (https://docs.docker.com/get-docker/) or set EXECUTION_MODE=auto to allow local fallback with user approval.',
+  solution: 'Set execution mode to "Auto" or "Local" in the Execution Security panel, or install Docker.',
   securityNote: 'This restriction exists to protect your system from malicious code.',
 };
+
+const EXECUTION_DISABLED_ERROR: ToolExecutionResult = {
+  content: {
+    error: 'Code execution is disabled.',
+    solution: 'Enable code execution in the Execution Security panel above the chat input.',
+  },
+  isError: true,
+};
+
+/**
+ * Resolve execution config from context permissions, falling back to env var.
+ * Returns { enabled, mode } where enabled=true means the master switch is on.
+ */
+function resolveExecutionConfig(context: ToolContext): { enabled: boolean; mode: ExecutionMode } {
+  const perms = context.executionPermissions;
+  if (perms && typeof perms.enabled === 'boolean') {
+    return { enabled: perms.enabled, mode: perms.mode ?? getExecutionMode() };
+  }
+  // Fallback: env var (CLI/API context without DB permissions)
+  return { enabled: true, mode: getExecutionMode() };
+}
 
 /**
  * Format a local execution result into a ToolExecutionResult.
@@ -72,7 +94,8 @@ function formatLocalResult(result: SandboxResult, language: string): ToolExecuti
 }
 
 /**
- * Layered permission check for local code execution (Layers 1-4).
+ * Layered permission check for ALL code execution (Layers 1-4).
+ * Applies to both Docker sandbox and local execution paths.
  *
  * Layer 1: Critical pattern blocklist (regex, ALWAYS blocks)
  * Layer 2: Code risk analysis (for display in approval dialog)
@@ -81,20 +104,47 @@ function formatLocalResult(result: SandboxResult, language: string): ToolExecuti
  *
  * Returns { allowed: true } to proceed, or { allowed: false, error } to block.
  */
-async function checkLocalPermission(
+async function checkExecutionPermission(
   category: ExecutionCategory,
   code: string,
   language: 'javascript' | 'python' | 'shell',
   context: ToolContext,
+  sandboxed: boolean = false,
 ): Promise<{ allowed: boolean; error?: ToolExecutionResult }> {
   const permissions = context.executionPermissions;
 
-  // undefined = non-chat context (CLI, direct API) → backward compat, allow
+  console.log(`[ExecSecurity] checkPermission: category=${category}, enabled=${permissions?.enabled}, mode=${permissions?.mode}, permLevel=${permissions?.[category]}, hasRequestApproval=${!!context.requestApproval}, userId=${context.userId}`);
+
+  // Layer 0: Master switch — instant reject when disabled
+  if (permissions && permissions.enabled === false) {
+    console.log(`[ExecSecurity] ${category}: BLOCKED by master switch (enabled=false)`);
+    return { allowed: false, error: EXECUTION_DISABLED_ERROR };
+  }
+
+  // undefined permissions: only allow in CLI/API context (no userId AND no requestApproval)
+  // In web/chat context, treat as blocked to prevent security bypass
   if (permissions === undefined) {
-    return { allowed: true };
+    if (!context.userId && !context.requestApproval) {
+      // CLI or direct API — no user session, no approval channel → backward compat
+      console.log(`[ExecSecurity] ${category}: ALLOWED (CLI/API backward compat, no userId, no requestApproval)`);
+      return { allowed: true };
+    }
+    // Web/chat context but permissions failed to load → block for safety
+    console.warn(`[ExecSecurity] ${category}: permissions=undefined in user context (userId=${context.userId}) → blocked`);
+    return {
+      allowed: false,
+      error: {
+        content: {
+          error: `${category} is blocked: execution permissions failed to load.`,
+          solution: 'Refresh the page or check the Execution Security panel.',
+        },
+        isError: true,
+      },
+    };
   }
 
   const mode = permissions[category] ?? 'blocked';
+  console.log(`[ExecSecurity] ${category}: resolved permission mode = '${mode}'`);
 
   // Layer 1: Critical pattern check (ALWAYS blocks, even if 'allowed')
   const critical = checkCriticalPatterns(code);
@@ -133,6 +183,7 @@ async function checkLocalPermission(
 
     // Layer 4: Real-time approval
     if (!context.requestApproval) {
+      console.warn(`[ExecSecurity] ${category}: mode=prompt but NO requestApproval callback — blocking`);
       return {
         allowed: false,
         error: {
@@ -145,13 +196,16 @@ async function checkLocalPermission(
       };
     }
 
+    console.log(`[ExecSecurity] ${category}: mode=prompt, requesting user approval via SSE...`);
+    const execEnv = sandboxed ? 'in Docker sandbox' : 'locally (no Docker sandbox)';
     const approved = await context.requestApproval(
       'code_execution',
       category,
-      `Execute ${language} code locally (no Docker sandbox)`,
+      `Execute ${language} code ${execEnv}`,
       { code: code.slice(0, 2000), riskAnalysis: risk },
     );
 
+    console.log(`[ExecSecurity] ${category}: user approval result = ${approved}`);
     if (!approved) {
       return {
         allowed: false,
@@ -164,6 +218,7 @@ async function checkLocalPermission(
   }
 
   // 'allowed' or approved 'prompt' → proceed
+  console.log(`[ExecSecurity] ${category}: ALLOWED (mode=${mode})`);
   return { allowed: true };
 }
 
@@ -197,12 +252,13 @@ export const executeJavaScriptExecutor: ToolExecutor = async (params, context): 
   const timeout = Math.min((params.timeout as number) || 10000, MAX_EXECUTION_TIME);
   const startTime = Date.now();
 
-  const mode = getExecutionMode();
-  const dockerReady = await isDockerAvailable();
+  const { mode } = resolveExecutionConfig(context);
+  // Skip Docker check entirely when mode is 'local' (avoids 5s timeout)
+  const dockerReady = mode === 'local' ? false : await isDockerAvailable();
 
   // Local execution path (when Docker is not available or mode is 'local')
   if (mode === 'local' || (mode === 'auto' && !dockerReady)) {
-    const permCheck = await checkLocalPermission('execute_javascript', code, 'javascript', context);
+    const permCheck = await checkExecutionPermission('execute_javascript', code, 'javascript', context, false);
     if (!permCheck.allowed) return permCheck.error!;
     const localResult = await executeJavaScriptLocal(code, { timeout });
     logSandboxExecution({
@@ -233,6 +289,10 @@ export const executeJavaScriptExecutor: ToolExecutor = async (params, context): 
     });
     return { content: DOCKER_REQUIRED_ERROR, isError: true };
   }
+
+  // Permission check applies to Docker sandbox too
+  const permCheck = await checkExecutionPermission('execute_javascript', code, 'javascript', context, true);
+  if (!permCheck.allowed) return permCheck.error!;
 
   // Docker execution path
   const result = await executeJavaScriptSandbox(code, { timeout, relaxedSecurity: DOCKER_RELAXED_SECURITY });
@@ -296,12 +356,12 @@ export const executePythonExecutor: ToolExecutor = async (params, context): Prom
   const timeout = Math.min((params.timeout as number) || 10000, MAX_EXECUTION_TIME);
   const startTime = Date.now();
 
-  const mode = getExecutionMode();
-  const dockerReady = await isDockerAvailable();
+  const { mode } = resolveExecutionConfig(context);
+  const dockerReady = mode === 'local' ? false : await isDockerAvailable();
 
   // Local execution path
   if (mode === 'local' || (mode === 'auto' && !dockerReady)) {
-    const permCheck = await checkLocalPermission('execute_python', code, 'python', context);
+    const permCheck = await checkExecutionPermission('execute_python', code, 'python', context, false);
     if (!permCheck.allowed) return permCheck.error!;
     const localResult = await executePythonLocal(code, { timeout });
     logSandboxExecution({
@@ -332,6 +392,10 @@ export const executePythonExecutor: ToolExecutor = async (params, context): Prom
     });
     return { content: DOCKER_REQUIRED_ERROR, isError: true };
   }
+
+  // Permission check applies to Docker sandbox too
+  const permCheck = await checkExecutionPermission('execute_python', code, 'python', context, true);
+  if (!permCheck.allowed) return permCheck.error!;
 
   // Docker execution path
   const result = await executePythonSandbox(code, { timeout, relaxedSecurity: DOCKER_RELAXED_SECURITY });
@@ -413,12 +477,12 @@ export const executeShellExecutor: ToolExecutor = async (params, context): Promi
     };
   }
 
-  const mode = getExecutionMode();
-  const dockerReady = await isDockerAvailable();
+  const { mode } = resolveExecutionConfig(context);
+  const dockerReady = mode === 'local' ? false : await isDockerAvailable();
 
   // Local execution path
   if (mode === 'local' || (mode === 'auto' && !dockerReady)) {
-    const permCheck = await checkLocalPermission('execute_shell', command, 'shell', context);
+    const permCheck = await checkExecutionPermission('execute_shell', command, 'shell', context, false);
     if (!permCheck.allowed) return permCheck.error!;
     const localResult = await executeShellLocal(command, { timeout });
     logSandboxExecution({
@@ -449,6 +513,10 @@ export const executeShellExecutor: ToolExecutor = async (params, context): Promi
     });
     return { content: DOCKER_REQUIRED_ERROR, isError: true };
   }
+
+  // Permission check applies to Docker sandbox too
+  const shellPermCheck = await checkExecutionPermission('execute_shell', command, 'shell', context, true);
+  if (!shellPermCheck.allowed) return shellPermCheck.error!;
 
   // Execute in Docker sandbox
   const result = await executeShellSandbox(command, { timeout, relaxedSecurity: DOCKER_RELAXED_SECURITY });
@@ -530,20 +598,15 @@ export const compileCodeExecutor: ToolExecutor = async (params, context): Promis
     return { content: { error: `Unknown compiler: ${compiler}. Allowed: ${[...ALLOWED_COMPILERS].join(', ')}` }, isError: true };
   }
 
-  const mode = getExecutionMode();
-  const dockerReady = await isDockerAvailable();
+  const { mode } = resolveExecutionConfig(context);
 
   // Compilation requires local access — Docker can't access host files
-  if (mode === 'docker' && !dockerReady) {
-    return { content: DOCKER_REQUIRED_ERROR, isError: true };
-  }
-
   if (mode === 'docker') {
     return {
       content: {
         error: 'compile_code requires local execution mode.',
         reason: 'Docker sandbox cannot access host filesystem for compilation.',
-        solution: 'Set EXECUTION_MODE=auto or EXECUTION_MODE=local to enable compilation.',
+        solution: 'Set execution mode to "Auto" or "Local" in the Execution Security panel.',
       },
       isError: true,
     };
@@ -557,7 +620,7 @@ export const compileCodeExecutor: ToolExecutor = async (params, context): Promis
     command = `${compiler} ${extraArgs} ${filePath}`.trim();
   }
 
-  const permCheck = await checkLocalPermission('compile_code', command, 'shell', context);
+  const permCheck = await checkExecutionPermission('compile_code', command, 'shell', context);
   if (!permCheck.allowed) return permCheck.error!;
 
   const localResult = await executeShellLocal(command, { timeout });
@@ -649,19 +712,15 @@ export const packageManagerExecutor: ToolExecutor = async (params, context): Pro
     return { content: { error: `Subcommand '${firstWord}' is blocked for safety. Blocked: ${[...BLOCKED_PM_SUBCOMMANDS].join(', ')}` }, isError: true };
   }
 
-  const mode = getExecutionMode();
-  const dockerReady = await isDockerAvailable();
+  const { mode } = resolveExecutionConfig(context);
 
-  if (mode === 'docker' && !dockerReady) {
-    return { content: DOCKER_REQUIRED_ERROR, isError: true };
-  }
-
+  // Package management requires local access — Docker can't access host filesystem
   if (mode === 'docker') {
     return {
       content: {
         error: 'package_manager requires local execution mode.',
         reason: 'Docker sandbox cannot access host filesystem for package management.',
-        solution: 'Set EXECUTION_MODE=auto or EXECUTION_MODE=local to enable package management.',
+        solution: 'Set execution mode to "Auto" or "Local" in the Execution Security panel.',
       },
       isError: true,
     };
@@ -670,7 +729,7 @@ export const packageManagerExecutor: ToolExecutor = async (params, context): Pro
   // Build the command
   const command = `${manager} ${subcommand}`.trim();
 
-  const permCheck = await checkLocalPermission('package_manager', command, 'shell', context);
+  const permCheck = await checkExecutionPermission('package_manager', command, 'shell', context);
   if (!permCheck.allowed) return permCheck.error!;
 
   const localResult = await executeShellLocal(command, { timeout });

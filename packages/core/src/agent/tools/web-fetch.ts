@@ -28,7 +28,7 @@ const BLOCKED_DOMAINS = [
   '[fc',      // IPv6 unique local (fc00::/7)
   '[fd',      // IPv6 unique local (fd00::/8)
   '[fe80',    // IPv6 link-local (fe80::/10)
-];;
+];
 
 /**
  * Check if URL is blocked
@@ -109,12 +109,14 @@ function htmlToText(html: string): string {
 /**
  * Extract links from HTML
  */
+const LINK_REGEX = /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1[^>]*>(.*?)<\/a>/gi;
+
 function extractLinks(html: string, baseUrl: string): Array<{ text: string; href: string }> {
   const links: Array<{ text: string; href: string }> = [];
-  const linkRegex = /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1[^>]*>(.*?)<\/a>/gi;
+  LINK_REGEX.lastIndex = 0;
 
   let match;
-  while ((match = linkRegex.exec(html)) !== null) {
+  while ((match = LINK_REGEX.exec(html)) !== null) {
     const href = match[2];
     const text = match[3]?.replace(/<[^>]+>/g, '').trim() || '';
 

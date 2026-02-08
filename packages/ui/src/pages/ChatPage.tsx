@@ -8,7 +8,7 @@ import { SetupWizard } from '../components/SetupWizard';
 import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
 import { ExecutionApprovalDialog } from '../components/ExecutionApprovalDialog';
-import { AlertCircle, AlertTriangle, Settings, Bot } from '../components/icons';
+import { AlertCircle, AlertTriangle, Settings, Bot, Shield } from '../components/icons';
 import { modelsApi, providersApi, settingsApi, agentsApi, chatApi } from '../api';
 import type { ModelInfo, AgentDetail } from '../types';
 import { STORAGE_KEYS } from '../constants/storage-keys';
@@ -490,6 +490,16 @@ export function ChatPage() {
             {/* Streaming content and progress */}
             {isLoading && (streamingContent || progressEvents.length > 0) && (
               <div className="mt-4 p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
+                {/* Security block banner */}
+                {progressEvents.some(e => e.type === 'tool_end' && e.result?.preview?.includes('blocked in Execution Security')) && (
+                  <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <Shield className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    <span className="text-xs text-red-600 dark:text-red-400">
+                      Tool execution was blocked by Execution Security settings. Adjust permissions in the security panel above.
+                    </span>
+                  </div>
+                )}
+
                 {/* Local execution warning banner */}
                 {progressEvents.some(e => e.type === 'tool_end' && e.result?.sandboxed === false) && (
                   <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -524,7 +534,12 @@ export function ChatPage() {
                               {event.result?.success ? '✓' : '✗'} {event.tool?.name}
                               <span className="opacity-60 ml-1">({event.result?.durationMs}ms)</span>
                             </span>
-                            {event.result?.sandboxed === false && (
+                            {event.result?.preview?.includes('blocked in Execution Security') ? (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-red-500/15 text-red-600 dark:text-red-400 rounded font-semibold leading-4">
+                                <Shield className="w-3 h-3" />
+                                BLOCKED
+                              </span>
+                            ) : event.result?.sandboxed === false && (
                               <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded font-semibold leading-4">
                                 LOCAL
                               </span>

@@ -731,12 +731,14 @@ CREATE TABLE IF NOT EXISTS custom_data_records (
 
 CREATE TABLE IF NOT EXISTS execution_permissions (
   user_id TEXT PRIMARY KEY,
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  mode TEXT NOT NULL DEFAULT 'local' CHECK(mode IN ('local','docker','auto')),
   execute_javascript TEXT NOT NULL DEFAULT 'blocked' CHECK(execute_javascript IN ('blocked','prompt','allowed')),
   execute_python TEXT NOT NULL DEFAULT 'blocked' CHECK(execute_python IN ('blocked','prompt','allowed')),
   execute_shell TEXT NOT NULL DEFAULT 'blocked' CHECK(execute_shell IN ('blocked','prompt','allowed')),
   compile_code TEXT NOT NULL DEFAULT 'blocked' CHECK(compile_code IN ('blocked','prompt','allowed')),
   package_manager TEXT NOT NULL DEFAULT 'blocked' CHECK(package_manager IN ('blocked','prompt','allowed')),
-  updated_at TEXT DEFAULT (datetime('now'))
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 `;
 
@@ -1160,6 +1162,22 @@ DO $$ BEGIN
       AND column_name = 'embedding'
   ) THEN
     ALTER TABLE memories ADD COLUMN embedding vector(1536);
+  END IF;
+END $$;
+
+-- =====================================================
+-- EXECUTION PERMISSIONS: Add enabled/mode columns
+-- =====================================================
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'execution_permissions' AND column_name = 'enabled') THEN
+    ALTER TABLE execution_permissions ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT FALSE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'execution_permissions' AND column_name = 'mode') THEN
+    ALTER TABLE execution_permissions ADD COLUMN mode TEXT NOT NULL DEFAULT 'local';
   END IF;
 END $$;
 `;

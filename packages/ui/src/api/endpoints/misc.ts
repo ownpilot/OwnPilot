@@ -50,7 +50,7 @@ export const autonomyApi = {
   getConfig: () => apiClient.get<{ config: AutonomyConfig; levels: AutonomyLevel[] }>('/autonomy/config'),
   getApprovals: () =>
     apiClient.get<{ pending: PendingApproval[]; count: number }>('/autonomy/approvals').then((r) => r.pending ?? []),
-  setLevel: (level: string) => apiClient.post<void>('/autonomy/level', { level }),
+  setLevel: (level: number) => apiClient.post<void>('/autonomy/level', { level }),
   updateBudget: (budget: Record<string, unknown>) =>
     apiClient.patch<void>('/autonomy/budget', budget),
   allowTool: (tool: string) => apiClient.post<void>('/autonomy/tools/allow', { tool }),

@@ -10,9 +10,12 @@ import type { ExecutionPermissions, PermissionMode } from '@ownpilot/core';
 import { DEFAULT_EXECUTION_PERMISSIONS } from '@ownpilot/core';
 
 const CATEGORIES = ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager'] as const;
+const VALID_MODES: ReadonlySet<string> = new Set(['local', 'docker', 'auto']);
 
 interface PermissionRow {
   user_id: string;
+  enabled: number | boolean;
+  mode: string;
   execute_javascript: string;
   execute_python: string;
   execute_shell: string;
@@ -23,6 +26,8 @@ interface PermissionRow {
 
 function rowToPermissions(row: PermissionRow): ExecutionPermissions {
   return {
+    enabled: Boolean(row.enabled),
+    mode: (VALID_MODES.has(row.mode) ? row.mode : 'local') as 'local' | 'docker' | 'auto',
     execute_javascript: (row.execute_javascript as PermissionMode) ?? 'blocked',
     execute_python: (row.execute_python as PermissionMode) ?? 'blocked',
     execute_shell: (row.execute_shell as PermissionMode) ?? 'blocked',
@@ -50,32 +55,46 @@ class ExecutionPermissionsRepository extends BaseRepository {
   async set(userId: string, partial: Partial<ExecutionPermissions>): Promise<ExecutionPermissions> {
     // Get current permissions
     const current = await this.get(userId);
-    const merged: ExecutionPermissions = { ...current };
+    const merged = { ...current } as Record<string, unknown>;
+
+    // Apply enabled toggle
+    if (typeof partial.enabled === 'boolean') {
+      merged.enabled = partial.enabled;
+    }
+
+    // Apply mode
+    if (partial.mode && VALID_MODES.has(partial.mode)) {
+      merged.mode = partial.mode;
+    }
 
     // Apply partial updates (only valid categories and modes)
     for (const cat of CATEGORIES) {
       if (cat in partial) {
         const val = partial[cat];
         if (val === 'blocked' || val === 'prompt' || val === 'allowed') {
-          (merged as unknown as Record<string, string>)[cat] = val;
+          merged[cat] = val;
         }
       }
     }
 
+    const result = merged as unknown as ExecutionPermissions;
+
     await this.execute(
-      `INSERT INTO execution_permissions (user_id, execute_javascript, execute_python, execute_shell, compile_code, package_manager, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      `INSERT INTO execution_permissions (user_id, enabled, mode, execute_javascript, execute_python, execute_shell, compile_code, package_manager, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
        ON CONFLICT(user_id) DO UPDATE SET
+         enabled = excluded.enabled,
+         mode = excluded.mode,
          execute_javascript = excluded.execute_javascript,
          execute_python = excluded.execute_python,
          execute_shell = excluded.execute_shell,
          compile_code = excluded.compile_code,
          package_manager = excluded.package_manager,
          updated_at = excluded.updated_at`,
-      [userId, merged.execute_javascript, merged.execute_python, merged.execute_shell, merged.compile_code, merged.package_manager],
+      [userId, result.enabled, result.mode, result.execute_javascript, result.execute_python, result.execute_shell, result.compile_code, result.package_manager],
     );
 
-    return merged;
+    return result;
   }
 
   /**

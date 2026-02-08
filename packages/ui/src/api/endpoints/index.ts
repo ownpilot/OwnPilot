@@ -15,7 +15,7 @@ export { integrationsApi, authApi } from './integrations';
 export { chatApi } from './chat';
 export type { ChatRequestBody } from './chat';
 export { executionPermissionsApi } from './execution-permissions';
-export type { ExecutionPermissions, PermissionMode, ApprovalRequest, CodeRiskAnalysis } from './execution-permissions';
+export type { ExecutionPermissions, ExecutionMode, PermissionMode, ApprovalRequest, CodeRiskAnalysis } from './execution-permissions';
 export { profileApi } from './profile';
 export {
   autonomyApi,
