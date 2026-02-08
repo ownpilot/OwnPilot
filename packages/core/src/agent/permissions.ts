@@ -9,6 +9,9 @@
  */
 
 import type { ToolContext } from './types.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('Permission');
 
 // =============================================================================
 // Permission Types
@@ -524,7 +527,7 @@ export class PermissionChecker {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.log('[Permission Audit]', JSON.stringify(logEntry));
+      log.debug('Audit:', logEntry);
     }
   }
 
@@ -660,7 +663,7 @@ export function withPermissionCheck<T extends (...args: unknown[]) => Promise<un
     if (result.requiresConfirmation) {
       // In a real implementation, this would trigger a confirmation flow
       // For now, we'll log and proceed
-      console.log(`[Permission] Tool "${toolName}" requires confirmation`);
+      log.info(`Tool "${toolName}" requires confirmation`);
     }
 
     return executor(args, context);

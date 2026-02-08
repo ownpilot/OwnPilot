@@ -13,6 +13,9 @@
 
 import type { ToolDefinition } from './types.js';
 import type { UserProfile } from '../memory/conversation.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('MemoryInjector');
 import { getPersonalMemoryStore, type ComprehensiveProfile } from '../memory/personal.js';
 import {
   PromptComposer,
@@ -134,7 +137,7 @@ export class MemoryInjector {
 
       return entry;
     } catch (error) {
-      console.warn('Failed to load user memory:', error);
+      log.warn('Failed to load user memory:', error);
       return null;
     }
   }
@@ -246,7 +249,7 @@ export class MemoryInjector {
 
       return `Relevant information from memory:\n${relevantInfo}`;
     } catch (error) {
-      console.warn('[MemoryInjector] Failed to retrieve memory context:', error instanceof Error ? error.message : error);
+      log.warn('Failed to retrieve memory context:', error instanceof Error ? error.message : error);
       return null;
     }
   }
