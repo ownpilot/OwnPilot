@@ -68,6 +68,9 @@ import { TOOL_ARGS_MAX_SIZE } from '../config/defaults.js';
 
 const log = getLog('Agents');
 
+/** Providers with built-in SDK support (non-native fall back to OpenAI-compatible) */
+const NATIVE_PROVIDERS = new Set(['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'xai', 'together', 'fireworks', 'perplexity']);
+
 /**
  * Base system prompt used for all agents.
  * Structured to establish identity, behavior, and output expectations.
@@ -645,8 +648,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   const baseUrl = providerConfig?.baseUrl;
 
   // Determine the actual provider type for the core library
-  const nativeProviders = ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'xai', 'together', 'fireworks', 'perplexity'];
-  const providerType = nativeProviders.includes(resolvedProvider) ? resolvedProvider : 'openai';
+  const providerType = NATIVE_PROVIDERS.has(resolvedProvider) ? resolvedProvider : 'openai';
 
   // Create tool registry with ALL tools (not just core)
   const tools = new ToolRegistry();
@@ -1508,8 +1510,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // Determine the actual provider type for the core library
   // Native providers: openai, anthropic, google, etc.
   // Others use 'openai' type with custom baseUrl (openai-compatible)
-  const nativeProviders = ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'xai', 'together', 'fireworks', 'perplexity'];
-  const providerType = nativeProviders.includes(provider) ? provider : 'openai';
+  const providerType = NATIVE_PROVIDERS.has(provider) ? provider : 'openai';
 
   // Create tools registry with ALL tools
   const tools = new ToolRegistry();
