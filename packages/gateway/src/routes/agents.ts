@@ -32,6 +32,7 @@ import {
   type AgentConfig,
   type AIProvider,
   type ToolExecutionResult as CoreToolResult,
+  type ToolContext,
   type WorkspaceContext,
   unsafeToolId,
 } from '@ownpilot/core';
@@ -254,6 +255,135 @@ function registerGatewayTools(
 /** Compatibility wrapper: old 2-arg signature → new 3-arg from core */
 function findSimilarTools(tools: ToolRegistry, query: string): string[] {
   return findSimilarToolNames(tools, query, 5);
+}
+
+/**
+ * Shared use_tool executor — validates, caps, executes a single tool by name.
+ * Used by both agent and chat tool registration paths.
+ */
+async function executeUseTool(
+  tools: ToolRegistry,
+  args: Record<string, unknown>,
+  context: ToolContext,
+): Promise<CoreToolResult> {
+  const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
+
+  // Check if tool exists — suggest similar names if not
+  if (!tools.has(tool_name)) {
+    const similar = findSimilarTools(tools, tool_name);
+    const hint = similar.length > 0
+      ? `\n\nDid you mean one of these?\n${similar.map(s => `  • ${s}`).join('\n')}\n\nCall get_tool_help("tool_name") to see parameters, then retry with the correct name.`
+      : '\n\nUse search_tools("keyword") to find the correct tool name.';
+    return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
+  }
+
+  // Pre-validate required parameters before execution
+  const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
+  if (missingError) {
+    return { content: `${missingError}${buildToolHelpText(tools, tool_name)}`, isError: true };
+  }
+
+  try {
+    // Validate tool arguments payload size
+    const argsStr = JSON.stringify(toolArgs ?? {});
+    if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
+      return { content: 'Tool arguments payload too large (max 100KB)', isError: true };
+    }
+
+    // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
+    const cappedArgs = applyToolLimits(tool_name, toolArgs);
+    // Forward the parent context so inner tools inherit executionPermissions, requestApproval, etc.
+    const result = await tools.execute(tool_name, cappedArgs, context);
+    if (result.ok) {
+      return result.value;
+    }
+    // Include parameter help on execution error so LLM can retry correctly
+    return { content: result.error.message + buildToolHelpText(tools, tool_name), isError: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Tool execution failed';
+    return { content: msg + buildToolHelpText(tools, tool_name), isError: true };
+  }
+}
+
+/**
+ * Shared batch_use_tool executor — validates and executes multiple tools in parallel.
+ * Used by both agent and chat tool registration paths.
+ */
+async function executeBatchUseTool(
+  tools: ToolRegistry,
+  args: Record<string, unknown>,
+  context: ToolContext,
+): Promise<CoreToolResult> {
+  const { calls } = args as { calls: Array<{ tool_name: string; arguments: Record<string, unknown> }> };
+
+  if (!calls?.length) {
+    return { content: 'Provide a "calls" array with at least one tool call.', isError: true };
+  }
+
+  if (calls.length > MAX_BATCH_TOOL_CALLS) {
+    return { content: `Batch size ${calls.length} exceeds maximum of ${MAX_BATCH_TOOL_CALLS}. Split into smaller batches.`, isError: true };
+  }
+
+  // Execute all tool calls in parallel
+  const results = await Promise.allSettled(
+    calls.map(async (call, idx) => {
+      const { tool_name, arguments: toolArgs } = call;
+
+      // Check tool exists
+      if (!tools.has(tool_name)) {
+        const similar = findSimilarTools(tools, tool_name);
+        const hint = similar.length > 0
+          ? ` Did you mean: ${similar.join(', ')}?`
+          : '';
+        return { idx, tool_name, ok: false, content: `Tool '${tool_name}' not found.${hint}` };
+      }
+
+      // Validate required params
+      const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
+      if (missingError) {
+        return { idx, tool_name, ok: false, content: missingError };
+      }
+
+      try {
+        // Validate tool arguments payload size
+        const argsStr = JSON.stringify(toolArgs ?? {});
+        if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
+          return { idx, tool_name, ok: false, content: 'Tool arguments payload too large (max 100KB)' };
+        }
+
+        const cappedArgs = applyToolLimits(tool_name, toolArgs);
+        // Forward the parent context so inner tools inherit executionPermissions, etc.
+        const result = await tools.execute(tool_name, cappedArgs, context);
+        if (result.ok) {
+          return { idx, tool_name, ok: true, content: typeof result.value.content === 'string' ? result.value.content : JSON.stringify(result.value.content, null, 2) };
+        }
+        return { idx, tool_name, ok: false, content: result.error.message };
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Execution failed';
+        return { idx, tool_name, ok: false, content: msg };
+      }
+    })
+  );
+
+  // Format combined results
+  const sections = results.map((r, i) => {
+    const call = calls[i]!;
+    if (r.status === 'fulfilled') {
+      const v = r.value;
+      const status = v.ok ? '✓' : '✗';
+      return `### ${i + 1}. ${call.tool_name} ${status}\n${v.content}`;
+    }
+    return `### ${i + 1}. ${call.tool_name} ✗\nUnexpected error: ${r.reason}`;
+  });
+
+  const hasErrors = results.some(r =>
+    r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)
+  );
+
+  return {
+    content: `[Batch: ${calls.length} tool calls]\n\n${sections.join('\n\n---\n\n')}`,
+    isError: hasErrors && results.every(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)),
+  };
 }
 
 /**
@@ -735,122 +865,13 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // On failure, auto-includes tool parameter help so LLM can self-correct
   const useToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
   if (useToolDef) {
-    tools.register(useToolDef, async (args, context): Promise<CoreToolResult> => {
-      const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
-
-      // Check if tool exists — suggest similar names if not
-      if (!tools.has(tool_name)) {
-        const similar = findSimilarTools(tools, tool_name);
-        const hint = similar.length > 0
-          ? `\n\nDid you mean one of these?\n${similar.map(s => `  • ${s}`).join('\n')}\n\nCall get_tool_help("tool_name") to see parameters, then retry with the correct name.`
-          : '\n\nUse search_tools("keyword") to find the correct tool name.';
-        return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
-      }
-
-      // Pre-validate required parameters before execution
-      const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
-      if (missingError) {
-        return { content: `${missingError}${buildToolHelpText(tools, tool_name)}`, isError: true };
-      }
-
-      try {
-        // Validate tool arguments payload size
-        const argsStr = JSON.stringify(toolArgs ?? {});
-        if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
-          return { content: 'Tool arguments payload too large (max 100KB)', isError: true };
-        }
-
-        // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
-        const cappedArgs = applyToolLimits(tool_name, toolArgs);
-        // Forward the parent context so inner tools inherit executionPermissions, requestApproval, etc.
-        const result = await tools.execute(tool_name, cappedArgs, context);
-        if (result.ok) {
-          return result.value;
-        }
-        // Include parameter help on execution error so LLM can retry correctly
-        return { content: result.error.message + buildToolHelpText(tools, tool_name), isError: true };
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : 'Tool execution failed';
-        return { content: msg + buildToolHelpText(tools, tool_name), isError: true };
-      }
-    });
+    tools.register(useToolDef, (args, context) => executeUseTool(tools, args as Record<string, unknown>, context));
   }
 
   // Register batch_use_tool — parallel execution of multiple tools
   const batchUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'batch_use_tool');
   if (batchUseToolDef) {
-    tools.register(batchUseToolDef, async (args, context): Promise<CoreToolResult> => {
-      const { calls } = args as { calls: Array<{ tool_name: string; arguments: Record<string, unknown> }> };
-
-      if (!calls?.length) {
-        return { content: 'Provide a "calls" array with at least one tool call.', isError: true };
-      }
-
-      if (calls.length > MAX_BATCH_TOOL_CALLS) {
-        return { content: `Batch size ${calls.length} exceeds maximum of ${MAX_BATCH_TOOL_CALLS}. Split into smaller batches.`, isError: true };
-      }
-
-      // Execute all tool calls in parallel
-      const results = await Promise.allSettled(
-        calls.map(async (call, idx) => {
-          const { tool_name, arguments: toolArgs } = call;
-
-          // Check tool exists
-          if (!tools.has(tool_name)) {
-            const similar = findSimilarTools(tools, tool_name);
-            const hint = similar.length > 0
-              ? ` Did you mean: ${similar.join(', ')}?`
-              : '';
-            return { idx, tool_name, ok: false, content: `Tool '${tool_name}' not found.${hint}` };
-          }
-
-          // Validate required params
-          const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
-          if (missingError) {
-            return { idx, tool_name, ok: false, content: missingError };
-          }
-
-          try {
-            // Validate tool arguments payload size
-            const argsStr = JSON.stringify(toolArgs ?? {});
-            if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
-              return { idx, tool_name, ok: false, content: 'Tool arguments payload too large (max 100KB)' };
-            }
-
-            const cappedArgs = applyToolLimits(tool_name, toolArgs);
-            // Forward the parent context so inner tools inherit executionPermissions, etc.
-            const result = await tools.execute(tool_name, cappedArgs, context);
-            if (result.ok) {
-              return { idx, tool_name, ok: true, content: typeof result.value.content === 'string' ? result.value.content : JSON.stringify(result.value.content, null, 2) };
-            }
-            return { idx, tool_name, ok: false, content: result.error.message };
-          } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Execution failed';
-            return { idx, tool_name, ok: false, content: msg };
-          }
-        })
-      );
-
-      // Format combined results
-      const sections = results.map((r, i) => {
-        const call = calls[i]!;
-        if (r.status === 'fulfilled') {
-          const v = r.value;
-          const status = v.ok ? '✓' : '✗';
-          return `### ${i + 1}. ${call.tool_name} ${status}\n${v.content}`;
-        }
-        return `### ${i + 1}. ${call.tool_name} ✗\nUnexpected error: ${r.reason}`;
-      });
-
-      const hasErrors = results.some(r =>
-        r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)
-      );
-
-      return {
-        content: `[Batch: ${calls.length} tool calls]\n\n${sections.join('\n\n---\n\n')}`,
-        isError: hasErrors && results.every(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)),
-      };
-    });
+    tools.register(batchUseToolDef, (args, context) => executeBatchUseTool(tools, args as Record<string, unknown>, context));
   }
 
   // Register active custom tools (user-created dynamic tools)
@@ -888,7 +909,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   let pluginOverrides = 0;
   for (const { definition, executor } of pluginTools) {
-    const wrappedExecutor = async (args: unknown, context: import('@ownpilot/core').ToolContext): Promise<CoreToolResult> => {
+    const wrappedExecutor = async (args: unknown, context: ToolContext): Promise<CoreToolResult> => {
       const startTime = traceToolCallStart(definition.name, args as Record<string, unknown>);
       try {
         const result = await executor(args as Record<string, unknown>, context);
@@ -1686,119 +1707,13 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // On failure, auto-includes tool parameter help so LLM can self-correct
   const chatUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
   if (chatUseToolDef) {
-    tools.register(chatUseToolDef, async (args, context): Promise<CoreToolResult> => {
-      const { tool_name, arguments: toolArgs } = args as { tool_name: string; arguments: Record<string, unknown> };
-
-      // Check if tool exists — suggest similar names if not
-      if (!tools.has(tool_name)) {
-        const similar = findSimilarTools(tools, tool_name);
-        const hint = similar.length > 0
-          ? `\n\nDid you mean one of these?\n${similar.map(s => `  • ${s}`).join('\n')}\n\nCall get_tool_help("tool_name") to see parameters, then retry with the correct name.`
-          : '\n\nUse search_tools("keyword") to find the correct tool name.';
-        return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
-      }
-
-      // Pre-validate required parameters before execution
-      const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
-      if (missingError) {
-        return { content: `${missingError}${buildToolHelpText(tools, tool_name)}`, isError: true };
-      }
-
-      try {
-        // Validate tool arguments payload size
-        const argsStr = JSON.stringify(toolArgs ?? {});
-        if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
-          return { content: 'Tool arguments payload too large (max 100KB)', isError: true };
-        }
-
-        // Apply max limits for list-returning tools (e.g. cap list_emails limit to 50)
-        const cappedArgs = applyToolLimits(tool_name, toolArgs);
-        // Forward the parent context so inner tools inherit executionPermissions, requestApproval, etc.
-        const result = await tools.execute(tool_name, cappedArgs, context);
-        if (result.ok) {
-          return result.value;
-        }
-        // Include parameter help on execution error so LLM can retry correctly
-        return { content: result.error.message + buildToolHelpText(tools, tool_name), isError: true };
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : 'Tool execution failed';
-        return { content: msg + buildToolHelpText(tools, tool_name), isError: true };
-      }
-    });
+    tools.register(chatUseToolDef, (args, context) => executeUseTool(tools, args as Record<string, unknown>, context));
   }
 
   // Register batch_use_tool — parallel execution of multiple tools
   const chatBatchUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'batch_use_tool');
   if (chatBatchUseToolDef) {
-    tools.register(chatBatchUseToolDef, async (args, context): Promise<CoreToolResult> => {
-      const { calls } = args as { calls: Array<{ tool_name: string; arguments: Record<string, unknown> }> };
-
-      if (!calls?.length) {
-        return { content: 'Provide a "calls" array with at least one tool call.', isError: true };
-      }
-
-      if (calls.length > MAX_BATCH_TOOL_CALLS) {
-        return { content: `Batch size ${calls.length} exceeds maximum of ${MAX_BATCH_TOOL_CALLS}. Split into smaller batches.`, isError: true };
-      }
-
-      // Execute all tool calls in parallel
-      const results = await Promise.allSettled(
-        calls.map(async (call, idx) => {
-          const { tool_name, arguments: toolArgs } = call;
-
-          if (!tools.has(tool_name)) {
-            const similar = findSimilarTools(tools, tool_name);
-            const hint = similar.length > 0
-              ? ` Did you mean: ${similar.join(', ')}?`
-              : '';
-            return { idx, tool_name, ok: false, content: `Tool '${tool_name}' not found.${hint}` };
-          }
-
-          const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
-          if (missingError) {
-            return { idx, tool_name, ok: false, content: missingError };
-          }
-
-          try {
-            // Validate tool arguments payload size
-            const argsStr = JSON.stringify(toolArgs ?? {});
-            if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
-              return { idx, tool_name, ok: false, content: 'Tool arguments payload too large (max 100KB)' };
-            }
-
-            const cappedArgs = applyToolLimits(tool_name, toolArgs);
-            // Forward the parent context so inner tools inherit executionPermissions, etc.
-            const result = await tools.execute(tool_name, cappedArgs, context);
-            if (result.ok) {
-              return { idx, tool_name, ok: true, content: typeof result.value.content === 'string' ? result.value.content : JSON.stringify(result.value.content, null, 2) };
-            }
-            return { idx, tool_name, ok: false, content: result.error.message };
-          } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Execution failed';
-            return { idx, tool_name, ok: false, content: msg };
-          }
-        })
-      );
-
-      const sections = results.map((r, i) => {
-        const call = calls[i]!;
-        if (r.status === 'fulfilled') {
-          const v = r.value;
-          const status = v.ok ? '✓' : '✗';
-          return `### ${i + 1}. ${call.tool_name} ${status}\n${v.content}`;
-        }
-        return `### ${i + 1}. ${call.tool_name} ✗\nUnexpected error: ${r.reason}`;
-      });
-
-      const hasErrors = results.some(r =>
-        r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)
-      );
-
-      return {
-        content: `[Batch: ${calls.length} tool calls]\n\n${sections.join('\n\n---\n\n')}`,
-        isError: hasErrors && results.every(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)),
-      };
-    });
+    tools.register(chatBatchUseToolDef, (args, context) => executeBatchUseTool(tools, args as Record<string, unknown>, context));
   }
 
   // Register active custom tools (user-created dynamic tools)
@@ -1826,7 +1741,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   const pluginToolDefs: typeof MEMORY_TOOLS = [];
 
   for (const { definition, executor } of pluginTools) {
-    const wrappedExecutor = async (args: unknown, context: import('@ownpilot/core').ToolContext): Promise<CoreToolResult> => {
+    const wrappedExecutor = async (args: unknown, context: ToolContext): Promise<CoreToolResult> => {
       try {
         const result = await executor(args as Record<string, unknown>, context);
         return result;
