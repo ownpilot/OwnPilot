@@ -6,8 +6,6 @@
  */
 
 import { Hono } from 'hono';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
 import {
   Agent,
@@ -504,9 +502,6 @@ You help the user track and achieve their goals. Use these tools:
 
   return sections.join('\n') + '\n';
 }
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * Get workspace context for file operations
@@ -1870,7 +1865,7 @@ export function clearAllChatAgentCaches(): number {
  * Helper: Get API key for a provider
  * Uses getApiKey from settings which checks both env vars and database
  */
-export async function getProviderApiKey(provider: string): Promise<string | undefined> {
+async function getProviderApiKey(provider: string): Promise<string | undefined> {
   // Check local provider first (may have its own API key, or none required)
   const localProv = await localProvidersRepo.getProvider(provider);
   if (localProv) {

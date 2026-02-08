@@ -1761,7 +1761,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   const deleted = memory.delete(id);
 
   // Also delete from database
-  const chatRepo = new ChatRepository('default');
+  const chatRepo = new ChatRepository(getUserId(c));
   await chatRepo.deleteConversation(id);
 
   if (!deleted) {

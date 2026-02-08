@@ -4,7 +4,7 @@
  * Real-time communication with the gateway
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext, type ReactNode } from 'react';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -213,8 +213,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
 /**
  * WebSocket context for sharing connection across components
  */
-import { createContext, useContext, type ReactNode } from 'react';
-
 const WebSocketContext = createContext<UseWebSocketResult | null>(null);
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {

@@ -451,6 +451,6 @@ costRoutes.get('/export', async (c) => {
 });
 
 /**
- * Export tracker and budget manager for use in other routes
+ * Export tracker for use in other routes
  */
-export { usageTracker, budgetManager };
+export { usageTracker };
