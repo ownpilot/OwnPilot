@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository } from './base.js';
+import { MS_PER_DAY } from '../../config/defaults.js';
 
 export interface Contact {
   id: string;
@@ -397,7 +398,7 @@ export class ContactsRepository extends BaseRepository {
         birthdayThisYear.setFullYear(today.getFullYear() + 1);
       }
 
-      const daysUntil = Math.ceil((birthdayThisYear.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const daysUntil = Math.ceil((birthdayThisYear.getTime() - today.getTime()) / MS_PER_DAY);
       if (daysUntil <= days) {
         results.push(contact);
       }
