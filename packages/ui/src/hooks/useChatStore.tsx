@@ -233,7 +233,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                   // Handle different event types
                   if (data.type === 'approval_required') {
                     // Real-time approval request from backend
-                    console.log('[ExecSecurity] Received approval_required SSE event:', data.approvalId, data.category);
                     setPendingApproval({
                       approvalId: data.approvalId,
                       category: data.category,
