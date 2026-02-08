@@ -19,7 +19,7 @@ import {
   DEFAULT_CONTAINER_CONFIG,
   StorageSecurityError,
 } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, getIntParam, getUserId } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getIntParam, getUserId, zodValidationError } from './helpers.js';
 
 const app = new Hono();
 
@@ -436,8 +436,7 @@ app.put('/:id/files/*', async (c) => {
     const parsed = workspaceWriteFileSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const { content } = parsed.data;
@@ -647,8 +646,7 @@ app.post('/:id/execute', async (c) => {
     const parsed = workspaceExecuteCodeSchema.safeParse(rawBody);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const body = parsed.data as ExecuteCodeRequest;

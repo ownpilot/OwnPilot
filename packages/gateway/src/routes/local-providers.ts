@@ -9,7 +9,7 @@ import { Hono } from 'hono';
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { discoverModels } from '../services/local-discovery.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, zodValidationError } from './helpers.js';
 
 const log = getLog('LocalProviders');
 
@@ -96,8 +96,7 @@ localProvidersRoutes.post('/', async (c) => {
     const parsed = createLocalProviderSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const { name, providerType, baseUrl, apiKey, discoveryEndpoint } = parsed.data;
@@ -170,8 +169,7 @@ localProvidersRoutes.put('/:id', async (c) => {
     const parsed = updateLocalProviderSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const { name, baseUrl, apiKey, discoveryEndpoint, isEnabled } = parsed.data;
@@ -238,8 +236,7 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
     const parsed = toggleEnabledSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const { enabled } = parsed.data;
@@ -384,8 +381,7 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
     const parsed = toggleEnabledSchema.safeParse(body);
 
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${issues}` }, 400);
+      return zodValidationError(c, parsed.error.issues);
     }
 
     const { enabled } = parsed.data;
