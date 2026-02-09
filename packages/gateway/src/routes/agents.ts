@@ -65,7 +65,7 @@ import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getD
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
 import { getApprovalManager } from '../autonomy/index.js';
-import { TOOL_ARGS_MAX_SIZE } from '../config/defaults.js';
+import { TOOL_ARGS_MAX_SIZE, MAX_AGENT_CACHE_SIZE, MAX_CHAT_AGENT_CACHE_SIZE } from '../config/defaults.js';
 
 const log = getLog('Agents');
 
@@ -871,8 +871,7 @@ const MAX_BATCH_TOOL_CALLS = 20;
 const agentCache = new Map<string, Agent>();
 const agentConfigCache = new Map<string, AgentConfig>();
 const chatAgentCache = new Map<string, Agent>(); // Chat agents keyed by provider:model
-const MAX_AGENT_CACHE_SIZE = 100;
-const MAX_CHAT_AGENT_CACHE_SIZE = 20;
+// Cache size limits imported from config/defaults.ts
 
 // In-flight creation promises to prevent duplicate concurrent creation
 const pendingAgents = new Map<string, Promise<Agent>>();

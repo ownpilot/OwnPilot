@@ -14,6 +14,7 @@ import {
 import { getPlanExecutor } from '../plans/index.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError } from './helpers.js';
+import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Plans');
@@ -36,7 +37,7 @@ plansRoutes.get('/', async (c) => {
   const goalId = c.req.query('goalId');
   const triggerId = c.req.query('triggerId');
   const limit = getIntParam(c, 'limit', 20, 1, 100);
-  const offset = getIntParam(c, 'offset', 0, 0, 10000);
+  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
 
   const service = getServiceRegistry().get(Services.Plan);
   const plans = await service.listPlans(userId, { status, goalId, triggerId, limit, offset });
