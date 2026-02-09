@@ -1379,10 +1379,3 @@ export async function getActiveCustomToolDefinitions(userId = 'default'): Promis
   }));
 }
 
-/**
- * Check if a tool name is a custom tool
- */
-export async function isCustomTool(toolName: string, userId = 'default'): Promise<boolean> {
-  const repo = createCustomToolsRepo(userId);
-  return (await repo.getByName(toolName)) !== null;
-}

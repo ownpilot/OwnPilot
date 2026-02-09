@@ -120,7 +120,6 @@ vi.mock('./custom-tools.js', () => ({
   executeCustomToolTool: vi.fn(),
   executeActiveCustomTool: vi.fn(),
   getActiveCustomToolDefinitions: vi.fn(async () => []),
-  isCustomTool: vi.fn(() => false),
 }));
 
 vi.mock('./memories.js', () => ({
