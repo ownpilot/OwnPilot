@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
+import { truncate } from '../../routes/helpers.js';
 
 // =====================================================
 // TYPES
@@ -335,10 +336,7 @@ export class ChatRepository extends BaseRepository {
     const firstMessage = messages[0];
     if (!firstMessage) return null;
 
-    let title = firstMessage.content.slice(0, 50);
-    if (firstMessage.content.length > 50) {
-      title += '...';
-    }
+    const title = truncate(firstMessage.content);
 
     await this.updateConversation(conversationId, { title });
     return title;

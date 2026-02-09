@@ -217,6 +217,25 @@ export function getErrorMessage(error: unknown, fallback = 'Unknown error'): str
 }
 
 /**
+ * Truncate a string to maxLength, appending '...' if truncated.
+ */
+export function truncate(text: string, maxLength = 50): string {
+  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+}
+
+/**
+ * Mask a secret value for safe display.
+ * Shows first 4 + '...' + last 4 for strings >= 12 chars,
+ * otherwise returns '****'.
+ */
+export function maskSecret(value: unknown): string {
+  if (typeof value === 'string' && value.length >= 12) {
+    return `${value.slice(0, 4)}...${value.slice(-4)}`;
+  }
+  return '****';
+}
+
+/**
  * Sanitize user-supplied text for safe interpolation in messages.
  * Strips special characters and truncates to 200 chars.
  */

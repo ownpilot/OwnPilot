@@ -10,26 +10,13 @@ import { Hono } from 'hono';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import type { CreateConfigServiceInput, UpdateConfigServiceInput, CreateConfigEntryInput, UpdateConfigEntryInput } from '../db/repositories/config-services.js';
 import type { ConfigServiceDefinition, ConfigEntry, ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, maskSecret } from './helpers.js'
 
 export const configServicesRoutes = new Hono();
 
 // =============================================================================
 // HELPERS
 // =============================================================================
-
-/**
- * Mask a secret value for safe display.
- * If the string is 12+ characters, show first 4 + '...' + last 4
- * (guarantees at least 4 hidden characters).
- * Otherwise return '****'.
- */
-function maskSecret(value: unknown): string {
-  if (typeof value === 'string' && value.length >= 12) {
-    return `${value.slice(0, 4)}...${value.slice(-4)}`;
-  }
-  return '****';
-}
 
 /**
  * Detect if a value looks like it was masked by maskSecret().

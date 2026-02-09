@@ -14,7 +14,7 @@ import type {
 } from '../db/repositories/memories.js';
 import { MemoryServiceError } from '../services/memory-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError, truncate } from './helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Memories');
@@ -310,7 +310,7 @@ export async function executeMemoryTool(
         return {
           success: true,
           result: {
-            message: `Remembered: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`,
+            message: `Remembered: "${truncate(content)}"`,
             memory: {
               id: memory.id,
               type: memory.type,
@@ -422,7 +422,7 @@ export async function executeMemoryTool(
         return {
           success: true,
           result: {
-            message: `Forgot: "${memory.content.substring(0, 50)}${memory.content.length > 50 ? '...' : ''}"`,
+            message: `Forgot: "${truncate(memory.content)}"`,
           },
         };
       }

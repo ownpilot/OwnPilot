@@ -8,6 +8,7 @@
 
 import type { ToolDefinition, ToolExecutionResult } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
+import { maskSecret } from '../routes/helpers.js';
 
 // =============================================================================
 // Tool Definitions
@@ -141,7 +142,7 @@ async function executeGetConfigService(
     for (const [key, value] of Object.entries(entry.data)) {
       const fieldDef = svc.configSchema.find((f) => f.name === key);
       if (fieldDef?.type === 'secret' && typeof value === 'string' && value.length > 0) {
-        maskedData[key] = value.slice(0, 4) + '****' + value.slice(-4);
+        maskedData[key] = maskSecret(value);
       } else {
         maskedData[key] = value;
       }

@@ -8,7 +8,7 @@ import type {
   ChatRequest,
   StreamChunkResponse,
 } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError, getErrorMessage } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError, getErrorMessage, truncate } from './helpers.js';
 import { MAX_DAYS_LOOKBACK, AI_META_TOOL_NAMES } from '../config/defaults.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
@@ -1092,7 +1092,7 @@ chatRoutes.post('/', async (c) => {
 
           // Get or create conversation
           const dbConversation = await chatRepo.getOrCreateConversation(body.conversationId || conversationId, {
-            title: body.message.slice(0, 50) + (body.message.length > 50 ? '...' : ''),
+            title: truncate(body.message),
             agentId: body.agentId,
             agentName: body.agentId ? undefined : 'Chat',
             provider,
@@ -1624,7 +1624,7 @@ chatRoutes.post('/', async (c) => {
 
     // Get or create conversation
     const dbConversation = await chatRepo.getOrCreateConversation(body.conversationId || conversation.id, {
-      title: body.message.slice(0, 50) + (body.message.length > 50 ? '...' : ''),
+      title: truncate(body.message),
       agentId: body.agentId,
       agentName: body.agentId ? undefined : 'Chat',
       provider,

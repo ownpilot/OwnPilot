@@ -170,7 +170,7 @@ describe('Config Tools', () => {
 
       // Secret field should be masked
       const entry = content.entries[0];
-      expect(entry.data.api_key).toBe('sk-1****cdef');
+      expect(entry.data.api_key).toBe('sk-1...cdef');
       // Non-secret field should be plain
       expect(entry.data.base_url).toBe('https://api.deepl.com');
     });

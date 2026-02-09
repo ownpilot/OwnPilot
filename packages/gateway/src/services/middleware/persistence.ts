@@ -7,6 +7,7 @@
 
 import type { MessageMiddleware } from '@ownpilot/core';
 import { ChatRepository } from '../../db/repositories/index.js';
+import { truncate } from '../../routes/helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { getLog } from '../log.js';
 
@@ -47,7 +48,7 @@ export function createPersistenceMiddleware(): MessageMiddleware {
       const chatRepo = new ChatRepository(userId);
 
       const dbConversation = await chatRepo.getOrCreateConversation(conversationId, {
-        title: message.content.slice(0, 50) + (message.content.length > 50 ? '...' : ''),
+        title: truncate(message.content),
         agentId,
         agentName: agentId ? undefined : 'Chat',
         provider,

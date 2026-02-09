@@ -59,7 +59,7 @@ import type {
   UpdateAgentRequest,
   AgentInfo,
 } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage, truncate } from './helpers.js'
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
@@ -561,7 +561,7 @@ async function executeSearchTools(
     return { content: [`Found ${matches.length} tool(s) for "${query}" (with parameters):`, '', ...sections.join('\n\n---\n\n').split('\n')].join('\n') };
   }
 
-  const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
+  const lines = matches.map(d => `- **${d.name}**: ${truncate(d.description, 100)}`);
   return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines].join('\n') };
 }
 
