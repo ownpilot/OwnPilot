@@ -10,7 +10,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import type {
   ConfigFieldDefinition,
   ConfigServiceRequiredBy,
@@ -103,22 +103,6 @@ let cacheInitialized = false;
 // =============================================================================
 
 /**
- * Parse a JSONB value that may arrive as a string or as an already-parsed
- * object, depending on the database driver.
- */
-function parseJsonb<T>(raw: unknown, fallback: T): T {
-  if (raw == null) return fallback;
-  if (typeof raw === 'string') {
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      return fallback;
-    }
-  }
-  return raw as T;
-}
-
-/**
  * Parse a boolean value that may arrive as a real boolean, a string
  * ('true'/'false'), or a numeric (0/1) depending on the driver.
  */
@@ -135,10 +119,10 @@ function rowToService(row: ConfigServiceRow): ConfigServiceDefinition {
     category: row.category,
     description: row.description ?? undefined,
     docsUrl: row.docs_url ?? undefined,
-    configSchema: parseJsonb<ConfigFieldDefinition[]>(row.config_schema, []),
+    configSchema: parseJsonField<ConfigFieldDefinition[]>(row.config_schema, []),
     multiEntry: parseBool(row.multi_entry),
     isActive: parseBool(row.is_active),
-    requiredBy: parseJsonb<ConfigServiceRequiredBy[]>(row.required_by, []),
+    requiredBy: parseJsonField<ConfigServiceRequiredBy[]>(row.required_by, []),
   };
 }
 
@@ -147,7 +131,7 @@ function rowToEntry(row: ConfigEntryRow): ConfigEntry {
     id: row.id,
     serviceName: row.service_name,
     label: row.label,
-    data: parseJsonb<Record<string, unknown>>(row.data, {}),
+    data: parseJsonField<Record<string, unknown>>(row.data, {}),
     isDefault: parseBool(row.is_default),
     isActive: parseBool(row.is_active),
   };

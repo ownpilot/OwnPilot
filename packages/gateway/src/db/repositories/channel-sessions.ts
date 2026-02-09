@@ -6,7 +6,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 
 // ============================================================================
 // Entity Types
@@ -56,10 +56,7 @@ function rowToEntity(row: ChannelSessionRow): ChannelSessionEntity {
     platformChatId: row.platform_chat_id,
     conversationId: row.conversation_id,
     isActive: row.is_active,
-    context:
-      typeof row.context === 'string'
-        ? JSON.parse(row.context || '{}')
-        : (row.context || {}),
+    context: parseJsonField(row.context, {}),
     createdAt: new Date(row.created_at),
     lastMessageAt: row.last_message_at ? new Date(row.last_message_at) : null,
   };
