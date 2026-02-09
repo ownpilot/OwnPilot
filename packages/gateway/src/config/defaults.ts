@@ -141,6 +141,35 @@ export const MAX_AGENT_CACHE_SIZE = 100;
 export const MAX_CHAT_AGENT_CACHE_SIZE = 20;
 
 // ============================================================================
+// Agent Defaults
+// ============================================================================
+
+/** Default max tokens for agent runtime execution */
+export const AGENT_DEFAULT_MAX_TOKENS = 8192;
+
+/** Default max tokens when creating/updating agent config */
+export const AGENT_CREATE_DEFAULT_MAX_TOKENS = 4096;
+
+/** Default temperature for agent responses */
+export const AGENT_DEFAULT_TEMPERATURE = 0.7;
+
+/** Default maximum conversation turns */
+export const AGENT_DEFAULT_MAX_TURNS = 25;
+
+/** Default maximum tool calls per conversation */
+export const AGENT_DEFAULT_MAX_TOOL_CALLS = 200;
+
+/** Maximum tool calls in a single batch_use_tool invocation */
+export const MAX_BATCH_TOOL_CALLS = 20;
+
+// ============================================================================
+// Meta-Tool Names
+// ============================================================================
+
+/** The 4 user-facing meta-tools exposed to the AI for tool discovery and execution */
+export const AI_META_TOOL_NAMES = ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'] as const;
+
+// ============================================================================
 // Channel Plugins
 // ============================================================================
 

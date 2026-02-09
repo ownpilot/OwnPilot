@@ -65,7 +65,18 @@ import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getD
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
 import { getApprovalManager } from '../autonomy/index.js';
-import { TOOL_ARGS_MAX_SIZE, MAX_AGENT_CACHE_SIZE, MAX_CHAT_AGENT_CACHE_SIZE } from '../config/defaults.js';
+import {
+  TOOL_ARGS_MAX_SIZE,
+  MAX_AGENT_CACHE_SIZE,
+  MAX_CHAT_AGENT_CACHE_SIZE,
+  AGENT_DEFAULT_MAX_TOKENS,
+  AGENT_CREATE_DEFAULT_MAX_TOKENS,
+  AGENT_DEFAULT_TEMPERATURE,
+  AGENT_DEFAULT_MAX_TURNS,
+  AGENT_DEFAULT_MAX_TOOL_CALLS,
+  MAX_BATCH_TOOL_CALLS,
+  AI_META_TOOL_NAMES,
+} from '../config/defaults.js';
 
 const log = getLog('Agents');
 
@@ -253,7 +264,7 @@ function registerGatewayTools(
 // =============================================================================
 
 /** Names of meta-tools that have dedicated executors (registered separately) */
-const META_TOOL_NAMES = new Set(['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool', 'inspect_tool_source']);
+const META_TOOL_NAMES = new Set([...AI_META_TOOL_NAMES, 'inspect_tool_source']);
 
 /**
  * Register all dynamic tools: CRUD meta-tools, special meta-tools, and active custom tools.
@@ -526,7 +537,7 @@ async function executeSearchTools(
   const queryWords = q.split(/\s+/).filter(Boolean);
 
   const matches = allDefs.filter(d => {
-    if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool' || d.name === 'batch_use_tool') return false;
+    if (AI_META_TOOL_NAMES.includes(d.name as typeof AI_META_TOOL_NAMES[number])) return false;
     if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
     if (showAll) return true;
 
@@ -864,8 +875,6 @@ function resolveToolGroups(toolGroups: string[] | undefined, explicitTools: stri
   return Array.from(tools);
 }
 
-/** Maximum number of tool calls in a single batch_use_tool invocation */
-const MAX_BATCH_TOOL_CALLS = 20;
 
 // Runtime agent cache (runtime instances, not serializable)
 const agentCache = new Map<string, Agent>();
@@ -998,9 +1007,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Only expose meta-tools (search_tools, get_tool_help, use_tool) to the API.
   // This prevents 100+ tool schemas from consuming ~20K+ tokens per request.
   // All tools remain registered in the ToolRegistry and can be executed via use_tool proxy.
-  const metaToolFilter = ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'].map(
-    n => unsafeToolId(n)
-  );
+  const metaToolFilter = AI_META_TOOL_NAMES.map(n => unsafeToolId(n));
 
   const config: AgentConfig = {
     name: record.name,
@@ -1012,11 +1019,11 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     },
     model: {
       model: resolvedModel,
-      maxTokens: (record.config.maxTokens as number) ?? 8192,
-      temperature: (record.config.temperature as number) ?? 0.7,
+      maxTokens: (record.config.maxTokens as number) ?? AGENT_DEFAULT_MAX_TOKENS,
+      temperature: (record.config.temperature as number) ?? AGENT_DEFAULT_TEMPERATURE,
     },
-    maxTurns: (record.config.maxTurns as number) ?? 25,
-    maxToolCalls: (record.config.maxToolCalls as number) ?? 200,
+    maxTurns: (record.config.maxTurns as number) ?? AGENT_DEFAULT_MAX_TURNS,
+    maxToolCalls: (record.config.maxToolCalls as number) ?? AGENT_DEFAULT_MAX_TOOL_CALLS,
     tools: metaToolFilter,
     // Bridge to ApprovalManager for local code execution approval
     requestApproval: async (category, actionType, description, params) => {
@@ -1138,10 +1145,10 @@ agentRoutes.post('/', async (c) => {
     provider,
     model,
     config: {
-      maxTokens: body.maxTokens ?? 4096,
-      temperature: body.temperature ?? 0.7,
-      maxTurns: body.maxTurns ?? 25,
-      maxToolCalls: body.maxToolCalls ?? 200,
+      maxTokens: body.maxTokens ?? AGENT_CREATE_DEFAULT_MAX_TOKENS,
+      temperature: body.temperature ?? AGENT_DEFAULT_TEMPERATURE,
+      maxTurns: body.maxTurns ?? AGENT_DEFAULT_MAX_TURNS,
+      maxToolCalls: body.maxToolCalls ?? AGENT_DEFAULT_MAX_TOOL_CALLS,
       tools: body.tools,
       toolGroups: body.toolGroups,
     },
@@ -1205,10 +1212,10 @@ agentRoutes.get('/:id', async (c) => {
     systemPrompt: record.systemPrompt ?? '',
     tools,
     config: {
-      maxTokens: (record.config.maxTokens as number) ?? 4096,
-      temperature: (record.config.temperature as number) ?? 0.7,
-      maxTurns: (record.config.maxTurns as number) ?? 25,
-      maxToolCalls: (record.config.maxToolCalls as number) ?? 200,
+      maxTokens: (record.config.maxTokens as number) ?? AGENT_CREATE_DEFAULT_MAX_TOKENS,
+      temperature: (record.config.temperature as number) ?? AGENT_DEFAULT_TEMPERATURE,
+      maxTurns: (record.config.maxTurns as number) ?? AGENT_DEFAULT_MAX_TURNS,
+      maxToolCalls: (record.config.maxToolCalls as number) ?? AGENT_DEFAULT_MAX_TOOL_CALLS,
       tools: configuredTools,
       toolGroups: configuredToolGroups,
     },
@@ -1283,10 +1290,10 @@ agentRoutes.patch('/:id', async (c) => {
     systemPrompt: updated.systemPrompt ?? '',
     tools,
     config: {
-      maxTokens: (newConfig.maxTokens as number) ?? 4096,
-      temperature: (newConfig.temperature as number) ?? 0.7,
-      maxTurns: (newConfig.maxTurns as number) ?? 25,
-      maxToolCalls: (newConfig.maxToolCalls as number) ?? 200,
+      maxTokens: (newConfig.maxTokens as number) ?? AGENT_CREATE_DEFAULT_MAX_TOKENS,
+      temperature: (newConfig.temperature as number) ?? AGENT_DEFAULT_TEMPERATURE,
+      maxTurns: (newConfig.maxTurns as number) ?? AGENT_DEFAULT_MAX_TURNS,
+      maxToolCalls: (newConfig.maxToolCalls as number) ?? AGENT_DEFAULT_MAX_TOOL_CALLS,
       tools: configuredTools,
       toolGroups: configuredToolGroups,
     },
@@ -1461,10 +1468,10 @@ export async function getOrCreateDefaultAgent(): Promise<Agent> {
         provider,
         model,
         config: {
-          maxTokens: 8192,
-          temperature: 0.7,
-          maxTurns: 25,
-          maxToolCalls: 200,
+          maxTokens: AGENT_DEFAULT_MAX_TOKENS,
+          temperature: AGENT_DEFAULT_TEMPERATURE,
+          maxTurns: AGENT_DEFAULT_MAX_TURNS,
+          maxToolCalls: AGENT_DEFAULT_MAX_TOOL_CALLS,
         },
       });
     }
@@ -1556,9 +1563,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   });
 
   // Only expose meta-tools to the API to prevent token bloat from 100+ tool schemas.
-  const chatMetaToolFilter = ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'].map(
-    n => unsafeToolId(n)
-  );
+  const chatMetaToolFilter = AI_META_TOOL_NAMES.map(n => unsafeToolId(n));
 
   // Create agent config
   const config: AgentConfig = {
@@ -1571,11 +1576,11 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     },
     model: {
       model,
-      maxTokens: 8192,
-      temperature: 0.7,
+      maxTokens: AGENT_DEFAULT_MAX_TOKENS,
+      temperature: AGENT_DEFAULT_TEMPERATURE,
     },
-    maxTurns: 25,
-    maxToolCalls: 200,
+    maxTurns: AGENT_DEFAULT_MAX_TURNS,
+    maxToolCalls: AGENT_DEFAULT_MAX_TOOL_CALLS,
     tools: chatMetaToolFilter,
     // Bridge to ApprovalManager for local code execution approval
     requestApproval: async (category, actionType, description, params) => {

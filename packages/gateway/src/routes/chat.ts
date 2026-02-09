@@ -9,7 +9,7 @@ import type {
   StreamChunkResponse,
 } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError } from './helpers.js';
-import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
+import { MAX_DAYS_LOOKBACK, AI_META_TOOL_NAMES } from '../config/defaults.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
@@ -45,6 +45,22 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('Chat');
 
+/**
+ * Extract display-friendly tool name and args from a ToolCall.
+ * For use_tool calls, unwraps the inner tool_name and arguments.
+ */
+function extractToolDisplay(toolCall: ToolCall): { displayName: string; displayArgs?: Record<string, unknown> } {
+  let parsedArgs: Record<string, unknown> | undefined;
+  try { parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined; } catch { /* malformed */ }
+  const displayName = toolCall.name === 'use_tool' && parsedArgs?.tool_name
+    ? String(parsedArgs.tool_name)
+    : toolCall.name;
+  const displayArgs = toolCall.name === 'use_tool' && parsedArgs?.arguments
+    ? parsedArgs.arguments as Record<string, unknown>
+    : parsedArgs;
+  return { displayName, displayArgs };
+}
+
 export const chatRoutes = new Hono();
 
 /**
@@ -60,7 +76,7 @@ async function buildToolCatalog(allTools: readonly ToolDefinition[]): Promise<st
   const lines: string[] = [];
 
   // 1. List active custom/user-created tools (if any)
-  const skipTools = new Set(['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool']);
+  const skipTools = new Set<string>(AI_META_TOOL_NAMES);
   const customTools = allTools.filter(
     t => !skipTools.has(t.name) && (t.category === 'Custom' || t.category === 'User' || t.category === 'Dynamic Tools')
   );
@@ -407,14 +423,7 @@ async function processStreamingViaBus(
     },
 
     onToolStart(toolCall: ToolCall) {
-      let parsedArgs: Record<string, unknown> | undefined;
-      try { parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined; } catch { /* malformed */ }
-      const displayName = toolCall.name === 'use_tool' && parsedArgs?.tool_name
-        ? String(parsedArgs.tool_name)
-        : toolCall.name;
-      const displayArgs = toolCall.name === 'use_tool' && parsedArgs?.arguments
-        ? parsedArgs.arguments as Record<string, unknown>
-        : parsedArgs;
+      const { displayName, displayArgs } = extractToolDisplay(toolCall);
 
       traceToolCalls.push({
         name: displayName,
@@ -905,15 +914,7 @@ chatRoutes.post('/', async (c) => {
           });
         },
         onToolStart: async (toolCall) => {
-          // Extract the real tool name from use_tool calls for better logs
-          let parsedArgs: Record<string, unknown> | undefined;
-          try { parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined; } catch { parsedArgs = undefined; }
-          const displayName = toolCall.name === 'use_tool' && parsedArgs?.tool_name
-            ? String(parsedArgs.tool_name)
-            : toolCall.name;
-          const displayArgs = toolCall.name === 'use_tool' && parsedArgs?.arguments
-            ? parsedArgs.arguments as Record<string, unknown>
-            : parsedArgs;
+          const { displayName, displayArgs } = extractToolDisplay(toolCall);
 
           // Add to trace collection with real tool name
           traceToolCalls.push({
