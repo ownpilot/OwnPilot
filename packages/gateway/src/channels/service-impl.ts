@@ -45,9 +45,15 @@ import {
   type ChannelVerificationService,
 } from './auth/verification.js';
 import { wsGateway } from '../ws/server.js';
+import { truncate } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('ChannelService');
+
+/** Generate the standard demo-mode reply. */
+function demoModeReply(text: string): string {
+  return `[Demo Mode] I received your message: "${truncate(text, 100)}"\n\nTo get real AI responses, configure an API key in OwnPilot settings.`;
+}
 
 /**
  * Try to get ISessionService from the registry.
@@ -679,7 +685,7 @@ export class ChannelServiceImpl implements IChannelService {
 
     // Demo mode short-circuit (bus isn't needed for demo)
     if (await isDemoMode()) {
-      return `[Demo Mode] I received your message: "${message.text.substring(0, 100)}"\n\nTo get real AI responses, configure an API key in OwnPilot settings.`;
+      return demoModeReply(message.text);
     }
 
     const agent = await getOrCreateDefaultAgent();
@@ -733,7 +739,7 @@ export class ChannelServiceImpl implements IChannelService {
     );
 
     if (await isDemoMode()) {
-      return `[Demo Mode] I received your message: "${message.text.substring(0, 100)}"\n\nTo get real AI responses, configure an API key in OwnPilot settings.`;
+      return demoModeReply(message.text);
     }
 
     const agent = await getOrCreateDefaultAgent();
