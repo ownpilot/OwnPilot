@@ -9,7 +9,7 @@ import { Hono } from 'hono';
 import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId } from './helpers.js';
+import { apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError } from './helpers.js';
 
 export const channelRoutes = new Hono();
 
@@ -159,7 +159,7 @@ channelRoutes.get('/:id', (c) => {
   const api = service.getChannel(pluginId);
 
   if (!api) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Channel ${sanitizeId(pluginId)} not found` }, 404);
+    return notFoundError(c, 'Channel', pluginId);
   }
 
   return apiResponse(c, {
@@ -178,7 +178,7 @@ channelRoutes.post('/:id/send', async (c) => {
   const api = service.getChannel(pluginId);
 
   if (!api) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Channel ${sanitizeId(pluginId)} not found` }, 404);
+    return notFoundError(c, 'Channel', pluginId);
   }
 
   try {
