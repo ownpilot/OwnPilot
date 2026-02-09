@@ -124,6 +124,23 @@ export const MS_PER_DAY = 86_400_000; // 1000 * 60 * 60 * 24
 export const MAX_DAYS_LOOKBACK = 365;
 
 // ============================================================================
+// Pagination
+// ============================================================================
+
+/** Maximum offset for paginated queries */
+export const MAX_PAGINATION_OFFSET = 10_000;
+
+// ============================================================================
+// Agent Caches
+// ============================================================================
+
+/** Maximum cached agent instances (persistent agents) */
+export const MAX_AGENT_CACHE_SIZE = 100;
+
+/** Maximum cached chat agent instances (ephemeral chat agents) */
+export const MAX_CHAT_AGENT_CACHE_SIZE = 20;
+
+// ============================================================================
 // Channel Plugins
 // ============================================================================
 

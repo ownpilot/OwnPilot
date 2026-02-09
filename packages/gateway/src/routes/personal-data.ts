@@ -33,7 +33,7 @@ import {
   type ContactQuery,
 } from '../db/repositories/index.js';
 import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, getOptionalIntParam } from './helpers.js';
-import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
+import { MAX_DAYS_LOOKBACK, MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 
 export const personalDataRoutes = new Hono();
 
@@ -52,7 +52,7 @@ tasksRoutes.get('/', async (c) => {
     projectId: c.req.query('projectId'),
     search: c.req.query('search'),
     limit: getOptionalIntParam(c, 'limit', 1, 100),
-    offset: getOptionalIntParam(c, 'offset', 0, 10000),
+    offset: getOptionalIntParam(c, 'offset', 0, MAX_PAGINATION_OFFSET),
   };
 
   const tasks = await repo.list(query);
@@ -151,7 +151,7 @@ bookmarksRoutes.get('/', async (c) => {
     isFavorite: c.req.query('favorite') === 'true' ? true : undefined,
     search: c.req.query('search'),
     limit: getOptionalIntParam(c, 'limit', 1, 100),
-    offset: getOptionalIntParam(c, 'offset', 0, 10000),
+    offset: getOptionalIntParam(c, 'offset', 0, MAX_PAGINATION_OFFSET),
   };
 
   const bookmarks = await repo.list(query);
@@ -245,7 +245,7 @@ notesRoutes.get('/', async (c) => {
     isArchived: c.req.query('archived') === 'true' ? true : false,
     search: c.req.query('search'),
     limit: getOptionalIntParam(c, 'limit', 1, 100),
-    offset: getOptionalIntParam(c, 'offset', 0, 10000),
+    offset: getOptionalIntParam(c, 'offset', 0, MAX_PAGINATION_OFFSET),
   };
 
   const notes = await repo.list(query);
@@ -356,7 +356,7 @@ calendarRoutes.get('/', async (c) => {
     category: c.req.query('category'),
     search: c.req.query('search'),
     limit: getOptionalIntParam(c, 'limit', 1, 100),
-    offset: getOptionalIntParam(c, 'offset', 0, 10000),
+    offset: getOptionalIntParam(c, 'offset', 0, MAX_PAGINATION_OFFSET),
   };
 
   const events = await repo.list(query);
@@ -441,7 +441,7 @@ contactsRoutes.get('/', async (c) => {
     isFavorite: c.req.query('favorite') === 'true' ? true : undefined,
     search: c.req.query('search'),
     limit: getOptionalIntParam(c, 'limit', 1, 100),
-    offset: getOptionalIntParam(c, 'offset', 0, 10000),
+    offset: getOptionalIntParam(c, 'offset', 0, MAX_PAGINATION_OFFSET),
   };
 
   const contacts = await repo.list(query);
