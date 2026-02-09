@@ -4,7 +4,7 @@
  * Logging all API requests for debugging and analytics
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonFieldNullable } from './base.js';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('LogsRepo');
@@ -119,8 +119,8 @@ function rowToLog(row: LogRow): RequestLog {
     model: row.model,
     endpoint: row.endpoint,
     method: row.method,
-    requestBody: row.request_body ? (typeof row.request_body === 'string' ? JSON.parse(row.request_body) : row.request_body) : null,
-    responseBody: row.response_body ? (typeof row.response_body === 'string' ? JSON.parse(row.response_body) : row.response_body) : null,
+    requestBody: parseJsonFieldNullable(row.request_body),
+    responseBody: parseJsonFieldNullable(row.response_body),
     statusCode: row.status_code,
     inputTokens: row.input_tokens,
     outputTokens: row.output_tokens,

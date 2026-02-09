@@ -11,6 +11,7 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { apiResponse, apiError, ERROR_CODES, getUserId } from './helpers.js';
+import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 /** Sanitize a filename for use in Content-Disposition headers */
 function sanitizeFilename(name: string): string {
@@ -308,7 +309,7 @@ app.post('/cleanup', async (c) => {
     const body = await c.req.json().catch(() => ({}));
     const mode: 'empty' | 'old' | 'both' = ['empty', 'old', 'both'].includes(body.mode) ? body.mode : 'old';
     const raw = Number(body.maxAgeDays) || 7;
-    const maxAgeDays = Math.max(1, Math.min(365, raw));
+    const maxAgeDays = Math.max(1, Math.min(MAX_DAYS_LOOKBACK, raw));
 
     const result = smartCleanupSessionWorkspaces(mode, maxAgeDays, userId);
 

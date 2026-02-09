@@ -5,7 +5,7 @@
  * Supports scheduled, event-based, condition-based, and webhook triggers.
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
 import { getNextRunTime } from '@ownpilot/core';
 import { getLog } from '../../services/log.js';
 
@@ -580,8 +580,8 @@ export class TriggersRepository extends BaseRepository {
       name: row.name,
       description: row.description,
       type: row.type,
-      config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config,
-      action: typeof row.action === 'string' ? JSON.parse(row.action) : row.action,
+      config: parseJsonField(row.config, {}),
+      action: parseJsonField<TriggerAction>(row.action, { type: 'chat', payload: {} }),
       enabled: row.enabled,
       priority: row.priority,
       lastFired: row.last_fired ? new Date(row.last_fired) : null,
@@ -598,7 +598,7 @@ export class TriggersRepository extends BaseRepository {
       triggerId: row.trigger_id,
       firedAt: new Date(row.fired_at),
       status: row.status,
-      result: row.result ? (typeof row.result === 'string' ? JSON.parse(row.result) : row.result) : null,
+      result: parseJsonFieldNullable(row.result),
       error: row.error,
       durationMs: row.duration_ms,
     };

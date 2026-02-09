@@ -2,7 +2,7 @@
  * Messages Repository (PostgreSQL)
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonFieldNullable } from './base.js';
 
 export interface Message {
   id: string;
@@ -29,21 +29,12 @@ interface MessageRow {
 }
 
 function rowToMessage(row: MessageRow): Message {
-  let toolCalls = undefined;
-  if (row.tool_calls) {
-    try {
-      toolCalls = typeof row.tool_calls === 'string' ? JSON.parse(row.tool_calls) : row.tool_calls;
-    } catch {
-      toolCalls = undefined;
-    }
-  }
-
   return {
     id: row.id,
     conversationId: row.conversation_id,
     role: row.role as Message['role'],
     content: row.content,
-    toolCalls,
+    toolCalls: parseJsonFieldNullable(row.tool_calls) ?? undefined,
     toolCallId: row.tool_call_id ?? undefined,
     createdAt: new Date(row.created_at),
   };

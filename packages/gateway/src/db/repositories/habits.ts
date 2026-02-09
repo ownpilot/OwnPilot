@@ -5,7 +5,7 @@
  */
 
 import { BaseRepository } from './base.js';
-import { MS_PER_DAY } from '../../config/defaults.js';
+import { MS_PER_DAY, MAX_DAYS_LOOKBACK } from '../../config/defaults.js';
 
 function safeParseArray(raw: string | null | undefined): number[] {
   if (!raw) return [];
@@ -433,7 +433,7 @@ export class HabitsRepository extends BaseRepository {
   }
 
   private async calculateStreak(habit: Habit): Promise<{ currentStreak: number; longestStreak: number }> {
-    const logs = await this.getLogs(habit.id, { limit: 365 }); // Last year
+    const logs = await this.getLogs(habit.id, { limit: MAX_DAYS_LOOKBACK }); // Last year
 
     if (logs.length === 0) {
       return { currentStreak: 0, longestStreak: 0 };

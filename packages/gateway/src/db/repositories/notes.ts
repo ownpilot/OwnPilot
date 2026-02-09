@@ -4,7 +4,7 @@
  * CRUD operations for personal notes
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 
 export interface Note {
   id: string;
@@ -75,7 +75,7 @@ function rowToNote(row: NoteRow): Note {
     content: row.content,
     contentType: row.content_type as Note['contentType'],
     category: row.category ?? undefined,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
+    tags: parseJsonField(row.tags, []),
     isPinned: row.is_pinned === true,
     isArchived: row.is_archived === true,
     color: row.color ?? undefined,
@@ -280,7 +280,7 @@ export class NotesRepository extends BaseRepository {
 
     const allTags = new Set<string>();
     for (const row of rows) {
-      const tags = typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []);
+      const tags = parseJsonField(row.tags, []);
       for (const tag of tags) {
         allTags.add(tag);
       }

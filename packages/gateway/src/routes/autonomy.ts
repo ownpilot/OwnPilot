@@ -312,7 +312,7 @@ async function handleApprovalShorthand(c: Context, decision: 'approve' | 'reject
 
   return apiResponse(c, {
     action,
-    message: `Action ${decision}d.`,
+    message: `Action ${decision === 'approve' ? 'approved' : 'rejected'}.`,
   });
 }
 

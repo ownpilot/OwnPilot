@@ -4,7 +4,7 @@
  * CRUD operations for personal tasks/todos
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import type { StandardQuery } from './interfaces.js';
 import {
   getEventBus,
@@ -106,7 +106,7 @@ function rowToTask(row: TaskRow): Task {
     dueTime: row.due_time ?? undefined,
     reminderAt: row.reminder_at ?? undefined,
     category: row.category ?? undefined,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
+    tags: parseJsonField(row.tags, []),
     parentId: row.parent_id ?? undefined,
     projectId: row.project_id ?? undefined,
     recurrence: row.recurrence ?? undefined,

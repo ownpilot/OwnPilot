@@ -5,7 +5,7 @@
  * Tokens are encrypted using AES-256-GCM before storage.
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import { randomUUID, randomBytes, createCipheriv, createDecipheriv, createHash } from 'node:crypto';
 import { getLog } from '../../services/log.js';
 
@@ -145,7 +145,7 @@ function rowToIntegration(row: IntegrationRow): OAuthIntegration {
     provider: row.provider as OAuthProvider,
     service: row.service as OAuthService,
     expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-    scopes: typeof row.scopes === 'string' ? JSON.parse(row.scopes) : row.scopes,
+    scopes: parseJsonField(row.scopes, []),
     email: row.email || undefined,
     status: row.status as IntegrationStatus,
     lastSyncAt: row.last_sync_at ? new Date(row.last_sync_at) : undefined,

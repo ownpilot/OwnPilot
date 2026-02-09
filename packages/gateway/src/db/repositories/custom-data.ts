@@ -5,7 +5,7 @@
  * Allows the AI to create tables, define columns, and manage data on the fly.
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 
 /**
  * Column definition for custom tables
@@ -155,7 +155,7 @@ export class CustomDataRepository extends BaseRepository {
       name: row.name,
       displayName: row.display_name,
       description: row.description ?? undefined,
-      columns: typeof row.columns === 'string' ? JSON.parse(row.columns) : row.columns,
+      columns: parseJsonField(row.columns, []),
       ownerPluginId: row.owner_plugin_id ?? undefined,
       isProtected: !!row.is_protected,
       createdAt: row.created_at,
@@ -318,7 +318,7 @@ export class CustomDataRepository extends BaseRepository {
     return {
       id: row.id,
       tableId: row.table_id,
-      data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
+      data: parseJsonField<Record<string, unknown>>(row.data, {}),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
@@ -364,7 +364,7 @@ export class CustomDataRepository extends BaseRepository {
     let records = rows.map((row) => ({
       id: row.id,
       tableId: row.table_id,
-      data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
+      data: parseJsonField<Record<string, unknown>>(row.data, {}),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
@@ -454,7 +454,7 @@ export class CustomDataRepository extends BaseRepository {
     return rows.map((row) => ({
       id: row.id,
       tableId: row.table_id,
-      data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
+      data: parseJsonField<Record<string, unknown>>(row.data, {}),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));

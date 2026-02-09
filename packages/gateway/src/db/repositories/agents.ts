@@ -4,7 +4,7 @@
  * Stores agent configurations
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 
 export interface AgentRecord {
   id: string;
@@ -35,7 +35,7 @@ function rowToAgent(row: AgentRow): AgentRecord {
     systemPrompt: row.system_prompt ?? undefined,
     provider: row.provider,
     model: row.model,
-    config: typeof row.config === 'string' ? JSON.parse(row.config || '{}') : (row.config || {}),
+    config: parseJsonField(row.config, {}),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };

@@ -4,7 +4,7 @@
  * CRUD operations for saved bookmarks/links
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 
 export interface Bookmark {
   id: string;
@@ -76,7 +76,7 @@ function rowToBookmark(row: BookmarkRow): Bookmark {
     description: row.description ?? undefined,
     favicon: row.favicon ?? undefined,
     category: row.category ?? undefined,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
+    tags: parseJsonField(row.tags, []),
     isFavorite: row.is_favorite === true,
     visitCount: Number(row.visit_count),
     lastVisitedAt: row.last_visited_at ? new Date(row.last_visited_at) : undefined,
@@ -285,7 +285,7 @@ export class BookmarksRepository extends BaseRepository {
 
     const allTags = new Set<string>();
     for (const row of rows) {
-      const tags = typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []);
+      const tags = parseJsonField(row.tags, []);
       for (const tag of tags) {
         allTags.add(tag);
       }
