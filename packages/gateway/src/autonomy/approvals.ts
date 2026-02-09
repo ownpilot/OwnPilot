@@ -16,7 +16,7 @@ import {
   DEFAULT_AUTONOMY_CONFIG,
 } from './types.js';
 import { assessRisk } from './risk.js';
-import { SCHEDULER_DEFAULT_TIMEOUT_MS } from '../config/defaults.js';
+import { MS_PER_DAY, SCHEDULER_DEFAULT_TIMEOUT_MS } from '../config/defaults.js';
 
 // ============================================================================
 // Approval Manager
@@ -85,7 +85,7 @@ export class ApprovalManager extends EventEmitter {
 
     if (existing) {
       // Check if budget should reset (daily)
-      if (now.getTime() - existing.budgetResetAt.getTime() > 24 * 60 * 60 * 1000) {
+      if (now.getTime() - existing.budgetResetAt.getTime() > MS_PER_DAY) {
         existing.dailySpend = 0;
         existing.budgetResetAt = now;
       }

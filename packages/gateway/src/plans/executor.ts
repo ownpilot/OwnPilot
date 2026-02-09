@@ -21,6 +21,7 @@ import {
 } from '../config/defaults.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
 import { getServiceRegistry, Services, type IPlanService } from '@ownpilot/core';
+import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('PlanExecutor');
@@ -177,7 +178,7 @@ export class PlanExecutor extends EventEmitter {
       // Signal cancellation to any pending step execution
       abortController.abort();
 
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = getErrorMessage(error);
       await this.planService.updatePlan(this.config.userId, planId, { status: 'failed', error: errorMessage });
       await this.planService.logEvent(this.config.userId, planId, 'failed', undefined, { error: errorMessage });
       this.emit('plan:failed', plan, errorMessage);
@@ -471,7 +472,7 @@ export class PlanExecutor extends EventEmitter {
         throw new Error(result.error || 'Step execution failed');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = getErrorMessage(error);
 
       // Check for retry with exponential backoff
       if (step.retryCount < step.maxRetries) {
@@ -635,7 +636,7 @@ export class PlanExecutor extends EventEmitter {
       } catch (error) {
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'LLM decision failed',
+          error: getErrorMessage(error, 'LLM decision failed'),
         };
       }
     });
@@ -787,7 +788,7 @@ export class PlanExecutor extends EventEmitter {
       } catch (error) {
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Sub-plan execution failed',
+          error: getErrorMessage(error, 'Sub-plan execution failed'),
         };
       }
     });

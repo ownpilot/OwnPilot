@@ -15,15 +15,16 @@ import type {
   CreateSessionInput,
   SessionSource,
 } from '@ownpilot/core';
+import { MS_PER_HOUR, MS_PER_MINUTE } from '../config/defaults.js';
 
 // ============================================================================
 // Implementation
 // ============================================================================
 
 /** Default interval for automatic cleanup of stale sessions (15 minutes). */
-const CLEANUP_INTERVAL_MS = 15 * 60 * 1000;
+const CLEANUP_INTERVAL_MS = 15 * MS_PER_MINUTE;
 /** Default max age for inactive sessions before cleanup (1 hour). */
-const STALE_SESSION_MAX_AGE_MS = 60 * 60 * 1000;
+const STALE_SESSION_MAX_AGE_MS = MS_PER_HOUR;
 
 export class SessionService implements ISessionService {
   private readonly sessions = new Map<string, Session>();

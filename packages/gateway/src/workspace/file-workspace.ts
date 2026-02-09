@@ -26,6 +26,7 @@ import {
   initializeDataDirectories,
   type WorkspaceSubdir,
 } from '../paths/index.js';
+import { MS_PER_DAY, MS_PER_HOUR } from '../config/defaults.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('FileWorkspace');
@@ -155,7 +156,7 @@ export function cleanTempFiles(maxAgeHours: number = 24): number {
     return 0;
   }
 
-  const maxAge = maxAgeHours * 60 * 60 * 1000;
+  const maxAge = maxAgeHours * MS_PER_HOUR;
   const now = Date.now();
   let cleaned = 0;
 
@@ -663,7 +664,7 @@ export async function zipSessionWorkspace(id: string): Promise<string> {
  */
 export function cleanupSessionWorkspaces(maxAgeDays: number = 7): { deleted: string[]; kept: string[] } {
   const workspaces = listSessionWorkspaces();
-  const maxAge = maxAgeDays * 24 * 60 * 60 * 1000;
+  const maxAge = maxAgeDays * MS_PER_DAY;
   const now = Date.now();
 
   const deleted: string[] = [];
@@ -701,7 +702,7 @@ export function smartCleanupSessionWorkspaces(
   userId?: string,
 ): { deleted: number; kept: number; deletedEmpty: number; deletedOld: number } {
   const workspaces = listSessionWorkspaces(userId);
-  const maxAge = maxAgeDays * 24 * 60 * 60 * 1000;
+  const maxAge = maxAgeDays * MS_PER_DAY;
   const now = Date.now();
 
   let deleted = 0;

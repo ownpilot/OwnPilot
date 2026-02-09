@@ -5,6 +5,7 @@
  * and generates AI-powered summaries using LLM.
  */
 
+import { MS_PER_DAY } from '../config/defaults.js';
 import {
   TasksRepository,
   CalendarRepository,
@@ -290,7 +291,7 @@ export class DashboardService {
     let overdueTasks: Task[] = [];
     let taskTotal = 0;
     try {
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0] ?? '';
+      const yesterday = new Date(Date.now() - MS_PER_DAY).toISOString().split('T')[0] ?? '';
       [pendingTasks, dueTodayTasks, overdueTasks] = await Promise.all([
         tasksRepo.list({ status: ['pending', 'in_progress'], limit: 50 }),
         tasksRepo.list({ status: ['pending', 'in_progress'], dueAfter: today, dueBefore: today, limit: 50 }),

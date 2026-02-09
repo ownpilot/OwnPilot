@@ -7,7 +7,7 @@ import { createMiddleware } from 'hono/factory';
 import { jwtVerify } from 'jose';
 import { createSecretKey, timingSafeEqual } from 'node:crypto';
 import type { AuthConfig } from '../types/index.js';
-import { apiError, ERROR_CODES } from '../routes/helpers.js';
+import { apiError, ERROR_CODES, getErrorMessage } from '../routes/helpers.js';
 
 /**
  * Timing-safe API key check.
@@ -70,7 +70,7 @@ export function createAuthMiddleware(config: AuthConfig) {
         c.set('userId', payload.sub);
         c.set('jwtPayload', payload);
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Invalid or expired token';
+        const message = getErrorMessage(error, 'Invalid or expired token');
         return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message }, 403);
       }
     }
