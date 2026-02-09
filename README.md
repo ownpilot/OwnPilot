@@ -1,6 +1,6 @@
 # OwnPilot
 
-Privacy-first personal AI assistant platform with autonomous agents, tool orchestration, multi-provider support, and multi-channel communication.
+Privacy-first personal AI assistant platform with autonomous agents, tool orchestration, multi-provider support, and Telegram integration.
 
 **Self-hosted. Your data stays yours.**
 
@@ -9,7 +9,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 ## Table of Contents
 
 - [Features](#features)
-- [Architecture Overview](#architecture-overview)
+- [Architecture](#architecture)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
 - [Packages](#packages)
@@ -25,6 +25,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 - [Autonomy & Automation](#autonomy--automation)
 - [Database](#database)
 - [Security & Privacy](#security--privacy)
+  - [Code Execution](#code-execution)
 - [API Reference](#api-reference)
 - [Configuration](#configuration)
 - [Deployment](#deployment)
@@ -36,87 +37,96 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 ## Features
 
 ### AI & Agents
-- **100+ AI Provider Configs** - OpenAI, Anthropic, Google, DeepSeek, Groq, xAI, Mistral, Together AI, Fireworks, Perplexity, OpenRouter, Cohere, Azure, NVIDIA, Hugging Face, and many more
-- **Local AI Support** - Ollama, LM Studio, and custom OpenAI-compatible endpoints
-- **29 Pre-configured Agents** - Code Assistant, Writing Assistant, Research, Data Analyst, and more across 8 categories
+- **Multi-Provider Support** - 4 native providers (OpenAI, Anthropic, Google, Zhipu) + 7 OpenAI-compatible providers + any custom endpoint
+- **Local AI Support** - Ollama and LM Studio auto-discovery on the local network
 - **Smart Provider Routing** - Cheapest, fastest, smartest, balanced, or fallback strategies
-- **Streaming Responses** - Server-Sent Events (SSE) for real-time streaming
+- **Streaming Responses** - Server-Sent Events (SSE) for real-time streaming with tool execution progress
+- **Configurable Agents** - Custom system prompts, model preferences, tool assignments, and execution limits
 
 ### Tools
-- **148+ Built-in Tools** across 20 categories (personal data, files, code, web, email, media, AI/NLP, finance, automation, utilities)
-- **Meta-tool Proxy** - Only 3 tools sent to the LLM (`search_tools`, `get_tool_help`, `use_tool`); all 148+ tools remain available via dynamic discovery
-- **Batch Operations** - `batch_use_tool` for multiple tool calls in one request, `search_tools` with `include_params` for faster workflows
+- **100+ Built-in Tools** across 20+ categories (personal data, files, code execution, web, email, media, finance, automation, utilities)
+- **Meta-tool Proxy** - Only 4 meta-tools sent to the LLM (`search_tools`, `get_tool_help`, `use_tool`, `batch_use_tool`); all tools remain available via dynamic discovery
 - **Custom Tools** - Create new tools at runtime via LLM (sandboxed JavaScript)
 - **Tool Limits** - Automatic parameter capping to prevent unbounded queries
-- **Search Tags** - 150+ English keywords for natural language tool discovery
+- **Search Tags** - Natural language tool discovery with keyword matching
 
 ### Personal Data
 - **Notes, Tasks, Bookmarks, Contacts, Calendar, Expenses** - Full CRUD with categories, tags, and search
-- **Productivity** - Pomodoro timer with sessions/settings/stats, habit tracker with streaks, quick capture inbox
-- **Memories** - Long-term persistent memory (facts, preferences, events, skills) with importance scoring
-- **Goals** - Goal creation, decomposition, progress tracking, next-action recommendations
-- **Custom Data Tables** - Create your own structured data types
+- **Productivity** - Pomodoro timer with sessions/stats, habit tracker with streaks, quick capture inbox
+- **Memories** - Long-term persistent memory (facts, preferences, events) with importance scoring and auto-injection
+- **Goals** - Goal creation, decomposition into steps, progress tracking, next-action recommendations
+- **Custom Data Tables** - Create your own structured data types with AI-determined schemas
 
 ### Autonomy & Automation
 - **5 Autonomy Levels** - Manual, Assisted, Supervised, Autonomous, Full
 - **Triggers** - Schedule-based (cron), event-driven, condition-based, webhook
-- **Plans** - Multi-step autonomous execution with checkpoints and rollback
-- **Risk Assessment** - Automatic risk scoring for tool executions
+- **Plans** - Multi-step autonomous execution with checkpoints, retry logic, and timeout handling
+- **Risk Assessment** - Automatic risk scoring for tool executions with approval workflows
 
 ### Communication
-- **Web UI** - React 19 + Vite + Tailwind CSS 4 with dark mode
-- **Telegram Bot** - Full bot integration with user/chat filtering
-- **Discord Bot** - Multi-guild support with DMs
-- **Slack Bot** - Socket Mode with thread support
-- **REST API** - 35 route modules, full CRUD for all entities
+- **Web UI** - React 19 + Vite 6 + Tailwind CSS 4 with dark mode, ~40 routes, code-split
+- **Telegram Bot** - Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
+- **WebSocket** - Real-time updates, event subscriptions, session management
+- **REST API** - 38 route modules with standardized responses, pagination, and error codes
 
 ### Security
-- **Encrypted Credential Storage** - AES-256-GCM + PBKDF2 (600K iterations)
-- **PII Detection & Redaction** - Automatic pattern-based detection
-- **Sandboxed Code Execution** - Isolated VM with resource limits
+- **Zero-Dependency Crypto** - AES-256-GCM encryption + PBKDF2 key derivation using only Node.js built-ins
+- **PII Detection & Redaction** - 15+ categories (SSN, credit cards, emails, phone, etc.)
+- **Sandboxed Code Execution** - Docker container isolation, local execution with approval, critical pattern blocking
+- **4-Layer Security** - Critical patterns -> permission matrix -> approval callback -> sandbox isolation
+- **Code Execution Approval** - Real-time SSE approval dialog for sensitive operations with 120s timeout
 - **Authentication** - None, API Key, or JWT modes
-- **Rate Limiting** - Configurable with burst support and soft mode
+- **Rate Limiting** - Sliding window with burst support
+- **Tamper-Evident Audit** - Hash chain verification for audit logs
 
 ---
 
-## Architecture Overview
+## Architecture
 
 ```
                          ┌──────────────┐
-                         │   Web UI     │  React 19 + Vite
-                         │  (Port 3000) │  + Tailwind CSS 4
+                         │   Web UI     │  React 19 + Vite 6
+                         │  (Port 5173) │  Tailwind CSS 4
                          └──────┬───────┘
-                                │
+                                │ HTTP + SSE
               ┌─────────────────┼─────────────────┐
               │                 │                  │
      ┌────────┴────────┐       │        ┌─────────┴──────────┐
-     │  Telegram Bot   │       │        │   Discord / Slack  │
-     │   (Channels)    │       │        │     (Channels)     │
+     │  Telegram Bot   │       │        │     WebSocket      │
+     │   (Channels)    │       │        │    (Port 18789)    │
      └────────┬────────┘       │        └─────────┬──────────┘
-              │                │                  │
-              └────────┬───────┘──────────────────┘
+              │                │                   │
+              └────────┬───────┘───────────────────┘
                        │
               ┌────────▼────────┐
-              │    Gateway      │  Hono API Server
-              │  (Port 8080)    │  35 Route Modules
+              │    Gateway      │  Hono HTTP API Server
+              │  (Port 8080)    │  38 Route Modules
               ├─────────────────┤
-              │  Service Layer  │  Business Logic
+              │  MessageBus     │  Middleware Pipeline
               │  Agent Engine   │  Tool Orchestration
               │  Provider Router│  Smart Model Selection
-              │  Autonomy       │  Risk Assessment
+              │  Plugin System  │  Extensible Architecture
               │  EventBus       │  Typed Event System
               ├─────────────────┤
-              │     Core        │  Tools, Providers, Types
-              │  148+ Tools     │  100+ Provider Configs
+              │     Core        │  Zero External Dependencies
+              │  50+ Tools      │  Multi-Provider Support
               │  Sandbox, Crypto│  Privacy, Audit
               └────────┬────────┘
                        │
               ┌────────▼────────┐
-              │   PostgreSQL    │  47 Tables
-              │  (Port 25432)   │  Conversations, Personal Data,
+              │   PostgreSQL    │  40+ Repositories
+              │                 │  Conversations, Personal Data,
               │                 │  Memories, Goals, Triggers, Plans
               └─────────────────┘
 ```
+
+### Message Pipeline
+
+```
+Request → Audit → Persistence → Post-Processing → Context-Injection → Agent-Execution → Response
+```
+
+All messages (web UI chat, Telegram) flow through the same MessageBus middleware pipeline.
 
 ---
 
@@ -124,8 +134,8 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 
 ### Prerequisites
 - **Node.js** >= 22.0.0
-- **pnpm** >= 9.0.0
-- **Docker** (for PostgreSQL)
+- **pnpm** >= 10.0.0
+- **PostgreSQL** (via Docker or native)
 
 ### Setup
 
@@ -135,40 +145,32 @@ git clone https://github.com/ownpilot/ownpilot.git
 cd ownpilot
 pnpm install
 
-# Start PostgreSQL
-docker compose -f docker-compose.db.yml up -d
-
 # Configure
 cp .env.example .env
-# Edit .env - add at least one API key (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.)
-
-# Seed database with default agents
-pnpm --filter @ownpilot/gateway seed
+# Edit .env with database connection details
+# AI provider API keys are configured via the Config Center UI after setup
 
 # Start development (gateway + ui)
 pnpm dev
 
-# UI: http://localhost:3000
+# UI: http://localhost:5173
 # API: http://localhost:8080
 ```
 
-### Secure Credential Storage (Recommended)
-
-Instead of storing API keys in `.env`, use the encrypted credential store:
+### Configuration via CLI
 
 ```bash
-# Create encrypted store
+# Initialize database
 ownpilot setup
 
-# Add API keys (encrypted with AES-256-GCM)
-ownpilot config set openai-api-key
-ownpilot config set anthropic-api-key
+# Start server + channels
+ownpilot start
 
-# Start with auto-unlock
-OWNPILOT_PASSWORD=your-master-password ownpilot start
+# Configure API keys (stored in database, not .env)
+ownpilot config set openai-api-key sk-...
 ```
 
-Credentials are stored in `~/.ownpilot/credentials.enc` with AES-256-GCM encryption and PBKDF2 key derivation (600K iterations).
+API keys and settings are stored in the PostgreSQL database. The web UI **Config Center** (Settings page) provides a graphical alternative to CLI configuration.
 
 ---
 
@@ -177,68 +179,74 @@ Credentials are stored in `~/.ownpilot/credentials.enc` with AES-256-GCM encrypt
 ```
 ownpilot/
 ├── packages/
-│   ├── core/                    # AI runtime, providers, tools, types
+│   ├── core/                    # AI runtime (zero external deps)
 │   │   ├── src/
-│   │   │   ├── agent/           # Agent engine, orchestrator, types
-│   │   │   │   ├── providers/   # 100+ provider configs (JSON), synced from models.dev
-│   │   │   │   ├── tools/       # 23 tool modules (148+ tools)
-│   │   │   │   └── types.ts     # Agent, provider, ToolProvider, ToolMiddleware types
-│   │   │   ├── events/          # EventBus - typed event system
-│   │   │   ├── memory/          # Conversation & personal memory
-│   │   │   ├── sandbox/         # Isolated code execution (VM)
+│   │   │   ├── agent/           # Agent engine, orchestrator, providers
+│   │   │   │   ├── providers/   # Multi-provider implementations
+│   │   │   │   └── tools/       # 50+ built-in tool definitions
+│   │   │   ├── plugins/         # Plugin system with isolation, marketplace
+│   │   │   ├── events/          # EventBus, HookBus, ScopedBus
+│   │   │   ├── services/        # Service registry (DI container)
+│   │   │   ├── memory/          # Encrypted personal memory (AES-256-GCM)
+│   │   │   ├── sandbox/         # Code execution isolation (VM, Docker, Worker)
+│   │   │   ├── crypto/          # Zero-dep encryption, vault, keychain
+│   │   │   ├── audit/           # Tamper-evident hash chain logging
 │   │   │   ├── privacy/         # PII detection & redaction
-│   │   │   ├── crypto/          # AES-256-GCM encryption, keychain
-│   │   │   ├── audit/           # Audit logging & compliance
-│   │   │   ├── costs/           # API cost tracking
-│   │   │   ├── plugins/         # Plugin system (worker threads)
-│   │   │   ├── services/        # Config center, service registry
-│   │   │   └── types/           # Branded types, Result<T,E>
+│   │   │   ├── security/        # Critical pattern blocking, permissions
+│   │   │   ├── channels/        # Channel plugin architecture
+│   │   │   ├── assistant/       # Intent classifier, orchestrator
+│   │   │   ├── workspace/       # Per-user isolated environments
+│   │   │   └── types/           # Branded types, Result<T,E>, guards
 │   │   └── package.json
 │   │
-│   ├── gateway/                 # Hono API server
+│   ├── gateway/                 # Hono API server (~60K LOC)
 │   │   ├── src/
-│   │   │   ├── routes/          # 35 route modules
-│   │   │   ├── services/        # 16 business logic services, tool providers
+│   │   │   ├── routes/          # 38 route modules
+│   │   │   ├── services/        # 32 business logic services
 │   │   │   ├── db/
-│   │   │   │   ├── repositories/  # 30 data access repositories
-│   │   │   │   ├── migrations/    # PostgreSQL schema (47 tables)
-│   │   │   │   └── seeds/         # Default agents, config services
-│   │   │   ├── channels/        # Discord, Slack adapters
-│   │   │   ├── triggers/        # Trigger engine
-│   │   │   ├── plans/           # Plan executor
-│   │   │   ├── ws/              # WebSocket handler
-│   │   │   └── middleware/      # Auth, rate limiting, CORS
-│   │   ├── data/seeds/          # default-agents.json
+│   │   │   │   ├── repositories/  # 40+ data access repositories
+│   │   │   │   ├── adapters/      # PostgreSQL adapter
+│   │   │   │   ├── migrations/    # Schema migrations
+│   │   │   │   └── seeds/         # Default data
+│   │   │   ├── channels/        # Telegram channel plugin
+│   │   │   ├── plugins/         # Plugin initialization & registration
+│   │   │   ├── triggers/        # Proactive automation engine
+│   │   │   ├── plans/           # Plan executor with step handlers
+│   │   │   ├── autonomy/        # Risk assessment, approval manager
+│   │   │   ├── ws/              # WebSocket server & session management
+│   │   │   ├── middleware/      # Auth, rate limiting, CORS, audit
+│   │   │   ├── assistant/       # AI orchestration (memories, goals)
+│   │   │   ├── tracing/         # Request tracing (AsyncLocalStorage)
+│   │   │   └── audit/           # Gateway audit logging
 │   │   └── package.json
 │   │
 │   ├── ui/                      # React 19 web interface
 │   │   ├── src/
-│   │   │   ├── pages/           # 28+ page components
-│   │   │   ├── components/      # 22+ reusable components
-│   │   │   ├── hooks/           # Custom React hooks
+│   │   │   ├── pages/           # ~40 page components
+│   │   │   ├── components/      # 30+ reusable components
+│   │   │   ├── hooks/           # Custom hooks (chat store, theme, WebSocket)
+│   │   │   ├── api/             # Typed fetch wrapper + 18 endpoint modules
 │   │   │   ├── types/           # UI type definitions
-│   │   │   ├── App.tsx          # Route definitions
-│   │   │   └── main.tsx         # Entry point
+│   │   │   └── App.tsx          # Route definitions with lazy loading
 │   │   └── package.json
 │   │
-│   ├── channels/                # Messaging channel adapters
+│   ├── channels/                # Telegram bot (Grammy)
 │   │   ├── src/
-│   │   │   ├── telegram/        # Telegram Bot API
+│   │   │   ├── telegram/        # Telegram Bot API wrapper
 │   │   │   ├── manager.ts       # Channel orchestration
 │   │   │   └── types/           # Channel type definitions
 │   │   └── package.json
 │   │
-│   └── cli/                     # Command-line tools
+│   └── cli/                     # Commander.js CLI
 │       ├── src/
 │       │   ├── commands/        # server, bot, start, config, workspace, channel
-│       │   └── index.ts         # CLI entry (Commander.js)
+│       │   └── index.ts         # CLI entry point
 │       └── package.json
 │
-├── docker-compose.db.yml        # PostgreSQL only
-├── docker-compose.yml           # Full stack (gateway + ui + db)
-├── Dockerfile                   # Multi-stage production build
-├── turbo.json                   # Turborepo task config
-├── tsconfig.base.json           # Shared TypeScript config
+├── turbo.json                   # Turborepo pipeline config
+├── tsconfig.base.json           # Shared TypeScript strict config
+├── eslint.config.js             # ESLint 9 flat config
+├── .env.example                 # Environment variable template
 └── package.json                 # Monorepo root
 ```
 
@@ -248,184 +256,156 @@ ownpilot/
 
 ### Core (`@ownpilot/core`)
 
-The core runtime library. Contains all AI provider integrations, tool definitions, agent types, and security primitives.
+The foundational runtime library with **zero external dependencies** (Node.js built-ins only). Contains the AI engine, tool system, plugin architecture, security primitives, and cryptography.
 
-**Key Modules:**
+**~25,000 LOC** across 158 TypeScript files.
 
 | Module | Description |
 |--------|-------------|
-| `agent/providers/` | 100+ provider config JSONs synced from models.dev |
-| `agent/tools/` | 23 tool modules with 148+ tool definitions and executors |
-| `agent/types.ts` | Agent config, provider types, ToolProvider, ToolMiddleware |
-| `events/` | EventBus - typed event system with wildcard subscriptions |
-| `memory/` | Conversation memory and personal memory stores |
-| `sandbox/` | Isolated VM code execution with resource limits |
-| `privacy/` | PII detection patterns (email, phone, SSN, credit card, etc.) |
-| `crypto/` | AES-256-GCM encryption, PBKDF2 key derivation, vault |
-| `audit/` | Event logging, verification, compliance |
-| `costs/` | Per-provider/model cost calculation |
-| `plugins/` | Worker-thread isolated plugin runtime |
-| `services/` | Config center, API service registry |
+| `agent/` | Agent engine with multi-provider support, orchestrator, tool-calling loop |
+| `agent/providers/` | Provider implementations (OpenAI, Anthropic, Google, Zhipu, OpenAI-compatible) |
+| `agent/tools/` | 50+ built-in tool definitions and executors |
+| `plugins/` | Plugin system with isolation, marketplace, signing, runtime |
+| `events/` | 3-in-1 event system: EventBus (fire-and-forget), HookBus (interceptable), ScopedBus (namespaced) |
+| `services/` | Service registry (DI container) with typed tokens |
+| `memory/` | AES-256-GCM encrypted personal memory with deduplication and TTL |
+| `sandbox/` | 5 sandbox implementations: VM, Docker, Worker threads, Local, Scoped APIs |
+| `crypto/` | PBKDF2, AES-256-GCM, RSA, SHA256 — zero dependency |
+| `audit/` | Tamper-evident logging with hash chain verification |
+| `privacy/` | PII detection (15+ categories) and redaction |
+| `security/` | Critical pattern blocking (100+ patterns), permission matrix |
+| `types/` | Result<T,E> pattern, branded types, error classes, type guards |
 
 ### Gateway (`@ownpilot/gateway`)
 
-The API server built on [Hono](https://hono.dev/). Handles all HTTP/WebSocket communication, database operations, agent execution, and channel management.
+The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, plugin management, and channel integration.
 
-**Route Modules (35):**
+**~60,000 LOC** across 293 TypeScript files. **66 test files** with **1,507 tests**.
+
+**Route Modules (38):**
 
 | Category | Routes |
 |----------|--------|
 | **Chat & Agents** | `chat.ts`, `agents.ts` |
 | **AI Configuration** | `models.ts`, `providers.ts`, `model-configs.ts`, `local-providers.ts` |
-| **Personal Data** | `personal-data.ts`, `personal-data-tools.ts`, `memories.ts`, `goals.ts`, `expenses.ts`, `custom-data.ts` |
+| **Personal Data** | `personal-data.ts`, `memories.ts`, `goals.ts`, `expenses.ts`, `custom-data.ts` |
 | **Productivity** | `productivity.ts` (Pomodoro, Habits, Captures) |
 | **Automation** | `triggers.ts`, `plans.ts`, `autonomy.ts` |
 | **Tools & Plugins** | `tools.ts`, `custom-tools.ts`, `plugins.ts` |
-| **Channels** | `channels.ts` |
-| **Configuration** | `settings.ts`, `config-services.ts`, `media-settings.ts` |
+| **Channels** | `channels.ts`, `channel-auth.ts` |
+| **Configuration** | `settings.ts`, `config-services.ts` |
 | **Integration** | `integrations.ts`, `auth.ts` |
-| **System** | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts` |
+| **System** | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts`, `execution-permissions.ts` |
 
-**Services (16):** GoalService, MemoryService, CustomDataService, TriggerService, PlanService, DashboardService, ToolExecutor, ToolOverrides, ToolProviders, GmailExecutors, MediaExecutors, ConfigCenter, ConfigTools, ApiServiceRegistrar, LocalDiscovery, ToolSource.
+**Services (32):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, and more.
 
-**Database Repositories (30):**
-
-agents, conversations, messages, chat, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, costs, logs, settings, workspaces, model-configs, media-settings, oauth-integrations, local-providers, config-services, pomodoro, habits, captures.
+**Repositories (40+):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, and more.
 
 ### UI (`@ownpilot/ui`)
 
-Modern web interface built with React 19, Vite 6, and Tailwind CSS 4.
+Modern web interface built with React 19, Vite 6.4, and Tailwind CSS 4. Minimal dependencies — no Redux/Zustand, no axios, no component library.
 
-**Tech Stack:**
-- React 19.0.0 with hooks and Context API
-- React Router DOM 7.1.3
-- Vite 6.0.11
-- Tailwind CSS 4.0.6
-- Prism React Renderer (syntax highlighting)
-- Lucide React (icons)
+| Technology | Version |
+|-----------|---------|
+| React | 19.0.0 |
+| React Router DOM | 7.1.3 |
+| Vite | 6.4.1 |
+| Tailwind CSS | 4.0.6 |
+| prism-react-renderer | 2.4.1 |
 
-**Pages (28+):**
+**Pages (~40):**
 
 | Page | Description |
 |------|-------------|
-| **Chat** | Main AI conversation interface with streaming, progress events, tool execution display |
-| **Dashboard** | Overview with stats cards, AI briefing, timeline, quick actions |
-| **Tasks** | Task management with priorities, due dates, categories |
-| **Notes** | Note-taking with markdown support |
-| **Calendar** | Event scheduling and viewing |
-| **Contacts** | Contact directory with relationships |
-| **Bookmarks** | URL bookmarking with tags and categories |
+| **Chat** | Main AI conversation with streaming, tool execution display, approval dialogs |
+| **Dashboard** | Overview with stats, AI briefing, quick actions |
+| **Inbox** | Read-only channel messages from Telegram |
+| **History** | Conversation history with search, archive, bulk operations |
+| **Tasks / Notes / Calendar / Contacts / Bookmarks** | Personal data management |
 | **Expenses** | Financial tracking with categories |
-| **Memories** | Browse and manage AI long-term memories |
-| **Goals** | Goal tracking with progress and decomposition |
-| **Data Browser** | Universal data browser for all personal data types |
-| **Custom Data** | User-defined data tables and records |
+| **Memories** | AI long-term memory browser |
+| **Goals** | Goal tracking with progress and step management |
+| **Triggers / Plans / Autonomy** | Automation configuration |
 | **Agents** | Agent selection and configuration |
-| **Tools** | Tool browser with categories |
-| **Custom Tools** | Create/manage LLM-created tools |
-| **Models** | AI model browser across providers |
-| **Costs** | API usage and spending dashboard |
-| **Triggers** | Automation trigger management |
-| **Plans** | Multi-step plan management |
-| **Autonomy** | Autonomy level controls, budget limits, tool permissions |
-| **Plugins** | Plugin management |
-| **Workspaces** | Multi-workspace support |
-| **Config Center** | Dynamic service configuration |
-| **API Keys** | Provider API key management |
-| **Logs** | Request logs and debug logs |
-| **System** | System info, database backup/restore, sandbox status |
-| **Profile** | User profile settings |
-| **Settings** | Settings hub (Providers, AI Models, Integrations, Media) |
+| **Tools / Custom Tools** | Tool browser and custom tool management |
+| **Models / Costs** | AI model browser and usage tracking |
+| **Plugins / Workspaces** | Extension and workspace management |
+| **Data Browser / Custom Data** | Universal data exploration |
+| **Settings** | Config Center, API Keys, Providers, AI Models, Integrations, System |
+| **Profile / Logs / About** | User profile, request logs, system info |
 
-**Key Components:**
-- `Layout` - 3-column layout (sidebar, content, stats panel)
-- `MessageList` - Chat messages with code blocks, tool calls, traces
-- `ChatInput` - Message input with send/stop controls
-- `ToolExecutionDisplay` - Real-time tool execution results
-- `TraceDisplay` - Detailed execution trace viewer
-- `CodeBlock` - Syntax-highlighted code with copy button
-- `ConfirmDialog` - Styled modal dialogs (replaces native `confirm`/`alert`)
-- `DynamicConfigForm` - Schema-driven configuration forms
-- `AIBriefingCard` - AI-generated daily briefing
-- `TimelineView` - Timeline visualization
+**Key Components:** Layout (sidebar nav), ChatInput, MessageList, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, SuggestionChips, ToastProvider, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
 
-**Custom Hooks:**
-- `useChatStore` - Global chat state (provider, model, messages, streaming)
-- `useTheme` - Dark/light/system theme with localStorage
-- `useWebSocket` - WebSocket connection management
-- `useDialog` - Async confirm/alert dialogs (`Promise<boolean>`)
+**State Management (Context + Hooks):**
+- `useChatStore` - Global chat state with SSE streaming, tool progress, approval flow
+- `useTheme` - Dark/light/system theme with localStorage persistence
+- `useWebSocket` - WebSocket connection with auto-reconnect and event subscriptions
 
 ### Channels (`@ownpilot/channels`)
 
-Communication channel adapters for messaging platforms.
+Telegram bot built on [Grammy](https://grammy.dev/). Implements the `ChannelHandler` interface with `start()`, `stop()`, `sendMessage()`, and `onMessage()`.
 
-| Channel | Features |
-|---------|----------|
-| **Telegram** | Bot API, message/photo/document/audio handling, user/chat filtering, parse modes (HTML, Markdown) |
-| **Discord** | Discord.js, multi-guild, DM support, message content intents, partial message reconstruction |
-| **Slack** | @slack/bolt, Socket Mode, thread support, file attachments, emoji reactions |
-
-All channels implement a common `ChannelHandler` interface with `start()`, `stop()`, `sendMessage()`, and `onMessage()` methods.
+| Feature | Details |
+|---------|---------|
+| **Bot API** | Grammy with long polling or webhook mode |
+| **Access Control** | User ID and chat ID whitelisting |
+| **Message Splitting** | Intelligent splitting at newlines/spaces for messages > 4096 chars |
+| **Parse Modes** | HTML, Markdown, MarkdownV2 |
+| **Commands** | `/start`, `/help`, `/reset` |
+| **Channel Manager** | Orchestrates multiple channels, routes messages through the Agent |
 
 ### CLI (`@ownpilot/cli`)
 
-Command-line interface built with Commander.js.
+Command-line interface built with Commander.js and @inquirer/prompts.
 
 ```bash
-ownpilot setup                    # Create encrypted credential store
-ownpilot start                    # Start all services (server + bot)
+ownpilot setup                    # Initialize database
+ownpilot start                    # Start server + channels
 ownpilot server                   # Start HTTP API server only
 ownpilot bot                      # Start Telegram bot only
 
-# Credential management
-ownpilot config set <key>         # Add encrypted credential
-ownpilot config get <key>         # Retrieve credential
-ownpilot config delete <key>      # Delete credential
-ownpilot config list              # List all credentials
-ownpilot config change-password   # Change master password
+# Configuration (stored in PostgreSQL)
+ownpilot config set <key> [value] # Set credential or setting
+ownpilot config get <key>         # Retrieve (masked for secrets)
+ownpilot config delete <key>      # Remove
+ownpilot config list              # List all with status
 
 # Workspace management
-ownpilot workspace list           # List workspaces
-ownpilot workspace create <name>  # Create workspace
-ownpilot workspace delete <name>  # Delete workspace
-ownpilot workspace switch <name>  # Switch active workspace
+ownpilot workspace list
+ownpilot workspace create
+ownpilot workspace delete [id]
+ownpilot workspace switch [id]
 
 # Channel management
-ownpilot channel list             # List channels
-ownpilot channel add <type>       # Add channel (telegram/discord/slack)
-ownpilot channel connect <id>     # Connect channel
-ownpilot channel disconnect <id>  # Disconnect channel
+ownpilot channel list
+ownpilot channel add
+ownpilot channel remove [id]
+ownpilot channel connect [id]
+ownpilot channel disconnect [id]
 ```
+
+**Configuration keys:** `<provider>-api-key` (e.g., `openai-api-key`, `anthropic-api-key`), `default_ai_provider`, `default_ai_model`, `telegram_bot_token`, `gateway_api_keys`, `gateway_jwt_secret`, `gateway_auth_type`, `gateway_rate_limit_max`, `gateway_rate_limit_window_ms`.
 
 ---
 
 ## AI Providers
 
-OwnPilot supports **100+ AI provider configurations** via OpenAI-compatible API format, Anthropic native API, and Google Gemini API.
+All API keys are managed via the **Config Center UI** (Settings page) or the `ownpilot config set` CLI command. They are stored in the PostgreSQL database, not in environment variables.
 
 ### Supported Providers
 
-| Provider | Type | Notable Models | Env Variable |
-|----------|------|---------------|--------------|
-| **OpenAI** | Native | GPT-5, GPT-5.1, o3, o4-mini, GPT-4o | `OPENAI_API_KEY` |
-| **Anthropic** | Native | Claude Opus 4.5, Claude Sonnet 4.5, Claude Haiku 4.5 | `ANTHROPIC_API_KEY` |
-| **Google** | Native | Gemini 2.0 Pro, Gemini 2.0 Flash | `GOOGLE_API_KEY` |
-| **DeepSeek** | OpenAI-compat | DeepSeek V3.2, DeepSeek Reasoner | `DEEPSEEK_API_KEY` |
-| **Groq** | OpenAI-compat | Llama 4 Maverick, Mixtral 8x7B | `GROQ_API_KEY` |
-| **xAI** | OpenAI-compat | Grok 3, Grok 3 Mini | `XAI_API_KEY` |
-| **Mistral** | OpenAI-compat | Mistral Large 3, Devstral 2, Codestral | `MISTRAL_API_KEY` |
-| **Together AI** | OpenAI-compat | Llama 4, Qwen3-72B | `TOGETHER_API_KEY` |
-| **Fireworks AI** | OpenAI-compat | Llama 4, Mistral Large 3 | `FIREWORKS_API_KEY` |
-| **Perplexity** | OpenAI-compat | Sonar Pro, Sonar Reasoning | `PERPLEXITY_API_KEY` |
-| **OpenRouter** | OpenAI-compat | 200+ models via single API | `OPENROUTER_API_KEY` |
-| **Ollama** | Local | Llama 4, Qwen3, Mistral, CodeLlama | None (local) |
-| **LM Studio** | Local | Any GGUF model | None (local) |
+| Provider | Integration Type |
+|----------|-----------------|
+| OpenAI | Native |
+| Anthropic | Native |
+| Google (Gemini) | Native (with OAuth) |
+| Zhipu AI | Native |
+| DeepSeek, Groq, xAI, Mistral, Together AI, Fireworks, Perplexity | OpenAI-compatible |
+| Ollama, LM Studio | Local (auto-discovered, no API key needed) |
 
-Plus 85+ more providers including Azure, AWS Bedrock, Google Vertex, NVIDIA, Hugging Face, Cerebras, Scaleway, OVHcloud, and more.
+Any OpenAI-compatible endpoint can be added as a custom provider.
 
 ### Provider Routing Strategies
-
-The provider router can automatically select the best model based on:
 
 | Strategy | Description |
 |----------|-------------|
@@ -439,24 +419,9 @@ The provider router can automatically select the best model based on:
 
 ## Agent System
 
-### Pre-configured Agents (29)
-
-Agents are AI assistants with specific system prompts, tool assignments, and model preferences.
-
-| Category | Agents |
-|----------|--------|
-| **Core (2)** | Orchestrator, General Assistant |
-| **Technical (6)** | Code Assistant, DevOps Engineer, Database Expert, Security Analyst, Mobile Developer, API Designer |
-| **Content (5)** | Writing Assistant, Creative Writer, Technical Writer, Summarizer, Translator |
-| **Professional (5)** | Task Manager, Career Coach, Personal Coach, Legal Assistant, Finance Advisor |
-| **Analysis (3)** | Data Analyst, Research Assistant, Business Analyst |
-| **Creative (3)** | UX Designer, Image Prompt Creator, Video Scriptwriter |
-| **Education (3)** | Math Tutor, Language Tutor, Study Coach |
-| **Specialized (2)** | Email Composer, Meeting Assistant |
+Agents are AI assistants with specific system prompts, tool assignments, model preferences, and execution limits.
 
 ### Agent Configuration
-
-Each agent has:
 
 ```typescript
 {
@@ -477,10 +442,12 @@ Each agent has:
 
 ### Agent Capabilities
 
-- **Tool Orchestration** - Automatic tool calling with multi-step planning
-- **Memory Injection** - Relevant memories automatically included in context
-- **Dynamic Prompts** - Context-aware system prompt enhancement
-- **Error Handling** - Automatic retries with graceful degradation
+- **Tool Orchestration** - Automatic tool calling with multi-step planning via meta-tool proxy
+- **Memory Injection** - Relevant memories automatically included in system prompt
+- **Goal Awareness** - Active goals and progress injected into context
+- **Dynamic System Prompts** - Context-aware enhancement with memories, goals, available resources
+- **Execution Context** - Code execution instructions injected into system prompt (not user message)
+- **Streaming** - Real-time SSE responses with tool execution progress events
 
 ---
 
@@ -488,69 +455,52 @@ Each agent has:
 
 ### Overview
 
-OwnPilot has **148+ tools** organized into **20 categories**. Rather than sending all tool definitions to the LLM (which would consume too many tokens), OwnPilot uses a **meta-tool proxy pattern**:
+OwnPilot has **100+ tools** organized into **20+ categories**. Rather than sending all tool definitions to the LLM (which would consume too many tokens), OwnPilot uses a **meta-tool proxy pattern**:
 
-1. **`search_tools`** - Find tools by keyword (supports `include_params` for inline parameter schemas)
+1. **`search_tools`** - Find tools by keyword with optional `include_params` for inline parameter schemas
 2. **`get_tool_help`** - Get detailed help for a specific tool (supports batch lookup)
-3. **`use_tool`** - Execute a tool with automatic parameter validation and limit enforcement
-4. **`batch_use_tool`** - Execute multiple tools in a single call for faster workflows
+3. **`use_tool`** - Execute a tool with parameter validation and limit enforcement
+4. **`batch_use_tool`** - Execute multiple tools in a single call
 
 ### Tool Categories
 
-| Category | Tools | Examples |
-|----------|-------|---------|
-| **Tasks** | 6 | add_task, list_tasks, complete_task, update_task, delete_task, batch_add_tasks |
-| **Notes** | 5 | add_note, list_notes, update_note, delete_note, batch_add_notes |
-| **Calendar** | 4 | add_calendar_event, list_calendar_events, delete_calendar_event, batch_add |
-| **Contacts** | 5 | add_contact, list_contacts, update_contact, delete_contact, batch_add |
-| **Bookmarks** | 4 | add_bookmark, list_bookmarks, delete_bookmark, batch_add_bookmarks |
-| **Custom Data** | 11 | create_custom_table, add_custom_record, search_custom_records, ... |
-| **File System** | 8 | read_file, write_file, list_directory, search_files, copy_file, ... |
-| **PDF** | 3 | read_pdf, create_pdf, pdf_info |
-| **Code Execution** | 5 | execute_javascript, execute_python, execute_shell, compile_code, package_manager |
-| **Git** | 7 | git_status, git_diff, git_log, git_commit, git_add, git_branch, git_checkout |
-| **Web & API** | 4 | http_request, fetch_web_page, search_web, json_api |
-| **Email** | 6 | send_email, list_emails, read_email, search_emails, reply_email, delete_email |
-| **Image** | 5 | analyze_image, generate_image, edit_image, image_variation, resize_image |
-| **Audio** | 5 | text_to_speech, speech_to_text, translate_audio, audio_info, split_audio |
-| **Translation** | 4 | translate_text, detect_language, list_languages, batch_translate |
-| **Data Extraction** | 4 | extract_structured_data, extract_entities, extract_table_data, summarize_text |
-| **Vector Search** | 7 | create_embedding, semantic_search, upsert_vectors, similarity_score, ... |
-| **Finance** | 7 | add_expense, parse_receipt, query_expenses, expense_summary, export_expenses, ... |
-| **Scheduler** | 6 | create_scheduled_task, list_scheduled_tasks, trigger_task, ... |
-| **Weather** | 2 | get_weather, get_weather_forecast |
-| **Memory** | 7 | remember, recall, forget, list_memories, boost_memory, memory_stats, batch_remember |
-| **Goals** | 8 | create_goal, list_goals, decompose_goal, get_next_actions, complete_step, ... |
-| **Dynamic Tools** | 4 | create_tool, list_custom_tools, delete_custom_tool, toggle_custom_tool |
-| **Utilities** | 21 | calculate, statistics, convert_units, generate_uuid, hash_text, regex, parse_csv, ... |
+| Category | Examples |
+|----------|---------|
+| **Tasks** | add_task, list_tasks, complete_task, update_task, delete_task |
+| **Notes** | add_note, list_notes, update_note, delete_note |
+| **Calendar** | add_calendar_event, list_calendar_events, delete_calendar_event |
+| **Contacts** | add_contact, list_contacts, update_contact, delete_contact |
+| **Bookmarks** | add_bookmark, list_bookmarks, delete_bookmark |
+| **Custom Data** | create_custom_table, add_custom_record, search_custom_records |
+| **File System** | read_file, write_file, list_directory, search_files, copy_file |
+| **PDF** | read_pdf, create_pdf, pdf_info |
+| **Code Execution** | execute_javascript, execute_python, execute_shell, compile_code |
+| **Web & API** | http_request, fetch_web_page, search_web |
+| **Email** | send_email, list_emails, read_email, search_emails |
+| **Image** | analyze_image, resize_image |
+| **Audio** | audio_info |
+| **Finance** | add_expense, query_expenses, expense_summary |
+| **Memory** | remember, recall, forget, list_memories, memory_stats |
+| **Goals** | create_goal, list_goals, decompose_goal, get_next_actions, complete_step |
+| **Dynamic Tools** | create_tool, list_custom_tools, delete_custom_tool |
+| **Utilities** | calculate, statistics, convert_units, generate_uuid, hash_text, regex |
 
-### Tool Limits
+### Tool Trust Levels
 
-Automatic parameter capping prevents unbounded queries from the LLM:
-
-| Tool | Parameter | Max | Default |
-|------|-----------|-----|---------|
-| `list_emails` | limit | 50 | 20 |
-| `search_emails` | limit | 100 | 50 |
-| `list_tasks` | limit | 50 | 20 |
-| `list_notes` | limit | 50 | 20 |
-| `list_calendar_events` | limit | 50 | 20 |
-| `list_contacts` | limit | 50 | 20 |
-| `list_goals` | limit | 30 | 10 |
-| `get_next_actions` | limit | 20 | 5 |
-| `query_expenses` | limit | 100 | 50 |
-| `semantic_search` | topK | 50 | 10 |
-| `search_web` | maxResults | 20 | 10 |
-| `search_files` | maxResults | 100 | 50 |
+| Level | Source | Behavior |
+|-------|--------|----------|
+| `trusted` | Core tools | Full access |
+| `semi-trusted` | Plugin tools | Require explicit permission |
+| `sandboxed` | Custom/dynamic tools | Strict validation + sandbox execution |
 
 ### Custom Tools (LLM-Created)
 
 The AI can create new tools at runtime:
 
 1. LLM calls `create_tool` with name, description, parameters, and JavaScript code
-2. Tool is sandboxed and stored in the database
+2. Tool is validated, sandboxed, and stored in the database
 3. Tool is available to all agents via `use_tool`
-4. Tools can be enabled/disabled, require approval, and have permission controls
+4. Tools can be enabled/disabled and have permission controls
 
 ---
 
@@ -558,39 +508,41 @@ The AI can create new tools at runtime:
 
 ### Entity Types
 
-| Entity | Features |
-|--------|----------|
-| **Tasks** | Title, description, status (pending/in_progress/completed/cancelled), priority (low/normal/high/urgent), due date, category, tags, subtasks, recurrence |
-| **Notes** | Title, content (markdown), category, tags, pinned, archived, color |
-| **Bookmarks** | URL, title, description, category, tags, favorite, visit count |
-| **Calendar Events** | Title, description, location, start/end time, all-day, timezone, recurrence, attendees, reminders |
-| **Contacts** | Name, email, phone, company, job title, birthday, address, relationship, tags, social links, custom fields |
-| **Expenses** | Amount, category, description, date, tags, receipt parsing |
-| **Custom Data** | User-defined tables with dynamic schemas |
+| Entity | Key Features |
+|--------|-------------|
+| **Tasks** | Priority (1-5), due date, category, status (pending/in_progress/completed/cancelled) |
+| **Notes** | Title, content (markdown), tags, category |
+| **Bookmarks** | URL, title, description, category, tags, favicon |
+| **Calendar Events** | Title, start/end time, location, attendees, RSVP status |
+| **Contacts** | Name, email, phone, address, organization, notes |
+| **Expenses** | Amount, category, description, date, tags |
+| **Custom Data** | User-defined tables with AI-determined schemas |
 
 ### Memory System
 
-Persistent long-term memory for the AI assistant:
+Persistent long-term memory for the AI assistant with AES-256-GCM encryption:
 
 | Memory Type | Description |
 |-------------|-------------|
 | `fact` | Factual information about the user |
 | `preference` | User preferences and settings |
 | `conversation` | Key conversation takeaways |
-| `event` | Important events and milestones |
-| `skill` | Learned capabilities |
+| `context` | Contextual information |
+| `task` | Task-related memory |
+| `relationship` | People and contacts |
+| `temporal` | Time-based reminders |
 
-Memories have **importance scoring** (0-1), are **automatically injected** into agent context, and support **semantic recall** with relevance matching.
+Memories have **importance scoring**, are **automatically injected** into agent system prompts, support **deduplication** via content hash, and have optional **TTL expiration**.
 
 ### Goals System
 
 Hierarchical goal tracking with decomposition:
 
-- **Create goals** with title, description, priority (1-10), due date
-- **Decompose** goals into sub-goals and actionable steps
-- **Track progress** (0-100%) with status (active/paused/completed/abandoned)
+- **Create goals** with title, description, due date
+- **Decompose** into actionable steps (pending, in_progress, completed, skipped)
+- **Track progress** (0-100%) with status (active/completed/abandoned)
 - **Get next actions** - AI recommends what to do next
-- **Complete steps** and auto-update parent goal progress
+- **Complete steps** - Auto-update parent goal progress
 
 ---
 
@@ -621,111 +573,159 @@ Proactive automation with 4 trigger types:
 
 Multi-step autonomous execution:
 
-- **Step types**: tool_call, llm_decision, user_input, condition, parallel, loop, sub_plan
-- **Status tracking**: pending, running, paused, completed, failed, cancelled
-- **Checkpoints**: Save state for rollback on failure
-- **Linked** to goals and triggers
+- **Step types**: tool, parallel, loop, conditional, wait, pause
+- **Status tracking**: draft, running, paused, completed, failed, cancelled
+- **Timeout and retry** logic with configurable backoff
+- **Step dependencies** for execution ordering
 
 ---
 
 ## Database
 
-### Supported Databases
+PostgreSQL via `better-sqlite3` adapter pattern with 40+ repositories.
 
-| Database | Status | Notes |
-|----------|--------|-------|
-| **PostgreSQL 16+** | Primary | Recommended for production |
-| **SQLite** | Legacy | Development/single-user |
+### Key Tables
 
-### Schema (47 Tables)
+**Core:** `conversations`, `messages`, `agents`, `settings`, `costs`, `request_logs`
 
-**Core Tables:**
-- `conversations`, `messages` - Chat history
-- `agents` - Agent configurations
-- `settings` - Key-value settings store
-- `request_logs` - API request/response logging
-- `costs` - Token usage and cost tracking
+**Personal Data:** `tasks`, `notes`, `bookmarks`, `calendar_events`, `contacts`, `expenses`
 
-**Personal Data Tables:**
-- `tasks`, `notes`, `bookmarks`, `calendar_events`, `contacts`
-- `projects`, `reminders`, `captures` (quick capture inbox)
-- `expenses`
+**Productivity:** `pomodoro_sessions`, `habits`, `captures`
 
-**Productivity Tables:**
-- `pomodoro_sessions`, `pomodoro_settings` - Pomodoro timer
-- `habits`, `habit_logs` - Habit tracking
+**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`
 
-**Autonomous AI Tables:**
-- `memories` - Long-term memory with embeddings
-- `goals`, `goal_steps` - Goal hierarchy
-- `triggers`, `trigger_history` - Automation triggers
-- `plans`, `plan_steps`, `plan_history` - Multi-step plans
+**Channels:** `channel_messages`, `channel_users`, `channel_sessions`
 
-**System Tables:**
-- `channels`, `channel_messages` - Messaging channels
-- `custom_tools` - LLM-created tools
-- `custom_data_tables`, `custom_data_records` - User-defined data
-- `plugins` - Plugin state persistence
-- `oauth_integrations` - OAuth token storage
-- `media_provider_settings` - Media provider configuration
-- `user_model_configs` - Per-user model enable/disable
-- `local_providers`, `local_models` - Local AI provider management
+**System:** `plugins`, `custom_tools`, `custom_data_tables`, `config_services`, `execution_permissions`, `workspaces`, `model_configs`
 
 ### Migration
 
-```bash
-# Run PostgreSQL migration
-pnpm --filter @ownpilot/gateway migrate:postgres
-
-# Dry run (preview only)
-pnpm --filter @ownpilot/gateway migrate:postgres:dry
-```
+Schema migrations are auto-applied on startup via `autoMigrateIfNeeded()`. Migration files are in `packages/gateway/src/db/migrations/`.
 
 ---
 
 ## Security & Privacy
 
+### 4-Layer Security Model
+
+| Layer | Purpose |
+|-------|---------|
+| **Critical Patterns** | 100+ regex patterns unconditionally blocked (rm -rf /, fork bombs, registry deletion, etc.) |
+| **Permission Matrix** | Per-category modes: blocked, prompt, allowed (execute_javascript, execute_python, execute_shell, compile_code, package_manager) |
+| **Approval Callback** | Real-time user approval for sensitive operations via SSE (2-minute timeout) |
+| **Sandbox Isolation** | VM, Docker, Worker threads, or Local execution with resource limits |
+
 ### Credential Management
 
-Two approaches for storing API keys:
+API keys and settings are stored in the PostgreSQL database via the Config Center system. The web UI settings page and `ownpilot config` CLI both write to the same database.
 
-1. **Encrypted Vault (CLI)** — `ownpilot config set <key>` stores credentials in `~/.ownpilot/credentials.enc` with AES-256-GCM encryption and PBKDF2 key derivation (600K iterations). Recommended for CLI usage.
-2. **Database Settings (Gateway API)** — `POST /api/v1/settings/api-keys` stores keys in PostgreSQL via the config services system. Keys are loaded into `process.env` at startup for provider SDK compatibility. Used by the Web UI.
+Keys are loaded into `process.env` at server startup for provider SDK compatibility.
 
 ### PII Detection
-- Automatic detection of emails, phone numbers, SSNs, credit cards, and more
-- Configurable redaction before logging/storage
-- Enable via `ENABLE_PII_REDACTION=true`
 
-### Sandboxed Code Execution
-- Node.js VM module + Worker threads for isolation
-- Configurable resource limits (memory, CPU, timeout)
-- Permission-based access control (filesystem, network, process)
-- All executions are audit-logged
+- 15+ detection categories: SSN, credit cards, emails, phone numbers, IP addresses, passport, etc.
+- Configurable redaction modes: mask, label, remove
+- Severity-based filtering
+
+### Code Execution
+
+OwnPilot can execute code on behalf of the AI through 5 execution tools:
+
+| Tool | Description |
+|------|-------------|
+| `execute_javascript` | Run JavaScript/TypeScript via Node.js |
+| `execute_python` | Run Python scripts |
+| `execute_shell` | Run shell commands (bash/PowerShell) |
+| `compile_code` | Compile and run C, C++, Rust, Go, Java |
+| `package_manager` | Install packages via npm/pip |
+
+#### Execution Modes
+
+| Mode | Behavior |
+|------|----------|
+| **docker** | All code runs inside isolated Docker containers (most secure) |
+| **local** | Code runs directly on the host machine (requires approval for non-allowed categories) |
+| **auto** | Tries Docker first, falls back to local if Docker is unavailable |
+
+#### Docker Sandbox Security
+
+When using Docker mode, each execution runs in a container with strict isolation:
+
+- `--read-only` filesystem (writable `/tmp` only)
+- `--network=none` (no network access)
+- `--user=65534:65534` (nobody user)
+- `--no-new-privileges`
+- `--cap-drop=ALL` (no Linux capabilities)
+- `--memory=256m` limit
+- `--cpus=1` limit
+- `--pids-limit=100`
+- Configurable timeout with automatic cleanup
+
+#### Local Executor Security
+
+When running locally (without Docker), the local executor applies:
+
+- **Environment sanitization** — strips API keys and sensitive variables from the child process
+- **Timeout enforcement** — SIGKILL after configured timeout
+- **Output truncation** — 1MB output limit to prevent memory exhaustion
+
+#### Permission System
+
+Code execution is governed by a per-category permission matrix:
+
+| Permission | Behavior |
+|------------|----------|
+| `blocked` | Execution is denied |
+| `prompt` | User must approve via real-time dialog before execution proceeds |
+| `allowed` | Execution proceeds without approval |
+
+Categories: `execute_javascript`, `execute_python`, `execute_shell`, `compile_code`, `package_manager`
+
+A **master switch** (`enabled` boolean) can disable all code execution globally.
+
+#### Approval Flow
+
+When a tool's permission is set to `prompt`:
+
+1. Gateway sends an SSE `approval_required` event to the web UI
+2. UI shows an approval dialog with the code to be executed
+3. User approves or rejects via `POST /api/v1/execution-permissions/approvals/{id}/resolve`
+4. Execution proceeds or is cancelled (120-second timeout, auto-reject on expiry)
+
+#### Critical Pattern Blocking
+
+Regardless of permission settings, 100+ regex patterns are **unconditionally blocked**:
+
+- Filesystem destruction (`rm -rf /`, `format C:`, `del /f /s`)
+- Fork bombs and system control
+- Registry/credential access (Windows registry, `/etc/shadow`)
+- Remote code execution (`curl | bash`, `eval(fetch(...))`)
+- Package manager abuse (`npm publish`, `pip install` to system)
 
 ### Authentication
-- **None** - No authentication (development only — **not for production**)
-- **API Key** - Static API keys in `API_KEYS` env var
-- **JWT** - JSON Web Token with configurable secret
-- **Database Admin** - Mutating database operations (`/api/v1/database/*`) require `ADMIN_API_KEY` env var and `X-Admin-Key` header, regardless of global auth config
+
+| Mode | Description |
+|------|-------------|
+| **None** | No authentication (default, development only) |
+| **API Key** | Bearer token or `X-API-Key` header, timing-safe comparison |
+| **JWT** | HS256/HS384/HS512 via `jose`, requires `sub` claim |
 
 ### Rate Limiting
-- Window-based rate limiting (default: 500 requests/minute)
-- Burst support (default: 750)
-- Soft mode: warn but don't block (recommended for personal use)
-- Fully configurable or disableable
+
+Sliding window algorithm with configurable window (default 60s), max requests (default 500), and burst limit (default 750). Per-IP tracking with `X-RateLimit-*` response headers.
 
 ---
 
 ## API Reference
 
-### Core Endpoints
+### Chat
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/v1/chat` | Send message to AI agent |
-| `GET` | `/api/v1/chat/conversations` | List conversations |
-| `GET` | `/api/v1/chat/conversations/:id` | Get conversation with messages |
+| `POST` | `/api/v1/chat` | Send message (supports SSE streaming) |
+| `GET` | `/api/v1/chat/history` | List conversations |
+| `GET` | `/api/v1/chat/history/:id` | Get conversation with messages |
+| `DELETE` | `/api/v1/chat/history/:id` | Delete conversation |
 
 ### Agents
 
@@ -772,7 +772,24 @@ Two approaches for storing API keys:
 | `GET` | `/health` | Health check |
 | `GET` | `/api/v1/dashboard` | Dashboard data |
 | `GET` | `/api/v1/costs` | Cost tracking |
-| `GET` | `/api/v1/chat/logs` | Request logs |
+| `GET` | `/api/v1/audit/logs` | Audit trail |
+
+### Response Format
+
+All API responses use a standardized envelope:
+
+```json
+{
+  "success": true,
+  "data": { },
+  "meta": {
+    "requestId": "uuid",
+    "timestamp": "ISO-8601"
+  }
+}
+```
+
+Error responses include error codes from a standardized `ERROR_CODES` enum.
 
 ---
 
@@ -780,110 +797,89 @@ Two approaches for storing API keys:
 
 ### Environment Variables
 
+> **Note:** AI provider API keys (OpenAI, Anthropic, etc.) and channel tokens (Telegram) are **not** configured via environment variables. Use the Config Center UI or `ownpilot config set` CLI after setup.
+
 ```bash
-# ─── Master Password ───────────────────────────────
-OWNPILOT_PASSWORD=              # Auto-unlock encrypted credentials
-
-# ─── AI Provider API Keys ─────────────────────────
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_API_KEY=...
-DEEPSEEK_API_KEY=...
-GROQ_API_KEY=...
-XAI_API_KEY=...
-MISTRAL_API_KEY=...
-
 # ─── Server ────────────────────────────────────────
-PORT=8080
+PORT=8080                       # Gateway port
+UI_PORT=5173                    # UI dev server port
 HOST=0.0.0.0
 NODE_ENV=development
-CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+# CORS_ORIGINS=                 # Additional origins (localhost:UI_PORT auto-included)
+# BODY_SIZE_LIMIT=1048576       # Max request body size in bytes (default: 1MB)
 
-# ─── Authentication ────────────────────────────────
-AUTH_TYPE=none                   # none | api-key | jwt
-API_KEYS=key1,key2              # For api-key auth
-JWT_SECRET=your-secret          # For jwt auth (min 32 chars)
-ADMIN_API_KEY=your-admin-key    # Required for database admin operations
-
-# ─── Rate Limiting ─────────────────────────────────
-RATE_LIMIT_DISABLED=false
-RATE_LIMIT_WINDOW_MS=60000      # 1 minute window
-RATE_LIMIT_MAX=500              # Max requests per window
-RATE_LIMIT_BURST=750            # Allow temporary spikes
-RATE_LIMIT_SOFT=true            # Warn but don't block
-
-# ─── Database ──────────────────────────────────────
-DB_TYPE=postgres                # postgres | sqlite
+# ─── Database (PostgreSQL) ─────────────────────────
+# Option 1: Full connection URL
+# DATABASE_URL=postgresql://user:pass@host:port/db
+# Option 2: Individual settings
 POSTGRES_HOST=localhost
 POSTGRES_PORT=25432
 POSTGRES_USER=ownpilot
 POSTGRES_PASSWORD=ownpilot_secret
 POSTGRES_DB=ownpilot
-POSTGRES_POOL_SIZE=10
-# Or use connection URL:
-# DATABASE_URL=postgresql://ownpilot:secret@localhost:25432/ownpilot
+# POSTGRES_POOL_SIZE=10
+# DB_VERBOSE=false
 
-# ─── Telegram Bot ──────────────────────────────────
-TELEGRAM_BOT_TOKEN=123456789:ABC...
-TELEGRAM_ALLOWED_USERS=         # Comma-separated user IDs
-TELEGRAM_ALLOWED_CHATS=         # Comma-separated chat IDs
+# ─── Authentication (DB primary, ENV fallback) ─────
+# AUTH_TYPE=none                 # none | api-key | jwt
+# API_KEYS=                     # Comma-separated keys for api-key auth
+# JWT_SECRET=                   # For jwt auth (min 32 chars)
 
-# ─── Autonomy ─────────────────────────────────────
-DEFAULT_AUTONOMY_LEVEL=1        # 0=Manual, 1=Assisted, 2=Supervised, 3=Autonomous, 4=Full
-ENABLE_PROACTIVE_TRIGGERS=false
-TRIGGER_CHECK_INTERVAL=60000    # ms
+# ─── Rate Limiting (DB primary, ENV fallback) ──────
+# RATE_LIMIT_DISABLED=false
+# RATE_LIMIT_WINDOW_MS=60000
+# RATE_LIMIT_MAX=500
 
-# ─── Privacy & Security ───────────────────────────
-ENABLE_PII_REDACTION=true
-ENCRYPTION_KEY=                 # 32 bytes hex
+# ─── Security & Encryption ────────────────────────
+# ENCRYPTION_KEY=               # 32 bytes hex (for OAuth token encryption)
+# ADMIN_API_KEY=                # Admin key for debug endpoints (production)
 
-# ─── Logging ───────────────────────────────────────
+# ─── Data Storage ─────────────────────────────────
+# OWNPILOT_DATA_DIR=            # Override platform-specific data directory
+
+# ─── Logging ──────────────────────────────────────
 LOG_LEVEL=info
-LOG_FORMAT=json
 
-# ─── AI Agent ──────────────────────────────────────
-SYSTEM_PROMPT=You are a helpful AI assistant.
-DATA_DIR=./data
+# ─── Debug (development only) ─────────────────────
+# DEBUG_AI_REQUESTS=false
+# DEBUG_AGENT=false
+# DEBUG_LLM=false
+# DEBUG_RAW_RESPONSE=false
+# DEBUG_EXEC_SECURITY=false
+
+# ─── Sandbox (advanced) ──────────────────────────
+# ALLOW_HOME_DIR_ACCESS=false
+# DOCKER_SANDBOX_RELAXED_SECURITY=false
+# MEMORY_SALT=change-this-in-production
 ```
+
+### Configuration Priority
+
+1. **CLI options** (highest) - `-p`, `-h`, `--no-auth`
+2. **PostgreSQL database** - settings table
+3. **Environment variables** - `.env` file
+4. **Hardcoded defaults** (lowest) - `config/defaults.ts`
 
 ---
 
 ## Deployment
 
-### Docker (Recommended)
+### Docker
 
 ```bash
-# Full stack: PostgreSQL + Gateway + UI
-docker compose up -d
-
-# PostgreSQL only
-docker compose -f docker-compose.db.yml up -d
-
 # Build and run production image
 docker build -t ownpilot .
 docker run -p 8080:8080 --env-file .env ownpilot
 ```
 
-The Dockerfile uses multi-stage builds:
-1. **Builder** - `node:22-alpine`, installs pnpm, builds all packages
-2. **Production** - `node:22-alpine`, copies only dist/ and prod dependencies
-
-### Docker Compose Services
-
-| Service | Image | Port | Description |
-|---------|-------|------|-------------|
-| `postgres` | postgres:16-alpine | 25432 | PostgreSQL database |
-| `gateway` | ownpilot (built) | 8080 | API server |
-| `ui` | ownpilot-ui (built) | 3000 | Web interface |
-
-### Manual Deployment
+### Manual
 
 ```bash
-# Build
+# Build all packages
 pnpm build
 
 # Start production server
-pnpm start
+ownpilot start
 
 # Or start individually
 pnpm --filter @ownpilot/gateway start
@@ -897,64 +893,49 @@ pnpm --filter @ownpilot/ui preview
 ### Scripts
 
 ```bash
-# ─── Root (Turborepo) ──────────────────────────────
 pnpm dev              # Watch mode for all packages
 pnpm build            # Build all packages
 pnpm test             # Run all tests
 pnpm test:watch       # Watch test mode
 pnpm test:coverage    # Coverage reports
-pnpm lint             # ESLint all packages
+pnpm lint             # ESLint check
 pnpm lint:fix         # Auto-fix lint issues
 pnpm typecheck        # TypeScript type checking
-pnpm clean            # Clear all build artifacts
 pnpm format           # Prettier formatting
 pnpm format:check     # Check formatting
-
-# ─── Package-specific ──────────────────────────────
-pnpm --filter @ownpilot/gateway seed                # Seed default agents
-pnpm --filter @ownpilot/gateway seed:triggers-plans # Seed triggers & plans
-pnpm --filter @ownpilot/gateway migrate:postgres    # Run DB migration
-pnpm --filter @ownpilot/ui dev                      # UI dev server
-pnpm --filter @ownpilot/ui build                    # Build UI
+pnpm clean            # Clear all build artifacts
 ```
 
 ### Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| **Monorepo** | pnpm workspaces + Turborepo |
+| **Monorepo** | pnpm 10+ workspaces + Turborepo 2.x |
 | **Language** | TypeScript 5.9 (strict, ES2023, NodeNext) |
-| **API Server** | Hono |
+| **Runtime** | Node.js 22+ |
+| **API Server** | Hono 4.x |
 | **Web UI** | React 19 + Vite 6 + Tailwind CSS 4 |
-| **Database** | PostgreSQL 16 / SQLite |
-| **Testing** | Vitest |
-| **Linting** | ESLint |
-| **Formatting** | Prettier |
-| **Git Hooks** | Husky |
-| **Build** | Turborepo with incremental caching |
-| **Container** | Docker multi-stage |
-
-### Testing
-
-- **65 test files** across all packages
-- **1,075+ tests** in the gateway package alone
-- Integration tests for all route modules
-- Unit tests for services, middleware, and core modules
-- Framework: **Vitest** with `vi.mock` for module-level mocking
+| **Database** | PostgreSQL |
+| **Telegram** | Grammy |
+| **Testing** | Vitest 2.x (66 test files, 1,507 tests) |
+| **Linting** | ESLint 9 (flat config) |
+| **Formatting** | Prettier 3.x |
+| **Git Hooks** | Husky (pre-commit: lint + typecheck) |
+| **CI** | GitHub Actions (Node 22, Ubuntu) |
 
 ### Architecture Patterns
 
 | Pattern | Usage |
 |---------|-------|
-| **Result<T, E>** | Error handling throughout core |
-| **Repository** | Data access abstraction (`IRepository<T>`, `StandardQuery`, `PaginatedResult`) |
-| **Strategy** | Provider routing (cheapest/fastest/smartest) |
-| **Registry** | Tool registration and discovery |
-| **EventBus** | Typed event system with wildcard subscriptions (tool, resource, agent, system events) |
-| **Service Layer** | Business logic services (GoalService, MemoryService, PlanService, TriggerService, etc.) |
-| **Tool Provider** | Modular tool registration via `ToolProvider` interface and `ToolMiddleware` |
-| **Middleware** | Hono request pipeline (auth, rate limiting, timing, circuit breaker) |
-| **Context + Hook** | React state management (Chat, Theme, Dialog) |
+| **Result<T, E>** | Functional error handling throughout core |
+| **Branded Types** | Compile-time distinct types (UserId, SessionId, PluginId) |
+| **Service Registry** | Typed DI container for runtime service composition |
+| **Middleware Pipeline** | Tools, MessageBus, providers all use middleware chains |
+| **Builder Pattern** | Plugin and Channel construction |
+| **EventBus + HookBus** | Event-driven state + interceptable hooks |
+| **Repository** | Data access abstraction with BaseRepository |
+| **Meta-tool Proxy** | Token-efficient tool discovery and execution |
+| **Context + Hooks** | React state management (no Redux/Zustand) |
 
 ---
 

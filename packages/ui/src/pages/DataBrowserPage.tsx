@@ -6,6 +6,7 @@ import {
   FileText,
   Calendar,
   Users,
+  DollarSign,
   Search,
   Plus,
   Trash2,
@@ -20,7 +21,7 @@ import { useToast } from '../components/ToastProvider';
 import { useDebouncedValue, useModalClose } from '../hooks';
 
 // Data types
-type DataType = 'tasks' | 'bookmarks' | 'notes' | 'calendar' | 'contacts';
+type DataType = 'tasks' | 'bookmarks' | 'notes' | 'calendar' | 'contacts' | 'expenses';
 
 interface DataTypeConfig {
   name: string;
@@ -95,6 +96,19 @@ const DATA_TYPES: Record<DataType, DataTypeConfig> = {
     ],
     searchable: true,
   },
+  expenses: {
+    name: 'Expenses',
+    icon: DollarSign,
+    endpoint: '/api/v1/expenses',
+    columns: [
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'description', label: 'Description', type: 'text' },
+      { key: 'amount', label: 'Amount', type: 'text' },
+      { key: 'category', label: 'Category', type: 'text' },
+      { key: 'currency', label: 'Currency', type: 'text' },
+    ],
+    searchable: true,
+  },
 };
 
 interface ApiResponse<T> {
@@ -143,9 +157,13 @@ export function DataBrowserPage() {
       params.append('limit', '100');
 
       const response = await fetch(`${config.endpoint}?${params}`);
-      const data: ApiResponse<Record<string, unknown>[]> = await response.json();
+      const data: ApiResponse<Record<string, unknown>[] | Record<string, unknown>> = await response.json();
       if (data.success && data.data) {
-        setRecords(data.data);
+        // Expenses API wraps array in { expenses: [...] }
+        const items = Array.isArray(data.data)
+          ? data.data
+          : (data.data as Record<string, unknown>).expenses as Record<string, unknown>[] ?? [];
+        setRecords(items);
       }
     } catch {
       // API client handles error reporting
@@ -484,6 +502,16 @@ function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalP
           { key: 'relationship', label: 'Relationship', type: 'text' },
           { key: 'notes', label: 'Notes', type: 'textarea' },
         ];
+      case 'expenses':
+        return [
+          { key: 'description', label: 'Description', type: 'text', required: true },
+          { key: 'amount', label: 'Amount', type: 'number', required: true },
+          { key: 'category', label: 'Category', type: 'select' },
+          { key: 'date', label: 'Date', type: 'date' },
+          { key: 'currency', label: 'Currency', type: 'text' },
+          { key: 'paymentMethod', label: 'Payment Method', type: 'text' },
+          { key: 'notes', label: 'Notes', type: 'textarea' },
+        ];
       default:
         return [];
     }
@@ -528,11 +556,29 @@ function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalP
                     <option value="high">High</option>
                     <option value="urgent">Urgent</option>
                   </select>
+                ) : field.type === 'select' && field.key === 'category' && dataType === 'expenses' ? (
+                  <select
+                    value={(formData[field.key] as string) || 'other'}
+                    onChange={(e) => handleChange(field.key, e.target.value)}
+                    className={inputClasses}
+                  >
+                    <option value="food">Food</option>
+                    <option value="transport">Transport</option>
+                    <option value="utilities">Utilities</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="shopping">Shopping</option>
+                    <option value="health">Health</option>
+                    <option value="education">Education</option>
+                    <option value="travel">Travel</option>
+                    <option value="subscription">Subscription</option>
+                    <option value="housing">Housing</option>
+                    <option value="other">Other</option>
+                  </select>
                 ) : (
                   <input
                     type={field.type}
                     value={(formData[field.key] as string) || ''}
-                    onChange={(e) => handleChange(field.key, e.target.value)}
+                    onChange={(e) => handleChange(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)}
                     className={inputClasses}
                     required={field.required}
                   />
