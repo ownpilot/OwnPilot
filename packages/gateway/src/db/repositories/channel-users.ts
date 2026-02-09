@@ -6,7 +6,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 
 // ============================================================================
 // Entity Types
@@ -73,10 +73,7 @@ function rowToEntity(row: ChannelUserRow): ChannelUserEntity {
     verifiedAt: row.verified_at ? new Date(row.verified_at) : undefined,
     verificationMethod: row.verification_method as ChannelUserEntity['verificationMethod'],
     isBlocked: row.is_blocked,
-    metadata:
-      typeof row.metadata === 'string'
-        ? JSON.parse(row.metadata || '{}')
-        : (row.metadata || {}),
+    metadata: parseJsonField(row.metadata, {}),
     firstSeenAt: new Date(row.first_seen_at),
     lastSeenAt: new Date(row.last_seen_at),
   };

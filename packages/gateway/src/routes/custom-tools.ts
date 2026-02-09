@@ -28,7 +28,8 @@ import {
   registerToolConfigRequirements,
   unregisterDependencies,
 } from '../services/api-service-registrar.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam, sanitizeId, notFoundError } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam, sanitizeId, notFoundError } from './helpers.js';
+import { TOOL_ARGS_MAX_SIZE } from '../config/defaults.js';
 
 /** Sanitize display text for safe interpolation (allows spaces) */
 const sanitizeText = (text: string) => text.replace(/[^\w\s-]/g, '').slice(0, 200);
@@ -492,7 +493,7 @@ customToolsRoutes.post('/:id/execute', async (c) => {
 
   // Validate arguments size to prevent abuse
   const argsStr = JSON.stringify(body.arguments ?? {});
-  if (argsStr.length > 100000) {
+  if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Arguments payload too large (max 100KB)' }, 400);
   }
 
