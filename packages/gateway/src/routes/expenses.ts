@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { apiResponse, apiError, ERROR_CODES, getIntParam, notFoundError } from './helpers.js';
+import { apiResponse, getIntParam, notFoundError } from './helpers.js';
 
 // =============================================================================
 // Types
