@@ -117,6 +117,12 @@ export const TOOL_ARGS_MAX_SIZE = 100_000; // 100KB
 // Time Constants
 // ============================================================================
 
+/** Milliseconds in one minute */
+export const MS_PER_MINUTE = 60_000;
+
+/** Milliseconds in one hour */
+export const MS_PER_HOUR = 3_600_000; // 1000 * 60 * 60
+
 /** Milliseconds in one day (for date difference calculations) */
 export const MS_PER_DAY = 86_400_000; // 1000 * 60 * 60 * 24
 

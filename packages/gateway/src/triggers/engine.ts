@@ -18,6 +18,7 @@ import { executeTool, hasTool } from '../services/tool-executor.js';
 import { getNextRunTime, getServiceRegistry, Services, type ITriggerService, type IGoalService, type IMemoryService, type ExecutionPermissions } from '@ownpilot/core';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { getLog } from '../services/log.js';
+import { getErrorMessage } from '../routes/helpers.js';
 import { MS_PER_DAY, TRIGGER_POLL_INTERVAL_MS, TRIGGER_CONDITION_CHECK_MS } from '../config/defaults.js';
 
 const log = getLog('TriggerEngine');
@@ -232,7 +233,7 @@ export class TriggerEngine {
             data: result,
           };
         } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : 'Chat execution failed';
+          const errorMsg = getErrorMessage(error, 'Chat execution failed');
           return { success: false, error: errorMsg };
         }
       }
@@ -488,7 +489,7 @@ export class TriggerEngine {
       log.info('Executed trigger', { trigger: trigger.name, durationMs });
     } catch (error) {
       const durationMs = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = getErrorMessage(error);
 
       // Log failure
       await this.triggerService.logExecution(this.config.userId, trigger.id, 'failure', undefined, errorMessage, durationMs);
@@ -558,7 +559,7 @@ export class TriggerEngine {
       return result;
     } catch (error) {
       const durationMs = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = getErrorMessage(error);
 
       await this.triggerService.logExecution(this.config.userId, trigger.id, 'failure', undefined, errorMessage, durationMs);
       return { success: false, error: errorMessage };

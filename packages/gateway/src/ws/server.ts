@@ -21,6 +21,7 @@ import {
   WS_MAX_CONNECTIONS,
 } from '../config/defaults.js';
 import { getOrCreateDefaultAgent, isDemoMode } from '../routes/agents.js';
+import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('WebSocket');
@@ -396,7 +397,7 @@ export class WSGateway {
         if (sessionId) {
           sessionManager.send(sessionId, 'chat:error', {
             sessionId,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: getErrorMessage(error),
           });
         }
       }
@@ -477,7 +478,7 @@ export class WSGateway {
           sessionManager.send(sessionId, 'channel:status', {
             channelId: 'unknown',
             status: 'error',
-            error: error instanceof Error ? error.message : 'Failed to connect channel',
+            error: getErrorMessage(error, 'Failed to connect channel'),
           });
         }
       }
@@ -502,7 +503,7 @@ export class WSGateway {
         if (sessionId) {
           sessionManager.send(sessionId, 'system:notification', {
             type: 'error',
-            message: error instanceof Error ? error.message : 'Failed to disconnect channel',
+            message: getErrorMessage(error, 'Failed to disconnect channel'),
           });
         }
       }
@@ -560,7 +561,7 @@ export class WSGateway {
         if (sessionId) {
           sessionManager.send(sessionId, 'channel:message:error', {
             channelId: data.message.channelId,
-            error: error instanceof Error ? error.message : 'Failed to send message',
+            error: getErrorMessage(error, 'Failed to send message'),
           });
         }
       }

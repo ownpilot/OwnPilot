@@ -16,6 +16,7 @@ import type {
 import { gatewayEvents } from '../ws/events.js';
 import { getChannelService } from '@ownpilot/core';
 import type { IncomingMessage } from '../ws/types.js';
+import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('WorkspaceManager');
@@ -208,7 +209,7 @@ class WorkspaceInstance implements Workspace {
 
       this.setState('idle');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = getErrorMessage(error);
       this.setState('error', errorMessage);
       throw error;
     }

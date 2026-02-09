@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField } from './base.js';
+import { MS_PER_DAY } from '../../config/defaults.js';
 import type { StandardQuery } from './interfaces.js';
 import {
   getEventBus,
@@ -375,7 +376,7 @@ export class TasksRepository extends BaseRepository {
 
   async getUpcoming(days = 7): Promise<Task[]> {
     const today = new Date();
-    const futureDate = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
+    const futureDate = new Date(today.getTime() + days * MS_PER_DAY);
     return this.list({
       dueAfter: today.toISOString().split('T')[0],
       dueBefore: futureDate.toISOString().split('T')[0],

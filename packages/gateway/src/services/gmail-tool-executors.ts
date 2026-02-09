@@ -17,6 +17,7 @@ import {
   type GmailAttachment,
 } from '@ownpilot/core';
 import { oauthIntegrationsRepo, settingsRepo } from '../db/repositories/index.js';
+import { getErrorMessage } from '../routes/helpers.js';
 
 // =============================================================================
 // Helper Functions
@@ -160,7 +161,7 @@ export const gmailSendEmailExecutor: ToolExecutor = async (params, _context): Pr
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to send email';
+    const errorMessage = getErrorMessage(error, 'Failed to send email');
     return errorResult(errorMessage);
   }
 };
@@ -241,7 +242,7 @@ export const gmailListEmailsExecutor: ToolExecutor = async (params, _context): P
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to list emails';
+    const errorMessage = getErrorMessage(error, 'Failed to list emails');
     return errorResult(errorMessage);
   }
 };
@@ -304,7 +305,7 @@ export const gmailReadEmailExecutor: ToolExecutor = async (params, _context): Pr
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to read email';
+    const errorMessage = getErrorMessage(error, 'Failed to read email');
     return errorResult(errorMessage);
   }
 };
@@ -358,7 +359,7 @@ export const gmailDeleteEmailExecutor: ToolExecutor = async (params, _context): 
       };
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete email';
+    const errorMessage = getErrorMessage(error, 'Failed to delete email');
     return errorResult(errorMessage);
   }
 };
@@ -427,7 +428,7 @@ export const gmailSearchEmailsExecutor: ToolExecutor = async (params, _context):
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to search emails';
+    const errorMessage = getErrorMessage(error, 'Failed to search emails');
     return errorResult(errorMessage);
   }
 };
@@ -478,7 +479,7 @@ export const gmailReplyEmailExecutor: ToolExecutor = async (params, _context): P
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to send reply';
+    const errorMessage = getErrorMessage(error, 'Failed to send reply');
     return errorResult(errorMessage);
   }
 };
@@ -523,7 +524,7 @@ export const gmailMarkReadExecutor: ToolExecutor = async (params, _context): Pro
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update email';
+    const errorMessage = getErrorMessage(error, 'Failed to update email');
     return errorResult(errorMessage);
   }
 };
@@ -564,7 +565,7 @@ export const gmailStarExecutor: ToolExecutor = async (params, _context): Promise
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update email';
+    const errorMessage = getErrorMessage(error, 'Failed to update email');
     return errorResult(errorMessage);
   }
 };
@@ -599,7 +600,7 @@ export const gmailArchiveExecutor: ToolExecutor = async (params, _context): Prom
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to archive email';
+    const errorMessage = getErrorMessage(error, 'Failed to archive email');
     return errorResult(errorMessage);
   }
 };
@@ -636,7 +637,7 @@ export const gmailGetLabelsExecutor: ToolExecutor = async (params, _context): Pr
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to get labels';
+    const errorMessage = getErrorMessage(error, 'Failed to get labels');
     return errorResult(errorMessage);
   }
 };
@@ -675,7 +676,7 @@ export const gmailGetAttachmentExecutor: ToolExecutor = async (params, _context)
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to get attachment';
+    const errorMessage = getErrorMessage(error, 'Failed to get attachment');
     return errorResult(errorMessage);
   }
 };

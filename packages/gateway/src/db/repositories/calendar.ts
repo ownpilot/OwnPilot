@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField } from './base.js';
+import { MS_PER_DAY } from '../../config/defaults.js';
 
 export interface CalendarEvent {
   id: string;
@@ -306,7 +307,7 @@ export class CalendarRepository extends BaseRepository {
   async getToday(): Promise<CalendarEvent[]> {
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
+    const endOfDay = new Date(startOfDay.getTime() + MS_PER_DAY - 1);
 
     return this.list({
       startAfter: startOfDay,
@@ -316,7 +317,7 @@ export class CalendarRepository extends BaseRepository {
 
   async getUpcoming(days = 7): Promise<CalendarEvent[]> {
     const now = new Date();
-    const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    const futureDate = new Date(now.getTime() + days * MS_PER_DAY);
 
     return this.list({
       startAfter: now,

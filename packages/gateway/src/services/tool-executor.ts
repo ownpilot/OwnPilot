@@ -35,6 +35,7 @@ import {
   getCustomToolDynamicRegistry,
   setSharedRegistryForCustomTools,
 } from '../routes/custom-tools.js';
+import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from './log.js';
 import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
 import type { IAuditService } from '@ownpilot/core';
@@ -281,7 +282,7 @@ async function executeToolInternal(
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Tool execution failed',
+        error: getErrorMessage(error, 'Tool execution failed'),
       };
     }
   }
