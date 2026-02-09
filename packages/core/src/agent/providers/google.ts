@@ -21,7 +21,7 @@ import type {
   Message,
 } from '../types.js';
 import {
-  getProviderConfig,
+  loadProviderConfig,
   resolveProviderConfig,
   type ProviderConfig,
   type ResolvedProviderConfig,
@@ -112,7 +112,7 @@ export class GoogleProvider {
    * Create provider with explicit API key
    */
   static withApiKey(apiKey: string): GoogleProvider | null {
-    const config = getProviderConfig('google');
+    const config = loadProviderConfig('google');
     if (!config) {
       return null;
     }
@@ -126,7 +126,7 @@ export class GoogleProvider {
    * Get the provider's JSON config
    */
   getConfig(): ProviderConfig | undefined {
-    return getProviderConfig(this.providerId);
+    return loadProviderConfig(this.providerId) ?? undefined;
   }
 
   /**

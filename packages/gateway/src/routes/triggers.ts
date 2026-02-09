@@ -12,7 +12,7 @@ import {
 } from '../db/repositories/triggers.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression, getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError } from './helpers.js';
 
 export const triggersRoutes = new Hono();
 
@@ -132,7 +132,7 @@ triggersRoutes.get('/:id', async (c) => {
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Trigger', id);
   }
 
   // Get recent history for this trigger
@@ -174,7 +174,7 @@ triggersRoutes.patch('/:id', async (c) => {
   const updated = await service.updateTrigger(userId, id, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Trigger', id);
   }
 
   return apiResponse(c, updated);
@@ -191,7 +191,7 @@ triggersRoutes.post('/:id/enable', async (c) => {
   const updated = await service.updateTrigger(userId, id, { enabled: true });
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Trigger', id);
   }
 
   return apiResponse(c, {
@@ -211,7 +211,7 @@ triggersRoutes.post('/:id/disable', async (c) => {
   const updated = await service.updateTrigger(userId, id, { enabled: false });
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Trigger', id);
   }
 
   return apiResponse(c, {
@@ -231,7 +231,7 @@ triggersRoutes.post('/:id/fire', async (c) => {
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Trigger', id);
   }
 
   // Fire the trigger using the engine
@@ -263,7 +263,7 @@ triggersRoutes.delete('/:id', async (c) => {
   const deleted = await service.deleteTrigger(userId, id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Trigger', id);
   }
 
   return apiResponse(c, {
@@ -283,7 +283,7 @@ triggersRoutes.get('/:id/history', async (c) => {
   const trigger = await service.getTrigger(userId, id);
 
   if (!trigger) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Trigger not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Trigger', id);
   }
 
   const history = await service.getHistoryForTrigger(userId, id, limit);

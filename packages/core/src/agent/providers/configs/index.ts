@@ -152,17 +152,20 @@ export function loadProviderConfig(id: string): ProviderConfig | null {
 }
 
 /**
- * Alias for loadProviderConfig (returns undefined for compatibility)
+ * Get provider config by ID (returns undefined for null-safety compat)
  */
 export function getProviderConfig(id: string): ProviderConfig | undefined {
   return loadProviderConfig(id) ?? undefined;
 }
 
 /**
- * Get provider by ID (alias)
+ * Get the default model for a provider
  */
-export function getProvider(id: string): ProviderConfig | null {
-  return loadProviderConfig(id);
+export function getDefaultModelForProvider(providerId: string): ModelConfig | null {
+  const provider = loadProviderConfig(providerId);
+  if (!provider || provider.models.length === 0) return null;
+  const defaultModel = provider.models.find((m: ModelConfig) => m.default);
+  return defaultModel ?? provider.models[0] ?? null;
 }
 
 /**
@@ -177,20 +180,6 @@ export function loadAllProviderConfigs(): ProviderConfig[] {
  */
 export function getAllProviderConfigs(): ProviderConfig[] {
   return loadAllProviderConfigs();
-}
-
-/**
- * Alias for loadAllProviderConfigs
- */
-export function loadProviderConfigs(): ProviderConfig[] {
-  return loadAllProviderConfigs();
-}
-
-/**
- * List all available provider IDs
- */
-export function listProviders(): string[] {
-  return [...PROVIDER_IDS];
 }
 
 /**
@@ -228,39 +217,6 @@ export function getConfiguredProviders(): ResolvedProviderConfig[] {
   return PROVIDER_IDS
     .map(id => resolveProviderConfig(id))
     .filter((c): c is ResolvedProviderConfig => c !== null);
-}
-
-/**
- * Load a custom provider config from a path
- */
-export function loadCustomProviderConfig(configPath: string): ProviderConfig | null {
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as ProviderConfig;
-    configCache.set(config.id, config);
-    return config;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Get a specific model config from a provider
- */
-export function getModelConfig(providerId: string, modelId: string): ModelConfig | null {
-  const provider = loadProviderConfig(providerId);
-  if (!provider) return null;
-  const model = provider.models.find((m: ModelConfig) => m.id === modelId);
-  return model ?? null;
-}
-
-/**
- * Get the default model for a provider
- */
-export function getDefaultModelForProvider(providerId: string): ModelConfig | null {
-  const provider = loadProviderConfig(providerId);
-  if (!provider || provider.models.length === 0) return null;
-  const defaultModel = provider.models.find((m: ModelConfig) => m.default);
-  return defaultModel ?? provider.models[0] ?? null;
 }
 
 /**

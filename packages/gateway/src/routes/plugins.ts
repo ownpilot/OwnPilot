@@ -14,7 +14,7 @@ import {
   type IPluginService,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
@@ -179,7 +179,7 @@ pluginsRoutes.get('/:id', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Plugin', id);
   }
 
   // Get detailed tool info
@@ -215,7 +215,7 @@ pluginsRoutes.post('/:id/enable', async (c) => {
   const success = await registry.enable(id);
 
   if (!success) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Plugin', id);
   }
 
   await pluginsRepo.updateStatus(id, 'enabled');
@@ -238,7 +238,7 @@ pluginsRoutes.post('/:id/disable', async (c) => {
   const success = await registry.disable(id);
 
   if (!success) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Plugin', id);
   }
 
   await pluginsRepo.updateStatus(id, 'disabled');
@@ -260,7 +260,7 @@ pluginsRoutes.put('/:id/config', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Plugin', id);
   }
 
   const body = await c.req.json<{ settings: Record<string, unknown> }>();
@@ -289,7 +289,7 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Plugin', id);
   }
 
   const body = await c.req.json<{ permissions: PluginPermission[] }>();
@@ -321,7 +321,7 @@ pluginsRoutes.get('/:id/settings', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Plugin', id);
   }
 
   return apiResponse(c, {
@@ -341,7 +341,7 @@ pluginsRoutes.put('/:id/settings', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Plugin', id);
   }
 
   const body = await c.req.json<{ settings: Record<string, unknown> }>();
@@ -380,7 +380,7 @@ pluginsRoutes.get('/:id/required-services', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Plugin', id);
   }
 
   const requiredServices = (plugin.manifest.requiredServices ?? []).map(svc => {
@@ -415,7 +415,7 @@ pluginsRoutes.delete('/:id', async (c) => {
   const plugin = registry.get(id);
 
   if (!plugin) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Plugin not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Plugin', id);
   }
 
   const name = plugin.manifest.name;

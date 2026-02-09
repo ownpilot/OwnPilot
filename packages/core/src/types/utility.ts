@@ -63,34 +63,6 @@ export type AsyncState<T, E = Error> =
   | { readonly status: 'error'; readonly error: E };
 
 /**
- * Create idle state
- */
-export function idle<T, E>(): AsyncState<T, E> {
-  return { status: 'idle' };
-}
-
-/**
- * Create loading state
- */
-export function loading<T, E>(): AsyncState<T, E> {
-  return { status: 'loading' };
-}
-
-/**
- * Create success state
- */
-export function success<T>(data: T): AsyncState<T, never> {
-  return { status: 'success', data };
-}
-
-/**
- * Create error state
- */
-export function failure<E>(error: E): AsyncState<never, E> {
-  return { status: 'error', error };
-}
-
-/**
  * Timestamp in ISO 8601 format
  */
 export type ISOTimestamp = string;
@@ -109,34 +81,6 @@ export type Bytes = number;
  * Non-empty array type
  */
 export type NonEmptyArray<T> = [T, ...T[]];
-
-/**
- * Check if array is non-empty
- */
-export function isNonEmptyArray<T>(arr: T[]): arr is NonEmptyArray<T> {
-  return arr.length > 0;
-}
-
-/**
- * Typed entries - Object.entries with proper typing
- */
-export function typedEntries<T extends object>(obj: T): Array<[keyof T, T[keyof T]]> {
-  return Object.entries(obj) as Array<[keyof T, T[keyof T]]>;
-}
-
-/**
- * Typed keys - Object.keys with proper typing
- */
-export function typedKeys<T extends object>(obj: T): Array<keyof T> {
-  return Object.keys(obj) as Array<keyof T>;
-}
-
-/**
- * Typed values - Object.values with proper typing
- */
-export function typedValues<T extends object>(obj: T): Array<T[keyof T]> {
-  return Object.values(obj) as Array<T[keyof T]>;
-}
 
 /**
  * Sleep for specified milliseconds

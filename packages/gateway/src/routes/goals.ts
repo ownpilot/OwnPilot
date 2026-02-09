@@ -17,7 +17,7 @@ import type {
 } from '../db/repositories/goals.js';
 import { GoalServiceError } from '../services/goal-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Goals');
@@ -137,7 +137,7 @@ goalsRoutes.get('/:id', async (c) => {
   const goalWithSteps = await service.getGoalWithSteps(userId, id);
 
   if (!goalWithSteps) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Goal', id);
   }
 
   return apiResponse(c, goalWithSteps);
@@ -157,7 +157,7 @@ goalsRoutes.patch('/:id', async (c) => {
   const updated = await service.updateGoal(userId, id, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Goal', id);
   }
 
   return apiResponse(c, updated);
@@ -174,7 +174,7 @@ goalsRoutes.delete('/:id', async (c) => {
   const deleted = await service.deleteGoal(userId, id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Goal not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Goal', id);
   }
 
   return apiResponse(c, {
@@ -256,7 +256,7 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
   const updated = await service.updateStep(userId, stepId, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${sanitizeId(stepId)}` }, 404);
+    return notFoundError(c, 'Step', stepId);
   }
 
   return apiResponse(c, updated);
@@ -277,7 +277,7 @@ goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
   const updated = await service.completeStep(userId, stepId, body.result);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${sanitizeId(stepId)}` }, 404);
+    return notFoundError(c, 'Step', stepId);
   }
 
   return apiResponse(c, {
@@ -298,7 +298,7 @@ goalsRoutes.delete('/:goalId/steps/:stepId', async (c) => {
   const deleted = await service.deleteStep(userId, stepId);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Step not found: ${sanitizeId(stepId)}` }, 404);
+    return notFoundError(c, 'Step', stepId);
   }
 
   return apiResponse(c, {

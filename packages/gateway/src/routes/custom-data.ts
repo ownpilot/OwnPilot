@@ -8,7 +8,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId } from './helpers.js';
+import { apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { CustomDataServiceError } from '../services/custom-data-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
@@ -83,7 +83,7 @@ customDataRoutes.get('/tables/:table', async (c) => {
 
   const table = await service.getTable(tableId);
   if (!table) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${sanitizeId(tableId)}` }, 404);
+    return notFoundError(c, 'Table', tableId);
   }
 
   const stats = await service.getTableStats(tableId);
@@ -111,7 +111,7 @@ customDataRoutes.put('/tables/:table', async (c) => {
   const updated = await service.updateTable(tableId, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${sanitizeId(tableId)}` }, 404);
+    return notFoundError(c, 'Table', tableId);
   }
 
   return apiResponse(c, updated);
@@ -129,7 +129,7 @@ customDataRoutes.delete('/tables/:table', async (c) => {
     const deleted = await service.deleteTable(tableId);
 
     if (!deleted) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Table not found: ${sanitizeId(tableId)}` }, 404);
+      return notFoundError(c, 'Table', tableId);
     }
 
     return apiResponse(c, { deleted: true });
@@ -233,7 +233,7 @@ customDataRoutes.get('/records/:id', async (c) => {
 
   const record = await service.getRecord(recordId);
   if (!record) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${sanitizeId(recordId)}` }, 404);
+    return notFoundError(c, 'Record', recordId);
   }
 
   return apiResponse(c, record);
@@ -257,7 +257,7 @@ customDataRoutes.put('/records/:id', async (c) => {
     const updated = await service.updateRecord(recordId, body.data);
 
     if (!updated) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${sanitizeId(recordId)}` }, 404);
+      return notFoundError(c, 'Record', recordId);
     }
 
     return apiResponse(c, updated);
@@ -275,7 +275,7 @@ customDataRoutes.delete('/records/:id', async (c) => {
 
   const deleted = await service.deleteRecord(recordId);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Record not found: ${sanitizeId(recordId)}` }, 404);
+    return notFoundError(c, 'Record', recordId);
   }
 
   return apiResponse(c, { deleted: true });

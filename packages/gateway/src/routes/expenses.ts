@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { apiResponse, apiError, ERROR_CODES, getIntParam, sanitizeId } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getIntParam, notFoundError } from './helpers.js';
 
 // =============================================================================
 // Types
@@ -378,7 +378,7 @@ expensesRoutes.put('/:id', async (c) => {
   const index = db.expenses.findIndex((e) => e.id === id);
 
   if (index === -1) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Expense not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Expense', id);
   }
 
   const existing = db.expenses[index]!;
@@ -405,7 +405,7 @@ expensesRoutes.delete('/:id', async (c) => {
   const index = db.expenses.findIndex((e) => e.id === id);
 
   if (index === -1) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Expense not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Expense', id);
   }
 
   const deleted = db.expenses.splice(index, 1)[0];

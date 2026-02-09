@@ -14,7 +14,7 @@ import {
   type ActionCategory,
   type ApprovalDecision,
 } from '../autonomy/index.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
 
 export const autonomyRoutes = new Hono();
 
@@ -236,7 +236,7 @@ autonomyRoutes.get('/approvals/:id', (c) => {
   const action = manager.getPendingAction(id);
 
   if (!action) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Pending action', id);
   }
 
   if (action.userId !== userId) {
@@ -263,7 +263,7 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   const manager = getApprovalManager();
   const pending = manager.getPendingAction(id);
   if (!pending) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Pending action', id);
   }
   if (pending.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to decide this action' }, 403);
@@ -275,7 +275,7 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   });
 
   if (!action) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Pending action', id);
   }
 
   return apiResponse(c, {
@@ -297,7 +297,7 @@ autonomyRoutes.post('/approvals/:id/approve', async (c) => {
   const manager = getApprovalManager();
   const pending = manager.getPendingAction(id);
   if (!pending) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Pending action', id);
   }
   if (pending.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to approve this action' }, 403);
@@ -329,7 +329,7 @@ autonomyRoutes.post('/approvals/:id/reject', async (c) => {
   const manager = getApprovalManager();
   const pending = manager.getPendingAction(id);
   if (!pending) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Pending action', id);
   }
   if (pending.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to reject this action' }, 403);

@@ -197,3 +197,13 @@ export function zodValidationError(
   const summary = issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
   return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${summary}` }, 400);
 }
+
+/**
+ * Return a standardized 404 not-found error response.
+ *
+ * Replaces the repeated pattern:
+ *   return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `X not found: ${sanitizeId(id)}` }, 404);
+ */
+export function notFoundError(c: Context, resourceType: string, id: string) {
+  return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `${resourceType} not found: ${sanitizeId(id)}` }, 404);
+}

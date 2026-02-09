@@ -8,7 +8,7 @@ import type {
   ChatRequest,
   StreamChunkResponse,
 } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, sanitizeId } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError } from './helpers.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
@@ -614,7 +614,7 @@ chatRoutes.post('/', async (c) => {
     // Use specific agent if agentId provided
     agent = await getAgent(body.agentId);
     if (!agent) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(body.agentId)}` }, 404);
+      return notFoundError(c, 'Agent', body.agentId);
     }
   } else {
     // Use provider/model from request to create chat agent
@@ -629,7 +629,7 @@ chatRoutes.post('/', async (c) => {
   if (body.conversationId) {
     const loaded = agent.loadConversation(body.conversationId);
     if (!loaded) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(body.conversationId)}` }, 404);
+      return notFoundError(c, 'Conversation', body.conversationId);
     }
   }
 
@@ -1715,14 +1715,14 @@ chatRoutes.get('/conversations/:id', async (c) => {
   const agent = agentId ? await getAgent(agentId) : await getOrCreateDefaultAgent();
 
   if (!agent) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(agentId!)}` }, 404);
+    return notFoundError(c, 'Agent', agentId!);
   }
 
   const memory = agent.getMemory();
   const conversation = memory.get(id);
 
   if (!conversation) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Conversation', id);
   }
 
   return apiResponse(c, {
@@ -1754,7 +1754,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   const agent = agentId ? await getAgent(agentId) : await getOrCreateDefaultAgent();
 
   if (!agent) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(agentId!)}` }, 404);
+    return notFoundError(c, 'Agent', agentId!);
   }
 
   const memory = agent.getMemory();
@@ -1765,7 +1765,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   await chatRepo.deleteConversation(id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Conversation', id);
   }
 
   return apiResponse(c, {});
@@ -1890,7 +1890,7 @@ chatRoutes.get('/history/:id', async (c) => {
     const data = await chatRepo.getConversationWithMessages(id);
 
     if (!data) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(id)}` }, 404);
+      return notFoundError(c, 'Conversation', id);
     }
 
     return apiResponse(c, {
@@ -1935,7 +1935,7 @@ chatRoutes.delete('/history/:id', async (c) => {
     const deleted = await chatRepo.deleteConversation(id);
 
     if (!deleted) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(id)}` }, 404);
+      return notFoundError(c, 'Conversation', id);
     }
 
     return apiResponse(c, { deleted: true });
@@ -1957,7 +1957,7 @@ chatRoutes.patch('/history/:id/archive', async (c) => {
     const updated = await chatRepo.updateConversation(id, { isArchived: body.archived });
 
     if (!updated) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Conversation not found: ${sanitizeId(id)}` }, 404);
+      return notFoundError(c, 'Conversation', id);
     }
 
     return apiResponse(c, { archived: updated.isArchived });
@@ -2038,7 +2038,7 @@ chatRoutes.get('/logs/:id', async (c) => {
     const log = await logsRepo.getLog(id);
 
     if (!log) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Log not found: ${sanitizeId(id)}` }, 404);
+      return notFoundError(c, 'Log', id);
     }
 
     return apiResponse(c, log);

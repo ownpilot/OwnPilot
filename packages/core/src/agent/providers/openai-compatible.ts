@@ -28,7 +28,7 @@ import type {
   ToolCall,
 } from '../types.js';
 import {
-  getProviderConfig,
+  loadProviderConfig,
   resolveProviderConfig,
   type ProviderConfig,
   type ResolvedProviderConfig,
@@ -108,7 +108,7 @@ export class OpenAICompatibleProvider {
    * Create provider with explicit API key
    */
   static fromProviderIdWithKey(providerId: string, apiKey: string): OpenAICompatibleProvider | null {
-    const config = getProviderConfig(providerId);
+    const config = loadProviderConfig(providerId);
     if (!config) {
       return null;
     }
@@ -122,7 +122,7 @@ export class OpenAICompatibleProvider {
    * Get the provider's JSON config
    */
   getConfig(): ProviderConfig | undefined {
-    return getProviderConfig(this.providerId);
+    return loadProviderConfig(this.providerId) ?? undefined;
   }
 
   /**

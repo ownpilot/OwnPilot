@@ -10,7 +10,7 @@ import { Hono } from 'hono';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import type { CreateConfigServiceInput, UpdateConfigServiceInput, CreateConfigEntryInput, UpdateConfigEntryInput } from '../db/repositories/config-services.js';
 import type { ConfigServiceDefinition, ConfigEntry, ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js'
 
 export const configServicesRoutes = new Hono();
 
@@ -285,7 +285,7 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
 
   const updated = await configServicesRepo.updateEntry(entryId, body);
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config entry not found: ${sanitizeId(entryId)}` }, 404);
+    return notFoundError(c, 'Config entry', entryId);
   }
 
   return apiResponse(c, sanitizeEntry(updated, service.configSchema));
@@ -305,7 +305,7 @@ configServicesRoutes.delete('/:name/entries/:entryId', async (c) => {
 
   const deleted = await configServicesRepo.deleteEntry(entryId);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config entry not found: ${sanitizeId(entryId)}` }, 404);
+    return notFoundError(c, 'Config entry', entryId);
   }
 
   return apiResponse(c, { deleted: true });
@@ -327,7 +327,7 @@ configServicesRoutes.put('/:name/entries/:entryId/default', async (c) => {
   const entries = configServicesRepo.getEntries(name);
   const entry = entries.find(e => e.id === entryId);
   if (!entry) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config entry not found: ${sanitizeId(entryId)}` }, 404);
+    return notFoundError(c, 'Config entry', entryId);
   }
 
   await configServicesRepo.setDefaultEntry(name, entryId);

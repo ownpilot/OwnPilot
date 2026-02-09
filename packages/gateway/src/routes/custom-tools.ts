@@ -28,7 +28,7 @@ import {
   registerToolConfigRequirements,
   unregisterDependencies,
 } from '../services/api-service-registrar.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam, sanitizeId } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam, sanitizeId, notFoundError } from './helpers.js'
 
 /** Sanitize display text for safe interpolation (allows spaces) */
 const sanitizeText = (text: string) => text.replace(/[^\w\s-]/g, '').slice(0, 200);
@@ -230,7 +230,7 @@ customToolsRoutes.get('/:id', async (c) => {
 
   const tool = await repo.get(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Custom tool', id);
   }
 
   return apiResponse(c, tool);
@@ -327,7 +327,7 @@ customToolsRoutes.patch('/:id', async (c) => {
 
   const tool = await repo.update(id, body);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Custom tool', id);
   }
 
   // Re-register config dependencies if changed
@@ -368,7 +368,7 @@ customToolsRoutes.delete('/:id', async (c) => {
 
   const deleted = await repo.delete(id);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Custom tool', id);
   }
 
   // Invalidate agent cache so tool removal takes effect
@@ -390,7 +390,7 @@ customToolsRoutes.post('/:id/enable', async (c) => {
 
   const tool = await repo.enable(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Custom tool', id);
   }
 
   syncToolToRegistry(tool);
@@ -410,7 +410,7 @@ customToolsRoutes.post('/:id/disable', async (c) => {
 
   const tool = await repo.disable(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Custom tool', id);
   }
 
   syncToolToRegistry(tool);
@@ -430,7 +430,7 @@ customToolsRoutes.post('/:id/approve', async (c) => {
 
   const tool = await repo.get(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Custom tool', id);
   }
 
   if (tool.status !== 'pending_approval') {
@@ -456,7 +456,7 @@ customToolsRoutes.post('/:id/reject', async (c) => {
 
   const tool = await repo.get(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Custom tool', id);
   }
 
   if (tool.status !== 'pending_approval') {
@@ -483,7 +483,7 @@ customToolsRoutes.post('/:id/execute', async (c) => {
   const tool = await repo.get(id);
 
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Custom tool', id);
   }
 
   if (tool.status !== 'active') {
@@ -553,7 +553,7 @@ customToolsRoutes.get('/:id/executions', async (c) => {
 
   const tool = await repo.get(id);
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Custom tool not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Custom tool', id);
   }
 
   const limit = getOptionalIntParam(c, 'limit', 1, 100) ?? 50;
@@ -1672,7 +1672,7 @@ customToolsRoutes.post('/templates/:templateId/create', async (c) => {
 
   const template = TOOL_TEMPLATES.find(t => t.id === templateId);
   if (!template) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Template not found: ${sanitizeId(templateId)}` }, 404);
+    return notFoundError(c, 'Template', templateId);
   }
 
   // Merge template with overrides

@@ -14,7 +14,7 @@ import type {
 } from '../db/repositories/memories.js';
 import { MemoryServiceError } from '../services/memory-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Memories');
@@ -134,7 +134,7 @@ memoriesRoutes.get('/:id', async (c) => {
   const memory = await service.getMemory(userId, id);
 
   if (!memory) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Memory', id);
   }
 
   return apiResponse(c, memory);
@@ -162,7 +162,7 @@ memoriesRoutes.patch('/:id', async (c) => {
   const updated = await service.updateMemory(userId, id, body);
 
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Memory', id);
   }
 
   return apiResponse(c, updated);
@@ -187,7 +187,7 @@ memoriesRoutes.post('/:id/boost', async (c) => {
   const boosted = await service.boostMemory(userId, id, amount);
 
   if (!boosted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Memory', id);
   }
 
   return apiResponse(c, {
@@ -208,7 +208,7 @@ memoriesRoutes.delete('/:id', async (c) => {
 
   if (!deleted) {
     log.warn('Memory not found for deletion', { userId, memoryId: id });
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Memory not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Memory', id);
   }
 
   log.info('Memory deleted', { userId, memoryId: id });

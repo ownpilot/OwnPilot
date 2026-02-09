@@ -58,7 +58,7 @@ import type {
   UpdateAgentRequest,
   AgentInfo,
 } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js'
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
@@ -1174,7 +1174,7 @@ agentRoutes.get('/:id', async (c) => {
   const record = await agentsRepo.getById(id);
 
   if (!record) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Agent', id);
   }
 
   // Resolve tools from config (explicit tools and/or toolGroups)
@@ -1233,7 +1233,7 @@ agentRoutes.patch('/:id', async (c) => {
 
   const existing = await agentsRepo.getById(id);
   if (!existing) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Agent', id);
   }
 
   // If provider is being changed to a specific provider (not 'default'), validate API key
@@ -1306,7 +1306,7 @@ agentRoutes.delete('/:id', async (c) => {
   const deleted = await agentsRepo.delete(id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Agent', id);
   }
 
   // Clear from cache
@@ -1324,7 +1324,7 @@ agentRoutes.post('/:id/reset', async (c) => {
   const record = await agentsRepo.getById(id);
 
   if (!record) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Agent', id);
   }
 
   const agent = await getOrCreateAgentInstance(record);
