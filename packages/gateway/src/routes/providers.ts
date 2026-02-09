@@ -7,7 +7,7 @@
 
 import { Hono } from 'hono';
 import { loadProviderConfig, PROVIDER_IDS } from '@ownpilot/core';
-import { apiResponse, apiError, getUserId, ERROR_CODES, zodValidationError } from './helpers.js';
+import { apiResponse, apiError, getUserId, ERROR_CODES, zodValidationError, getErrorMessage } from './helpers.js';
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
@@ -415,7 +415,7 @@ app.put('/:id/config', async (c) => {
         },
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: error instanceof Error ? error.message : 'Failed to update provider config' }, 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to update provider config') }, 500);
   }
 });
 
@@ -465,7 +465,7 @@ app.patch('/:id/toggle', async (c) => {
         isEnabled: userConfig?.isEnabled ?? true,
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.TOGGLE_FAILED, message: error instanceof Error ? error.message : 'Failed to toggle provider' }, 500);
+    return apiError(c, { code: ERROR_CODES.TOGGLE_FAILED, message: getErrorMessage(error, 'Failed to toggle provider') }, 500);
   }
 });
 

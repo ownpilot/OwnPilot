@@ -7,7 +7,7 @@ import { VERSION, getSandboxStatus, resetSandboxCache, ensureImage, getExecution
 import type { HealthCheck } from '../types/index.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 
 const startTime = Date.now();
 
@@ -116,7 +116,7 @@ healthRoutes.get('/sandbox', async (c) => {
 
     return apiResponse(c, status);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SANDBOX_CHECK_FAILED, message: error instanceof Error ? error.message : 'Failed to check sandbox status' }, 500);
+    return apiError(c, { code: ERROR_CODES.SANDBOX_CHECK_FAILED, message: getErrorMessage(error, 'Failed to check sandbox status') }, 500);
   }
 });
 
@@ -150,7 +150,7 @@ healthRoutes.post('/sandbox/pull-images', async (c) => {
     } catch (error) {
       results[name] = {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: getErrorMessage(error),
       };
     }
   }

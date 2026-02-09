@@ -14,7 +14,7 @@ import {
   type ActionCategory,
   type ApprovalDecision,
 } from '../autonomy/index.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage } from './helpers.js';
 
 export const autonomyRoutes = new Hono();
 
@@ -221,7 +221,7 @@ autonomyRoutes.post('/approvals/request', async (c) => {
       message: 'Action requires approval.',
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.APPROVAL_ERROR, message: errorMessage }, 500);
   }
 });

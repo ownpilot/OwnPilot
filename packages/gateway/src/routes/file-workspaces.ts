@@ -10,7 +10,7 @@ import { Hono } from 'hono';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { apiResponse, apiError, ERROR_CODES, getUserId } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getErrorMessage } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 /** Sanitize a filename for use in Content-Disposition headers */
@@ -67,7 +67,7 @@ app.get('/', async (c) => {
       count: workspaces.length,
     });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_LIST_ERROR, message: error instanceof Error ? error.message : 'Failed to list workspaces' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_LIST_ERROR, message: getErrorMessage(error, 'Failed to list workspaces') }, 500);
   }
 });
 
@@ -90,7 +90,7 @@ app.post('/', async (c) => {
 
     return apiResponse(c, workspace, 201);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_CREATE_ERROR, message: error instanceof Error ? error.message : 'Failed to create workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_CREATE_ERROR, message: getErrorMessage(error, 'Failed to create workspace') }, 500);
   }
 });
 
@@ -107,7 +107,7 @@ app.get('/:id', async (c) => {
 
     return apiResponse(c, result);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_FETCH_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_FETCH_ERROR, message: getErrorMessage(error, 'Failed to fetch workspace') }, 500);
   }
 });
 
@@ -126,7 +126,7 @@ app.delete('/:id', async (c) => {
 
     return apiResponse(c, { deleted: true });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_DELETE_ERROR, message: error instanceof Error ? error.message : 'Failed to delete workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_DELETE_ERROR, message: getErrorMessage(error, 'Failed to delete workspace') }, 500);
   }
 });
 
@@ -150,7 +150,7 @@ app.get('/:id/files', async (c) => {
         count: files.length,
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.FILE_LIST_ERROR, message: error instanceof Error ? error.message : 'Failed to list files' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_LIST_ERROR, message: getErrorMessage(error, 'Failed to list files') }, 500);
   }
 });
 
@@ -195,7 +195,7 @@ app.get('/:id/file/*', async (c) => {
     if (error instanceof Error && error.message.includes('traversal')) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: ERROR_CODES.FILE_READ_ERROR, message: error instanceof Error ? error.message : 'Failed to read file' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_READ_ERROR, message: getErrorMessage(error, 'Failed to read file') }, 500);
   }
 });
 
@@ -229,7 +229,7 @@ app.put('/:id/file/*', async (c) => {
     if (error instanceof Error && error.message.includes('traversal')) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: ERROR_CODES.FILE_WRITE_ERROR, message: error instanceof Error ? error.message : 'Failed to write file' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_WRITE_ERROR, message: getErrorMessage(error, 'Failed to write file') }, 500);
   }
 });
 
@@ -259,7 +259,7 @@ app.delete('/:id/file/*', async (c) => {
     if (error instanceof Error && error.message.includes('traversal')) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: ERROR_CODES.FILE_DELETE_ERROR, message: error instanceof Error ? error.message : 'Failed to delete file' }, 500);
+    return apiError(c, { code: ERROR_CODES.FILE_DELETE_ERROR, message: getErrorMessage(error, 'Failed to delete file') }, 500);
   }
 });
 
@@ -296,7 +296,7 @@ app.get('/:id/download', async (c) => {
       },
     });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.DOWNLOAD_ERROR, message: error instanceof Error ? error.message : 'Failed to download workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.DOWNLOAD_ERROR, message: getErrorMessage(error, 'Failed to download workspace') }, 500);
   }
 });
 
@@ -320,7 +320,7 @@ app.post('/cleanup', async (c) => {
       stats: { deletedEmpty: result.deletedEmpty, deletedOld: result.deletedOld },
     });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CLEANUP_ERROR, message: error instanceof Error ? error.message : 'Failed to cleanup workspaces' }, 500);
+    return apiError(c, { code: ERROR_CODES.CLEANUP_ERROR, message: getErrorMessage(error, 'Failed to cleanup workspaces') }, 500);
   }
 });
 
@@ -338,7 +338,7 @@ app.post('/session/:sessionId', async (c) => {
 
     return apiResponse(c, workspace);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_ERROR, message: error instanceof Error ? error.message : 'Failed to get or create workspace' }, 500);
+    return apiError(c, { code: ERROR_CODES.WORKSPACE_ERROR, message: getErrorMessage(error, 'Failed to get or create workspace') }, 500);
   }
 });
 

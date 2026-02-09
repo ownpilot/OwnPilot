@@ -59,7 +59,7 @@ import type {
   UpdateAgentRequest,
   AgentInfo,
 } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage } from './helpers.js'
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
 import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
@@ -362,7 +362,7 @@ function registerPluginTools(
         if (trace) traceToolCallEnd(definition.name, startTime, !result.isError, result.content, result.isError ? String(result.content) : undefined);
         return result;
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        const errorMsg = getErrorMessage(error);
         if (trace) traceToolCallEnd(definition.name, startTime, false, undefined, errorMsg);
         return { content: errorMsg, isError: true };
       }
@@ -436,7 +436,7 @@ async function executeUseTool(
     // Include parameter help on execution error so LLM can retry correctly
     return { content: result.error.message + buildToolHelpText(tools, tool_name), isError: true };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Tool execution failed';
+    const msg = getErrorMessage(error, 'Tool execution failed');
     return { content: msg + buildToolHelpText(tools, tool_name), isError: true };
   }
 }
@@ -495,7 +495,7 @@ async function executeBatchUseTool(
         }
         return { idx, tool_name, ok: false, content: result.error.message };
       } catch (error) {
-        const msg = error instanceof Error ? error.message : 'Execution failed';
+        const msg = getErrorMessage(error, 'Execution failed');
         return { idx, tool_name, ok: false, content: msg };
       }
     })
@@ -1381,7 +1381,7 @@ agentRoutes.post('/resync', async (c) => {
         created++;
       }
     } catch (error) {
-      errors.push(`${agent.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(`${agent.id}: ${getErrorMessage(error)}`);
     }
   }
 

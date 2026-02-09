@@ -8,13 +8,10 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
+import { apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, sanitizeText, notFoundError } from './helpers.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { CustomDataServiceError } from '../services/custom-data-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-
-/** Sanitize display text for safe interpolation (allows spaces) */
-const sanitizeText = (text: string) => text.replace(/[^\w\s-]/g, '').slice(0, 200);
 
 export const customDataRoutes = new Hono();
 

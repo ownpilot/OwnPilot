@@ -13,7 +13,7 @@ import {
 } from '../db/repositories/plans.js';
 import { getPlanExecutor } from '../plans/index.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { getLog } from '../services/log.js';
 
@@ -209,7 +209,7 @@ plansRoutes.post('/:id/execute', async (c) => {
         message: 'Plan executed successfully.',
       });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: errorMessage }, 500);
   }
 });
@@ -237,7 +237,7 @@ plansRoutes.post('/:id/pause', async (c) => {
         message: paused ? 'Plan paused.' : 'Plan was not running.',
       });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.PAUSE_ERROR, message: errorMessage }, 500);
   }
 });
@@ -273,7 +273,7 @@ plansRoutes.post('/:id/resume', async (c) => {
         message: 'Plan resumed.',
       });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.RESUME_ERROR, message: errorMessage }, 500);
   }
 });
@@ -301,7 +301,7 @@ plansRoutes.post('/:id/abort', async (c) => {
         message: aborted ? 'Plan aborted.' : 'Plan was not running.',
       });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.ABORT_ERROR, message: errorMessage }, 500);
   }
 });
@@ -334,7 +334,7 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
         message: 'Checkpoint created.',
       });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.CHECKPOINT_ERROR, message: errorMessage }, 500);
   }
 });
@@ -373,7 +373,7 @@ plansRoutes.post('/:id/start', async (c) => {
         message: 'Plan executed successfully.',
       });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: errorMessage }, 500);
   }
 });
@@ -421,7 +421,7 @@ plansRoutes.post('/:id/rollback', async (c) => {
         checkpoint: checkpointData,
       });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.ROLLBACK_ERROR, message: errorMessage }, 500);
   }
 });
@@ -472,7 +472,7 @@ plansRoutes.post('/:id/steps', async (c) => {
         message: 'Step added successfully.',
       }, 201);
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.ADD_STEP_ERROR, message: errorMessage }, 500);
   }
 });

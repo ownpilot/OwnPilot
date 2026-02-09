@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import { DashboardService, briefingCache, type AIBriefing } from '../services/dashboard.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { getDefaultProvider, getDefaultModel } from './settings.js';
 
 const log = getLog('Dashboard');
@@ -51,7 +51,7 @@ dashboardRoutes.get('/briefing', async (c) => {
       });
     } catch (error) {
       log.error('AI briefing generation failed:', error);
-      aiError = error instanceof Error ? error.message : 'AI briefing generation failed';
+      aiError = getErrorMessage(error, 'AI briefing generation failed');
     }
 
     return apiResponse(c, aiOnly
@@ -60,7 +60,7 @@ dashboardRoutes.get('/briefing', async (c) => {
   } catch (error) {
     log.error('Failed to generate briefing:', error);
 
-    return apiError(c, { code: ERROR_CODES.BRIEFING_FAILED, message: error instanceof Error ? error.message : 'Failed to generate briefing' }, 500);
+    return apiError(c, { code: ERROR_CODES.BRIEFING_FAILED, message: getErrorMessage(error, 'Failed to generate briefing') }, 500);
   }
 });
 
@@ -78,7 +78,7 @@ dashboardRoutes.get('/data', async (c) => {
   } catch (error) {
     log.error('Failed to aggregate data:', error);
 
-    return apiError(c, { code: ERROR_CODES.DATA_AGGREGATION_FAILED, message: error instanceof Error ? error.message : 'Failed to aggregate data' }, 500);
+    return apiError(c, { code: ERROR_CODES.DATA_AGGREGATION_FAILED, message: getErrorMessage(error, 'Failed to aggregate data') }, 500);
   }
 });
 
@@ -109,7 +109,7 @@ dashboardRoutes.post('/briefing/refresh', async (c) => {
   } catch (error) {
     log.error('Failed to refresh briefing:', error);
 
-    return apiError(c, { code: ERROR_CODES.REFRESH_FAILED, message: error instanceof Error ? error.message : 'Failed to refresh briefing' }, 500);
+    return apiError(c, { code: ERROR_CODES.REFRESH_FAILED, message: getErrorMessage(error, 'Failed to refresh briefing') }, 500);
   }
 });
 
@@ -182,7 +182,7 @@ dashboardRoutes.get('/timeline', async (c) => {
   } catch (error) {
     log.error('Failed to generate timeline:', error);
 
-    return apiError(c, { code: ERROR_CODES.TIMELINE_FAILED, message: error instanceof Error ? error.message : 'Failed to generate timeline' }, 500);
+    return apiError(c, { code: ERROR_CODES.TIMELINE_FAILED, message: getErrorMessage(error, 'Failed to generate timeline') }, 500);
   }
 });
 
@@ -240,7 +240,7 @@ dashboardRoutes.post('/briefing/stream', async (c) => {
       log.error('Streaming briefing failed:', error);
       await sendEvent({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Streaming failed',
+        message: getErrorMessage(error, 'Streaming failed'),
       });
     } finally {
       await writer.close();

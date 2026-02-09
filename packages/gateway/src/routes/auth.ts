@@ -11,7 +11,7 @@ import { google } from 'googleapis';
 import { settingsRepo, oauthIntegrationsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, getErrorMessage } from './helpers.js'
 
 const log = getLog('Auth');
 
@@ -322,7 +322,7 @@ authRoutes.get('/google/callback', async (c) => {
     return c.redirect(`${safeReturnUrl}${separator}oauth_success=${state.service}`);
   } catch (err) {
     log.error('Google OAuth callback error:', err);
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    const errorMessage = getErrorMessage(err);
     return c.redirect(`${safeReturnUrl}?oauth_error=${encodeURIComponent(errorMessage)}`);
   }
 });
@@ -444,7 +444,7 @@ authRoutes.post('/google/refresh', async (c) => {
       await oauthIntegrationsRepo.updateStatus(
         body.integrationId,
         'expired',
-        error instanceof Error ? error.message : 'Token refresh failed'
+        getErrorMessage(error, 'Token refresh failed')
       );
     }
 

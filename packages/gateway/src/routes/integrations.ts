@@ -8,7 +8,7 @@ import { Hono } from 'hono';
 import { oauthIntegrationsRepo, settingsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js'
 
 const log = getLog('Integrations');
 
@@ -261,7 +261,7 @@ integrationsRoutes.post('/:id/sync', async (c) => {
           ? new Date(credentials.expiry_date).toISOString()
           : undefined, });
     } catch (error) {
-      const internalMessage = error instanceof Error ? error.message : 'Sync failed';
+      const internalMessage = getErrorMessage(error, 'Sync failed');
       log.error('Integration sync failed:', { integrationId: id, error: internalMessage });
       await oauthIntegrationsRepo.updateStatus(id, 'error', internalMessage);
       return apiError(c, { code: ERROR_CODES.SYNC_ERROR, message: 'Integration sync failed' }, 500);

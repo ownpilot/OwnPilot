@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { settingsRepo, localProvidersRepo } from '../db/repositories/index.js';
 import {
   getAvailableProviders,
@@ -396,7 +396,7 @@ settingsRoutes.get('/sandbox', async (c) => {
         },
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SANDBOX_SETTINGS_ERROR, message: error instanceof Error ? error.message : 'Failed to get sandbox settings' }, 500);
+    return apiError(c, { code: ERROR_CODES.SANDBOX_SETTINGS_ERROR, message: getErrorMessage(error, 'Failed to get sandbox settings') }, 500);
   }
 });
 
@@ -461,7 +461,7 @@ settingsRoutes.post('/sandbox', async (c) => {
         settings: newSettings,
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SANDBOX_SETTINGS_ERROR, message: error instanceof Error ? error.message : 'Failed to update sandbox settings' }, 500);
+    return apiError(c, { code: ERROR_CODES.SANDBOX_SETTINGS_ERROR, message: getErrorMessage(error, 'Failed to update sandbox settings') }, 500);
   }
 });
 
@@ -483,7 +483,7 @@ settingsRoutes.post('/sandbox/enable', async (c) => {
         message: 'Sandbox has been enabled.',
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SANDBOX_ENABLE_ERROR, message: error instanceof Error ? error.message : 'Failed to enable sandbox' }, 500);
+    return apiError(c, { code: ERROR_CODES.SANDBOX_ENABLE_ERROR, message: getErrorMessage(error, 'Failed to enable sandbox') }, 500);
   }
 });
 
@@ -499,6 +499,6 @@ settingsRoutes.post('/sandbox/disable', async (c) => {
         message: 'Sandbox has been disabled.',
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SANDBOX_DISABLE_ERROR, message: error instanceof Error ? error.message : 'Failed to disable sandbox' }, 500);
+    return apiError(c, { code: ERROR_CODES.SANDBOX_DISABLE_ERROR, message: getErrorMessage(error, 'Failed to disable sandbox') }, 500);
   }
 });

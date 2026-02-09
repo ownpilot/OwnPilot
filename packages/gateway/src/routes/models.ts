@@ -18,7 +18,7 @@ import {
 } from '@ownpilot/core';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 
 const app = new Hono();
 
@@ -148,7 +148,7 @@ app.get('/sync/providers', async (c) => {
         source: 'https://models.dev/api.json',
       });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const message = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.FETCH_ERROR, message: `Failed to fetch providers: ${message}` }, 500);
   }
 });
@@ -183,7 +183,7 @@ app.post('/sync', async (c) => {
         message: `Synced ${result.synced.length} provider(s) from models.dev`,
       });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const message = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.SYNC_ERROR, message: `Failed to sync providers: ${message}` }, 500);
   }
 });

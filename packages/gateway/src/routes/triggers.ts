@@ -12,7 +12,7 @@ import {
 } from '../db/repositories/triggers.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression, getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 export const triggersRoutes = new Hono();
@@ -70,7 +70,7 @@ triggersRoutes.post('/', async (c) => {
   try {
     trigger = await service.createTrigger(userId, body);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create trigger';
+    const message = getErrorMessage(error, 'Failed to create trigger');
     return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message }, 400);
   }
 
@@ -242,7 +242,7 @@ triggersRoutes.post('/:id/fire', async (c) => {
   try {
     result = await engine.fireTrigger(id);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Trigger execution failed unexpectedly.';
+    const message = getErrorMessage(error, 'Trigger execution failed unexpectedly.');
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message }, 500);
   }
 

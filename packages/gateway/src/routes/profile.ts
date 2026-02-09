@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES, getUserId, zodValidationError } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, zodValidationError, getErrorMessage } from './helpers.js';
 import {
   getPersonalMemoryStore,
   getMemoryInjector,
@@ -38,7 +38,7 @@ app.get('/', async (c) => {
 
     return apiResponse(c, profile);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.PROFILE_FETCH_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch profile' }, 500);
+    return apiError(c, { code: ERROR_CODES.PROFILE_FETCH_ERROR, message: getErrorMessage(error, 'Failed to fetch profile') }, 500);
   }
 });
 
@@ -52,7 +52,7 @@ app.get('/summary', async (c) => {
 
     return apiResponse(c, { summary });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SUMMARY_FETCH_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch summary' }, 500);
+    return apiError(c, { code: ERROR_CODES.SUMMARY_FETCH_ERROR, message: getErrorMessage(error, 'Failed to fetch summary') }, 500);
   }
 });
 
@@ -75,7 +75,7 @@ app.get('/category/:category', async (c) => {
         count: entries.length,
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CATEGORY_FETCH_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch category' }, 500);
+    return apiError(c, { code: ERROR_CODES.CATEGORY_FETCH_ERROR, message: getErrorMessage(error, 'Failed to fetch category') }, 500);
   }
 });
 
@@ -107,7 +107,7 @@ app.post('/data', async (c) => {
 
     return apiResponse(c, entry, 201);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.DATA_SET_ERROR, message: error instanceof Error ? error.message : 'Failed to set data' }, 500);
+    return apiError(c, { code: ERROR_CODES.DATA_SET_ERROR, message: getErrorMessage(error, 'Failed to set data') }, 500);
   }
 });
 
@@ -133,7 +133,7 @@ app.delete('/data', async (c) => {
 
     return apiResponse(c, { deleted });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.DATA_DELETE_ERROR, message: error instanceof Error ? error.message : 'Failed to delete data' }, 500);
+    return apiError(c, { code: ERROR_CODES.DATA_DELETE_ERROR, message: getErrorMessage(error, 'Failed to delete data') }, 500);
   }
 });
 
@@ -161,7 +161,7 @@ app.get('/search', async (c) => {
         count: results.length,
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SEARCH_ERROR, message: error instanceof Error ? error.message : 'Failed to search' }, 500);
+    return apiError(c, { code: ERROR_CODES.SEARCH_ERROR, message: getErrorMessage(error, 'Failed to search') }, 500);
   }
 });
 
@@ -195,7 +195,7 @@ app.post('/import', async (c) => {
         message: `Successfully imported ${imported} entries`,
       }, 201);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.IMPORT_ERROR, message: error instanceof Error ? error.message : 'Failed to import' }, 500);
+    return apiError(c, { code: ERROR_CODES.IMPORT_ERROR, message: getErrorMessage(error, 'Failed to import') }, 500);
   }
 });
 
@@ -213,7 +213,7 @@ app.get('/export', async (c) => {
         exportedAt: new Date().toISOString(),
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXPORT_ERROR, message: error instanceof Error ? error.message : 'Failed to export' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXPORT_ERROR, message: getErrorMessage(error, 'Failed to export') }, 500);
   }
 });
 
@@ -288,7 +288,7 @@ app.post('/quick', async (c) => {
         profile,
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.QUICK_SETUP_ERROR, message: error instanceof Error ? error.message : 'Failed to setup profile' }, 500);
+    return apiError(c, { code: ERROR_CODES.QUICK_SETUP_ERROR, message: getErrorMessage(error, 'Failed to setup profile') }, 500);
   }
 });
 

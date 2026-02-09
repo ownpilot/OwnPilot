@@ -9,7 +9,7 @@ import { Hono } from 'hono';
 import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError } from './helpers.js';
+import { apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 
 export const channelRoutes = new Hono();
 
@@ -55,7 +55,7 @@ channelRoutes.get('/messages/inbox', async (c) => {
   } catch (error) {
     return apiError(c, {
       code: ERROR_CODES.FETCH_FAILED,
-      message: error instanceof Error ? error.message : 'Failed to fetch inbox',
+      message: getErrorMessage(error, 'Failed to fetch inbox'),
     }, 500);
   }
 });
@@ -132,7 +132,7 @@ channelRoutes.post('/:id/connect', async (c) => {
     await service.connect(pluginId);
     return apiResponse(c, { pluginId, status: 'connected' });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: error instanceof Error ? error.message : 'Failed to connect channel' }, 500);
+    return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: getErrorMessage(error, 'Failed to connect channel') }, 500);
   }
 });
 
@@ -146,7 +146,7 @@ channelRoutes.post('/:id/disconnect', async (c) => {
     await service.disconnect(pluginId);
     return apiResponse(c, { pluginId, status: 'disconnected' });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.DISCONNECT_FAILED, message: error instanceof Error ? error.message : 'Failed to disconnect channel' }, 500);
+    return apiError(c, { code: ERROR_CODES.DISCONNECT_FAILED, message: getErrorMessage(error, 'Failed to disconnect channel') }, 500);
   }
 });
 
@@ -222,7 +222,7 @@ channelRoutes.post('/:id/send', async (c) => {
 
     return apiResponse(c, { messageId, pluginId, chatId });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SEND_FAILED, message: error instanceof Error ? error.message : 'Failed to send message' }, 500);
+    return apiError(c, { code: ERROR_CODES.SEND_FAILED, message: getErrorMessage(error, 'Failed to send message') }, 500);
   }
 });
 
@@ -240,7 +240,7 @@ channelRoutes.get('/:id/messages', async (c) => {
 
     return apiResponse(c, { messages, count: messages.length, limit, offset });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.FETCH_FAILED, message: error instanceof Error ? error.message : 'Failed to fetch messages' }, 500);
+    return apiError(c, { code: ERROR_CODES.FETCH_FAILED, message: getErrorMessage(error, 'Failed to fetch messages') }, 500);
   }
 });
 

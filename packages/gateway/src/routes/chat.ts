@@ -8,7 +8,7 @@ import type {
   ChatRequest,
   StreamChunkResponse,
 } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError, getErrorMessage } from './helpers.js';
 import { MAX_DAYS_LOOKBACK, AI_META_TOOL_NAMES } from '../config/defaults.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
@@ -631,7 +631,7 @@ chatRoutes.post('/', async (c) => {
     try {
       agent = await getOrCreateChatAgent(provider, model);
     } catch (error) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: error instanceof Error ? error.message : 'Failed to create agent' }, 400);
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: getErrorMessage(error, 'Failed to create agent') }, 400);
     }
   }
 
@@ -1850,7 +1850,7 @@ chatRoutes.post('/history/bulk-delete', async (c) => {
 
     return apiResponse(c, { deleted });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Bulk delete failed' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Bulk delete failed') }, 500);
   }
 });
 
@@ -1876,7 +1876,7 @@ chatRoutes.post('/history/bulk-archive', async (c) => {
 
     return apiResponse(c, { updated, archived: body.archived });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Bulk archive failed' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Bulk archive failed') }, 500);
   }
 });
 
@@ -1921,7 +1921,7 @@ chatRoutes.get('/history/:id', async (c) => {
       })),
     });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch conversation' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to fetch conversation') }, 500);
   }
 });
 
@@ -1942,7 +1942,7 @@ chatRoutes.delete('/history/:id', async (c) => {
 
     return apiResponse(c, { deleted: true });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Failed to delete conversation' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to delete conversation') }, 500);
   }
 });
 
@@ -1964,7 +1964,7 @@ chatRoutes.patch('/history/:id/archive', async (c) => {
 
     return apiResponse(c, { archived: updated.isArchived });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Failed to update conversation' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to update conversation') }, 500);
   }
 });
 
@@ -2045,7 +2045,7 @@ chatRoutes.get('/logs/:id', async (c) => {
 
     return apiResponse(c, log);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: error instanceof Error ? error.message : 'Failed to fetch log' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to fetch log') }, 500);
   }
 });
 

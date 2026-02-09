@@ -207,3 +207,19 @@ export function zodValidationError(
 export function notFoundError(c: Context, resourceType: string, id: string) {
   return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `${resourceType} not found: ${sanitizeId(id)}` }, 404);
 }
+
+/**
+ * Extract error message from an unknown catch value.
+ * Accepts an optional fallback for context-specific defaults.
+ */
+export function getErrorMessage(error: unknown, fallback = 'Unknown error'): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+/**
+ * Sanitize user-supplied text for safe interpolation in messages.
+ * Strips special characters and truncates to 200 chars.
+ */
+export function sanitizeText(text: string): string {
+  return text.replace(/[^\w\s-]/g, '').slice(0, 200);
+}

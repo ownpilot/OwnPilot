@@ -15,7 +15,7 @@ import {
   type BudgetConfig,
 } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
-import { apiResponse, apiError, getIntParam, getUserId, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getIntParam, getUserId, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 const log = getLog('Costs');
@@ -260,7 +260,7 @@ costRoutes.post('/estimate', async (c) => {
         note: 'This is an estimate. Actual costs may vary.',
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.ESTIMATION_FAILED, message: error instanceof Error ? error.message : 'Failed to estimate cost' }, 500);
+    return apiError(c, { code: ERROR_CODES.ESTIMATION_FAILED, message: getErrorMessage(error, 'Failed to estimate cost') }, 500);
   }
 });
 
@@ -312,7 +312,7 @@ costRoutes.post('/budget', async (c) => {
         status,
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.BUDGET_FAILED, message: error instanceof Error ? error.message : 'Failed to set budget' }, 500);
+    return apiError(c, { code: ERROR_CODES.BUDGET_FAILED, message: getErrorMessage(error, 'Failed to set budget') }, 500);
   }
 });
 
@@ -424,7 +424,7 @@ costRoutes.post('/record', async (c) => {
         },
       });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.RECORD_FAILED, message: error instanceof Error ? error.message : 'Failed to record usage' }, 500);
+    return apiError(c, { code: ERROR_CODES.RECORD_FAILED, message: getErrorMessage(error, 'Failed to record usage') }, 500);
   }
 });
 
