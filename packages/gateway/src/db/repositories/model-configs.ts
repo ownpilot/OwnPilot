@@ -5,7 +5,7 @@
  * and custom providers (aggregators like fal.ai, together.ai, etc.)
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import { randomUUID } from 'node:crypto';
 import type { ModelCapability } from '@ownpilot/core';
 
@@ -190,14 +190,14 @@ function rowToModelConfig(row: ModelConfigRow): UserModelConfig {
     providerId: row.provider_id,
     modelId: row.model_id,
     displayName: row.display_name || undefined,
-    capabilities: (typeof row.capabilities === 'string' ? JSON.parse(row.capabilities) : row.capabilities) as ModelCapability[],
+    capabilities: parseJsonField(row.capabilities, []) as ModelCapability[],
     pricingInput: row.pricing_input ?? undefined,
     pricingOutput: row.pricing_output ?? undefined,
     contextWindow: row.context_window ?? undefined,
     maxOutput: row.max_output ?? undefined,
     isEnabled: row.is_enabled,
     isCustom: row.is_custom,
-    config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config,
+    config: parseJsonField(row.config, {}),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -213,7 +213,7 @@ function rowToProvider(row: CustomProviderRow): CustomProvider {
     apiKeySetting: row.api_key_setting || undefined,
     providerType: row.provider_type as 'openai_compatible' | 'custom',
     isEnabled: row.is_enabled,
-    config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config,
+    config: parseJsonField(row.config, {}),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -229,7 +229,7 @@ function rowToUserProviderConfig(row: UserProviderConfigRow): UserProviderConfig
     isEnabled: row.is_enabled,
     apiKeyEnv: row.api_key_env || undefined,
     notes: row.notes || undefined,
-    config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config,
+    config: parseJsonField(row.config, {}),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };

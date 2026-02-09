@@ -5,7 +5,7 @@
  * Supports long-term objectives tracking with decomposition into steps.
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import type { StandardQuery } from './interfaces.js';
 import {
   getEventBus,
@@ -644,7 +644,7 @@ export class GoalsRepository extends BaseRepository {
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
-      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata,
+      metadata: parseJsonField(row.metadata, {}),
     };
   }
 
@@ -656,7 +656,7 @@ export class GoalsRepository extends BaseRepository {
       description: row.description,
       status: row.status,
       orderNum: row.order_num,
-      dependencies: typeof row.dependencies === 'string' ? JSON.parse(row.dependencies) : row.dependencies,
+      dependencies: parseJsonField(row.dependencies, []),
       result: row.result,
       createdAt: new Date(row.created_at),
       completedAt: row.completed_at ? new Date(row.completed_at) : null,

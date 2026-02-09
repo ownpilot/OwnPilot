@@ -184,3 +184,29 @@ export async function ensureTable(tableName: string, createSQL: string): Promise
     log.info(`[PostgreSQL] Created table: ${tableName}`);
   }
 }
+
+/**
+ * Parse a JSON column that may be stored as a string (SQLite) or already parsed (PostgreSQL).
+ * Returns the fallback when the value is null, undefined, or an empty string.
+ */
+export function parseJsonField<T>(value: unknown, fallback: T): T {
+  if (typeof value === 'string') {
+    if (!value) return fallback;
+    try { return JSON.parse(value) as T; }
+    catch { return fallback; }
+  }
+  return (value as T) ?? fallback;
+}
+
+/**
+ * Parse a nullable JSON column. Returns null when the value is null, undefined, or empty.
+ */
+export function parseJsonFieldNullable<T>(value: unknown): T | null {
+  if (value == null) return null;
+  if (typeof value === 'string') {
+    if (!value) return null;
+    try { return JSON.parse(value) as T; }
+    catch { return null; }
+  }
+  return value as T;
+}

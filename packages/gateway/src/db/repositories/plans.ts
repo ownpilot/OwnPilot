@@ -4,7 +4,7 @@
  * Database operations for autonomous plan execution.
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
 
 // ============================================================================
 // Types
@@ -750,7 +750,7 @@ export class PlansRepository extends BaseRepository {
       updatedAt: new Date(row.updated_at),
       startedAt: row.started_at ? new Date(row.started_at) : null,
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
-      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : (row.metadata || {}),
+      metadata: parseJsonField(row.metadata, {}),
     };
   }
 
@@ -762,10 +762,10 @@ export class PlansRepository extends BaseRepository {
       type: row.type as StepType,
       name: row.name,
       description: row.description,
-      config: typeof row.config === 'string' ? JSON.parse(row.config || '{}') : (row.config || {}),
+      config: parseJsonField(row.config, {}),
       status: row.status as StepStatus,
-      dependencies: typeof row.dependencies === 'string' ? JSON.parse(row.dependencies || '[]') : (row.dependencies || []),
-      result: row.result ? (typeof row.result === 'string' ? JSON.parse(row.result) : row.result) : null,
+      dependencies: parseJsonField(row.dependencies, []),
+      result: parseJsonFieldNullable(row.result),
       error: row.error,
       retryCount: row.retry_count,
       maxRetries: row.max_retries,
@@ -775,7 +775,7 @@ export class PlansRepository extends BaseRepository {
       durationMs: row.duration_ms,
       onSuccess: row.on_success,
       onFailure: row.on_failure,
-      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : (row.metadata || {}),
+      metadata: parseJsonField(row.metadata, {}),
     };
   }
 
@@ -785,7 +785,7 @@ export class PlansRepository extends BaseRepository {
       planId: row.plan_id,
       stepId: row.step_id,
       eventType: row.event_type as PlanEventType,
-      details: typeof row.details === 'string' ? JSON.parse(row.details || '{}') : (row.details || {}),
+      details: parseJsonField(row.details, {}),
       createdAt: new Date(row.created_at),
     };
   }

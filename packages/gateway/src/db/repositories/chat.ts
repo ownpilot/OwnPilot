@@ -4,7 +4,7 @@
  * CRUD operations for conversations and messages
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
 
 // =====================================================
 // TYPES
@@ -128,7 +128,7 @@ function rowToConversation(row: ConversationRow): Conversation {
     isArchived: row.is_archived,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : row.metadata,
+    metadata: parseJsonField(row.metadata, {}),
   };
 }
 
@@ -140,9 +140,9 @@ function rowToMessage(row: MessageRow): Message {
     content: row.content,
     provider: row.provider,
     model: row.model,
-    toolCalls: row.tool_calls ? (typeof row.tool_calls === 'string' ? JSON.parse(row.tool_calls) : row.tool_calls) : null,
+    toolCalls: parseJsonFieldNullable(row.tool_calls),
     toolCallId: row.tool_call_id,
-    trace: row.trace ? (typeof row.trace === 'string' ? JSON.parse(row.trace) : row.trace) : null,
+    trace: parseJsonFieldNullable(row.trace),
     isError: row.is_error,
     inputTokens: row.input_tokens,
     outputTokens: row.output_tokens,

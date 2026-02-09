@@ -4,7 +4,7 @@
  * CRUD operations for personal contacts
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import { MS_PER_DAY } from '../../config/defaults.js';
 
 export interface Contact {
@@ -120,12 +120,12 @@ function rowToContact(row: ContactRow): Contact {
     address: row.address ?? undefined,
     notes: row.notes ?? undefined,
     relationship: row.relationship ?? undefined,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
+    tags: parseJsonField(row.tags, []),
     isFavorite: row.is_favorite === true,
     externalId: row.external_id ?? undefined,
     externalSource: row.external_source ?? undefined,
-    socialLinks: typeof row.social_links === 'string' ? JSON.parse(row.social_links || '{}') : (row.social_links || {}),
-    customFields: typeof row.custom_fields === 'string' ? JSON.parse(row.custom_fields || '{}') : (row.custom_fields || {}),
+    socialLinks: parseJsonField(row.social_links, {}),
+    customFields: parseJsonField(row.custom_fields, {}),
     lastContactedAt: row.last_contacted_at ? new Date(row.last_contacted_at) : undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
@@ -431,7 +431,7 @@ export class ContactsRepository extends BaseRepository {
 
     const allTags = new Set<string>();
     for (const row of rows) {
-      const tags = typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []);
+      const tags = parseJsonField(row.tags, []);
       for (const tag of tags) {
         allTags.add(tag);
       }

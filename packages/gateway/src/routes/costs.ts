@@ -16,6 +16,7 @@ import {
 } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 import { apiResponse, apiError, getIntParam, getUserId, ERROR_CODES } from './helpers.js';
+import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 const log = getLog('Costs');
 
@@ -320,7 +321,7 @@ costRoutes.post('/budget', async (c) => {
  */
 costRoutes.get('/history', async (c) => {
   const limit = getIntParam(c, 'limit', 100, 1, 1000);
-  const days = getIntParam(c, 'days', 30, 1, 365);
+  const days = getIntParam(c, 'days', 30, 1, MAX_DAYS_LOOKBACK);
   const userId = getUserId(c);
   const provider = c.req.query('provider') as AIProvider | undefined;
   const model = c.req.query('model');
@@ -355,7 +356,7 @@ costRoutes.get('/history', async (c) => {
  */
 costRoutes.get('/expensive', async (c) => {
   const limit = getIntParam(c, 'limit', 10, 1, 100);
-  const days = getIntParam(c, 'days', 30, 1, 365);
+  const days = getIntParam(c, 'days', 30, 1, MAX_DAYS_LOOKBACK);
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
@@ -432,7 +433,7 @@ costRoutes.post('/record', async (c) => {
  */
 costRoutes.get('/export', async (c) => {
   const format = (c.req.query('format') ?? 'json') as 'json' | 'csv';
-  const days = getIntParam(c, 'days', 30, 1, 365);
+  const days = getIntParam(c, 'days', 30, 1, MAX_DAYS_LOOKBACK);
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);

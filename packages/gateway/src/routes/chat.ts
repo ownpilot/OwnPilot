@@ -9,6 +9,7 @@ import type {
   StreamChunkResponse,
 } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError } from './helpers.js';
+import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
@@ -2015,7 +2016,7 @@ chatRoutes.get('/logs', async (c) => {
  */
 chatRoutes.get('/logs/stats', async (c) => {
   const userId = getUserId(c);
-  const days = getIntParam(c, 'days', 7, 1, 365);
+  const days = getIntParam(c, 'days', 7, 1, MAX_DAYS_LOOKBACK);
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);

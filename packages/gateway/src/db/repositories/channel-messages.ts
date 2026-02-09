@@ -4,7 +4,7 @@
  * Stores incoming and outgoing messages from channels (inbox)
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
 
 export interface ChannelMessage {
   id: string;
@@ -50,11 +50,9 @@ function rowToChannelMessage(row: ChannelMessageRow): ChannelMessage {
     senderName: row.sender_name ?? undefined,
     content: row.content,
     contentType: row.content_type,
-    attachments: row.attachments
-      ? (typeof row.attachments === 'string' ? JSON.parse(row.attachments) : row.attachments)
-      : undefined,
+    attachments: parseJsonFieldNullable(row.attachments) ?? undefined,
     replyToId: row.reply_to_id ?? undefined,
-    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : (row.metadata || {}),
+    metadata: parseJsonField(row.metadata, {}),
     createdAt: new Date(row.created_at),
   };
 }

@@ -5,7 +5,7 @@
  * Supports enable/disable, permissions, and approval workflows
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
 import { randomUUID } from 'node:crypto';
 
 // =============================================================================
@@ -100,11 +100,11 @@ function rowToRecord(row: CustomToolRow): CustomToolRecord {
     userId: row.user_id,
     name: row.name,
     description: row.description,
-    parameters: typeof row.parameters === 'string' ? JSON.parse(row.parameters) : row.parameters,
+    parameters: parseJsonField<CustomToolRecord['parameters']>(row.parameters, { type: 'object', properties: {} }),
     code: row.code,
     category: row.category ?? undefined,
     status: row.status as ToolStatus,
-    permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : row.permissions,
+    permissions: parseJsonField(row.permissions, []),
     requiresApproval: row.requires_approval,
     createdBy: row.created_by as 'user' | 'llm',
     version: row.version,
@@ -112,10 +112,8 @@ function rowToRecord(row: CustomToolRow): CustomToolRecord {
     lastUsedAt: row.last_used_at ? new Date(row.last_used_at) : undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined,
-    requiredApiKeys: row.required_api_keys
-      ? (typeof row.required_api_keys === 'string' ? JSON.parse(row.required_api_keys) : row.required_api_keys)
-      : undefined,
+    metadata: parseJsonFieldNullable(row.metadata) ?? undefined,
+    requiredApiKeys: parseJsonFieldNullable(row.required_api_keys) ?? undefined,
   };
 }
 

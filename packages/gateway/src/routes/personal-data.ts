@@ -32,7 +32,8 @@ import {
   type UpdateContactInput,
   type ContactQuery,
 } from '../db/repositories/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, getOptionalIntParam } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, getOptionalIntParam } from './helpers.js';
+import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 export const personalDataRoutes = new Hono();
 
@@ -72,7 +73,7 @@ tasksRoutes.get('/overdue', async (c) => {
 
 tasksRoutes.get('/upcoming', async (c) => {
   const repo = new TasksRepository(getUserId(c));
-  const days = getIntParam(c, 'days', 7, 1, 365);
+  const days = getIntParam(c, 'days', 7, 1, MAX_DAYS_LOOKBACK);
   const tasks = await repo.getUpcoming(days);
   return apiResponse(c, tasks);
 });
@@ -370,7 +371,7 @@ calendarRoutes.get('/today', async (c) => {
 
 calendarRoutes.get('/upcoming', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
-  const days = getIntParam(c, 'days', 7, 1, 365);
+  const days = getIntParam(c, 'days', 7, 1, MAX_DAYS_LOOKBACK);
   const events = await repo.getUpcoming(days);
   return apiResponse(c, events);
 });
@@ -462,7 +463,7 @@ contactsRoutes.get('/recent', async (c) => {
 
 contactsRoutes.get('/birthdays', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
-  const days = getIntParam(c, 'days', 30, 1, 365);
+  const days = getIntParam(c, 'days', 30, 1, MAX_DAYS_LOOKBACK);
   const contacts = await repo.getUpcomingBirthdays(days);
   return apiResponse(c, contacts);
 });

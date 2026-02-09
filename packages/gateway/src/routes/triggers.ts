@@ -13,6 +13,7 @@ import {
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression, getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError } from './helpers.js';
+import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 export const triggersRoutes = new Hono();
 
@@ -306,7 +307,7 @@ triggersRoutes.post('/cleanup', async (c) => {
   const service = getServiceRegistry().get(Services.Trigger);
   let raw = Number(body.maxAgeDays) || 30;
   if (!Number.isFinite(raw)) raw = 30;
-  const maxAgeDays = Math.max(1, Math.min(365, raw));
+  const maxAgeDays = Math.max(1, Math.min(MAX_DAYS_LOOKBACK, raw));
   const deleted = await service.cleanupHistory(userId, maxAgeDays);
 
   return apiResponse(c, {

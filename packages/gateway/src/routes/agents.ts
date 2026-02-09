@@ -29,6 +29,7 @@ import {
   validateRequiredParams,
   type AgentConfig,
   type AIProvider,
+  type ToolDefinition,
   type ToolExecutionResult as CoreToolResult,
   type ToolContext,
   type WorkspaceContext,
@@ -245,6 +246,130 @@ function registerGatewayTools(
       });
     }
   }
+}
+
+// =============================================================================
+// Shared dynamic-tool & plugin-tool registration
+// =============================================================================
+
+/** Names of meta-tools that have dedicated executors (registered separately) */
+const META_TOOL_NAMES = new Set(['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool', 'inspect_tool_source']);
+
+/**
+ * Register all dynamic tools: CRUD meta-tools, special meta-tools, and active custom tools.
+ * Used by both agent and chat endpoints to avoid duplicating ~80 lines of registration logic.
+ *
+ * @returns The active custom tool definitions (needed for tool-list assembly).
+ */
+async function registerDynamicTools(
+  tools: ToolRegistry,
+  userId: string,
+  conversationId: string,
+  trace: boolean,
+): Promise<ToolDefinition[]> {
+  // 1. Register CRUD meta-tools (create_tool, list_custom_tools, etc.)
+  for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
+    if (META_TOOL_NAMES.has(toolDef.name)) continue;
+
+    tools.register(toolDef, async (args, _context): Promise<CoreToolResult> => {
+      const startTime = trace ? traceToolCallStart(toolDef.name, args as Record<string, unknown>) : 0;
+      const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
+
+      if (trace) {
+        if (toolDef.name === 'create_tool') traceDbWrite('custom_tools', 'insert');
+        else if (toolDef.name === 'list_custom_tools') traceDbRead('custom_tools', 'select');
+        else if (toolDef.name === 'delete_custom_tool') traceDbWrite('custom_tools', 'delete');
+        else if (toolDef.name === 'toggle_custom_tool' || toolDef.name === 'update_custom_tool') traceDbWrite('custom_tools', 'update');
+        traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
+      }
+
+      return toToolResult(result);
+    });
+  }
+
+  // 2. Register special meta-tools with dedicated executors
+  const searchToolsDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'search_tools');
+  if (searchToolsDef) {
+    tools.register(searchToolsDef, (args) => executeSearchTools(tools, args as Record<string, unknown>));
+  }
+  const inspectToolSourceDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'inspect_tool_source');
+  if (inspectToolSourceDef) {
+    tools.register(inspectToolSourceDef, (args) => executeInspectToolSource(tools, userId, args as Record<string, unknown>));
+  }
+  const getToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
+  if (getToolHelpDef) {
+    tools.register(getToolHelpDef, (args) => executeGetToolHelp(tools, args as Record<string, unknown>));
+  }
+  const useToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
+  if (useToolDef) {
+    tools.register(useToolDef, (args, context) => executeUseTool(tools, args as Record<string, unknown>, context));
+  }
+  const batchUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'batch_use_tool');
+  if (batchUseToolDef) {
+    tools.register(batchUseToolDef, (args, context) => executeBatchUseTool(tools, args as Record<string, unknown>, context));
+  }
+
+  // 3. Register active custom tools (user-created dynamic tools)
+  const activeCustomToolDefs = await getActiveCustomToolDefinitions(userId);
+  for (const toolDef of activeCustomToolDefs) {
+    tools.register(toolDef, async (args, _context): Promise<CoreToolResult> => {
+      const startTime = trace ? traceToolCallStart(toolDef.name, args as Record<string, unknown>) : 0;
+
+      const result = await executeActiveCustomTool(toolDef.name, args as Record<string, unknown>, userId, {
+        callId: `call_${Date.now()}`,
+        conversationId,
+      });
+
+      if (trace) traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
+
+      return toToolResult(result);
+    });
+  }
+
+  return activeCustomToolDefs;
+}
+
+/**
+ * Register plugin-provided tools and remove superseded core stubs.
+ * Used by both agent and chat endpoints.
+ *
+ * @returns The plugin tool definitions (needed for tool-list assembly).
+ */
+function registerPluginTools(
+  tools: ToolRegistry,
+  trace: boolean,
+): ToolDefinition[] {
+  const pluginService = getServiceRegistry().get(Services.Plugin);
+  const pluginTools = pluginService.getAllTools();
+  const pluginToolDefs: ToolDefinition[] = [];
+
+  for (const { definition, executor } of pluginTools) {
+    const wrappedExecutor = async (args: unknown, context: ToolContext): Promise<CoreToolResult> => {
+      const startTime = trace ? traceToolCallStart(definition.name, args as Record<string, unknown>) : 0;
+      try {
+        const result = await executor(args as Record<string, unknown>, context);
+        if (trace) traceToolCallEnd(definition.name, startTime, !result.isError, result.content, result.isError ? String(result.content) : undefined);
+        return result;
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        if (trace) traceToolCallEnd(definition.name, startTime, false, undefined, errorMsg);
+        return { content: errorMsg, isError: true };
+      }
+    };
+
+    if (tools.has(definition.name)) {
+      tools.updateExecutor(definition.name, wrappedExecutor);
+    } else {
+      tools.register(definition, wrappedExecutor);
+    }
+    pluginToolDefs.push(definition);
+  }
+
+  // Remove core stub tools that are superseded by plugin tools
+  const pluginToolNames = new Set(pluginToolDefs.map(t => t.name));
+  removeSupersededCoreStubs(tools, pluginToolNames);
+
+  return pluginToolDefs;
 }
 
 // =============================================================================
@@ -815,139 +940,13 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   const userId = 'default';
   registerGatewayTools(tools, userId, true);
 
-  // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
-  for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
-    // These tools have special executors registered separately below
-    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool' || toolDef.name === 'batch_use_tool' || toolDef.name === 'inspect_tool_source') continue;
-
-    tools.register(toolDef, async (args): Promise<CoreToolResult> => {
-      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
-
-      const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
-
-      // Trace database operations
-      if (toolDef.name === 'create_tool') {
-        traceDbWrite('custom_tools', 'insert');
-      } else if (toolDef.name === 'list_custom_tools') {
-        traceDbRead('custom_tools', 'select');
-      } else if (toolDef.name === 'delete_custom_tool') {
-        traceDbWrite('custom_tools', 'delete');
-      } else if (toolDef.name === 'toggle_custom_tool' || toolDef.name === 'update_custom_tool') {
-        traceDbWrite('custom_tools', 'update');
-      }
-
-      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return {
-        content: result.error ?? 'Unknown error',
-        isError: true,
-      };
-    });
-  }
-
-  // Register search_tools — keyword/intent search across all registered tools
-  const searchToolsDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'search_tools');
-  if (searchToolsDef) {
-    tools.register(searchToolsDef, (args) => executeSearchTools(tools, args as Record<string, unknown>));
-  }
-
-  // Register inspect_tool_source — view source code of any tool
-  const inspectToolSourceDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'inspect_tool_source');
-  if (inspectToolSourceDef) {
-    tools.register(inspectToolSourceDef, (args) => executeInspectToolSource(tools, userId, args as Record<string, unknown>));
-  }
-
-  // Register get_tool_help — parameter docs for one or more tools
-  const getToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
-  if (getToolHelpDef) {
-    tools.register(getToolHelpDef, (args) => executeGetToolHelp(tools, args as Record<string, unknown>));
-  }
-
-  // Register use_tool proxy (executes any registered tool by name)
-  // On failure, auto-includes tool parameter help so LLM can self-correct
-  const useToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
-  if (useToolDef) {
-    tools.register(useToolDef, (args, context) => executeUseTool(tools, args as Record<string, unknown>, context));
-  }
-
-  // Register batch_use_tool — parallel execution of multiple tools
-  const batchUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'batch_use_tool');
-  if (batchUseToolDef) {
-    tools.register(batchUseToolDef, (args, context) => executeBatchUseTool(tools, args as Record<string, unknown>, context));
-  }
-
-  // Register active custom tools (user-created dynamic tools)
-  const activeCustomToolDefs = await getActiveCustomToolDefinitions(userId);
-  for (const toolDef of activeCustomToolDefs) {
-    tools.register(toolDef, async (args, _context): Promise<CoreToolResult> => {
-      const startTime = traceToolCallStart(toolDef.name, args as Record<string, unknown>);
-
-      const result = await executeActiveCustomTool(toolDef.name, args as Record<string, unknown>, userId, {
-        callId: `call_${Date.now()}`,
-        conversationId: record.id,
-      });
-
-      traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return {
-        content: result.error ?? 'Unknown error',
-        isError: true,
-      };
-    });
-  }
+  // Register dynamic tools (CRUD meta-tools, special meta-tools, active custom tools)
+  const activeCustomToolDefs = await registerDynamicTools(tools, userId, record.id, true);
   log.info(`Registered ${activeCustomToolDefs.length} active custom tools`);
 
-  // Register plugin tools
-  const pluginService = getServiceRegistry().get(Services.Plugin);
-  const pluginTools = pluginService.getAllTools();
-  const pluginToolDefs: typeof MEMORY_TOOLS = [];
-
-  let pluginOverrides = 0;
-  for (const { definition, executor } of pluginTools) {
-    const wrappedExecutor = async (args: unknown, context: ToolContext): Promise<CoreToolResult> => {
-      const startTime = traceToolCallStart(definition.name, args as Record<string, unknown>);
-      try {
-        const result = await executor(args as Record<string, unknown>, context);
-        traceToolCallEnd(definition.name, startTime, !result.isError, result.content, result.isError ? String(result.content) : undefined);
-        return result;
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        traceToolCallEnd(definition.name, startTime, false, undefined, errorMsg);
-        return { content: errorMsg, isError: true };
-      }
-    };
-
-    if (tools.has(definition.name)) {
-      // Plugin tool overrides a core stub — replace the executor
-      tools.updateExecutor(definition.name, wrappedExecutor);
-      pluginOverrides++;
-    } else {
-      tools.register(definition, wrappedExecutor);
-    }
-    pluginToolDefs.push(definition);
-  }
-  log.info(`Registered ${pluginTools.length} plugin tools (${pluginOverrides} overrides)`);
-
-  // Remove core stub tools that overlap with plugin tools to prevent LLM confusion
-  const pluginToolNames = new Set(pluginToolDefs.map(t => t.name));
-  const removedStubs = removeSupersededCoreStubs(tools, pluginToolNames);
-  if (removedStubs > 0) {
-    log.info(`Removed ${removedStubs} superseded core stubs`);
-  }
+  // Register plugin tools and remove superseded core stubs
+  const pluginToolDefs = registerPluginTools(tools, true);
+  log.info(`Registered ${pluginToolDefs.length} plugin tools`);
 
   // Separate standard tools (from TOOL_GROUPS) and special tools that bypass filtering
   // Filter getToolDefinitions() to exclude stubs that were unregistered above
@@ -1534,101 +1533,11 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   const userId = 'default';
   registerGatewayTools(tools, userId, false);
 
-  // Register dynamic tool meta-tools (create_tool, list_custom_tools, etc.)
-  for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
-    // These tools have special executors registered separately below
-    if (toolDef.name === 'search_tools' || toolDef.name === 'get_tool_help' || toolDef.name === 'use_tool' || toolDef.name === 'batch_use_tool' || toolDef.name === 'inspect_tool_source') continue;
+  // Register dynamic tools (CRUD meta-tools, special meta-tools, active custom tools)
+  const activeCustomToolDefs = await registerDynamicTools(tools, userId, `chat_${provider}_${model}`, false);
 
-    tools.register(toolDef, async (args, _context): Promise<CoreToolResult> => {
-      const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register search_tools — keyword/intent search across all registered tools
-  const chatSearchToolsDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'search_tools');
-  if (chatSearchToolsDef) {
-    tools.register(chatSearchToolsDef, (args) => executeSearchTools(tools, args as Record<string, unknown>));
-  }
-
-  // Register inspect_tool_source — view source code of any tool
-  const chatInspectToolSourceDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'inspect_tool_source');
-  if (chatInspectToolSourceDef) {
-    tools.register(chatInspectToolSourceDef, (args) => executeInspectToolSource(tools, userId, args as Record<string, unknown>));
-  }
-
-  // Register get_tool_help — parameter docs for one or more tools
-  const chatGetToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
-  if (chatGetToolHelpDef) {
-    tools.register(chatGetToolHelpDef, (args) => executeGetToolHelp(tools, args as Record<string, unknown>));
-  }
-
-  // Register use_tool proxy (executes any registered tool by name)
-  // On failure, auto-includes tool parameter help so LLM can self-correct
-  const chatUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'use_tool');
-  if (chatUseToolDef) {
-    tools.register(chatUseToolDef, (args, context) => executeUseTool(tools, args as Record<string, unknown>, context));
-  }
-
-  // Register batch_use_tool — parallel execution of multiple tools
-  const chatBatchUseToolDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'batch_use_tool');
-  if (chatBatchUseToolDef) {
-    tools.register(chatBatchUseToolDef, (args, context) => executeBatchUseTool(tools, args as Record<string, unknown>, context));
-  }
-
-  // Register active custom tools (user-created dynamic tools)
-  const activeCustomToolDefs = await getActiveCustomToolDefinitions(userId);
-  for (const toolDef of activeCustomToolDefs) {
-    tools.register(toolDef, async (args, _context): Promise<CoreToolResult> => {
-      const result = await executeActiveCustomTool(toolDef.name, args as Record<string, unknown>, userId, {
-        callId: `call_${Date.now()}`,
-        conversationId: `chat_${provider}_${model}`,
-      });
-      if (result.success) {
-        return {
-          content: typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2),
-        };
-      }
-      return { content: result.error ?? 'Unknown error', isError: true };
-    });
-  }
-
-  // Register plugin tools
-  const pluginService = getServiceRegistry().get(Services.Plugin);
-  const pluginTools = pluginService.getAllTools();
-  const pluginToolDefs: typeof MEMORY_TOOLS = [];
-
-  for (const { definition, executor } of pluginTools) {
-    const wrappedExecutor = async (args: unknown, context: ToolContext): Promise<CoreToolResult> => {
-      try {
-        const result = await executor(args as Record<string, unknown>, context);
-        return result;
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        return { content: errorMsg, isError: true };
-      }
-    };
-
-    if (tools.has(definition.name)) {
-      tools.updateExecutor(definition.name, wrappedExecutor);
-    } else {
-      tools.register(definition, wrappedExecutor);
-    }
-    pluginToolDefs.push(definition);
-  }
-
-  // Remove core stub tools that overlap with plugin tools
-  const chatPluginToolNames = new Set(pluginToolDefs.map(t => t.name));
-  removeSupersededCoreStubs(tools, chatPluginToolNames);
+  // Register plugin tools and remove superseded core stubs
+  const pluginToolDefs = registerPluginTools(tools, false);
 
   // Get tool definitions for prompt injection (including all registered tools)
   // Filter getToolDefinitions() to exclude stubs removed above

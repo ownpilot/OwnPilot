@@ -4,7 +4,7 @@
  * Quick capture inbox for ideas, thoughts, and snippets
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 
 // =============================================================================
 // Types
@@ -78,7 +78,7 @@ function rowToCapture(row: CaptureRow): Capture {
     userId: row.user_id,
     content: row.content,
     type: row.type as CaptureType,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
+    tags: parseJsonField(row.tags, []),
     source: row.source ?? undefined,
     url: row.url ?? undefined,
     processed: row.processed === true,

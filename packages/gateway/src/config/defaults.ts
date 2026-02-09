@@ -120,6 +120,9 @@ export const TOOL_ARGS_MAX_SIZE = 100_000; // 100KB
 /** Milliseconds in one day (for date difference calculations) */
 export const MS_PER_DAY = 86_400_000; // 1000 * 60 * 60 * 24
 
+/** Maximum lookback period for date-range queries (days) */
+export const MAX_DAYS_LOOKBACK = 365;
+
 // ============================================================================
 // Channel Plugins
 // ============================================================================

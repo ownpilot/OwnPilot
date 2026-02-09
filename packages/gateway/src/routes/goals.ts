@@ -18,6 +18,7 @@ import type {
 import { GoalServiceError } from '../services/goal-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
+import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Goals');
@@ -115,7 +116,7 @@ goalsRoutes.get('/next-actions', async (c) => {
  */
 goalsRoutes.get('/upcoming', async (c) => {
   const userId = getUserId(c);
-  const days = getIntParam(c, 'days', 7, 1, 365);
+  const days = getIntParam(c, 'days', 7, 1, MAX_DAYS_LOOKBACK);
 
   const service = getServiceRegistry().get(Services.Goal);
   const goals = await service.getUpcoming(userId, days);

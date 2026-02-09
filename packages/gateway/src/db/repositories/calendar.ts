@@ -4,7 +4,7 @@
  * CRUD operations for calendar events
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 
 export interface CalendarEvent {
   id: string;
@@ -107,11 +107,11 @@ function rowToEvent(row: EventRow): CalendarEvent {
     recurrence: row.recurrence ?? undefined,
     reminderMinutes: row.reminder_minutes ?? undefined,
     category: row.category ?? undefined,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
+    tags: parseJsonField(row.tags, []),
     color: row.color ?? undefined,
     externalId: row.external_id ?? undefined,
     externalSource: row.external_source ?? undefined,
-    attendees: typeof row.attendees === 'string' ? JSON.parse(row.attendees || '[]') : (row.attendees || []),
+    attendees: parseJsonField(row.attendees, []),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };

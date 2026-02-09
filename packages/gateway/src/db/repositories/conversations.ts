@@ -2,7 +2,7 @@
  * Conversations Repository (PostgreSQL)
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 
 export interface Conversation {
   id: string;
@@ -29,7 +29,7 @@ function rowToConversation(row: ConversationRow): Conversation {
     systemPrompt: row.system_prompt ?? undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : (row.metadata || {}),
+    metadata: parseJsonField(row.metadata, {}),
   };
 }
 
