@@ -4,7 +4,7 @@
  * API for managing autonomy levels, risk assessment, and approvals.
  */
 
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import {
   getApprovalManager,
   assessRisk,
@@ -285,9 +285,9 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
 });
 
 /**
- * POST /autonomy/approvals/:id/approve - Approve a pending action (shorthand)
+ * Shared handler for approve/reject shorthand endpoints
  */
-autonomyRoutes.post('/approvals/:id/approve', async (c) => {
+async function handleApprovalShorthand(c: Context, decision: 'approve' | 'reject') {
   const id = c.req.param('id');
   const userId = getUserId(c);
   const rawBody = await c.req.json().catch(() => ({}));
@@ -300,53 +300,24 @@ autonomyRoutes.post('/approvals/:id/approve', async (c) => {
     return notFoundError(c, 'Pending action', id);
   }
   if (pending.userId !== userId) {
-    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to approve this action' }, 403);
+    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: `Not authorized to ${decision} this action` }, 403);
   }
 
   const action = manager.processDecision({
     actionId: id,
-    decision: 'approve',
+    decision,
     reason: body.reason,
     remember: body.remember,
   });
 
   return apiResponse(c, {
     action,
-    message: 'Action approved.',
+    message: `Action ${decision}d.`,
   });
-});
+}
 
-/**
- * POST /autonomy/approvals/:id/reject - Reject a pending action (shorthand)
- */
-autonomyRoutes.post('/approvals/:id/reject', async (c) => {
-  const id = c.req.param('id');
-  const userId = getUserId(c);
-  const rawBody = await c.req.json().catch(() => ({}));
-  const { validateBody, autonomyApproveRejectSchema } = await import('../middleware/validation.js');
-  const body = validateBody(autonomyApproveRejectSchema, rawBody) as { reason?: string; remember?: boolean };
-
-  const manager = getApprovalManager();
-  const pending = manager.getPendingAction(id);
-  if (!pending) {
-    return notFoundError(c, 'Pending action', id);
-  }
-  if (pending.userId !== userId) {
-    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to reject this action' }, 403);
-  }
-
-  const action = manager.processDecision({
-    actionId: id,
-    decision: 'reject',
-    reason: body.reason,
-    remember: body.remember,
-  });
-
-  return apiResponse(c, {
-    action,
-    message: 'Action rejected.',
-  });
-});
+autonomyRoutes.post('/approvals/:id/approve', (c) => handleApprovalShorthand(c, 'approve'));
+autonomyRoutes.post('/approvals/:id/reject', (c) => handleApprovalShorthand(c, 'reject'));
 
 /**
  * DELETE /autonomy/approvals/:id - Cancel a pending action
