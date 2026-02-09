@@ -387,6 +387,162 @@ async function executeBatchUseTool(
 }
 
 /**
+ * Shared handler for search_tools meta-tool
+ */
+async function executeSearchTools(
+  tools: ToolRegistry,
+  args: Record<string, unknown>,
+): Promise<CoreToolResult> {
+  const { query, category: filterCategory, include_params } = args as { query: string; category?: string; include_params?: boolean };
+  const allDefs = tools.getDefinitions();
+  const q = query.trim().toLowerCase();
+
+  const showAll = q === 'all' || q === '*';
+  const queryWords = q.split(/\s+/).filter(Boolean);
+
+  const matches = allDefs.filter(d => {
+    if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool' || d.name === 'batch_use_tool') return false;
+    if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
+    if (showAll) return true;
+
+    const tags = TOOL_SEARCH_TAGS[d.name] ?? d.tags ?? [];
+    const searchBlob = [
+      d.name.toLowerCase().replace(/[_\-]/g, ' '),
+      d.name.toLowerCase(),
+      d.description.toLowerCase(),
+      (d.category ?? '').toLowerCase(),
+      ...tags.map(tag => tag.toLowerCase()),
+    ].join(' ');
+    return queryWords.every(word => searchBlob.includes(word));
+  });
+
+  if (matches.length === 0) {
+    return { content: `No tools found for "${query}". Tips:\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"` };
+  }
+
+  if (include_params !== false) {
+    const sections = matches.map(d => formatFullToolHelp(tools, d.name));
+    return { content: [`Found ${matches.length} tool(s) for "${query}" (with parameters):`, '', ...sections.join('\n\n---\n\n').split('\n')].join('\n') };
+  }
+
+  const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
+  return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines].join('\n') };
+}
+
+/**
+ * Shared handler for inspect_tool_source meta-tool
+ */
+async function executeInspectToolSource(
+  tools: ToolRegistry,
+  userId: string,
+  args: Record<string, unknown>,
+): Promise<CoreToolResult> {
+  const { tool_name } = args as { tool_name: string };
+  if (!tool_name || typeof tool_name !== 'string') {
+    return { content: 'Provide a "tool_name" parameter.', isError: true };
+  }
+
+  const customToolsRepo = createCustomToolsRepo(userId);
+
+  // 1. Check if it's a custom tool
+  const customTool = await customToolsRepo.getByName(tool_name);
+  if (customTool) {
+    const sections: string[] = [
+      `## Tool: ${customTool.name}`,
+      `**Category:** ${customTool.category ?? 'Custom'}`,
+      `**Type:** custom (v${customTool.version}, created by ${customTool.createdBy})`,
+      `**Status:** ${customTool.status}`,
+      '',
+      '### Description',
+      customTool.description,
+      '',
+      '### Parameters',
+      '```json',
+      JSON.stringify(customTool.parameters, null, 2),
+      '```',
+      '',
+      '### Source Code',
+      '```javascript',
+      customTool.code,
+      '```',
+    ];
+    if (customTool.permissions?.length) {
+      sections.push('', `**Permissions:** ${customTool.permissions.join(', ')}`);
+    }
+    sections.push('', '### Improvement Tips', '- You can update this tool directly with `update_custom_tool`.');
+    return { content: sections.join('\n') };
+  }
+
+  // 2. Check if it's a built-in tool
+  const def = tools.getDefinition(tool_name);
+  if (def) {
+    const source = getToolSource(tool_name);
+    const sections: string[] = [
+      `## Tool: ${def.name}`,
+      `**Category:** ${def.category ?? 'Unknown'}`,
+      `**Type:** built-in`,
+      '',
+      '### Description',
+      def.description,
+      '',
+      '### Parameters',
+      '```json',
+      JSON.stringify(def.parameters, null, 2),
+      '```',
+    ];
+    if (source) {
+      sections.push('', '### Source Code', '```typescript', source, '```');
+    } else {
+      sections.push('', '*Source code not available for this tool.*');
+    }
+    sections.push('', '### Improvement Tips', '- Built-in tools cannot be modified directly. Use `create_tool` to create an improved custom version that overrides or extends this tool.');
+    return { content: sections.join('\n') };
+  }
+
+  // 3. Not found — suggest similar tools
+  const similar = findSimilarTools(tools, tool_name);
+  const hint = similar.length > 0
+    ? `\n\nDid you mean one of these?\n${similar.map(s => `  - ${s}`).join('\n')}`
+    : '\n\nUse search_tools("keyword") to find the correct tool name.';
+  return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
+}
+
+/**
+ * Shared handler for get_tool_help meta-tool
+ */
+async function executeGetToolHelp(
+  tools: ToolRegistry,
+  args: Record<string, unknown>,
+): Promise<CoreToolResult> {
+  const { tool_name, tool_names } = args as { tool_name?: string; tool_names?: string[] };
+
+  const names: string[] = tool_names?.length ? tool_names : tool_name ? [tool_name] : [];
+  if (names.length === 0) {
+    return { content: 'Provide either "tool_name" (string) or "tool_names" (array) parameter.', isError: true };
+  }
+
+  const results: string[] = [];
+  const notFound: string[] = [];
+  for (const name of names) {
+    if (!tools.getDefinition(name)) {
+      notFound.push(name);
+      continue;
+    }
+    results.push(formatFullToolHelp(tools, name));
+  }
+
+  if (notFound.length > 0) {
+    const similar = notFound.flatMap(n => findSimilarTools(tools, n));
+    const hintText = similar.length > 0
+      ? `\nDid you mean one of these?\n${[...new Set(similar)].map(s => `  • ${s}`).join('\n')}\n\nUse search_tools("keyword") to find the correct tool name.`
+      : '\nUse search_tools("keyword") to discover available tools.';
+    results.push(`Tools not found: ${notFound.join(', ')}${hintText}`);
+  }
+
+  return { content: results.join('\n\n---\n\n'), isError: notFound.length > 0 && results.length === notFound.length };
+}
+
+/**
  * Build memory context string from important memories
  */
 async function buildMemoryContext(userId = 'default'): Promise<string> {
@@ -699,162 +855,19 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Register search_tools — keyword/intent search across all registered tools
   const searchToolsDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'search_tools');
   if (searchToolsDef) {
-    tools.register(searchToolsDef, async (args): Promise<CoreToolResult> => {
-      const { query, category: filterCategory, include_params } = args as { query: string; category?: string; include_params?: boolean };
-      const allDefs = tools.getDefinitions();
-      const q = query.trim().toLowerCase();
-
-      // "all" or "*" returns everything
-      const showAll = q === 'all' || q === '*';
-
-      // Split query into individual words for AND matching
-      const queryWords = q.split(/\s+/).filter(Boolean);
-
-      const matches = allDefs.filter(d => {
-        // Skip meta-tools from results
-        if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool' || d.name === 'batch_use_tool') return false;
-        // Category filter
-        if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
-
-        if (showAll) return true;
-
-        // Build searchable text: split underscored names into words
-        const tags = TOOL_SEARCH_TAGS[d.name] ?? d.tags ?? [];
-        const searchBlob = [
-          d.name.toLowerCase().replace(/[_\-]/g, ' '),
-          d.name.toLowerCase(),
-          d.description.toLowerCase(),
-          (d.category ?? '').toLowerCase(),
-          ...tags.map(tag => tag.toLowerCase()),
-        ].join(' ');
-
-        // Every query word must appear somewhere in the search blob
-        return queryWords.every(word => searchBlob.includes(word));
-      });
-
-      if (matches.length === 0) {
-        return { content: `No tools found for "${query}". Tips:\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"` };
-      }
-
-      // include_params defaults to true — return full parameter docs unless explicitly false
-      if (include_params !== false) {
-        const sections = matches.map(d => formatFullToolHelp(tools, d.name));
-        return { content: [`Found ${matches.length} tool(s) for "${query}" (with parameters):`, '', ...sections.join('\n\n---\n\n').split('\n')].join('\n') };
-      }
-
-      const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
-      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines].join('\n') };
-    });
+    tools.register(searchToolsDef, (args) => executeSearchTools(tools, args as Record<string, unknown>));
   }
 
   // Register inspect_tool_source — view source code of any tool
   const inspectToolSourceDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'inspect_tool_source');
   if (inspectToolSourceDef) {
-    tools.register(inspectToolSourceDef, async (args): Promise<CoreToolResult> => {
-      const { tool_name } = args as { tool_name: string };
-      if (!tool_name || typeof tool_name !== 'string') {
-        return { content: 'Provide a "tool_name" parameter.', isError: true };
-      }
-
-      const customToolsRepo = createCustomToolsRepo(userId);
-
-      // 1. Check if it's a custom tool
-      const customTool = await customToolsRepo.getByName(tool_name);
-      if (customTool) {
-        const sections: string[] = [
-          `## Tool: ${customTool.name}`,
-          `**Category:** ${customTool.category ?? 'Custom'}`,
-          `**Type:** custom (v${customTool.version}, created by ${customTool.createdBy})`,
-          `**Status:** ${customTool.status}`,
-          '',
-          '### Description',
-          customTool.description,
-          '',
-          '### Parameters',
-          '```json',
-          JSON.stringify(customTool.parameters, null, 2),
-          '```',
-          '',
-          '### Source Code',
-          '```javascript',
-          customTool.code,
-          '```',
-        ];
-        if (customTool.permissions?.length) {
-          sections.push('', `**Permissions:** ${customTool.permissions.join(', ')}`);
-        }
-        sections.push('', '### Improvement Tips', '- You can update this tool directly with `update_custom_tool`.');
-        return { content: sections.join('\n') };
-      }
-
-      // 2. Check if it's a built-in tool
-      const def = tools.getDefinition(tool_name);
-      if (def) {
-        const source = getToolSource(tool_name);
-        const sections: string[] = [
-          `## Tool: ${def.name}`,
-          `**Category:** ${def.category ?? 'Unknown'}`,
-          `**Type:** built-in`,
-          '',
-          '### Description',
-          def.description,
-          '',
-          '### Parameters',
-          '```json',
-          JSON.stringify(def.parameters, null, 2),
-          '```',
-        ];
-        if (source) {
-          sections.push('', '### Source Code', '```typescript', source, '```');
-        } else {
-          sections.push('', '*Source code not available for this tool.*');
-        }
-        sections.push('', '### Improvement Tips', '- Built-in tools cannot be modified directly. Use `create_tool` to create an improved custom version that overrides or extends this tool.');
-        return { content: sections.join('\n') };
-      }
-
-      // 3. Not found — suggest similar tools
-      const similar = findSimilarTools(tools, tool_name);
-      const hint = similar.length > 0
-        ? `\n\nDid you mean one of these?\n${similar.map(s => `  - ${s}`).join('\n')}`
-        : '\n\nUse search_tools("keyword") to find the correct tool name.';
-      return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
-    });
+    tools.register(inspectToolSourceDef, (args) => executeInspectToolSource(tools, userId, args as Record<string, unknown>));
   }
 
-  // Register get_tool_help with a closure over the tools registry
-  // Supports both single tool_name and batch tool_names array
+  // Register get_tool_help — parameter docs for one or more tools
   const getToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
   if (getToolHelpDef) {
-    tools.register(getToolHelpDef, async (args): Promise<CoreToolResult> => {
-      const { tool_name, tool_names } = args as { tool_name?: string; tool_names?: string[] };
-
-      // Resolve list of tool names (batch or single)
-      const names: string[] = tool_names?.length ? tool_names : tool_name ? [tool_name] : [];
-      if (names.length === 0) {
-        return { content: 'Provide either "tool_name" (string) or "tool_names" (array) parameter.', isError: true };
-      }
-
-      const results: string[] = [];
-      const notFound: string[] = [];
-      for (const name of names) {
-        if (!tools.getDefinition(name)) {
-          notFound.push(name);
-          continue;
-        }
-        results.push(formatFullToolHelp(tools, name));
-      }
-
-      if (notFound.length > 0) {
-        const similar = notFound.flatMap(n => findSimilarTools(tools, n));
-        const hint = similar.length > 0
-          ? `\nDid you mean one of these?\n${[...new Set(similar)].map(s => `  • ${s}`).join('\n')}\n\nUse search_tools("keyword") to find the correct tool name.`
-          : '\nUse search_tools("keyword") to discover available tools.';
-        results.push(`Tools not found: ${notFound.join(', ')}${hint}`);
-      }
-
-      return { content: results.join('\n\n---\n\n'), isError: notFound.length > 0 && results.length === notFound.length };
-    });
+    tools.register(getToolHelpDef, (args) => executeGetToolHelp(tools, args as Record<string, unknown>));
   }
 
   // Register use_tool proxy (executes any registered tool by name)
@@ -1542,160 +1555,19 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // Register search_tools — keyword/intent search across all registered tools
   const chatSearchToolsDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'search_tools');
   if (chatSearchToolsDef) {
-    tools.register(chatSearchToolsDef, async (args): Promise<CoreToolResult> => {
-      const { query, category: filterCategory, include_params } = args as { query: string; category?: string; include_params?: boolean };
-      const allDefs = tools.getDefinitions();
-      const q = query.trim().toLowerCase();
-
-      // "all" or "*" returns everything
-      const showAll = q === 'all' || q === '*';
-
-      // Split query into individual words for AND matching
-      const queryWords = q.split(/\s+/).filter(Boolean);
-
-      const matches = allDefs.filter(d => {
-        if (d.name === 'search_tools' || d.name === 'get_tool_help' || d.name === 'use_tool' || d.name === 'batch_use_tool') return false;
-        if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
-
-        if (showAll) return true;
-
-        // Build searchable text: split underscored names into words
-        const tags = TOOL_SEARCH_TAGS[d.name] ?? d.tags ?? [];
-        const searchBlob = [
-          d.name.toLowerCase().replace(/[_\-]/g, ' '),
-          d.name.toLowerCase(),
-          d.description.toLowerCase(),
-          (d.category ?? '').toLowerCase(),
-          ...tags.map(tag => tag.toLowerCase()),
-        ].join(' ');
-
-        // Every query word must appear somewhere in the search blob
-        return queryWords.every(word => searchBlob.includes(word));
-      });
-
-      if (matches.length === 0) {
-        return { content: `No tools found for "${query}". Tips:\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"` };
-      }
-
-      // include_params defaults to true — return full parameter docs unless explicitly false
-      if (include_params !== false) {
-        const sections = matches.map(d => formatFullToolHelp(tools, d.name));
-        return { content: [`Found ${matches.length} tool(s) for "${query}" (with parameters):`, '', ...sections.join('\n\n---\n\n').split('\n')].join('\n') };
-      }
-
-      const lines = matches.map(d => `- **${d.name}**: ${d.description.slice(0, 100)}${d.description.length > 100 ? '...' : ''}`);
-      return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines].join('\n') };
-    });
+    tools.register(chatSearchToolsDef, (args) => executeSearchTools(tools, args as Record<string, unknown>));
   }
 
   // Register inspect_tool_source — view source code of any tool
   const chatInspectToolSourceDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'inspect_tool_source');
   if (chatInspectToolSourceDef) {
-    tools.register(chatInspectToolSourceDef, async (args): Promise<CoreToolResult> => {
-      const { tool_name } = args as { tool_name: string };
-      if (!tool_name || typeof tool_name !== 'string') {
-        return { content: 'Provide a "tool_name" parameter.', isError: true };
-      }
-
-      const customToolsRepo = createCustomToolsRepo(userId);
-
-      // 1. Check if it's a custom tool
-      const customTool = await customToolsRepo.getByName(tool_name);
-      if (customTool) {
-        const sections: string[] = [
-          `## Tool: ${customTool.name}`,
-          `**Category:** ${customTool.category ?? 'Custom'}`,
-          `**Type:** custom (v${customTool.version}, created by ${customTool.createdBy})`,
-          `**Status:** ${customTool.status}`,
-          '',
-          '### Description',
-          customTool.description,
-          '',
-          '### Parameters',
-          '```json',
-          JSON.stringify(customTool.parameters, null, 2),
-          '```',
-          '',
-          '### Source Code',
-          '```javascript',
-          customTool.code,
-          '```',
-        ];
-        if (customTool.permissions?.length) {
-          sections.push('', `**Permissions:** ${customTool.permissions.join(', ')}`);
-        }
-        sections.push('', '### Improvement Tips', '- You can update this tool directly with `update_custom_tool`.');
-        return { content: sections.join('\n') };
-      }
-
-      // 2. Check if it's a built-in tool
-      const def = tools.getDefinition(tool_name);
-      if (def) {
-        const source = getToolSource(tool_name);
-        const sections: string[] = [
-          `## Tool: ${def.name}`,
-          `**Category:** ${def.category ?? 'Unknown'}`,
-          `**Type:** built-in`,
-          '',
-          '### Description',
-          def.description,
-          '',
-          '### Parameters',
-          '```json',
-          JSON.stringify(def.parameters, null, 2),
-          '```',
-        ];
-        if (source) {
-          sections.push('', '### Source Code', '```typescript', source, '```');
-        } else {
-          sections.push('', '*Source code not available for this tool.*');
-        }
-        sections.push('', '### Improvement Tips', '- Built-in tools cannot be modified directly. Use `create_tool` to create an improved custom version that overrides or extends this tool.');
-        return { content: sections.join('\n') };
-      }
-
-      // 3. Not found — suggest similar tools
-      const similar = findSimilarTools(tools, tool_name);
-      const hint = similar.length > 0
-        ? `\n\nDid you mean one of these?\n${similar.map(s => `  - ${s}`).join('\n')}`
-        : '\n\nUse search_tools("keyword") to find the correct tool name.';
-      return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
-    });
+    tools.register(chatInspectToolSourceDef, (args) => executeInspectToolSource(tools, userId, args as Record<string, unknown>));
   }
 
-  // Register get_tool_help with a closure over the tools registry
-  // Supports both single tool_name and batch tool_names array
+  // Register get_tool_help — parameter docs for one or more tools
   const chatGetToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
   if (chatGetToolHelpDef) {
-    tools.register(chatGetToolHelpDef, async (args): Promise<CoreToolResult> => {
-      const { tool_name, tool_names } = args as { tool_name?: string; tool_names?: string[] };
-
-      // Resolve list of tool names (batch or single)
-      const names: string[] = tool_names?.length ? tool_names : tool_name ? [tool_name] : [];
-      if (names.length === 0) {
-        return { content: 'Provide either "tool_name" (string) or "tool_names" (array) parameter.', isError: true };
-      }
-
-      const results: string[] = [];
-      const notFound: string[] = [];
-      for (const name of names) {
-        if (!tools.getDefinition(name)) {
-          notFound.push(name);
-          continue;
-        }
-        results.push(formatFullToolHelp(tools, name));
-      }
-
-      if (notFound.length > 0) {
-        const similar = notFound.flatMap(n => findSimilarTools(tools, n));
-        const hint = similar.length > 0
-          ? `\nDid you mean one of these?\n${[...new Set(similar)].map(s => `  • ${s}`).join('\n')}\n\nUse search_tools("keyword") to find the correct tool name.`
-          : '\nUse search_tools("keyword") to discover available tools.';
-        results.push(`Tools not found: ${notFound.join(', ')}${hint}`);
-      }
-
-      return { content: results.join('\n\n---\n\n'), isError: notFound.length > 0 && results.length === notFound.length };
-    });
+    tools.register(chatGetToolHelpDef, (args) => executeGetToolHelp(tools, args as Record<string, unknown>));
   }
 
   // Register use_tool proxy (executes any registered tool by name)
