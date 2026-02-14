@@ -43,7 +43,7 @@
       "undici": ">=6.23.0"
     }
   },
-  "packageManager": "pnpm@10.28.2",
+  "packageManager": "pnpm@10.29.3",
   "engines": {
     "node": ">=22.0.0",
     "pnpm": ">=10.0.0"
