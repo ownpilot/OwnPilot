@@ -14,11 +14,8 @@ import {
   type AIProvider,
   type BudgetConfig,
 } from '@ownpilot/core';
-import { getLog } from '../services/log.js';
 import { apiResponse, apiError, getIntParam, getUserId, ERROR_CODES, getErrorMessage, validateQueryEnum } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
-
-const log = getLog('Costs');
 
 export const costRoutes = new Hono();
 

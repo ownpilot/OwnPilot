@@ -47,7 +47,7 @@ const CREATE_TABLE_SQL = `
 `;
 
 // In-memory cache for sync access (populated at startup)
-let settingsCache: Map<string, unknown> = new Map();
+const settingsCache: Map<string, unknown> = new Map();
 let cacheInitialized = false;
 
 export class SettingsRepository extends BaseRepository {

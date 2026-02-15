@@ -7,7 +7,6 @@
 
 import { Hono } from 'hono';
 import { getAuditLogger } from '../audit/index.js';
-import type { AuditSeverity } from '@ownpilot/core';
 import { apiResponse, apiError, getIntParam, ERROR_CODES, validateQueryEnum } from './helpers.js';
 
 const app = new Hono();

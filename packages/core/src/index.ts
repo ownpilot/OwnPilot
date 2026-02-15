@@ -1,8 +1,8 @@
 /**
  * @ownpilot/core
  *
- * Zero-dependency secure gateway foundation.
- * Uses only Node.js built-in modules.
+ * Secure AI agent engine and tool framework.
+ * Core crypto/sandbox use only Node.js built-ins; Google integration requires googleapis.
  *
  * @packageDocumentation
  */

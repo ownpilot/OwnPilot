@@ -61,6 +61,11 @@ vi.mock('../services/dashboard.js', () => ({
   briefingCache: mockBriefingCache,
 }));
 
+vi.mock('./settings.js', () => ({
+  getDefaultProvider: vi.fn(async () => null),
+  getDefaultModel: vi.fn(async () => null),
+}));
+
 // Import after mocks
 const { dashboardRoutes } = await import('./dashboard.js');
 

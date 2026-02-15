@@ -6,7 +6,6 @@
 
 import { Hono } from 'hono';
 import {
-  type TriggerType,
   type CreateTriggerInput,
   type UpdateTriggerInput,
 } from '../db/repositories/triggers.js';
