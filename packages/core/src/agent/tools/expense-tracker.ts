@@ -11,6 +11,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
+import { getErrorMessage } from '../../services/error-utils.js';
 
 // =============================================================================
 // Types
@@ -254,7 +255,7 @@ export const addExpenseExecutor: ToolExecutor = async (args, _context): Promise<
     };
   } catch (error) {
     return {
-      content: `Error adding expense: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error adding expense: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -370,7 +371,7 @@ export const batchAddExpensesExecutor: ToolExecutor = async (args, _context): Pr
     };
   } catch (error) {
     return {
-      content: `Error adding expenses: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error adding expenses: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -582,7 +583,7 @@ export const queryExpensesExecutor: ToolExecutor = async (args, _context): Promi
     };
   } catch (error) {
     return {
-      content: `Error querying expenses: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error querying expenses: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -668,7 +669,7 @@ export const exportExpensesExecutor: ToolExecutor = async (args, _context): Prom
     };
   } catch (error) {
     return {
-      content: `Error exporting expenses: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error exporting expenses: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -812,7 +813,7 @@ export const expenseSummaryExecutor: ToolExecutor = async (args, _context): Prom
     };
   } catch (error) {
     return {
-      content: `Error generating summary: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error generating summary: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -903,7 +904,7 @@ export const deleteExpenseExecutor: ToolExecutor = async (args, _context): Promi
     };
   } catch (error) {
     return {
-      content: `Error deleting expense: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error deleting expense: ${getErrorMessage(error)}`,
       isError: true,
     };
   }

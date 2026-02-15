@@ -10,6 +10,7 @@ import type { Message, ToolCall, ToolResult, ToolDefinition } from '../agent/typ
 import type { ToolRegistry } from '../agent/tools.js';
 import type { DataGateway, DataStoreType } from '../data-gateway/index.js';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 // =============================================================================
 // Types
@@ -313,7 +314,7 @@ export class AgentExecutor {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = getErrorMessage(error);
 
       this.log(`[${executionId}] Execution failed: ${errorMessage}`);
 
@@ -415,12 +416,13 @@ export class AgentExecutor {
     };
 
     const timeoutMs = this.config.toolTimeout;
+    let timer: NodeJS.Timeout;
     const result = await Promise.race([
       this.toolRegistry.execute(toolName, args, toolContext),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`Tool '${toolName}' timed out after ${timeoutMs}ms`)), timeoutMs)
-      ),
-    ]).catch((err: Error) => ({ ok: false as const, error: err }));
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`Tool '${toolName}' timed out after ${timeoutMs}ms`)), timeoutMs);
+      }),
+    ]).finally(() => clearTimeout(timer)).catch((err: Error) => ({ ok: false as const, error: err }));
 
     if (result.ok) {
       return { content: result.value.content };

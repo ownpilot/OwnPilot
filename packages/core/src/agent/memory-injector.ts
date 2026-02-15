@@ -14,6 +14,7 @@
 import type { ToolDefinition } from './types.js';
 import type { UserProfile } from '../memory/conversation.js';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 const log = getLog('MemoryInjector');
 import { getPersonalMemoryStore, type ComprehensiveProfile } from '../memory/personal.js';
@@ -249,7 +250,7 @@ export class MemoryInjector {
 
       return `Relevant information from memory:\n${relevantInfo}`;
     } catch (error) {
-      log.warn('Failed to retrieve memory context:', error instanceof Error ? error.message : error);
+      log.warn('Failed to retrieve memory context:', getErrorMessage(error));
       return null;
     }
   }

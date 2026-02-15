@@ -13,6 +13,8 @@ import {
   loadApiKeysToEnvironment,
   settingsRepo,
   initializePlugins,
+  RATE_LIMIT_MAX_REQUESTS,
+  RATE_LIMIT_WINDOW_MS,
 } from '@ownpilot/gateway';
 
 // Database settings keys for gateway config
@@ -78,11 +80,11 @@ export async function startServer(options: ServerOptions): Promise<void> {
     const dbRateLimitMax = await settingsRepo.get<number>(GATEWAY_RATE_LIMIT_MAX_KEY);
     const dbRateLimitWindow = await settingsRepo.get<number>(GATEWAY_RATE_LIMIT_WINDOW_KEY);
 
-    const windowMs = dbRateLimitWindow ?? parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? '60000', 10);
-    const maxRequests = dbRateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10);
+    const windowMs = dbRateLimitWindow ?? parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? String(RATE_LIMIT_WINDOW_MS), 10);
+    const maxRequests = dbRateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX ?? String(RATE_LIMIT_MAX_REQUESTS), 10);
     config.rateLimit = {
-      windowMs: Number.isFinite(windowMs) && windowMs > 0 ? windowMs : 60000,
-      maxRequests: Number.isFinite(maxRequests) && maxRequests > 0 ? maxRequests : 100,
+      windowMs: Number.isFinite(windowMs) && windowMs > 0 ? windowMs : RATE_LIMIT_WINDOW_MS,
+      maxRequests: Number.isFinite(maxRequests) && maxRequests > 0 ? maxRequests : RATE_LIMIT_MAX_REQUESTS,
     };
   }
 
@@ -111,7 +113,7 @@ export async function startServer(options: ServerOptions): Promise<void> {
   console.log(`   Rate Limit: ${config.rateLimit ? `${config.rateLimit.maxRequests} req/min` : 'disabled'}`);
   console.log('');
 
-  serve(
+  const server = serve(
     {
       fetch: app.fetch,
       port,
@@ -132,9 +134,13 @@ export async function startServer(options: ServerOptions): Promise<void> {
   );
 
   // Handle shutdown signals
+  let isShuttingDown = false;
   const shutdown = () => {
-    console.log('\n\n🛑 Shutting down...');
-    process.exit(0);
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log('\n\n🛑 Shutting down gracefully...');
+    server.close();
+    setTimeout(() => process.exit(0), 3000).unref();
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);

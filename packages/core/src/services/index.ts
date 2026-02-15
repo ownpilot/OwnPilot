@@ -19,6 +19,9 @@ export { Services } from './tokens.js';
 // Logging
 export type { ILogService, LogLevel } from './log-service.js';
 export { getLog } from './get-log.js';
+
+// Error Utilities
+export { getErrorMessage } from './error-utils.js';
 export type {
   ISessionService,
   Session,

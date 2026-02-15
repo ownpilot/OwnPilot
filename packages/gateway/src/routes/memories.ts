@@ -14,7 +14,7 @@ import type {
 } from '../db/repositories/memories.js';
 import { MemoryServiceError } from '../services/memory-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError, truncate } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError, truncate, validateQueryEnum, getErrorMessage } from './helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Memories');
@@ -30,7 +30,7 @@ export const memoriesRoutes = new Hono();
  */
 memoriesRoutes.get('/', async (c) => {
   const userId = getUserId(c);
-  const type = c.req.query('type') as MemoryType | undefined;
+  const type = validateQueryEnum(c.req.query('type'), ['fact', 'preference', 'conversation', 'event', 'skill'] as const);
   const limit = getIntParam(c, 'limit', 20, 1, 100);
   const rawMinImportance = c.req.query('minImportance');
   const minImportance = rawMinImportance !== undefined
@@ -83,7 +83,7 @@ memoriesRoutes.post('/', async (c) => {
       log.warn('Memory validation error', { userId, error: err.message });
       return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: err.message }, 400);
     }
-    log.error('Memory creation error', { userId, error: err instanceof Error ? err.message : 'Unknown error' });
+    log.error('Memory creation error', { userId, error: getErrorMessage(err) });
     throw err;
   }
 });
@@ -94,7 +94,7 @@ memoriesRoutes.post('/', async (c) => {
 memoriesRoutes.get('/search', async (c) => {
   const userId = getUserId(c);
   const query = c.req.query('q') ?? '';
-  const type = c.req.query('type') as MemoryType | undefined;
+  const type = validateQueryEnum(c.req.query('type'), ['fact', 'preference', 'conversation', 'event', 'skill'] as const);
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   if (!query) {
@@ -509,7 +509,7 @@ export async function executeMemoryTool(
     }
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Unknown error',
+      error: getErrorMessage(err),
     };
   }
 }

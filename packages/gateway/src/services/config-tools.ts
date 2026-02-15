@@ -8,7 +8,7 @@
 
 import type { ToolDefinition, ToolExecutionResult } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { maskSecret } from '../routes/helpers.js';
+import { maskSecret, getErrorMessage } from '../routes/helpers.js';
 
 // =============================================================================
 // Tool Definitions
@@ -265,7 +265,7 @@ async function executeSetConfigEntry(
     }
   } catch (error) {
     return {
-      content: { error: `Failed to save config: ${error instanceof Error ? error.message : String(error)}` },
+      content: { error: `Failed to save config: ${getErrorMessage(error)}` },
       isError: true,
     };
   }
@@ -299,7 +299,7 @@ export async function executeConfigTool(
     }
     return { success: true, result: result.content };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 

@@ -8,6 +8,7 @@ import type { Result } from '../types/result.js';
 import { err } from '../types/result.js';
 import { InternalError, TimeoutError } from '../types/errors.js';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 const log = getLog('Retry');
 
@@ -51,7 +52,7 @@ export function isRetryableError(error: unknown): boolean {
   if (error instanceof TimeoutError) return true;
 
   // Check error message for common transient issues
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const message = getErrorMessage(error).toLowerCase();
 
   // Network errors
   if (message.includes('network') || message.includes('econnreset') || message.includes('econnrefused')) {
@@ -148,7 +149,7 @@ export async function withRetry<T>(
 
         onRetry(attempt + 1, result.error, delayMs);
         log.info(`Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delayMs}ms...`);
-        log.info(`Error: ${result.error instanceof Error ? result.error.message : String(result.error)}`);
+        log.info(`Error: ${getErrorMessage(result.error)}`);
 
         await sleep(delayMs);
         continue;
@@ -165,7 +166,7 @@ export async function withRetry<T>(
 
         onRetry(attempt + 1, error, delayMs);
         log.info(`Attempt ${attempt + 1}/${maxRetries} threw exception, retrying in ${delayMs}ms...`);
-        log.info(`Error: ${error instanceof Error ? error.message : String(error)}`);
+        log.info(`Error: ${getErrorMessage(error)}`);
 
         await sleep(delayMs);
         continue;
@@ -177,7 +178,7 @@ export async function withRetry<T>(
   }
 
   // Max retries exceeded
-  const errorMessage = lastError instanceof Error ? lastError.message : String(lastError);
+  const errorMessage = getErrorMessage(lastError);
   return err(new InternalError(`Max retries (${maxRetries}) exceeded. Last error: ${errorMessage}`));
 }
 

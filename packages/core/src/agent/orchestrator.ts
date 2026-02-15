@@ -10,6 +10,7 @@ import type { Message, ToolCall } from './types.js';
 import { injectMemoryIntoPrompt, type MemoryInjectionOptions } from './memory-injector.js';
 import { getEventSystem } from '../events/index.js';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 const log = getLog('Orchestrator');
 
@@ -221,7 +222,7 @@ export class AgentOrchestrator {
       });
     } catch (error: unknown) {
       context.status = 'failed';
-      context.error = error instanceof Error ? error.message : String(error);
+      context.error = getErrorMessage(error);
       context.endTime = new Date();
       getEventSystem().emit('agent.error', `orchestrator:${context.id}`, {
         agentId: context.id,
@@ -272,7 +273,7 @@ export class AgentOrchestrator {
       context.endTime = new Date();
     } catch (error: unknown) {
       context.status = 'failed';
-      context.error = error instanceof Error ? error.message : String(error);
+      context.error = getErrorMessage(error);
       context.endTime = new Date();
     } finally {
       this.currentExecution = null;
@@ -593,7 +594,7 @@ export class AgentOrchestrator {
       record.result = result.content;
       record.success = !result.isError;
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = getErrorMessage(error);
       record.error = errorMessage;
       record.result = { error: errorMessage };
     }

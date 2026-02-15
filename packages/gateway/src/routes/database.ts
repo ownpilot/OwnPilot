@@ -8,7 +8,7 @@ import { Hono } from 'hono';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, sanitizeId, getErrorMessage } from './helpers.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
@@ -92,8 +92,26 @@ function quoteIdentifier(name: string): string {
 
 export const databaseRoutes = new Hono();
 
-// Database admin routes are protected by the global auth middleware (api-key / jwt / none)
-// configured in app.ts. No additional admin key guard is needed.
+// Additional admin guard for destructive database operations.
+// When ADMIN_KEY is set, destructive routes (POST/DELETE) require X-Admin-Key header.
+// GET routes (status, stats, export) are allowed with standard auth only.
+const ADMIN_KEY = process.env.ADMIN_KEY;
+
+if (ADMIN_KEY) {
+  databaseRoutes.use('*', async (c, next) => {
+    // Allow GET requests with standard auth (read-only)
+    if (c.req.method === 'GET') {
+      return next();
+    }
+    // Destructive operations (POST, DELETE) require admin key
+    const providedKey = c.req.header('X-Admin-Key');
+    if (!providedKey || providedKey !== ADMIN_KEY) {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Admin key required for database write operations. Set X-Admin-Key header.' }, 403);
+    }
+    return next();
+  });
+  log.info('Database admin routes: X-Admin-Key guard enabled for write operations');
+}
 
 // Backup directory
 const getBackupDir = () => {
@@ -396,7 +414,7 @@ databaseRoutes.delete('/backup/:filename', (c) => {
     unlinkSync(backupPath);
     return apiResponse(c, { message: `Deleted backup: ${sanitizeId(basename(filename))}` });
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: err instanceof Error ? err.message : 'Failed to delete backup' }, 500);
+    return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: getErrorMessage(err, 'Failed to delete backup') }, 500);
   }
 });
 
@@ -465,7 +483,7 @@ databaseRoutes.post('/maintenance', async (c) => {
       } catch (err) {
         operationStatus.isRunning = false;
         operationStatus.lastResult = 'failure';
-        operationStatus.lastError = err instanceof Error ? err.message : 'Maintenance failed';
+        operationStatus.lastError = getErrorMessage(err, 'Maintenance failed');
         operationStatus.output?.push(`Error: ${operationStatus.lastError}`);
       }
     })();
@@ -611,7 +629,7 @@ databaseRoutes.get('/export', async (c) => {
           exportData[table] = rows;
         }
       } catch (err) {
-        errors.push(`${table}: ${err instanceof Error ? err.message : 'Failed'}`);
+        errors.push(`${table}: ${getErrorMessage(err, 'Failed')}`);
       }
     }
 
@@ -640,7 +658,7 @@ databaseRoutes.get('/export', async (c) => {
     return c.body(JSON.stringify(exportPayload, null, 2));
 
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.EXPORT_FAILED, message: err instanceof Error ? err.message : 'Export failed' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXPORT_FAILED, message: getErrorMessage(err, 'Export failed') }, 500);
   }
 });
 
@@ -787,7 +805,7 @@ databaseRoutes.post('/import', async (c) => {
               totalErrors++;
               // Log but continue
               if (results[table].errors <= 3) {
-                operationStatus.output?.push(`  Error in ${table}: ${err instanceof Error ? err.message : 'Unknown'}`);
+                operationStatus.output?.push(`  Error in ${table}: ${getErrorMessage(err, 'Unknown')}`);
               }
             }
           }
@@ -802,7 +820,7 @@ databaseRoutes.post('/import', async (c) => {
       } catch (err) {
         operationStatus.isRunning = false;
         operationStatus.lastResult = 'failure';
-        operationStatus.lastError = err instanceof Error ? err.message : 'Import failed';
+        operationStatus.lastError = getErrorMessage(err, 'Import failed');
         operationStatus.output?.push(`Import failed: ${operationStatus.lastError}`);
       }
     })();
@@ -814,7 +832,7 @@ databaseRoutes.post('/import', async (c) => {
       }, 202);
 
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.IMPORT_FAILED, message: err instanceof Error ? err.message : 'Import failed' }, 500);
+    return apiError(c, { code: ERROR_CODES.IMPORT_FAILED, message: getErrorMessage(err, 'Import failed') }, 500);
   }
 });
 
@@ -881,7 +899,7 @@ databaseRoutes.post('/export/save', async (c) => {
       });
 
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.EXPORT_SAVE_FAILED, message: err instanceof Error ? err.message : 'Export save failed' }, 500);
+    return apiError(c, { code: ERROR_CODES.EXPORT_SAVE_FAILED, message: getErrorMessage(err, 'Export save failed') }, 500);
   }
 });
 
@@ -927,10 +945,10 @@ databaseRoutes.post('/migrate-schema', async (c) => {
   } catch (err) {
     operationStatus.isRunning = false;
     operationStatus.lastResult = 'failure';
-    operationStatus.lastError = err instanceof Error ? err.message : 'Migration failed';
+    operationStatus.lastError = getErrorMessage(err, 'Migration failed');
     operationStatus.output?.push(`Migration failed: ${operationStatus.lastError}`);
 
-    return apiError(c, { code: ERROR_CODES.MIGRATION_FAILED, message: err instanceof Error ? err.message : 'Schema migration failed' }, 500);
+    return apiError(c, { code: ERROR_CODES.MIGRATION_FAILED, message: getErrorMessage(err, 'Schema migration failed') }, 500);
   }
 });
 

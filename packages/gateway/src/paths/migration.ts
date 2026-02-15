@@ -9,6 +9,7 @@ import { existsSync, copyFileSync, mkdirSync, readdirSync, statSync } from 'node
 import { join, dirname } from 'node:path';
 import { getDataPaths, getLegacyDataPath, hasLegacyData, initializeDataDirectories } from './index.js';
 import { getLog } from '../services/log.js';
+import { getErrorMessage } from '../routes/helpers.js';
 
 const log = getLog('Migration');
 
@@ -140,7 +141,7 @@ export function migrateData(_options: { backup?: boolean } = {}): MigrationResul
       result.migratedFiles.push(src);
       log.info(`[Migration] Migrated: ${src}`);
     } catch (error) {
-      const errMsg = `Failed to migrate ${src}: ${error instanceof Error ? error.message : String(error)}`;
+      const errMsg = `Failed to migrate ${src}: ${getErrorMessage(error)}`;
       result.errors.push(errMsg);
       log.error(`[Migration] ${errMsg}`);
     }
@@ -165,7 +166,7 @@ export function migrateData(_options: { backup?: boolean } = {}): MigrationResul
       result.migratedFiles.push(`${src}/`);
       log.info(`[Migration] Migrated directory: ${src}/`);
     } catch (error) {
-      const errMsg = `Failed to migrate ${src}/: ${error instanceof Error ? error.message : String(error)}`;
+      const errMsg = `Failed to migrate ${src}/: ${getErrorMessage(error)}`;
       result.errors.push(errMsg);
       log.error(`[Migration] ${errMsg}`);
     }

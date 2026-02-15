@@ -15,7 +15,7 @@ import {
   type BudgetConfig,
 } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
-import { apiResponse, apiError, getIntParam, getUserId, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { apiResponse, apiError, getIntParam, getUserId, ERROR_CODES, getErrorMessage, validateQueryEnum } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 const log = getLog('Costs');
@@ -28,14 +28,6 @@ const usageTracker = new UsageTracker();
 // Initialize budget manager with tracker
 const budgetManager = new BudgetManager(usageTracker);
 
-// Initialize tracker
-(async () => {
-  try {
-    await usageTracker.initialize();
-  } catch (error) {
-    log.error('Failed to initialize usage tracker', { error });
-  }
-})();
 
 /**
  * Helper to get period start date
@@ -65,7 +57,7 @@ function getPeriodStart(period: 'day' | 'week' | 'month' | 'year'): Date {
  * GET /costs - Get cost summary
  */
 costRoutes.get('/', async (c) => {
-  const period = (c.req.query('period') ?? 'month') as 'day' | 'week' | 'month' | 'year';
+  const period = validateQueryEnum(c.req.query('period'), ['day', 'week', 'month', 'year'] as const) ?? 'month';
   const userId = getUserId(c); // Use authenticated user, not arbitrary query param
 
   const startDate = getPeriodStart(period);
@@ -139,7 +131,7 @@ costRoutes.get('/usage', async (c) => {
  * GET /costs/breakdown - Get detailed cost breakdown
  */
 costRoutes.get('/breakdown', async (c) => {
-  const period = (c.req.query('period') ?? 'month') as 'day' | 'week' | 'month' | 'year';
+  const period = validateQueryEnum(c.req.query('period'), ['day', 'week', 'month', 'year'] as const) ?? 'month';
   const userId = getUserId(c);
 
   const startDate = getPeriodStart(period);
@@ -198,7 +190,7 @@ costRoutes.get('/breakdown', async (c) => {
  * GET /costs/models - Get model pricing information
  */
 costRoutes.get('/models', (c) => {
-  const provider = c.req.query('provider') as AIProvider | undefined;
+  const provider = validateQueryEnum(c.req.query('provider'), ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'zhipu', 'cohere', 'together', 'fireworks', 'perplexity', 'openrouter', 'xai', 'local', 'custom'] as const);
 
   let models = MODEL_PRICING;
 
@@ -323,7 +315,7 @@ costRoutes.get('/history', async (c) => {
   const limit = getIntParam(c, 'limit', 100, 1, 1000);
   const days = getIntParam(c, 'days', 30, 1, MAX_DAYS_LOOKBACK);
   const userId = getUserId(c);
-  const provider = c.req.query('provider') as AIProvider | undefined;
+  const provider = validateQueryEnum(c.req.query('provider'), ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'zhipu', 'cohere', 'together', 'fireworks', 'perplexity', 'openrouter', 'xai', 'local', 'custom'] as const);
   const model = c.req.query('model');
 
   const startDate = new Date();
@@ -432,7 +424,7 @@ costRoutes.post('/record', async (c) => {
  * GET /costs/export - Export usage data
  */
 costRoutes.get('/export', async (c) => {
-  const format = (c.req.query('format') ?? 'json') as 'json' | 'csv';
+  const format = validateQueryEnum(c.req.query('format'), ['json', 'csv'] as const) ?? 'json';
   const days = getIntParam(c, 'days', 30, 1, MAX_DAYS_LOOKBACK);
 
   const startDate = new Date();

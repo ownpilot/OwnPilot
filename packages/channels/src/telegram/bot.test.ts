@@ -4,19 +4,21 @@ import type { TelegramConfig } from '../types/index.js';
 
 // Mock grammy Bot class
 vi.mock('grammy', () => ({
-  Bot: vi.fn().mockImplementation(() => ({
-    on: vi.fn(),
-    command: vi.fn(),
-    catch: vi.fn(),
-    start: vi.fn().mockResolvedValue(undefined),
-    stop: vi.fn().mockResolvedValue(undefined),
-    api: {
-      getMe: vi.fn().mockResolvedValue({ username: 'test_bot' }),
-      sendMessage: vi.fn().mockResolvedValue({ message_id: 123 }),
-      setWebhook: vi.fn().mockResolvedValue(true),
-      deleteWebhook: vi.fn().mockResolvedValue(true),
-    },
-  })),
+  Bot: vi.fn().mockImplementation(function () {
+    return {
+      on: vi.fn(),
+      command: vi.fn(),
+      catch: vi.fn(),
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(undefined),
+      api: {
+        getMe: vi.fn().mockResolvedValue({ username: 'test_bot' }),
+        sendMessage: vi.fn().mockResolvedValue({ message_id: 123 }),
+        setWebhook: vi.fn().mockResolvedValue(true),
+        deleteWebhook: vi.fn().mockResolvedValue(true),
+      },
+    };
+  }),
   webhookCallback: vi.fn().mockReturnValue(() => Promise.resolve(new Response())),
 }));
 

@@ -19,6 +19,7 @@ import type {
 import { type IProvider, createProvider } from './provider.js';
 import { ToolRegistry, registerCoreTools } from './tools.js';
 import { ConversationMemory, createMemory } from './memory.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 /**
  * Default agent configuration
@@ -176,7 +177,7 @@ export class Agent {
         onProgress: options?.onProgress,
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = getErrorMessage(error);
       this.state = { ...this.state, lastError: errorMessage };
       return err(new InternalError(errorMessage));
     } finally {
@@ -323,7 +324,7 @@ export class Agent {
               // Rejected tool call — report error back to the model
               executionResults.push({
                 toolCallId: 'unknown',
-                content: `Tool execution failed: ${outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason)}`,
+                content: `Tool execution failed: ${getErrorMessage(outcome.reason)}`,
                 isError: true,
               });
             }

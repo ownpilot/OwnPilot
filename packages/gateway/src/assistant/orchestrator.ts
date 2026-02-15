@@ -108,7 +108,13 @@ export async function buildEnhancedSystemPrompt(
     goalsUsed = goals.length;
     const goalLines: string[] = ['## Active Goals'];
 
-    for (const goal of goals) {
+    // Fetch all goal steps in parallel (avoids N+1 sequential queries)
+    const allSteps = await Promise.all(
+      goals.map(g => goalService.getSteps(options.userId, g.id).catch(() => []))
+    );
+
+    for (let i = 0; i < goals.length; i++) {
+      const goal = goals[i]!;
       const progressStr = `${Math.round(goal.progress)}%`;
       const dueStr = goal.dueDate ? ` (due: ${goal.dueDate})` : '';
       goalLines.push(`- **${goal.title}** [${progressStr}]${dueStr}`);
@@ -116,18 +122,13 @@ export async function buildEnhancedSystemPrompt(
         goalLines.push(`  ${goal.description}`);
       }
 
-      // Include pending steps
-      try {
-        const steps = await goalService.getSteps(options.userId, goal.id);
-        const pendingSteps = steps.filter((s) => s.status === 'pending' || s.status === 'in_progress');
-        if (pendingSteps.length > 0) {
-          goalLines.push('  Next steps:');
-          pendingSteps.slice(0, 3).forEach((s) => {
-            goalLines.push(`  - [ ] ${s.title}`);
-          });
-        }
-      } catch {
-        // Skip steps if fetch fails — don't break system prompt generation
+      // Include pending steps (already fetched in parallel)
+      const pendingSteps = allSteps[i]!.filter((s) => s.status === 'pending' || s.status === 'in_progress');
+      if (pendingSteps.length > 0) {
+        goalLines.push('  Next steps:');
+        pendingSteps.slice(0, 3).forEach((s) => {
+          goalLines.push(`  - [ ] ${s.title}`);
+        });
       }
     }
 

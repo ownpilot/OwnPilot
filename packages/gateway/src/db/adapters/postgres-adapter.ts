@@ -122,7 +122,11 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   dateSubtract(column: string, amount: number, unit: 'days' | 'hours' | 'minutes'): string {
-    return `${column} - INTERVAL '${amount} ${unit}'`;
+    // Validate amount to prevent SQL injection via string interpolation
+    if (!Number.isFinite(amount) || amount < 0) {
+      throw new Error(`Invalid interval amount: ${amount}`);
+    }
+    return `${column} - INTERVAL '${Math.floor(amount)} ${unit}'`;
   }
 
   placeholder(index: number): string {

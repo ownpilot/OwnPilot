@@ -882,6 +882,16 @@ const agentConfigCache = new Map<string, AgentConfig>();
 const chatAgentCache = new Map<string, Agent>(); // Chat agents keyed by provider:model
 // Cache size limits imported from config/defaults.ts
 
+/** LRU touch: move entry to end of Map iteration order */
+function lruGet<V>(cache: Map<string, V>, key: string): V | undefined {
+  const value = cache.get(key);
+  if (value !== undefined) {
+    cache.delete(key);
+    cache.set(key, value);
+  }
+  return value;
+}
+
 // In-flight creation promises to prevent duplicate concurrent creation
 const pendingAgents = new Map<string, Promise<Agent>>();
 const pendingChatAgents = new Map<string, Promise<Agent>>();
@@ -981,20 +991,12 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   const toolDefs = [...filteredStandardTools, ...alwaysIncludedToolDefs];
 
-  // Build memory context from persistent memories
-  const memoryContext = await buildMemoryContext('default');
-
-  // Build goal context from active goals
-  const goalContext = await buildGoalContext('default');
-
-  // Inject memory and goal context into system prompt
+  // Note: Memory/goal context is NOT injected here at agent creation time.
+  // The MessageBus context-injection middleware (or buildEnhancedSystemPrompt)
+  // injects fresh memory/goal context per-request, avoiding duplicate DB fetches.
   const basePrompt = record.systemPrompt ?? 'You are a helpful personal AI assistant.';
-  const contextSections = [basePrompt];
-  if (memoryContext) contextSections.push(memoryContext);
-  if (goalContext) contextSections.push(goalContext);
-  const promptWithContext = contextSections.join('\n\n');
 
-  const { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(promptWithContext, {
+  const { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
     userId: 'default',
     tools: toolDefs,
     workspaceContext: getWorkspaceContext(),
@@ -1067,7 +1069,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
  * share a single createAgentFromRecord call instead of racing.
  */
 async function getOrCreateAgentInstance(record: AgentRecord): Promise<Agent> {
-  const cached = agentCache.get(record.id);
+  const cached = lruGet(agentCache, record.id);
   if (cached) return cached;
 
   // Check if creation is already in-flight
@@ -1398,8 +1400,8 @@ agentRoutes.post('/resync', async (c) => {
  * Uses promise-based deduplication to prevent concurrent creation races.
  */
 export async function getAgent(id: string): Promise<Agent | undefined> {
-  // First check cache
-  const cached = agentCache.get(id);
+  // First check cache (LRU touch)
+  const cached = lruGet(agentCache, id);
   if (cached) return cached;
 
   // Check if creation is already in-flight
@@ -1436,8 +1438,8 @@ export async function getAgent(id: string): Promise<Agent | undefined> {
 export async function getOrCreateDefaultAgent(): Promise<Agent> {
   const defaultId = 'default';
 
-  // Check cache first
-  const cached = agentCache.get(defaultId);
+  // Check cache first (LRU touch)
+  const cached = lruGet(agentCache, defaultId);
   if (cached) return cached;
 
   // Check if creation is already in-flight
@@ -1494,8 +1496,8 @@ export async function getOrCreateDefaultAgent(): Promise<Agent> {
 export async function getOrCreateChatAgent(provider: string, model: string): Promise<Agent> {
   const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
 
-  // Check cache first
-  const cached = chatAgentCache.get(cacheKey);
+  // Check cache first (LRU touch)
+  const cached = lruGet(chatAgentCache, cacheKey);
   if (cached) return cached;
 
   // Check if creation is already in-flight

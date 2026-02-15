@@ -8,7 +8,7 @@ import type {
   ChatRequest,
   StreamChunkResponse,
 } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError, getErrorMessage, truncate } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError, getErrorMessage, truncate, validateQueryEnum } from './helpers.js';
 import { MAX_DAYS_LOOKBACK, AI_META_TOOL_NAMES } from '../config/defaults.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
 import { usageTracker } from './costs.js';
@@ -278,46 +278,49 @@ async function processNonStreamingViaBus(
   });
 }
 
-/**
- * Process a streaming request through the MessageBus pipeline.
- * Creates StreamCallbacks that write SSE events.
- */
-async function processStreamingViaBus(
-  bus: IMessageBus,
-  sseStream: Parameters<Parameters<typeof streamSSE>[1]>[0],
-  params: {
-    agent: NonNullable<Awaited<ReturnType<typeof getAgent>>>;
-    chatMessage: string;
-    body: ChatRequest & { provider?: string; model?: string; workspaceId?: string };
-    provider: string;
-    model: string;
-    userId: string;
-    agentId: string;
-    conversationId: string;
-  },
-): Promise<void> {
-  const { agent, chatMessage, body, provider, model, userId, agentId, conversationId } = params;
-  const streamStartTime = performance.now();
+/** Shared configuration for creating stream callbacks. */
+interface StreamingConfig {
+  sseStream: Parameters<Parameters<typeof streamSSE>[1]>[0];
+  conversationId: string;
+  userId: string;
+  agentId: string;
+  provider: string;
+  model: string;
+  historyLength: number;
+}
 
-  // Content accumulated for suggestion extraction on stream completion
-  let streamedContent = '';
-
-  // Trace data accumulated during streaming
-  let lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
-  const traceToolCalls: Array<{
+/** Accumulated state from streaming, available after stream completes. */
+interface StreamState {
+  streamedContent: string;
+  lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+  traceToolCalls: Array<{
     name: string;
     arguments?: Record<string, unknown>;
     result?: string;
     success: boolean;
     duration?: number;
     startTime?: number;
-  }> = [];
+  }>;
+  startTime: number;
+}
 
-  // Build StreamCallbacks that write SSE events
-  const streamCallbacks: StreamCallbacks = {
+/**
+ * Create shared StreamCallbacks for SSE streaming.
+ * Used by both the MessageBus and Legacy streaming paths to eliminate duplication.
+ */
+function createStreamCallbacks(config: StreamingConfig): { callbacks: StreamCallbacks; state: StreamState } {
+  const { sseStream, conversationId, userId, agentId, provider, model, historyLength } = config;
+
+  const state: StreamState = {
+    streamedContent: '',
+    lastUsage: undefined,
+    traceToolCalls: [],
+    startTime: performance.now(),
+  };
+
+  const callbacks: StreamCallbacks = {
     onChunk(chunk: StreamChunk) {
-      // Accumulate content for suggestion extraction
-      if (chunk.content) streamedContent += chunk.content;
+      if (chunk.content) state.streamedContent += chunk.content;
 
       const data: StreamChunkResponse & { trace?: Record<string, unknown> } = {
         id: chunk.id,
@@ -339,26 +342,25 @@ async function processStreamingViaBus(
           : undefined,
       };
 
-      // Add trace info and extract suggestions when stream is done
       if (chunk.done) {
-        const { suggestions } = extractSuggestions(streamedContent);
+        const { suggestions } = extractSuggestions(state.streamedContent);
         if (suggestions.length > 0) data.suggestions = suggestions;
-        const streamDuration = Math.round(performance.now() - streamStartTime);
+        const streamDuration = Math.round(performance.now() - state.startTime);
         data.trace = {
           duration: streamDuration,
-          toolCalls: traceToolCalls.map(tc => ({
+          toolCalls: state.traceToolCalls.map(tc => ({
             name: tc.name,
             arguments: tc.arguments,
             result: tc.result,
             success: tc.success,
             duration: tc.duration,
           })),
-          modelCalls: lastUsage ? [{
+          modelCalls: state.lastUsage ? [{
             provider,
             model,
-            inputTokens: lastUsage.promptTokens,
-            outputTokens: lastUsage.completionTokens,
-            tokens: lastUsage.totalTokens,
+            inputTokens: state.lastUsage.promptTokens,
+            outputTokens: state.lastUsage.completionTokens,
+            tokens: state.lastUsage.totalTokens,
             duration: streamDuration,
           }] : [],
           autonomyChecks: [],
@@ -366,7 +368,7 @@ async function processStreamingViaBus(
           memoryOps: { adds: 0, recalls: 0 },
           triggersFired: [],
           errors: [],
-          events: traceToolCalls.map(tc => ({
+          events: state.traceToolCalls.map(tc => ({
             type: 'tool_call',
             name: tc.name,
             duration: tc.duration,
@@ -376,7 +378,7 @@ async function processStreamingViaBus(
             provider,
             model,
             endpoint: `/api/v1/chat`,
-            messageCount: (body.history?.length ?? 0) + 1,
+            messageCount: historyLength + 1,
           },
           response: {
             status: 'success' as const,
@@ -385,9 +387,8 @@ async function processStreamingViaBus(
         };
       }
 
-      // Store last usage for cost tracking
       if (chunk.usage) {
-        lastUsage = {
+        state.lastUsage = {
           promptTokens: chunk.usage.promptTokens,
           completionTokens: chunk.usage.completionTokens,
           totalTokens: chunk.usage.totalTokens,
@@ -425,7 +426,7 @@ async function processStreamingViaBus(
     onToolStart(toolCall: ToolCall) {
       const { displayName, displayArgs } = extractToolDisplay(toolCall);
 
-      traceToolCalls.push({
+      state.traceToolCalls.push({
         name: displayName,
         arguments: displayArgs,
         success: true,
@@ -455,7 +456,7 @@ async function processStreamingViaBus(
         }
       } catch { /* ignore parse errors */ }
 
-      const traceEntry = traceToolCalls.find(tc => tc.name === displayName && !tc.result);
+      const traceEntry = state.traceToolCalls.find(tc => tc.name === displayName && !tc.result);
       if (traceEntry) {
         traceEntry.result = result.content;
         traceEntry.success = !(result.isError ?? false);
@@ -463,7 +464,6 @@ async function processStreamingViaBus(
         delete traceEntry.startTime;
       }
 
-      // Detect local execution metadata from result content
       let sandboxed: boolean | undefined;
       let executionMode: string | undefined;
       try {
@@ -514,6 +514,77 @@ async function processStreamingViaBus(
     },
   };
 
+  return { callbacks, state };
+}
+
+/**
+ * Record streaming usage/cost metrics.
+ */
+async function recordStreamUsage(
+  state: StreamState,
+  params: { userId: string; conversationId: string; provider: string; model: string; error?: string },
+): Promise<void> {
+  const latencyMs = Math.round(performance.now() - state.startTime);
+  if (state.lastUsage) {
+    try {
+      await usageTracker.record({
+        userId: params.userId,
+        sessionId: params.conversationId,
+        provider: params.provider as AIProvider,
+        model: params.model,
+        inputTokens: state.lastUsage.promptTokens,
+        outputTokens: state.lastUsage.completionTokens,
+        totalTokens: state.lastUsage.totalTokens,
+        latencyMs,
+        requestType: 'chat',
+      });
+    } catch { /* Ignore tracking errors */ }
+  } else if (params.error) {
+    try {
+      await usageTracker.record({
+        userId: params.userId,
+        provider: params.provider as AIProvider,
+        model: params.model,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        latencyMs,
+        requestType: 'chat',
+        error: params.error,
+      });
+    } catch { /* Ignore */ }
+  }
+}
+
+/**
+ * Process a streaming request through the MessageBus pipeline.
+ */
+async function processStreamingViaBus(
+  bus: IMessageBus,
+  sseStream: Parameters<Parameters<typeof streamSSE>[1]>[0],
+  params: {
+    agent: NonNullable<Awaited<ReturnType<typeof getAgent>>>;
+    chatMessage: string;
+    body: ChatRequest & { provider?: string; model?: string; workspaceId?: string };
+    provider: string;
+    model: string;
+    userId: string;
+    agentId: string;
+    conversationId: string;
+  },
+): Promise<void> {
+  const { agent, chatMessage, body, provider, model, userId, agentId, conversationId } = params;
+
+  const { callbacks, state } = createStreamCallbacks({
+    sseStream,
+    conversationId,
+    userId,
+    agentId,
+    provider,
+    model,
+    historyLength: body.history?.length ?? 0,
+  });
+
   // Normalize into NormalizedMessage
   const normalized: NormalizedMessage = {
     id: crypto.randomUUID(),
@@ -533,7 +604,7 @@ async function processStreamingViaBus(
 
   // Process through the pipeline
   const result = await bus.process(normalized, {
-    stream: streamCallbacks,
+    stream: callbacks,
     context: {
       agent,
       userId,
@@ -545,41 +616,13 @@ async function processStreamingViaBus(
     },
   });
 
-  // Record usage if not already done by middleware
-  const streamLatency = Math.round(performance.now() - streamStartTime);
-  if (lastUsage) {
-    try {
-      await usageTracker.record({
-        userId,
-        sessionId: conversationId,
-        provider: provider as AIProvider,
-        model,
-        inputTokens: lastUsage.promptTokens,
-        outputTokens: lastUsage.completionTokens,
-        totalTokens: lastUsage.totalTokens,
-        latencyMs: streamLatency,
-        requestType: 'chat',
-      });
-    } catch {
-      // Ignore tracking errors
-    }
-  } else if (result.response.metadata.error) {
-    try {
-      await usageTracker.record({
-        userId,
-        provider: provider as AIProvider,
-        model,
-        inputTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-        latencyMs: streamLatency,
-        requestType: 'chat',
-        error: result.response.metadata.error as string,
-      });
-    } catch {
-      // Ignore
-    }
-  }
+  await recordStreamUsage(state, {
+    userId,
+    conversationId,
+    provider,
+    model,
+    error: result.response.metadata.error as string | undefined,
+  });
 }
 
 /**
@@ -762,10 +805,18 @@ chatRoutes.post('/', async (c) => {
     // ── Legacy Streaming Path (fallback) ──────────────────────────────────
     return streamSSE(c, async (stream) => {
       const conversationId = agent.getConversation().id;
-      const streamStartTime = performance.now();
       const streamAgentId = body.agentId ?? `chat-${provider}`;
       const streamUserId = getUserId(c);
-      let lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+
+      const { callbacks, state } = createStreamCallbacks({
+        sseStream: stream,
+        conversationId,
+        userId: streamUserId,
+        agentId: streamAgentId,
+        provider,
+        model,
+        historyLength: body.history?.length ?? 0,
+      });
 
       // Wire real-time approval for 'prompt' mode execution
       agent.setRequestApproval(async (_category, actionType, description, params) => {
@@ -789,214 +840,13 @@ chatRoutes.post('/', async (c) => {
         agent.setAdditionalTools(body.directTools);
       }
 
-      // Content accumulated for suggestion extraction on stream completion
-      let legacyStreamedContent = '';
-
-      // Collect tool execution info for trace
-      const traceToolCalls: Array<{
-        name: string;
-        arguments?: Record<string, unknown>;
-        result?: string;
-        success: boolean;
-        duration?: number;
-        startTime?: number;
-      }> = [];
-
       const result = await agent.chat(chatMessage, {
         stream: true,
-        onBeforeToolCall: async (toolCall) => {
-          const approval = await checkToolCallApproval(streamUserId, toolCall, {
-            agentId: streamAgentId,
-            conversationId,
-            provider,
-            model,
-          });
-
-          if (!approval.approved) {
-            // Notify client about blocked tool call
-            await stream.writeSSE({
-              data: JSON.stringify({
-                type: 'tool_blocked',
-                toolCall: { id: toolCall.id, name: toolCall.name },
-                reason: approval.reason,
-              }),
-              event: 'autonomy',
-            });
-          }
-
-          return {
-            approved: approval.approved,
-            reason: approval.reason,
-          };
-        },
-        onChunk: async (chunk) => {
-          // Accumulate content for suggestion extraction
-          if (chunk.content) legacyStreamedContent += chunk.content;
-
-          const data: StreamChunkResponse & { trace?: Record<string, unknown> } = {
-            id: chunk.id,
-            conversationId,
-            delta: chunk.content,
-            toolCalls: chunk.toolCalls?.map((tc) => {
-              let args: Record<string, unknown> | undefined;
-              try { args = tc.arguments ? JSON.parse(tc.arguments) : undefined; } catch { args = undefined; }
-              return { id: tc.id, name: tc.name, arguments: args };
-            }),
-            done: chunk.done,
-            finishReason: chunk.finishReason,
-            usage: chunk.usage
-              ? {
-                  promptTokens: chunk.usage.promptTokens,
-                  completionTokens: chunk.usage.completionTokens,
-                  totalTokens: chunk.usage.totalTokens,
-                }
-              : undefined,
-          };
-
-          // Add trace info and extract suggestions when stream is done
-          if (chunk.done) {
-            const { suggestions } = extractSuggestions(legacyStreamedContent);
-            if (suggestions.length > 0) data.suggestions = suggestions;
-            const streamDuration = Math.round(performance.now() - streamStartTime);
-            data.trace = {
-              duration: streamDuration,
-              toolCalls: traceToolCalls.map(tc => ({
-                name: tc.name,
-                arguments: tc.arguments,
-                result: tc.result,
-                success: tc.success,
-                duration: tc.duration,
-              })),
-              modelCalls: lastUsage ? [{
-                provider,
-                model,
-                inputTokens: lastUsage.promptTokens,
-                outputTokens: lastUsage.completionTokens,
-                tokens: lastUsage.totalTokens,
-                duration: streamDuration,
-              }] : [],
-              autonomyChecks: [],
-              dbOperations: { reads: 0, writes: 0 },
-              memoryOps: { adds: 0, recalls: 0 },
-              triggersFired: [],
-              errors: [],
-              events: traceToolCalls.map(tc => ({
-                type: 'tool_call',
-                name: tc.name,
-                duration: tc.duration,
-                success: tc.success,
-              })),
-              request: {
-                provider,
-                model,
-                endpoint: `/api/v1/chat`,
-                messageCount: (body.history?.length ?? 0) + 1,
-              },
-              response: {
-                status: 'success' as const,
-                finishReason: chunk.finishReason,
-              },
-            };
-          }
-
-          // Store last usage for cost tracking
-          if (chunk.usage) {
-            lastUsage = {
-              promptTokens: chunk.usage.promptTokens,
-              completionTokens: chunk.usage.completionTokens,
-              totalTokens: chunk.usage.totalTokens,
-            };
-          }
-
-          await stream.writeSSE({
-            data: JSON.stringify(data),
-            event: chunk.done ? 'done' : 'chunk',
-          });
-        },
-        onToolStart: async (toolCall) => {
-          const { displayName, displayArgs } = extractToolDisplay(toolCall);
-
-          // Add to trace collection with real tool name
-          traceToolCalls.push({
-            name: displayName,
-            arguments: displayArgs,
-            success: true, // Will be updated in onToolEnd
-            startTime: performance.now(),
-          });
-
-          await stream.writeSSE({
-            data: JSON.stringify({
-              type: 'tool_start',
-              tool: {
-                id: toolCall.id,
-                name: displayName,
-                arguments: displayArgs,
-              },
-              timestamp: new Date().toISOString(),
-            }),
-            event: 'progress',
-          });
-        },
-        onToolEnd: async (toolCall, result) => {
-          // Extract real tool name for display
-          let displayName = toolCall.name;
-          try {
-            if (toolCall.name === 'use_tool' && toolCall.arguments) {
-              const args = JSON.parse(toolCall.arguments);
-              if (args.tool_name) displayName = args.tool_name;
-            }
-          } catch { /* ignore parse errors */ }
-
-          // Update trace with result (match by real tool name)
-          const traceEntry = traceToolCalls.find(tc => tc.name === displayName && !tc.result);
-          if (traceEntry) {
-            traceEntry.result = result.content;
-            traceEntry.success = !(result.isError ?? false);
-            traceEntry.duration = result.durationMs ?? (traceEntry.startTime ? Math.round(performance.now() - traceEntry.startTime) : undefined);
-            delete traceEntry.startTime;
-          }
-
-          // Detect local execution metadata from result content
-          let sandboxed: boolean | undefined;
-          let executionMode: string | undefined;
-          try {
-            const parsed = JSON.parse(result.content);
-            if (typeof parsed === 'object' && parsed !== null && 'sandboxed' in parsed) {
-              sandboxed = parsed.sandboxed;
-              executionMode = parsed.executionMode;
-            }
-          } catch { /* not JSON or no sandbox info */ }
-
-          await stream.writeSSE({
-            data: JSON.stringify({
-              type: 'tool_end',
-              tool: {
-                id: toolCall.id,
-                name: displayName,
-              },
-              result: {
-                success: !(result.isError ?? false),
-                preview: result.content.substring(0, 500),
-                durationMs: result.durationMs,
-                ...(sandboxed !== undefined && { sandboxed }),
-                ...(executionMode && { executionMode }),
-              },
-              timestamp: new Date().toISOString(),
-            }),
-            event: 'progress',
-          });
-        },
-        onProgress: async (message, data) => {
-          await stream.writeSSE({
-            data: JSON.stringify({
-              type: 'status',
-              message,
-              data,
-              timestamp: new Date().toISOString(),
-            }),
-            event: 'progress',
-          });
-        },
+        onBeforeToolCall: callbacks.onBeforeToolCall,
+        onChunk: callbacks.onChunk,
+        onToolStart: callbacks.onToolStart,
+        onToolEnd: callbacks.onToolEnd,
+        onProgress: callbacks.onProgress,
       });
 
       // Clear direct tools after chat completes
@@ -1008,73 +858,50 @@ chatRoutes.post('/', async (c) => {
       agent.setRequestApproval(undefined);
       agent.setExecutionPermissions(undefined);
 
-      const streamLatency = Math.round(performance.now() - streamStartTime);
-
       if (!result.ok) {
-        // Record failed streaming request
-        try {
-          await usageTracker.record({
-            userId: streamUserId,
-            provider: provider as AIProvider,
-            model,
-            inputTokens: 0,
-            outputTokens: 0,
-            totalTokens: 0,
-            latencyMs: streamLatency,
-            requestType: 'chat',
-            error: result.error.message,
-          });
-        } catch (costErr) {
-          log.warn('Failed to log cost metrics', { error: costErr instanceof Error ? costErr.message : costErr });
-        }
-
         await stream.writeSSE({
-          data: JSON.stringify({
-            error: result.error.message,
-          }),
+          data: JSON.stringify({ error: result.error.message }),
           event: 'error',
         });
-      } else if (lastUsage) {
-        // Record successful streaming request
-        try {
-          await usageTracker.record({
-            userId: streamUserId,
-            sessionId: conversationId,
-            provider: provider as AIProvider,
-            model,
-            inputTokens: lastUsage.promptTokens,
-            outputTokens: lastUsage.completionTokens,
-            totalTokens: lastUsage.totalTokens,
-            latencyMs: streamLatency,
-            requestType: 'chat',
-          });
-        } catch {
-          // Ignore tracking errors
-        }
+        await recordStreamUsage(state, {
+          userId: streamUserId,
+          conversationId,
+          provider,
+          model,
+          error: result.error.message,
+        });
+      } else {
+        await recordStreamUsage(state, {
+          userId: streamUserId,
+          conversationId,
+          provider,
+          model,
+        });
       }
 
-      // Save streaming chat to database (same as non-streaming)
+      // Save streaming chat to database
       if (result.ok) {
         try {
           const chatRepo = new ChatRepository(streamUserId);
           const logsRepo = new LogsRepository(streamUserId);
+          const streamLatency = Math.round(performance.now() - state.startTime);
 
           // Build trace info from collected data
           const streamTraceInfo = {
             duration: streamLatency,
-            toolCalls: traceToolCalls.map(tc => ({
+            toolCalls: state.traceToolCalls.map(tc => ({
               name: tc.name,
               arguments: tc.arguments,
               result: tc.result,
               success: tc.success,
               duration: tc.duration,
             })),
-            modelCalls: lastUsage ? [{
+            modelCalls: state.lastUsage ? [{
               provider,
               model,
-              inputTokens: lastUsage.promptTokens,
-              outputTokens: lastUsage.completionTokens,
-              tokens: lastUsage.totalTokens,
+              inputTokens: state.lastUsage.promptTokens,
+              outputTokens: state.lastUsage.completionTokens,
+              tokens: state.lastUsage.totalTokens,
               duration: streamLatency,
             }] : [],
             request: {
@@ -1117,8 +944,8 @@ chatRoutes.post('/', async (c) => {
             model,
             toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
             trace: streamTraceInfo as Record<string, unknown>,
-            inputTokens: lastUsage?.promptTokens,
-            outputTokens: lastUsage?.completionTokens,
+            inputTokens: state.lastUsage?.promptTokens,
+            outputTokens: state.lastUsage?.completionTokens,
           });
 
           // Extract payload breakdown from debug log
@@ -1141,9 +968,9 @@ chatRoutes.post('/', async (c) => {
             },
             responseBody: { contentLength: result.value.content.length, toolCalls: result.value.toolCalls?.length ?? 0 },
             statusCode: 200,
-            inputTokens: lastUsage?.promptTokens,
-            outputTokens: lastUsage?.completionTokens,
-            totalTokens: lastUsage?.totalTokens,
+            inputTokens: state.lastUsage?.promptTokens,
+            outputTokens: state.lastUsage?.completionTokens,
+            totalTokens: state.lastUsage?.totalTokens,
             durationMs: streamLatency,
             ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
             userAgent: c.req.header('user-agent'),
@@ -1277,7 +1104,7 @@ chatRoutes.post('/', async (c) => {
       }
     } catch (error) {
       // Don't fail chat if orchestrator fails, just log
-      recordTraceError('Orchestrator failed', { error: error instanceof Error ? error.message : String(error) });
+      recordTraceError('Orchestrator failed', { error: getErrorMessage(error) });
       log.warn('Failed to build enhanced prompt:', error);
     }
 
@@ -1489,7 +1316,7 @@ chatRoutes.post('/', async (c) => {
       }
     }
   }).catch((error) => {
-    log.error('Post-chat processing failed', { error: error instanceof Error ? error.message : error });
+    log.error('Post-chat processing failed', { error: getErrorMessage(error) });
   });
 
   // Build trace info for response with enhanced debug data
@@ -1979,7 +1806,7 @@ chatRoutes.get('/logs', async (c) => {
   const userId = getUserId(c);
   const limit = parseLimit(c.req.query('limit'), 100);
   const offset = parseOffset(c.req.query('offset'));
-  const type = c.req.query('type') as 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other' | undefined;
+  const type = validateQueryEnum(c.req.query('type'), ['chat', 'completion', 'embedding', 'tool', 'agent', 'other'] as const);
   const hasError = c.req.query('errors') === 'true' ? true : c.req.query('errors') === 'false' ? false : undefined;
   const conversationId = c.req.query('conversationId');
 

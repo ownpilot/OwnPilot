@@ -16,6 +16,7 @@ import type { PluginId } from '../types/branded.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 // =============================================================================
 // Types
@@ -409,7 +410,7 @@ export class PluginIsolatedStorage implements IsolatedStorage {
     } catch (e) {
       return err({
         type: 'serialization_failed',
-        error: e instanceof Error ? e.message : String(e),
+        error: getErrorMessage(e),
       });
     }
 
@@ -638,7 +639,7 @@ export class PluginIsolatedNetwork implements IsolatedNetwork {
       }
       return err({
         type: 'network_error',
-        message: e instanceof Error ? e.message : String(e),
+        message: getErrorMessage(e),
       });
     }
   }

@@ -11,6 +11,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 import type { SchedulerNotificationBridge, TaskNotificationConfig } from './notifications.js';
 
@@ -733,7 +734,7 @@ export class Scheduler {
         startedAt,
         completedAt,
         duration,
-        error: error instanceof Error ? error.message : String(error),
+        error: getErrorMessage(error),
       };
 
       task.lastStatus = 'failed';

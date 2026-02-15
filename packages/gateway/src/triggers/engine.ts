@@ -63,6 +63,8 @@ export class TriggerEngine {
   private pollTimer: NodeJS.Timeout | null = null;
   private conditionTimer: NodeJS.Timeout | null = null;
   private running = false;
+  private isProcessingSchedule = false;
+  private isProcessingConditions = false;
   private eventHandlers: Map<string, EventHandler[]> = new Map();
   private actionHandlers: Map<string, (payload: Record<string, unknown>) => Promise<ActionResult>> = new Map();
   private chatHandler: ChatHandler | null = null;
@@ -330,10 +332,13 @@ export class TriggerEngine {
    * Process due schedule triggers
    */
   private async processScheduleTriggers(): Promise<void> {
-    const dueTriggers = await this.triggerService.getDueTriggers(this.config.userId);
-
-    for (const trigger of dueTriggers) {
-      await this.executeTrigger(trigger);
+    if (this.isProcessingSchedule) return;
+    this.isProcessingSchedule = true;
+    try {
+      const dueTriggers = await this.triggerService.getDueTriggers(this.config.userId);
+      await Promise.allSettled(dueTriggers.map(t => this.executeTrigger(t)));
+    } finally {
+      this.isProcessingSchedule = false;
     }
   }
 
@@ -365,6 +370,9 @@ export class TriggerEngine {
    * Process condition-based triggers
    */
   private async processConditionTriggers(): Promise<void> {
+    if (this.isProcessingConditions) return;
+    this.isProcessingConditions = true;
+    try {
     const triggers = await this.triggerService.getConditionTriggers(this.config.userId);
 
     for (const trigger of triggers) {
@@ -383,6 +391,9 @@ export class TriggerEngine {
       if (shouldFire) {
         await this.executeTrigger(trigger);
       }
+    }
+    } finally {
+      this.isProcessingConditions = false;
     }
   }
 

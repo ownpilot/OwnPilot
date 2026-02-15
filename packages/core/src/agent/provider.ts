@@ -26,6 +26,7 @@ import {
   buildResponseDebugInfo,
   calculatePayloadBreakdown,
 } from './debug.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 /**
  * Default retry configuration for AI provider calls
@@ -448,7 +449,7 @@ export class OpenAIProvider extends BaseProvider {
           logError('openai', timeoutError, 'Request timeout');
           return err(timeoutError);
         }
-        const internalError = new InternalError(`OpenAI request failed: ${error instanceof Error ? error.message : String(error)}`);
+        const internalError = new InternalError(`OpenAI request failed: ${getErrorMessage(error)}`);
         logError('openai', internalError, 'Request exception');
         return err(internalError);
       }
@@ -553,7 +554,7 @@ export class OpenAIProvider extends BaseProvider {
       }
     } catch (error) {
       yield err(
-        new InternalError(`OpenAI stream failed: ${error instanceof Error ? error.message : String(error)}`)
+        new InternalError(`OpenAI stream failed: ${getErrorMessage(error)}`)
       );
     }
   }
@@ -582,7 +583,7 @@ export class OpenAIProvider extends BaseProvider {
       return ok(models);
     } catch (error) {
       return err(
-        new InternalError(`Failed to fetch models: ${error instanceof Error ? error.message : String(error)}`)
+        new InternalError(`Failed to fetch models: ${getErrorMessage(error)}`)
       );
     }
   }
@@ -760,7 +761,7 @@ export class AnthropicProvider extends BaseProvider {
           logError('anthropic', timeoutError, 'Request timeout');
           return err(timeoutError);
         }
-        const internalError = new InternalError(`Anthropic request failed: ${error instanceof Error ? error.message : String(error)}`);
+        const internalError = new InternalError(`Anthropic request failed: ${getErrorMessage(error)}`);
         logError('anthropic', internalError, 'Request exception');
         return err(internalError);
       }
@@ -887,7 +888,7 @@ export class AnthropicProvider extends BaseProvider {
       }
     } catch (error) {
       yield err(
-        new InternalError(`Anthropic stream failed: ${error instanceof Error ? error.message : String(error)}`)
+        new InternalError(`Anthropic stream failed: ${getErrorMessage(error)}`)
       );
     }
   }

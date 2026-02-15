@@ -7,6 +7,7 @@
 
 import type { MessageMiddleware } from '@ownpilot/core';
 import { buildEnhancedSystemPrompt } from '../../assistant/index.js';
+import { getErrorMessage } from '../../routes/helpers.js';
 import { getLog } from '../log.js';
 
 const log = getLog('Middleware:ContextInjection');
@@ -47,7 +48,7 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
 
       ctx.set('contextStats', stats);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorMsg = getErrorMessage(error, String(error));
       log.warn('Failed to build enhanced prompt', { error: errorMsg });
       ctx.addWarning(`Context injection failed: ${errorMsg}`);
     }

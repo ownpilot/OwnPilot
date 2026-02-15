@@ -7,6 +7,8 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
+import { getErrorMessage } from '../../services/error-utils.js';
+import { isBlockedUrl } from './web-fetch.js';
 
 /** Maximum file size for read/write operations (10 MB) */
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -212,7 +214,7 @@ export const readFileExecutor: ToolExecutor = async (args, context): Promise<Too
     };
   } catch (error) {
     return {
-      content: `Error reading file: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error reading file: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -292,7 +294,7 @@ export const writeFileExecutor: ToolExecutor = async (args, context): Promise<To
     };
   } catch (error) {
     return {
-      content: `Error writing file: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error writing file: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -406,7 +408,7 @@ export const listDirectoryExecutor: ToolExecutor = async (args, context): Promis
     };
   } catch (error) {
     return {
-      content: `Error listing directory: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error listing directory: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -544,7 +546,7 @@ export const searchFilesExecutor: ToolExecutor = async (args, context): Promise<
     };
   } catch (error) {
     return {
-      content: `Error searching files: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error searching files: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -603,6 +605,14 @@ export const downloadFileExecutor: ToolExecutor = async (args, context): Promise
     // Create directory
     await fs.mkdir(path.dirname(filePath), { recursive: true });
 
+    // SSRF protection: block internal/private URLs
+    if (isBlockedUrl(url)) {
+      return {
+        content: 'Error: URL is blocked. Cannot download from internal or private addresses.',
+        isError: true,
+      };
+    }
+
     // Download file
     const response = await fetch(url);
     if (!response.ok) {
@@ -627,7 +637,7 @@ export const downloadFileExecutor: ToolExecutor = async (args, context): Promise
     };
   } catch (error) {
     return {
-      content: `Error downloading file: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error downloading file: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -678,7 +688,7 @@ export const fileInfoExecutor: ToolExecutor = async (args, context): Promise<Too
     };
   } catch (error) {
     return {
-      content: `Error getting file info: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error getting file info: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -736,7 +746,7 @@ export const deleteFileExecutor: ToolExecutor = async (args, context): Promise<T
     };
   } catch (error) {
     return {
-      content: `Error deleting: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error deleting: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -822,7 +832,7 @@ export const copyFileExecutor: ToolExecutor = async (args, context): Promise<Too
     };
   } catch (error) {
     return {
-      content: `Error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }

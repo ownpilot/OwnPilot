@@ -47,12 +47,12 @@ import { initializePluginsRepo } from './db/repositories/plugins.js';
 import { initializeLocalProvidersRepo } from './db/repositories/local-providers.js';
 import { seedConfigServices } from './db/seeds/config-services-seed.js';
 import { gatewayConfigCenter } from './services/config-center-impl.js';
-import { startTriggerEngine, initializeDefaultTriggers } from './triggers/index.js';
+import { startTriggerEngine, stopTriggerEngine, initializeDefaultTriggers } from './triggers/index.js';
 import { seedExamplePlans } from './db/seeds/plans-seed.js';
 import { createChannelServiceImpl } from './channels/service-impl.js';
 import { initServiceRegistry, Services, getEventSystem, setChannelService, setModuleResolver } from '@ownpilot/core';
 import { createLogService } from './services/log-service-impl.js';
-import { RATE_LIMIT_WINDOW_MS } from './config/defaults.js';
+import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS } from './config/defaults.js';
 import { createSessionService } from './services/session-service-impl.js';
 import { createMessageBus } from './services/message-bus-impl.js';
 import { registerPipelineMiddleware } from './services/middleware/index.js';
@@ -67,7 +67,11 @@ import { createGoalServiceImpl } from './services/goal-service-impl.js';
 import { createTriggerServiceImpl } from './services/trigger-service-impl.js';
 import { createPlanServiceImpl } from './services/plan-service-impl.js';
 import { createResourceServiceImpl } from './services/resource-service-impl.js';
+import { stopAllRateLimiters } from './middleware/rate-limit.js';
+import { getAdapterSync } from './db/adapters/index.js';
+import { getApprovalManager } from './autonomy/approvals.js';
 import { getLog } from './services/log.js';
+import { getErrorMessage } from './routes/helpers.js';
 
 const log = getLog('Server');
 
@@ -87,8 +91,8 @@ function loadConfig(): Partial<GatewayConfig> {
   const dbApiKeys = settingsRepo.get<string>(GATEWAY_API_KEYS_KEY);
   const dbJwtSecret = settingsRepo.get<string>(GATEWAY_JWT_SECRET_KEY);
 
-  // Auth type from database or ENV
-  const authType = (dbAuthType ?? process.env.AUTH_TYPE ?? 'none') as 'none' | 'api-key' | 'jwt';
+  // Auth type from database or ENV (default: api-key for security)
+  const authType = (dbAuthType ?? process.env.AUTH_TYPE ?? 'api-key') as 'none' | 'api-key' | 'jwt';
 
   // API keys and JWT secret from database or ENV
   const apiKeys = dbApiKeys?.split(',').filter(Boolean) ?? process.env.API_KEYS?.split(',');
@@ -99,11 +103,11 @@ function loadConfig(): Partial<GatewayConfig> {
   const dbRateLimitMax = settingsRepo.get<number>(GATEWAY_RATE_LIMIT_MAX_KEY);
 
   const rateLimitWindowMs = dbRateLimitWindow ?? parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? String(RATE_LIMIT_WINDOW_MS), 10);
-  const rateLimitMax = dbRateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX ?? '1000', 10);
+  const rateLimitMax = dbRateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX ?? String(RATE_LIMIT_MAX_REQUESTS), 10);
 
   return {
     port: parseInt(process.env.PORT ?? '8080', 10),
-    host: process.env.HOST ?? '0.0.0.0',
+    host: process.env.HOST ?? '127.0.0.1',
     corsOrigins: process.env.CORS_ORIGINS?.split(',').filter(Boolean),
     rateLimit: process.env.RATE_LIMIT_DISABLED !== 'true'
       ? {
@@ -151,7 +155,7 @@ async function main() {
   // Log PostgreSQL configuration
   log.info('Database: PostgreSQL');
   log.info(`POSTGRES_HOST=${process.env.POSTGRES_HOST || 'localhost'}`);
-  log.info(`POSTGRES_PORT=${process.env.POSTGRES_PORT || '5432'}`);
+  log.info(`POSTGRES_PORT=${process.env.POSTGRES_PORT || '25432'}`);
   log.info(`POSTGRES_DB=${process.env.POSTGRES_DB || 'ownpilot'}`);
 
   // Initialize data directories (creates platform-specific directories)
@@ -317,9 +321,18 @@ async function main() {
 
   // Security warnings at startup
   if (config.auth?.type === 'none' || !config.auth?.type) {
-    log.warn('Authentication is DISABLED (AUTH_TYPE=none)');
-    log.warn('Anyone with network access can use this API.');
-    log.warn('Set AUTH_TYPE=api-key and API_KEYS=your-secret-key for security.');
+    const isExposed = host !== '127.0.0.1' && host !== 'localhost' && host !== '::1';
+    if (isExposed) {
+      log.warn('==========================================================');
+      log.warn('  SECURITY WARNING: Auth DISABLED on a network interface!');
+      log.warn(`  HOST=${host} — anyone on the network can access all APIs.`);
+      log.warn('  Set AUTH_TYPE=api-key and API_KEYS=your-secret-key,');
+      log.warn('  or change HOST=127.0.0.1 to restrict to localhost only.');
+      log.warn('==========================================================');
+    } else {
+      log.warn('Authentication is DISABLED (AUTH_TYPE=none).');
+      log.warn('Only localhost can access the API. Set AUTH_TYPE=api-key for remote access.');
+    }
   }
   if (config.corsOrigins?.includes('*')) {
     log.warn('CORS is set to wildcard (*). Any website can make API requests.');
@@ -348,10 +361,59 @@ async function main() {
   // Attach WebSocket gateway to HTTP server
   wsGateway.attachToServer(server as Server);
   log.info(`WebSocket Gateway attached at ws://${host}:${port}/ws`);
+
+  // ── Graceful Shutdown ─────────────────────────────────────────────────────
+  let isShuttingDown = false;
+
+  async function gracefulShutdown(signal: string): Promise<void> {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
+    log.info(`Received ${signal}, shutting down gracefully...`);
+
+    // 1. Stop accepting new HTTP connections
+    (server as Server).close();
+
+    // 2. Stop WebSocket gateway
+    try { await wsGateway.stop(); } catch (e) { log.warn('WS shutdown error', { error: String(e) }); }
+
+    // 3. Stop trigger engine
+    try { stopTriggerEngine(); } catch (e) { log.warn('Trigger engine stop error', { error: String(e) }); }
+
+    // 4. Stop rate limiter cleanup intervals
+    stopAllRateLimiters();
+
+    // 5. Stop approval manager cleanup
+    try { getApprovalManager().stop(); } catch (e) { log.warn('ApprovalManager stop error', { error: String(e) }); }
+
+    // 6. Close DB connection pool
+    try {
+      const adapter = getAdapterSync();
+      await adapter.close();
+    } catch (e) { log.warn('DB close error', { error: String(e) }); }
+
+    log.info('Cleanup complete, exiting.');
+
+    // Force exit after 5s if something hangs
+    setTimeout(() => process.exit(0), 5000).unref();
+  }
+
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+  // ── Global Error Handlers ─────────────────────────────────────────────────
+  process.on('unhandledRejection', (reason) => {
+    log.error('Unhandled Promise Rejection', { reason: String(reason) });
+  });
+
+  process.on('uncaughtException', (error) => {
+    log.error('Uncaught Exception — shutting down', { error: error.message, stack: error.stack });
+    gracefulShutdown('uncaughtException').finally(() => process.exit(1));
+  });
 }
 
 // Run server
 main().catch((err) => {
-  log.error('Fatal: server startup failed', { error: err instanceof Error ? err.message : err, stack: err instanceof Error ? err.stack : undefined });
+  log.error('Fatal: server startup failed', { error: getErrorMessage(err), stack: err instanceof Error ? err.stack : undefined });
   process.exit(1);
 });

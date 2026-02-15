@@ -976,9 +976,9 @@ export function createPlugin(): PluginBuilder {
 }
 
 /**
- * Create a plugin registry
+ * Create a plugin registry (internal helper)
  */
-export function createPluginRegistry(storageDir?: string): PluginRegistry {
+function createPluginRegistry(storageDir?: string): PluginRegistry {
   return new PluginRegistry(storageDir);
 }
 
@@ -1104,29 +1104,3 @@ export {
 
 // CorePlugin - built-in tools packaged as a plugin
 export { buildCorePlugin } from './core-plugin.js';
-
-// Example plugins - reference implementations
-// NOTE: Only Weather plugin is exported here. Other plugins cause circular dependencies
-// when exported from barrel files. Import them directly from ./examples/*.js if needed.
-export {
-  // Weather plugin example (Marketplace pattern - full exports)
-  WEATHER_PLUGIN_MANIFEST,
-  WeatherService,
-  createWeatherPluginTools,
-  createWeatherToolExecutors,
-  WEATHER_CURRENT_TOOL,
-  WEATHER_FORECAST_TOOL,
-  WEATHER_CONFIGURE_TOOL,
-  type WeatherCondition,
-  type CurrentWeather,
-  type ForecastEntry,
-  type WeatherAlert,
-  type WeatherResponse,
-  type WeatherPluginConfig,
-  type WeatherServiceAPI,
-  type WeatherPluginTools,
-  DEFAULT_WEATHER_CONFIG,
-  // Guidelines
-  EXAMPLE_PLUGIN_MANIFESTS,
-  PLUGIN_DEVELOPMENT_GUIDELINES,
-} from './examples/index.js';

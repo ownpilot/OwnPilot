@@ -9,6 +9,7 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
+import { getErrorMessage } from '../../services/error-utils.js';
 import {
   Scheduler,
   createScheduler,
@@ -496,7 +497,7 @@ export const createScheduledTaskExecutor: ToolExecutor = async (
     };
   } catch (error) {
     return {
-      content: `Error creating scheduled task: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error creating scheduled task: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -575,7 +576,7 @@ export const listScheduledTasksExecutor: ToolExecutor = async (
     };
   } catch (error) {
     return {
-      content: `Error listing tasks: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error listing tasks: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -687,7 +688,7 @@ export const updateScheduledTaskExecutor: ToolExecutor = async (
     };
   } catch (error) {
     return {
-      content: `Error updating task: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error updating task: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -748,7 +749,7 @@ export const deleteScheduledTaskExecutor: ToolExecutor = async (
     };
   } catch (error) {
     return {
-      content: `Error deleting task: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error deleting task: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -824,7 +825,7 @@ export const getTaskHistoryExecutor: ToolExecutor = async (
     };
   } catch (error) {
     return {
-      content: `Error getting history: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error getting history: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -892,7 +893,7 @@ export const triggerTaskExecutor: ToolExecutor = async (
     };
   } catch (error) {
     return {
-      content: `Error triggering task: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error triggering task: ${getErrorMessage(error)}`,
       isError: true,
     };
   }

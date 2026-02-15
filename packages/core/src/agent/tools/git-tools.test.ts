@@ -77,7 +77,7 @@ function failWith(message: string, stderr = ''): void {
 // Reset mocks between tests
 // ---------------------------------------------------------------------------
 beforeEach(() => {
-  vi.restoreAllMocks();
+  mockExecFile.mockReset();
 });
 
 // ===========================================================================

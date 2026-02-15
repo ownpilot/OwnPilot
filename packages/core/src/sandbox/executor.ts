@@ -19,6 +19,7 @@ import type {
 } from './types.js';
 import { DEFAULT_RESOURCE_LIMITS, DEFAULT_PERMISSIONS } from './types.js';
 import { buildSandboxContext, validateCode } from './context.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 /**
  * Sandbox executor for running untrusted code
@@ -186,7 +187,7 @@ export class SandboxExecutor {
         }
 
         // Handle other errors
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage = getErrorMessage(error);
         const errorStack = this.debug && error instanceof Error ? error.stack : undefined;
 
         return ok({

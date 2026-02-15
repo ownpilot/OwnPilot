@@ -63,7 +63,7 @@ import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST } from 
  */
 const DEFAULT_CONFIG: GatewayConfig = {
   port: 8080,
-  host: '0.0.0.0',
+  host: '127.0.0.1',
   // Default to localhost only. In production, set the CORS_ORIGINS env var
   // (comma-separated list of allowed origins, e.g. "https://my-domain.com,https://app.my-domain.com")
   corsOrigins: (() => {
@@ -79,10 +79,10 @@ const DEFAULT_CONFIG: GatewayConfig = {
     maxRequests: RATE_LIMIT_MAX_REQUESTS,
     burstLimit: RATE_LIMIT_BURST,
     softLimit: false, // Enforce rate limits
-    excludePaths: ['/health', '/api/v1/health', '/api/v1/chat/stream'],
+    excludePaths: ['/health', '/api/v1/health'],
   },
   auth: {
-    type: 'none',
+    type: 'api-key',
   },
 };
 

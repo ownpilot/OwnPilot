@@ -49,9 +49,6 @@ export * from './integrations/index.js';
 // Services (ServiceRegistry, interfaces, tokens, media, weather)
 export * from './services/index.js';
 
-// Notifications
-export * from './notifications/index.js';
-
 // Cost Tracking
 export * from './costs/index.js';
 

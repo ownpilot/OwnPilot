@@ -19,13 +19,27 @@ import type {
   TaskPriority,
 } from './index.js';
 
-import type {
-  NotificationChannel,
-  NotificationPriority,
-  NotificationRequest,
-  NotificationContent,
-  UserNotificationPreferences,
-} from '../notifications/index.js';
+// Notification types (inlined — the full notifications module was removed as dead code)
+export type NotificationChannel = 'telegram' | 'email' | 'webhook' | 'push' | 'sms';
+export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+export interface NotificationContent {
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+  actions?: Array<{ label: string; action: string }>;
+}
+export interface NotificationRequest {
+  userId: string;
+  channels: NotificationChannel[];
+  content: NotificationContent;
+  priority: NotificationPriority;
+  metadata?: Record<string, unknown>;
+}
+export interface UserNotificationPreferences {
+  channels: NotificationChannel[];
+  quietHoursStart?: string;
+  quietHoursEnd?: string;
+}
 
 // =============================================================================
 // Types

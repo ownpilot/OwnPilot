@@ -303,7 +303,7 @@ async function executeToolInternal(
       } catch (execError) {
         return {
           success: false,
-          error: execError instanceof Error ? execError.message : 'Plugin tool execution failed',
+          error: getErrorMessage(execError, 'Plugin tool execution failed'),
         };
       }
     }

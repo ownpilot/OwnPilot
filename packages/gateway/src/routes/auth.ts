@@ -11,7 +11,7 @@ import { google } from 'googleapis';
 import { settingsRepo, oauthIntegrationsRepo } from '../db/repositories/index.js';
 import type { OAuthProvider, OAuthService } from '../db/repositories/oauth-integrations.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, getErrorMessage } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, getErrorMessage, validateQueryEnum } from './helpers.js'
 
 const log = getLog('Auth');
 
@@ -179,16 +179,15 @@ authRoutes.delete('/config/google', async (c) => {
  * Start Google OAuth flow
  */
 authRoutes.get('/google/start', async (c) => {
-  const service = (c.req.query('service') || 'gmail') as OAuthService;
+  const serviceRaw = c.req.query('service');
+  const service = validateQueryEnum(serviceRaw || 'gmail', ['gmail', 'calendar', 'drive'] as const);
+  if (!service) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid service: ${sanitizeId(serviceRaw ?? '')}` }, 400);
+  }
   const rawReturnUrl = c.req.query('returnUrl') || '/settings';
   // Prevent open redirect: only allow relative paths (no protocol-relative or absolute URLs)
   const returnUrl = rawReturnUrl.startsWith('/') && !rawReturnUrl.startsWith('//') ? rawReturnUrl : '/settings';
   const userId = getUserId(c);
-
-  // Validate service
-  if (!['gmail', 'calendar', 'drive'].includes(service)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid service: ${sanitizeId(service)}` }, 400);
-  }
 
   // Get OAuth configuration
   const config = getGoogleOAuthConfig();

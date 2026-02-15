@@ -14,10 +14,10 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "typecheck": "tsc --noEmit",
+    "typecheck:ci": "tsc --noEmit --skipLibCheck false",
     "clean": "rimraf dist coverage"
   },
   "dependencies": {
-    "@ownpilot/gateway": "workspace:*",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

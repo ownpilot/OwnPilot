@@ -4,11 +4,35 @@
  */
 
 import { createMiddleware } from 'hono/factory';
+import type { Context } from 'hono';
 import type { RateLimitConfig } from '../types/index.js';
 import { apiError, ERROR_CODES } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('RateLimit');
+
+/**
+ * Whether to trust proxy headers (X-Forwarded-For, X-Real-IP).
+ * Only enable when running behind a reverse proxy (nginx, CloudFlare, etc.).
+ * Set TRUSTED_PROXY=true to enable.
+ */
+const TRUST_PROXY = process.env.TRUSTED_PROXY === 'true';
+
+/**
+ * Get client IP for rate limiting.
+ * Only trusts proxy headers when TRUSTED_PROXY=true.
+ */
+function getClientIp(c: Context): string {
+  if (TRUST_PROXY) {
+    return (
+      c.req.header('X-Forwarded-For')?.split(',')[0]?.trim() ??
+      c.req.header('X-Real-IP') ??
+      'unknown'
+    );
+  }
+  // Direct connection: ignore spoofable headers
+  return 'direct';
+}
 
 interface RateLimitEntry {
   count: number;
@@ -51,7 +75,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
 
   const store = new Map<string, RateLimitEntry>();
   const burstLimit = config.burstLimit ?? Math.floor(config.maxRequests * 1.5);
-  const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health', '/api/v1/chat/stream'];
+  const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health'];
   const maxStoreSize = 10_000;
 
   // Clean up expired entries periodically
@@ -78,10 +102,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
 
     // Use user ID if available, otherwise fall back to IP
     const userId = c.get('userId');
-    const ip =
-      c.req.header('X-Forwarded-For')?.split(',')[0]?.trim() ??
-      c.req.header('X-Real-IP') ??
-      'unknown';
+    const ip = getClientIp(c);
     const key = userId ?? `ip:${ip}`;
 
     const now = Date.now();
@@ -163,7 +184,7 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
 
   const requests = new Map<string, number[]>();
   const burstLimit = config.burstLimit ?? Math.floor(config.maxRequests * 1.5);
-  const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health', '/api/v1/chat/stream'];
+  const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health'];
   const maxStoreSize = 10_000;
 
   // Clean up old entries
@@ -191,10 +212,7 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
     }
 
     const userId = c.get('userId');
-    const ip =
-      c.req.header('X-Forwarded-For')?.split(',')[0]?.trim() ??
-      c.req.header('X-Real-IP') ??
-      'unknown';
+    const ip = getClientIp(c);
     const key = userId ?? `ip:${ip}`;
 
     const now = Date.now();

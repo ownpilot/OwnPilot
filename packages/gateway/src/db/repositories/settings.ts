@@ -64,7 +64,10 @@ export class SettingsRepository extends BaseRepository {
    */
   private async loadCache(): Promise<void> {
     const rows = await this.query<SettingRow>('SELECT * FROM settings');
-    settingsCache = new Map(rows.map(row => [row.key, safeParseJSON(row.value)]));
+    settingsCache.clear();
+    for (const row of rows) {
+      settingsCache.set(row.key, safeParseJSON(row.value));
+    }
     cacheInitialized = true;
   }
 

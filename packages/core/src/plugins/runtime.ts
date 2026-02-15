@@ -14,6 +14,7 @@ import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
 import type { PluginId } from '../types/branded.js';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 import { createPluginId } from '../types/branded.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
@@ -432,7 +433,7 @@ export class SecurePluginRuntime extends EventEmitter {
       return ok(undefined);
     } catch (e) {
       instance.state = 'error';
-      instance.lastError = e instanceof Error ? e.message : String(e);
+      instance.lastError = getErrorMessage(e);
       instance.errorCount++;
 
       this.emit('plugin:error', {
@@ -496,7 +497,7 @@ export class SecurePluginRuntime extends EventEmitter {
       return ok(undefined);
     } catch (e) {
       instance.state = 'error';
-      return err(`Failed to stop plugin: ${e instanceof Error ? e.message : String(e)}`);
+      return err(`Failed to stop plugin: ${getErrorMessage(e)}`);
     }
   }
 
@@ -657,7 +658,12 @@ export class SecurePluginRuntime extends EventEmitter {
    */
   async shutdown(): Promise<void> {
     const promises = [...this.plugins.keys()].map((id) => this.stop(id, 'shutdown'));
-    await Promise.all(promises);
+    const results = await Promise.allSettled(promises);
+    const failures = results.filter(r => r.status === 'rejected');
+    if (failures.length > 0) {
+      const log = await import('../services/get-log.js').then(m => m.getLog('PluginRuntime'));
+      log.warn(`${failures.length} plugin(s) failed to shut down cleanly`);
+    }
   }
 
   // ==========================================================================
@@ -755,7 +761,7 @@ export class SecurePluginRuntime extends EventEmitter {
         this.handleWorkerMessage(instance.manifest.id, msg);
       } catch (err) {
         instance.errorCount++;
-        instance.lastError = err instanceof Error ? err.message : 'Worker message handler failed';
+        instance.lastError = getErrorMessage(err, 'Worker message handler failed');
       }
     });
 
@@ -763,7 +769,7 @@ export class SecurePluginRuntime extends EventEmitter {
     worker.on('error', (error) => {
       try {
         instance.errorCount++;
-        instance.lastError = error instanceof Error ? error.message : String(error);
+        instance.lastError = getErrorMessage(error);
 
         this.emit('plugin:error', {
           pluginId: instance.manifest.id,

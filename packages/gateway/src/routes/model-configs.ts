@@ -27,7 +27,7 @@ import {
 } from '@ownpilot/core';
 import { hasApiKey, getApiKey } from './settings.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, validateQueryEnum, getErrorMessage } from './helpers.js'
 
 const log = getLog('ModelConfigs');
 
@@ -337,7 +337,7 @@ async function getMergedProviders(userId: string): Promise<MergedProvider[]> {
 modelConfigsRoutes.get('/', async (c) => {
   const userId = getUserId(c);
   const providerId = c.req.query('provider');
-  const capability = c.req.query('capability') as ModelCapability | undefined;
+  const capability = validateQueryEnum(c.req.query('capability'), ['chat', 'code', 'vision', 'function_calling', 'json_mode', 'streaming', 'embeddings', 'image_generation', 'audio', 'reasoning'] as const);
   const enabledOnly = c.req.query('enabled') === 'true';
 
   let models = await getMergedModels(userId);
@@ -395,7 +395,7 @@ modelConfigsRoutes.post('/', async (c) => {
  */
 modelConfigsRoutes.get('/providers/list', async (c) => {
   const userId = getUserId(c);
-  const type = c.req.query('type') as 'builtin' | 'aggregator' | 'custom' | undefined;
+  const type = validateQueryEnum(c.req.query('type'), ['builtin', 'aggregator', 'custom'] as const);
 
   let providers = await getMergedProviders(userId);
 
@@ -764,7 +764,7 @@ modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
 
       lastError = `No models in response from ${url}`;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = getErrorMessage(err);
       lastError = msg.includes('abort')
         ? `Timeout connecting to ${url}`
         : `Fetch error for ${url}: ${msg}`;
@@ -822,7 +822,7 @@ modelConfigsRoutes.post('/providers/:id/discover-models', async (c) => {
         existingModels: discovered.filter((m) => !m.isNew).length,
       }, });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: `Models fetched but failed to save: ${error instanceof Error ? error.message : String(error)}` }, 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: `Models fetched but failed to save: ${getErrorMessage(error)}` }, 500);
   }
 });
 

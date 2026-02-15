@@ -14,6 +14,7 @@ import type { PluginRegistry, HandlerContext, HandlerResult } from '../plugins/i
 import type { SecureMemoryStore } from '../memory/index.js';
 import type { Scheduler } from '../scheduler/index.js';
 import { CodeGenerator, createCodeGenerator } from '../agent/code-generator.js';
+import { getErrorMessage } from '../services/error-utils.js';
 import type { CodeGenerationRequest, CodeLanguage } from '../agent/code-generator.js';
 
 // =============================================================================
@@ -525,7 +526,7 @@ export class PersonalAssistant {
             toolResults.push({
               tool: call.tool,
               args: call.args,
-              result: { error: error instanceof Error ? error.message : String(error) },
+              result: { error: getErrorMessage(error) },
             });
           }
         }

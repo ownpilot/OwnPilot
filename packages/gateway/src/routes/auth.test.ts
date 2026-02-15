@@ -12,7 +12,7 @@ import { authRoutes } from './auth.js';
 vi.mock('googleapis', () => ({
   google: {
     auth: {
-      OAuth2: vi.fn(),
+      OAuth2: vi.fn(function() {}),
     },
     oauth2: vi.fn(),
   },
@@ -82,7 +82,7 @@ describe('Auth Routes', () => {
       revokeToken: vi.fn(),
     };
 
-    vi.mocked(google.auth.OAuth2).mockReturnValue(mockOAuth2Client as unknown as InstanceType<typeof google.auth.OAuth2>);
+    vi.mocked(google.auth.OAuth2).mockImplementation(function() { return mockOAuth2Client; } as never);
     vi.mocked(google.oauth2).mockReturnValue({
       userinfo: {
         get: vi.fn(),

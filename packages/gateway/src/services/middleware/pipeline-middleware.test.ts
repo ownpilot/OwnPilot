@@ -58,13 +58,13 @@ vi.mock('../../routes/costs.js', () => ({
 
 // --- db/repositories/index.js ---
 vi.mock('../../db/repositories/index.js', () => ({
-  LogsRepository: vi.fn().mockImplementation(() => ({
+  LogsRepository: vi.fn().mockImplementation(function() { return {
     log: mockLogsLog,
-  })),
-  ChatRepository: vi.fn().mockImplementation(() => ({
+  }; }),
+  ChatRepository: vi.fn().mockImplementation(function() { return {
     getOrCreateConversation: mockGetOrCreateConversation,
     addMessage: mockAddMessage,
-  })),
+  }; }),
 }));
 
 // --- audit/index.js ---

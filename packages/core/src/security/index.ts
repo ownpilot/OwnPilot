@@ -302,3 +302,6 @@ export function checkCriticalPatterns(code: string): { blocked: boolean; reason?
 export function isCommandBlocked(command: string): boolean {
   return checkCriticalPatterns(command).blocked;
 }
+
+// Safe math expression evaluator (replaces new Function() usage)
+export { evaluateMathExpression } from './safe-math.js';

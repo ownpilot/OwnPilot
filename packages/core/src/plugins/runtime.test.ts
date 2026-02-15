@@ -59,7 +59,9 @@ const mockRandomUUID = vi.hoisted(() => vi.fn(() => 'mock-uuid-1234'));
 // ---------------------------------------------------------------------------
 
 vi.mock('node:worker_threads', () => ({
-  Worker: vi.fn(() => mockWorkerInstance),
+  Worker: vi.fn(function () {
+    return mockWorkerInstance;
+  }),
 }));
 
 vi.mock('node:crypto', () => ({

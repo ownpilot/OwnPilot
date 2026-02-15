@@ -22,7 +22,7 @@ import {
   type ProcessCaptureInput,
   type CaptureType,
 } from '../db/repositories/captures.js';
-import { apiResponse, apiError, getUserId, getIntParam, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getUserId, getIntParam, ERROR_CODES, validateQueryEnum } from './helpers.js';
 
 export const productivityRoutes = new Hono();
 
@@ -112,7 +112,7 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
  */
 pomodoroRoutes.get('/sessions', async (c) => {
   const userId = getUserId(c);
-  const type = c.req.query('type') as SessionType | undefined;
+  const type = validateQueryEnum(c.req.query('type'), ['work', 'short_break', 'long_break'] as const);
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   const repo = getPomodoroRepo(userId);
@@ -354,7 +354,7 @@ function getCapturesRepo(userId = 'default'): CapturesRepository {
  */
 capturesRoutes.get('/', async (c) => {
   const userId = getUserId(c);
-  const type = c.req.query('type') as CaptureType | undefined;
+  const type = validateQueryEnum(c.req.query('type'), ['idea', 'thought', 'todo', 'link', 'quote', 'snippet', 'question', 'other'] as const);
   const tag = c.req.query('tag');
   const processed = c.req.query('processed');
   const limit = getIntParam(c, 'limit', 20, 1, 100);

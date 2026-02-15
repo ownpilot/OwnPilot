@@ -45,7 +45,7 @@ import {
   type ChannelVerificationService,
 } from './auth/verification.js';
 import { wsGateway } from '../ws/server.js';
-import { truncate } from '../routes/helpers.js';
+import { truncate, getErrorMessage } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('ChannelService');
@@ -118,6 +118,7 @@ export class ChannelServiceImpl implements IChannelService {
   private readonly verificationService: ChannelVerificationService;
   private readonly pluginRegistry: PluginRegistry;
   private unsubscribes: Array<() => void> = [];
+  private readonly sessionLocks = new Map<string, Promise<void>>();
 
   constructor(
     pluginRegistry: PluginRegistry,
@@ -187,7 +188,7 @@ export class ChannelServiceImpl implements IChannelService {
             {
               channelPluginId,
               platform: api.getPlatform(),
-              error: error instanceof Error ? error.message : String(error),
+              error: getErrorMessage(error),
               platformChatId: message.platformChatId,
             }
           )
@@ -397,7 +398,7 @@ export class ChannelServiceImpl implements IChannelService {
       } catch (error) {
         log.warn('Channel auto-connect failed', {
           pluginId: manifest.id,
-          error: error instanceof Error ? error.message : String(error),
+          error: getErrorMessage(error),
         });
       }
     }
@@ -521,14 +522,16 @@ export class ChannelServiceImpl implements IChannelService {
         action: 'channel:message',
       });
 
-      // 6. Find or create session -> conversation
-      let session = await this.sessionsRepo.findActive(
-        channelUser.id,
-        message.channelPluginId,
-        message.platformChatId
-      );
+      // 6. Find or create session -> conversation (serialized per chat to prevent duplicates)
+      const sessionLockKey = `${channelUser.id}:${message.channelPluginId}:${message.platformChatId}`;
+      const session = await this.withSessionLock(sessionLockKey, async () => {
+        const existing = await this.sessionsRepo.findActive(
+          channelUser.id,
+          message.channelPluginId,
+          message.platformChatId
+        );
+        if (existing) return existing;
 
-      if (!session) {
         // Create a new conversation for this channel session
         const { createConversationsRepository } = await import(
           '../db/repositories/conversations.js'
@@ -547,13 +550,13 @@ export class ChannelServiceImpl implements IChannelService {
           },
         });
 
-        session = await this.sessionsRepo.create({
+        return this.sessionsRepo.create({
           channelUserId: channelUser.id,
           channelPluginId: message.channelPluginId,
           platformChatId: message.platformChatId,
           conversationId,
         });
-      }
+      });
 
       // Touch last message
       await this.sessionsRepo.touchLastMessage(session.id);
@@ -643,7 +646,7 @@ export class ChannelServiceImpl implements IChannelService {
       log.error('Error processing message', { error });
 
       // Build a helpful error message
-      const errMsg = error instanceof Error ? error.message : String(error);
+      const errMsg = getErrorMessage(error);
       const isProviderError = /provider|model|api.?key|unauthorized|401|no.*configured/i.test(errMsg);
       const userMessage = isProviderError
         ? 'No AI provider configured. Please set up an API key (e.g. OpenAI, Anthropic) in OwnPilot Settings or Config Center.'
@@ -754,6 +757,27 @@ export class ChannelServiceImpl implements IChannelService {
   // ==========================================================================
   // Private Methods
   // ==========================================================================
+
+  /**
+   * Serialize async operations per key to prevent race conditions.
+   * Different keys run concurrently; same key waits for prior call.
+   */
+  private async withSessionLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.sessionLocks.get(key);
+    let resolve: () => void;
+    const gate = new Promise<void>(r => { resolve = r; });
+    this.sessionLocks.set(key, gate);
+    try {
+      if (prev) await prev;
+      return await fn();
+    } finally {
+      resolve!();
+      // Only delete if we're still the latest lock for this key
+      if (this.sessionLocks.get(key) === gate) {
+        this.sessionLocks.delete(key);
+      }
+    }
+  }
 
   private getChannelPlugins(): Plugin[] {
     return this.pluginRegistry

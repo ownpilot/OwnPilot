@@ -9,6 +9,7 @@ import type { Result } from '../../types/result.js';
 import { ok, err } from '../../types/result.js';
 import { InternalError, TimeoutError, ValidationError } from '../../types/errors.js';
 import { getLog } from '../../services/get-log.js';
+import { getErrorMessage } from '../../services/error-utils.js';
 
 const log = getLog('Google');
 import type {
@@ -347,7 +348,7 @@ export class GoogleProvider {
       // Clear the timeout for other errors too
       this.clearAbortTimeout();
 
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = getErrorMessage(error);
       logResponse(buildResponseDebugInfo('google', model, elapsed, {
         error: `${errorMessage} (attempt ${attempt})`,
       }));
@@ -480,7 +481,7 @@ export class GoogleProvider {
     } catch (error) {
       this.clearAbortTimeout();
       yield err(
-        new InternalError(`Google stream failed: ${error instanceof Error ? error.message : String(error)}`)
+        new InternalError(`Google stream failed: ${getErrorMessage(error)}`)
       );
     }
   }

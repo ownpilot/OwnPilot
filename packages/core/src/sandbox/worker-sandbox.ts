@@ -20,6 +20,7 @@ import type {
 } from './types.js';
 import { DEFAULT_RESOURCE_LIMITS, DEFAULT_PERMISSIONS } from './types.js';
 import { buildSandboxContext, validateCode } from './context.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 /**
  * Worker code that runs in the isolated thread
@@ -85,7 +86,7 @@ function workerMain() {
       } satisfies WorkerMessage);
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = getErrorMessage(error);
       const errorStack = config.debug && error instanceof Error ? error.stack : undefined;
 
       port.postMessage({
@@ -272,7 +273,7 @@ export class WorkerSandbox {
       return err(
         new PluginError(
           this.config.pluginId,
-          `Failed to initialize worker: ${error instanceof Error ? error.message : String(error)}`
+          `Failed to initialize worker: ${getErrorMessage(error)}`
         )
       );
     }

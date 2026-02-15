@@ -37,7 +37,7 @@ vi.mock('@ownpilot/core', async () => {
   const actual = await vi.importActual<typeof import('@ownpilot/core')>('@ownpilot/core');
   return {
     ...actual,
-    ToolRegistry: vi.fn(() => mockToolRegistry),
+    ToolRegistry: vi.fn(function() { return mockToolRegistry; }),
     registerAllTools: vi.fn(),
     registerCoreTools: vi.fn(),
     hasServiceRegistry: vi.fn(() => true),

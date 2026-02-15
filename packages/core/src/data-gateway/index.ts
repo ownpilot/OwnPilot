@@ -6,6 +6,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { getErrorMessage } from '../services/error-utils.js';
 
 // =============================================================================
 // Types
@@ -369,7 +370,7 @@ export class DataGateway {
       return result;
     } catch (error) {
       this.logAccess(agentId, dataStore, operation, false, {
-        error: error instanceof Error ? error.message : String(error),
+        error: getErrorMessage(error),
       });
       throw error;
     }

@@ -8,44 +8,53 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // ─── Mock Repositories ──────────────────────────────────────────
 
-const { mockTasksRepo, mockBookmarksRepo, mockNotesRepo, mockCalendarRepo, mockContactsRepo } = vi.hoisted(() => ({
-  mockTasksRepo: {
+const {
+  mockTasksRepo, mockBookmarksRepo, mockNotesRepo, mockCalendarRepo, mockContactsRepo,
+  MockTasksRepository, MockNotesRepository,
+} = vi.hoisted(() => {
+  const mockTasksRepo = {
     create: vi.fn(),
     list: vi.fn(),
     complete: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-  },
-  mockBookmarksRepo: {
+  };
+  const mockBookmarksRepo = {
     create: vi.fn(),
     list: vi.fn(),
     delete: vi.fn(),
-  },
-  mockNotesRepo: {
-    create: vi.fn(),
-    list: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-  },
-  mockCalendarRepo: {
-    create: vi.fn(),
-    list: vi.fn(),
-    delete: vi.fn(),
-  },
-  mockContactsRepo: {
+  };
+  const mockNotesRepo = {
     create: vi.fn(),
     list: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-  },
-}));
+  };
+  const mockCalendarRepo = {
+    create: vi.fn(),
+    list: vi.fn(),
+    delete: vi.fn(),
+  };
+  const mockContactsRepo = {
+    create: vi.fn(),
+    list: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  };
+  const MockTasksRepository = vi.fn(function () { return mockTasksRepo; });
+  const MockNotesRepository = vi.fn(function () { return mockNotesRepo; });
+  return {
+    mockTasksRepo, mockBookmarksRepo, mockNotesRepo, mockCalendarRepo, mockContactsRepo,
+    MockTasksRepository, MockNotesRepository,
+  };
+});
 
 vi.mock('../db/repositories/index.js', () => ({
-  TasksRepository: vi.fn(() => mockTasksRepo),
-  BookmarksRepository: vi.fn(() => mockBookmarksRepo),
-  NotesRepository: vi.fn(() => mockNotesRepo),
-  CalendarRepository: vi.fn(() => mockCalendarRepo),
-  ContactsRepository: vi.fn(() => mockContactsRepo),
+  TasksRepository: MockTasksRepository,
+  BookmarksRepository: vi.fn(function () { return mockBookmarksRepo; }),
+  NotesRepository: MockNotesRepository,
+  CalendarRepository: vi.fn(function () { return mockCalendarRepo; }),
+  ContactsRepository: vi.fn(function () { return mockContactsRepo; }),
 }));
 
 // ─── Import ─────────────────────────────────────────────────────
@@ -437,20 +446,18 @@ describe('executePersonalDataTool', () => {
 
     it('should use default userId when not provided', async () => {
       mockTasksRepo.list.mockResolvedValue([]);
-      const { TasksRepository } = await import('../db/repositories/index.js');
 
       await executePersonalDataTool('list_tasks', {});
 
-      expect(TasksRepository).toHaveBeenCalledWith('default');
+      expect(MockTasksRepository).toHaveBeenCalledWith('default');
     });
 
     it('should pass custom userId to repositories', async () => {
       mockNotesRepo.list.mockResolvedValue([]);
-      const { NotesRepository } = await import('../db/repositories/index.js');
 
       await executePersonalDataTool('list_notes', {}, 'user-42');
 
-      expect(NotesRepository).toHaveBeenCalledWith('user-42');
+      expect(MockNotesRepository).toHaveBeenCalledWith('user-42');
     });
   });
 });

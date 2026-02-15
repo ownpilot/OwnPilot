@@ -130,15 +130,15 @@ const mockCapturesMethods = {
 // ---------------------------------------------------------------------------
 
 vi.mock('../db/repositories/pomodoro.js', () => ({
-  PomodoroRepository: vi.fn().mockImplementation(() => mockPomodoroMethods),
+  PomodoroRepository: vi.fn().mockImplementation(function() { return mockPomodoroMethods; }),
 }));
 
 vi.mock('../db/repositories/habits.js', () => ({
-  HabitsRepository: vi.fn().mockImplementation(() => mockHabitsMethods),
+  HabitsRepository: vi.fn().mockImplementation(function() { return mockHabitsMethods; }),
 }));
 
 vi.mock('../db/repositories/captures.js', () => ({
-  CapturesRepository: vi.fn().mockImplementation(() => mockCapturesMethods),
+  CapturesRepository: vi.fn().mockImplementation(function() { return mockCapturesMethods; }),
 }));
 
 // Import after mocks

@@ -57,7 +57,7 @@ const mockBriefingCache = {
 };
 
 vi.mock('../services/dashboard.js', () => ({
-  DashboardService: vi.fn(() => mockDashboardService),
+  DashboardService: vi.fn(function() { return mockDashboardService; }),
   briefingCache: mockBriefingCache,
 }));
 

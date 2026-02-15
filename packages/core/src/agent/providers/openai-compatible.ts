@@ -17,6 +17,7 @@
 import type { Result } from '../../types/result.js';
 import { ok, err } from '../../types/result.js';
 import { InternalError, TimeoutError, ValidationError } from '../../types/errors.js';
+import { getErrorMessage } from '../../services/error-utils.js';
 import type {
   ProviderConfig as LegacyProviderConfig,
   CompletionRequest,
@@ -189,7 +190,7 @@ export class OpenAICompatibleProvider {
         return err(new TimeoutError(`${this.providerId} request`, this.config.timeout ?? 300000));
       }
       return err(
-        new InternalError(`${this.providerId} request failed: ${error instanceof Error ? error.message : String(error)}`)
+        new InternalError(`${this.providerId} request failed: ${getErrorMessage(error)}`)
       );
     }
   }
@@ -296,7 +297,7 @@ export class OpenAICompatibleProvider {
       }
     } catch (error) {
       yield err(
-        new InternalError(`${this.providerId} stream failed: ${error instanceof Error ? error.message : String(error)}`)
+        new InternalError(`${this.providerId} stream failed: ${getErrorMessage(error)}`)
       );
     }
   }

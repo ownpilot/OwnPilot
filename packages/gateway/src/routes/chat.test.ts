@@ -34,8 +34,8 @@ const mockLogsRepo = {
 // ─── Mock Dependencies ───────────────────────────────────────────
 
 vi.mock('../db/repositories/index.js', () => ({
-  ChatRepository: vi.fn(() => mockChatRepo),
-  LogsRepository: vi.fn(() => mockLogsRepo),
+  ChatRepository: vi.fn(function() { return mockChatRepo; }),
+  LogsRepository: vi.fn(function() { return mockLogsRepo; }),
 }));
 
 const mockAgent = {
@@ -191,12 +191,12 @@ vi.mock('@ownpilot/core', () => ({
     getDefinitions: vi.fn(() => []),
   })),
   getToolDefinitions: vi.fn(() => []),
-  ToolRegistry: vi.fn(() => ({
+  ToolRegistry: vi.fn(function() { return {
     register: vi.fn(),
     has: vi.fn(),
     getDefinitions: vi.fn(() => []),
     setConfigCenter: vi.fn(),
-  })),
+  }; }),
   registerAllTools: vi.fn(),
   registerCoreTools: vi.fn(),
   injectMemoryIntoPrompt: vi.fn(async (prompt: string) => ({ systemPrompt: prompt })),

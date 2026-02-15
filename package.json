@@ -19,6 +19,7 @@
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
     "typecheck": "turbo typecheck",
+    "typecheck:ci": "turbo typecheck:ci",
     "clean": "turbo clean && rimraf node_modules",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

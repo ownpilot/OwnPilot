@@ -435,6 +435,9 @@ let managerInstance: ApprovalManager | null = null;
 
 export function getApprovalManager(config?: ApprovalManagerConfig): ApprovalManager {
   if (!managerInstance || config) {
+    if (managerInstance) {
+      managerInstance.stop();
+    }
     managerInstance = new ApprovalManager(config);
   }
   return managerInstance;

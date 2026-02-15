@@ -19,6 +19,7 @@ import {
 import type { PluginCapability } from './isolation.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 // =============================================================================
 // Types
@@ -406,7 +407,7 @@ export function verifySignature(
 
     return ok(isValid);
   } catch (e) {
-    return err(`Signature verification failed: ${e instanceof Error ? e.message : String(e)}`);
+    return err(`Signature verification failed: ${getErrorMessage(e)}`);
   }
 }
 

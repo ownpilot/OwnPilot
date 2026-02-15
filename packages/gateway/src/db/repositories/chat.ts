@@ -308,10 +308,15 @@ export class ChatRepository extends BaseRepository {
   }
 
   async deleteOldConversations(olderThanDays: number): Promise<number> {
-    // Find old conversation IDs
+    // Validate input to prevent SQL injection via INTERVAL interpolation
+    const days = Math.floor(Math.abs(olderThanDays));
+    if (!Number.isFinite(days) || days <= 0) {
+      return 0;
+    }
+    // Find old conversation IDs — use MAKE_INTERVAL for parameterized query
     const rows = await this.query<{ id: string }>(
-      `SELECT id FROM conversations WHERE user_id = $1 AND updated_at < NOW() - INTERVAL '${olderThanDays} days'`,
-      [this.userId]
+      `SELECT id FROM conversations WHERE user_id = $1 AND updated_at < NOW() - MAKE_INTERVAL(days => $2)`,
+      [this.userId, days]
     );
     const ids = rows.map(r => r.id);
     if (ids.length === 0) return 0;

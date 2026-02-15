@@ -8,7 +8,7 @@
 import { Hono } from 'hono';
 import { getAuditLogger } from '../audit/index.js';
 import type { AuditSeverity } from '@ownpilot/core';
-import { apiResponse, apiError, getIntParam, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getIntParam, ERROR_CODES, validateQueryEnum } from './helpers.js';
 
 const app = new Hono();
 
@@ -44,17 +44,17 @@ app.get('/', async (c) => {
   const result = await logger.query({
     types: types as import('@ownpilot/core').AuditEventType[] | undefined,
     actorId: c.req.query('actorId'),
-    actorType: c.req.query('actorType') as 'user' | 'agent' | 'system' | undefined,
+    actorType: validateQueryEnum(c.req.query('actorType'), ['user', 'agent', 'system'] as const),
     resourceId: c.req.query('resourceId'),
     resourceType: c.req.query('resourceType'),
-    minSeverity: c.req.query('minSeverity') as AuditSeverity | undefined,
-    outcome: c.req.query('outcome') as 'success' | 'failure' | 'unknown' | undefined,
+    minSeverity: validateQueryEnum(c.req.query('minSeverity'), ['debug', 'info', 'warn', 'error', 'critical'] as const),
+    outcome: validateQueryEnum(c.req.query('outcome'), ['success', 'failure', 'unknown'] as const),
     from: from ? new Date(from) : undefined,
     to: to ? new Date(to) : undefined,
     correlationId: c.req.query('correlationId'),
     limit: getIntParam(c, 'limit', 100, 1, 1000),
     offset: getIntParam(c, 'offset', 0, 0),
-    order: c.req.query('order') as 'asc' | 'desc' | undefined,
+    order: validateQueryEnum(c.req.query('order'), ['asc', 'desc'] as const),
   });
 
   if (!result.ok) {

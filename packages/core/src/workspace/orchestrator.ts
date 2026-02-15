@@ -8,6 +8,7 @@
 import { spawn, execSync, execFileSync, type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 const log = getLog('Workspace');
 import type {
@@ -227,7 +228,7 @@ export class UserContainerOrchestrator {
     } catch (err) {
       log.error('Failed to create container:', err);
       throw new Error(
-        `Failed to create container: ${err instanceof Error ? err.message : String(err)}`
+        `Failed to create container: ${getErrorMessage(err)}`
       );
     }
   }

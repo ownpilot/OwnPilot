@@ -9,6 +9,7 @@ import { createSandbox } from '../sandbox/executor.js';
 import { validateCode } from '../sandbox/context.js';
 import type { SandboxPermissions, ResourceLimits } from '../sandbox/types.js';
 import { createPluginId } from '../types/branded.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 // =============================================================================
 // Types
@@ -293,7 +294,7 @@ export class CodeGenerator {
       return {
         success: false,
         language,
-        error: error instanceof Error ? error.message : String(error),
+        error: getErrorMessage(error),
         metadata: {
           generatedAt: new Date().toISOString(),
           validationPassed: false,
@@ -388,7 +389,7 @@ export class CodeGenerator {
       const duration = Date.now() - startTime;
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: getErrorMessage(error),
         duration,
       };
     }

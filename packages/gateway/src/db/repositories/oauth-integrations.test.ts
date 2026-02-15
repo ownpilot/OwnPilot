@@ -8,7 +8,7 @@
  * so they are tested indirectly through create, getTokens, and updateTokens.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import type { DatabaseAdapter } from '../adapters/types.js';
 
 // ---------------------------------------------------------------------------
@@ -84,10 +84,21 @@ function makeIntegrationRow(overrides: Record<string, unknown> = {}) {
 
 describe('OAuthIntegrationsRepository', () => {
   let repo: InstanceType<typeof OAuthIntegrationsRepository>;
+  const originalJwtSecret = process.env.JWT_SECRET;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // getEncryptionKey() requires JWT_SECRET or API_KEYS when no OAUTH_ENCRYPTION_KEY is set
+    process.env.JWT_SECRET = 'test-jwt-secret-for-oauth-encryption';
     repo = new OAuthIntegrationsRepository();
+  });
+
+  afterAll(() => {
+    if (originalJwtSecret === undefined) {
+      delete process.env.JWT_SECRET;
+    } else {
+      process.env.JWT_SECRET = originalJwtSecret;
+    }
   });
 
   // ---- create ----

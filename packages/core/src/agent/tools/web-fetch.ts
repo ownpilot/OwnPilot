@@ -31,9 +31,9 @@ const BLOCKED_DOMAINS = [
 ];
 
 /**
- * Check if URL is blocked
+ * Check if URL is blocked (exported for reuse in file-system download_file)
  */
-function isBlockedUrl(url: string): boolean {
+export function isBlockedUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     const hostname = parsed.hostname.toLowerCase();

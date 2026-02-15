@@ -480,7 +480,7 @@ export class WorkspaceManager {
           await defaultWorkspace.processIncomingMessage(message);
         }
       } catch (error) {
-        log.error('[WorkspaceManager] Error processing channel message:', error instanceof Error ? error.message : error);
+        log.error('[WorkspaceManager] Error processing channel message:', getErrorMessage(error));
       }
     });
     this.unsubscribes.push(unsub);

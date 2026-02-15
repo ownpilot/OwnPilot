@@ -41,9 +41,11 @@ vi.mock('../memory/personal.js', () => ({
 }));
 
 vi.mock('./prompt-composer.js', () => ({
-  PromptComposer: vi.fn().mockImplementation(() => ({
-    compose: vi.fn().mockReturnValue('composed-system-prompt'),
-  })),
+  PromptComposer: vi.fn().mockImplementation(function () {
+    return {
+      compose: vi.fn().mockReturnValue('composed-system-prompt'),
+    };
+  }),
   getTimeContext: vi.fn().mockReturnValue({
     timezone: 'UTC',
     datetime: '2024-01-01T12:00:00Z',

@@ -5,6 +5,7 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import { getErrorMessage } from '../../services/error-utils.js';
 import {
   WeatherDataService,
   createWeatherDataService,
@@ -143,7 +144,7 @@ export const getWeatherExecutor: ToolExecutor = async (params, context): Promise
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to get weather';
+    const errorMessage = getErrorMessage(error, 'Failed to get weather');
     return {
       content: { error: errorMessage },
       isError: true,
@@ -252,7 +253,7 @@ export const getWeatherForecastExecutor: ToolExecutor = async (
       isError: false,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to get forecast';
+    const errorMessage = getErrorMessage(error, 'Failed to get forecast');
     return {
       content: { error: errorMessage },
       isError: true,

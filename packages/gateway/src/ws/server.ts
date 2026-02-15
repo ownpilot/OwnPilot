@@ -9,6 +9,7 @@ import type { IncomingMessage } from 'node:http';
 import type { Server as HttpServer } from 'node:http';
 import type { Server as HttpsServer } from 'node:https';
 import type { Http2SecureServer, Http2Server } from 'node:http2';
+import { timingSafeEqual } from 'node:crypto';
 import type { ClientEvents, WSMessage, Channel } from './types.js';
 import { sessionManager } from './session.js';
 import { ClientEventHandler } from './events.js';
@@ -25,6 +26,25 @@ import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('WebSocket');
+
+/**
+ * Validate a WebSocket authentication token.
+ * Reads API_KEYS from env (same keys used for HTTP auth).
+ * Returns true if auth is disabled (no keys) or token is valid.
+ */
+function validateWsToken(token: string | null): boolean {
+  const apiKeys = process.env.API_KEYS?.split(',').filter(Boolean);
+  // No API keys configured = auth disabled, allow connection
+  if (!apiKeys || apiKeys.length === 0) return true;
+  // Auth enabled but no token provided
+  if (!token) return false;
+  // Timing-safe comparison against all valid keys
+  const tokenBuf = Buffer.from(token);
+  return apiKeys.some(key => {
+    const keyBuf = Buffer.from(key);
+    return tokenBuf.length === keyBuf.length && timingSafeEqual(tokenBuf, keyBuf);
+  });
+}
 
 /** Whitelist of valid client event types (static set, avoid re-creating per message) */
 const VALID_CLIENT_EVENTS = new Set<string>([
@@ -135,6 +155,15 @@ export class WSGateway {
       const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
 
       if (url.pathname === this.config.path) {
+        // Authenticate before upgrading: token via query param or Authorization header
+        const token = url.searchParams.get('token') ?? null;
+        if (!validateWsToken(token)) {
+          log.warn('WebSocket connection rejected: invalid or missing token');
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+
         this.wss!.handleUpgrade(request, socket, head, (ws) => {
           this.wss!.emit('connection', ws, request);
         });
@@ -193,6 +222,15 @@ export class WSGateway {
     if (!isOriginAllowed(origin, this.config.allowedOrigins)) {
       log.warn('Connection rejected: origin not allowed', { origin });
       socket.close(1008, 'Origin not allowed');
+      return;
+    }
+
+    // Authenticate (standalone mode — upgrade handler already checks for attachToServer mode)
+    const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
+    const token = url.searchParams.get('token') ?? null;
+    if (!validateWsToken(token)) {
+      log.warn('Connection rejected: invalid or missing token');
+      socket.close(1008, 'Authentication required');
       return;
     }
 

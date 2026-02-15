@@ -5,6 +5,7 @@
  */
 
 import type { Message, ToolCall, ToolDefinition, TokenUsage } from './types.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 /**
  * Debug log entry
@@ -324,14 +325,14 @@ export function logRetry(attempt: number, maxRetries: number, error: unknown, de
     data: {
       attempt,
       maxRetries,
-      error: error instanceof Error ? error.message : String(error),
+      error: getErrorMessage(error),
       delayMs,
     },
   });
 
   if (shouldLogToConsole()) {
     console.log(`\n🔄 RETRY ${attempt}/${maxRetries} (waiting ${delayMs}ms)`);
-    console.log(`  Error: ${error instanceof Error ? error.message : String(error)}`);
+    console.log(`  Error: ${getErrorMessage(error)}`);
   }
 }
 
@@ -343,7 +344,7 @@ export function logError(provider: string, error: unknown, context?: string): vo
     type: 'error',
     provider,
     data: {
-      error: error instanceof Error ? error.message : String(error),
+      error: getErrorMessage(error),
       stack: error instanceof Error ? error.stack : undefined,
       context,
     },
@@ -356,7 +357,7 @@ export function logError(provider: string, error: unknown, context?: string): vo
     if (context) {
       console.log(`Context: ${context}`);
     }
-    console.log(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    console.log(`Error: ${getErrorMessage(error)}`);
     if (error instanceof Error && error.stack) {
       console.log(`Stack: ${error.stack.split('\n').slice(1, 4).join('\n')}`);
     }

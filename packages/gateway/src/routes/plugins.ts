@@ -14,7 +14,7 @@ import {
   type IPluginService,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, validateQueryEnum } from './helpers.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
@@ -106,8 +106,8 @@ pluginsRoutes.get('/', async (c) => {
   const registry = getPluginService();
   const plugins = registry.getAll();
 
-  const status = c.req.query('status') as PluginStatus | undefined;
-  const capability = c.req.query('capability') as PluginCapability | undefined;
+  const status = validateQueryEnum(c.req.query('status'), ['installed', 'enabled', 'disabled', 'error', 'updating'] as const);
+  const capability = validateQueryEnum(c.req.query('capability'), ['tools', 'handlers', 'storage', 'scheduled', 'notifications', 'ui', 'integrations'] as const);
 
   let filtered = plugins;
 

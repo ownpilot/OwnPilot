@@ -18,7 +18,7 @@ import {
   type ToolDefinition,
 } from '@ownpilot/core';
 import type { ToolInfo } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js'
 import { getAgent } from './agents.js';
 import { initializeToolOverrides } from '../services/tool-overrides.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
@@ -351,7 +351,7 @@ toolsRoutes.post('/:name/execute', async (c) => {
       duration,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = getErrorMessage(err);
     if (message.startsWith('Tool not found:')) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message }, 404);
     }
@@ -410,7 +410,7 @@ toolsRoutes.post('/:name/stream', async (c) => {
         event: 'error',
         data: JSON.stringify({
           success: false,
-          error: err instanceof Error ? err.message : String(err),
+          error: getErrorMessage(err),
           duration,
         }),
       });
@@ -454,7 +454,7 @@ toolsRoutes.post('/batch', async (c) => {
         tool: exec.tool,
         success: false,
         result: null,
-        error: err instanceof Error ? err.message : String(err),
+        error: getErrorMessage(err),
         duration: Date.now() - toolStartTime,
       };
     }

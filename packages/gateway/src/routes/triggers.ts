@@ -12,7 +12,7 @@ import {
 } from '../db/repositories/triggers.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression, getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 export const triggersRoutes = new Hono();
@@ -26,7 +26,7 @@ export const triggersRoutes = new Hono();
  */
 triggersRoutes.get('/', async (c) => {
   const userId = getUserId(c);
-  const type = c.req.query('type') as TriggerType | undefined;
+  const type = validateQueryEnum(c.req.query('type'), ['schedule', 'event', 'condition', 'webhook'] as const);
   const enabled = c.req.query('enabled');
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 

@@ -21,6 +21,7 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "typecheck": "tsc --noEmit",
+    "typecheck:ci": "tsc --noEmit --skipLibCheck false",
     "clean": "rimraf dist coverage",
     "seed": "tsx scripts/seed-database.ts",
     "seed:triggers-plans": "tsx scripts/seed-triggers-plans.ts",
@@ -29,7 +30,6 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",
-    "@hono/zod-validator": "^0.7.6",
     "@ownpilot/core": "workspace:*",
     "archiver": "^7.0.1",
     "dotenv": "^16.6.1",
@@ -49,9 +49,11 @@
   },
   "devDependencies": {
     "@types/archiver": "^6.0.4",
+    "@types/better-sqlite3": "^7.6.14",
     "@types/node": "^22.19.11",
     "@types/pg": "^8.16.0",
     "@types/ws": "^8.18.1",
+    "better-sqlite3": "^11.9.1",
     "rimraf": "^6.1.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",

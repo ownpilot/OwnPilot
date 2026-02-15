@@ -1193,6 +1193,7 @@ CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at
 CREATE INDEX IF NOT EXISTS idx_conversations_archived ON conversations(is_archived);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_conv_created ON messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_messages_role ON messages(role);
 CREATE INDEX IF NOT EXISTS idx_request_logs_user ON request_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_request_logs_conversation ON request_logs(conversation_id);

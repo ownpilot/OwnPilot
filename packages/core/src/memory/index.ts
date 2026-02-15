@@ -295,7 +295,7 @@ export class SecureMemoryStore {
     this.config = {
       storageDir: config.storageDir ?? dataDir,
       pbkdf2Iterations: config.pbkdf2Iterations ?? PBKDF2_DEFAULT_ITERATIONS,
-      installationSalt: config.installationSalt ?? process.env.MEMORY_SALT ?? 'change-this-in-production',
+      installationSalt: config.installationSalt ?? process.env.MEMORY_SALT ?? crypto.randomUUID(),
       auditLog: config.auditLog ?? true,
       auditRetentionDays: config.auditRetentionDays ?? 30,
       purgeInterval: config.purgeInterval ?? 3600000, // 1 hour
@@ -990,128 +990,6 @@ export async function getDefaultMemoryStore(): Promise<SecureMemoryStore> {
   }
   return defaultStore;
 }
-
-// =============================================================================
-// Memory Tools (for AI agent)
-// =============================================================================
-
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../agent/types.js';
-
-export const rememberTool: ToolDefinition = {
-  name: 'create_memory',
-  description: 'Store information in long-term memory. Use this to remember facts, preferences, or important details about the user.',
-  parameters: {
-    type: 'object',
-    properties: {
-      content: {
-        type: 'string',
-        description: 'The information to remember',
-      },
-      type: {
-        type: 'string',
-        description: 'Type of memory',
-        enum: ['fact', 'preference', 'context', 'relationship', 'task'],
-      },
-      tags: {
-        type: 'array',
-        description: 'Tags for organization',
-        items: { type: 'string' },
-      },
-      ttl: {
-        type: 'number',
-        description: 'Time to live in seconds (optional)',
-      },
-    },
-    required: ['content', 'type'],
-  },
-};
-
-export const recallTool: ToolDefinition = {
-  name: 'search_memories',
-  description: 'Retrieve information from long-term memory. Use this to recall facts, preferences, or context.',
-  parameters: {
-    type: 'object',
-    properties: {
-      search: {
-        type: 'string',
-        description: 'Search query',
-      },
-      type: {
-        type: 'string',
-        description: 'Filter by memory type',
-        enum: ['fact', 'preference', 'context', 'relationship', 'task'],
-      },
-      tags: {
-        type: 'array',
-        description: 'Filter by tags',
-        items: { type: 'string' },
-      },
-      limit: {
-        type: 'number',
-        description: 'Maximum results (default: 10)',
-      },
-    },
-    required: [],
-  },
-};
-
-export const forgetTool: ToolDefinition = {
-  name: 'delete_memory',
-  description: 'Remove information from memory. Use with caution - this permanently deletes the memory.',
-  parameters: {
-    type: 'object',
-    properties: {
-      memoryId: {
-        type: 'string',
-        description: 'ID of the memory to forget',
-      },
-    },
-    required: ['memoryId'],
-  },
-};
-
-// Tool executors would be implemented with proper context handling
-// These are placeholders - actual implementation needs userId and masterKey from context
-
-export const SECURE_MEMORY_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecutor }> = [
-  {
-    definition: rememberTool,
-    executor: async (args, _context): Promise<ToolExecutionResult> => {
-      // In production, get userId and masterKey from context
-      return {
-        content: JSON.stringify({
-          message: 'Memory tools require secure context with userId and masterKey',
-          argsReceived: args,
-        }),
-        isError: true,
-      };
-    },
-  },
-  {
-    definition: recallTool,
-    executor: async (args, _context): Promise<ToolExecutionResult> => {
-      return {
-        content: JSON.stringify({
-          message: 'Memory tools require secure context with userId and masterKey',
-          argsReceived: args,
-        }),
-        isError: true,
-      };
-    },
-  },
-  {
-    definition: forgetTool,
-    executor: async (args, _context): Promise<ToolExecutionResult> => {
-      return {
-        content: JSON.stringify({
-          message: 'Memory tools require secure context with userId and masterKey',
-          argsReceived: args,
-        }),
-        isError: true,
-      };
-    },
-  },
-];
 
 // =============================================================================
 // Re-export Conversation Memory

@@ -16,6 +16,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 const execAsync = promisify(exec);
 const log = getLog('Sandbox');
@@ -149,7 +150,7 @@ export async function testSecurityFlags(): Promise<boolean> {
     securityFlagsSupported = true;
     return true;
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorMsg = getErrorMessage(error);
     // Check for specific error messages indicating unsupported flags
     if (errorMsg.includes('unknown flag') ||
         errorMsg.includes('no-new-privileges') ||
@@ -208,7 +209,7 @@ export async function checkSandboxHealth(): Promise<SandboxHealthStatus> {
     lastHealthCheck = status;
     return status;
   } catch (error) {
-    status.error = error instanceof Error ? error.message : 'Unknown error during health check';
+    status.error = getErrorMessage(error, 'Unknown error during health check');
     lastHealthCheck = status;
     return status;
   }

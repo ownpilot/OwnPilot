@@ -17,7 +17,7 @@ import type {
 } from '../db/repositories/goals.js';
 import { GoalServiceError } from '../services/goal-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { getLog } from '../services/log.js';
 
@@ -79,7 +79,7 @@ goalsRoutes.post('/', async (c) => {
       log.warn('Goal validation error', { userId, error: err.message });
       return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: err.message }, 400);
     }
-    log.error('Goal creation error', { userId, error: err instanceof Error ? err.message : 'Unknown error' });
+    log.error('Goal creation error', { userId, error: getErrorMessage(err) });
     throw err;
   }
 });
@@ -591,7 +591,7 @@ export async function executeGoalTool(
     }
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Unknown error',
+      error: getErrorMessage(err),
     };
   }
 }

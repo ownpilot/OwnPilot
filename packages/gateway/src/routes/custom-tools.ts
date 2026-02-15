@@ -28,7 +28,7 @@ import {
   registerToolConfigRequirements,
   unregisterDependencies,
 } from '../services/api-service-registrar.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam, sanitizeId, sanitizeText, notFoundError, getErrorMessage } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam, sanitizeId, sanitizeText, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
 import { TOOL_TEMPLATES } from './tool-templates.js';
 import { TOOL_ARGS_MAX_SIZE } from '../config/defaults.js';
 
@@ -164,9 +164,9 @@ customToolsRoutes.get('/stats', async (c) => {
 customToolsRoutes.get('/', async (c) => {
   const repo = createCustomToolsRepo(getUserId(c));
 
-  const status = c.req.query('status') as ToolStatus | undefined;
+  const status = validateQueryEnum(c.req.query('status'), ['active', 'disabled', 'pending_approval', 'rejected'] as const);
   const category = c.req.query('category');
-  const createdBy = c.req.query('createdBy') as 'user' | 'llm' | undefined;
+  const createdBy = validateQueryEnum(c.req.query('createdBy'), ['user', 'llm'] as const);
   const limit = getOptionalIntParam(c, 'limit', 1, 100);
   const offset = getOptionalIntParam(c, 'offset', 0);
 

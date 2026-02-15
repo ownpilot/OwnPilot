@@ -15,12 +15,13 @@
  * - Groq, Mistral, Cohere, and more
  */
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { getLog } from '../services/get-log.js';
 
 const costLog = getLog('Costs');
+
+/** Maximum in-memory records to keep (prevents unbounded growth) */
+const MAX_RECORDS = 10_000;
 
 // =============================================================================
 // Types
@@ -795,28 +796,32 @@ export const MODEL_PRICING: ModelPricing[] = [
 // Cost Calculator
 // =============================================================================
 
+// Pre-built lookup maps for O(1) exact-match pricing (built once at module load)
+const pricingByExactKey = new Map<string, ModelPricing>();
+const pricingByProvider = new Map<string, ModelPricing>();
+for (const p of MODEL_PRICING) {
+  pricingByExactKey.set(`${p.provider}:${p.modelId}`, p);
+  if (!pricingByProvider.has(p.provider)) {
+    pricingByProvider.set(p.provider, p);
+  }
+}
+
 /**
  * Get pricing for a model
  */
 export function getModelPricing(provider: AIProvider, modelId: string): ModelPricing | null {
-  // Exact match first
-  let pricing = MODEL_PRICING.find(
-    p => p.provider === provider && p.modelId === modelId
+  // O(1) exact match
+  const exact = pricingByExactKey.get(`${provider}:${modelId}`);
+  if (exact) return exact;
+
+  // Partial match for versioned models (e.g. claude-3-5-sonnet-20241022)
+  const partial = MODEL_PRICING.find(
+    p => p.provider === provider && modelId.includes(p.modelId.split('-').slice(0, 3).join('-'))
   );
+  if (partial) return partial;
 
-  if (!pricing) {
-    // Try partial match (for versioned models like claude-3-5-sonnet-20241022)
-    pricing = MODEL_PRICING.find(
-      p => p.provider === provider && modelId.includes(p.modelId.split('-').slice(0, 3).join('-'))
-    );
-  }
-
-  if (!pricing) {
-    // Fallback: find any model from the same provider
-    pricing = MODEL_PRICING.find(p => p.provider === provider);
-  }
-
-  return pricing ?? null;
+  // Fallback: any model from the same provider
+  return pricingByProvider.get(provider) ?? null;
 }
 
 /**
@@ -873,24 +878,13 @@ export function estimateCost(
  * Usage Tracker - Records and analyzes API usage
  */
 export class UsageTracker extends EventEmitter {
-  private readonly storageDir: string;
   private records: UsageRecord[] = [];
   private initialized = false;
 
-  constructor(storageDir?: string) {
-    super();
-    const homeDir = process.env.HOME ?? process.env.USERPROFILE ?? '.';
-    this.storageDir = storageDir ?? path.join(homeDir, '.ownpilot', 'costs');
-  }
-
   /**
-   * Initialize tracker
+   * Initialize tracker (no-op, kept for backward compatibility)
    */
   async initialize(): Promise<void> {
-    if (this.initialized) return;
-
-    await fs.mkdir(this.storageDir, { recursive: true });
-    await this.loadRecords();
     this.initialized = true;
   }
 
@@ -915,7 +909,11 @@ export class UsageTracker extends EventEmitter {
     };
 
     this.records.push(record);
-    await this.saveRecords();
+
+    // Cap in-memory records to prevent unbounded growth
+    if (this.records.length > MAX_RECORDS) {
+      this.records = this.records.slice(-MAX_RECORDS);
+    }
 
     // Emit event for real-time tracking
     this.emit('usage', record);
@@ -1152,26 +1150,6 @@ export class UsageTracker extends EventEmitter {
     }
   }
 
-  private async loadRecords(): Promise<void> {
-    const filePath = path.join(this.storageDir, 'usage.json');
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      this.records = JSON.parse(content) as UsageRecord[];
-    } catch {
-      this.records = [];
-    }
-  }
-
-  private async saveRecords(): Promise<void> {
-    const filePath = path.join(this.storageDir, 'usage.json');
-
-    // Keep only last 100,000 records (about 3 months of heavy use)
-    if (this.records.length > 100000) {
-      this.records = this.records.slice(-100000);
-    }
-
-    await fs.writeFile(filePath, JSON.stringify(this.records, null, 2), 'utf-8');
-  }
 }
 
 // =============================================================================
@@ -1447,8 +1425,8 @@ export async function generateRecommendations(
 /**
  * Create usage tracker
  */
-export function createUsageTracker(storageDir?: string): UsageTracker {
-  return new UsageTracker(storageDir);
+export function createUsageTracker(): UsageTracker {
+  return new UsageTracker();
 }
 
 /**

@@ -19,6 +19,7 @@ import { randomUUID, randomBytes } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 // =============================================================================
 // Types
@@ -522,7 +523,7 @@ export abstract class BaseIntegration {
       this.logAction(action, capability, true);
       return { success: true, data: result };
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorMsg = getErrorMessage(error);
       this.logAction(action, capability, false, { error: errorMsg });
       return { success: false, error: errorMsg };
     }

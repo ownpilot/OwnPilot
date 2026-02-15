@@ -84,11 +84,11 @@ const mockContactsRepo = {
 };
 
 vi.mock('../db/repositories/index.js', () => ({
-  TasksRepository: vi.fn(() => mockTasksRepo),
-  BookmarksRepository: vi.fn(() => mockBookmarksRepo),
-  NotesRepository: vi.fn(() => mockNotesRepo),
-  CalendarRepository: vi.fn(() => mockCalendarRepo),
-  ContactsRepository: vi.fn(() => mockContactsRepo),
+  TasksRepository: vi.fn(function() { return mockTasksRepo; }),
+  BookmarksRepository: vi.fn(function() { return mockBookmarksRepo; }),
+  NotesRepository: vi.fn(function() { return mockNotesRepo; }),
+  CalendarRepository: vi.fn(function() { return mockCalendarRepo; }),
+  ContactsRepository: vi.fn(function() { return mockContactsRepo; }),
 }));
 
 // Import after mocks

@@ -22,6 +22,7 @@ import {
   createEvent,
 } from '@ownpilot/core';
 import { getLog } from '../../../services/log.js';
+import { getErrorMessage } from '../../../routes/helpers.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../../utils/message-utils.js';
 import { markdownToTelegramHtml } from '../../utils/markdown-telegram.js';
 
@@ -189,7 +190,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         if (options.parse_mode && isParseEntityError(err)) {
           log.warn('[Telegram] Parse entity error, retrying without parse_mode', {
             parseMode: options.parse_mode,
-            error: err instanceof Error ? err.message : String(err),
+            error: getErrorMessage(err),
           });
           const { parse_mode: _, ...plainOptions } = options;
           sent = await this.bot.api.sendMessage(chatId, parts[i]!, plainOptions);

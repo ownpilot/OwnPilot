@@ -242,3 +242,18 @@ export function maskSecret(value: unknown): string {
 export function sanitizeText(text: string): string {
   return text.replace(/[^\w\s-]/g, '').slice(0, 200);
 }
+
+/**
+ * Validate a query parameter against an allowed set of string values.
+ * Returns the value narrowed to the union type if valid, otherwise undefined.
+ *
+ * @example
+ *   const period = validateQueryEnum(c.req.query('period'), ['day', 'week', 'month', 'year'] as const) ?? 'month';
+ */
+export function validateQueryEnum<T extends string>(
+  value: string | undefined,
+  allowed: readonly T[],
+): T | undefined {
+  if (value === undefined) return undefined;
+  return (allowed as readonly string[]).includes(value) ? (value as T) : undefined;
+}

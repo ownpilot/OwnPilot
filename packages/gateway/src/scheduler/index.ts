@@ -27,6 +27,7 @@ import { getChannelService } from '@ownpilot/core';
 import { getOrCreateDefaultAgent } from '../routes/agents.js';
 import { getDataPaths } from '../paths/index.js';
 import { getLog } from '../services/log.js';
+import { getErrorMessage } from '../routes/helpers.js';
 
 const log = getLog('Scheduler');
 
@@ -158,7 +159,7 @@ async function executeScheduledTask(task: ScheduledTask): Promise<TaskExecutionR
       status: 'failed',
       startedAt,
       completedAt: new Date().toISOString(),
-      error: error instanceof Error ? error.message : String(error),
+      error: getErrorMessage(error),
     };
   }
 }

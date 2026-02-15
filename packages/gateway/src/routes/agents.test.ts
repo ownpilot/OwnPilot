@@ -59,7 +59,7 @@ vi.mock('@ownpilot/core', () => ({
     reset: vi.fn(() => ({ id: 'new-conversation-id' })),
     getTools: vi.fn(() => []),
   })),
-  ToolRegistry: vi.fn(() => mockToolRegistry),
+  ToolRegistry: vi.fn(function() { return mockToolRegistry; }),
   registerCoreTools: vi.fn(),
   registerAllTools: vi.fn(),
   getToolDefinitions: vi.fn(() => []),

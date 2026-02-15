@@ -12,6 +12,7 @@ import type {
   ToolResult,
 } from './types.js';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 const log = getLog('Memory');
 
@@ -360,7 +361,7 @@ export class ConversationMemory {
       this.conversations.set(conversation.id, conversation);
       return conversation;
     } catch (error) {
-      log.warn('Failed to import conversation:', error instanceof Error ? error.message : error);
+      log.warn('Failed to import conversation:', getErrorMessage(error));
       return undefined;
     }
   }

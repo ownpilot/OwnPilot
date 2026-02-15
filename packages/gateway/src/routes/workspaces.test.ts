@@ -67,7 +67,7 @@ describe('Workspaces Routes', () => {
     };
 
     // Mock WorkspacesRepository constructor
-    vi.mocked(WorkspacesRepository).mockImplementation(() => mockRepo);
+    vi.mocked(WorkspacesRepository).mockImplementation(function() { return mockRepo; } as never);
 
     // Create mock orchestrator
     mockOrchestrator = {

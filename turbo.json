@@ -37,6 +37,10 @@
       "dependsOn": ["^build"],
       "inputs": ["src/**", "tsconfig.json"]
     },
+    "typecheck:ci": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig.json"]
+    },
     "clean": {
       "cache": false
     }

@@ -97,7 +97,13 @@ function getEncryptionKey(): Buffer {
   if (!secret) {
     log.warn('No OAUTH_ENCRYPTION_KEY set. Using insecure fallback for development only.');
   }
-  return createHash('sha256').update(secret || 'dev-only-insecure-key').digest();
+  if (!secret) {
+    throw new Error(
+      'OAUTH_ENCRYPTION_KEY, JWT_SECRET, or API_KEYS must be set for OAuth token encryption. ' +
+      'Generate a key with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+    );
+  }
+  return createHash('sha256').update(secret).digest();
 }
 
 function encryptToken(token: string): { encrypted: string; iv: string } {

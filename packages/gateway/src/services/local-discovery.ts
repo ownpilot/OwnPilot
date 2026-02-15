@@ -7,6 +7,7 @@
  */
 
 import type { LocalProvider } from '../db/repositories/local-providers.js';
+import { getErrorMessage } from '../routes/helpers.js';
 
 // ============================================================================
 // Types
@@ -365,7 +366,7 @@ export async function discoverModels(provider: LocalProvider): Promise<Discovery
         };
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown discovery error';
+    const message = getErrorMessage(err, 'Unknown discovery error');
     return {
       models: [],
       sourceUrl: provider.baseUrl,

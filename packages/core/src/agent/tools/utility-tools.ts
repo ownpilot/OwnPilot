@@ -14,6 +14,7 @@
 import * as crypto from 'node:crypto';
 import { runInNewContext } from 'node:vm';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
+import { getErrorMessage } from '../../services/error-utils.js';
 
 // =============================================================================
 // DATE/TIME TOOLS
@@ -105,7 +106,7 @@ export const getCurrentDateTimeExecutor: ToolExecutor = async (args): Promise<To
     return { content: JSON.stringify(result) };
   } catch (error) {
     return {
-      content: `Error getting datetime: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error getting datetime: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -215,7 +216,7 @@ export const calculateExecutor: ToolExecutor = async (args): Promise<ToolExecuti
     };
   } catch (error) {
     return {
-      content: `Calculation error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Calculation error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -417,7 +418,7 @@ export const convertUnitsExecutor: ToolExecutor = async (args): Promise<ToolExec
     };
   } catch (error) {
     return {
-      content: `Conversion error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Conversion error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -470,7 +471,7 @@ export const generateUuidExecutor: ToolExecutor = async (args): Promise<ToolExec
     };
   } catch (error) {
     return {
-      content: `Error generating UUID: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error generating UUID: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -567,7 +568,7 @@ export const generatePasswordExecutor: ToolExecutor = async (args): Promise<Tool
     };
   } catch (error) {
     return {
-      content: `Error generating password: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error generating password: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -631,7 +632,7 @@ export const generateRandomNumberExecutor: ToolExecutor = async (args): Promise<
     };
   } catch (error) {
     return {
-      content: `Error generating random number: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error generating random number: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -680,7 +681,7 @@ export const hashTextExecutor: ToolExecutor = async (args): Promise<ToolExecutio
     };
   } catch (error) {
     return {
-      content: `Error hashing text: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error hashing text: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -771,7 +772,7 @@ export const encodeDecodeExecutor: ToolExecutor = async (args): Promise<ToolExec
     };
   } catch (error) {
     return {
-      content: `Error ${args.operation}ing text: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error ${args.operation}ing text: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -825,7 +826,7 @@ export const countTextExecutor: ToolExecutor = async (args): Promise<ToolExecuti
     };
   } catch (error) {
     return {
-      content: `Error counting text: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error counting text: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -889,7 +890,7 @@ export const extractFromTextExecutor: ToolExecutor = async (args): Promise<ToolE
     };
   } catch (error) {
     return {
-      content: `Error extracting from text: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Error extracting from text: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -943,7 +944,7 @@ function validateJson(json: string): { valid: boolean; reason?: string; parsed?:
     const parsed = JSON.parse(json);
     return { valid: true, parsed };
   } catch (e) {
-    return { valid: false, reason: e instanceof Error ? e.message : 'Invalid JSON' };
+    return { valid: false, reason: getErrorMessage(e, 'Invalid JSON') };
   }
 }
 
@@ -1092,7 +1093,7 @@ export const validateDataExecutor: ToolExecutor = async (args): Promise<ToolExec
     };
   } catch (error) {
     return {
-      content: `Validation error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Validation error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -1239,7 +1240,7 @@ export const transformTextExecutor: ToolExecutor = async (args): Promise<ToolExe
     };
   } catch (error) {
     return {
-      content: `Transform error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Transform error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -1338,7 +1339,7 @@ export const dateDiffExecutor: ToolExecutor = async (args): Promise<ToolExecutio
     };
   } catch (error) {
     return {
-      content: `Date diff error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Date diff error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -1428,7 +1429,7 @@ export const dateAddExecutor: ToolExecutor = async (args): Promise<ToolExecution
     };
   } catch (error) {
     return {
-      content: `Date add error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Date add error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -1536,7 +1537,7 @@ export const formatJsonExecutor: ToolExecutor = async (args): Promise<ToolExecut
     };
   } catch (error) {
     return {
-      content: `JSON error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `JSON error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -1680,7 +1681,7 @@ export const parseCsvExecutor: ToolExecutor = async (args): Promise<ToolExecutio
     };
   } catch (error) {
     return {
-      content: `CSV parse error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `CSV parse error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -1766,7 +1767,7 @@ export const generateCsvExecutor: ToolExecutor = async (args): Promise<ToolExecu
     };
   } catch (error) {
     return {
-      content: `CSV generate error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `CSV generate error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -1923,7 +1924,7 @@ export const arrayOperationsExecutor: ToolExecutor = async (args): Promise<ToolE
     };
   } catch (error) {
     return {
-      content: `Array operation error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Array operation error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -2043,7 +2044,7 @@ export const calculateStatisticsExecutor: ToolExecutor = async (args): Promise<T
     return { content: JSON.stringify(result) };
   } catch (error) {
     return {
-      content: `Statistics error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Statistics error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -2125,7 +2126,7 @@ export const compareTextExecutor: ToolExecutor = async (args): Promise<ToolExecu
     };
   } catch (error) {
     return {
-      content: `Compare error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Compare error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -2190,7 +2191,7 @@ export const runRegexExecutor: ToolExecutor = async (args): Promise<ToolExecutio
       regex = new RegExp(pattern, flags);
     } catch (e) {
       return {
-        content: JSON.stringify({ error: `Invalid regex: ${e instanceof Error ? e.message : String(e)}` }),
+        content: JSON.stringify({ error: `Invalid regex: ${getErrorMessage(e)}` }),
         isError: true,
       };
     }
@@ -2232,7 +2233,7 @@ export const runRegexExecutor: ToolExecutor = async (args): Promise<ToolExecutio
     };
   } catch (error) {
     return {
-      content: `Regex error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `Regex error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }
@@ -2310,7 +2311,7 @@ export const getSystemInfoExecutor: ToolExecutor = async (args): Promise<ToolExe
     return { content: JSON.stringify(result) };
   } catch (error) {
     return {
-      content: `System info error: ${error instanceof Error ? error.message : String(error)}`,
+      content: `System info error: ${getErrorMessage(error)}`,
       isError: true,
     };
   }

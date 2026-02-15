@@ -14,6 +14,7 @@ import { type Result, ok, err } from '../types/result.js';
 import { createAuditEventId } from '../types/branded.js';
 import { InternalError, ValidationError } from '../types/errors.js';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 const log = getLog('AuditLogger');
 import {
@@ -405,7 +406,7 @@ export class AuditLogger {
         this.eventCount = 0;
       }
     } catch (error) {
-      log.warn('Log rotation failed:', error instanceof Error ? error.message : error);
+      log.warn('Log rotation failed:', getErrorMessage(error));
     }
   }
 

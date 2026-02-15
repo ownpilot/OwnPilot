@@ -59,8 +59,8 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
-    UsageTracker: vi.fn(() => mockUsageTracker),
-    BudgetManager: vi.fn(() => mockBudgetManager),
+    UsageTracker: vi.fn(function () { return mockUsageTracker; }),
+    BudgetManager: vi.fn(function () { return mockBudgetManager; }),
     formatCost: vi.fn((cost: number) => `$${cost.toFixed(2)}`),
     formatTokens: vi.fn((tokens: number) => `${tokens}`),
     estimateCost: vi.fn((_provider: string, _model: string, _text: string, _outputTokens: number) => ({

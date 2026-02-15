@@ -80,6 +80,9 @@ export { settingsRepo } from './db/repositories/index.js';
 // Plugins
 export { initializePlugins, getDefaultPluginRegistry } from './plugins/index.js';
 
+// Config defaults (shared with CLI)
+export { RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS } from './config/defaults.js';
+
 // Data Paths (for proper data directory management)
 export {
   getDataPaths,

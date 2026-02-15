@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { apiResponse, getIntParam, notFoundError } from './helpers.js';
+import { apiResponse, getIntParam, notFoundError, validateQueryEnum } from './helpers.js';
 
 // =============================================================================
 // Types
@@ -113,7 +113,7 @@ expensesRoutes.get('/', async (c) => {
   // Query params
   const startDate = c.req.query('startDate');
   const endDate = c.req.query('endDate');
-  const category = c.req.query('category') as ExpenseCategory | undefined;
+  const category = validateQueryEnum(c.req.query('category'), ['food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'education', 'travel', 'subscription', 'housing', 'other'] as const);
   const search = c.req.query('search');
   const limit = getIntParam(c, 'limit', 100, 1, 1000);
   const offset = getIntParam(c, 'offset', 0, 0);

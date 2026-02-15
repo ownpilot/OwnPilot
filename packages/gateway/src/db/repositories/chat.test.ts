@@ -991,8 +991,9 @@ describe('ChatRepository', () => {
 
       expect(result).toBe(2);
       const selectSql = mockAdapter.query.mock.calls[0]![0] as string;
-      expect(selectSql).toContain('INTERVAL');
-      expect(selectSql).toContain('30 days');
+      expect(selectSql).toContain('MAKE_INTERVAL(days => $2)');
+      const selectParams = mockAdapter.query.mock.calls[0]![1] as unknown[];
+      expect(selectParams).toContain(30);
     });
   });
 

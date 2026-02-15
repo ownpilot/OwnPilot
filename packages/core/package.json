@@ -61,6 +61,7 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "typecheck": "tsc --noEmit",
+    "typecheck:ci": "tsc --noEmit --skipLibCheck false",
     "clean": "rimraf dist coverage"
   },
   "dependencies": {

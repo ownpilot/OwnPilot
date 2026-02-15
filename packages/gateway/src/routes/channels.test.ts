@@ -58,7 +58,7 @@ const mockChannelMessagesRepo = {
 };
 
 vi.mock('../db/repositories/channel-messages.js', () => ({
-  ChannelMessagesRepository: vi.fn().mockImplementation(() => mockChannelMessagesRepo),
+  ChannelMessagesRepository: vi.fn(function () { return mockChannelMessagesRepo; }),
 }));
 
 // Import after mocks
