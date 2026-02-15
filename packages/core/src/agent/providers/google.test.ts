@@ -3,10 +3,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ok, err } from '../../types/result.js';
 // Error types checked via constructor.name to avoid cross-module instanceof issues
-import type { CompletionRequest, Message } from '../types.js';
+import type { CompletionRequest, Message, StreamChunk } from '../types.js';
 import type { ResolvedProviderConfig, ProviderConfig } from './configs/index.js';
+import type { Result } from '../../types/result.js';
 
 // Mock debug functions
 vi.mock('../debug.js', () => ({
@@ -108,24 +108,6 @@ function makeGeminiResponse(overrides: Record<string, unknown> = {}) {
     },
     ...overrides,
   };
-}
-
-function mockFetchOk(body: unknown, status = 200) {
-  return vi.fn().mockResolvedValue({
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-    text: async () => JSON.stringify(body),
-    body: null,
-  });
-}
-
-function mockFetchError(status: number, errorText: string) {
-  return vi.fn().mockResolvedValue({
-    ok: false,
-    status,
-    text: async () => errorText,
-  });
 }
 
 // --- Tests ---
@@ -376,9 +358,9 @@ describe('GoogleProvider', () => {
       vi.useFakeTimers();
 
       // Mock fetch to listen for abort signal and reject with AbortError
-      mockFetch.mockImplementation((_url: string, init: RequestInit) => {
+      mockFetch.mockImplementation((_url: string, init?: RequestInit) => {
         return new Promise((_, reject) => {
-          const signal = init.signal as AbortSignal;
+          const signal = init?.signal;
           if (signal?.aborted) {
             reject(new DOMException('The operation was aborted', 'AbortError'));
             return;
@@ -913,16 +895,17 @@ describe('GoogleProvider', () => {
     it('yields error when not ready', async () => {
       const provider = new GoogleProvider(makeMockConfig({ apiKey: '' }));
 
-      const chunks: unknown[] = [];
+      const chunks: Result<StreamChunk>[] = [];
       for await (const chunk of provider.stream(makeRequest())) {
         chunks.push(chunk);
       }
 
       expect(chunks).toHaveLength(1);
       expect(chunks[0]).toHaveProperty('ok', false);
-      if (!chunks[0]!.ok) {
-        expect((chunks[0] as any).error.constructor.name).toBe('InternalError');
-        expect((chunks[0] as any).error.message).toBe('Google API key not configured');
+      const firstChunk = chunks[0];
+      if (!firstChunk.ok) {
+        expect(firstChunk.error.constructor.name).toBe('InternalError');
+        expect(firstChunk.error.message).toBe('Google API key not configured');
       }
     });
 
@@ -930,14 +913,17 @@ describe('GoogleProvider', () => {
       const config = makeMockConfig({ models: [] });
       const provider = new GoogleProvider(config);
 
-      const chunks: unknown[] = [];
+      const chunks: Result<StreamChunk>[] = [];
       for await (const chunk of provider.stream(makeRequest({ model: { model: '' } }))) {
         chunks.push(chunk);
       }
 
       expect(chunks).toHaveLength(1);
-      expect((chunks[0] as any).ok).toBe(false);
-      expect((chunks[0] as any).error.message).toBe('No model specified');
+      const firstChunk = chunks[0];
+      expect(firstChunk.ok).toBe(false);
+      if (!firstChunk.ok) {
+        expect(firstChunk.error.message).toBe('No model specified');
+      }
     });
 
     it('parses SSE chunks correctly', async () => {
@@ -975,7 +961,7 @@ describe('GoogleProvider', () => {
         body: { getReader: () => mockReader },
       });
 
-      const chunks: unknown[] = [];
+      const chunks: Result<StreamChunk>[] = [];
       for await (const chunk of provider.stream(makeRequest())) {
         chunks.push(chunk);
       }
@@ -984,27 +970,33 @@ describe('GoogleProvider', () => {
       expect(chunks.length).toBeGreaterThanOrEqual(3);
 
       // First chunk - text
-      const first = chunks[0] as any;
+      const first = chunks[0];
       expect(first.ok).toBe(true);
-      expect(first.value.content).toBe('Hello');
-      expect(first.value.done).toBe(false);
+      if (first.ok) {
+        expect(first.value.content).toBe('Hello');
+        expect(first.value.done).toBe(false);
+      }
 
       // Second chunk - text
-      const second = chunks[1] as any;
+      const second = chunks[1];
       expect(second.ok).toBe(true);
-      expect(second.value.content).toBe(' world');
-      expect(second.value.done).toBe(false);
+      if (second.ok) {
+        expect(second.value.content).toBe(' world');
+        expect(second.value.done).toBe(false);
+      }
 
       // Done chunk
-      const last = chunks[chunks.length - 1] as any;
+      const last = chunks[chunks.length - 1];
       expect(last.ok).toBe(true);
-      expect(last.value.done).toBe(true);
-      expect(last.value.finishReason).toBe('stop');
-      expect(last.value.usage).toEqual({
-        promptTokens: 5,
-        completionTokens: 10,
-        totalTokens: 15,
-      });
+      if (last.ok) {
+        expect(last.value.done).toBe(true);
+        expect(last.value.finishReason).toBe('stop');
+        expect(last.value.usage).toEqual({
+          promptTokens: 5,
+          completionTokens: 10,
+          totalTokens: 15,
+        });
+      }
     });
 
     it('handles function call in stream', async () => {
@@ -1047,7 +1039,7 @@ describe('GoogleProvider', () => {
         body: { getReader: () => mockReader },
       });
 
-      const chunks: unknown[] = [];
+      const chunks: Result<StreamChunk>[] = [];
       for await (const chunk of provider.stream(makeRequest())) {
         chunks.push(chunk);
       }
@@ -1056,18 +1048,22 @@ describe('GoogleProvider', () => {
       expect(chunks.length).toBeGreaterThanOrEqual(2);
 
       const fnChunk = chunks.find(
-        (c: any) => c.ok && c.value.toolCalls?.length,
-      ) as any;
+        (c) => c.ok && c.value.toolCalls?.length,
+      );
       expect(fnChunk).toBeDefined();
-      expect(fnChunk.value.toolCalls[0].name).toBe('search');
-      expect(JSON.parse(fnChunk.value.toolCalls[0].arguments)).toEqual({ query: 'weather' });
-      expect(fnChunk.value.toolCalls[0].metadata).toEqual({ thoughtSignature: 'sig_xyz' });
+      if (fnChunk?.ok) {
+        expect(fnChunk.value.toolCalls![0].name).toBe('search');
+        expect(JSON.parse(fnChunk.value.toolCalls![0].arguments)).toEqual({ query: 'weather' });
+        expect(fnChunk.value.toolCalls![0].metadata).toEqual({ thoughtSignature: 'sig_xyz' });
+      }
 
       const doneChunk = chunks.find(
-        (c: any) => c.ok && c.value.done === true,
-      ) as any;
+        (c) => c.ok && c.value.done === true,
+      );
       expect(doneChunk).toBeDefined();
-      expect(doneChunk.value.finishReason).toBe('tool_calls');
+      if (doneChunk?.ok) {
+        expect(doneChunk.value.finishReason).toBe('tool_calls');
+      }
     });
 
     it('handles thinking content in stream with metadata', async () => {
@@ -1110,24 +1106,28 @@ describe('GoogleProvider', () => {
         body: { getReader: () => mockReader },
       });
 
-      const chunks: unknown[] = [];
+      const chunks: Result<StreamChunk>[] = [];
       for await (const chunk of provider.stream(makeRequest())) {
         chunks.push(chunk);
       }
 
       // Thinking chunk should have metadata.type = 'thinking'
       const thinkingChunk = chunks.find(
-        (c: any) => c.ok && c.value.metadata?.type === 'thinking',
-      ) as any;
+        (c) => c.ok && c.value.metadata?.type === 'thinking',
+      );
       expect(thinkingChunk).toBeDefined();
-      expect(thinkingChunk.value.content).toBe('Thinking about this...');
+      if (thinkingChunk?.ok) {
+        expect(thinkingChunk.value.content).toBe('Thinking about this...');
+      }
 
       // Regular text chunk
       const textChunk = chunks.find(
-        (c: any) => c.ok && c.value.content === 'Final answer.',
-      ) as any;
+        (c) => c.ok && c.value.content === 'Final answer.',
+      );
       expect(textChunk).toBeDefined();
-      expect(textChunk.value.metadata).toBeUndefined();
+      if (textChunk?.ok) {
+        expect(textChunk.value.metadata).toBeUndefined();
+      }
     });
 
     it('yields error on non-ok response', async () => {
@@ -1138,28 +1138,34 @@ describe('GoogleProvider', () => {
         body: null,
       });
 
-      const chunks: unknown[] = [];
+      const chunks: Result<StreamChunk>[] = [];
       for await (const chunk of provider.stream(makeRequest())) {
         chunks.push(chunk);
       }
 
       expect(chunks).toHaveLength(1);
-      expect((chunks[0] as any).ok).toBe(false);
-      expect((chunks[0] as any).error.message).toContain('503');
+      const firstChunk = chunks[0];
+      expect(firstChunk.ok).toBe(false);
+      if (!firstChunk.ok) {
+        expect(firstChunk.error.message).toContain('503');
+      }
     });
 
     it('yields error on fetch exception', async () => {
       const provider = new GoogleProvider(makeMockConfig());
       mockFetch.mockRejectedValue(new Error('Network failure'));
 
-      const chunks: unknown[] = [];
+      const chunks: Result<StreamChunk>[] = [];
       for await (const chunk of provider.stream(makeRequest())) {
         chunks.push(chunk);
       }
 
       expect(chunks).toHaveLength(1);
-      expect((chunks[0] as any).ok).toBe(false);
-      expect((chunks[0] as any).error.message).toContain('Network failure');
+      const firstChunk = chunks[0];
+      expect(firstChunk.ok).toBe(false);
+      if (!firstChunk.ok) {
+        expect(firstChunk.error.message).toContain('Network failure');
+      }
     });
 
     it('uses correct streaming URL with alt=sse parameter', async () => {
@@ -1175,7 +1181,7 @@ describe('GoogleProvider', () => {
         body: { getReader: () => mockReader },
       });
 
-      const chunks: unknown[] = [];
+      const chunks: Result<StreamChunk>[] = [];
       for await (const chunk of provider.stream(makeRequest())) {
         chunks.push(chunk);
       }
@@ -1224,15 +1230,18 @@ describe('GoogleProvider', () => {
         body: { getReader: () => mockReader },
       });
 
-      const chunks: unknown[] = [];
+      const chunks: Result<StreamChunk>[] = [];
       for await (const chunk of provider.stream(makeRequest())) {
         chunks.push(chunk);
       }
 
       // Should get valid text chunk + done chunk (malformed chunk silently skipped)
-      const textChunks = chunks.filter((c: any) => c.ok && c.value.content);
+      const textChunks = chunks.filter((c) => c.ok && c.value.content);
       expect(textChunks).toHaveLength(1);
-      expect((textChunks[0] as any).value.content).toBe('valid');
+      const firstTextChunk = textChunks[0];
+      if (firstTextChunk.ok) {
+        expect(firstTextChunk.value.content).toBe('valid');
+      }
     });
   });
 

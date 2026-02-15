@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ok, err } from '../../types/result.js';
 import { InternalError, TimeoutError, ValidationError } from '../../types/errors.js';
-import type { CompletionResponse, StreamChunk, Message } from '../types.js';
+import type { CompletionResponse, StreamChunk, Message, AIProvider } from '../types.js';
 import type { IProvider } from '../provider.js';
 import type { Result } from '../../types/result.js';
 import { FallbackProvider, createFallbackProvider, createProviderWithFallbacks } from './fallback.js';
@@ -31,18 +31,18 @@ vi.mock('../debug.js', () => ({
 const mockProviderMap = new Map<string, IProvider>();
 
 function createMockProvider(
-  type: string,
+  type: AIProvider,
   ready = true,
   completeFn?: () => Promise<Result<CompletionResponse>>,
   streamFn?: () => AsyncGenerator<Result<StreamChunk>>,
 ): IProvider {
   const provider: IProvider = {
-    type: type as any,
+    type: type as AIProvider,
     isReady: () => ready,
     complete: completeFn ?? vi.fn(async () => ok({
       content: `Response from ${type}`,
       model: 'test-model',
-      provider: type as any,
+      provider: type as AIProvider,
     } as CompletionResponse)),
     stream: streamFn ?? vi.fn(async function* () {
       yield ok({ content: 'chunk', done: true } as StreamChunk);
@@ -57,7 +57,7 @@ function makeRequest() {
   return {
     messages: [{ role: 'user' as const, content: 'Hello' }],
     model: 'test-model',
-    provider: 'openai' as any,
+    provider: 'openai' as AIProvider,
   };
 }
 
@@ -73,7 +73,7 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('openai', primary);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
         fallbacks: [],
       });
 
@@ -92,8 +92,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
       });
 
       const result = await fb.complete(makeRequest());
@@ -112,8 +112,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
       });
 
       const result = await fb.complete(makeRequest());
@@ -125,7 +125,7 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('openai', primary);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
         fallbacks: [],
       });
 
@@ -144,8 +144,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
         enableFallback: false,
       });
 
@@ -162,8 +162,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
         onFallback,
       });
 
@@ -179,8 +179,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
       });
 
       const result = await fb.complete(makeRequest());
@@ -200,8 +200,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
       });
 
       const result = await fb.complete(makeRequest());
@@ -217,8 +217,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
       });
 
       const result = await fb.complete(makeRequest());
@@ -234,8 +234,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
       });
 
       const result = await fb.complete(makeRequest());
@@ -256,8 +256,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
         circuitBreakerThreshold: 3,
         circuitBreakerCooldown: 60000,
       });
@@ -281,15 +281,15 @@ describe('FallbackProvider', () => {
       const primary = createMockProvider('openai', true,
         async () => {
           if (failPrimary) return err(new InternalError('timeout 503'));
-          return ok({ content: 'ok', model: 'm', provider: 'openai' } as CompletionResponse);
+          return ok({ content: 'ok', model: 'm', provider: 'openai' as AIProvider } as CompletionResponse);
         });
       const fallback = createMockProvider('anthropic');
       mockProviderMap.set('openai', primary);
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
         circuitBreakerThreshold: 2,
         circuitBreakerCooldown: 10, // very short for testing
       });
@@ -322,7 +322,7 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('openai', primary);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
         fallbacks: [],
       });
 
@@ -346,8 +346,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
       });
 
       const chunks: string[] = [];
@@ -371,8 +371,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
       });
 
       const results: Result<StreamChunk>[] = [];
@@ -390,7 +390,7 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('openai', primary);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
         fallbacks: [],
       });
 
@@ -411,8 +411,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
       });
 
       expect(fb.isReady()).toBe(true);
@@ -423,7 +423,7 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('openai', primary);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
         fallbacks: [],
       });
 
@@ -435,7 +435,7 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('openai', primary);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
         fallbacks: [],
       });
 
@@ -447,14 +447,14 @@ describe('FallbackProvider', () => {
       const primary = createMockProvider('openai');
       const fallback = createMockProvider('anthropic');
       // Both return overlapping models
-      (primary.getModels as any).mockResolvedValue(ok(['model-a', 'model-b']));
-      (fallback.getModels as any).mockResolvedValue(ok(['model-b', 'model-c']));
+      vi.mocked(primary.getModels).mockResolvedValue(ok(['model-a', 'model-b']));
+      vi.mocked(fallback.getModels).mockResolvedValue(ok(['model-b', 'model-c']));
       mockProviderMap.set('openai', primary);
       mockProviderMap.set('anthropic', fallback);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }],
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
       });
 
       const result = await fb.getModels();
@@ -469,7 +469,7 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('openai', primary);
 
       const fb = createFallbackProvider({
-        primary: { provider: 'openai' as any, model: 'm', apiKey: 'k' },
+        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
         fallbacks: [],
       });
 
@@ -485,8 +485,8 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('anthropic', fallback);
 
       const provider = createProviderWithFallbacks(
-        { provider: 'openai' as any, model: 'm', apiKey: 'k' },
-        { fallbacks: [{ provider: 'anthropic' as any, model: 'm', apiKey: 'k' }] },
+        { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
+        { fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }] },
       );
 
       expect(provider).toBeInstanceOf(FallbackProvider);
@@ -497,7 +497,7 @@ describe('FallbackProvider', () => {
       mockProviderMap.set('openai', primary);
 
       const provider = createProviderWithFallbacks(
-        { provider: 'openai' as any, model: 'm', apiKey: 'k' },
+        { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
       );
 
       // Should NOT be a FallbackProvider, just the raw mock
