@@ -1,6 +1,6 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { ok, err } from '../../types/result.js';
-import { InternalError, ValidationError } from '../../types/errors.js';
+import { ok, err, type Result } from '../../types/result.js';
+import { InternalError, type ValidationError } from '../../types/errors.js';
 import type { CompletionRequest, CompletionResponse, StreamChunk } from '../types.js';
 import type { ModelConfig, ResolvedProviderConfig } from './configs/types.js';
 
@@ -434,7 +434,7 @@ describe('ProviderRouter', () => {
       mockStream.mockReturnValue(fakeStream());
 
       const router = new ProviderRouter();
-      const chunks: any[] = [];
+      const chunks: Array<Result<StreamChunk & { routingInfo?: unknown }, InternalError | ValidationError>> = [];
       for await (const chunk of router.stream(makeRequest())) {
         chunks.push(chunk);
       }
@@ -455,7 +455,7 @@ describe('ProviderRouter', () => {
       mockSelectBestModel.mockReturnValue(null);
 
       const router = new ProviderRouter();
-      const chunks: any[] = [];
+      const chunks: Array<Result<StreamChunk & { routingInfo?: unknown }, InternalError | ValidationError>> = [];
       for await (const chunk of router.stream(makeRequest())) {
         chunks.push(chunk);
       }
@@ -472,7 +472,7 @@ describe('ProviderRouter', () => {
       mockStream.mockReturnValue(fakeStream());
 
       const router = new ProviderRouter();
-      const chunks: any[] = [];
+      const chunks: Array<Result<StreamChunk & { routingInfo?: unknown }, InternalError | ValidationError>> = [];
       for await (const chunk of router.stream(makeRequest())) {
         chunks.push(chunk);
       }
@@ -754,7 +754,7 @@ describe('ProviderRouter', () => {
       if (result.ok) {
         expect(result.value.content).toBe('Hello back!');
         // routingInfo should be stripped
-        expect((result.value as any).routingInfo).toBeUndefined();
+        expect((result.value as Record<string, unknown>).routingInfo).toBeUndefined();
       }
     });
 

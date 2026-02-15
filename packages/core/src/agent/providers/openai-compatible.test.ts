@@ -4,7 +4,9 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ResolvedProviderConfig, ProviderConfig } from './configs/index.js';
-import type { CompletionRequest, Message } from '../types.js';
+import type { CompletionRequest, Message, StreamChunk } from '../types.js';
+import type { Result } from '../../types/result.js';
+import type { InternalError } from '../../types/errors.js';
 import { OpenAICompatibleProvider } from './openai-compatible.js';
 
 // Mock configs module — vi.hoisted ensures the fns exist before the hoisted vi.mock runs
@@ -645,10 +647,10 @@ describe('OpenAICompatibleProvider', () => {
       ];
       vi.stubGlobal('fetch', mockFetchStream(sseLines));
 
-      const chunks: Array<{ ok: true; value: { content?: string; done: boolean } }> = [];
+      const chunks: Array<Result<StreamChunk, InternalError>> = [];
       for await (const chunk of provider.stream(makeRequest())) {
         if (chunk.ok) {
-          chunks.push(chunk as any);
+          chunks.push(chunk);
         }
       }
 
@@ -686,16 +688,16 @@ describe('OpenAICompatibleProvider', () => {
       ];
       vi.stubGlobal('fetch', mockFetchStream(sseLines));
 
-      const chunks: Array<{ ok: true; value: any }> = [];
+      const chunks: Array<Result<StreamChunk, InternalError>> = [];
       for await (const chunk of provider.stream(makeRequest())) {
         if (chunk.ok) {
-          chunks.push(chunk as any);
+          chunks.push(chunk);
         }
       }
 
       // First chunk: reasoning content
-      expect(chunks[0].value.content).toBe('Thinking...');
-      expect(chunks[0].value.metadata).toEqual({ type: 'reasoning' });
+      expect(chunks[0].ok && chunks[0].value.content).toBe('Thinking...');
+      expect(chunks[0].ok && chunks[0].value.metadata).toEqual({ type: 'reasoning' });
 
       // Second chunk: transition newline
       expect(chunks[1].value.content).toBe('\n\n');
@@ -713,17 +715,17 @@ describe('OpenAICompatibleProvider', () => {
       ];
       vi.stubGlobal('fetch', mockFetchStream(sseLines));
 
-      const chunks: Array<{ ok: true; value: any }> = [];
+      const chunks: Array<Result<StreamChunk, InternalError>> = [];
       for await (const chunk of provider.stream(makeRequest())) {
         if (chunk.ok) {
-          chunks.push(chunk as any);
+          chunks.push(chunk);
         }
       }
 
       // First chunk should have tool call info
-      expect(chunks[0].value.toolCalls).toBeDefined();
-      expect(chunks[0].value.toolCalls[0].id).toBe('call_1');
-      expect(chunks[0].value.toolCalls[0].name).toBe('get_weather');
+      expect(chunks[0].ok && chunks[0].value.toolCalls).toBeDefined();
+      expect(chunks[0].ok && chunks[0].value.toolCalls?.[0].id).toBe('call_1');
+      expect(chunks[0].ok && chunks[0].value.toolCalls?.[0].name).toBe('get_weather');
     });
 
     it('skips malformed chunks without crashing', async () => {
@@ -736,17 +738,17 @@ describe('OpenAICompatibleProvider', () => {
       ];
       vi.stubGlobal('fetch', mockFetchStream(sseLines));
 
-      const chunks: Array<{ ok: true; value: any }> = [];
+      const chunks: Array<Result<StreamChunk, InternalError>> = [];
       for await (const chunk of provider.stream(makeRequest())) {
         if (chunk.ok) {
-          chunks.push(chunk as any);
+          chunks.push(chunk);
         }
       }
 
       // Should have A, B, and DONE (the malformed chunk is silently skipped)
-      const contentChunks = chunks.filter(c => c.value.content);
-      expect(contentChunks.map(c => c.value.content)).toContain('A');
-      expect(contentChunks.map(c => c.value.content)).toContain('B');
+      const contentChunks = chunks.filter(c => c.ok && c.value.content);
+      expect(contentChunks.map(c => c.ok && c.value.content)).toContain('A');
+      expect(contentChunks.map(c => c.ok && c.value.content)).toContain('B');
     });
 
     it('yields InternalError on non-ok fetch response', async () => {
@@ -817,19 +819,19 @@ describe('OpenAICompatibleProvider', () => {
       ];
       vi.stubGlobal('fetch', mockFetchStream(sseLines));
 
-      const chunks: Array<{ ok: true; value: any }> = [];
+      const chunks: Array<Result<StreamChunk, InternalError>> = [];
       for await (const chunk of provider.stream(makeRequest())) {
         if (chunk.ok) {
-          chunks.push(chunk as any);
+          chunks.push(chunk);
         }
       }
 
       // The content chunk with finish_reason
-      const contentChunk = chunks.find(c => c.value.content === 'Done');
+      const contentChunk = chunks.find(c => c.ok && c.value.content === 'Done');
       expect(contentChunk).toBeDefined();
-      expect(contentChunk!.value.done).toBe(true);
-      expect(contentChunk!.value.finishReason).toBe('stop');
-      expect(contentChunk!.value.usage).toEqual({
+      expect(contentChunk?.ok && contentChunk.value.done).toBe(true);
+      expect(contentChunk?.ok && contentChunk.value.finishReason).toBe('stop');
+      expect(contentChunk?.ok && contentChunk.value.usage).toEqual({
         promptTokens: 5,
         completionTokens: 3,
         totalTokens: 8,
@@ -846,16 +848,16 @@ describe('OpenAICompatibleProvider', () => {
       ];
       vi.stubGlobal('fetch', mockFetchStream(sseLines));
 
-      const chunks: Array<{ ok: true; value: any }> = [];
+      const chunks: Array<Result<StreamChunk, InternalError>> = [];
       for await (const chunk of provider.stream(makeRequest())) {
         if (chunk.ok) {
-          chunks.push(chunk as any);
+          chunks.push(chunk);
         }
       }
 
-      const contentChunks = chunks.filter(c => c.value.content);
+      const contentChunks = chunks.filter(c => c.ok && c.value.content);
       expect(contentChunks).toHaveLength(1);
-      expect(contentChunks[0].value.content).toBe('ok');
+      expect(contentChunks[0].ok && contentChunks[0].value.content).toBe('ok');
     });
   });
 

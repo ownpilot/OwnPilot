@@ -10,8 +10,8 @@ import {
   getAllAggregatorProviders,
   isAggregatorProvider,
   getAggregatorModels,
-  type AggregatorProvider,
-  type AggregatorModel,
+  type AggregatorProvider as _AggregatorProvider,
+  type AggregatorModel as _AggregatorModel,
 } from './aggregators.js';
 
 describe('Aggregator Providers', () => {
