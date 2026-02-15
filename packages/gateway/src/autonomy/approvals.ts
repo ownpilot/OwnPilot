@@ -5,6 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { generateId } from '@ownpilot/core';
 import {
   type PendingAction,
   type ApprovalRequest,
@@ -305,7 +306,7 @@ export class ApprovalManager extends EventEmitter {
   ): PendingAction {
     const now = new Date();
     return {
-      id: `action_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      id: generateId('action'),
       userId,
       category,
       type: actionType,
@@ -397,7 +398,7 @@ export class ApprovalManager extends EventEmitter {
     severity: AutonomyNotification['severity'] = 'info'
   ): void {
     const notification: AutonomyNotification = {
-      id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      id: generateId('notif'),
       userId,
       type,
       title,

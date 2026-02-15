@@ -6,7 +6,7 @@
  */
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
-import { getNextRunTime } from '@ownpilot/core';
+import { getNextRunTime, generateId } from '@ownpilot/core';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('TriggersRepo');
@@ -146,7 +146,7 @@ export class TriggersRepository extends BaseRepository {
    * Create a new trigger
    */
   async create(input: CreateTriggerInput): Promise<Trigger> {
-    const id = `trigger_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const id = generateId('trigger');
     const now = new Date().toISOString();
 
     // Calculate next fire time for schedule triggers
@@ -387,7 +387,7 @@ export class TriggersRepository extends BaseRepository {
     error?: string,
     durationMs?: number
   ): Promise<TriggerHistory> {
-    const id = `hist_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const id = generateId('hist');
 
     await this.execute(
       `INSERT INTO trigger_history (id, trigger_id, status, result, error, duration_ms)

@@ -11,6 +11,7 @@ import { injectMemoryIntoPrompt, type MemoryInjectionOptions } from './memory-in
 import { getEventSystem } from '../events/index.js';
 import { getLog } from '../services/get-log.js';
 import { getErrorMessage } from '../services/error-utils.js';
+import { generateId } from '../services/id-utils.js';
 
 const log = getLog('Orchestrator');
 
@@ -188,7 +189,7 @@ export class AgentOrchestrator {
     conversationHistory: Message[] = [],
     metadata: Record<string, unknown> = {}
   ): Promise<OrchestratorContext> {
-    const executionId = `exec_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const executionId = generateId('exec');
 
     // Get system prompt (with optional memory injection)
     const systemPrompt = await this.getSystemPrompt(conversationHistory.length);
@@ -245,7 +246,7 @@ export class AgentOrchestrator {
     conversationHistory: Message[] = [],
     metadata: Record<string, unknown> = {}
   ): AsyncGenerator<AgentStep, OrchestratorContext, undefined> {
-    const executionId = `exec_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const executionId = generateId('exec');
 
     // Get system prompt (with optional memory injection)
     const systemPrompt = await this.getSystemPrompt(conversationHistory.length);

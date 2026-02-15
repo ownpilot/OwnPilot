@@ -51,18 +51,21 @@ vi.mock('../services/log.js', () => ({
 // Mock fs functions
 const mockExistsSync = vi.fn(() => false);
 const mockMkdirSync = vi.fn();
-const mockReaddirSync = vi.fn(() => [] as string[]);
-const mockStatSync = vi.fn(() => ({ size: 1024, mtime: new Date('2024-06-01') }));
+const mockReaddir = vi.fn(async () => [] as string[]);
+const mockStat = vi.fn(async () => ({ size: 1024, mtime: new Date('2024-06-01') }));
 const mockUnlinkSync = vi.fn();
-const mockWriteFileSync = vi.fn();
+const mockWriteFile = vi.fn(async () => undefined);
 
 vi.mock('fs', () => ({
   existsSync: (...args: unknown[]) => mockExistsSync(...args),
   mkdirSync: (...args: unknown[]) => mockMkdirSync(...args),
-  readdirSync: (...args: unknown[]) => mockReaddirSync(...args),
-  statSync: (...args: unknown[]) => mockStatSync(...args),
   unlinkSync: (...args: unknown[]) => mockUnlinkSync(...args),
-  writeFileSync: (...args: unknown[]) => mockWriteFileSync(...args),
+}));
+
+vi.mock('fs/promises', () => ({
+  readdir: (...args: unknown[]) => mockReaddir(...args),
+  stat: (...args: unknown[]) => mockStat(...args),
+  writeFile: (...args: unknown[]) => mockWriteFile(...args),
 }));
 
 // Mock child_process.spawn
@@ -151,7 +154,7 @@ describe('Database Routes', () => {
 
     // Default fs mocks
     mockExistsSync.mockReturnValue(false);
-    mockReaddirSync.mockReturnValue([]);
+    mockReaddir.mockResolvedValue([]);
 
     // Reset spawn event maps
     Object.keys(mockSpawnEvents).forEach(k => delete mockSpawnEvents[k]);
@@ -173,7 +176,7 @@ describe('Database Routes', () => {
         .mockResolvedValueOnce({ size: '15 MB' })
         .mockResolvedValueOnce({ count: '30' });
       mockExistsSync.mockReturnValue(false);
-      mockReaddirSync.mockReturnValue([]);
+      mockReaddir.mockResolvedValue([]);
 
       const res = await app.request('/database/status');
 
@@ -201,7 +204,7 @@ describe('Database Routes', () => {
         .mockResolvedValueOnce({ size: '15 MB' })
         .mockResolvedValueOnce({ count: '30' });
       mockExistsSync.mockReturnValue(false); // No legacy data
-      mockReaddirSync.mockReturnValue([]);
+      mockReaddir.mockResolvedValue([]);
 
       const res = await app.request('/database/status', {
         headers: adminHeaders(),
@@ -250,8 +253,8 @@ describe('Database Routes', () => {
 
     it('should list available backups', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockReaddirSync.mockReturnValue(['backup-2024.sql', 'backup-2024.dump', 'other.txt'] as never);
-      mockStatSync.mockReturnValue({ size: 2048, mtime: new Date('2024-06-15') });
+      mockReaddir.mockResolvedValue(['backup-2024.sql', 'backup-2024.dump', 'other.txt'] as never);
+      mockStat.mockResolvedValue({ size: 2048, mtime: new Date('2024-06-15') });
 
       const res = await app.request('/database/status', {
         headers: adminHeaders(),

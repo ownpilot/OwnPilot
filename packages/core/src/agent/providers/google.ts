@@ -10,6 +10,7 @@ import { ok, err } from '../../types/result.js';
 import { InternalError, TimeoutError, ValidationError } from '../../types/errors.js';
 import { getLog } from '../../services/get-log.js';
 import { getErrorMessage } from '../../services/error-utils.js';
+import { generateId } from '../../services/id-utils.js';
 
 const log = getLog('Google');
 import type {
@@ -291,7 +292,7 @@ export class GoogleProvider {
         }
         if (part.functionCall) {
           toolCalls.push({
-            id: `call_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+            id: generateId('call'),
             name: part.functionCall.name,
             arguments: JSON.stringify(part.functionCall.args),
             // Capture thoughtSignature for Gemini 3+ thinking models

@@ -97,6 +97,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 vi.mock('./settings.js', () => ({
   hasApiKey: vi.fn(async (providerId: string) => providerId === 'openai'),
   getApiKey: vi.fn(async () => null),
+  getConfiguredProviderIds: vi.fn(async () => new Set(['openai'])),
 }));
 
 // Import after mocks

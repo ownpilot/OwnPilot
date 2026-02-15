@@ -22,6 +22,9 @@ export { getLog } from './get-log.js';
 
 // Error Utilities
 export { getErrorMessage } from './error-utils.js';
+
+// ID Utilities
+export { generateId } from './id-utils.js';
 export type {
   ISessionService,
   Session,

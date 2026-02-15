@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
+import { hasServiceRegistry, getServiceRegistry, Services, generateId } from '@ownpilot/core';
 import {
   Agent,
   createAgent,
@@ -61,7 +61,7 @@ import type {
 } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage, truncate } from './helpers.js'
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
-import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel } from './settings.js';
+import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel, getConfiguredProviderIds } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
 import { getApprovalManager } from '../autonomy/index.js';
@@ -913,7 +913,7 @@ export function invalidateAgentCache(): void {
  * Generate unique agent ID
  */
 function generateAgentId(): string {
-  return `agent_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return generateId('agent');
 }
 
 /**
@@ -1671,16 +1671,11 @@ export { getDefaultModel } from './settings.js';
  * Check if demo mode is enabled (no API keys configured)
  */
 export async function isDemoMode(): Promise<boolean> {
-  // Check all supported providers
+  // Batch-check all providers in one query instead of 11 sequential queries
+  const configured = await getConfiguredProviderIds();
   const providers = [
     'openai', 'anthropic', 'zhipu', 'deepseek', 'groq',
     'google', 'xai', 'mistral', 'together', 'fireworks', 'perplexity'
   ];
-
-  for (const provider of providers) {
-    if (await hasApiKey(provider)) {
-      return false;
-    }
-  }
-  return true;
+  return !providers.some(p => configured.has(p));
 }

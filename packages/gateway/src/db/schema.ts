@@ -1339,6 +1339,13 @@ CREATE INDEX IF NOT EXISTS idx_channel_verification_token ON channel_verificatio
 CREATE INDEX IF NOT EXISTS idx_channel_verification_user ON channel_verification_tokens(ownpilot_user_id);
 CREATE INDEX IF NOT EXISTS idx_channel_verification_expires ON channel_verification_tokens(expires_at);
 
+-- Composite indexes for high-frequency multi-column queries
+CREATE INDEX IF NOT EXISTS idx_tasks_user_status ON tasks(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_goals_user_status ON goals(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_pomodoro_sessions_user_status ON pomodoro_sessions(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_plans_user_status ON plans(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_habit_logs_habit_date ON habit_logs(habit_id, date);
+
 -- pgvector: HNSW index for cosine similarity search on memories
 DO $$ BEGIN
   IF EXISTS (

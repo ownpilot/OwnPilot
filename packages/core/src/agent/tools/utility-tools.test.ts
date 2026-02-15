@@ -1,30 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  getCurrentDateTimeExecutor,
-  calculateExecutor,
-  convertUnitsExecutor,
-  generateUuidExecutor,
-  generatePasswordExecutor,
-  generateRandomNumberExecutor,
-  hashTextExecutor,
-  encodeDecodeExecutor,
-  countTextExecutor,
-  extractFromTextExecutor,
-  validateDataExecutor,
-  transformTextExecutor,
-  dateDiffExecutor,
-  dateAddExecutor,
-  formatJsonExecutor,
-  parseCsvExecutor,
-  generateCsvExecutor,
-  arrayOperationsExecutor,
-  calculateStatisticsExecutor,
-  compareTextExecutor,
-  runRegexExecutor,
-  getSystemInfoExecutor,
-  UTILITY_TOOLS,
-  UTILITY_TOOL_NAMES,
-} from './utility-tools.js';
+import { getCurrentDateTimeExecutor, dateDiffExecutor, dateAddExecutor } from './utility-date-tools.js';
+import { calculateExecutor, convertUnitsExecutor, calculateStatisticsExecutor } from './utility-math-tools.js';
+import { countTextExecutor, extractFromTextExecutor, transformTextExecutor, compareTextExecutor, runRegexExecutor } from './utility-text-tools.js';
+import { generateUuidExecutor, generatePasswordExecutor, generateRandomNumberExecutor, hashTextExecutor, encodeDecodeExecutor } from './utility-gen-tools.js';
+import { validateDataExecutor, formatJsonExecutor, parseCsvExecutor, generateCsvExecutor, arrayOperationsExecutor, getSystemInfoExecutor } from './utility-data-tools.js';
+import { UTILITY_TOOLS, UTILITY_TOOL_NAMES } from './utility-tools.js';
 
 // Helper to parse the JSON content from a successful result
 function parseContent(content: string): Record<string, unknown> {

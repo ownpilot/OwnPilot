@@ -4,7 +4,7 @@
  * AI agent tools for creating, managing, and firing triggers.
  */
 
-import { type ToolDefinition, getServiceRegistry, Services } from '@ownpilot/core';
+import { type ToolDefinition, getServiceRegistry, Services, getErrorMessage } from '@ownpilot/core';
 import { getTriggerEngine } from '../triggers/index.js';
 
 // =============================================================================
@@ -233,7 +233,7 @@ export async function executeTriggerTool(
           },
         };
       } catch (e) {
-        return { success: false, error: (e as Error).message };
+        return { success: false, error: getErrorMessage(e) };
       }
     }
 
@@ -293,7 +293,7 @@ export async function executeTriggerTool(
           result: { id: triggerId, name: trigger.name, message: `Trigger "${trigger.name}" fired manually.` },
         };
       } catch (e) {
-        return { success: false, error: `Failed to fire trigger: ${(e as Error).message}` };
+        return { success: false, error: `Failed to fire trigger: ${getErrorMessage(e)}` };
       }
     }
 

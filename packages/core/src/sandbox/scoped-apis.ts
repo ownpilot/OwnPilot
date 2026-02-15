@@ -133,11 +133,23 @@ export function createScopedExec(workspaceDir: string): ScopedExec {
 
       const execTimeout = timeout ?? 30000;
 
+      // Security: only pass safe env vars to sandboxed commands (no API keys/secrets)
+      const safeEnv: Record<string, string> = {};
+      const SAFE_ENV_KEYS = ['PATH', 'HOME', 'USER', 'LANG', 'TERM', 'NODE_ENV', 'TZ',
+        'SHELL', 'TEMP', 'TMP', 'TMPDIR', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA',
+        'SystemRoot', 'SYSTEMROOT', 'windir', 'WINDIR', 'ComSpec', 'COMSPEC',
+        'ProgramFiles', 'ProgramFiles(x86)', 'CommonProgramFiles',
+        'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS'];
+      for (const key of SAFE_ENV_KEYS) {
+        if (process.env[key]) safeEnv[key] = process.env[key]!;
+      }
+
       return new Promise<{ stdout: string; stderr: string; exitCode: number | null }>((resolve, reject) => {
         const child = exec(command, {
           cwd: workspaceDir,
           timeout: execTimeout,
           maxBuffer: MAX_OUTPUT_SIZE,
+          env: safeEnv,
         }, (error, stdout, stderr) => {
           if (error && !error.killed) {
             // Execution error but not timeout-killed

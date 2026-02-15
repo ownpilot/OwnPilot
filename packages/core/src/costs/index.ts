@@ -17,6 +17,7 @@
 
 import { EventEmitter } from 'node:events';
 import { getLog } from '../services/get-log.js';
+import { generateId } from '../services/id-utils.js';
 
 const costLog = getLog('Costs');
 
@@ -903,7 +904,7 @@ export class UsageTracker extends EventEmitter {
 
     const record: UsageRecord = {
       ...usage,
-      id: `usage_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      id: generateId('usage'),
       timestamp: new Date().toISOString(),
       cost,
     };

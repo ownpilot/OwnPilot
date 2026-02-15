@@ -181,3 +181,16 @@ export const AI_META_TOOL_NAMES = ['search_tools', 'get_tool_help', 'use_tool', 
 
 /** IMAP connection timeout (ms) */
 export const IMAP_CONNECT_TIMEOUT_MS = 15_000;
+
+// ============================================================================
+// In-Memory Cache Limits
+// ============================================================================
+
+/** Maximum cached source file contents (tool-source.ts) */
+export const MAX_TOOL_SOURCE_FILE_CACHE = 200;
+
+/** Maximum cached tool source extractions (tool-source.ts) */
+export const MAX_TOOL_SOURCE_EXTRACTION_CACHE = 500;
+
+/** Maximum outgoing message→chat mappings kept for edit/delete support */
+export const MAX_MESSAGE_CHAT_MAP_SIZE = 1_000;

@@ -6,6 +6,7 @@
  */
 
 import { BaseRepository, parseJsonField } from './base.js';
+import { generateId } from '@ownpilot/core';
 
 /**
  * Column definition for custom tables
@@ -78,7 +79,7 @@ export class CustomDataRepository extends BaseRepository {
     description?: string,
     options?: { ownerPluginId?: string; isProtected?: boolean }
   ): Promise<CustomTableSchema> {
-    const id = `table_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const id = generateId('table');
     const now = new Date().toISOString();
 
     // Validate column names
@@ -286,7 +287,7 @@ export class CustomDataRepository extends BaseRepository {
       }
     }
 
-    const id = `rec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const id = generateId('rec');
     const now = new Date().toISOString();
 
     await this.execute(
@@ -440,7 +441,7 @@ export class CustomDataRepository extends BaseRepository {
     }
 
     const limit = options?.limit ?? 50;
-    const searchTerm = `%${query.toLowerCase()}%`;
+    const searchTerm = `%${this.escapeLike(query.toLowerCase())}%`;
 
     // Search in JSON data (PostgreSQL ILIKE on cast)
     const rows = await this.query<RecordRow>(

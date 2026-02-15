@@ -25,7 +25,7 @@ import {
   isAggregatorProvider,
   type ModelCapability,
 } from '@ownpilot/core';
-import { hasApiKey, getApiKey } from './settings.js';
+import { hasApiKey, getApiKey, getConfiguredProviderIds } from './settings.js';
 import { getLog } from '../services/log.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, validateQueryEnum, getErrorMessage } from './helpers.js'
 
@@ -86,14 +86,17 @@ async function isProviderConfigured(providerId: string): Promise<boolean> {
  */
 async function getMergedModels(userId: string): Promise<MergedModel[]> {
   const models: MergedModel[] = [];
-  const userConfigs = await modelConfigsRepo.listModels(userId);
-  const disabledSet = await modelConfigsRepo.getDisabledModelIds(userId);
+  const [userConfigs, disabledSet, configuredProviders] = await Promise.all([
+    modelConfigsRepo.listModels(userId),
+    modelConfigsRepo.getDisabledModelIds(userId),
+    getConfiguredProviderIds(),
+  ]);
   const userConfigMap = new Map(userConfigs.map((c) => [`${c.providerId}/${c.modelId}`, c]));
 
   // 1. Built-in providers from models.dev (ALL providers)
   const builtinProviders = getAllProviderConfigs();
   for (const provider of builtinProviders) {
-    const configured = await isProviderConfigured(provider.id);
+    const configured = configuredProviders.has(provider.id);
 
     for (const model of provider.models) {
       const key = `${provider.id}/${model.id}`;
@@ -128,8 +131,8 @@ async function getMergedModels(userId: string): Promise<MergedModel[]> {
     const userProvider = await modelConfigsRepo.getProvider(userId, agg.id);
     if (!userProvider?.isEnabled) continue;
 
-    // Check if API key is configured (either in env or in user settings)
-    const configured = await isProviderConfigured(agg.id);
+    // Check if API key is configured (from batch-loaded set)
+    const configured = configuredProviders.has(agg.id);
 
     for (const model of agg.defaultModels) {
       const key = `${agg.id}/${model.id}`;

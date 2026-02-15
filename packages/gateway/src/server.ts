@@ -228,6 +228,12 @@ async function main() {
   const port = config.port ?? 8080;
   const host = config.host ?? '0.0.0.0';
 
+  // Security: warn if binding to all interfaces without authentication
+  if (host === '0.0.0.0' && config.auth?.type === 'none') {
+    log.warn('⚠ WARNING: Server bound to 0.0.0.0 with AUTH_TYPE=none — API is exposed without authentication!');
+    log.warn('Set AUTH_TYPE=api-key or AUTH_TYPE=jwt, or bind to 127.0.0.1 for local-only access.');
+  }
+
   // Initialize plugins (registers built-in plugins)
   log.info('Initializing plugins...');
   await initializePlugins();

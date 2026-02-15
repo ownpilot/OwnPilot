@@ -12,6 +12,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 import { getErrorMessage } from '../../services/error-utils.js';
+import { generateId } from '../../services/id-utils.js';
 
 // =============================================================================
 // Types
@@ -139,7 +140,7 @@ async function saveExpenseDb(db: ExpenseDatabase, dbPath: string = DEFAULT_EXPEN
  * Generate expense ID
  */
 function generateExpenseId(): string {
-  return `exp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return generateId('exp');
 }
 
 // =============================================================================

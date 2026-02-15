@@ -201,6 +201,15 @@ export async function getApiKey(provider: string): Promise<string | undefined> {
 }
 
 /**
+ * Get all configured provider IDs in one query (batch version of hasApiKey).
+ * Returns a Set of provider IDs that have API keys configured.
+ */
+export async function getConfiguredProviderIds(): Promise<Set<string>> {
+  const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
+  return new Set(apiKeySettings.map(s => s.key.replace(API_KEY_PREFIX, '')));
+}
+
+/**
  * Load all API keys from database into process.env for provider SDKs
  * Called at startup - this allows SDKs that read from env to work
  */

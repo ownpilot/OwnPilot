@@ -11,6 +11,7 @@ import {
   getEventBus,
   createEvent,
   EventTypes,
+  generateId,
   type ResourceCreatedData,
   type ResourceUpdatedData,
   type ResourceDeletedData,
@@ -151,7 +152,7 @@ export class GoalsRepository extends BaseRepository {
    * Create a new goal
    */
   async create(input: CreateGoalInput): Promise<Goal> {
-    const id = `goal_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const id = generateId('goal');
     const now = new Date().toISOString();
 
     await this.execute(
@@ -402,7 +403,7 @@ export class GoalsRepository extends BaseRepository {
     const goal = await this.get(goalId);
     if (!goal) return null;
 
-    const id = `step_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const id = generateId('step');
     const now = new Date().toISOString();
 
     // Get max order num if not provided

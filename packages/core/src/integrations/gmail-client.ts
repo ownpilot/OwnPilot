@@ -8,6 +8,7 @@
 import { google, type gmail_v1 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { getLog } from '../services/get-log.js';
+import { generateId } from '../services/id-utils.js';
 
 const log = getLog('Gmail');
 
@@ -513,7 +514,7 @@ export class GmailClient {
       mimeType: string;
     }>;
   }): string {
-    const boundary = `boundary_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+    const boundary = generateId('boundary');
     const lines: string[] = [];
 
     // Headers

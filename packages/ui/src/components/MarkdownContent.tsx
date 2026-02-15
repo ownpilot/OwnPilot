@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { CodeBlock } from './CodeBlock';
 
 interface MarkdownContentProps {
@@ -7,7 +8,7 @@ interface MarkdownContentProps {
   compact?: boolean;
 }
 
-export function MarkdownContent({ content, className, compact }: MarkdownContentProps) {
+export const MarkdownContent = memo(function MarkdownContent({ content, className, compact }: MarkdownContentProps) {
   const maxHeight = compact ? '200px' : '300px';
 
   // Render inline elements (bold, italic, inline code, links)
@@ -129,9 +130,11 @@ export function MarkdownContent({ content, className, compact }: MarkdownContent
     return parts.length > 0 ? parts : <span className="whitespace-pre-wrap break-words">{text}</span>;
   };
 
+  const rendered = useMemo(() => renderContent(content), [content, compact]);
+
   return (
     <div className={className}>
-      {renderContent(content)}
+      {rendered}
     </div>
   );
-}
+});

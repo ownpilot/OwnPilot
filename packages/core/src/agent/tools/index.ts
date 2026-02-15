@@ -4,36 +4,10 @@
  */
 
 // =============================================================================
-// EXPORTS - All tool modules
+// EXPORTS - Module resolver (used by gateway for pnpm strict mode)
 // =============================================================================
 
 export { setModuleResolver, tryImport } from './module-resolver.js';
-export * from './file-system.js';
-export * from './code-execution.js';
-export * from './web-fetch.js';
-export * from './expense-tracker.js';
-export * from './scheduler-tools.js';
-export * from './custom-data.js';
-export * from './memory-tools.js';
-export * from './goal-tools.js';
-export * from './personal-data.js';
-
-// New tools
-export * from './pdf-tools.js';
-export * from './translation-tools.js';
-export * from './image-tools.js';
-export * from './email-tools.js';
-export * from './git-tools.js';
-export * from './vector-search-tools.js';
-export * from './audio-tools.js';
-export * from './data-extraction-tools.js';
-export * from './weather-tools.js';
-
-// Dynamic tools - LLM-created tools
-export * from './dynamic-tools.js';
-
-// Utility tools - date/time, calculations, conversions, text utilities
-export * from './utility-tools.js';
 
 // =============================================================================
 // IMPORTS - Tool sets
@@ -113,6 +87,15 @@ export const TOOL_SETS = {
 // =============================================================================
 // TOOL NAME EXPORTS
 // =============================================================================
+
+/**
+ * Core tool sets (with built-in executors)
+ */
+export { FILE_SYSTEM_TOOLS };
+export { CODE_EXECUTION_TOOLS };
+export { WEB_FETCH_TOOLS };
+export { EXPENSE_TRACKER_TOOLS };
+export { SCHEDULER_TOOLS };
 
 /**
  * Custom data tools (definitions only - executors are in gateway)

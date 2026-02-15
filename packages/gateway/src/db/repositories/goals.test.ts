@@ -51,6 +51,7 @@ vi.mock('@ownpilot/core', () => ({
     RESOURCE_UPDATED: 'resource.updated',
     RESOURCE_DELETED: 'resource.deleted',
   },
+  generateId: (prefix: string) => `${prefix}_test_${Date.now()}`,
 }));
 
 vi.mock('../../services/log.js', () => ({

@@ -80,11 +80,11 @@ export class PIIDetector {
         continue;
       }
 
-      // Reset regex lastIndex for global patterns
-      const regex = new RegExp(pattern.pattern.source, pattern.pattern.flags);
+      // Reset regex lastIndex for global patterns (reuse existing RegExp, avoid re-compilation)
+      pattern.pattern.lastIndex = 0;
 
       let match: RegExpExecArray | null;
-      while ((match = regex.exec(text)) !== null) {
+      while ((match = pattern.pattern.exec(text)) !== null) {
         const matchText = match[0];
         const start = match.index;
         const end = start + matchText.length;

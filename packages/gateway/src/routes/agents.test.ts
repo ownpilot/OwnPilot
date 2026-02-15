@@ -80,6 +80,7 @@ vi.mock('@ownpilot/core', () => ({
   } as Record<string, { tools: string[] }>,
   getProviderConfig: vi.fn(() => null),
   unsafeToolId: vi.fn((id: string) => id),
+  generateId: (prefix: string) => `${prefix}_test_${Date.now()}`,
 }));
 
 vi.mock('../db/repositories/index.js', () => ({

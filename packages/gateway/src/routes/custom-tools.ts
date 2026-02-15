@@ -476,7 +476,10 @@ customToolsRoutes.post('/:id/reject', async (c) => {
  */
 customToolsRoutes.post('/:id/execute', async (c) => {
   const id = c.req.param('id');
-  const body = await c.req.json().catch(() => null) as { arguments?: Record<string, unknown> };
+  const body = await c.req.json().catch(() => null) as { arguments?: Record<string, unknown> } | null;
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
+  }
 
   const repo = createCustomToolsRepo(getUserId(c));
   const tool = await repo.get(id);
@@ -578,7 +581,10 @@ customToolsRoutes.post('/test', async (c) => {
     code: string;
     permissions?: ToolPermission[];
     testArguments?: Record<string, unknown>;
-  };
+  } | null;
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
+  }
 
   // Validate required fields
   if (!body.name || !body.description || !body.parameters || !body.code) {
@@ -649,9 +655,9 @@ customToolsRoutes.post('/validate', async (c) => {
     code: string;
     name?: string;
     permissions?: string[];
-  };
+  } | null;
 
-  if (!body.code || typeof body.code !== 'string') {
+  if (!body?.code || typeof body.code !== 'string') {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'code is required' }, 400);
   }
 
@@ -687,9 +693,9 @@ customToolsRoutes.post('/llm-review', async (c) => {
     name?: string;
     description?: string;
     permissions?: string[];
-  };
+  } | null;
 
-  if (!body.code || typeof body.code !== 'string') {
+  if (!body?.code || typeof body.code !== 'string') {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'code is required' }, 400);
   }
 
@@ -855,16 +861,17 @@ customToolsRoutes.post('/templates/:templateId/create', async (c) => {
     code?: string;
     permissions?: ToolPermission[];
     requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
-  };
+  } | null;
 
   const template = TOOL_TEMPLATES.find(t => t.id === templateId);
   if (!template) {
     return notFoundError(c, 'Template', templateId);
   }
 
-  // Merge template with overrides
-  const toolName = body.name ?? template.name;
-  const toolCode = body.code ?? template.code;
+  // Merge template with overrides (body may be null if no overrides provided)
+  const overrides = body ?? {};
+  const toolName = overrides.name ?? template.name;
+  const toolCode = overrides.code ?? template.code;
 
   // Validate the final code
   const codeValidation = validateToolCode(toolCode);
@@ -882,14 +889,14 @@ customToolsRoutes.post('/templates/:templateId/create', async (c) => {
 
   const tool = await repo.create({
     name: toolName,
-    description: body.description ?? template.description,
+    description: overrides.description ?? template.description,
     parameters: template.parameters as CustomToolRecord['parameters'],
     code: toolCode,
     category: template.category,
-    permissions: (body.permissions ?? template.permissions) as ToolPermission[],
+    permissions: (overrides.permissions ?? template.permissions) as ToolPermission[],
     requiresApproval: false,
     createdBy: 'user',
-    requiredApiKeys: body.requiredApiKeys ?? template.requiredApiKeys,
+    requiredApiKeys: overrides.requiredApiKeys ?? template.requiredApiKeys,
   });
 
   // Register config dependencies

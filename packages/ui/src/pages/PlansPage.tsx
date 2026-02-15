@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { plansApi, apiClient } from '../api';
-import type { Plan, PlanStep, PlanEventType, PlanHistoryEntry } from '../api';
+import { plansApi } from '../api';
+import type { Plan, PlanStep, PlanHistoryEntry } from '../api';
 import {
   ListChecks,
   Plus,
@@ -23,7 +23,8 @@ import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
-import { useModalClose } from '../hooks';
+import { PlanModal } from '../components/PlanModal';
+import { PlanHistoryModal } from '../components/PlanHistoryModal';
 
 const statusColors: Record<Plan['status'], string> = {
   pending: 'bg-warning/10 text-warning',
@@ -686,129 +687,6 @@ function StepDebugItem({ step, isActive }: StepDebugItemProps) {
 }
 
 // ============================================================================
-// Plan Modal (Create / Edit)
-// ============================================================================
-
-interface PlanModalProps {
-  plan: Plan | null;
-  onClose: () => void;
-  onSave: () => void;
-}
-
-function PlanModal({ plan, onClose, onSave }: PlanModalProps) {
-  const { onBackdropClick } = useModalClose(onClose);
-  const toast = useToast();
-  const [name, setName] = useState(plan?.name ?? '');
-  const [goal, setGoal] = useState(plan?.goal ?? '');
-  const [description, setDescription] = useState(plan?.description ?? '');
-  const [isSaving, setIsSaving] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !goal.trim()) return;
-
-    setIsSaving(true);
-    try {
-      const body = {
-        name: name.trim(),
-        goal: goal.trim(),
-        description: description.trim() || undefined,
-      };
-
-if (plan) {
-        await apiClient.patch(`/plans/${plan.id}`, body);
-        toast.success('Plan updated');
-      } else {
-        await apiClient.post('/plans', body);
-        toast.success('Plan created');
-      }
-      onSave();
-    } catch {
-      // API client handles error reporting
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
-      <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 border-b border-border dark:border-dark-border">
-            <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              {plan ? 'Edit Plan' : 'Create Plan'}
-            </h3>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Plan name"
-                className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-                autoFocus
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                Goal
-              </label>
-              <input
-                type="text"
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-                placeholder="What should this plan achieve?"
-                className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                Description (optional)
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Additional details about the plan"
-                rows={3}
-                className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-              />
-            </div>
-
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              After creating the plan, you can add steps or ask the AI to decompose it automatically.
-            </p>
-          </div>
-
-          <div className="p-4 border-t border-border dark:border-dark-border flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!name.trim() || !goal.trim() || isSaving}
-              className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSaving ? 'Saving...' : plan ? 'Save' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
 // Add Step Form (inline within expanded plan)
 // ============================================================================
 
@@ -934,97 +812,3 @@ await plansApi.addStep(planId, {
   );
 }
 
-// ============================================================================
-// Plan History Modal
-// ============================================================================
-
-const eventTypeColors: Record<PlanEventType, string> = {
-  started: 'text-primary',
-  step_started: 'text-primary',
-  step_completed: 'text-success',
-  step_failed: 'text-error',
-  paused: 'text-warning',
-  resumed: 'text-primary',
-  completed: 'text-success',
-  failed: 'text-error',
-  cancelled: 'text-text-muted',
-  checkpoint: 'text-warning',
-  rollback: 'text-warning',
-};
-
-const eventTypeLabels: Record<PlanEventType, string> = {
-  started: 'Started',
-  step_started: 'Step Started',
-  step_completed: 'Step Completed',
-  step_failed: 'Step Failed',
-  paused: 'Paused',
-  resumed: 'Resumed',
-  completed: 'Completed',
-  failed: 'Failed',
-  cancelled: 'Cancelled',
-  checkpoint: 'Checkpoint',
-  rollback: 'Rollback',
-};
-
-interface PlanHistoryModalProps {
-  history: PlanHistoryEntry[];
-  onClose: () => void;
-}
-
-function PlanHistoryModal({ history, onClose }: PlanHistoryModalProps) {
-  const { onBackdropClick } = useModalClose(onClose);
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
-      <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="p-6 border-b border-border dark:border-dark-border">
-          <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-            Plan History
-          </h3>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          {history.length === 0 ? (
-            <p className="text-text-muted dark:text-dark-text-muted text-center">
-              No history yet
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {history.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex items-start gap-3 p-2 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-medium ${eventTypeColors[entry.eventType]}`}>
-                        {eventTypeLabels[entry.eventType]}
-                      </span>
-                      <span className="text-xs text-text-muted dark:text-dark-text-muted">
-                        {new Date(entry.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                    {entry.details && Object.keys(entry.details).length > 0 && (
-                      <pre className="mt-1 text-xs text-text-muted dark:text-dark-text-muted overflow-x-auto">
-                        {JSON.stringify(entry.details, null, 2)}
-                      </pre>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 border-t border-border dark:border-dark-border flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}

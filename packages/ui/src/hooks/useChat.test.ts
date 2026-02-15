@@ -514,36 +514,23 @@ describe('useChat', () => {
       expect(onProgress).toHaveBeenCalledWith(progressEvent);
     });
 
-    it('handles error event in stream (swallowed by inner catch)', async () => {
-      // In the source code, `throw new Error(data.error)` on line 222 is caught
-      // by the inner `catch (parseErr)` on line 224 and logged via console.warn.
-      // It does NOT propagate to the outer catch, so error state is NOT set.
-      // The stream completes normally with an empty assistant message.
+    it('handles error event in stream (propagates to outer catch)', async () => {
+      // Error events from the server now propagate to the outer catch block
+      // and set proper error state (previously they were silently swallowed).
       const sseResponse = createSSEResponse([
         { data: JSON.stringify({ error: 'Token limit exceeded' }) },
       ]);
       mockFetch.mockResolvedValueOnce(sseResponse);
 
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       const result = callHook();
       await result.sendMessage('test');
 
-      // The error is logged via console.warn, not propagated
-      expect(warnSpy).toHaveBeenCalled();
-      const warnArgs = warnSpy.mock.calls[0]!;
-      expect(warnArgs[0]).toBe('Failed to parse SSE data:');
-      expect(warnArgs[1]).toBeInstanceOf(Error);
-      expect((warnArgs[1] as Error).message).toBe('Token limit exceeded');
-
-      warnSpy.mockRestore();
-
-      // Stream completes normally — no error state set
-      expect(states[S.error]!.value).toBeNull();
-      // An assistant message is still created (with empty content)
+      // Error state is set
+      expect(states[S.error]!.value).toBe('Token limit exceeded');
+      // An error message is created
       const messages = states[S.messages]!.value as Array<Record<string, unknown>>;
-      const assistantMsg = messages.find((m) => m.role === 'assistant' && !m.isError);
-      expect(assistantMsg).toBeDefined();
+      const errorMsg = messages.find((m) => m.role === 'assistant' && m.isError);
+      expect(errorMsg).toBeDefined();
     });
 
     it('clears streamingContent after stream completes', async () => {

@@ -12,10 +12,9 @@ export type DatabaseType = 'postgres';
 
 /**
  * Query result row - generic object
- * Using 'object' type to allow any interface without requiring index signature
+ * Repositories should always provide explicit row interfaces via type parameters.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Row = { [key: string]: any };
+export type Row = Record<string, unknown>;
 
 /**
  * Query parameters
@@ -36,12 +35,12 @@ export interface DatabaseAdapter {
   /**
    * Execute a query that returns rows
    */
-  query<T extends Row = Row>(sql: string, params?: QueryParams): Promise<T[]>;
+  query<T extends object = Row>(sql: string, params?: QueryParams): Promise<T[]>;
 
   /**
    * Execute a query that returns a single row
    */
-  queryOne<T extends Row = Row>(sql: string, params?: QueryParams): Promise<T | null>;
+  queryOne<T extends object = Row>(sql: string, params?: QueryParams): Promise<T | null>;
 
   /**
    * Execute a statement (INSERT, UPDATE, DELETE)

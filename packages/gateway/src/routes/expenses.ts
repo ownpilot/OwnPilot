@@ -7,6 +7,7 @@
 import { Hono } from 'hono';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { generateId } from '@ownpilot/core';
 import { apiResponse, getIntParam, notFoundError, validateQueryEnum } from './helpers.js';
 
 // =============================================================================
@@ -95,7 +96,7 @@ async function saveExpenseDb(db: ExpenseDatabase): Promise<void> {
 }
 
 function generateExpenseId(): string {
-  return `exp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return generateId('exp');
 }
 
 // =============================================================================

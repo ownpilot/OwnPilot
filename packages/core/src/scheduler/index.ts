@@ -12,6 +12,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { getLog } from '../services/get-log.js';
 import { getErrorMessage } from '../services/error-utils.js';
+import { generateId } from '../services/id-utils.js';
 
 import type { SchedulerNotificationBridge, TaskNotificationConfig } from './notifications.js';
 
@@ -522,7 +523,7 @@ export class Scheduler {
   async addTask(
     task: Omit<ScheduledTask, 'id' | 'createdAt' | 'updatedAt' | 'nextRun'>
   ): Promise<ScheduledTask> {
-    const id = `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const id = generateId('task');
     const now = new Date().toISOString();
 
     // Determine next run time - either from runAt (one-time) or cron (recurring)
@@ -767,7 +768,7 @@ export class Scheduler {
     const history = this.history.get(taskId)!;
     const entry: TaskHistoryEntry = {
       ...result,
-      executionId: `exec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      executionId: generateId('exec'),
     };
 
     history.push(entry);

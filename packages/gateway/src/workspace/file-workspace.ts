@@ -646,13 +646,19 @@ export async function zipSessionWorkspace(id: string): Promise<string> {
     const output = createWriteStream(zipPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
 
+    const cleanup = (err: Error) => {
+      archive.destroy();
+      output.destroy();
+      reject(err);
+    };
+
     output.on('close', () => {
       log.info(`[FileWorkspace] Created zip: ${zipPath} (${archive.pointer()} bytes)`);
       resolve(zipPath);
     });
 
-    output.on('error', reject);
-    archive.on('error', reject);
+    output.on('error', cleanup);
+    archive.on('error', cleanup);
     archive.pipe(output);
     archive.directory(workspacePath, basename(workspacePath));
     archive.finalize();

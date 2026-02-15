@@ -23,6 +23,7 @@ import {
 } from '@ownpilot/core';
 import { getLog } from '../../../services/log.js';
 import { getErrorMessage } from '../../../routes/helpers.js';
+import { MAX_MESSAGE_CHAT_MAP_SIZE } from '../../../config/defaults.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../../utils/message-utils.js';
 import { markdownToTelegramHtml } from '../../utils/markdown-telegram.js';
 
@@ -124,13 +125,17 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         this.emitConnectionEvent('error');
       });
 
-      // Start long-polling (non-blocking)
+      // Start long-polling (non-blocking) with error recovery
       this.bot.start({
         onStart: () => {
           this.status = 'connected';
           log.info('[Telegram] Bot connected and polling');
           this.emitConnectionEvent('connected');
         },
+      }).catch((err) => {
+        log.error('[Telegram] Bot polling crashed:', err);
+        this.status = 'error';
+        this.emitConnectionEvent('error');
       });
     } catch (error) {
       this.status = 'error';
@@ -199,6 +204,11 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         }
       }
       lastMessageId = String(sent.message_id);
+      // Evict oldest entries if map is at capacity
+      if (this.messageChatMap.size >= MAX_MESSAGE_CHAT_MAP_SIZE) {
+        const oldest = this.messageChatMap.keys().next().value;
+        if (oldest) this.messageChatMap.delete(oldest);
+      }
       this.messageChatMap.set(lastMessageId, chatId);
 
       // Small delay between split messages

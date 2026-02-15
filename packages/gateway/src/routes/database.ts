@@ -6,9 +6,10 @@
 
 import { Hono } from 'hono';
 import { spawn } from 'child_process';
-import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
+import { readdir, stat, writeFile } from 'fs/promises';
 import { join, basename } from 'path';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId, getErrorMessage } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, sanitizeId, getErrorMessage, safeKeyCompare } from './helpers.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
@@ -105,7 +106,7 @@ if (ADMIN_KEY) {
     }
     // Destructive operations (POST, DELETE) require admin key
     const providedKey = c.req.header('X-Admin-Key');
-    if (!providedKey || providedKey !== ADMIN_KEY) {
+    if (!safeKeyCompare(providedKey, ADMIN_KEY)) {
       return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Admin key required for database write operations. Set X-Admin-Key header.' }, 403);
     }
     return next();
@@ -175,16 +176,17 @@ databaseRoutes.get('/status', async (c) => {
   const backupDir = getBackupDir();
   let backups: { name: string; size: number; created: string }[] = [];
   try {
-    const files = readdirSync(backupDir).filter(f => f.endsWith('.sql') || f.endsWith('.dump'));
-    backups = files.map(f => {
+    const files = (await readdir(backupDir)).filter(f => f.endsWith('.sql') || f.endsWith('.dump'));
+    backups = await Promise.all(files.map(async f => {
       const filePath = join(backupDir, f);
-      const stat = statSync(filePath);
+      const fileStat = await stat(filePath);
       return {
         name: f,
-        size: stat.size,
-        created: stat.mtime.toISOString(),
+        size: fileStat.size,
+        created: fileStat.mtime.toISOString(),
       };
-    }).sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+    }));
+    backups.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
   } catch {
     // Backup directory doesn't exist or can't be read
   }
@@ -884,11 +886,10 @@ databaseRoutes.post('/export/save', async (c) => {
     };
 
     // Save to backup directory
-    const { writeFileSync } = await import('fs');
     const filename = `export-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
     const filepath = join(getBackupDir(), filename);
 
-    writeFileSync(filepath, JSON.stringify(exportPayload, null, 2), 'utf-8');
+    await writeFile(filepath, JSON.stringify(exportPayload, null, 2), 'utf-8');
 
     return apiResponse(c, {
         message: 'Export saved successfully',

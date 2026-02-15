@@ -151,7 +151,10 @@ triggersRoutes.get('/:id', async (c) => {
 triggersRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = await c.req.json().catch(() => null) as UpdateTriggerInput;
+  const body = await c.req.json().catch(() => null) as UpdateTriggerInput | null;
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
+  }
 
   const service = getServiceRegistry().get(Services.Trigger);
 

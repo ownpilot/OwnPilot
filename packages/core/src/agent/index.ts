@@ -80,67 +80,28 @@ export {
   type ToolValidationError,
 } from './tool-validation.js';
 
-// Tools - Extended (File System, Code Execution, Web Fetch)
+// Tools - Aggregation arrays and utilities (individual tool defs accessed via source files)
 export {
-  // File System Tools
+  // Tool set aggregation arrays
   FILE_SYSTEM_TOOLS,
-  readFileTool,
-  readFileExecutor,
-  writeFileTool,
-  writeFileExecutor,
-  listDirectoryTool,
-  listDirectoryExecutor,
-  searchFilesTool,
-  searchFilesExecutor,
-  downloadFileTool,
-  downloadFileExecutor,
-  fileInfoTool,
-  fileInfoExecutor,
-  deleteFileTool,
-  deleteFileExecutor,
-  copyFileTool,
-  copyFileExecutor,
-  // Code Execution Tools
   CODE_EXECUTION_TOOLS,
-  executeJavaScriptTool,
-  executeJavaScriptExecutor,
-  executePythonTool,
-  executePythonExecutor,
-  executeShellTool,
-  executeShellExecutor,
-  compileCodeTool,
-  compileCodeExecutor,
-  packageManagerTool,
-  packageManagerExecutor,
-  // Web Fetch Tools
   WEB_FETCH_TOOLS,
-  httpRequestTool,
-  httpRequestExecutor,
-  fetchWebPageTool,
-  fetchWebPageExecutor,
-  searchWebTool,
-  searchWebExecutor,
-  jsonApiTool,
-  jsonApiExecutor,
-  // All Tools
   ALL_TOOLS,
   TOOL_SETS,
   TOOL_CATEGORIES,
+  // Tool helpers
   getToolDefinitions,
   getToolExecutors,
   registerAllTools,
   registerToolSet,
   getToolsByCategory,
-  // Custom Data Tools (definitions only)
+  // Definition-only tools (executors in gateway)
   CUSTOM_DATA_TOOLS,
   CUSTOM_DATA_TOOL_NAMES,
-  // Memory Tools (definitions only)
   MEMORY_TOOLS,
   MEMORY_TOOL_NAMES,
-  // Goal Tools (definitions only)
   GOAL_TOOLS,
   GOAL_TOOL_NAMES,
-  // Personal Data Tools (definitions only)
   PERSONAL_DATA_TOOLS,
   PERSONAL_DATA_TOOL_NAMES,
   // Dynamic Tools (LLM-created tools)

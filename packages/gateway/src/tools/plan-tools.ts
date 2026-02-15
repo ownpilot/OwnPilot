@@ -4,7 +4,7 @@
  * AI agent tools for creating, managing, and executing autonomous plans.
  */
 
-import { type ToolDefinition, getServiceRegistry, Services } from '@ownpilot/core';
+import { type ToolDefinition, getServiceRegistry, Services, getErrorMessage } from '@ownpilot/core';
 import type { CreateStepInput } from '../db/repositories/plans.js';
 import { getPlanExecutor } from '../plans/executor.js';
 import { getLog } from '../services/log.js';
@@ -280,7 +280,7 @@ export async function executePlanTool(
           },
         };
       } catch (e) {
-        return { success: false, error: (e as Error).message };
+        return { success: false, error: getErrorMessage(e) };
       }
     }
 
@@ -381,7 +381,7 @@ export async function executePlanTool(
           },
         };
       } catch (e) {
-        return { success: false, error: (e as Error).message };
+        return { success: false, error: getErrorMessage(e) };
       }
     }
 
@@ -400,7 +400,7 @@ export async function executePlanTool(
           result: { id: planId, message: `Plan "${plan.name}" paused.` },
         };
       } catch (e) {
-        return { success: false, error: (e as Error).message };
+        return { success: false, error: getErrorMessage(e) };
       }
     }
 

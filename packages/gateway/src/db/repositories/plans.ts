@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
+import { generateId } from '@ownpilot/core';
 
 // ============================================================================
 // Types
@@ -242,7 +243,7 @@ export class PlansRepository extends BaseRepository {
    * Create a new plan
    */
   async create(input: CreatePlanInput): Promise<Plan> {
-    const id = `plan_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const id = generateId('plan');
     const now = new Date().toISOString();
 
     await this.execute(
@@ -458,7 +459,7 @@ export class PlansRepository extends BaseRepository {
       }
     }
 
-    const id = `step_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const id = generateId('step');
 
     await this.execute(
       `INSERT INTO plan_steps (
@@ -625,7 +626,7 @@ export class PlansRepository extends BaseRepository {
    * Log a plan event
    */
   async logEvent(planId: string, eventType: PlanEventType, stepId?: string, details: Record<string, unknown> = {}): Promise<void> {
-    const id = `evt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const id = generateId('evt');
 
     await this.execute(
       `INSERT INTO plan_history (id, plan_id, step_id, event_type, details, created_at)

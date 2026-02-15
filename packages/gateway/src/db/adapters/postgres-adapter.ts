@@ -57,14 +57,14 @@ export class PostgresAdapter implements DatabaseAdapter {
     return this.pool !== null;
   }
 
-  async query<T extends Row = Row>(sql: string, params: QueryParams = []): Promise<T[]> {
+  async query<T extends object = Row>(sql: string, params: QueryParams = []): Promise<T[]> {
     if (!this.pool) throw new Error('Database not initialized');
     const convertedSql = this.convertPlaceholders(sql);
     const result = await this.pool.query(convertedSql, params);
     return result.rows as T[];
   }
 
-  async queryOne<T extends Row = Row>(sql: string, params: QueryParams = []): Promise<T | null> {
+  async queryOne<T extends object = Row>(sql: string, params: QueryParams = []): Promise<T | null> {
     const rows = await this.query<T>(sql, params);
     return rows[0] ?? null;
   }

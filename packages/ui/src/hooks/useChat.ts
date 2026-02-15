@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Message, ChatResponse, ApiResponse } from '../types';
+import { parseSSELine } from '../utils/sse-parser';
 
 interface UseChatOptions {
   provider?: string;
@@ -182,49 +183,34 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
           buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
           for (const line of lines) {
-            if (line.startsWith('event:')) {
-              // Event type line, data follows
-              continue;
-            }
-
-            if (line.startsWith('data:')) {
-              const dataStr = line.slice(5).trim();
-              if (!dataStr) continue;
-
-              try {
-                const data = JSON.parse(dataStr);
-
-                // Handle different event types based on the data structure
-                if (data.type === 'status' || data.type === 'tool_start' || data.type === 'tool_end') {
-                  // Progress event
-                  const progressEvent: ProgressEvent = data;
-                  setProgressEvents(prev => [...prev, progressEvent]);
-                  options?.onProgress?.(progressEvent);
-                } else if (data.delta !== undefined) {
-                  // Content chunk
-                  if (data.delta) {
-                    syncAccumulated(accumulatedContent + data.delta);
-                    setStreamingContent(accumulatedContent);
-                  }
-                  if (data.done) {
-                    finalResponse = {
-                      id: data.id,
-                      conversationId: data.conversationId,
-                      message: accumulatedContent,
-                      response: accumulatedContent,
-                      model: model,
-                      toolCalls: data.toolCalls,
-                      usage: data.usage,
-                      finishReason: data.finishReason,
-                    };
-                  }
-                } else if (data.error) {
-                  throw new Error(data.error);
-                }
-              } catch (parseErr) {
-                // Ignore parse errors for incomplete JSON
-                console.warn('Failed to parse SSE data:', parseErr);
+            const event = parseSSELine(line);
+            switch (event.kind) {
+              case 'progress': {
+                const progressEvent = event.data as unknown as ProgressEvent;
+                setProgressEvents(prev => [...prev, progressEvent]);
+                options?.onProgress?.(progressEvent);
+                break;
               }
+              case 'delta':
+                if (event.data.delta) {
+                  syncAccumulated(accumulatedContent + event.data.delta);
+                  setStreamingContent(accumulatedContent);
+                }
+                if (event.data.done) {
+                  finalResponse = {
+                    id: event.data.id,
+                    conversationId: event.data.conversationId ?? '',
+                    message: accumulatedContent,
+                    response: accumulatedContent,
+                    model: model,
+                    toolCalls: event.data.toolCalls as ChatResponse['toolCalls'],
+                    usage: event.data.usage as ChatResponse['usage'],
+                    finishReason: event.data.finishReason,
+                  };
+                }
+                break;
+              case 'error':
+                throw new Error(event.message);
             }
           }
         }

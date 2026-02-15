@@ -8,6 +8,7 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
+import { MAX_TOOL_SOURCE_FILE_CACHE, MAX_TOOL_SOURCE_EXTRACTION_CACHE } from '../config/defaults.js';
 
 // =============================================================================
 // Path Resolution
@@ -32,6 +33,11 @@ function readSourceFile(absolutePath: string): string | null {
   if (fileCache.has(absolutePath)) return fileCache.get(absolutePath)!;
   try {
     const content = readFileSync(absolutePath, 'utf-8');
+    // Evict oldest entry if cache is at capacity
+    if (fileCache.size >= MAX_TOOL_SOURCE_FILE_CACHE) {
+      const oldest = fileCache.keys().next().value;
+      if (oldest) fileCache.delete(oldest);
+    }
     fileCache.set(absolutePath, content);
     return content;
   } catch {
@@ -313,6 +319,11 @@ export function getToolSource(toolName: string, fallbackToString?: () => string)
   }
 
   if (source) {
+    // Evict oldest entry if cache is at capacity
+    if (extractionCache.size >= MAX_TOOL_SOURCE_EXTRACTION_CACHE) {
+      const oldest = extractionCache.keys().next().value;
+      if (oldest) extractionCache.delete(oldest);
+    }
     extractionCache.set(toolName, source);
   }
   return source;

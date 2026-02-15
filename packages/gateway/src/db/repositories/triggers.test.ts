@@ -37,6 +37,7 @@ const mockGetNextRunTime = vi.hoisted(() => vi.fn());
 
 vi.mock('@ownpilot/core', () => ({
   getNextRunTime: mockGetNextRunTime,
+  generateId: (prefix: string) => `${prefix}_test_${Date.now()}`,
 }));
 
 vi.mock('../../services/log.js', () => ({

@@ -42,7 +42,7 @@ export abstract class BaseRepository {
   /**
    * Execute a query that returns rows
    */
-  protected async query<T extends Row = Row>(sql: string, params?: unknown[]): Promise<T[]> {
+  protected async query<T extends object = Row>(sql: string, params?: unknown[]): Promise<T[]> {
     const adapter = await this.getAdapter();
     return adapter.query<T>(sql, params);
   }
@@ -50,7 +50,7 @@ export abstract class BaseRepository {
   /**
    * Execute a query that returns a single row
    */
-  protected async queryOne<T extends Row = Row>(sql: string, params?: unknown[]): Promise<T | null> {
+  protected async queryOne<T extends object = Row>(sql: string, params?: unknown[]): Promise<T | null> {
     const adapter = await this.getAdapter();
     return adapter.queryOne<T>(sql, params);
   }
@@ -118,7 +118,7 @@ export abstract class BaseRepository {
    * @param defaultOrderBy - Default ORDER BY clause if query.orderBy is not set
    * @returns Rows and total count, ready for buildPaginatedResult
    */
-  protected async paginatedQuery<T extends Row = Row>(
+  protected async paginatedQuery<T extends object = Row>(
     baseSql: string,
     countSql: string,
     query: StandardQuery = {},

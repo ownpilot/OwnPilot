@@ -5,6 +5,8 @@
  * Flow: SSE event → UI dialog → HTTP POST → resolve promise → execution continues.
  */
 
+import { generateId } from '@ownpilot/core';
+
 /** In-memory pending approvals */
 const pendingApprovals = new Map<string, {
   resolve: (approved: boolean) => void;
@@ -49,7 +51,7 @@ export function resolveApproval(approvalId: string, approved: boolean): boolean 
  * Generate a unique approval ID
  */
 export function generateApprovalId(): string {
-  return `approval_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return generateId('approval');
 }
 
 

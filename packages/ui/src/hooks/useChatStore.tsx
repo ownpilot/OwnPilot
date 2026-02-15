@@ -17,6 +17,7 @@ import {
 import type { Message, ChatResponse, ApiResponse } from '../types';
 import type { ApprovalRequest } from '../api';
 import { executionPermissionsApi } from '../api';
+import { parseSSELine } from '../utils/sse-parser';
 
 // Progress event types from the stream
 export interface ProgressEvent {
@@ -218,60 +219,42 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
             for (const line of lines) {
-              if (line.startsWith('event:')) {
-                // Event type - we'll get data next
-                continue;
-              }
-
-              if (line.startsWith('data:')) {
-                const dataStr = line.slice(5).trim();
-                if (!dataStr) continue;
-
-                try {
-                  const data = JSON.parse(dataStr);
-
-                  // Handle different event types
-                  if (data.type === 'approval_required') {
-                    // Real-time approval request from backend
-                    setPendingApproval({
-                      approvalId: data.approvalId,
-                      category: data.category,
-                      description: data.description,
-                      code: data.code,
-                      riskAnalysis: data.riskAnalysis,
-                    });
-                  } else if (data.type === 'status' || data.type === 'tool_start' || data.type === 'tool_end') {
-                    // Progress event
-                    const progressEvent: ProgressEvent = data;
-                    setProgressEvents(prev => [...prev, progressEvent]);
-                  } else if (data.delta !== undefined || data.done) {
-                    // Content chunk or done event
-                    if (data.delta) {
-                      accumulatedContent += data.delta;
-                      setStreamingContent(accumulatedContent);
-                    }
-                    if (data.done) {
-                      finalResponse = {
-                        id: data.id,
-                        conversationId: data.conversationId,
-                        message: accumulatedContent,
-                        response: accumulatedContent,
-                        model: model,
-                        toolCalls: data.toolCalls,
-                        usage: data.usage,
-                        finishReason: data.finishReason,
-                        trace: data.trace,
-                        suggestions: data.suggestions,
-                      };
-                    }
-                  } else if (data.error) {
-                    throw new Error(data.error);
+              const event = parseSSELine(line);
+              switch (event.kind) {
+                case 'approval':
+                  setPendingApproval({
+                    approvalId: event.data.approvalId,
+                    category: event.data.category,
+                    description: event.data.description,
+                    code: event.data.code,
+                    riskAnalysis: event.data.riskAnalysis as ApprovalRequest['riskAnalysis'],
+                  });
+                  break;
+                case 'progress':
+                  setProgressEvents(prev => [...prev, event.data as unknown as ProgressEvent]);
+                  break;
+                case 'delta':
+                  if (event.data.delta) {
+                    accumulatedContent += event.data.delta;
+                    setStreamingContent(accumulatedContent);
                   }
-                } catch (parseErr) {
-                  // Ignore SyntaxErrors from incomplete JSON chunks; re-throw real errors
-                  if (parseErr instanceof SyntaxError) continue;
-                  throw parseErr;
-                }
+                  if (event.data.done) {
+                    finalResponse = {
+                      id: event.data.id,
+                      conversationId: event.data.conversationId ?? '',
+                      message: accumulatedContent,
+                      response: accumulatedContent,
+                      model: model,
+                      toolCalls: event.data.toolCalls as ChatResponse['toolCalls'],
+                      usage: event.data.usage as ChatResponse['usage'],
+                      finishReason: event.data.finishReason,
+                      trace: event.data.trace as ChatResponse['trace'],
+                      suggestions: event.data.suggestions as ChatResponse['suggestions'],
+                    };
+                  }
+                  break;
+                case 'error':
+                  throw new Error(event.message);
               }
             }
           }

@@ -10,6 +10,7 @@ import { validateCode } from '../sandbox/context.js';
 import type { SandboxPermissions, ResourceLimits } from '../sandbox/types.js';
 import { createPluginId } from '../types/branded.js';
 import { getErrorMessage } from '../services/error-utils.js';
+import { generateId } from '../services/id-utils.js';
 
 // =============================================================================
 // Types
@@ -529,7 +530,7 @@ export class CodeGenerator {
     const now = new Date().toISOString();
     const newSnippet: CodeSnippet = {
       ...snippet,
-      id: `snippet_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      id: generateId('snippet'),
       userId,
       createdAt: now,
       updatedAt: now,
