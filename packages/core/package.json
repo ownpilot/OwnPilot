@@ -1,7 +1,7 @@
 {
   "name": "@ownpilot/core",
   "version": "0.1.0",
-  "description": "OwnPilot Core - Zero-dependency secure gateway foundation",
+  "description": "OwnPilot Core - Secure AI agent engine and tool framework",
   "type": "module",
   "exports": {
     ".": {

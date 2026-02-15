@@ -1519,7 +1519,7 @@ describe('ChannelServiceImpl', () => {
 
       // Remove the channel plugin from registry after initial calls
       let callCount = 0;
-      registry.get.mockImplementation((id: string) => {
+      registry.get.mockImplementation((_id: string) => {
         callCount++;
         // First call (in processIncomingMessage for whitelist check) returns the plugin,
         // subsequent calls return undefined to simulate plugin disappearing

@@ -9,7 +9,6 @@ import {
   PomodoroRepository,
   type CreateSessionInput,
   type UpdateSettingsInput,
-  type SessionType,
 } from '../db/repositories/pomodoro.js';
 import {
   HabitsRepository,
@@ -20,7 +19,6 @@ import {
   CapturesRepository,
   type CreateCaptureInput,
   type ProcessCaptureInput,
-  type CaptureType,
 } from '../db/repositories/captures.js';
 import { apiResponse, apiError, getUserId, getIntParam, ERROR_CODES, validateQueryEnum } from './helpers.js';
 

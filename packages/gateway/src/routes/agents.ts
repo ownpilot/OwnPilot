@@ -1,7 +1,7 @@
 /**
  * Agent management routes
  *
- * Agents are stored in SQLite database for persistence.
+ * Agents are stored in the database for persistence.
  * Runtime Agent instances are cached in memory for active use.
  */
 
@@ -61,7 +61,7 @@ import type {
 } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage, truncate } from './helpers.js'
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
-import { hasApiKey, getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel, getConfiguredProviderIds } from './settings.js';
+import { getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel, getConfiguredProviderIds } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
 import { getApprovalManager } from '../autonomy/index.js';
@@ -676,126 +676,6 @@ async function executeGetToolHelp(
   }
 
   return { content: results.join('\n\n---\n\n'), isError: notFound.length > 0 && results.length === notFound.length };
-}
-
-/**
- * Build memory context string from important memories
- */
-async function buildMemoryContext(userId = 'default'): Promise<string> {
-  const memoryService = getServiceRegistry().get(Services.Memory);
-
-  // Get important memories
-  const importantMemories = await memoryService.getImportantMemories(userId, { threshold: 0.5, limit: 10 });
-
-  const sections: string[] = [];
-
-  // Always include memory instructions
-  sections.push(`## Memory System
-
-You have access to a persistent memory system. Use it wisely:
-
-**When to Remember (use the \`remember\` tool):**
-- User's name, job, or personal details they share
-- Preferences they express (likes, dislikes, communication style)
-- Important dates (birthdays, deadlines, events)
-- Goals they're working towards
-- Skills or knowledge they demonstrate
-
-**When to Recall (use the \`recall\` tool):**
-- When you need to reference past information
-- When answering questions about previous conversations
-- When personalizing your responses
-
-**Be selective** - only remember truly important information. Don't store trivial details.`);
-
-  // Add existing memories if any
-  if (importantMemories.length > 0) {
-    sections.push('\n## What I Remember About You\n');
-
-    // Group by type
-    const facts = importantMemories.filter(m => m.type === 'fact');
-    const preferences = importantMemories.filter(m => m.type === 'preference');
-    const events = importantMemories.filter(m => m.type === 'event');
-    const skills = importantMemories.filter(m => m.type === 'skill');
-
-    if (facts.length > 0) {
-      sections.push('**Facts:**');
-      facts.forEach(m => sections.push(`- ${m.content}`));
-    }
-
-    if (preferences.length > 0) {
-      sections.push('\n**Preferences:**');
-      preferences.forEach(m => sections.push(`- ${m.content}`));
-    }
-
-    if (events.length > 0) {
-      sections.push('\n**Important Events:**');
-      events.forEach(m => sections.push(`- ${m.content}`));
-    }
-
-    if (skills.length > 0) {
-      sections.push('\n**Learned Skills:**');
-      skills.forEach(m => sections.push(`- ${m.content}`));
-    }
-  }
-
-  return sections.join('\n') + '\n';
-}
-
-/**
- * Build goal context string from active goals
- */
-async function buildGoalContext(userId = 'default'): Promise<string> {
-  const goalService = getServiceRegistry().get(Services.Goal);
-
-  // Get active goals (parallel — independent queries)
-  const [activeGoals, nextActions] = await Promise.all([
-    goalService.getActive(userId, 5),
-    goalService.getNextActions(userId, 3),
-  ]);
-
-  const sections: string[] = [];
-
-  // Always include goal system instructions
-  sections.push(`## Goal Tracking System
-
-You help the user track and achieve their goals. Use these tools:
-
-**When to Create Goals (use \`create_goal\`):**
-- User expresses a desire to achieve something
-- User sets a deadline or target
-- User mentions learning or improving at something
-
-**When to Update Goals (use \`update_goal\`):**
-- User reports progress
-- User wants to pause, complete, or abandon a goal
-
-**When to Decompose Goals (use \`decompose_goal\`):**
-- User has a complex goal that needs planning
-- User asks for help breaking down a task
-
-**When to Get Next Actions (use \`get_next_actions\`):**
-- User asks what to work on
-- User seems unsure of priorities`);
-
-  // Add active goals if any
-  if (activeGoals.length > 0) {
-    sections.push('\n## Current Active Goals\n');
-    for (const goal of activeGoals) {
-      const dueInfo = goal.dueDate ? ` (due: ${goal.dueDate})` : '';
-      sections.push(`- **${goal.title}** - ${goal.progress}% complete${dueInfo} [Priority: ${goal.priority}/10]`);
-    }
-  }
-
-  // Add next actions if any
-  if (nextActions.length > 0) {
-    sections.push('\n## Suggested Next Actions\n');
-    for (const action of nextActions) {
-      sections.push(`- ${action.title} (for: ${action.goalTitle})`);
-    }
-  }
-
-  return sections.join('\n') + '\n';
 }
 
 /**
