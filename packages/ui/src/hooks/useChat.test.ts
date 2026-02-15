@@ -30,7 +30,7 @@ vi.mock('react', () => ({
     stateIndex++;
     return [slot.value, slot.setter];
   },
-  useCallback: (fn: Function, _deps?: unknown[]) => fn,
+  useCallback: (fn: (...args: unknown[]) => unknown, _deps?: unknown[]) => fn,
   useRef: (initial: unknown) => {
     if (refIndex >= refs.length) {
       refs.push({ current: initial });

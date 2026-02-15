@@ -138,7 +138,7 @@ describe('EventBus (new API)', () => {
           iterationCount: 1,
           duration: 100,
         });
-      }, 5);
+      }, 0);
 
       const event = await promise;
       expect(event.type).toBe('agent.complete');
@@ -263,7 +263,7 @@ describe('EventBus (new API)', () => {
         data: {},
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 0));
       expect(errorSpy).toHaveBeenCalled();
       errorSpy.mockRestore();
     });

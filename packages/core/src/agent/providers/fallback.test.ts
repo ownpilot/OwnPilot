@@ -298,16 +298,22 @@ describe('FallbackProvider', () => {
       await fb.complete(makeRequest());
       await fb.complete(makeRequest());
 
-      // Wait for cooldown
-      await new Promise((r) => setTimeout(r, 20));
+      // Advance Date.now() past cooldown deterministically
+      const realNow = Date.now;
+      const baseTime = realNow.call(Date);
+      Date.now = () => baseTime + 20;
 
       // Now primary works
       failPrimary = false;
 
-      const result = await fb.complete(makeRequest());
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.content).toBe('ok');
+      try {
+        const result = await fb.complete(makeRequest());
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          expect(result.value.content).toBe('ok');
+        }
+      } finally {
+        Date.now = realNow;
       }
     });
   });
