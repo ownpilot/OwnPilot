@@ -79,30 +79,35 @@ describe('AuditLogger', () => {
     });
 
     it('generates UUIDv7-style IDs (time-ordered)', async () => {
-      const logger = createAuditLogger({ path: logPath });
+      vi.useFakeTimers();
+      try {
+        const logger = createAuditLogger({ path: logPath });
 
-      const result1 = await logger.log({
-        type: 'system.start',
-        actor: SYSTEM_ACTOR,
-        resource: { type: 'system', id: 'gateway' },
-        outcome: 'success',
-      });
+        const result1 = await logger.log({
+          type: 'system.start',
+          actor: SYSTEM_ACTOR,
+          resource: { type: 'system', id: 'gateway' },
+          outcome: 'success',
+        });
 
-      // Small delay to ensure different timestamp
-      await new Promise((resolve) => setTimeout(resolve, 10));
+        // Advance fake clock to ensure different UUIDv7 timestamp
+        vi.advanceTimersByTime(1);
 
-      const result2 = await logger.log({
-        type: 'system.stop',
-        actor: SYSTEM_ACTOR,
-        resource: { type: 'system', id: 'gateway' },
-        outcome: 'success',
-      });
+        const result2 = await logger.log({
+          type: 'system.stop',
+          actor: SYSTEM_ACTOR,
+          resource: { type: 'system', id: 'gateway' },
+          outcome: 'success',
+        });
 
-      expect(result1.ok).toBe(true);
-      expect(result2.ok).toBe(true);
-      if (result1.ok && result2.ok) {
-        // UUIDv7 IDs should be sortable
-        expect(result1.value.id < result2.value.id).toBe(true);
+        expect(result1.ok).toBe(true);
+        expect(result2.ok).toBe(true);
+        if (result1.ok && result2.ok) {
+          // UUIDv7 IDs should be sortable
+          expect(result1.value.id < result2.value.id).toBe(true);
+        }
+      } finally {
+        vi.useRealTimers();
       }
     });
 

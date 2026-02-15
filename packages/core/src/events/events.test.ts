@@ -257,7 +257,7 @@ describe('Legacy EventBus API', () => {
         bus.emit(createEvent('test.event', 'system', 'test', {}));
       }).not.toThrow();
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(errorSpy).toHaveBeenCalled();
       errorSpy.mockRestore();
