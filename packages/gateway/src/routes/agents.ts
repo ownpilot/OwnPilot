@@ -65,6 +65,7 @@ import { getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
 import { getApprovalManager } from '../autonomy/index.js';
+import type { ActionCategory } from '../autonomy/types.js';
 import {
   TOOL_ARGS_MAX_SIZE,
   MAX_AGENT_CACHE_SIZE,
@@ -797,6 +798,56 @@ function generateAgentId(): string {
 }
 
 /**
+ * Create a requestApproval callback for agent configs.
+ * Bridges the Agent tool system to the ApprovalManager.
+ */
+function createApprovalCallback(): AgentConfig['requestApproval'] {
+  return async (category, actionType, description, params) => {
+    const approvalMgr = getApprovalManager();
+    const result = await approvalMgr.requestApproval(
+      'default',
+      category as ActionCategory,
+      actionType,
+      description,
+      params,
+    );
+    if (!result) return true;
+    if (result.action.status === 'rejected') return false;
+    return false;
+  };
+}
+
+/** Resolve configured tools and toolGroups from an agent record's config */
+function resolveRecordTools(config: Record<string, unknown>): {
+  configuredTools: string[] | undefined;
+  configuredToolGroups: string[] | undefined;
+  tools: string[];
+} {
+  const configuredTools = safeStringArray(config.tools);
+  const configuredToolGroups = safeStringArray(config.toolGroups);
+  const tools = resolveToolGroups(configuredToolGroups, configuredTools);
+  return { configuredTools, configuredToolGroups, tools };
+}
+
+/** Build standardized agent config response object */
+function buildAgentConfigResponse(config: Record<string, unknown>, configuredTools: string[] | undefined, configuredToolGroups: string[] | undefined) {
+  return {
+    maxTokens: (config.maxTokens as number) ?? AGENT_CREATE_DEFAULT_MAX_TOKENS,
+    temperature: (config.temperature as number) ?? AGENT_DEFAULT_TEMPERATURE,
+    maxTurns: (config.maxTurns as number) ?? AGENT_DEFAULT_MAX_TURNS,
+    maxToolCalls: (config.maxToolCalls as number) ?? AGENT_DEFAULT_MAX_TOOL_CALLS,
+    tools: configuredTools,
+    toolGroups: configuredToolGroups,
+  };
+}
+
+/** Invalidate both agent caches for a given agent ID */
+function evictAgentFromCache(id: string): void {
+  agentCache.delete(id);
+  agentConfigCache.delete(id);
+}
+
+/**
  * Create runtime Agent instance from database record
  */
 async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
@@ -858,9 +909,8 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs];
 
   // Filter tools based on agent's toolGroups configuration
-  const configuredToolGroups = safeStringArray(record.config.toolGroups);
-  const configuredTools = safeStringArray(record.config.tools);
-  const allowedToolNames = new Set(resolveToolGroups(configuredToolGroups, configuredTools));
+  const { tools: resolvedToolNames } = resolveRecordTools(record.config);
+  const allowedToolNames = new Set(resolvedToolNames);
 
   // Only filter standard tools by toolGroups
   // Custom tools, dynamic tools, and plugin tools are ALWAYS included
@@ -907,23 +957,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     maxTurns: (record.config.maxTurns as number) ?? AGENT_DEFAULT_MAX_TURNS,
     maxToolCalls: (record.config.maxToolCalls as number) ?? AGENT_DEFAULT_MAX_TOOL_CALLS,
     tools: metaToolFilter,
-    // Bridge to ApprovalManager for local code execution approval
-    requestApproval: async (category, actionType, description, params) => {
-      const approvalMgr = getApprovalManager();
-      const result = await approvalMgr.requestApproval(
-        'default', // userId — agent record doesn't carry user context
-        category as import('../autonomy/types.js').ActionCategory,
-        actionType,
-        description,
-        params,
-      );
-      // null = auto-approved (low risk or remembered decision)
-      if (!result) return true;
-      // ApprovalRequest with rejected status = denied
-      if (result.action.status === 'rejected') return false;
-      // Pending = no real-time UI for in-tool approval, default deny
-      return false;
-    },
+    requestApproval: createApprovalCallback(),
   };
 
   const agent = createAgent(config, { tools });
@@ -932,8 +966,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   if (agentCache.size >= MAX_AGENT_CACHE_SIZE) {
     const oldestKey = agentCache.keys().next().value;
     if (oldestKey) {
-      agentCache.delete(oldestKey);
-      agentConfigCache.delete(oldestKey);
+      evictAgentFromCache(oldestKey);
     }
   }
 
@@ -976,12 +1009,7 @@ agentRoutes.get('/', async (c) => {
   const records = allRecords.slice(0, 100);
 
   const agentList: AgentInfo[] = records.map((record) => {
-    // Resolve tools from config (explicit tools and/or toolGroups)
-    const configuredTools = safeStringArray(record.config.tools);
-    const configuredToolGroups = safeStringArray(record.config.toolGroups);
-
-    // Use resolveToolGroups to get all tools
-    const tools = resolveToolGroups(configuredToolGroups, configuredTools);
+    const { tools } = resolveRecordTools(record.config);
 
     return {
       id: record.id,
@@ -1064,17 +1092,8 @@ agentRoutes.get('/:id', async (c) => {
     return notFoundError(c, 'Agent', id);
   }
 
-  // Resolve tools from config (explicit tools and/or toolGroups)
-  const configuredTools = safeStringArray(record.config.tools);
-  const configuredToolGroups = safeStringArray(record.config.toolGroups);
-
-  // Use resolveToolGroups to get all tools (same logic as list endpoint)
-  let tools: string[] = resolveToolGroups(configuredToolGroups, configuredTools);
-
-  // If no tools configured, use defaults
-  if (tools.length === 0) {
-    tools = ['get_current_time', 'calculate'];
-  }
+  const { configuredTools, configuredToolGroups, tools: resolvedTools } = resolveRecordTools(record.config);
+  let tools = resolvedTools.length > 0 ? resolvedTools : ['get_current_time', 'calculate'];
 
   // Try to get actual tools from runtime instance (if agent was already created)
   try {
@@ -1093,14 +1112,7 @@ agentRoutes.get('/:id', async (c) => {
     model: record.model,
     systemPrompt: record.systemPrompt ?? '',
     tools,
-    config: {
-      maxTokens: (record.config.maxTokens as number) ?? AGENT_CREATE_DEFAULT_MAX_TOKENS,
-      temperature: (record.config.temperature as number) ?? AGENT_DEFAULT_TEMPERATURE,
-      maxTurns: (record.config.maxTurns as number) ?? AGENT_DEFAULT_MAX_TURNS,
-      maxToolCalls: (record.config.maxToolCalls as number) ?? AGENT_DEFAULT_MAX_TOOL_CALLS,
-      tools: configuredTools,
-      toolGroups: configuredToolGroups,
-    },
+    config: buildAgentConfigResponse(record.config, configuredTools, configuredToolGroups),
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   });
@@ -1156,13 +1168,9 @@ agentRoutes.patch('/:id', async (c) => {
   }
 
   // Invalidate cache to force recreation with new config
-  agentCache.delete(id);
-  agentConfigCache.delete(id);
+  evictAgentFromCache(id);
 
-  // Resolve tools from both explicit tools and toolGroups
-  const configuredTools = safeStringArray(newConfig.tools);
-  const configuredToolGroups = safeStringArray(newConfig.toolGroups);
-  const tools = resolveToolGroups(configuredToolGroups, configuredTools);
+  const { configuredTools, configuredToolGroups, tools } = resolveRecordTools(newConfig);
 
   return apiResponse(c, {
     id: updated.id,
@@ -1171,14 +1179,7 @@ agentRoutes.patch('/:id', async (c) => {
     model: updated.model,
     systemPrompt: updated.systemPrompt ?? '',
     tools,
-    config: {
-      maxTokens: (newConfig.maxTokens as number) ?? AGENT_CREATE_DEFAULT_MAX_TOKENS,
-      temperature: (newConfig.temperature as number) ?? AGENT_DEFAULT_TEMPERATURE,
-      maxTurns: (newConfig.maxTurns as number) ?? AGENT_DEFAULT_MAX_TURNS,
-      maxToolCalls: (newConfig.maxToolCalls as number) ?? AGENT_DEFAULT_MAX_TOOL_CALLS,
-      tools: configuredTools,
-      toolGroups: configuredToolGroups,
-    },
+    config: buildAgentConfigResponse(newConfig, configuredTools, configuredToolGroups),
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),
   });
@@ -1197,8 +1198,7 @@ agentRoutes.delete('/:id', async (c) => {
   }
 
   // Clear from cache
-  agentCache.delete(id);
-  agentConfigCache.delete(id);
+  evictAgentFromCache(id);
 
   return apiResponse(c, {});
 });
@@ -1247,8 +1247,7 @@ agentRoutes.post('/resync', async (c) => {
           },
         });
         // Clear cache to force recreation
-        agentCache.delete(agent.id);
-        agentConfigCache.delete(agent.id);
+        evictAgentFromCache(agent.id);
         updated++;
       } else {
         // Create new agent
@@ -1464,20 +1463,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     maxTurns: AGENT_DEFAULT_MAX_TURNS,
     maxToolCalls: AGENT_DEFAULT_MAX_TOOL_CALLS,
     tools: chatMetaToolFilter,
-    // Bridge to ApprovalManager for local code execution approval
-    requestApproval: async (category, actionType, description, params) => {
-      const approvalMgr = getApprovalManager();
-      const result = await approvalMgr.requestApproval(
-        'default',
-        category as import('../autonomy/types.js').ActionCategory,
-        actionType,
-        description,
-        params,
-      );
-      if (!result) return true;
-      if (result.action.status === 'rejected') return false;
-      return false;
-    },
+    requestApproval: createApprovalCallback(),
   };
 
   // Create and cache the agent (evict oldest if at capacity)

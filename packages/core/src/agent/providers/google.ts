@@ -42,6 +42,12 @@ const RETRY_CONFIG = {
   retryableStatusCodes: [429, 500, 502, 503, 504],
 };
 
+/** Safely parse tool call arguments JSON, returning {} on failure */
+function safeParseToolArgs(args: string | undefined): Record<string, unknown> {
+  if (!args) return {};
+  try { return JSON.parse(args); } catch { return {}; }
+}
+
 /**
  * Sleep helper
  */
@@ -664,7 +670,7 @@ export class GoogleProvider {
             const functionCallPart: Record<string, unknown> = {
               functionCall: {
                 name: tc.name,
-                args: tc.arguments ? (() => { try { return JSON.parse(tc.arguments); } catch { return {}; } })() : {},
+                args: safeParseToolArgs(tc.arguments),
               },
             };
 
