@@ -49,7 +49,7 @@ import { getToolSource } from '../services/tool-source.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool, HEARTBEAT_TOOLS, executeHeartbeatTool, SKILL_PACKAGE_TOOLS, executeSkillPackageTool } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
-import { getSkillPackageService, type ToolDefinitionForRegistry } from '../services/skill-package-service.js';
+import { getSkillPackageService } from '../services/skill-package-service.js';
 import {
   traceToolCallStart,
   traceToolCallEnd,
