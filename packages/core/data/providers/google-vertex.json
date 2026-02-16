@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "zai-org/glm-5-maas",
+      "name": "GLM-5",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 1,
+      "outputPrice": 3.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-11"
+    },
+    {
       "id": "zai-org/glm-4.7-maas",
       "name": "GLM-4.7",
       "contextWindow": 204800,
@@ -24,7 +40,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-22"
     },
     {
@@ -66,30 +82,12 @@
       "releaseDate": "2025-11-18"
     },
     {
-      "id": "gemini-flash-lite-latest",
-      "name": "Gemini Flash-Lite Latest",
+      "id": "gemini-2.5-flash-lite-preview-09-2025",
+      "name": "Gemini 2.5 Flash Lite Preview 09-25",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0.1,
       "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-25"
-    },
-    {
-      "id": "gemini-flash-latest",
-      "name": "Gemini Flash Latest",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.3,
-      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",
@@ -120,8 +118,26 @@
       "releaseDate": "2025-09-25"
     },
     {
-      "id": "gemini-2.5-flash-lite-preview-09-2025",
-      "name": "Gemini 2.5 Flash Lite Preview 09-25",
+      "id": "gemini-flash-latest",
+      "name": "Gemini Flash Latest",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-25"
+    },
+    {
+      "id": "gemini-flash-lite-latest",
+      "name": "Gemini Flash-Lite Latest",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0.1,
@@ -138,12 +154,12 @@
       "releaseDate": "2025-09-25"
     },
     {
-      "id": "openai/gpt-oss-120b-maas",
-      "name": "GPT OSS 120B",
+      "id": "openai/gpt-oss-20b-maas",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
       "maxOutput": 32768,
-      "inputPrice": 0.09,
-      "outputPrice": 0.36,
+      "inputPrice": 0.07,
+      "outputPrice": 0.25,
       "capabilities": [
         "chat",
         "function_calling",
@@ -154,12 +170,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-20b-maas",
-      "name": "GPT OSS 20B",
+      "id": "openai/gpt-oss-120b-maas",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 32768,
-      "inputPrice": 0.07,
-      "outputPrice": 0.25,
+      "inputPrice": 0.09,
+      "outputPrice": 0.36,
       "capabilities": [
         "chat",
         "function_calling",

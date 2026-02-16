@@ -1231,6 +1231,31 @@ CREATE TABLE IF NOT EXISTS heartbeats (
 );
 
 -- =====================================================
+-- SKILL PACKAGES (shareable tool + prompt + trigger bundles)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS skill_packages (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  name TEXT NOT NULL,
+  version TEXT NOT NULL DEFAULT '1.0.0',
+  description TEXT,
+  category TEXT DEFAULT 'other',
+  icon TEXT,
+  author_name TEXT,
+  manifest JSONB NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'enabled'
+    CHECK(status IN ('enabled', 'disabled', 'error')),
+  source_path TEXT,
+  settings JSONB NOT NULL DEFAULT '{}',
+  error_message TEXT,
+  tool_count INTEGER NOT NULL DEFAULT 0,
+  trigger_count INTEGER NOT NULL DEFAULT 0,
+  installed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- =====================================================
 -- EXECUTION PERMISSIONS: Add enabled/mode columns
 -- =====================================================
 
@@ -1408,6 +1433,10 @@ CREATE INDEX IF NOT EXISTS idx_channel_verification_expires ON channel_verificat
 CREATE INDEX IF NOT EXISTS idx_heartbeats_user ON heartbeats(user_id);
 CREATE INDEX IF NOT EXISTS idx_heartbeats_enabled ON heartbeats(enabled);
 CREATE INDEX IF NOT EXISTS idx_heartbeats_trigger ON heartbeats(trigger_id);
+
+-- Skill package indexes
+CREATE INDEX IF NOT EXISTS idx_skill_packages_user ON skill_packages(user_id);
+CREATE INDEX IF NOT EXISTS idx_skill_packages_status ON skill_packages(status);
 
 -- Composite indexes for high-frequency multi-column queries
 CREATE INDEX IF NOT EXISTS idx_tasks_user_status ON tasks(user_id, status);

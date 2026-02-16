@@ -29,6 +29,23 @@
       "releaseDate": "2026-01"
     },
     {
+      "id": "hf:nvidia/Kimi-K2.5-NVFP4",
+      "name": "Kimi K2.5 (NVFP4)",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.55,
+      "outputPrice": 2.19,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01"
+    },
+    {
       "id": "hf:MiniMaxAI/MiniMax-M2.1",
       "name": "MiniMax-M2.1",
       "contextWindow": 204800,
@@ -220,22 +237,6 @@
       "releaseDate": "2025-08-01"
     },
     {
-      "id": "hf:zai-org/GLM-4.5",
-      "name": "GLM 4.5",
-      "contextWindow": 128000,
-      "maxOutput": 96000,
-      "inputPrice": 0.55,
-      "outputPrice": 2.19,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-28"
-    },
-    {
       "id": "hf:Qwen/Qwen3-235B-A22B-Thinking-2507",
       "name": "Qwen3 235B A22B Thinking 2507",
       "contextWindow": 256000,
@@ -376,6 +377,22 @@
       "releaseDate": "2024-11-11"
     },
     {
+      "id": "hf:meta-llama/Llama-3.1-405B-Instruct",
+      "name": "Llama-3.1-405B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 3,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
       "id": "hf:meta-llama/Llama-3.1-70B-Instruct",
       "name": "Llama-3.1-70B-Instruct",
       "contextWindow": 128000,
@@ -398,22 +415,6 @@
       "maxOutput": 32768,
       "inputPrice": 0.2,
       "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "hf:meta-llama/Llama-3.1-405B-Instruct",
-      "name": "Llama-3.1-405B-Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 3,
-      "outputPrice": 3,
       "capabilities": [
         "chat",
         "function_calling",

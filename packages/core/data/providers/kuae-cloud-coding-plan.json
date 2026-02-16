@@ -1,0 +1,33 @@
+{
+  "id": "kuae-cloud-coding-plan",
+  "name": "KUAE Cloud Coding Plan",
+  "type": "openai-compatible",
+  "apiKeyEnv": "KUAE_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "GLM-4.7",
+      "name": "GLM-4.7",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-22"
+    }
+  ],
+  "baseUrl": "https://coding-plan-endpoint.kuaecloud.net/v1",
+  "docsUrl": "https://docs.mthreads.com/kuaecloud/kuaecloud-doc-online/coding_plan/"
+}

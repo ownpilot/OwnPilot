@@ -55,6 +55,7 @@ import {
   debugRoutes,
   executionPermissionsRoutes,
   heartbeatsRoutes,
+  skillPackagesRoutes,
 } from './routes/index.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST } from './config/defaults.js';
 
@@ -226,6 +227,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Heartbeats (NL-to-cron periodic tasks)
   app.route('/api/v1/heartbeats', heartbeatsRoutes);
 
+  // Skill Packages (shareable tool + prompt + trigger bundles)
+  app.route('/api/v1/skill-packages', skillPackagesRoutes);
+
   // Local AI Providers (LM Studio, Ollama, etc.)
   app.route('/api/v1/local-providers', localProvidersRoutes);
 
@@ -300,6 +304,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         configServices: '/api/v1/config-services',
         // Heartbeats (NL-to-cron periodic tasks)
         heartbeats: '/api/v1/heartbeats',
+        // Skill Packages (shareable tool bundles)
+        skillPackages: '/api/v1/skill-packages',
         // Local AI Providers (LM Studio, Ollama)
         localProviders: '/api/v1/local-providers',
       },

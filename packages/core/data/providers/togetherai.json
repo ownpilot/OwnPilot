@@ -12,11 +12,11 @@
   },
   "models": [
     {
-      "id": "Qwen/Qwen3-Coder-Next-FP8",
-      "name": "Qwen3 Coder Next FP8",
-      "contextWindow": 262144,
-      "maxOutput": 32000,
-      "inputPrice": 0.5,
+      "id": "MiniMaxAI/MiniMax-M2.5",
+      "name": "MiniMax-M2.5",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.3,
       "outputPrice": 1.2,
       "capabilities": [
         "chat",
@@ -25,13 +25,46 @@
         "streaming"
       ],
       "default": true,
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "zai-org/GLM-5",
+      "name": "GLM-5",
+      "contextWindow": 202752,
+      "maxOutput": 131072,
+      "inputPrice": 1,
+      "outputPrice": 3.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-11"
+    },
+    {
+      "id": "Qwen/Qwen3-Coder-Next-FP8",
+      "name": "Qwen3 Coder Next FP8",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.5,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-02-03"
     },
     {
       "id": "moonshotai/Kimi-K2.5",
       "name": "Kimi K2.5",
       "contextWindow": 262144,
-      "maxOutput": 32768,
+      "maxOutput": 262144,
       "inputPrice": 0.5,
       "outputPrice": 2.8,
       "capabilities": [
@@ -63,7 +96,7 @@
       "id": "moonshotai/Kimi-K2-Thinking",
       "name": "Kimi K2 Thinking",
       "contextWindow": 262144,
-      "maxOutput": 32768,
+      "maxOutput": 262144,
       "inputPrice": 1.2,
       "outputPrice": 4,
       "capabilities": [
@@ -79,7 +112,7 @@
       "id": "zai-org/GLM-4.6",
       "name": "GLM 4.6",
       "contextWindow": 200000,
-      "maxOutput": 32768,
+      "maxOutput": 200000,
       "inputPrice": 0.6,
       "outputPrice": 2.2,
       "capabilities": [
@@ -94,7 +127,7 @@
       "id": "moonshotai/Kimi-K2-Instruct-0905",
       "name": "Kimi K2 Instruct-0905",
       "contextWindow": 262144,
-      "maxOutput": 32768,
+      "maxOutput": 262144,
       "inputPrice": 1,
       "outputPrice": 3,
       "capabilities": [
@@ -109,7 +142,7 @@
       "id": "deepseek-ai/DeepSeek-V3-1",
       "name": "DeepSeek V3.1",
       "contextWindow": 131072,
-      "maxOutput": 12288,
+      "maxOutput": 131072,
       "inputPrice": 0.6,
       "outputPrice": 1.7,
       "capabilities": [
@@ -138,12 +171,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
-      "name": "Qwen3 235B A22B Instruct 2507 FP8",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0.2,
-      "outputPrice": 0.6,
+      "id": "zai-org/GLM-4.7",
+      "name": "GLM-4.7",
+      "contextWindow": 200000,
+      "maxOutput": 200000,
+      "inputPrice": 0.45,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -157,7 +190,7 @@
       "id": "Qwen/Qwen3-Next-80B-A3B-Instruct",
       "name": "Qwen3-Next-80B-A3B-Instruct",
       "contextWindow": 262144,
-      "maxOutput": 131072,
+      "maxOutput": 262144,
       "inputPrice": 0.15,
       "outputPrice": 1.5,
       "capabilities": [
@@ -169,12 +202,12 @@
       "releaseDate": "2025-07-25"
     },
     {
-      "id": "zai-org/GLM-4.7",
-      "name": "GLM-4.7",
-      "contextWindow": 200000,
-      "maxOutput": 128000,
-      "inputPrice": 0.45,
-      "outputPrice": 2,
+      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
+      "name": "Qwen3 235B A22B Instruct 2507 FP8",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -188,7 +221,7 @@
       "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
       "name": "Qwen3 Coder 480B A35B Instruct",
       "contextWindow": 262144,
-      "maxOutput": 66536,
+      "maxOutput": 262144,
       "inputPrice": 2,
       "outputPrice": 2,
       "capabilities": [
@@ -203,7 +236,7 @@
       "id": "moonshotai/Kimi-K2-Instruct",
       "name": "Kimi K2 Instruct",
       "contextWindow": 131072,
-      "maxOutput": 32768,
+      "maxOutput": 131072,
       "inputPrice": 1,
       "outputPrice": 3,
       "capabilities": [
@@ -218,7 +251,7 @@
       "id": "deepseek-ai/DeepSeek-V3",
       "name": "DeepSeek V3",
       "contextWindow": 131072,
-      "maxOutput": 12288,
+      "maxOutput": 131072,
       "inputPrice": 1.25,
       "outputPrice": 1.25,
       "capabilities": [
@@ -234,7 +267,7 @@
       "id": "deepseek-ai/DeepSeek-R1",
       "name": "DeepSeek R1",
       "contextWindow": 163839,
-      "maxOutput": 12288,
+      "maxOutput": 163839,
       "inputPrice": 3,
       "outputPrice": 7,
       "capabilities": [
@@ -249,7 +282,7 @@
       "id": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
       "name": "Llama 3.3 70B",
       "contextWindow": 131072,
-      "maxOutput": 66536,
+      "maxOutput": 131072,
       "inputPrice": 0.88,
       "outputPrice": 0.88,
       "capabilities": [

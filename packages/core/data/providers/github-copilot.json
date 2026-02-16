@@ -102,7 +102,7 @@
       "id": "claude-opus-4.5",
       "name": "Claude Opus 4.5",
       "contextWindow": 128000,
-      "maxOutput": 16000,
+      "maxOutput": 32000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -135,10 +135,10 @@
       "releaseDate": "2025-11-18"
     },
     {
-      "id": "gpt-5.1-codex",
-      "name": "GPT-5.1-Codex",
+      "id": "gpt-5.1",
+      "name": "GPT-5.1",
       "contextWindow": 128000,
-      "maxOutput": 128000,
+      "maxOutput": 64000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -155,7 +155,7 @@
       "id": "gpt-5.1-codex-mini",
       "name": "GPT-5.1-Codex-mini",
       "contextWindow": 128000,
-      "maxOutput": 100000,
+      "maxOutput": 128000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -169,8 +169,8 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "gpt-5.1",
-      "name": "GPT-5.1",
+      "id": "gpt-5.1-codex",
+      "name": "GPT-5.1-Codex",
       "contextWindow": 128000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -189,7 +189,7 @@
       "id": "claude-haiku-4.5",
       "name": "Claude Haiku 4.5",
       "contextWindow": 128000,
-      "maxOutput": 16000,
+      "maxOutput": 32000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -206,7 +206,7 @@
       "id": "claude-sonnet-4.5",
       "name": "Claude Sonnet 4.5",
       "contextWindow": 128000,
-      "maxOutput": 16000,
+      "maxOutput": 32000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -305,7 +305,7 @@
     {
       "id": "gpt-4.1",
       "name": "GPT-4.1",
-      "contextWindow": 128000,
+      "contextWindow": 64000,
       "maxOutput": 16384,
       "inputPrice": 0,
       "outputPrice": 0,

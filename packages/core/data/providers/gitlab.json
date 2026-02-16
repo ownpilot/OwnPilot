@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "duo-chat-opus-4-6",
+      "name": "Agentic Chat (Claude Opus 4.6)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-05"
+    },
+    {
       "id": "duo-chat-gpt-5-2",
       "name": "Agentic Chat (GPT-5.2)",
       "contextWindow": 400000,
@@ -26,12 +43,12 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-01-23"
     },
     {
-      "id": "duo-chat-gpt-5-1",
-      "name": "Agentic Chat (GPT-5.1)",
+      "id": "duo-chat-gpt-5-2-codex",
+      "name": "Agentic Chat (GPT-5.2 Codex)",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -66,24 +83,6 @@
       "releaseDate": "2026-01-22"
     },
     {
-      "id": "duo-chat-gpt-5-2-codex",
-      "name": "Agentic Chat (GPT-5.2 Codex)",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-22"
-    },
-    {
       "id": "duo-chat-gpt-5-codex",
       "name": "Agentic Chat (GPT-5 Codex)",
       "contextWindow": 400000,
@@ -102,21 +101,22 @@
       "releaseDate": "2026-01-22"
     },
     {
-      "id": "duo-chat-opus-4-5",
-      "name": "Agentic Chat (Claude Opus 4.5)",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
+      "id": "duo-chat-gpt-5-1",
+      "name": "Agentic Chat (GPT-5.1)",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-01-08"
+      "releaseDate": "2026-01-22"
     },
     {
       "id": "duo-chat-sonnet-4-5",
@@ -138,6 +138,23 @@
     {
       "id": "duo-chat-haiku-4-5",
       "name": "Agentic Chat (Claude Haiku 4.5)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-08"
+    },
+    {
+      "id": "duo-chat-opus-4-5",
+      "name": "Agentic Chat (Claude Opus 4.5)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 0,

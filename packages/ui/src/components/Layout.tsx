@@ -38,6 +38,7 @@ import {
   Link,
   Container,
   Info,
+  Sparkles,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
@@ -107,6 +108,7 @@ const navGroups: NavGroup[] = [
       { to: '/tools', icon: Wrench, label: 'Tools' },
       { to: '/custom-tools', icon: Code, label: 'Custom Tools' },
       { to: '/plugins', icon: Puzzle, label: 'Plugins' },
+      { to: '/skill-packages', icon: Sparkles, label: 'Skills' },
       { to: '/workspaces', icon: HardDrive, label: 'Workspaces' },
       { to: '/models', icon: Cpu, label: 'Models' },
       { to: '/costs', icon: DollarSign, label: 'Costs' },

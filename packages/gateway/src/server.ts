@@ -204,6 +204,25 @@ async function main() {
   // 7. Resource Service (wraps ResourceRegistry)
   registry.register(Services.Resource, createResourceServiceImpl());
 
+  // Initialize Skill Packages repository + scan for new packages
+  log.info('Initializing Skill Packages...');
+  try {
+    const { initializeSkillPackagesRepo } = await import('./db/repositories/skill-packages.js');
+    await initializeSkillPackagesRepo();
+
+    const { getSkillPackageService } = await import('./services/skill-package-service.js');
+    const skillService = getSkillPackageService();
+    const scanResult = await skillService.scanDirectory(undefined, 'default');
+    const totalPackages = skillService.getAll().length;
+    if (scanResult.installed > 0) {
+      log.info(`Skill Packages: ${totalPackages} total, ${scanResult.installed} newly installed`);
+    } else if (totalPackages > 0) {
+      log.info(`Skill Packages: ${totalPackages} installed`);
+    }
+  } catch (error) {
+    log.warn('Skill Packages initialization failed', { error: String(error) });
+  }
+
   // Initialize Plugins repository
   log.info('Initializing Plugins repository...');
   await initializePluginsRepo();

@@ -43,11 +43,13 @@ import {
   executeCustomToolTool,
   executeActiveCustomTool,
   getActiveCustomToolDefinitions,
+  getCustomToolDynamicRegistry,
 } from './custom-tools.js';
 import { getToolSource } from '../services/tool-source.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
-import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool, HEARTBEAT_TOOLS, executeHeartbeatTool } from '../tools/index.js';
+import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool, HEARTBEAT_TOOLS, executeHeartbeatTool, SKILL_PACKAGE_TOOLS, executeSkillPackageTool } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
+import { getSkillPackageService, type ToolDefinitionForRegistry } from '../services/skill-package-service.js';
 import {
   traceToolCallStart,
   traceToolCallEnd,
@@ -240,6 +242,7 @@ function registerGatewayTools(
     { definitions: TRIGGER_TOOLS, executor: executeTriggerTool, needsUserId: true },
     { definitions: PLAN_TOOLS, executor: executePlanTool, needsUserId: true },
     { definitions: HEARTBEAT_TOOLS, executor: executeHeartbeatTool, needsUserId: true },
+    { definitions: SKILL_PACKAGE_TOOLS, executor: executeSkillPackageTool, needsUserId: true },
   ];
 
   for (const group of groups) {
@@ -383,6 +386,78 @@ function registerPluginTools(
   removeSupersededCoreStubs(tools, pluginToolNames);
 
   return pluginToolDefs;
+}
+
+/**
+ * Register skill package tools (from installed skill packages).
+ * Skill tools are registered in the DynamicToolRegistry (same sandbox as custom tools)
+ * and then exposed on the ToolRegistry for agent access.
+ *
+ * @returns The skill package tool definitions (needed for tool-list assembly).
+ */
+function registerSkillPackageTools(
+  tools: ToolRegistry,
+  _userId: string,
+  trace: boolean,
+): ToolDefinition[] {
+  let service: ReturnType<typeof getSkillPackageService>;
+  try {
+    service = getSkillPackageService();
+  } catch {
+    return []; // Service not initialized yet (e.g. during tests)
+  }
+
+  const skillToolDefs = service.getToolDefinitions();
+  if (skillToolDefs.length === 0) return [];
+
+  // Get the shared DynamicToolRegistry (same sandbox as custom tools)
+  const dynamicRegistry = getCustomToolDynamicRegistry();
+
+  const result: ToolDefinition[] = [];
+
+  for (const def of skillToolDefs) {
+    // Register in DynamicToolRegistry if not already there
+    if (!dynamicRegistry.has(def.name)) {
+      try {
+        dynamicRegistry.register({
+          name: def.name,
+          description: def.description,
+          parameters: def.skillTool.parameters as never,
+          code: def.skillTool.code,
+          permissions: def.skillTool.permissions as never,
+        });
+      } catch (error) {
+        log.warn(`Failed to register skill tool "${def.name}"`, { error: String(error) });
+        continue;
+      }
+    }
+
+    const toolDef: ToolDefinition = {
+      name: def.name,
+      description: def.description,
+      parameters: def.parameters as ToolDefinition['parameters'],
+      category: def.category,
+    };
+
+    tools.register(toolDef, async (args, context): Promise<CoreToolResult> => {
+      const startTime = trace ? traceToolCallStart(def.name, args as Record<string, unknown>) : 0;
+      try {
+        const execResult = await dynamicRegistry.execute(def.name, args as Record<string, unknown>, context);
+        if (trace) {
+          traceToolCallEnd(def.name, startTime, !execResult.isError, execResult.content, execResult.isError ? String(execResult.content) : undefined);
+        }
+        return { content: execResult.isError ? String(execResult.content) : JSON.stringify(execResult.content), isError: execResult.isError };
+      } catch (error) {
+        const errorMsg = getErrorMessage(error);
+        if (trace) traceToolCallEnd(def.name, startTime, false, undefined, errorMsg);
+        return { content: errorMsg, isError: true };
+      }
+    });
+
+    result.push(toolDef);
+  }
+
+  return result;
 }
 
 // =============================================================================
@@ -898,23 +973,30 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   const pluginToolDefs = registerPluginTools(tools, true);
   log.info(`Registered ${pluginToolDefs.length} plugin tools`);
 
+  // Register skill package tools (from installed skill packages)
+  const skillPackageToolDefs = registerSkillPackageTools(tools, userId, true);
+  if (skillPackageToolDefs.length > 0) {
+    log.info(`Registered ${skillPackageToolDefs.length} skill package tools`);
+  }
+
   // Separate standard tools (from TOOL_GROUPS) and special tools that bypass filtering
   // Filter getToolDefinitions() to exclude stubs that were unregistered above
   const coreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS];
+  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...SKILL_PACKAGE_TOOLS];
 
   // These tools ALWAYS bypass toolGroup filtering:
   // - DYNAMIC_TOOL_DEFINITIONS: Meta-tools for managing custom tools (create_tool, etc.)
   // - activeCustomToolDefs: User's custom tools (always available when active)
   // - pluginToolDefs: Plugin-provided tools (explicitly installed by user)
-  const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs];
+  // - skillPackageToolDefs: Skill package tools (explicitly installed by user)
+  const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...skillPackageToolDefs];
 
   // Filter tools based on agent's toolGroups configuration
   const { tools: resolvedToolNames } = resolveRecordTools(record.config);
   const allowedToolNames = new Set(resolvedToolNames);
 
   // Only filter standard tools by toolGroups
-  // Custom tools, dynamic tools, and plugin tools are ALWAYS included
+  // Custom tools, dynamic tools, plugin tools, and skill package tools are ALWAYS included
   // If no toolGroups are configured, include all standard tools (backwards compatibility)
   const filteredStandardTools = allowedToolNames.size > 0
     ? standardToolDefs.filter(tool => allowedToolNames.has(tool.name))
@@ -927,7 +1009,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // injects fresh memory/goal context per-request, avoiding duplicate DB fetches.
   const basePrompt = record.systemPrompt ?? 'You are a helpful personal AI assistant.';
 
-  const { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
+  let { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
     userId: 'default',
     tools: toolDefs,
     workspaceContext: getWorkspaceContext(),
@@ -936,6 +1018,14 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     includeTimeContext: true,
     includeToolDescriptions: true,
   });
+
+  // Inject skill package system prompts
+  try {
+    const skillPromptSections = getSkillPackageService().getSystemPromptSections();
+    if (skillPromptSections.length > 0) {
+      enhancedPrompt += '\n\n' + skillPromptSections.join('\n\n');
+    }
+  } catch { /* Service not initialized */ }
 
   // Only expose meta-tools (search_tools, get_tool_help, use_tool) to the API.
   // This prevents 100+ tool schemas from consuming ~20K+ tokens per request.
@@ -1427,14 +1517,17 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // Register plugin tools and remove superseded core stubs
   const pluginToolDefs = registerPluginTools(tools, false);
 
+  // Register skill package tools (from installed skill packages)
+  const skillPackageToolDefs = registerSkillPackageTools(tools, userId, false);
+
   // Get tool definitions for prompt injection (including all registered tools)
   // Filter getToolDefinitions() to exclude stubs removed above
   const chatCoreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs];
+  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...SKILL_PACKAGE_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...skillPackageToolDefs];
 
   // Inject personal memory into system prompt
   const basePrompt = BASE_SYSTEM_PROMPT;
-  const { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
+  let { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
     userId: 'default',
     tools: toolDefs,
     workspaceContext: getWorkspaceContext(),
@@ -1443,6 +1536,14 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     includeTimeContext: true,
     includeToolDescriptions: true,
   });
+
+  // Inject skill package system prompts
+  try {
+    const skillPromptSections = getSkillPackageService().getSystemPromptSections();
+    if (skillPromptSections.length > 0) {
+      enhancedPrompt += '\n\n' + skillPromptSections.join('\n\n');
+    }
+  } catch { /* Service not initialized */ }
 
   // Only expose meta-tools to the API to prevent token bloat from 100+ tool schemas.
   const chatMetaToolFilter = AI_META_TOOL_NAMES.map(n => unsafeToolId(n));

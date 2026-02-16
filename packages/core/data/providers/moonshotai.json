@@ -30,22 +30,6 @@
       "releaseDate": "2026-01"
     },
     {
-      "id": "kimi-k2-thinking-turbo",
-      "name": "Kimi K2 Thinking Turbo",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 1.15,
-      "outputPrice": 8,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-11-06"
-    },
-    {
       "id": "kimi-k2-thinking",
       "name": "Kimi K2 Thinking",
       "contextWindow": 262144,
@@ -62,12 +46,28 @@
       "releaseDate": "2025-11-06"
     },
     {
-      "id": "kimi-k2-turbo-preview",
-      "name": "Kimi K2 Turbo",
+      "id": "kimi-k2-thinking-turbo",
+      "name": "Kimi K2 Thinking Turbo",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 2.4,
-      "outputPrice": 10,
+      "inputPrice": 1.15,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-06"
+    },
+    {
+      "id": "kimi-k2-0905-preview",
+      "name": "Kimi K2 0905",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.6,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "function_calling",
@@ -77,12 +77,12 @@
       "releaseDate": "2025-09-05"
     },
     {
-      "id": "kimi-k2-0905-preview",
-      "name": "Kimi K2 0905",
+      "id": "kimi-k2-turbo-preview",
+      "name": "Kimi K2 Turbo",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 0.6,
-      "outputPrice": 2.5,
+      "inputPrice": 2.4,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "function_calling",

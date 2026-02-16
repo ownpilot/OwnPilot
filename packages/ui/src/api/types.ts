@@ -236,6 +236,62 @@ export interface PluginStats {
   byPermission: Record<string, number>;
 }
 
+// ---- Skill Packages ----
+
+export interface SkillToolInfo {
+  name: string;
+  description: string;
+  permissions?: string[];
+  requires_approval?: boolean;
+}
+
+export interface SkillTriggerInfo {
+  name: string;
+  description?: string;
+  type: 'schedule' | 'event';
+  config: Record<string, unknown>;
+  enabled?: boolean;
+}
+
+export interface SkillRequiredService {
+  name: string;
+  display_name: string;
+  description?: string;
+  category?: string;
+  docs_url?: string;
+}
+
+export interface SkillPackageInfo {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  category: string;
+  icon?: string;
+  authorName?: string;
+  status: 'enabled' | 'disabled' | 'error';
+  sourcePath?: string;
+  errorMessage?: string;
+  toolCount: number;
+  triggerCount: number;
+  installedAt: string;
+  updatedAt: string;
+  manifest: {
+    id: string;
+    name: string;
+    version: string;
+    description: string;
+    tools: SkillToolInfo[];
+    triggers?: SkillTriggerInfo[];
+    required_services?: SkillRequiredService[];
+    system_prompt?: string;
+    tags?: string[];
+    keywords?: string[];
+    docs?: string;
+    author?: { name: string; email?: string; url?: string };
+  };
+}
+
 // ---- Config Services ----
 
 export interface RequiredByEntry {
