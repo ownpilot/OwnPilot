@@ -385,7 +385,7 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
     try {
       if (mode === 'json') {
         if (!jsonText.trim()) {
-          setError('Please paste the skill.json manifest content.');
+          setError('Please paste the skill.json or skill.md manifest content.');
           setIsInstalling(false);
           return;
         }
@@ -400,7 +400,7 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
         await skillPackagesApi.install(manifest);
       } else {
         if (!filePath.trim()) {
-          setError('Please enter the path to the skill.json file.');
+          setError('Please enter the path to the skill.json or skill.md file.');
           setIsInstalling(false);
           return;
         }
@@ -466,7 +466,7 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
           {mode === 'json' ? (
             <div>
               <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
-                Paste skill.json content
+                Paste skill.json or skill.md content
               </label>
               <textarea
                 value={jsonText}
@@ -478,17 +478,17 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
           ) : (
             <div>
               <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
-                Path to skill.json file
+                Path to skill.json or skill.md file
               </label>
               <input
                 type="text"
                 value={filePath}
                 onChange={(e) => setFilePath(e.target.value)}
-                placeholder="/path/to/skill-packages/my-skill/skill.json"
+                placeholder="/path/to/skill-packages/my-skill/skill.json or skill.md"
                 className="w-full px-3 py-2 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
               <p className="text-xs text-text-muted dark:text-dark-text-muted mt-2">
-                Enter the absolute path to the skill.json manifest file on the server.
+                Enter the absolute path to the skill.json or skill.md manifest file on the server.
               </p>
             </div>
           )}

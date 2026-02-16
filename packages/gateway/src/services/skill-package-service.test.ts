@@ -374,4 +374,153 @@ describe('SkillPackageService', () => {
       expect(service.getEnabled()).toEqual([record]);
     });
   });
+
+  // ========================================================================
+  // install (file-based) — JSON vs Markdown
+  // ========================================================================
+
+  describe('install (file-based)', () => {
+    // fs is mocked at module level — get reference to mocked functions
+    let mockReadFileSync: ReturnType<typeof vi.fn>;
+    let mockExistsSync: ReturnType<typeof vi.fn>;
+
+    beforeEach(async () => {
+      const fs = await import('fs');
+      mockReadFileSync = fs.readFileSync as ReturnType<typeof vi.fn>;
+      mockExistsSync = fs.existsSync as ReturnType<typeof vi.fn>;
+    });
+
+    it('installs from .json file', async () => {
+      const manifest = validManifest();
+      mockReadFileSync.mockReturnValue(JSON.stringify(manifest));
+      mockRepo.upsert.mockResolvedValue(fakeRecord());
+
+      const result = await service.install('/path/to/skill.json');
+
+      expect(result.id).toBe('test-skill');
+      expect(mockReadFileSync).toHaveBeenCalledWith('/path/to/skill.json', 'utf-8');
+    });
+
+    it('installs from .md file', async () => {
+      const mdContent = `---
+id: md-skill
+name: MD Skill
+version: 1.0.0
+description: A markdown skill
+---
+
+## Tools
+
+### md_tool
+
+Does markdown things.
+
+\`\`\`javascript
+return { content: { ok: true } };
+\`\`\`
+`;
+      mockReadFileSync.mockReturnValue(mdContent);
+      mockRepo.upsert.mockResolvedValue(fakeRecord({ id: 'md-skill', name: 'MD Skill' }));
+
+      const result = await service.install('/path/to/skill.md');
+
+      expect(result.id).toBe('md-skill');
+      expect(mockRepo.upsert).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'md-skill',
+        name: 'MD Skill',
+      }));
+    });
+
+    it('throws VALIDATION_ERROR for invalid .md file', async () => {
+      mockReadFileSync.mockReturnValue('# Not a valid skill markdown');
+
+      await expect(service.install('/path/to/bad.md')).rejects.toThrow(SkillPackageError);
+      await expect(service.install('/path/to/bad.md')).rejects.toThrow('Invalid markdown manifest');
+    });
+
+    it('throws IO_ERROR when file cannot be read', async () => {
+      mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+
+      await expect(service.install('/missing/skill.json')).rejects.toThrow('Cannot read manifest');
+    });
+  });
+
+  // ========================================================================
+  // scanDirectory — .md support
+  // ========================================================================
+
+  describe('scanDirectory (.md support)', () => {
+    let mockReadFileSync: ReturnType<typeof vi.fn>;
+    let mockExistsSync: ReturnType<typeof vi.fn>;
+    let mockReaddirSync: ReturnType<typeof vi.fn>;
+
+    beforeEach(async () => {
+      const fs = await import('fs');
+      mockReadFileSync = fs.readFileSync as ReturnType<typeof vi.fn>;
+      mockExistsSync = fs.existsSync as ReturnType<typeof vi.fn>;
+      mockReaddirSync = fs.readdirSync as ReturnType<typeof vi.fn>;
+    });
+
+    it('discovers skill.md files', async () => {
+      const mdContent = `---
+id: md-pkg
+name: MD Pkg
+version: 1.0.0
+description: Test
+---
+
+## Tools
+
+### t
+
+Test.
+
+\`\`\`javascript
+return { content: {} };
+\`\`\`
+`;
+      // Use includes to handle both forward and backslash path separators
+      mockExistsSync.mockImplementation((p: string) => {
+        const n = p.replace(/\\/g, '/');
+        if (n.endsWith('skill-packages')) return true;
+        if (n.endsWith('my-pkg/skill.md')) return true;
+        return false;
+      });
+      mockReaddirSync.mockReturnValue([
+        { name: 'my-pkg', isDirectory: () => true },
+      ]);
+      mockReadFileSync.mockReturnValue(mdContent);
+      mockRepo.upsert.mockResolvedValue(fakeRecord({ id: 'md-pkg' }));
+
+      const result = await service.scanDirectory(undefined, 'default');
+
+      expect(result.installed).toBe(1);
+    });
+
+    it('prefers skill.json over skill.md when both exist', async () => {
+      const manifest = validManifest({ id: 'dual-pkg' });
+
+      mockExistsSync.mockImplementation((p: string) => {
+        const n = p.replace(/\\/g, '/');
+        if (n.endsWith('skill-packages')) return true;
+        if (n.endsWith('dual-pkg/skill.json')) return true;
+        if (n.endsWith('dual-pkg/skill.md')) return true;
+        return false;
+      });
+      mockReaddirSync.mockReturnValue([
+        { name: 'dual-pkg', isDirectory: () => true },
+      ]);
+      mockReadFileSync.mockReturnValue(JSON.stringify(manifest));
+      mockRepo.upsert.mockResolvedValue(fakeRecord({ id: 'dual-pkg' }));
+
+      const result = await service.scanDirectory(undefined, 'default');
+
+      expect(result.installed).toBe(1);
+      // readFileSync should have been called with .json path, not .md
+      expect(mockReadFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('skill.json'),
+        'utf-8',
+      );
+    });
+  });
 });
