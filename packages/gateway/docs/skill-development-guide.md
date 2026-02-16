@@ -465,19 +465,136 @@ Here's a complete `skill.json` for a weather skill:
 
 ---
 
+## skill.md Format (Markdown Alternative)
+
+Skill packages can also be authored as `skill.md` — a Markdown file that is simultaneously **human-readable documentation** and a **valid skill package definition**. This is especially useful for writing tool code, since you get proper syntax highlighting and don't need to escape everything into a JSON string.
+
+The system accepts both `skill.json` and `skill.md`. When scanning directories, `skill.json` takes priority if both exist.
+
+### Format Structure
+
+```markdown
+---
+id: my-skill
+name: My Skill
+version: 1.0.0
+description: What this skill does
+category: utilities
+icon: 🔧
+author: Your Name
+tags: [tag1, tag2]
+keywords: [keyword1, keyword2]
+docs: https://example.com
+---
+
+# My Skill
+
+Optional prose description — this paragraph is ignored by the parser.
+
+## System Prompt
+
+Instructions injected when this skill is active.
+Can be multiple lines.
+
+## Required Services
+
+### my-api
+- **Display Name**: My API Service
+- **Description**: API key for my service
+- **Category**: api
+- **Docs URL**: https://example.com
+
+| Field | Label | Type | Required | Description |
+|-------|-------|------|----------|-------------|
+| api_key | API Key | secret | yes | Your API key |
+
+## Tools
+
+### my_tool
+
+Clear description of what this tool does. This first paragraph becomes the tool description.
+
+**Permissions**: network
+**Requires Approval**: no
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | yes | Search query |
+| max_results | number | no | Max results to return |
+
+```javascript
+const apiKey = await config.get('my-api', 'api_key');
+if (!apiKey) return { content: { error: 'Not configured' } };
+
+const res = await fetch(`https://api.example.com/search?q=${encodeURIComponent(args.query)}`);
+const data = await res.json();
+return { content: { results: data.items.slice(0, args.max_results || 5) } };
+```
+
+## Triggers
+
+### daily-check
+- **Type**: schedule
+- **Description**: Daily automated check
+- **Enabled**: true
+
+```json
+{
+  "config": { "cron": "0 9 * * *" },
+  "action": { "type": "chat", "payload": { "prompt": "Run daily check" } }
+}
+```
+```
+
+### Key Differences from JSON
+
+| Aspect | skill.json | skill.md |
+|--------|-----------|---------|
+| Tool code | Single escaped JSON string | Fenced code block with syntax highlighting |
+| Metadata | JSON object | YAML frontmatter |
+| Parameters | JSON Schema object | Markdown table (auto-converted to JSON Schema) |
+| Documentation | Separate file needed | The file IS the documentation |
+| Required services | JSON array | `### heading` + bold list items + table |
+| Triggers | JSON array | `### heading` + bold list items + JSON block |
+
+### Frontmatter Fields
+
+The YAML frontmatter (between `---` delimiters) supports these fields:
+
+- `id` (required) — Unique package ID
+- `name` (required) — Human-readable name
+- `version` (required) — Semver version
+- `description` (required) — Package description
+- `category` — One of: developer, productivity, communication, data, utilities, integrations, media, lifestyle, other
+- `icon` — Single emoji
+- `author` — Author name (string, mapped to `{ name: string }`)
+- `tags` — Inline array: `[tag1, tag2]`
+- `keywords` — Inline array: `[kw1, kw2]`
+- `docs` — Documentation URL
+
+### Section Rules
+
+- `## System Prompt` — Body text becomes `system_prompt`
+- `## Tools` → `### tool_name` sub-sections — First paragraph = description, `**Permissions**:` line, parameter table, JavaScript code block
+- `## Required Services` → `### service_name` sub-sections — Bold list items + config table
+- `## Triggers` → `### trigger_name` sub-sections — Bold list items + JSON code block
+- `# Title` and any prose outside sections — Ignored (decorative documentation)
+
+---
+
 ## Directory Structure
 
 ```
 skill-packages/
   weather-tools/
-    skill.json          ← The manifest file
+    skill.json          ← JSON manifest (preferred)
   web-search/
-    skill.json
+    skill.md            ← Markdown manifest (alternative)
   math-helper/
     skill.json
 ```
 
-Each package gets its own directory named after its `id`. The manifest must be named `skill.json`.
+Each package gets its own directory named after its `id`. The manifest must be named `skill.json` or `skill.md`. When both exist, `skill.json` takes priority.
 
 ---
 
@@ -485,12 +602,13 @@ Each package gets its own directory named after its `id`. The manifest must be n
 
 1. **UI Wizard**: Settings > Skill Packages > Create — describe what you want and let AI generate it, or fill in the form manually
 2. **JSON Install**: Settings > Skill Packages > Install > paste `skill.json` content
-3. **File Path Install**: Settings > Skill Packages > Install > enter path to `skill.json` on server
-4. **Directory Scan**: Settings > Skill Packages > Scan — discovers all `skill.json` files in the skill-packages directory
+3. **File Path Install**: Settings > Skill Packages > Install > enter path to `skill.json` or `skill.md` on server
+4. **Directory Scan**: Settings > Skill Packages > Scan — discovers all `skill.json` and `skill.md` files in the skill-packages directory
 5. **API**:
    - `POST /api/v1/skill-packages` — Install from inline JSON manifest
-   - `POST /api/v1/skill-packages/install` — Install from file path
+   - `POST /api/v1/skill-packages/install` — Install from file path (`.json` or `.md`)
    - `POST /api/v1/skill-packages/scan` — Scan directory
+   - `POST /api/v1/skill-packages/generate` — AI generation (add `format: "markdown"` to get `.md` output)
 
 ---
 

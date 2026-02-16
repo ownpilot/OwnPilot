@@ -7,7 +7,8 @@
 import { Hono } from 'hono';
 import { createProvider, getProviderConfig as coreGetProviderConfig, type AIProvider } from '@ownpilot/core';
 import { getSkillPackageService, SkillPackageError } from '../services/skill-package-service.js';
-import { validateManifest } from '../services/skill-package-types.js';
+import { validateManifest, type SkillPackageManifest } from '../services/skill-package-types.js';
+import { serializeSkillMarkdown } from '../services/skill-package-markdown.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { resolveProviderAndModel, getApiKey } from './settings.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
@@ -267,7 +268,7 @@ skillPackagesRoutes.post('/scan', async (c) => {
  * POST /generate - Generate skill manifest from description using AI
  */
 skillPackagesRoutes.post('/generate', async (c) => {
-  const body = await c.req.json().catch(() => null) as { description?: string } | null;
+  const body = await c.req.json().catch(() => null) as { description?: string; format?: 'json' | 'markdown' } | null;
 
   if (!body?.description || typeof body.description !== 'string' || body.description.trim().length === 0) {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'description field is required' }, 400);
@@ -331,6 +332,12 @@ skillPackagesRoutes.post('/generate', async (c) => {
 
     // 6. Validate
     const validation = validateManifest(manifest);
+
+    // 7. Optionally serialize to markdown
+    if (body?.format === 'markdown' && validation.valid) {
+      const markdown = serializeSkillMarkdown(manifest as SkillPackageManifest);
+      return apiResponse(c, { manifest, validation, markdown });
+    }
 
     return apiResponse(c, { manifest, validation });
   } catch (error) {

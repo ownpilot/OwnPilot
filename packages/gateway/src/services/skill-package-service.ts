@@ -26,6 +26,7 @@ import {
   type SkillPackageManifest,
   type SkillToolDefinition,
 } from './skill-package-types.js';
+import { parseSkillMarkdown } from './skill-package-markdown.js';
 import { registerToolConfigRequirements, unregisterDependencies } from './api-service-registrar.js';
 import { getDataDirectoryInfo } from '../paths/index.js';
 import { getLog } from './log.js';
@@ -76,14 +77,26 @@ export class SkillPackageService {
       throw new SkillPackageError(`Cannot read manifest: ${manifestPath}`, 'IO_ERROR');
     }
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(rawContent);
-    } catch {
-      throw new SkillPackageError(`Invalid JSON in manifest: ${manifestPath}`, 'VALIDATION_ERROR');
+    let manifest: SkillPackageManifest;
+    if (manifestPath.endsWith('.md')) {
+      try {
+        manifest = parseSkillMarkdown(rawContent);
+      } catch (e) {
+        throw new SkillPackageError(
+          `Invalid markdown manifest: ${manifestPath} — ${e instanceof Error ? e.message : String(e)}`,
+          'VALIDATION_ERROR',
+        );
+      }
+    } else {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(rawContent);
+      } catch {
+        throw new SkillPackageError(`Invalid JSON in manifest: ${manifestPath}`, 'VALIDATION_ERROR');
+      }
+      manifest = parsed as SkillPackageManifest;
     }
 
-    const manifest = parsed as SkillPackageManifest;
     return this.installFromManifest(manifest, userId, manifestPath);
   }
 
@@ -339,8 +352,16 @@ export class SkillPackageService {
     }
 
     for (const dirName of entries) {
-      const manifestPath = join(scanDir, dirName, 'skill.json');
-      if (!existsSync(manifestPath)) continue;
+      // Prefer skill.json, fall back to skill.md
+      const jsonPath = join(scanDir, dirName, 'skill.json');
+      const mdPath = join(scanDir, dirName, 'skill.md');
+      let manifestPath: string | null = null;
+      if (existsSync(jsonPath)) {
+        manifestPath = jsonPath;
+      } else if (existsSync(mdPath)) {
+        manifestPath = mdPath;
+      }
+      if (!manifestPath) continue;
 
       try {
         await this.install(manifestPath, userId);
