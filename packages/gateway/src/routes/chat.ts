@@ -61,6 +61,42 @@ function extractToolDisplay(toolCall: ToolCall): { displayName: string; displayA
   return { displayName, displayArgs };
 }
 
+/**
+ * Wire real-time execution approval via SSE stream.
+ * Sends approval_required event and returns a pending ApprovalRequest.
+ */
+type ApprovalFn = ((category: string, actionType: string, description: string, params: Record<string, unknown>) => Promise<boolean>) | undefined;
+function wireStreamApproval(
+  agent: { setRequestApproval: (fn: ApprovalFn) => void },
+  stream: { writeSSE: (data: { data: string; event: string }) => Promise<void> },
+) {
+  agent.setRequestApproval(async (_category: string, actionType: string, description: string, params: Record<string, unknown>) => {
+    const approvalId = generateApprovalId();
+    await stream.writeSSE({
+      data: JSON.stringify({
+        type: 'approval_required',
+        approvalId,
+        category: actionType,
+        description,
+        code: params.code,
+        riskAnalysis: params.riskAnalysis,
+      }),
+      event: 'approval',
+    });
+    return createApprovalRequest(approvalId);
+  });
+}
+
+/** Broadcast chat history update to WebSocket clients */
+function broadcastChatUpdate(conversation: { id: string; title: string | null; messageCount: number }) {
+  wsGateway.broadcast('chat:history:updated', {
+    conversationId: conversation.id,
+    title: conversation.title ?? '',
+    source: 'web',
+    messageCount: conversation.messageCount + 2,
+  });
+}
+
 export const chatRoutes = new Hono();
 
 // Mount history, logs, and context reset sub-routes (extracted for maintainability)
@@ -452,13 +488,7 @@ function createStreamCallbacks(config: StreamingConfig): { callbacks: StreamCall
     },
 
     onToolEnd(toolCall: ToolCall, result: ToolEndResult) {
-      let displayName = toolCall.name;
-      try {
-        if (toolCall.name === 'use_tool' && toolCall.arguments) {
-          const args = JSON.parse(toolCall.arguments);
-          if (args.tool_name) displayName = args.tool_name;
-        }
-      } catch { /* ignore parse errors */ }
+      const { displayName } = extractToolDisplay(toolCall);
 
       const traceEntry = state.traceToolCalls.find(tc => tc.name === displayName && !tc.result);
       if (traceEntry) {
@@ -769,23 +799,7 @@ chatRoutes.post('/', async (c) => {
         const streamUserId = getUserId(c);
 
         // Wire real-time approval for 'prompt' mode execution
-        agent.setRequestApproval(async (_category, actionType, description, params) => {
-          const approvalId = generateApprovalId();
-          log.info(`[ExecSecurity] Approval requested: ${actionType} (id=${approvalId})`);
-          await stream.writeSSE({
-            data: JSON.stringify({
-              type: 'approval_required',
-              approvalId,
-              category: actionType,
-              description,
-              code: params.code,
-              riskAnalysis: params.riskAnalysis,
-            }),
-            event: 'approval',
-          });
-          log.info(`[ExecSecurity] SSE approval event sent, waiting for user response...`);
-          return createApprovalRequest(approvalId);
-        });
+        wireStreamApproval(agent, stream);
         log.info(`[ExecSecurity] SSE requestApproval callback wired on agent (MessageBus path)`);
 
         try {
@@ -823,21 +837,7 @@ chatRoutes.post('/', async (c) => {
       });
 
       // Wire real-time approval for 'prompt' mode execution
-      agent.setRequestApproval(async (_category, actionType, description, params) => {
-        const approvalId = generateApprovalId();
-        await stream.writeSSE({
-          data: JSON.stringify({
-            type: 'approval_required',
-            approvalId,
-            category: actionType,
-            description,
-            code: params.code,
-            riskAnalysis: params.riskAnalysis,
-          }),
-          event: 'approval',
-        });
-        return createApprovalRequest(approvalId);
-      });
+      wireStreamApproval(agent, stream);
 
       // Expose direct tools to LLM if requested (from picker selection)
       if (body.directTools?.length) {
@@ -982,12 +982,7 @@ chatRoutes.post('/', async (c) => {
 
           log.info(`Saved streaming to history: conversation=${dbConversation.id}, messages=+2`);
 
-          wsGateway.broadcast('chat:history:updated', {
-            conversationId: dbConversation.id,
-            title: dbConversation.title,
-            source: 'web',
-            messageCount: dbConversation.messageCount + 2,
-          });
+          broadcastChatUpdate(dbConversation);
         } catch (err) {
           log.warn('Failed to save streaming chat history:', err);
         }
@@ -1513,12 +1508,7 @@ chatRoutes.post('/', async (c) => {
 
     log.info(`Saved to history: conversation=${dbConversation.id}, messages=+2`);
 
-    wsGateway.broadcast('chat:history:updated', {
-      conversationId: dbConversation.id,
-      title: dbConversation.title,
-      source: 'web',
-      messageCount: dbConversation.messageCount + 2,
-    });
+    broadcastChatUpdate(dbConversation);
   } catch (err) {
     // Don't fail the request if history save fails
     log.warn('Failed to save chat history:', err);
