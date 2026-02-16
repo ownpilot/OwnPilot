@@ -194,6 +194,10 @@ async function main() {
   // 5. Config Center
   registry.register(Services.Config, gatewayConfigCenter);
 
+  // Start embedding queue (background embedding generation for memories)
+  const { getEmbeddingQueue } = await import('./services/embedding-queue.js');
+  getEmbeddingQueue().start();
+
   // 6. Database Service (wraps CustomDataService)
   registry.register(Services.Database, createDatabaseServiceImpl());
 

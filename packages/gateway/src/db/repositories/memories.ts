@@ -15,8 +15,10 @@ import {
   type ResourceUpdatedData,
   type ResourceDeletedData,
 } from '@ownpilot/core';
+import { RRF_K } from '../../config/defaults.js';
 
 export type MemoryType = 'fact' | 'preference' | 'conversation' | 'event' | 'skill';
+export type MatchType = 'hybrid' | 'vector' | 'fts' | 'keyword';
 
 export interface Memory {
   id: string;
@@ -68,6 +70,7 @@ interface MemoryRow {
   type: string;
   content: string;
   embedding: number[] | string | null;
+  search_vector: string | null; // tsvector — populated by trigger, not read in app
   source: string | null;
   source_id: string | null;
   importance: number;
@@ -642,6 +645,245 @@ export class MemoriesRepository extends BaseRepository {
 
     const newImportance = Math.min(1, existing.importance + amount);
     return this.update(id, { importance: newImportance });
+  }
+
+  // --------------------------------------------------------------------------
+  // Hybrid Search (FTS + Vector + RRF)
+  // --------------------------------------------------------------------------
+
+  /**
+   * Full-text search using PostgreSQL tsvector/tsquery.
+   * Returns memories with FTS rank score.
+   */
+  async searchByFTS(
+    query: string,
+    options: {
+      type?: MemoryType;
+      limit?: number;
+      minImportance?: number;
+    } = {},
+  ): Promise<Array<Memory & { ftsRank: number }>> {
+    const limit = options.limit ?? 20;
+    const conditions: string[] = ['user_id = $1', 'search_vector IS NOT NULL'];
+    const params: unknown[] = [this.userId];
+    let paramIndex = 2;
+
+    // Query parameter for tsquery
+    const queryParamIdx = paramIndex++;
+    params.push(query);
+
+    if (options.type) {
+      conditions.push(`type = $${paramIndex++}`);
+      params.push(options.type);
+    }
+    if (options.minImportance !== undefined) {
+      conditions.push(`importance >= $${paramIndex++}`);
+      params.push(options.minImportance);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    const sql = `
+      SELECT *,
+        ts_rank_cd(search_vector, websearch_to_tsquery('english', $${queryParamIdx})) AS fts_rank
+      FROM memories
+      WHERE ${whereClause}
+        AND search_vector @@ websearch_to_tsquery('english', $${queryParamIdx})
+      ORDER BY fts_rank DESC
+      LIMIT $${paramIndex}
+    `;
+    params.push(limit);
+
+    const rows = await this.query<MemoryRow & { fts_rank: number }>(sql, params);
+    return rows.map(row => ({
+      ...rowToMemory(row),
+      ftsRank: Number(row.fts_rank),
+    }));
+  }
+
+  /**
+   * Hybrid search combining vector similarity + full-text search
+   * using Reciprocal Rank Fusion (RRF).
+   *
+   * Falls back gracefully:
+   * - If embedding provided: vector + FTS, merged with RRF
+   * - If no embedding: FTS only
+   * - If no FTS results: ILIKE keyword fallback
+   */
+  async hybridSearch(
+    query: string,
+    options: {
+      embedding?: number[];
+      type?: MemoryType;
+      limit?: number;
+      minImportance?: number;
+    } = {},
+  ): Promise<Array<Memory & { score: number; matchType: MatchType }>> {
+    const limit = options.limit ?? 20;
+    const k = RRF_K;
+    const hasEmbedding = options.embedding && options.embedding.length > 0;
+
+    if (hasEmbedding) {
+      return this.hybridSearchRRF(query, options.embedding!, {
+        type: options.type,
+        limit,
+        minImportance: options.minImportance,
+        k,
+      });
+    }
+
+    // No embedding available — try FTS, then ILIKE fallback
+    const ftsResults = await this.searchByFTS(query, {
+      type: options.type,
+      limit,
+      minImportance: options.minImportance,
+    });
+
+    if (ftsResults.length > 0) {
+      return ftsResults.map(m => ({
+        ...m,
+        score: m.ftsRank,
+        matchType: 'fts' as const,
+      }));
+    }
+
+    // ILIKE keyword fallback
+    const keywordResults = await this.search(query, {
+      type: options.type,
+      limit,
+    });
+
+    return keywordResults.map((m, i) => ({
+      ...m,
+      score: 1 / (k + i + 1), // Synthetic score based on position
+      matchType: 'keyword' as const,
+    }));
+  }
+
+  /**
+   * Internal: RRF query combining vector + FTS results.
+   */
+  private async hybridSearchRRF(
+    query: string,
+    embedding: number[],
+    options: {
+      type?: MemoryType;
+      limit: number;
+      minImportance?: number;
+      k: number;
+    },
+  ): Promise<Array<Memory & { score: number; matchType: MatchType }>> {
+    const { limit, k } = options;
+
+    // Build shared filter conditions (applied in both CTEs)
+    let typeFilter = '';
+    let importanceFilter = '';
+    const extraParams: unknown[] = [];
+    let nextParam = 4; // $1=userId, $2=embedding, $3=query
+
+    if (options.type) {
+      typeFilter = `AND type = $${nextParam++}`;
+      extraParams.push(options.type);
+    }
+    if (options.minImportance !== undefined) {
+      importanceFilter = `AND importance >= $${nextParam++}`;
+      extraParams.push(options.minImportance);
+    }
+
+    const candidateLimit = limit * 3; // Over-fetch candidates for better ranking
+
+    const sql = `
+      WITH vector_results AS (
+        SELECT id, content, type, importance, tags, source, source_id,
+               accessed_count, created_at, updated_at, accessed_at, metadata,
+               user_id, embedding,
+               ROW_NUMBER() OVER (ORDER BY embedding <=> $2::vector ASC) AS vrank
+        FROM memories
+        WHERE user_id = $1
+          AND embedding IS NOT NULL
+          ${typeFilter}
+          ${importanceFilter}
+        ORDER BY embedding <=> $2::vector ASC
+        LIMIT ${candidateLimit}
+      ),
+      fts_results AS (
+        SELECT id, content, type, importance, tags, source, source_id,
+               accessed_count, created_at, updated_at, accessed_at, metadata,
+               user_id, embedding,
+               ROW_NUMBER() OVER (
+                 ORDER BY ts_rank_cd(search_vector, websearch_to_tsquery('english', $3)) DESC
+               ) AS frank
+        FROM memories
+        WHERE user_id = $1
+          AND search_vector @@ websearch_to_tsquery('english', $3)
+          ${typeFilter}
+          ${importanceFilter}
+        ORDER BY ts_rank_cd(search_vector, websearch_to_tsquery('english', $3)) DESC
+        LIMIT ${candidateLimit}
+      ),
+      combined AS (
+        SELECT
+          COALESCE(v.id, f.id) AS id,
+          COALESCE(v.content, f.content) AS content,
+          COALESCE(v.type, f.type) AS type,
+          COALESCE(v.importance, f.importance) AS importance,
+          COALESCE(v.tags, f.tags) AS tags,
+          COALESCE(v.source, f.source) AS source,
+          COALESCE(v.source_id, f.source_id) AS source_id,
+          COALESCE(v.accessed_count, f.accessed_count) AS accessed_count,
+          COALESCE(v.created_at, f.created_at) AS created_at,
+          COALESCE(v.updated_at, f.updated_at) AS updated_at,
+          COALESCE(v.accessed_at, f.accessed_at) AS accessed_at,
+          COALESCE(v.metadata, f.metadata) AS metadata,
+          COALESCE(v.user_id, f.user_id) AS user_id,
+          COALESCE(v.embedding, f.embedding) AS embedding,
+          COALESCE(1.0 / (${k} + v.vrank), 0) +
+          COALESCE(1.0 / (${k} + f.frank), 0) AS rrf_score,
+          CASE
+            WHEN v.id IS NOT NULL AND f.id IS NOT NULL THEN 'hybrid'
+            WHEN v.id IS NOT NULL THEN 'vector'
+            ELSE 'fts'
+          END AS match_type
+        FROM vector_results v
+        FULL OUTER JOIN fts_results f ON v.id = f.id
+      )
+      SELECT * FROM combined
+      ORDER BY rrf_score DESC
+      LIMIT $${nextParam}
+    `;
+
+    const params = [
+      this.userId,
+      JSON.stringify(embedding),
+      query,
+      ...extraParams,
+      limit,
+    ];
+
+    const rows = await this.query<MemoryRow & {
+      rrf_score: number;
+      match_type: string;
+    }>(sql, params);
+
+    return rows.map(row => ({
+      ...rowToMemory(row),
+      score: Number(row.rrf_score),
+      matchType: row.match_type as MatchType,
+    }));
+  }
+
+  /**
+   * Get memories that are missing embeddings (for backfill).
+   */
+  async getWithoutEmbeddings(limit = 100): Promise<Memory[]> {
+    const rows = await this.query<MemoryRow>(
+      `SELECT * FROM memories
+       WHERE user_id = $1 AND embedding IS NULL
+       ORDER BY importance DESC, created_at DESC
+       LIMIT $2`,
+      [this.userId, limit],
+    );
+    return rows.map(rowToMemory);
   }
 
   /**

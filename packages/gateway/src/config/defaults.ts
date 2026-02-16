@@ -194,3 +194,37 @@ export const MAX_TOOL_SOURCE_EXTRACTION_CACHE = 500;
 
 /** Maximum outgoing message→chat mappings kept for edit/delete support */
 export const MAX_MESSAGE_CHAT_MAP_SIZE = 1_000;
+
+// ============================================================================
+// Embedding Service
+// ============================================================================
+
+/** Default embedding model */
+export const EMBEDDING_MODEL = 'text-embedding-3-small';
+
+/** Embedding dimensions (must match schema vector(1536)) */
+export const EMBEDDING_DIMENSIONS = 1536;
+
+/** Maximum texts per OpenAI embedding API batch call */
+export const EMBEDDING_MAX_BATCH_SIZE = 100;
+
+/** Delay between batch embedding API calls (ms) */
+export const EMBEDDING_RATE_LIMIT_DELAY_MS = 500;
+
+/** Maximum chunk size for markdown splitting (~500 tokens) */
+export const EMBEDDING_MAX_CHUNK_CHARS = 2000;
+
+/** Minimum chunk size to avoid tiny fragments */
+export const EMBEDDING_MIN_CHUNK_CHARS = 100;
+
+/** Days before unused cache entries are evicted (LRU) */
+export const EMBEDDING_CACHE_EVICTION_DAYS = 30;
+
+/** RRF constant k (standard value for Reciprocal Rank Fusion) */
+export const RRF_K = 60;
+
+/** Background queue batch size (process N items at once) */
+export const EMBEDDING_QUEUE_BATCH_SIZE = 10;
+
+/** Background queue processing interval (ms) */
+export const EMBEDDING_QUEUE_INTERVAL_MS = 5_000;

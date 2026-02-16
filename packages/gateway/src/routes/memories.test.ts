@@ -22,6 +22,7 @@ const mockMemoryService = {
   updateMemory: vi.fn(),
   deleteMemory: vi.fn(),
   searchMemories: vi.fn(async () => []),
+  hybridSearch: vi.fn(async () => []),
   boostMemory: vi.fn(),
   decayMemories: vi.fn(async () => 0),
   cleanupMemories: vi.fn(async () => 0),
@@ -292,9 +293,9 @@ describe('Memories Routes', () => {
   // ========================================================================
 
   describe('GET /memories/search', () => {
-    it('searches memories by query', async () => {
-      mockMemoryService.searchMemories.mockResolvedValue([
-        { id: 'm1', content: 'Matching memory', type: 'fact', importance: 0.9 },
+    it('searches memories by query (hybrid mode by default)', async () => {
+      mockMemoryService.hybridSearch.mockResolvedValue([
+        { id: 'm1', content: 'Matching memory', type: 'fact', importance: 0.9, score: 0.85, matchType: 'fts' },
       ]);
 
       const res = await app.request('/memories/search?q=matching');
@@ -305,6 +306,19 @@ describe('Memories Routes', () => {
       expect(json.data.memories).toHaveLength(1);
       expect(json.data.count).toBe(1);
       expect(json.data.query).toBe('matching');
+    });
+
+    it('searches with keyword mode (fallback to text search)', async () => {
+      mockMemoryService.searchMemories.mockResolvedValue([
+        { id: 'm1', content: 'Matching memory', type: 'fact', importance: 0.9 },
+      ]);
+
+      const res = await app.request('/memories/search?q=matching&mode=keyword');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.mode).toBe('keyword');
     });
 
     it('returns 400 when query is missing', async () => {

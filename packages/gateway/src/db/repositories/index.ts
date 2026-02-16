@@ -285,6 +285,13 @@ export {
   executionPermissionsRepo,
 } from './execution-permissions.js';
 
+// Embedding cache repository
+export {
+  EmbeddingCacheRepository,
+  embeddingCacheRepo,
+  type EmbeddingCacheEntry,
+} from './embedding-cache.js';
+
 // Workspaces repository
 export {
   WorkspacesRepository,

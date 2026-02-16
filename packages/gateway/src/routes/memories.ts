@@ -96,20 +96,24 @@ memoriesRoutes.get('/search', async (c) => {
   const query = c.req.query('q') ?? '';
   const type = validateQueryEnum(c.req.query('type'), ['fact', 'preference', 'conversation', 'event', 'skill'] as const);
   const limit = getIntParam(c, 'limit', 20, 1, 100);
+  const mode = c.req.query('mode') ?? 'hybrid';
 
   if (!query) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'query (q) parameter is required' }, 400);
   }
 
   const service = getServiceRegistry().get(Services.Memory);
-  const memories = await service.searchMemories(userId, query, { type, limit });
 
-  log.info('Memory search', { userId, query, type, resultsCount: memories.length });
-  return apiResponse(c, {
-      query,
-      memories,
-      count: memories.length,
-    });
+  if (mode === 'hybrid' || mode === 'vector') {
+    const memories = await service.hybridSearch(userId, query, { type, limit });
+    log.info('Hybrid memory search', { userId, query, type, mode, resultsCount: memories.length });
+    return apiResponse(c, { query, mode, memories, count: memories.length });
+  }
+
+  // Fallback to existing text search for 'keyword' mode
+  const memories = await service.searchMemories(userId, query, { type, limit });
+  log.info('Memory search', { userId, query, type, mode, resultsCount: memories.length });
+  return apiResponse(c, { query, mode, memories, count: memories.length });
 });
 
 /**
@@ -259,6 +263,41 @@ memoriesRoutes.post('/cleanup', async (c) => {
     });
 });
 
+/**
+ * POST /memories/backfill-embeddings - Queue all memories without embeddings
+ */
+memoriesRoutes.post('/backfill-embeddings', async (c) => {
+  const userId = getUserId(c);
+
+  const { getEmbeddingQueue } = await import('../services/embedding-queue.js');
+  const queued = await getEmbeddingQueue().backfill(userId);
+
+  log.info('Embedding backfill queued', { userId, count: queued });
+  return apiResponse(c, {
+    queued,
+    message: `Queued ${queued} memories for embedding generation.`,
+  });
+});
+
+/**
+ * GET /memories/embedding-stats - Get embedding system stats
+ */
+memoriesRoutes.get('/embedding-stats', async (c) => {
+  const { getEmbeddingService } = await import('../services/embedding-service.js');
+  const { getEmbeddingQueue } = await import('../services/embedding-queue.js');
+  const { embeddingCacheRepo } = await import('../db/repositories/embedding-cache.js');
+
+  const embeddingService = getEmbeddingService();
+  const queue = getEmbeddingQueue();
+  const cacheStats = await embeddingCacheRepo.getStats();
+
+  return apiResponse(c, {
+    available: embeddingService.isAvailable(),
+    queue: queue.getStats(),
+    cache: cacheStats,
+  });
+});
+
 // ============================================================================
 // Tool Executor
 // ============================================================================
@@ -372,15 +411,16 @@ export async function executeMemoryTool(
         }
 
         const limit = Math.max(1, Math.min(100, rawLimit));
-        const memories = await service.listMemories(userId, {
-          search: query,
-          type,
-          tags,
-          limit,
-          orderBy: 'relevance',
-        });
 
-        if (memories.length === 0) {
+        // Use hybrid search (vector + FTS + RRF, with graceful fallback)
+        const results = await service.hybridSearch(userId, query, { type, limit });
+
+        // Post-filter by tags (tag filtering not in RRF CTE)
+        const filtered = tags && tags.length > 0
+          ? results.filter(m => tags.some(tag => m.tags.includes(tag)))
+          : results;
+
+        if (filtered.length === 0) {
           return {
             success: true,
             result: {
@@ -393,12 +433,14 @@ export async function executeMemoryTool(
         return {
           success: true,
           result: {
-            message: `Found ${memories.length} relevant memories.`,
-            memories: memories.map((m) => ({
+            message: `Found ${filtered.length} relevant memories.`,
+            memories: filtered.map((m) => ({
               id: m.id,
               type: m.type,
               content: m.content,
               importance: m.importance,
+              score: m.score,
+              matchType: m.matchType,
               createdAt: m.createdAt,
             })),
           },

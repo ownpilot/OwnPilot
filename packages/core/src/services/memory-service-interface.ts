@@ -156,4 +156,14 @@ export interface IMemoryService {
    * Count total memories for user, optionally filtered by type.
    */
   countMemories(userId: string, type?: MemoryType): Promise<number>;
+
+  /**
+   * Hybrid search: vector + FTS + RRF ranking.
+   * Generates query embedding on-the-fly, falls back to FTS/keyword if unavailable.
+   */
+  hybridSearch(
+    userId: string,
+    query: string,
+    options?: MemorySearchOptions & { minImportance?: number },
+  ): Promise<Array<ServiceMemoryEntry & { score: number; matchType: string }>>;
 }

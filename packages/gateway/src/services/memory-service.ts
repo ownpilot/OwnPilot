@@ -22,6 +22,12 @@ import {
   type CreateMemoryInput,
   type UpdateMemoryInput,
 } from '../db/repositories/memories.js';
+import { getEmbeddingQueue } from './embedding-queue.js';
+import { getEmbeddingService } from './embedding-service.js';
+import { shouldChunk, chunkMarkdown } from './chunking.js';
+import { getLog } from './log.js';
+
+const log = getLog('MemoryService');
 
 // ============================================================================
 // Types
@@ -54,13 +60,87 @@ export class MemoryService {
     if (!input.type) {
       throw new MemoryServiceError('Type is required', 'VALIDATION_ERROR');
     }
+
+    // Handle chunking for long content
+    if (shouldChunk(input.content)) {
+      return this.createChunkedMemory(userId, input);
+    }
+
     const repo = this.getRepo(userId);
     const memory = await repo.create(input);
+
+    // Queue embedding generation (async, non-blocking)
+    if (!input.embedding) {
+      getEmbeddingQueue().enqueue(memory.id, userId, memory.content);
+    }
+
     getEventBus().emit(createEvent<ResourceCreatedData>(
       EventTypes.RESOURCE_CREATED, 'resource', 'memory-service',
       { resourceType: 'memory', id: memory.id },
     ));
     return memory;
+  }
+
+  /**
+   * Create a long memory with chunks.
+   * Parent memory stores full content, child chunks store segments.
+   */
+  private async createChunkedMemory(userId: string, input: CreateMemoryInput): Promise<Memory> {
+    const repo = this.getRepo(userId);
+    const chunks = chunkMarkdown(input.content);
+
+    // Create parent memory
+    const parentMemory = await repo.create({
+      ...input,
+      metadata: {
+        ...input.metadata,
+        isParent: true,
+        chunkCount: chunks.length,
+      },
+    });
+
+    // Create child chunk memories and enqueue embeddings
+    const chunkIds: string[] = [];
+    for (const chunk of chunks) {
+      const chunkMemory = await repo.create({
+        type: input.type,
+        content: chunk.text,
+        source: 'chunk',
+        sourceId: parentMemory.id,
+        importance: input.importance ?? 0.5,
+        tags: input.tags,
+        metadata: {
+          parentId: parentMemory.id,
+          chunkIndex: chunk.index,
+          headingContext: chunk.headingContext,
+        },
+      });
+      chunkIds.push(chunkMemory.id);
+
+      // Queue embedding for each chunk
+      getEmbeddingQueue().enqueue(chunkMemory.id, userId, chunk.text);
+    }
+
+    // Update parent with chunk IDs
+    await repo.update(parentMemory.id, {
+      metadata: {
+        ...parentMemory.metadata,
+        isParent: true,
+        chunkCount: chunks.length,
+        chunks: chunkIds,
+      },
+    });
+
+    // Also queue embedding for the parent (full content — truncated by API if too long)
+    getEmbeddingQueue().enqueue(parentMemory.id, userId, input.content);
+
+    getEventBus().emit(createEvent<ResourceCreatedData>(
+      EventTypes.RESOURCE_CREATED, 'resource', 'memory-service',
+      { resourceType: 'memory', id: parentMemory.id },
+    ));
+
+    log.info(`Created chunked memory: ${chunks.length} chunks`, { parentId: parentMemory.id });
+    return parentMemory;
   }
 
   /**
@@ -89,6 +169,12 @@ export class MemoryService {
     }
 
     const memory = await repo.create(input);
+
+    // Queue embedding generation for new memories
+    if (!input.embedding) {
+      getEmbeddingQueue().enqueue(memory.id, userId, memory.content);
+    }
+
     return { memory, deduplicated: false };
   }
 
@@ -182,6 +268,51 @@ export class MemoryService {
   }
 
   /**
+   * Hybrid search: vector + FTS + RRF ranking.
+   * Generates embedding for the query text on-the-fly.
+   * Falls back gracefully if embedding service is unavailable.
+   */
+  async hybridSearch(
+    userId: string,
+    query: string,
+    options: {
+      type?: MemoryType;
+      limit?: number;
+      minImportance?: number;
+    } = {},
+  ): Promise<Array<Memory & { score: number; matchType: string }>> {
+    const repo = this.getRepo(userId);
+
+    // Try to generate embedding for the query
+    let queryEmbedding: number[] | undefined;
+    try {
+      const embeddingService = getEmbeddingService();
+      if (embeddingService.isAvailable()) {
+        const result = await embeddingService.generateEmbedding(query);
+        queryEmbedding = result.embedding;
+      }
+    } catch (err) {
+      // Embedding unavailable — proceed with FTS-only
+      log.debug('Query embedding generation failed, falling back to FTS', String(err));
+    }
+
+    return repo.hybridSearch(query, {
+      embedding: queryEmbedding,
+      type: options.type,
+      limit: options.limit,
+      minImportance: options.minImportance,
+    });
+  }
+
+  /**
+   * Get memories that are missing embeddings (for backfill).
+   */
+  async getWithoutEmbeddings(userId: string, limit = 100): Promise<Memory[]> {
+    const repo = this.getRepo(userId);
+    return repo.getWithoutEmbeddings(limit);
+  }
+
+  /**
    * Update the embedding for an existing memory (backfill support).
    */
   async updateEmbedding(userId: string, id: string, embedding: number[]): Promise<boolean> {
@@ -247,14 +378,22 @@ export class MemoryService {
   }
 
   /**
-   * Cleanup old low-importance memories
+   * Cleanup old low-importance memories.
+   * Also evicts stale embedding cache entries (fire-and-forget).
    */
   async cleanupMemories(
     userId: string,
     options: { maxAge?: number; minImportance?: number } = {},
   ): Promise<number> {
     const repo = this.getRepo(userId);
-    return repo.cleanup(options);
+    const deleted = await repo.cleanup(options);
+
+    // Also evict stale embedding cache entries (fire-and-forget)
+    import('../db/repositories/embedding-cache.js').then(({ embeddingCacheRepo }) => {
+      embeddingCacheRepo.evict().catch(() => {});
+    }).catch(() => {});
+
+    return deleted;
   }
 }
 

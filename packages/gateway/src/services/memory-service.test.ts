@@ -49,11 +49,51 @@ const mockRepo = {
   count: vi.fn(),
   decay: vi.fn(),
   cleanup: vi.fn(),
+  hybridSearch: vi.fn(),
+  searchByEmbedding: vi.fn(),
+  getWithoutEmbeddings: vi.fn(),
+  updateEmbedding: vi.fn(),
 };
 
 vi.mock('../db/repositories/memories.js', () => ({
   MemoriesRepository: vi.fn(),
   createMemoriesRepository: () => mockRepo,
+}));
+
+// Mock embedding queue (fire-and-forget, not tested here)
+vi.mock('./embedding-queue.js', () => ({
+  getEmbeddingQueue: () => ({
+    enqueue: vi.fn(),
+    backfill: vi.fn(),
+    getStats: vi.fn(() => ({ queueSize: 0, running: false })),
+  }),
+}));
+
+// Mock embedding service
+const mockEmbeddingAvailable = vi.fn().mockReturnValue(false);
+const mockGenerateEmbedding = vi.fn();
+
+vi.mock('./embedding-service.js', () => ({
+  getEmbeddingService: () => ({
+    isAvailable: () => mockEmbeddingAvailable(),
+    generateEmbedding: (...args: unknown[]) => mockGenerateEmbedding(...args),
+  }),
+}));
+
+// Mock chunking (default: nothing should chunk in unit tests)
+vi.mock('./chunking.js', () => ({
+  shouldChunk: vi.fn().mockReturnValue(false),
+  chunkMarkdown: vi.fn().mockReturnValue([]),
+}));
+
+// Mock log
+vi.mock('./log.js', () => ({
+  getLog: () => ({
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -302,6 +342,79 @@ describe('MemoryService', () => {
       const result = await service.countMemories('user-1', 'fact');
       expect(result).toBe(42);
       expect(mockRepo.count).toHaveBeenCalledWith('fact');
+    });
+  });
+
+  // ========================================================================
+  // Hybrid Search
+  // ========================================================================
+
+  describe('hybridSearch', () => {
+    it('delegates to repo.hybridSearch with embedding unavailable', async () => {
+      mockEmbeddingAvailable.mockReturnValue(false);
+      mockRepo.hybridSearch.mockResolvedValue([]);
+
+      await service.hybridSearch('user-1', 'search query');
+
+      expect(mockRepo.hybridSearch).toHaveBeenCalledWith('search query', {
+        embedding: undefined,
+        type: undefined,
+        limit: undefined,
+        minImportance: undefined,
+      });
+    });
+
+    it('generates embedding when service is available', async () => {
+      mockEmbeddingAvailable.mockReturnValue(true);
+      mockGenerateEmbedding.mockResolvedValue({ embedding: [0.1, 0.2, 0.3], cached: false });
+      mockRepo.hybridSearch.mockResolvedValue([]);
+
+      await service.hybridSearch('user-1', 'search query');
+
+      expect(mockGenerateEmbedding).toHaveBeenCalledWith('search query');
+      expect(mockRepo.hybridSearch).toHaveBeenCalledWith('search query', {
+        embedding: [0.1, 0.2, 0.3],
+        type: undefined,
+        limit: undefined,
+        minImportance: undefined,
+      });
+    });
+
+    it('falls back gracefully when embedding generation fails', async () => {
+      mockEmbeddingAvailable.mockReturnValue(true);
+      mockGenerateEmbedding.mockRejectedValue(new Error('API error'));
+      mockRepo.hybridSearch.mockResolvedValue([]);
+
+      await service.hybridSearch('user-1', 'search query');
+
+      expect(mockRepo.hybridSearch).toHaveBeenCalledWith('search query', {
+        embedding: undefined,
+        type: undefined,
+        limit: undefined,
+        minImportance: undefined,
+      });
+    });
+
+    it('passes type and limit options', async () => {
+      mockEmbeddingAvailable.mockReturnValue(false);
+      mockRepo.hybridSearch.mockResolvedValue([]);
+
+      await service.hybridSearch('user-1', 'query', { type: 'fact', limit: 5, minImportance: 0.3 });
+
+      expect(mockRepo.hybridSearch).toHaveBeenCalledWith('query', {
+        embedding: undefined,
+        type: 'fact',
+        limit: 5,
+        minImportance: 0.3,
+      });
+    });
+  });
+
+  describe('getWithoutEmbeddings', () => {
+    it('delegates to repo', async () => {
+      mockRepo.getWithoutEmbeddings.mockResolvedValue([]);
+      await service.getWithoutEmbeddings('user-1', 50);
+      expect(mockRepo.getWithoutEmbeddings).toHaveBeenCalledWith(50);
     });
   });
 

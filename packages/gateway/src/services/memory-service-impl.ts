@@ -155,6 +155,23 @@ export class MemoryServiceImpl implements IMemoryService {
   async countMemories(userId: string, type?: ServiceMemoryType): Promise<number> {
     return this.service.countMemories(userId, type as MemoryType | undefined);
   }
+
+  async hybridSearch(
+    userId: string,
+    query: string,
+    options?: MemorySearchOptions & { minImportance?: number },
+  ): Promise<Array<ServiceMemoryEntry & { score: number; matchType: string }>> {
+    const results = await this.service.hybridSearch(userId, query, {
+      type: options?.type as MemoryType | undefined,
+      limit: options?.limit,
+      minImportance: options?.minImportance,
+    });
+    return results.map((m) => ({
+      ...toMemoryEntry(m),
+      score: m.score,
+      matchType: m.matchType,
+    }));
+  }
 }
 
 /**

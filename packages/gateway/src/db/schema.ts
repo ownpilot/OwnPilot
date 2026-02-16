@@ -916,6 +916,52 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- =====================================================
+-- MEMORIES TABLE: Full-Text Search (tsvector)
+-- =====================================================
+
+-- Add search_vector column for PostgreSQL full-text search
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'memories' AND column_name = 'search_vector'
+  ) THEN
+    ALTER TABLE memories ADD COLUMN search_vector tsvector;
+  END IF;
+END $$;
+
+-- Backfill search_vector for existing rows
+UPDATE memories SET search_vector = to_tsvector('english', content)
+WHERE search_vector IS NULL;
+
+-- Auto-update trigger: keeps search_vector in sync with content
+CREATE OR REPLACE FUNCTION memories_search_vector_trigger() RETURNS trigger AS $$
+BEGIN
+  NEW.search_vector := to_tsvector('english', COALESCE(NEW.content, ''));
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_memories_search_vector ON memories;
+CREATE TRIGGER trg_memories_search_vector
+  BEFORE INSERT OR UPDATE OF content ON memories
+  FOR EACH ROW EXECUTE FUNCTION memories_search_vector_trigger();
+
+-- =====================================================
+-- EMBEDDING CACHE TABLE
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS embedding_cache (
+  id TEXT PRIMARY KEY,
+  content_hash TEXT NOT NULL,
+  model_name TEXT NOT NULL DEFAULT 'text-embedding-3-small',
+  embedding vector(1536) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_used_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  use_count INTEGER NOT NULL DEFAULT 1,
+  UNIQUE(content_hash, model_name)
+);
+
 -- =============================================================================
 -- Config Center tables (replaces api_services)
 -- =============================================================================
@@ -1345,6 +1391,13 @@ CREATE INDEX IF NOT EXISTS idx_goals_user_status ON goals(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_pomodoro_sessions_user_status ON pomodoro_sessions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_plans_user_status ON plans(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_habit_logs_habit_date ON habit_logs(habit_id, date);
+
+-- Full-text search GIN index on memories
+CREATE INDEX IF NOT EXISTS idx_memories_search_vector ON memories USING GIN (search_vector);
+
+-- Embedding cache indexes
+CREATE INDEX IF NOT EXISTS idx_embedding_cache_hash ON embedding_cache(content_hash, model_name);
+CREATE INDEX IF NOT EXISTS idx_embedding_cache_last_used ON embedding_cache(last_used_at);
 
 -- pgvector: HNSW index for cosine similarity search on memories
 DO $$ BEGIN
