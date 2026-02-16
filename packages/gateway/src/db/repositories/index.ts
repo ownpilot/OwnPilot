@@ -292,6 +292,16 @@ export {
   type EmbeddingCacheEntry,
 } from './embedding-cache.js';
 
+// Heartbeats repository
+export {
+  HeartbeatsRepository,
+  createHeartbeatsRepository,
+  type Heartbeat,
+  type CreateHeartbeatInput,
+  type UpdateHeartbeatInput,
+  type HeartbeatQuery,
+} from './heartbeats.js';
+
 // Workspaces repository
 export {
   WorkspacesRepository,

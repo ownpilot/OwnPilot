@@ -37,3 +37,4 @@ export { localProvidersRoutes } from './local-providers.js';
 export { channelAuthRoutes } from './channel-auth.js';
 export { debugRoutes } from './debug.js';
 export { executionPermissionsRoutes } from './execution-permissions.js';
+export { heartbeatsRoutes } from './heartbeats.js';

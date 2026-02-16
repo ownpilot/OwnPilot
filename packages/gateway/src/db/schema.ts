@@ -1212,6 +1212,25 @@ DO $$ BEGIN
 END $$;
 
 -- =====================================================
+-- HEARTBEATS TABLE (NL-to-cron periodic tasks)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS heartbeats (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  name TEXT NOT NULL,
+  schedule_text TEXT NOT NULL,
+  cron TEXT NOT NULL,
+  task_description TEXT NOT NULL,
+  trigger_id TEXT REFERENCES triggers(id) ON DELETE SET NULL,
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  tags JSONB DEFAULT '[]',
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- =====================================================
 -- EXECUTION PERMISSIONS: Add enabled/mode columns
 -- =====================================================
 
@@ -1384,6 +1403,11 @@ CREATE INDEX IF NOT EXISTS idx_channel_sessions_conversation ON channel_sessions
 CREATE INDEX IF NOT EXISTS idx_channel_verification_token ON channel_verification_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_channel_verification_user ON channel_verification_tokens(ownpilot_user_id);
 CREATE INDEX IF NOT EXISTS idx_channel_verification_expires ON channel_verification_tokens(expires_at);
+
+-- Heartbeat indexes
+CREATE INDEX IF NOT EXISTS idx_heartbeats_user ON heartbeats(user_id);
+CREATE INDEX IF NOT EXISTS idx_heartbeats_enabled ON heartbeats(enabled);
+CREATE INDEX IF NOT EXISTS idx_heartbeats_trigger ON heartbeats(trigger_id);
 
 -- Composite indexes for high-frequency multi-column queries
 CREATE INDEX IF NOT EXISTS idx_tasks_user_status ON tasks(user_id, status);
