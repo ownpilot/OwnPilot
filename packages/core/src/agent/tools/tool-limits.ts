@@ -11,6 +11,8 @@
  * - defaultValue: used when LLM omits the parameter
  */
 
+import { getBaseName } from '../tool-namespace.js';
+
 export interface ToolLimit {
   /** Name of the parameter that controls result count */
   readonly paramName: string;
@@ -96,7 +98,7 @@ export function applyToolLimits(
   toolName: string,
   args: Record<string, unknown>,
 ): Record<string, unknown> {
-  const limit = TOOL_MAX_LIMITS[toolName];
+  const limit = TOOL_MAX_LIMITS[toolName] ?? TOOL_MAX_LIMITS[getBaseName(toolName)];
   if (!limit) return args;
 
   const currentValue = args[limit.paramName];

@@ -20,11 +20,11 @@ describe('Tools Routes', () => {
       expect(json.data).toBeInstanceOf(Array);
       expect(json.data.length).toBeGreaterThan(0);
 
-      // Check core tools are present
+      // Check core tools are present (tools have core. namespace prefix)
       const toolNames = json.data.map((t: { name: string }) => t.name);
-      expect(toolNames).toContain('get_current_time');
-      expect(toolNames).toContain('calculate');
-      expect(toolNames).toContain('generate_uuid');
+      expect(toolNames).toContain('core.get_current_time');
+      expect(toolNames).toContain('core.calculate');
+      expect(toolNames).toContain('core.generate_uuid');
     });
 
     it('each tool has required fields', async () => {
@@ -47,7 +47,7 @@ describe('Tools Routes', () => {
 
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(json.data.name).toBe('calculate');
+      expect(json.data.name).toBe('core.calculate');
       expect(json.data.description).toBeDefined();
       expect(json.data.parameters).toBeDefined();
     });

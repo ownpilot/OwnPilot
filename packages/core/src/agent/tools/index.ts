@@ -55,6 +55,7 @@ import { TOOL_MAX_LIMITS, applyToolLimits } from './tool-limits.js';
 import type { ToolLimit } from './tool-limits.js';
 
 import type { ToolDefinition, ToolExecutor, ToolRegistry as IToolRegistry } from '../tools.js';
+import { qualifyToolName, getBaseName } from '../tool-namespace.js';
 
 // =============================================================================
 // TOOL SETS
@@ -267,7 +268,8 @@ export function getToolExecutors(): Map<string, ToolExecutor> {
  */
 export function registerAllTools(registry: IToolRegistry): void {
   for (const tool of ALL_TOOLS) {
-    registry.register(tool.definition, tool.executor);
+    const qName = qualifyToolName(tool.definition.name, 'core');
+    registry.register({ ...tool.definition, name: qName }, tool.executor);
   }
 }
 
@@ -280,7 +282,8 @@ export function registerToolSet(
 ): void {
   const toolSet = TOOL_SETS[setName];
   for (const tool of toolSet) {
-    registry.register(tool.definition, tool.executor);
+    const qName = qualifyToolName(tool.definition.name, 'core');
+    registry.register({ ...tool.definition, name: qName }, tool.executor);
   }
 }
 
@@ -288,7 +291,8 @@ export function registerToolSet(
  * Get a tool by name
  */
 export function getTool(name: string): { definition: ToolDefinition; executor: ToolExecutor } | undefined {
-  return ALL_TOOLS.find((t) => t.definition.name === name);
+  const baseName = getBaseName(name);
+  return ALL_TOOLS.find((t) => t.definition.name === baseName);
 }
 
 // =============================================================================
@@ -548,8 +552,9 @@ export function getToolsByCategory(): Map<string, ToolDefinition[]> {
  * Get category for a tool name
  */
 export function getCategoryForTool(toolName: string): string | undefined {
+  const baseName = getBaseName(toolName);
   for (const [category, tools] of Object.entries(TOOL_CATEGORIES)) {
-    if ((tools as readonly string[]).includes(toolName)) {
+    if ((tools as readonly string[]).includes(baseName)) {
       return category;
     }
   }

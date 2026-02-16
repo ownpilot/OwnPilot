@@ -80,6 +80,16 @@ export {
   type ToolValidationError,
 } from './tool-validation.js';
 
+// Tool Namespace
+export {
+  qualifyToolName,
+  getBaseName,
+  getNamespace,
+  isQualifiedName,
+  UNPREFIXED_META_TOOLS,
+  type ToolNamespacePrefix,
+} from './tool-namespace.js';
+
 // Tools - Aggregation arrays and utilities (individual tool defs accessed via source files)
 export {
   // Tool set aggregation arrays

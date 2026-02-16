@@ -30,6 +30,7 @@ import type {
 import { logToolCall, logToolResult } from './debug.js';
 import { validateToolCall } from './tool-validation.js';
 import type { ConfigCenter } from '../services/config-center.js';
+import { getBaseName, qualifyToolName } from './tool-namespace.js';
 import {
   getEventBus,
   getEventSystem,
@@ -73,6 +74,8 @@ export type ConfigRegistrationHandler = (
 export class ToolRegistry {
   private readonly tools = new Map<string, RegisteredTool>();
   private readonly pluginTools = new Map<string, Set<string>>();
+  /** Reverse index: base name → Set of qualified names that share that base name */
+  private readonly baseNameIndex = new Map<string, Set<string>>();
   private _configCenter?: ConfigCenter;
   private readonly globalMiddleware: ToolMiddleware[] = [];
   private readonly perToolMiddleware = new Map<string, ToolMiddleware[]>();
@@ -93,13 +96,13 @@ export class ToolRegistry {
       : metadataOrPluginId ?? {};
 
     // Validate tool name
-    if (!definition.name || definition.name.length > 64) {
-      return err(new ValidationError('Tool name must be 1-64 characters'));
+    if (!definition.name || definition.name.length > 128) {
+      return err(new ValidationError('Tool name must be 1-128 characters'));
     }
 
-    if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(definition.name)) {
+    if (!/^[a-zA-Z][a-zA-Z0-9_.]*$/.test(definition.name)) {
       return err(
-        new ValidationError('Tool name must start with a letter and contain only alphanumeric characters and underscores')
+        new ValidationError('Tool name must start with a letter and contain only alphanumeric characters, underscores, and dots')
       );
     }
 
@@ -126,6 +129,15 @@ export class ToolRegistry {
     };
 
     this.tools.set(definition.name, tool);
+
+    // Track base name → qualified name mapping
+    const baseName = getBaseName(definition.name);
+    let baseNameSet = this.baseNameIndex.get(baseName);
+    if (!baseNameSet) {
+      baseNameSet = new Set();
+      this.baseNameIndex.set(baseName, baseNameSet);
+    }
+    baseNameSet.add(definition.name);
 
     // Track plugin association
     if (pluginId) {
@@ -156,10 +168,22 @@ export class ToolRegistry {
    * Unregister a tool
    */
   unregister(name: string): boolean {
-    const tool = this.tools.get(name);
+    // Try exact match first, then resolve from base name
+    const resolved = this.tools.has(name) ? name : this.resolveToQualified(name);
+    if (!resolved) return false;
+
+    const tool = this.tools.get(resolved);
     if (!tool) return false;
 
-    this.tools.delete(name);
+    this.tools.delete(resolved);
+
+    // Remove from base name index
+    const baseName = getBaseName(resolved);
+    const baseNameSet = this.baseNameIndex.get(baseName);
+    if (baseNameSet) {
+      baseNameSet.delete(resolved);
+      if (baseNameSet.size === 0) this.baseNameIndex.delete(baseName);
+    }
 
     // Remove from plugin tracking
     if (tool.pluginId) {
@@ -180,7 +204,7 @@ export class ToolRegistry {
    * Used to override placeholder implementations with real ones (e.g., Gmail, Media services).
    */
   updateExecutor(name: string, executor: ToolExecutor): boolean {
-    const tool = this.tools.get(name);
+    const tool = this.get(name);
     if (!tool) return false;
 
     tool.executor = executor;
@@ -197,6 +221,13 @@ export class ToolRegistry {
     let count = 0;
     for (const name of pluginToolSet) {
       this.tools.delete(name);
+      // Remove from base name index
+      const baseName = getBaseName(name);
+      const baseSet = this.baseNameIndex.get(baseName);
+      if (baseSet) {
+        baseSet.delete(name);
+        if (baseSet.size === 0) this.baseNameIndex.delete(baseName);
+      }
       count++;
     }
 
@@ -204,18 +235,43 @@ export class ToolRegistry {
     return count;
   }
 
+  // ─── Namespace resolution ───────────────────────────────────────────
+
   /**
-   * Get a tool by name
+   * Resolve all qualified names that share a given base name.
+   * @example resolveBaseName('read_file') // ['core.read_file']
+   * @example resolveBaseName('send_message') // ['core.send_message', 'plugin.telegram.send_message']
    */
-  get(name: string): RegisteredTool | undefined {
-    return this.tools.get(name);
+  resolveBaseName(baseName: string): string[] {
+    return [...(this.baseNameIndex.get(baseName) ?? [])];
   }
 
   /**
-   * Check if a tool exists
+   * Resolve a name (qualified or base) to a single qualified name.
+   * Returns undefined if not found or if base name is ambiguous (multiple matches).
+   */
+  private resolveToQualified(name: string): string | undefined {
+    if (this.tools.has(name)) return name;
+    const qualified = this.baseNameIndex.get(name);
+    if (qualified && qualified.size === 1) return qualified.values().next().value;
+    return undefined;
+  }
+
+  // ─── Core lookup methods ──────────────────────────────────────────
+
+  /**
+   * Get a tool by name (supports both qualified and unambiguous base names)
+   */
+  get(name: string): RegisteredTool | undefined {
+    const resolved = this.resolveToQualified(name);
+    return resolved ? this.tools.get(resolved) : undefined;
+  }
+
+  /**
+   * Check if a tool exists (supports both qualified and unambiguous base names)
    */
   has(name: string): boolean {
-    return this.tools.has(name);
+    return this.resolveToQualified(name) !== undefined;
   }
 
   /**
@@ -226,18 +282,18 @@ export class ToolRegistry {
   }
 
   /**
-   * Get a single tool definition by name
+   * Get a single tool definition by name (supports both qualified and base names)
    */
   getDefinition(name: string): ToolDefinition | undefined {
-    return this.tools.get(name)?.definition;
+    return this.get(name)?.definition;
   }
 
   /**
-   * Get tool definitions by names
+   * Get tool definitions by names (supports both qualified and base names)
    */
   getDefinitionsByNames(names: readonly string[]): readonly ToolDefinition[] {
     return names
-      .map((name) => this.tools.get(name)?.definition)
+      .map((name) => this.get(name)?.definition)
       .filter((d): d is ToolDefinition => d !== undefined);
   }
 
@@ -279,10 +335,12 @@ export class ToolRegistry {
     args: Record<string, unknown>,
     context: Omit<ToolContext, 'callId'>
   ): Promise<Result<ToolExecutionResult, NotFoundError | PluginError>> {
-    const tool = this.tools.get(name);
-    if (!tool) {
+    const resolved = this.resolveToQualified(name);
+    const tool = resolved ? this.tools.get(resolved) : undefined;
+    if (!tool || !resolved) {
       return err(new NotFoundError('Tool', name));
     }
+    name = resolved;
 
     // Scoped config access for non-trusted tools
     const allowedServices = tool.definition.configRequirements?.map(r => r.name);
@@ -436,7 +494,8 @@ export class ToolRegistry {
     tools: Map<string, { definition: ToolDefinition; executor: ToolExecutor }>
   ): void {
     for (const [, { definition, executor }] of tools) {
-      this.register(definition, executor, {
+      const qName = qualifyToolName(definition.name, 'plugin', pluginId);
+      this.register({ ...definition, name: qName }, executor, {
         source: 'plugin',
         pluginId,
         trustLevel: 'semi-trusted',
@@ -461,7 +520,8 @@ export class ToolRegistry {
     executor: ToolExecutor,
     customToolId: string
   ): Result<ToolId, ValidationError> {
-    return this.register(definition, executor, {
+    const qName = qualifyToolName(definition.name, 'custom');
+    return this.register({ ...definition, name: qName }, executor, {
       source: 'custom',
       customToolId,
       trustLevel: 'sandboxed',
@@ -488,7 +548,7 @@ export class ToolRegistry {
    * Get full registered tool metadata (source, trustLevel, etc.) by name.
    */
   getRegisteredTool(name: string): RegisteredTool | undefined {
-    return this.tools.get(name);
+    return this.get(name);
   }
 
   /**
@@ -679,8 +739,18 @@ export class ToolRegistry {
    */
   registerProvider(provider: ToolProvider): void {
     for (const { definition, executor } of provider.getTools()) {
-      this.register(definition, executor, {
-        source: provider.source ?? 'gateway',
+      const source = provider.source ?? 'gateway';
+      let qName: string;
+      if (source === 'plugin' && provider.pluginId) {
+        qName = qualifyToolName(definition.name, 'plugin', provider.pluginId);
+      } else if (source === 'custom') {
+        qName = qualifyToolName(definition.name, 'custom');
+      } else {
+        // core and gateway sources both get core. prefix
+        qName = qualifyToolName(definition.name, 'core');
+      }
+      this.register({ ...definition, name: qName }, executor, {
+        source,
         pluginId: provider.pluginId,
         trustLevel: provider.trustLevel ?? 'trusted',
         providerName: provider.name,
@@ -851,7 +921,8 @@ export function registerCoreTools(registry: ToolRegistry): void {
   for (const tool of CORE_TOOLS) {
     const executor = CORE_EXECUTORS[tool.name];
     if (executor) {
-      registry.register(tool, executor);
+      const qName = qualifyToolName(tool.name, 'core');
+      registry.register({ ...tool, name: qName }, executor);
     }
   }
 }

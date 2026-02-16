@@ -119,7 +119,7 @@ describe('Agent', () => {
       const tools = agent.getTools();
 
       expect(tools.length).toBeGreaterThan(0);
-      expect(tools.find((t) => t.name === 'get_current_time')).toBeDefined();
+      expect(tools.find((t) => t.name === 'core.get_current_time')).toBeDefined();
     });
 
     it('filters tools by config', () => {

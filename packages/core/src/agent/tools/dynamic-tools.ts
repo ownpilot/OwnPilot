@@ -19,6 +19,7 @@ import type {
   JSONSchemaProperty,
 } from '../types.js';
 import { UTILITY_TOOLS } from './utility-tools.js';
+import { getBaseName } from '../tool-namespace.js';
 
 // =============================================================================
 // TYPES
@@ -149,8 +150,11 @@ function isToolCallAllowed(
   toolName: string,
   permissions: DynamicToolPermission[]
 ): { allowed: boolean; reason?: string } {
+  // Use base name for security checks (lookup tables use base names)
+  const baseName = getBaseName(toolName);
+
   // Always blocked
-  if (BLOCKED_CALLABLE_TOOLS.has(toolName)) {
+  if (BLOCKED_CALLABLE_TOOLS.has(baseName)) {
     return {
       allowed: false,
       reason: `Tool '${toolName}' is blocked for security — custom tools cannot invoke code execution, file mutation, email, or git tools`,
@@ -158,7 +162,7 @@ function isToolCallAllowed(
   }
 
   // Permission-gated
-  const requiredPerm = PERMISSION_GATED_TOOLS[toolName];
+  const requiredPerm = PERMISSION_GATED_TOOLS[baseName];
   if (requiredPerm && !permissions.includes(requiredPerm)) {
     return {
       allowed: false,
@@ -676,13 +680,15 @@ async function executeDynamicTool(
           }
 
           // Search callable tools first (all built-in tools), then fall back to utility tools
+          // Match by exact name first, then by base name (for qualified name resolution)
           const allTools = callableTools ?? UTILITY_TOOLS;
-          const foundTool = allTools.find(t => t.definition.name === toolName);
+          const foundTool = allTools.find(t => t.definition.name === toolName)
+            ?? allTools.find(t => getBaseName(t.definition.name) === getBaseName(toolName));
           if (!foundTool) {
-            // Only show allowed tools in the error message
+            // Only show allowed tools in the error message (show base names for readability)
             const available = allTools
               .filter(t => isToolCallAllowed(t.definition.name, toolPermissions).allowed)
-              .map(t => t.definition.name)
+              .map(t => getBaseName(t.definition.name))
               .join(', ');
             throw new Error(`Tool '${toolName}' not found. Available tools: ${available}`);
           }
@@ -709,7 +715,7 @@ async function executeDynamicTool(
           return allTools
             .filter(t => isToolCallAllowed(t.definition.name, toolPermissions).allowed)
             .map(t => ({
-              name: t.definition.name,
+              name: getBaseName(t.definition.name),
               description: t.definition.description,
               parameters: Object.keys(t.definition.parameters.properties || {}),
             }));
@@ -855,9 +861,9 @@ export function createDynamicToolRegistry(
 
     register(tool: DynamicToolDefinition): void {
       // Validate tool name (alphanumeric and underscores only)
-      if (!/^[a-z][a-z0-9_]*$/.test(tool.name)) {
+      if (!/^[a-z][a-z0-9_.]*$/.test(tool.name)) {
         throw new Error(
-          `Invalid tool name: ${tool.name}. Must start with lowercase letter and contain only lowercase letters, numbers, and underscores.`
+          `Invalid tool name: ${tool.name}. Must start with lowercase letter and contain only lowercase letters, numbers, underscores, and dots.`
         );
       }
 

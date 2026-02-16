@@ -10,7 +10,7 @@
  * It wraps the Agent to provide a fully autonomous personal AI assistant.
  */
 
-import { type ToolCall, getServiceRegistry, Services } from '@ownpilot/core';
+import { type ToolCall, getServiceRegistry, Services, getBaseName } from '@ownpilot/core';
 import { getResourceRegistry } from '../services/resource-registry.js';
 import { getApprovalManager, assessRisk, type ActionCategory } from '../autonomy/index.js';
 import { getTriggerEngine } from '../triggers/engine.js';
@@ -284,7 +284,7 @@ function mapToolToCategory(toolName: string): ActionCategory {
     create_subscription: 'financial',
   };
 
-  return categoryMap[toolName] ?? 'tool_execution';
+  return categoryMap[toolName] ?? categoryMap[getBaseName(toolName)] ?? 'tool_execution';
 }
 
 /**
