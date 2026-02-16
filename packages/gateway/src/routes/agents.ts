@@ -36,6 +36,7 @@ import {
   unsafeToolId,
   qualifyToolName,
   getBaseName,
+  getModelPricing,
 } from '@ownpilot/core';
 import { executeMemoryTool } from './memories.js';
 import { executeGoalTool } from './goals.js';
@@ -62,6 +63,7 @@ import type {
   CreateAgentRequest,
   UpdateAgentRequest,
   AgentInfo,
+  SessionInfo,
 } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage, truncate } from './helpers.js'
 import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/repositories/index.js';
@@ -1615,7 +1617,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
  * Reset chat agent context - clears conversation memory
  * Call this when user starts a "New Chat"
  */
-export function resetChatAgentContext(provider: string, model: string): boolean {
+export function resetChatAgentContext(provider: string, model: string): { reset: boolean; newSessionId?: string } {
   const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
   const agent = chatAgentCache.get(cacheKey);
 
@@ -1632,10 +1634,31 @@ export function resetChatAgentContext(provider: string, model: string): boolean 
     agent.loadConversation(newConversation.id);
 
     log.info(`Reset context for ${provider}/${model}, new conversation: ${newConversation.id}`);
-    return true;
+    return { reset: true, newSessionId: newConversation.id };
   }
 
-  return false;
+  return { reset: false };
+}
+
+/**
+ * Get session info (context usage) for an agent's current conversation.
+ * Uses ConversationMemory.getStats() for token estimation and getModelPricing() for context window size.
+ */
+export function getSessionInfo(agent: Agent, provider: string, model: string): SessionInfo {
+  const conversation = agent.getConversation();
+  const memory = agent.getMemory();
+  const stats = memory.getStats(conversation.id);
+  const pricing = getModelPricing(provider as AIProvider, model);
+  const maxCtx = pricing?.contextWindow ?? 128_000;
+  const estimated = stats?.estimatedTokens ?? 0;
+
+  return {
+    sessionId: conversation.id,
+    messageCount: stats?.messageCount ?? 0,
+    estimatedTokens: estimated,
+    maxContextTokens: maxCtx,
+    contextFillPercent: Math.min(100, Math.round((estimated / maxCtx) * 100)),
+  };
 }
 
 /**

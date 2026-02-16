@@ -136,6 +136,17 @@ export interface ApiResponse<T = unknown> {
   };
 }
 
+/**
+ * Session context metadata returned with chat responses.
+ */
+export interface SessionInfo {
+  sessionId: string;
+  messageCount: number;
+  estimatedTokens: number;
+  maxContextTokens: number;
+  contextFillPercent: number;
+}
+
 export interface ChatResponse {
   id?: string;
   message?: string;
@@ -144,6 +155,7 @@ export interface ChatResponse {
   toolCalls?: ToolCall[];
   model?: string;
   trace?: TraceInfo;
+  session?: SessionInfo;
   usage?: {
     promptTokens: number;
     completionTokens: number;

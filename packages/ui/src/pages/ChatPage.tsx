@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ChatInput, type ChatInputHandle } from '../components/ChatInput';
 import { MessageList } from '../components/MessageList';
 import { SuggestionChips } from '../components/SuggestionChips';
+import { ContextBar } from '../components/ContextBar';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
 import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
@@ -33,6 +34,7 @@ export function ChatPage() {
     setWorkspaceId,
     suggestions,
     pendingApproval,
+    sessionInfo,
     sendMessage,
     retryLastMessage,
     clearMessages,
@@ -368,6 +370,9 @@ export function ChatPage() {
           New Chat
         </button>
       </header>
+
+      {/* Session context bar */}
+      <ContextBar sessionInfo={sessionInfo} onNewSession={handleNewChat} />
 
       {/* Click outside to close menu */}
       {showProviderMenu && (

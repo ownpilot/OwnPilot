@@ -68,7 +68,7 @@ vi.mock('./agents.js', () => ({
     homeDir: '/home/test',
     tempDir: '/tmp',
   })),
-  resetChatAgentContext: vi.fn(() => true),
+  resetChatAgentContext: vi.fn(() => ({ reset: true, newSessionId: 'new-session-1' })),
   clearAllChatAgentCaches: vi.fn(() => 3),
 }));
 
@@ -325,7 +325,7 @@ describe('Chat Routes', () => {
     vi.mocked(isDemoMode).mockResolvedValue(false);
     vi.mocked(getDefaultModel).mockResolvedValue('gpt-4');
     vi.mocked(getAgent).mockResolvedValue(undefined);
-    vi.mocked(resetChatAgentContext).mockReturnValue(true);
+    vi.mocked(resetChatAgentContext).mockReturnValue({ reset: true, newSessionId: 'new-session-1' });
     vi.mocked(clearAllChatAgentCaches).mockReturnValue(3);
 
     // Reset repository mocks
@@ -1035,7 +1035,7 @@ describe('Chat Routes', () => {
     });
 
     it('should handle case when no cached agent found', async () => {
-      vi.mocked(resetChatAgentContext).mockReturnValue(false);
+      vi.mocked(resetChatAgentContext).mockReturnValue({ reset: false });
 
       const res = await app.request('/chat/reset-context', {
         method: 'POST',

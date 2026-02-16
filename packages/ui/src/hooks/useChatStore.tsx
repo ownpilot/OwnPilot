@@ -14,7 +14,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import type { Message, ChatResponse, ApiResponse } from '../types';
+import type { Message, ChatResponse, ApiResponse, SessionInfo } from '../types';
 import type { ApprovalRequest } from '../api';
 import { executionPermissionsApi } from '../api';
 import { parseSSELine } from '../utils/sse-parser';
@@ -54,6 +54,10 @@ interface ChatState {
   suggestions: Array<{ title: string; detail: string }>;
   /** Pending approval request from SSE (real-time code execution approval) */
   pendingApproval: ApprovalRequest | null;
+  /** Current session ID */
+  sessionId: string | null;
+  /** Current session context info (tokens, fill %, etc.) */
+  sessionInfo: SessionInfo | null;
 }
 
 interface ChatStore extends ChatState {
@@ -84,6 +88,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
   const [suggestions, setSuggestions] = useState<Array<{ title: string; detail: string }>>([]);
   const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
 
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -249,8 +255,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                       usage: event.data.usage as ChatResponse['usage'],
                       finishReason: event.data.finishReason,
                       trace: event.data.trace as ChatResponse['trace'],
+                      session: event.data.session as ChatResponse['session'],
                       suggestions: event.data.suggestions as ChatResponse['suggestions'],
                     };
+                    // Update session context info
+                    if (event.data.session) {
+                      const s = event.data.session as SessionInfo;
+                      setSessionId(s.sessionId);
+                      setSessionInfo(s);
+                    }
                   }
                   break;
                 case 'error':
@@ -306,6 +319,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             trace: data.data.trace,
           };
           setMessages((prev) => [...prev, assistantMessage]);
+
+          // Update session context info
+          if (data.data.session) {
+            setSessionId(data.data.session.sessionId);
+            setSessionInfo(data.data.session);
+          }
 
           // Set follow-up suggestions from the response
           if (data.data.suggestions?.length) {
@@ -365,6 +384,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setProgressEvents([]);
     setSuggestions([]);
     setPendingApproval(null);
+    setSessionId(null);
+    setSessionInfo(null);
   }, [cancelRequest]);
 
   const value: ChatStore = {
@@ -380,6 +401,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     progressEvents,
     suggestions,
     pendingApproval,
+    sessionId,
+    sessionInfo,
     setProvider,
     setModel,
     setAgentId,

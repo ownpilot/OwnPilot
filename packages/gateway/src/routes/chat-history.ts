@@ -343,13 +343,14 @@ chatHistoryRoutes.post('/reset-context', async (c) => {
   const provider = body.provider ?? 'openai';
   const model = body.model ?? await getDefaultModel(provider) ?? 'gpt-4o';
 
-  const reset = resetChatAgentContext(provider, model);
+  const result = resetChatAgentContext(provider, model);
 
   return apiResponse(c, {
-    reset,
+    reset: result.reset,
+    newSessionId: result.newSessionId,
     provider,
     model,
-    message: reset
+    message: result.reset
       ? `Context reset for ${provider}/${model}`
       : `No cached agent found for ${provider}/${model}`,
   });

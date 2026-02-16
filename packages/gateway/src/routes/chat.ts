@@ -7,10 +7,11 @@ import { streamSSE } from 'hono/streaming';
 import type {
   ChatRequest,
   StreamChunkResponse,
+  SessionInfo,
 } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, getUserId, notFoundError, getErrorMessage, truncate } from './helpers.js';
 import { AI_META_TOOL_NAMES } from '../config/defaults.js';
-import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext } from './agents.js';
+import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, getSessionInfo } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
@@ -321,6 +322,7 @@ async function processNonStreamingViaBus(
 /** Shared configuration for creating stream callbacks. */
 interface StreamingConfig {
   sseStream: Parameters<Parameters<typeof streamSSE>[1]>[0];
+  agent: NonNullable<Awaited<ReturnType<typeof getAgent>>>;
   conversationId: string;
   userId: string;
   agentId: string;
@@ -362,7 +364,7 @@ function createStreamCallbacks(config: StreamingConfig): { callbacks: StreamCall
     onChunk(chunk: StreamChunk) {
       if (chunk.content) state.streamedContent += chunk.content;
 
-      const data: StreamChunkResponse & { trace?: Record<string, unknown> } = {
+      const data: StreamChunkResponse & { trace?: Record<string, unknown>; session?: SessionInfo } = {
         id: chunk.id,
         conversationId,
         delta: chunk.content,
@@ -425,6 +427,7 @@ function createStreamCallbacks(config: StreamingConfig): { callbacks: StreamCall
             finishReason: chunk.finishReason,
           },
         };
+        data.session = getSessionInfo(config.agent, config.provider, config.model);
       }
 
       if (chunk.usage) {
@@ -611,6 +614,7 @@ async function processStreamingViaBus(
 
   const { callbacks, state } = createStreamCallbacks({
     sseStream,
+    agent,
     conversationId,
     userId,
     agentId,
@@ -828,6 +832,7 @@ chatRoutes.post('/', async (c) => {
 
       const { callbacks, state } = createStreamCallbacks({
         sseStream: stream,
+        agent,
         conversationId,
         userId: streamUserId,
         agentId: streamAgentId,
@@ -1047,6 +1052,7 @@ chatRoutes.post('/', async (c) => {
             }
           : undefined,
         finishReason: 'stop',
+        session: getSessionInfo(agent, provider, model),
         suggestions: busSuggestions.length > 0 ? busSuggestions : undefined,
         trace: {
           duration: processingTime,
@@ -1432,6 +1438,7 @@ chatRoutes.post('/', async (c) => {
           }
         : undefined,
       finishReason: result.value.finishReason,
+      session: getSessionInfo(agent, provider, model),
       suggestions: legacySuggestions.length > 0 ? legacySuggestions : undefined,
       // Include trace info for debugging
       trace: traceInfo,

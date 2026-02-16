@@ -136,6 +136,17 @@ export interface UsageStats {
 }
 
 /**
+ * Session context metadata returned with chat responses.
+ */
+export interface SessionInfo {
+  sessionId: string;
+  messageCount: number;
+  estimatedTokens: number;
+  maxContextTokens: number;
+  contextFillPercent: number;
+}
+
+/**
  * Streaming chunk
  */
 export interface StreamChunkResponse {

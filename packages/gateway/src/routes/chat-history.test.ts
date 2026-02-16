@@ -129,7 +129,7 @@ const mockLogsRepo = {
   deleteOldLogs: vi.fn(async () => 10),
 };
 
-const mockResetChatAgentContext = vi.fn(() => true);
+const mockResetChatAgentContext = vi.fn(() => ({ reset: true, newSessionId: 'new-session-1' }));
 const mockClearAllChatAgentCaches = vi.fn(() => 3);
 const mockGetDefaultModel = vi.fn(async () => 'gpt-4o');
 
@@ -198,7 +198,7 @@ describe('Chat History & Logs Routes', () => {
     mockLogsRepo.getLog.mockImplementation(async (id: string) => (id === 'log-1' ? sampleLog : null));
     mockLogsRepo.clearAll.mockResolvedValue(42);
     mockLogsRepo.deleteOldLogs.mockResolvedValue(10);
-    mockResetChatAgentContext.mockReturnValue(true);
+    mockResetChatAgentContext.mockReturnValue({ reset: true, newSessionId: 'new-session-1' });
     mockClearAllChatAgentCaches.mockReturnValue(3);
     mockGetDefaultModel.mockResolvedValue('gpt-4o');
     app = createApp();
@@ -996,7 +996,7 @@ describe('Chat History & Logs Routes', () => {
     });
 
     it('reports when no cached agent was found', async () => {
-      mockResetChatAgentContext.mockReturnValue(false);
+      mockResetChatAgentContext.mockReturnValue({ reset: false });
 
       const res = await app.request('/api/reset-context', {
         method: 'POST',

@@ -8,7 +8,7 @@
 export type SSEEventType =
   | { kind: 'progress'; data: { type: string; [key: string]: unknown } }
   | { kind: 'approval'; data: { approvalId: string; category: string; description: string; code?: string; riskAnalysis?: unknown } }
-  | { kind: 'delta'; data: { delta?: string; done?: boolean; id?: string; conversationId?: string; toolCalls?: unknown; usage?: unknown; finishReason?: string; trace?: unknown; suggestions?: unknown } }
+  | { kind: 'delta'; data: { delta?: string; done?: boolean; id?: string; conversationId?: string; toolCalls?: unknown; usage?: unknown; finishReason?: string; trace?: unknown; session?: unknown; suggestions?: unknown } }
   | { kind: 'error'; message: string }
   | { kind: 'skip' };
 
