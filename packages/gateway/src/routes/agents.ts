@@ -404,7 +404,8 @@ function registerSkillPackageTools(
   try {
     service = getSkillPackageService();
   } catch {
-    return []; // Service not initialized yet (e.g. during tests)
+    log.debug('Skill package service not initialized, skipping tool registration');
+    return [];
   }
 
   const skillToolDefs = service.getToolDefinitions();
@@ -1030,7 +1031,9 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     if (skillPromptSections.length > 0) {
       enhancedPrompt += '\n\n' + skillPromptSections.join('\n\n');
     }
-  } catch { /* Service not initialized */ }
+  } catch {
+    log.debug('Skill package service not initialized, skipping system prompt injection');
+  }
 
   // Only expose meta-tools (search_tools, get_tool_help, use_tool) to the API.
   // This prevents 100+ tool schemas from consuming ~20K+ tokens per request.
@@ -1548,7 +1551,9 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     if (skillPromptSections.length > 0) {
       enhancedPrompt += '\n\n' + skillPromptSections.join('\n\n');
     }
-  } catch { /* Service not initialized */ }
+  } catch {
+    log.debug('Skill package service not initialized, skipping system prompt injection');
+  }
 
   // Only expose meta-tools to the API to prevent token bloat from 100+ tool schemas.
   const chatMetaToolFilter = AI_META_TOOL_NAMES.map(n => unsafeToolId(n));

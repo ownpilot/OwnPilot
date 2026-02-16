@@ -76,6 +76,37 @@ heartbeatsRoutes.post('/', async (c) => {
 });
 
 /**
+ * POST /import - Import from markdown
+ * (Static routes must be defined before parametric /:id routes)
+ */
+heartbeatsRoutes.post('/import', async (c) => {
+  const userId = getUserId(c);
+  const body = await c.req.json().catch(() => null);
+
+  if (!body || typeof (body as { markdown?: string }).markdown !== 'string') {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'markdown field is required (string)' }, 400);
+  }
+
+  const service = getHeartbeatService();
+  const result = await service.importMarkdown(userId, (body as { markdown: string }).markdown);
+
+  return apiResponse(c, result, 201);
+});
+
+/**
+ * GET /export - Export as markdown
+ * (Static routes must be defined before parametric /:id routes)
+ */
+heartbeatsRoutes.get('/export', async (c) => {
+  const userId = getUserId(c);
+
+  const service = getHeartbeatService();
+  const markdown = await service.exportMarkdown(userId);
+
+  return apiResponse(c, { markdown });
+});
+
+/**
  * GET /:id - Get a heartbeat
  */
 heartbeatsRoutes.get('/:id', async (c) => {
@@ -170,33 +201,4 @@ heartbeatsRoutes.post('/:id/disable', async (c) => {
   }
 
   return apiResponse(c, { heartbeat, message: 'Heartbeat disabled.' });
-});
-
-/**
- * POST /import - Import from markdown
- */
-heartbeatsRoutes.post('/import', async (c) => {
-  const userId = getUserId(c);
-  const body = await c.req.json().catch(() => null);
-
-  if (!body || typeof (body as { markdown?: string }).markdown !== 'string') {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'markdown field is required (string)' }, 400);
-  }
-
-  const service = getHeartbeatService();
-  const result = await service.importMarkdown(userId, (body as { markdown: string }).markdown);
-
-  return apiResponse(c, result, 201);
-});
-
-/**
- * GET /export - Export as markdown
- */
-heartbeatsRoutes.get('/export', async (c) => {
-  const userId = getUserId(c);
-
-  const service = getHeartbeatService();
-  const markdown = await service.exportMarkdown(userId);
-
-  return apiResponse(c, { markdown });
 });
