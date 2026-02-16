@@ -32,6 +32,12 @@ vi.mock('@ownpilot/core', () => ({
     RESOURCE_UPDATED: 'resource.updated',
     RESOURCE_DELETED: 'resource.deleted',
   },
+  getLog: vi.fn(() => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  })),
 }));
 
 // ---------------------------------------------------------------------------

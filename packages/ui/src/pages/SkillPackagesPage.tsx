@@ -931,7 +931,11 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
   const toast = useToast();
 
   // Step
-  const [step, setStep] = useState<'metadata' | 'tools' | 'extras' | 'preview'>('metadata');
+  const [step, setStep] = useState<'describe' | 'metadata' | 'tools' | 'extras' | 'preview'>('describe');
+
+  // AI Describe
+  const [aiDescription, setAiDescription] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Metadata
   const [skillId, setSkillId] = useState('');
@@ -956,6 +960,64 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
   const [isInstalling, setIsInstalling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Populate wizard from AI-generated manifest
+  const populateFromManifest = (m: Record<string, unknown>) => {
+    setName((m.name as string) || '');
+    setSkillId((m.id as string) || '');
+    setIdManuallyEdited(true);
+    setVersion((m.version as string) || '1.0.0');
+    setDescription((m.description as string) || '');
+    setCategory((m.category as string) || 'utilities');
+    setIcon((m.icon as string) || '');
+    const author = m.author as { name?: string } | undefined;
+    if (author?.name) setAuthorName(author.name);
+    if (Array.isArray(m.tags)) setTags(m.tags.join(', '));
+    if (m.system_prompt) setSystemPrompt(m.system_prompt as string);
+    if (Array.isArray(m.keywords)) setKeywords(m.keywords.join(', '));
+    if (m.docs) setDocsUrl(m.docs as string);
+
+    if (Array.isArray(m.tools)) {
+      setTools(
+        (m.tools as Record<string, unknown>[]).map((t) => ({
+          name: (t.name as string) || '',
+          description: (t.description as string) || '',
+          parameters: JSON.stringify(
+            t.parameters || { type: 'object', properties: {}, required: [] },
+            null,
+            2,
+          ),
+          code: (t.code as string) || '',
+          permissions: Array.isArray(t.permissions) ? (t.permissions as string[]) : [],
+          requiresApproval: (t.requires_approval as boolean) || false,
+          expanded: false,
+        })),
+      );
+    }
+
+    setStep('metadata');
+  };
+
+  const handleGenerate = async () => {
+    if (!aiDescription.trim()) {
+      setError('Please describe the skill you want to create.');
+      return;
+    }
+    setError(null);
+    setIsGenerating(true);
+    try {
+      const result = await skillPackagesApi.generate(aiDescription.trim());
+      if (result.validation && !result.validation.valid) {
+        toast.warning(`Generated with ${result.validation.errors.length} warning(s). Review and fix in the next steps.`);
+      }
+      populateFromManifest(result.manifest);
+      toast.success('Skill manifest generated! Review and edit below.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Generation failed. Try rephrasing your description.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Auto-derive ID from name
   const handleNameChange = (val: string) => {
@@ -1066,7 +1128,9 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
   const handleNext = () => {
     setError(null);
-    if (step === 'metadata') {
+    if (step === 'describe') {
+      setStep('metadata');
+    } else if (step === 'metadata') {
       if (!metadataValid) { setError('Please fill in all required fields (ID, Name, Version, Description).'); return; }
       setStep('tools');
     } else if (step === 'tools') {
@@ -1079,13 +1143,14 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
   const handleBack = () => {
     setError(null);
-    if (step === 'tools') setStep('metadata');
+    if (step === 'metadata') setStep('describe');
+    else if (step === 'tools') setStep('metadata');
     else if (step === 'extras') setStep('tools');
     else if (step === 'preview') setStep('extras');
   };
 
-  const steps = ['metadata', 'tools', 'extras', 'preview'] as const;
-  const stepLabels = { metadata: 'Metadata', tools: 'Tools', extras: 'Extras', preview: 'Preview' };
+  const steps = ['describe', 'metadata', 'tools', 'extras', 'preview'] as const;
+  const stepLabels = { describe: 'Describe', metadata: 'Metadata', tools: 'Tools', extras: 'Extras', preview: 'Preview' };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -1126,7 +1191,64 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Step 1: Metadata */}
+          {/* Step 1: Describe */}
+          {step === 'describe' && (
+            <div className="space-y-4">
+              <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                Describe the skill you want to create and let AI generate the manifest for you,
+                or skip to create one manually.
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  What should this skill do?
+                </label>
+                <textarea
+                  value={aiDescription}
+                  onChange={(e) => setAiDescription(e.target.value)}
+                  rows={5}
+                  placeholder="Example: I want a skill that can fetch weather data for any city using a free weather API, with tools for current weather and 5-day forecast..."
+                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                  disabled={isGenerating}
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !aiDescription.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Generate with AI
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => { setError(null); setStep('metadata'); }}
+                  className="text-sm text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                  disabled={isGenerating}
+                >
+                  Skip — Create Manually
+                </button>
+              </div>
+
+              {isGenerating && (
+                <p className="text-xs text-text-muted dark:text-dark-text-muted animate-pulse">
+                  AI is generating your skill manifest. This may take a moment...
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Step 2: Metadata */}
           {step === 'metadata' && (
             <div className="space-y-4">
               <div>
@@ -1372,7 +1494,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
             Cancel
           </button>
           <div className="flex gap-2">
-            {step !== 'metadata' && (
+            {step !== 'describe' && (
               <button
                 onClick={handleBack}
                 className="px-4 py-2 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
@@ -1398,14 +1520,14 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
                   </>
                 )}
               </button>
-            ) : (
+            ) : step !== 'describe' ? (
               <button
                 onClick={handleNext}
                 className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
               >
                 Next
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
