@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "v0-1.5-lg",
-      "name": "v0-1.5-lg",
-      "contextWindow": 512000,
+      "id": "v0-1.5-md",
+      "name": "v0-1.5-md",
+      "contextWindow": 128000,
       "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -29,12 +29,12 @@
       "releaseDate": "2025-06-09"
     },
     {
-      "id": "v0-1.5-md",
-      "name": "v0-1.5-md",
-      "contextWindow": 128000,
+      "id": "v0-1.5-lg",
+      "name": "v0-1.5-lg",
+      "contextWindow": 512000,
       "maxOutput": 32000,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
         "vision",

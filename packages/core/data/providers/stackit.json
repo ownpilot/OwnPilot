@@ -1,0 +1,139 @@
+{
+  "id": "stackit",
+  "name": "STACKIT",
+  "type": "openai-compatible",
+  "apiKeyEnv": "STACKIT_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "Qwen/Qwen3-VL-Embedding-8B",
+      "name": "Qwen3-VL Embedding 8B",
+      "contextWindow": 32000,
+      "maxOutput": 4096,
+      "inputPrice": 0.09,
+      "outputPrice": 0.09,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-05"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT-OSS 120B",
+      "contextWindow": 131000,
+      "maxOutput": 8192,
+      "inputPrice": 0.49,
+      "outputPrice": 0.71,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "google/gemma-3-27b-it",
+      "name": "Gemma 3 27B",
+      "contextWindow": 37000,
+      "maxOutput": 8192,
+      "inputPrice": 0.49,
+      "outputPrice": 0.71,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-17"
+    },
+    {
+      "id": "cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic",
+      "name": "Llama 3.3 70B",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.49,
+      "outputPrice": 0.71,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-05"
+    },
+    {
+      "id": "Qwen/Qwen3-VL-235B-A22B-Instruct-FP8",
+      "name": "Qwen3-VL 235B",
+      "contextWindow": 218000,
+      "maxOutput": 8192,
+      "inputPrice": 1.64,
+      "outputPrice": 1.91,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-11-01"
+    },
+    {
+      "id": "neuralmagic/Meta-Llama-3.1-8B-Instruct-FP8",
+      "name": "Llama 3.1 8B",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.16,
+      "outputPrice": 0.27,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "neuralmagic/Mistral-Nemo-Instruct-2407-FP8",
+      "name": "Mistral Nemo",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.49,
+      "outputPrice": 0.71,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-01"
+    },
+    {
+      "id": "intfloat/e5-mistral-7b-instruct",
+      "name": "E5 Mistral 7B",
+      "contextWindow": 4096,
+      "maxOutput": 4096,
+      "inputPrice": 0.02,
+      "outputPrice": 0.02,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-12-11"
+    }
+  ],
+  "baseUrl": "https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1",
+  "docsUrl": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models"
+}

@@ -181,12 +181,12 @@
       "releaseDate": "2025-09-01"
     },
     {
-      "id": "gpt-5-nano",
-      "name": "GPT-5 Nano",
+      "id": "gpt-5",
+      "name": "GPT-5",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
@@ -215,12 +215,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "gpt-5",
-      "name": "GPT-5",
+      "id": "gpt-5-nano",
+      "name": "GPT-5 Nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -298,22 +298,6 @@
       "releaseDate": "2025-07-22"
     },
     {
-      "id": "grok-4-fast-non-reasoning",
-      "name": "Grok 4 Fast (Non-Reasoning)",
-      "contextWindow": 2000000,
-      "maxOutput": 16384,
-      "inputPrice": 0.2,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-09"
-    },
-    {
       "id": "grok-4-0709",
       "name": "Grok 4",
       "contextWindow": 256000,
@@ -325,6 +309,22 @@
         "vision",
         "function_calling",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-09"
+    },
+    {
+      "id": "grok-4-fast-non-reasoning",
+      "name": "Grok 4 Fast (Non-Reasoning)",
+      "contextWindow": 2000000,
+      "maxOutput": 16384,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -460,12 +460,12 @@
       "releaseDate": "2025-05-28"
     },
     {
-      "id": "claude-sonnet-4-20250514",
-      "name": "Claude Sonnet 4",
+      "id": "claude-opus-4-20250514",
+      "name": "Claude Opus 4",
       "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
         "vision",
@@ -477,12 +477,12 @@
       "releaseDate": "2025-05-14"
     },
     {
-      "id": "claude-opus-4-20250514",
-      "name": "Claude Opus 4",
+      "id": "claude-sonnet-4-20250514",
+      "name": "Claude Sonnet 4",
       "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -510,12 +510,12 @@
       "releaseDate": "2025-04-29"
     },
     {
-      "id": "o4-mini",
-      "name": "o4-mini",
+      "id": "o3",
+      "name": "o3",
       "contextWindow": 200000,
       "maxOutput": 100000,
-      "inputPrice": 1.1,
-      "outputPrice": 4.4,
+      "inputPrice": 2,
+      "outputPrice": 8,
       "capabilities": [
         "chat",
         "vision",
@@ -527,12 +527,12 @@
       "releaseDate": "2025-04-16"
     },
     {
-      "id": "o3",
-      "name": "o3",
+      "id": "o4-mini",
+      "name": "o4-mini",
       "contextWindow": 200000,
       "maxOutput": 100000,
-      "inputPrice": 2,
-      "outputPrice": 8,
+      "inputPrice": 1.1,
+      "outputPrice": 4.4,
       "capabilities": [
         "chat",
         "vision",
@@ -560,12 +560,12 @@
       "releaseDate": "2025-04-14"
     },
     {
-      "id": "gpt-4.1-mini",
-      "name": "GPT-4.1 Mini",
+      "id": "gpt-4.1",
+      "name": "GPT-4.1",
       "contextWindow": 1047576,
       "maxOutput": 32768,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
+      "inputPrice": 2,
+      "outputPrice": 8,
       "capabilities": [
         "chat",
         "vision",
@@ -576,12 +576,12 @@
       "releaseDate": "2025-04-14"
     },
     {
-      "id": "gpt-4.1",
-      "name": "GPT-4.1",
+      "id": "gpt-4.1-mini",
+      "name": "GPT-4.1 Mini",
       "contextWindow": 1047576,
       "maxOutput": 32768,
-      "inputPrice": 2,
-      "outputPrice": 8,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
       "capabilities": [
         "chat",
         "vision",
@@ -676,23 +676,6 @@
       "releaseDate": "2025-02-19"
     },
     {
-      "id": "gemini-2.0-flash-001",
-      "name": "Gemini 2.0 Flash",
-      "contextWindow": 1000000,
-      "maxOutput": 8192,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-02-05"
-    },
-    {
       "id": "gemini-2.0-pro-exp-02-05",
       "name": "Gemini 2.0 Pro Exp",
       "contextWindow": 2000000,
@@ -710,12 +693,29 @@
       "releaseDate": "2025-02-05"
     },
     {
-      "id": "deepseek/deepseek-v3.1",
-      "name": "DeepSeek V3.1",
+      "id": "gemini-2.0-flash-001",
+      "name": "Gemini 2.0 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 8192,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-02-05"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1",
+      "name": "DeepSeek R1",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 0.14,
-      "outputPrice": 0.28,
+      "inputPrice": 3,
+      "outputPrice": 7,
       "capabilities": [
         "chat",
         "function_calling",
@@ -726,12 +726,12 @@
       "releaseDate": "2025-01-20"
     },
     {
-      "id": "deepseek-ai/DeepSeek-R1",
-      "name": "DeepSeek R1",
+      "id": "deepseek/deepseek-v3.1",
+      "name": "DeepSeek V3.1",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 3,
-      "outputPrice": 7,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
         "function_calling",

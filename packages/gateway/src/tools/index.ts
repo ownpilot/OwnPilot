@@ -7,3 +7,4 @@
 export { TRIGGER_TOOLS, executeTriggerTool } from './trigger-tools.js';
 export { PLAN_TOOLS, executePlanTool } from './plan-tools.js';
 export { HEARTBEAT_TOOLS, executeHeartbeatTool } from './heartbeat-tools.js';
+export { SKILL_PACKAGE_TOOLS, executeSkillPackageTool } from './skill-package-tools.js';

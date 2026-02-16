@@ -33,6 +33,7 @@ export {
   fileWorkspacesApi,
   expensesApi,
 } from './misc';
+export { skillPackagesApi } from './skill-packages';
 export {
   notesApi,
   bookmarksApi,
@@ -69,6 +70,10 @@ export type {
   ConfigEntryView,
   ConfigServiceView,
   ConfigServiceStats,
+  SkillPackageInfo,
+  SkillToolInfo,
+  SkillTriggerInfo,
+  SkillRequiredService,
   WorkspaceSelectorInfo,
   FileWorkspaceInfo,
   WorkspaceFile,

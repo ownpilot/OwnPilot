@@ -262,6 +262,7 @@ export function initToolSourceMappings(tools: {
   triggerNames: string[];
   planNames: string[];
   heartbeatNames: string[];
+  skillPackageNames?: string[];
 }) {
   addGatewayTools(tools.memoryNames, 'routes/memories.ts', 'executeMemoryTool');
   addGatewayTools(tools.goalNames, 'routes/goals.ts', 'executeGoalTool');
@@ -270,6 +271,9 @@ export function initToolSourceMappings(tools: {
   addGatewayTools(tools.triggerNames, 'tools/trigger-tools.ts', 'executeTriggerTool');
   addGatewayTools(tools.planNames, 'tools/plan-tools.ts', 'executePlanTool');
   addGatewayTools(tools.heartbeatNames, 'tools/heartbeat-tools.ts', 'executeHeartbeatTool');
+  if (tools.skillPackageNames?.length) {
+    addGatewayTools(tools.skillPackageNames, 'tools/skill-package-tools.ts', 'executeSkillPackageTool');
+  }
 }
 
 /**

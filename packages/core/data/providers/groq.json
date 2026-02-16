@@ -28,12 +28,12 @@
       "releaseDate": "2025-09-05"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 65536,
-      "inputPrice": 0.075,
-      "outputPrice": 0.3,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -45,12 +45,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
       "maxOutput": 65536,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
@@ -94,6 +94,21 @@
       "releaseDate": "2025-04-05"
     },
     {
+      "id": "meta-llama/llama-guard-4-12b",
+      "name": "Llama Guard 4 12B",
+      "contextWindow": 131072,
+      "maxOutput": 1024,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-05"
+    },
+    {
       "id": "meta-llama/llama-4-maverick-17b-128e-instruct",
       "name": "Llama 4 Maverick 17B",
       "contextWindow": 131072,
@@ -105,21 +120,6 @@
         "vision",
         "function_calling",
         "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-05"
-    },
-    {
-      "id": "meta-llama/llama-guard-4-12b",
-      "name": "Llama Guard 4 12B",
-      "contextWindow": 131072,
-      "maxOutput": 1024,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "vision",
         "streaming"
       ],
       "default": false,
@@ -248,12 +248,12 @@
       "releaseDate": "2024-06-27"
     },
     {
-      "id": "llama3-8b-8192",
-      "name": "Llama 3 8B",
+      "id": "llama3-70b-8192",
+      "name": "Llama 3 70B",
       "contextWindow": 8192,
       "maxOutput": 8192,
-      "inputPrice": 0.05,
-      "outputPrice": 0.08,
+      "inputPrice": 0.59,
+      "outputPrice": 0.79,
       "capabilities": [
         "chat",
         "function_calling",
@@ -263,12 +263,12 @@
       "releaseDate": "2024-04-18"
     },
     {
-      "id": "llama3-70b-8192",
-      "name": "Llama 3 70B",
+      "id": "llama3-8b-8192",
+      "name": "Llama 3 8B",
       "contextWindow": 8192,
       "maxOutput": 8192,
-      "inputPrice": 0.59,
-      "outputPrice": 0.79,
+      "inputPrice": 0.05,
+      "outputPrice": 0.08,
       "capabilities": [
         "chat",
         "function_calling",

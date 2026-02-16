@@ -12,6 +12,142 @@
   },
   "models": [
     {
+      "id": "minimax/minimax-m2.5-official",
+      "name": "MiniMax M2.5",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "minimax/minimax-m2.5",
+      "name": "MiniMax M2.5",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "zai-org/glm-5-original:thinking",
+      "name": "GLM 5 Original Thinking",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0.8,
+      "outputPrice": 2.56,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-11"
+    },
+    {
+      "id": "zai-org/glm-5",
+      "name": "GLM 5",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0.8,
+      "outputPrice": 2.56,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-11"
+    },
+    {
+      "id": "zai-org/glm-5-original",
+      "name": "GLM 5 Original",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0.8,
+      "outputPrice": 2.56,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-11"
+    },
+    {
+      "id": "zai-org/glm-5:thinking",
+      "name": "GLM 5 Thinking",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0.8,
+      "outputPrice": 2.56,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-11"
+    },
+    {
+      "id": "moonshotai/kimi-k2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 0.3,
+      "outputPrice": 1.9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-26"
+    },
+    {
+      "id": "moonshotai/kimi-k2.5-thinking",
+      "name": "Kimi K2.5 Thinking",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 0.3,
+      "outputPrice": 1.9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-26"
+    },
+    {
       "id": "minimax/minimax-m2.1",
       "name": "Minimax M2.1",
       "contextWindow": 128000,
@@ -24,7 +160,7 @@
         "json_mode",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-23"
     },
     {
@@ -174,7 +310,7 @@
       "releaseDate": "2025-06-23"
     },
     {
-      "id": "z-ai/glm-4.6:thinking",
+      "id": "zai-org/glm-4.6:thinking",
       "name": "GLM 4.6 Thinking",
       "contextWindow": 128000,
       "maxOutput": 8192,
@@ -290,7 +426,7 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "z-ai/glm-4.6",
+      "id": "zai-org/glm-4.6",
       "name": "GLM 4.6",
       "contextWindow": 200000,
       "maxOutput": 8192,

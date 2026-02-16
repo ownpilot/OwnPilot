@@ -12,6 +12,24 @@
   },
   "models": [
     {
+      "id": "moonshotai/Kimi-K2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.5,
+      "outputPrice": 2.8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-27"
+    },
+    {
       "id": "zai-org/GLM-4.7-Flash",
       "name": "GLM-4.7-Flash",
       "contextWindow": 202752,
@@ -24,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-01-19"
     },
     {
@@ -60,6 +78,22 @@
       "releaseDate": "2025-12-22"
     },
     {
+      "id": "deepseek-ai/DeepSeek-V3.2",
+      "name": "DeepSeek-V3.2",
+      "contextWindow": 163840,
+      "maxOutput": 64000,
+      "inputPrice": 0.26,
+      "outputPrice": 0.38,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-02"
+    },
+    {
       "id": "MiniMaxAI/MiniMax-M2",
       "name": "MiniMax M2",
       "contextWindow": 262144,
@@ -92,12 +126,12 @@
       "releaseDate": "2025-11-06"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 16384,
-      "inputPrice": 0.03,
-      "outputPrice": 0.14,
+      "inputPrice": 0.05,
+      "outputPrice": 0.24,
       "capabilities": [
         "chat",
         "function_calling",
@@ -108,12 +142,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
       "maxOutput": 16384,
-      "inputPrice": 0.05,
-      "outputPrice": 0.24,
+      "inputPrice": 0.03,
+      "outputPrice": 0.14,
       "capabilities": [
         "chat",
         "function_calling",
@@ -139,12 +173,12 @@
       "releaseDate": "2025-07-28"
     },
     {
-      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
-      "name": "Qwen3 Coder 480B A35B Instruct",
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo",
+      "name": "Qwen3 Coder 480B A35B Instruct Turbo",
       "contextWindow": 262144,
       "maxOutput": 66536,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -154,12 +188,12 @@
       "releaseDate": "2025-07-23"
     },
     {
-      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo",
-      "name": "Qwen3 Coder 480B A35B Instruct Turbo",
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
       "contextWindow": 262144,
       "maxOutput": 66536,
-      "inputPrice": 0.3,
-      "outputPrice": 1.2,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -182,6 +216,55 @@
       ],
       "default": false,
       "releaseDate": "2025-07-11"
+    },
+    {
+      "id": "anthropic/claude-4-opus",
+      "name": "Claude Opus 4",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 16.5,
+      "outputPrice": 82.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-12"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1-0528",
+      "name": "DeepSeek-R1-0528",
+      "contextWindow": 163840,
+      "maxOutput": 64000,
+      "inputPrice": 0.5,
+      "outputPrice": 2.15,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-28"
+    },
+    {
+      "id": "anthropic/claude-3-7-sonnet-latest",
+      "name": "Claude Sonnet 3.7 (Latest)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3.3,
+      "outputPrice": 16.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-13"
     }
   ],
   "baseUrl": "https://api.deepinfra.com/v1/openai",

@@ -97,12 +97,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "claude-sonnet-4@20250514",
-      "name": "Claude Sonnet 4",
+      "id": "claude-opus-4@20250514",
+      "name": "Claude Opus 4",
       "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
         "vision",
@@ -114,12 +114,12 @@
       "releaseDate": "2025-05-22"
     },
     {
-      "id": "claude-opus-4@20250514",
-      "name": "Claude Opus 4",
+      "id": "claude-sonnet-4@20250514",
+      "name": "Claude Sonnet 4",
       "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -148,12 +148,12 @@
       "releaseDate": "2025-02-19"
     },
     {
-      "id": "claude-3-5-sonnet@20241022",
-      "name": "Claude Sonnet 3.5 v2",
+      "id": "claude-3-5-haiku@20241022",
+      "name": "Claude Haiku 3.5",
       "contextWindow": 200000,
       "maxOutput": 8192,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "inputPrice": 0.8,
+      "outputPrice": 4,
       "capabilities": [
         "chat",
         "vision",
@@ -164,12 +164,12 @@
       "releaseDate": "2024-10-22"
     },
     {
-      "id": "claude-3-5-haiku@20241022",
-      "name": "Claude Haiku 3.5",
+      "id": "claude-3-5-sonnet@20241022",
+      "name": "Claude Sonnet 3.5 v2",
       "contextWindow": 200000,
       "maxOutput": 8192,
-      "inputPrice": 0.8,
-      "outputPrice": 4,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",

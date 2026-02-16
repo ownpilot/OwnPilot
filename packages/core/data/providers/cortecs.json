@@ -12,19 +12,36 @@
   },
   "models": [
     {
-      "id": "devstral-2512",
-      "name": "Devstral 2 2512",
-      "contextWindow": 262000,
-      "maxOutput": 262000,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "id": "minimax-m2p1",
+      "name": "MiniMax-M2.1",
+      "contextWindow": 196000,
+      "maxOutput": 196000,
+      "inputPrice": 0.34,
+      "outputPrice": 1.34,
       "capabilities": [
         "chat",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2025-12-09"
+      "releaseDate": "2025-12-23"
+    },
+    {
+      "id": "glm-4p7",
+      "name": "GLM 4.7",
+      "contextWindow": 198000,
+      "maxOutput": 198000,
+      "inputPrice": 0.45,
+      "outputPrice": 2.23,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-22"
     },
     {
       "id": "devstral-small-2512",
@@ -36,6 +53,21 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-09"
+    },
+    {
+      "id": "devstral-2512",
+      "name": "Devstral 2 2512",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "function_calling",
         "streaming"
       ],
@@ -73,6 +105,22 @@
       ],
       "default": false,
       "releaseDate": "2025-11-26"
+    },
+    {
+      "id": "minimax-m2",
+      "name": "MiniMax-M2",
+      "contextWindow": 400000,
+      "maxOutput": 400000,
+      "inputPrice": 0.39,
+      "outputPrice": 1.57,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-27"
     },
     {
       "id": "claude-4-5-sonnet",
@@ -121,6 +169,38 @@
       ],
       "default": false,
       "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "glm-4p5-air",
+      "name": "GLM 4.5 Air",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.22,
+      "outputPrice": 1.34,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-01"
+    },
+    {
+      "id": "glm-4p5",
+      "name": "GLM 4.5",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.67,
+      "outputPrice": 2.46,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-29"
     },
     {
       "id": "qwen3-coder-480b-a35b-instruct",

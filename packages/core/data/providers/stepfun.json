@@ -1,0 +1,65 @@
+{
+  "id": "stepfun",
+  "name": "StepFun",
+  "type": "openai-compatible",
+  "apiKeyEnv": "STEPFUN_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "step-3.5-flash",
+      "name": "Step 3.5 Flash",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.096,
+      "outputPrice": 0.288,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-29"
+    },
+    {
+      "id": "step-2-16k",
+      "name": "Step 2 (16K)",
+      "contextWindow": 16384,
+      "maxOutput": 8192,
+      "inputPrice": 5.21,
+      "outputPrice": 16.44,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "step-1-32k",
+      "name": "Step 1 (32K)",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 2.05,
+      "outputPrice": 9.59,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    }
+  ],
+  "baseUrl": "https://api.stepfun.com/v1",
+  "docsUrl": "https://platform.stepfun.com/docs/zh/overview/concept"
+}

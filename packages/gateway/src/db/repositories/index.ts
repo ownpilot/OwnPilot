@@ -302,6 +302,15 @@ export {
   type HeartbeatQuery,
 } from './heartbeats.js';
 
+// Skill packages repository
+export {
+  SkillPackagesRepository,
+  skillPackagesRepo,
+  initializeSkillPackagesRepo,
+  type SkillPackageRecord,
+  type UpsertSkillPackageInput,
+} from './skill-packages.js';
+
 // Workspaces repository
 export {
   WorkspacesRepository,

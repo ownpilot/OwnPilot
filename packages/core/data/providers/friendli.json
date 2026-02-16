@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "zai-org/GLM-5",
+      "name": "GLM 5",
+      "contextWindow": 202752,
+      "maxOutput": 202752,
+      "inputPrice": 1,
+      "outputPrice": 3.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-12"
+    },
+    {
       "id": "MiniMaxAI/MiniMax-M2.1",
       "name": "MiniMax M2.1",
       "contextWindow": 196608,
@@ -25,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-01-13"
     },
     {

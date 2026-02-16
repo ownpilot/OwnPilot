@@ -16,8 +16,8 @@
       "name": "Z.AI GLM-4.7",
       "contextWindow": 131072,
       "maxOutput": 40000,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 2.25,
+      "outputPrice": 2.75,
       "capabilities": [
         "chat",
         "function_calling",
@@ -56,6 +56,21 @@
       ],
       "default": false,
       "releaseDate": "2025-07-22"
+    },
+    {
+      "id": "llama3.1-8b",
+      "name": "Llama 3.1 8B",
+      "contextWindow": 32000,
+      "maxOutput": 8000,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
     }
   ],
   "baseUrl": "https://api.cerebras.com/v1",
