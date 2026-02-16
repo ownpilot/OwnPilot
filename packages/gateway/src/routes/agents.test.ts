@@ -151,6 +151,10 @@ vi.mock('../tools/index.js', () => ({
   executeTriggerTool: vi.fn(),
   PLAN_TOOLS: [],
   executePlanTool: vi.fn(),
+  HEARTBEAT_TOOLS: [],
+  executeHeartbeatTool: vi.fn(),
+  SKILL_PACKAGE_TOOLS: [],
+  executeSkillPackageTool: vi.fn(),
 }));
 
 vi.mock('../services/config-tools.js', () => ({

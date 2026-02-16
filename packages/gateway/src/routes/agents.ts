@@ -439,7 +439,7 @@ function registerSkillPackageTools(
       category: def.category,
     };
 
-    tools.register(toolDef, async (args, context): Promise<CoreToolResult> => {
+    const registerResult = tools.register(toolDef, async (args, context): Promise<CoreToolResult> => {
       const startTime = trace ? traceToolCallStart(def.name, args as Record<string, unknown>) : 0;
       try {
         const execResult = await dynamicRegistry.execute(def.name, args as Record<string, unknown>, context);
@@ -453,6 +453,11 @@ function registerSkillPackageTools(
         return { content: errorMsg, isError: true };
       }
     });
+
+    if (!registerResult.ok) {
+      log.warn(`Skill tool "${def.name}" skipped: ${registerResult.error.message}`);
+      continue;
+    }
 
     result.push(toolDef);
   }

@@ -611,6 +611,18 @@ async function executeDynamicTool(
         warn: (...logArgs: unknown[]) => console.warn(`[DynamicTool:${tool.name}]`, ...logArgs),
         error: (...logArgs: unknown[]) => console.error(`[DynamicTool:${tool.name}]`, ...logArgs),
       },
+      // Config bridge — matches skill.json documentation: config.get(service, field)
+      config: {
+        get: async (serviceName: string, fieldName: string) => {
+          return context.getFieldValue?.(serviceName, fieldName);
+        },
+      },
+      // Crypto utilities (require('crypto') is blocked in sandbox)
+      crypto: {
+        randomUUID: () => crypto.randomUUID(),
+        randomBytes: (size: number) => crypto.randomBytes(size),
+        createHash: (algorithm: string) => crypto.createHash(algorithm),
+      },
       // Utility helpers - all built-in utility functions accessible via utils.*
       utils: {
         ...createSandboxUtils(),

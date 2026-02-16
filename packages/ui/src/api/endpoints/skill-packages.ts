@@ -33,4 +33,9 @@ export const skillPackagesApi = {
       '/skill-packages/scan',
       directory ? { directory } : {},
     ),
+  generate: (description: string) =>
+    apiClient.post<{ manifest: Record<string, unknown>; validation: { valid: boolean; errors: string[] } }>(
+      '/skill-packages/generate',
+      { description },
+    ),
 };
