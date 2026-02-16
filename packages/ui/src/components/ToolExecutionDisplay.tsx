@@ -370,20 +370,24 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
 }
 
 function getToolCategory(name: string): string {
-  if (name.startsWith('read_') || name.startsWith('write_') || name.includes('file') || name.includes('directory')) {
+  // Strip namespace prefix for category matching
+  const baseName = name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name;
+  if (baseName.startsWith('read_') || baseName.startsWith('write_') || baseName.includes('file') || baseName.includes('directory')) {
     return 'File System';
   }
-  if (name.startsWith('execute_') || name.includes('compile') || name.includes('package')) {
+  if (baseName.startsWith('execute_') || baseName.includes('compile') || baseName.includes('package')) {
     return 'Code Execution';
   }
-  if (name.includes('http') || name.includes('web') || name.includes('fetch') || name.includes('api')) {
+  if (baseName.includes('http') || baseName.includes('web') || baseName.includes('fetch') || baseName.includes('api')) {
     return 'Web & API';
   }
   return 'Other';
 }
 
 function formatToolName(name: string): string {
-  return name
+  // Strip namespace prefix (e.g. "core.read_file" → "read_file")
+  const baseName = name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name;
+  return baseName
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');

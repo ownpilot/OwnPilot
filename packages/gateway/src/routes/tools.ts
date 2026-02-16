@@ -116,8 +116,10 @@ async function resolveAndExecuteTool(
 }
 
 function getCategoryForTool(toolName: string): string {
+  // Strip namespace prefix for category lookup (TOOL_GROUPS uses base names)
+  const baseName = toolName.includes('.') ? toolName.substring(toolName.lastIndexOf('.') + 1) : toolName;
   for (const [groupId, group] of Object.entries(TOOL_GROUPS)) {
-    if (group.tools.includes(toolName)) {
+    if (group.tools.includes(baseName)) {
       return groupId;
     }
   }
@@ -315,11 +317,14 @@ toolsRoutes.get('/:name', async (c) => {
     if (!agent) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${agentId}` }, 404);
     }
-    tool = agent.getTools().find((t) => t.name === name);
+    // Match by exact name or base name (tools now have namespace prefixes)
+    const baseName = name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name;
+    tool = agent.getTools().find((t) => t.name === name || t.name.endsWith(`.${baseName}`));
   } else {
     // Search all tool sources (core, memory, goal, custom data, personal data, triggers, plans, plugins)
     const allTools = await getAllTools();
-    tool = allTools.find((t) => t.name === name);
+    const baseName = name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name;
+    tool = allTools.find((t) => t.name === name || t.name.endsWith(`.${baseName}`));
   }
 
   if (!tool) {

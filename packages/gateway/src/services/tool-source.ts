@@ -287,16 +287,19 @@ export function initToolSourceMappings(tools: {
 export function getToolSource(toolName: string, fallbackToString?: () => string): string | null {
   if (extractionCache.has(toolName)) return extractionCache.get(toolName)!;
 
+  // Lookup tables use base names (no namespace prefix)
+  const baseName = toolName.includes('.') ? toolName.substring(toolName.lastIndexOf('.') + 1) : toolName;
+
   let source: string | null = null;
 
   // 1. Gateway-wrapped tools: extract per-tool case block
-  const gwMapping = GATEWAY_TOOL_MAP[toolName];
+  const gwMapping = GATEWAY_TOOL_MAP[baseName];
   if (gwMapping) {
     const filePath = resolve(gatewaySrc, gwMapping.file);
     const fileContent = readSourceFile(filePath);
     if (fileContent) {
       // First try: extract just this tool's switch case
-      source = extractSwitchCase(fileContent, toolName);
+      source = extractSwitchCase(fileContent, baseName);
       // Second try: extract the entire function (less ideal but complete)
       if (!source) {
         source = extractFunction(fileContent, gwMapping.func);
@@ -306,7 +309,7 @@ export function getToolSource(toolName: string, fallbackToString?: () => string)
 
   // 2. Core tools: extract the specific executor
   if (!source) {
-    const coreMapping = CORE_TOOL_MAP[toolName];
+    const coreMapping = CORE_TOOL_MAP[baseName];
     if (coreMapping) {
       const filePath = resolve(coreSrc, `${coreMapping.file}.ts`);
       const fileContent = readSourceFile(filePath);

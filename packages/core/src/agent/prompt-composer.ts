@@ -14,6 +14,7 @@
 import type { ToolDefinition } from './types.js';
 import type { UserProfile } from '../memory/conversation.js';
 import { TOOL_GROUPS, FAMILIAR_TOOLS, TOOL_CATEGORY_CAPABILITIES } from './tool-config.js';
+import { getBaseName } from './tool-namespace.js';
 
 // =============================================================================
 // Types
@@ -283,7 +284,7 @@ function formatTools(tools: readonly ToolDefinition[]): string {
   // Build familiar tools quick-reference
   const familiarToolLines: string[] = [];
   for (const tool of tools) {
-    if (FAMILIAR_TOOLS.has(tool.name)) {
+    if (FAMILIAR_TOOLS.has(getBaseName(tool.name))) {
       const brief = tool.brief ?? tool.description.slice(0, 60);
       familiarToolLines.push(`  ${tool.name} — ${brief}`);
     }
@@ -407,7 +408,10 @@ export class PromptComposer {
 
       // 4a. Automation context (only if automation tools are registered)
       const hasAutomationTools = context.tools.some(
-        (t) => t.category === 'Automation' || t.name.startsWith('create_trigger') || t.name.startsWith('create_plan')
+        (t) => {
+          const baseName = getBaseName(t.name);
+          return t.category === 'Automation' || baseName.startsWith('create_trigger') || baseName.startsWith('create_plan');
+        }
       );
       if (hasAutomationTools) {
         sections.push(PROMPT_SECTIONS.automation);

@@ -117,7 +117,7 @@ export interface SkillConfigField {
 // =============================================================================
 
 const SKILL_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
-const TOOL_NAME_PATTERN = /^[a-z0-9_]+$/;
+const TOOL_NAME_PATTERN = /^[a-z0-9_.]+$/;
 
 export interface ValidationResult {
   valid: boolean;

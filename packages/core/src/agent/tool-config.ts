@@ -5,6 +5,8 @@
  * This allows customizing which tools are available to the AI.
  */
 
+import { getBaseName } from './tool-namespace.js';
+
 export interface ToolGroupConfig {
   /** Group identifier */
   id: string;
@@ -461,8 +463,9 @@ export function getToolGroups(): ToolGroupConfig[] {
  * Get tool group by tool name
  */
 export function getGroupForTool(toolName: string): ToolGroupConfig | undefined {
+  const baseName = getBaseName(toolName);
   for (const group of Object.values(TOOL_GROUPS)) {
-    if (group.tools.includes(toolName)) {
+    if (group.tools.includes(baseName)) {
       return group;
     }
   }

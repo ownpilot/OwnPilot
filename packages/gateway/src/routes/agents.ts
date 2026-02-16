@@ -34,6 +34,8 @@ import {
   type ToolContext,
   type WorkspaceContext,
   unsafeToolId,
+  qualifyToolName,
+  getBaseName,
 } from '@ownpilot/core';
 import { executeMemoryTool } from './memories.js';
 import { executeGoalTool } from './goals.js';
@@ -100,6 +102,13 @@ const BASE_SYSTEM_PROMPT = `You are OwnPilot, a privacy-first personal AI assist
 ## Tool System
 You access all capabilities through 4 meta-tools: \`search_tools\`, \`get_tool_help\`, \`use_tool\`, and \`batch_use_tool\`.
 
+**Tool namespaces:** All tools use dot-prefixed namespaces indicating their source:
+- \`core.*\` — built-in tools (e.g. \`core.add_task\`, \`core.read_file\`, \`core.search_memories\`)
+- \`custom.*\` — user-created tools (e.g. \`custom.my_parser\`)
+- \`plugin.<id>.*\` — plugin-provided tools (e.g. \`plugin.telegram.send_message\`)
+- \`skill.<id>.*\` — skill package tools (e.g. \`skill.web_search.search_web\`)
+Always use the full qualified name with \`use_tool\`, e.g. \`use_tool("core.add_task", {"title": "..."})\`.
+
 **Key principles:**
 - Never guess tool names or parameters. Use \`search_tools\` to discover and \`get_tool_help\` to verify before calling unfamiliar tools.
 - Use \`batch_use_tool\` for parallel execution when multiple independent operations are needed.
@@ -112,19 +121,19 @@ All personal data is stored in a local database and persists across conversation
 - **Calendar** — Events and appointments
 - **Contacts** — People with phone, email, address
 - **Bookmarks** — Saved URLs with tags
-- **Custom Data** — User-created tables with any schema (use \`search_tools("custom")\` to discover)
+- **Custom Data** — User-created tables with any schema (use \`search_tools("custom data")\` to discover)
 - **Memories** — Facts, preferences, and events you learn about the user
 
 **Always use tools to access data.** Never fabricate, assume, or recall data from conversation history alone. Call the appropriate list/search tool to get the current state — data changes between conversations.
 
 ## Tool Improvement
-- Use \`inspect_tool_source\` to view any tool's source code before suggesting improvements.
-- For built-in tools: create an improved custom tool with \`create_tool\` that handles additional edge cases, better formatting, or extra features.
-- For custom tools: use \`update_custom_tool\` to improve the existing code directly.
+- Use \`core.inspect_tool_source\` to view any tool's source code before suggesting improvements.
+- For built-in tools: create an improved custom tool with \`core.create_tool\` that handles additional edge cases, better formatting, or extra features.
+- For custom tools: use \`core.update_custom_tool\` to improve the existing code directly.
 - Always explain what you improved and why before making changes.
 
 ## Memory Protocol
-- Before answering questions about the user, call \`search_memories\` to recall relevant context.
+- Before answering questions about the user, call \`core.search_memories\` to recall relevant context.
 - Search before creating to avoid duplicate memories.
 - When you detect memorizable information (personal facts, preferences, events), do NOT save automatically. Instead, include a memory-save suggestion in your follow-up suggestions so the user can confirm.
 
@@ -247,7 +256,8 @@ function registerGatewayTools(
 
   for (const group of groups) {
     for (const toolDef of group.definitions) {
-      tools.register(toolDef, async (args): Promise<CoreToolResult> => {
+      const qName = qualifyToolName(toolDef.name, 'core');
+      tools.register({ ...toolDef, name: qName }, async (args): Promise<CoreToolResult> => {
         const startTime = trace ? traceToolCallStart(toolDef.name, args as Record<string, unknown>) : 0;
 
         const result = group.needsUserId
@@ -287,7 +297,8 @@ async function registerDynamicTools(
   for (const toolDef of DYNAMIC_TOOL_DEFINITIONS) {
     if (META_TOOL_NAMES.has(toolDef.name)) continue;
 
-    tools.register(toolDef, async (args, _context): Promise<CoreToolResult> => {
+    const qName = qualifyToolName(toolDef.name, 'core');
+    tools.register({ ...toolDef, name: qName }, async (args, _context): Promise<CoreToolResult> => {
       const startTime = trace ? traceToolCallStart(toolDef.name, args as Record<string, unknown>) : 0;
       const result = await executeCustomToolTool(toolDef.name, args as Record<string, unknown>, userId);
 
@@ -304,13 +315,16 @@ async function registerDynamicTools(
   }
 
   // 2. Register special meta-tools with dedicated executors
+  //    search_tools, get_tool_help, use_tool, batch_use_tool stay unprefixed (LLM native API)
+  //    inspect_tool_source gets core. prefix (accessed via use_tool)
   const searchToolsDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'search_tools');
   if (searchToolsDef) {
     tools.register(searchToolsDef, (args) => executeSearchTools(tools, args as Record<string, unknown>));
   }
   const inspectToolSourceDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'inspect_tool_source');
   if (inspectToolSourceDef) {
-    tools.register(inspectToolSourceDef, (args) => executeInspectToolSource(tools, userId, args as Record<string, unknown>));
+    const qName = qualifyToolName('inspect_tool_source', 'core');
+    tools.register({ ...inspectToolSourceDef, name: qName }, (args) => executeInspectToolSource(tools, userId, args as Record<string, unknown>));
   }
   const getToolHelpDef = DYNAMIC_TOOL_DEFINITIONS.find(t => t.name === 'get_tool_help');
   if (getToolHelpDef) {
@@ -328,7 +342,8 @@ async function registerDynamicTools(
   // 3. Register active custom tools (user-created dynamic tools)
   const activeCustomToolDefs = await getActiveCustomToolDefinitions(userId);
   for (const toolDef of activeCustomToolDefs) {
-    tools.register(toolDef, async (args, _context): Promise<CoreToolResult> => {
+    const qName = qualifyToolName(toolDef.name, 'custom');
+    tools.register({ ...toolDef, name: qName }, async (args, _context): Promise<CoreToolResult> => {
       const startTime = trace ? traceToolCallStart(toolDef.name, args as Record<string, unknown>) : 0;
 
       const result = await executeActiveCustomTool(toolDef.name, args as Record<string, unknown>, userId, {
@@ -359,7 +374,9 @@ function registerPluginTools(
   const pluginTools = pluginService.getAllTools();
   const pluginToolDefs: ToolDefinition[] = [];
 
-  for (const { definition, executor } of pluginTools) {
+  for (const { pluginId, definition, executor } of pluginTools) {
+    const qName = qualifyToolName(definition.name, 'plugin', pluginId);
+    const qDef = { ...definition, name: qName };
     const wrappedExecutor = async (args: unknown, context: ToolContext): Promise<CoreToolResult> => {
       const startTime = trace ? traceToolCallStart(definition.name, args as Record<string, unknown>) : 0;
       try {
@@ -373,17 +390,17 @@ function registerPluginTools(
       }
     };
 
-    if (tools.has(definition.name)) {
-      tools.updateExecutor(definition.name, wrappedExecutor);
+    if (tools.has(qName)) {
+      tools.updateExecutor(qName, wrappedExecutor);
     } else {
-      tools.register(definition, wrappedExecutor);
+      tools.register(qDef, wrappedExecutor);
     }
     pluginToolDefs.push(definition);
   }
 
   // Remove core stub tools that are superseded by plugin tools
-  const pluginToolNames = new Set(pluginToolDefs.map(t => t.name));
-  removeSupersededCoreStubs(tools, pluginToolNames);
+  const pluginToolBaseNames = new Set(pluginToolDefs.map(t => getBaseName(t.name)));
+  removeSupersededCoreStubs(tools, pluginToolBaseNames);
 
   return pluginToolDefs;
 }
@@ -417,7 +434,7 @@ function registerSkillPackageTools(
   const result: ToolDefinition[] = [];
 
   for (const def of skillToolDefs) {
-    // Register in DynamicToolRegistry if not already there
+    // Register in DynamicToolRegistry if not already there (uses base name)
     if (!dynamicRegistry.has(def.name)) {
       try {
         dynamicRegistry.register({
@@ -433,6 +450,7 @@ function registerSkillPackageTools(
       }
     }
 
+    const qName = qualifyToolName(def.name, 'skill', def.skillPackageId);
     const toolDef: ToolDefinition = {
       name: def.name,
       description: def.description,
@@ -440,7 +458,7 @@ function registerSkillPackageTools(
       category: def.category,
     };
 
-    const registerResult = tools.register(toolDef, async (args, context): Promise<CoreToolResult> => {
+    const registerResult = tools.register({ ...toolDef, name: qName }, async (args, context): Promise<CoreToolResult> => {
       const startTime = trace ? traceToolCallStart(def.name, args as Record<string, unknown>) : 0;
       try {
         const execResult = await dynamicRegistry.execute(def.name, args as Record<string, unknown>, context);
@@ -624,9 +642,11 @@ async function executeSearchTools(
     if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
     if (showAll) return true;
 
-    const tags = TOOL_SEARCH_TAGS[d.name] ?? d.tags ?? [];
+    const baseName = getBaseName(d.name);
+    const tags = TOOL_SEARCH_TAGS[baseName] ?? d.tags ?? [];
     const searchBlob = [
-      d.name.toLowerCase().replace(/[_\-]/g, ' '),
+      baseName.toLowerCase().replace(/[_\-]/g, ' '),
+      d.name.toLowerCase().replace(/[_.]/g, ' '),
       d.name.toLowerCase(),
       d.description.toLowerCase(),
       (d.category ?? '').toLowerCase(),
@@ -662,9 +682,10 @@ async function executeInspectToolSource(
   }
 
   const customToolsRepo = createCustomToolsRepo(userId);
+  const baseName = getBaseName(tool_name);
 
-  // 1. Check if it's a custom tool
-  const customTool = await customToolsRepo.getByName(tool_name);
+  // 1. Check if it's a custom tool (DB stores base names)
+  const customTool = await customToolsRepo.getByName(baseName);
   if (customTool) {
     const sections: string[] = [
       `## Tool: ${customTool.name}`,
@@ -1005,7 +1026,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Custom tools, dynamic tools, plugin tools, and skill package tools are ALWAYS included
   // If no toolGroups are configured, include all standard tools (backwards compatibility)
   const filteredStandardTools = allowedToolNames.size > 0
-    ? standardToolDefs.filter(tool => allowedToolNames.has(tool.name))
+    ? standardToolDefs.filter(tool => allowedToolNames.has(tool.name) || allowedToolNames.has(getBaseName(tool.name)))
     : standardToolDefs;
 
   const toolDefs = [...filteredStandardTools, ...alwaysIncludedToolDefs];

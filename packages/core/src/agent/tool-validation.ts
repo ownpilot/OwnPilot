@@ -277,7 +277,7 @@ export function findSimilarToolNames(
   limit: number = 5,
 ): string[] {
   const allDefs = registry.getDefinitions();
-  const q = query.toLowerCase().replace(/[_\-]/g, ' ');
+  const q = query.toLowerCase().replace(/[_.\-]/g, ' ');
   const qWords = q.split(/\s+/).filter(Boolean);
 
   const scored = allDefs
@@ -289,7 +289,7 @@ export function findSimilarToolNames(
     )
     .map(d => {
       const name = d.name.toLowerCase();
-      const nameWords = name.replace(/[_\-]/g, ' ');
+      const nameWords = name.replace(/[_.\-]/g, ' ');
       let score = 0;
 
       // Exact substring match in name

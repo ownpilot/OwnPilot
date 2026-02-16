@@ -359,20 +359,26 @@ describe('PromptComposer', () => {
 
     it('should show familiar tools in quick-reference section', () => {
       const tools = [
-        { name: 'add_task', description: 'Create a new todo item', brief: 'Create a new todo', parameters: { type: 'object' as const, properties: {} }, category: 'Tasks' },
-        { name: 'obscure_tool', description: 'Does something rare', parameters: { type: 'object' as const, properties: {} }, category: 'Other' },
+        { name: 'core.add_task', description: 'Create a new todo item', brief: 'Create a new todo', parameters: { type: 'object' as const, properties: {} }, category: 'Tasks' },
+        { name: 'custom.obscure_tool', description: 'Does something rare', parameters: { type: 'object' as const, properties: {} }, category: 'Other' },
       ];
       const result = composer.compose(baseContext({ tools }));
       expect(result).toContain('### Familiar Tools');
-      expect(result).toContain('add_task');
+      expect(result).toContain('core.add_task');
       expect(result).not.toContain('obscure_tool —'); // obscure_tool appears in category but not in familiar section
     });
 
     it('should include automation section when automation tools present', () => {
-      const tools = [makeTool('create_trigger', 'Automation')];
+      const tools = [makeTool('core.create_trigger', 'Automation')];
       const result = composer.compose(baseContext({ tools }));
       expect(result).toContain('## Automation');
       expect(result).toContain('triggers');
+    });
+
+    it('should detect automation tools by base name even with namespace prefix', () => {
+      const tools = [makeTool('core.create_plan', 'Other')];
+      const result = composer.compose(baseContext({ tools }));
+      expect(result).toContain('## Automation');
     });
 
     it('should not include automation section when no automation tools', () => {
