@@ -4,6 +4,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useTheme } from '../hooks/useTheme';
+import { useDesktopNotifications } from '../hooks/useDesktopNotifications';
 import { systemApi } from '../api';
 import type { SandboxStatus, DatabaseStatus, BackupInfo, DatabaseStats } from '../api';
 
@@ -41,6 +42,7 @@ export function SystemPage() {
   const toast = useToast();
   // Theme
   const { theme, setTheme } = useTheme();
+  const { supported: notifSupported, permission: notifPermission, enabled: notifEnabled, setEnabled: setNotifEnabled, requestPermission } = useDesktopNotifications();
 
   // System status
   const [sandboxStatus, setSandboxStatus] = useState<SandboxStatus | null>(null);
@@ -177,6 +179,51 @@ export function SystemPage() {
                 ))}
               </div>
             </div>
+
+            {/* Desktop Notifications */}
+            {notifSupported && (
+              <div className="mt-6 pt-6 border-t border-border dark:border-dark-border">
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
+                  Desktop Notifications
+                </label>
+                <div className="flex items-center justify-between p-4 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
+                  <div>
+                    <p className="text-sm text-text-primary dark:text-dark-text-primary">
+                      Show notifications for incoming messages and trigger failures
+                    </p>
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+                      {notifPermission === 'granted'
+                        ? 'Notifications are allowed by your browser'
+                        : notifPermission === 'denied'
+                          ? 'Notifications are blocked. Enable them in browser settings.'
+                          : 'Browser permission required'}
+                    </p>
+                  </div>
+                  {notifPermission === 'granted' ? (
+                    <button
+                      onClick={() => setNotifEnabled(!notifEnabled)}
+                      className={`w-10 h-6 rounded-full transition-colors relative ${
+                        notifEnabled ? 'bg-primary' : 'bg-border dark:bg-dark-border'
+                      }`}
+                      aria-label={notifEnabled ? 'Disable notifications' : 'Enable notifications'}
+                    >
+                      <div
+                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                          notifEnabled ? 'translate-x-5' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  ) : notifPermission !== 'denied' ? (
+                    <button
+                      onClick={requestPermission}
+                      className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+                    >
+                      Enable
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Docker Sandbox Status */}

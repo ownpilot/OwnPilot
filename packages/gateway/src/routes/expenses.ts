@@ -9,6 +9,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { generateId } from '@ownpilot/core';
 import { apiResponse, getIntParam, notFoundError, validateQueryEnum } from './helpers.js';
+import { wsGateway } from '../ws/server.js';
 
 // =============================================================================
 // Types
@@ -363,6 +364,7 @@ expensesRoutes.post('/', async (c) => {
   db.expenses.push(expense);
   await saveExpenseDb(db);
 
+  wsGateway.broadcast('data:changed', { entity: 'expense', action: 'created', id: expense.id });
   return apiResponse(c, expense, 201);
 });
 
@@ -393,6 +395,7 @@ expensesRoutes.put('/:id', async (c) => {
   db.expenses[index] = updated;
   await saveExpenseDb(db);
 
+  wsGateway.broadcast('data:changed', { entity: 'expense', action: 'updated', id: updated.id });
   return apiResponse(c, updated);
 });
 
@@ -412,5 +415,6 @@ expensesRoutes.delete('/:id', async (c) => {
   const deleted = db.expenses.splice(index, 1)[0];
   await saveExpenseDb(db);
 
+  wsGateway.broadcast('data:changed', { entity: 'expense', action: 'deleted', id });
   return apiResponse(c, { deleted });
 });

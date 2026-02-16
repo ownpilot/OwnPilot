@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import { Bookmark, Plus, Trash2, Star, ExternalLink, Search, Folder } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { useDebouncedValue, useModalClose } from '../hooks';
+import { useAnimatedList } from '../hooks/useAnimatedList';
 import { bookmarksApi } from '../api';
 import type { BookmarkItem } from '../api';
 
@@ -12,6 +14,7 @@ import type { BookmarkItem } from '../api';
 export function BookmarksPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,6 +23,8 @@ export function BookmarksPage() {
   const [editingBookmark, setEditingBookmark] = useState<BookmarkItem | null>(null);
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(bookmarks);
 
   const fetchBookmarks = useCallback(async () => {
     try {
@@ -41,11 +46,25 @@ export function BookmarksPage() {
     fetchBookmarks();
   }, [fetchBookmarks]);
 
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchBookmarks(), 2000);
+  }, [fetchBookmarks]);
+
+  useEffect(() => {
+    const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
+      if (data.entity === 'bookmark') debouncedRefresh();
+    });
+    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [subscribe, debouncedRefresh]);
+
   const handleDelete = useCallback(async (bookmarkId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this bookmark?', variant: 'danger' })) return;
 
     try {
-      await bookmarksApi.delete(bookmarkId);
+      await animatedDelete(bookmarkId, async () => {
+        await bookmarksApi.delete(bookmarkId);
+      });
       toast.success('Bookmark deleted');
       fetchBookmarks();
     } catch {
@@ -145,7 +164,7 @@ export function BookmarksPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
-          <LoadingSpinner message="Loading bookmarks..." />
+          <SkeletonCard count={5} />
         ) : bookmarks.length === 0 ? (
           <EmptyState
             icon={Bookmark}
@@ -155,14 +174,15 @@ export function BookmarksPage() {
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {bookmarks.map((bookmark) => (
-              <BookmarkCard
-                key={bookmark.id}
-                bookmark={bookmark}
-                onEdit={() => setEditingBookmark(bookmark)}
-                onDelete={() => handleDelete(bookmark.id)}
-                onToggleFavorite={() => handleToggleFavorite(bookmark)}
-              />
+            {animatedItems.map(({ item: bookmark, animClass }) => (
+              <div key={bookmark.id} className={animClass}>
+                <BookmarkCard
+                  bookmark={bookmark}
+                  onEdit={() => setEditingBookmark(bookmark)}
+                  onDelete={() => handleDelete(bookmark.id)}
+                  onToggleFavorite={() => handleToggleFavorite(bookmark)}
+                />
+              </div>
             ))}
           </div>
         )}

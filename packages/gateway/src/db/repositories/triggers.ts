@@ -65,12 +65,22 @@ export interface Trigger {
 
 export interface TriggerHistory {
   id: string;
-  triggerId: string;
+  triggerId: string | null;
+  triggerName: string | null;
   firedAt: Date;
   status: TriggerStatus;
   result: unknown | null;
   error: string | null;
   durationMs: number | null;
+}
+
+export interface HistoryQuery {
+  status?: TriggerStatus;
+  triggerId?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
 }
 
 export interface CreateTriggerInput {
@@ -118,7 +128,8 @@ interface TriggerRow {
 
 interface HistoryRow {
   id: string;
-  trigger_id: string;
+  trigger_id: string | null;
+  trigger_name: string | null;
   fired_at: string;
   status: TriggerStatus;
   result: string | null;
@@ -260,9 +271,18 @@ export class TriggersRepository extends BaseRepository {
   }
 
   /**
-   * Delete a trigger
+   * Delete a trigger (preserves history by detaching rows first)
    */
   async delete(id: string): Promise<boolean> {
+    // Detach history rows: preserve trigger name, set trigger_id = NULL
+    const trigger = await this.get(id);
+    if (trigger) {
+      await this.execute(
+        `UPDATE trigger_history SET trigger_name = COALESCE(trigger_name, $1), trigger_id = NULL WHERE trigger_id = $2`,
+        [trigger.name, id]
+      );
+    }
+
     const result = await this.execute(
       'DELETE FROM triggers WHERE id = $1 AND user_id = $2',
       [id, this.userId]
@@ -382,6 +402,7 @@ export class TriggersRepository extends BaseRepository {
    */
   async logExecution(
     triggerId: string,
+    triggerName: string,
     status: TriggerStatus,
     result?: unknown,
     error?: string,
@@ -390,11 +411,12 @@ export class TriggersRepository extends BaseRepository {
     const id = generateId('hist');
 
     await this.execute(
-      `INSERT INTO trigger_history (id, trigger_id, status, result, error, duration_ms)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+      `INSERT INTO trigger_history (id, trigger_id, trigger_name, status, result, error, duration_ms)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         id,
         triggerId,
+        triggerName,
         status,
         result ? JSON.stringify(result) : null,
         error ?? null,
@@ -412,49 +434,110 @@ export class TriggersRepository extends BaseRepository {
    */
   async getHistory(id: string): Promise<TriggerHistory | null> {
     const row = await this.queryOne<HistoryRow>(
-      `SELECT h.* FROM trigger_history h
-       JOIN triggers t ON h.trigger_id = t.id
-       WHERE h.id = $1 AND t.user_id = $2`,
-      [id, this.userId]
+      `SELECT h.*, COALESCE(h.trigger_name, t.name) as trigger_name FROM trigger_history h
+       LEFT JOIN triggers t ON h.trigger_id = t.id
+       WHERE h.id = $1`,
+      [id]
     );
     return row ? this.mapHistory(row) : null;
   }
 
   /**
-   * Get history for a trigger
+   * Get history for a trigger (with optional filters + pagination)
    */
-  async getHistoryForTrigger(triggerId: string, limit = 20): Promise<TriggerHistory[]> {
+  async getHistoryForTrigger(triggerId: string, query: HistoryQuery = {}): Promise<{ rows: TriggerHistory[]; total: number }> {
+    const limit = query.limit ?? 20;
+    const offset = query.offset ?? 0;
+
+    let whereSql = 'WHERE h.trigger_id = $1';
+    const params: unknown[] = [triggerId];
+    let paramIndex = 2;
+
+    if (query.status) {
+      whereSql += ` AND h.status = $${paramIndex++}`;
+      params.push(query.status);
+    }
+    if (query.from) {
+      whereSql += ` AND h.fired_at >= $${paramIndex++}`;
+      params.push(query.from);
+    }
+    if (query.to) {
+      whereSql += ` AND h.fired_at <= $${paramIndex++}`;
+      params.push(query.to);
+    }
+
+    const countResult = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM trigger_history h ${whereSql}`,
+      params
+    );
+    const total = parseInt(countResult?.count ?? '0', 10);
+
+    const dataParams = [...params, limit, offset];
     const rows = await this.query<HistoryRow>(
-      `SELECT h.* FROM trigger_history h
-       JOIN triggers t ON h.trigger_id = t.id
-       WHERE h.trigger_id = $1 AND t.user_id = $2
+      `SELECT h.*, COALESCE(h.trigger_name, t.name) as trigger_name FROM trigger_history h
+       LEFT JOIN triggers t ON h.trigger_id = t.id
+       ${whereSql}
        ORDER BY h.fired_at DESC
-       LIMIT $3`,
-      [triggerId, this.userId, limit]
+       LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+      dataParams
     );
-    return rows.map((row) => this.mapHistory(row));
+
+    return { rows: rows.map((row) => this.mapHistory(row)), total };
   }
 
   /**
-   * Get recent history across all triggers
+   * Get recent history across all triggers (with optional filters + pagination)
    */
-  async getRecentHistory(limit = 50): Promise<Array<TriggerHistory & { triggerName: string }>> {
-    const rows = await this.query<HistoryRow & { trigger_name: string }>(
-      `SELECT h.*, t.name as trigger_name FROM trigger_history h
-       JOIN triggers t ON h.trigger_id = t.id
-       WHERE t.user_id = $1
-       ORDER BY h.fired_at DESC
-       LIMIT $2`,
-      [this.userId, limit]
+  async getRecentHistory(query: HistoryQuery = {}): Promise<{ rows: TriggerHistory[]; total: number }> {
+    const limit = query.limit ?? 25;
+    const offset = query.offset ?? 0;
+
+    // Base: LEFT JOIN so detached history (deleted triggers) is included
+    // Filter by user via trigger ownership OR detached rows (trigger_id IS NULL)
+    let whereSql = 'WHERE (t.user_id = $1 OR h.trigger_id IS NULL)';
+    const params: unknown[] = [this.userId];
+    let paramIndex = 2;
+
+    if (query.status) {
+      whereSql += ` AND h.status = $${paramIndex++}`;
+      params.push(query.status);
+    }
+    if (query.triggerId) {
+      whereSql += ` AND h.trigger_id = $${paramIndex++}`;
+      params.push(query.triggerId);
+    }
+    if (query.from) {
+      whereSql += ` AND h.fired_at >= $${paramIndex++}`;
+      params.push(query.from);
+    }
+    if (query.to) {
+      whereSql += ` AND h.fired_at <= $${paramIndex++}`;
+      params.push(query.to);
+    }
+
+    const countResult = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM trigger_history h
+       LEFT JOIN triggers t ON h.trigger_id = t.id
+       ${whereSql}`,
+      params
     );
-    return rows.map((row) => ({
-      ...this.mapHistory(row),
-      triggerName: row.trigger_name,
-    }));
+    const total = parseInt(countResult?.count ?? '0', 10);
+
+    const dataParams = [...params, limit, offset];
+    const rows = await this.query<HistoryRow>(
+      `SELECT h.*, COALESCE(h.trigger_name, t.name) as trigger_name FROM trigger_history h
+       LEFT JOIN triggers t ON h.trigger_id = t.id
+       ${whereSql}
+       ORDER BY h.fired_at DESC
+       LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+      dataParams
+    );
+
+    return { rows: rows.map((row) => this.mapHistory(row)), total };
   }
 
   /**
-   * Clean up old history
+   * Clean up old history (includes detached rows from deleted triggers)
    */
   async cleanupHistory(maxAgeDays = 30): Promise<number> {
     const cutoff = new Date();
@@ -462,9 +545,9 @@ export class TriggersRepository extends BaseRepository {
 
     const result = await this.execute(
       `DELETE FROM trigger_history
-       WHERE trigger_id IN (SELECT id FROM triggers WHERE user_id = $1)
-         AND fired_at < $2`,
-      [this.userId, cutoff.toISOString()]
+       WHERE fired_at < $1
+         AND (trigger_id IN (SELECT id FROM triggers WHERE user_id = $2) OR trigger_id IS NULL)`,
+      [cutoff.toISOString(), this.userId]
     );
 
     return result.changes;
@@ -509,22 +592,22 @@ export class TriggersRepository extends BaseRepository {
     weekAgo.setDate(weekAgo.getDate() - 7);
     const firesThisWeek = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM trigger_history h
-       JOIN triggers t ON h.trigger_id = t.id
-       WHERE t.user_id = $1 AND h.fired_at >= $2`,
+       LEFT JOIN triggers t ON h.trigger_id = t.id
+       WHERE (t.user_id = $1 OR h.trigger_id IS NULL) AND h.fired_at >= $2`,
       [this.userId, weekAgo.toISOString()]
     );
 
     const successCount = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM trigger_history h
-       JOIN triggers t ON h.trigger_id = t.id
-       WHERE t.user_id = $1 AND h.status = 'success'`,
+       LEFT JOIN triggers t ON h.trigger_id = t.id
+       WHERE (t.user_id = $1 OR h.trigger_id IS NULL) AND h.status = 'success'`,
       [this.userId]
     );
 
     const totalHistory = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM trigger_history h
-       JOIN triggers t ON h.trigger_id = t.id
-       WHERE t.user_id = $1`,
+       LEFT JOIN triggers t ON h.trigger_id = t.id
+       WHERE (t.user_id = $1 OR h.trigger_id IS NULL)`,
       [this.userId]
     );
 
@@ -596,6 +679,7 @@ export class TriggersRepository extends BaseRepository {
     return {
       id: row.id,
       triggerId: row.trigger_id,
+      triggerName: row.trigger_name,
       firedAt: new Date(row.fired_at),
       status: row.status,
       result: parseJsonFieldNullable(row.result),

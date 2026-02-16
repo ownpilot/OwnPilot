@@ -82,6 +82,7 @@ function historyRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'hist_1',
     trigger_id: 'trigger_1',
+    trigger_name: 'Test Trigger',
     fired_at: NOW_ISO,
     status: 'success',
     result: null,
@@ -466,7 +467,7 @@ describe('TriggersRepository', () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(historyRow());
 
-      const history = await repo.logExecution('trigger_1', 'success', { ok: true }, undefined, 200);
+      const history = await repo.logExecution('trigger_1', 'Test Trigger', 'success', { ok: true }, undefined, 200);
 
       expect(history.id).toBe('hist_1');
       expect(history.status).toBe('success');
@@ -477,7 +478,7 @@ describe('TriggersRepository', () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(historyRow({ status: 'failure', error: 'Timeout' }));
 
-      const history = await repo.logExecution('trigger_1', 'failure', undefined, 'Timeout');
+      const history = await repo.logExecution('trigger_1', 'Test Trigger', 'failure', undefined, 'Timeout');
 
       expect(history.error).toBe('Timeout');
     });
@@ -486,7 +487,7 @@ describe('TriggersRepository', () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(null);
 
-      await expect(repo.logExecution('trigger_1', 'success')).rejects.toThrow(
+      await expect(repo.logExecution('trigger_1', 'Test Trigger', 'success')).rejects.toThrow(
         'Failed to create trigger history',
       );
     });
@@ -506,36 +507,41 @@ describe('TriggersRepository', () => {
 
   describe('getHistoryForTrigger', () => {
     it('returns history entries for a trigger', async () => {
-      mockAdapter.query.mockResolvedValue([
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '2' });
+      mockAdapter.query.mockResolvedValueOnce([
         historyRow(),
         historyRow({ id: 'hist_2', status: 'failure' }),
       ]);
 
-      const entries = await repo.getHistoryForTrigger('trigger_1');
+      const result = await repo.getHistoryForTrigger('trigger_1');
 
-      expect(entries).toHaveLength(2);
+      expect(result.rows).toHaveLength(2);
+      expect(result.total).toBe(2);
     });
 
     it('applies custom limit', async () => {
-      mockAdapter.query.mockResolvedValue([]);
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockAdapter.query.mockResolvedValueOnce([]);
 
-      await repo.getHistoryForTrigger('trigger_1', 5);
+      await repo.getHistoryForTrigger('trigger_1', { limit: 5 });
 
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
-      expect(params[2]).toBe(5);
+      expect(params).toContain(5);
     });
   });
 
   describe('getRecentHistory', () => {
     it('includes trigger name in results', async () => {
-      mockAdapter.query.mockResolvedValue([
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '1' });
+      mockAdapter.query.mockResolvedValueOnce([
         { ...historyRow(), trigger_name: 'Daily Check' },
       ]);
 
-      const entries = await repo.getRecentHistory();
+      const result = await repo.getRecentHistory();
 
-      expect(entries).toHaveLength(1);
-      expect(entries[0]!.triggerName).toBe('Daily Check');
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0]!.triggerName).toBe('Daily Check');
+      expect(result.total).toBe(1);
     });
   });
 

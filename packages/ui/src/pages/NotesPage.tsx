@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import { FileText, Plus, Trash2, Pin, Search } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { useDebouncedValue, useModalClose } from '../hooks';
+import { useAnimatedList } from '../hooks/useAnimatedList';
 import { notesApi } from '../api';
 import type { Note } from '../api';
 
@@ -12,12 +14,15 @@ import type { Note } from '../api';
 export function NotesPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(notes);
 
   const fetchNotes = useCallback(async () => {
     try {
@@ -39,11 +44,25 @@ export function NotesPage() {
     fetchNotes();
   }, [fetchNotes]);
 
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchNotes(), 2000);
+  }, [fetchNotes]);
+
+  useEffect(() => {
+    const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
+      if (data.entity === 'note') debouncedRefresh();
+    });
+    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [subscribe, debouncedRefresh]);
+
   const handleDelete = useCallback(async (noteId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this note?', variant: 'danger' })) return;
 
     try {
-      await notesApi.delete(noteId);
+      await animatedDelete(noteId, async () => {
+        await notesApi.delete(noteId);
+      });
       toast.success('Note deleted');
       fetchNotes();
       setSelectedNote((prev) => prev?.id === noteId ? null : prev);
@@ -64,6 +83,7 @@ export function NotesPage() {
 
   const pinnedNotes = useMemo(() => notes.filter((n) => n.isPinned), [notes]);
   const otherNotes = useMemo(() => notes.filter((n) => !n.isPinned), [notes]);
+  const animClassMap = new Map(animatedItems.map(a => [a.item.id, a.animClass]));
 
   return (
     <div className="flex flex-col h-full">
@@ -103,7 +123,7 @@ export function NotesPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
-          <LoadingSpinner message="Loading notes..." />
+          <SkeletonCard count={5} />
         ) : notes.length === 0 ? (
           <EmptyState
             icon={FileText}
@@ -122,13 +142,14 @@ export function NotesPage() {
                 </h3>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {pinnedNotes.map((note) => (
-                    <NoteCard
-                      key={note.id}
-                      note={note}
-                      onClick={() => setSelectedNote(note)}
-                      onTogglePin={() => handleTogglePin(note)}
-                      onDelete={() => handleDelete(note.id)}
-                    />
+                    <div key={note.id} className={animClassMap.get(note.id) || ''}>
+                      <NoteCard
+                        note={note}
+                        onClick={() => setSelectedNote(note)}
+                        onTogglePin={() => handleTogglePin(note)}
+                        onDelete={() => handleDelete(note.id)}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -144,13 +165,14 @@ export function NotesPage() {
                 )}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {otherNotes.map((note) => (
-                    <NoteCard
-                      key={note.id}
-                      note={note}
-                      onClick={() => setSelectedNote(note)}
-                      onTogglePin={() => handleTogglePin(note)}
-                      onDelete={() => handleDelete(note.id)}
-                    />
+                    <div key={note.id} className={animClassMap.get(note.id) || ''}>
+                      <NoteCard
+                        note={note}
+                        onClick={() => setSelectedNote(note)}
+                        onTogglePin={() => handleTogglePin(note)}
+                        onDelete={() => handleDelete(note.id)}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>

@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import { Calendar, Plus, Trash2, Clock, MapPin } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { useModalClose } from '../hooks';
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { SkeletonCard } from '../components/Skeleton';
 import { calendarApi } from '../api';
 import type { CalendarEvent } from '../api';
 
@@ -19,12 +20,14 @@ const colorOptions = [
 export function CalendarPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]!);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -48,6 +51,18 @@ export function CalendarPage() {
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchEvents(), 2000);
+  }, [fetchEvents]);
+
+  useEffect(() => {
+    const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
+      if (data.entity === 'calendar') debouncedRefresh();
+    });
+    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [subscribe, debouncedRefresh]);
 
   const handleDelete = async (eventId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this event?', variant: 'danger' })) return;
@@ -138,7 +153,7 @@ export function CalendarPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <LoadingSpinner message="Loading events..." />
+          <SkeletonCard count={5} />
         ) : events.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full">
             <Calendar className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />

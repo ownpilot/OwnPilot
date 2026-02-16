@@ -1,13 +1,15 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChatInput, type ChatInputHandle } from '../components/ChatInput';
 import { MessageList } from '../components/MessageList';
 import { SuggestionChips } from '../components/SuggestionChips';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
-import { SetupWizard } from '../components/SetupWizard';
 import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
-import { ExecutionApprovalDialog } from '../components/ExecutionApprovalDialog';
+
+// Lazy-load rarely-used components
+const SetupWizard = lazy(() => import('../components/SetupWizard').then(m => ({ default: m.SetupWizard })));
+const ExecutionApprovalDialog = lazy(() => import('../components/ExecutionApprovalDialog').then(m => ({ default: m.ExecutionApprovalDialog })));
 import { AlertCircle, AlertTriangle, Settings, Bot, Shield } from '../components/icons';
 import { modelsApi, providersApi, settingsApi, agentsApi, chatApi } from '../api';
 import type { ModelInfo, AgentDetail } from '../types';
@@ -385,7 +387,7 @@ export function ChatPage() {
               </h3>
 
               {!isLoadingModels && configuredProviders.length === 0 && localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE) !== 'true' ? (
-                <SetupWizard onComplete={() => window.location.reload()} />
+                <Suspense fallback={null}><SetupWizard onComplete={() => window.location.reload()} /></Suspense>
               ) : !isLoadingModels && configuredProviders.length === 0 ? (
                 <>
                   <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg mb-4">
@@ -602,10 +604,12 @@ export function ChatPage() {
 
       {/* Execution Approval Dialog */}
       {pendingApproval && (
-        <ExecutionApprovalDialog
-          approval={pendingApproval}
-          onResolve={resolveApproval}
-        />
+        <Suspense fallback={null}>
+          <ExecutionApprovalDialog
+            approval={pendingApproval}
+            onResolve={resolveApproval}
+          />
+        </Suspense>
       )}
     </div>
   );

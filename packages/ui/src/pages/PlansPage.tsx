@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import { plansApi } from '../api';
 import type { Plan, PlanStep, PlanHistoryEntry } from '../api';
 import {
@@ -58,6 +59,7 @@ const stepStatusIcons: Record<PlanStep['status'], typeof Circle> = {
 export function PlansPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<Plan['status'] | 'all'>('all');
@@ -100,12 +102,12 @@ export function PlansPage() {
     fetchPlans();
   }, [fetchPlans]);
 
-  // Auto-refresh every 5 seconds while plans are running
+  // WS-triggered refresh when tools complete (indicates plan step progress)
   useEffect(() => {
     if (!hasRunningPlans) return;
-    const interval = setInterval(fetchPlans, 5000);
-    return () => clearInterval(interval);
-  }, [hasRunningPlans, fetchPlans]);
+    const unsub = subscribe('tool:end', () => fetchPlans());
+    return unsub;
+  }, [subscribe, hasRunningPlans, fetchPlans]);
 
   const handleDelete = useCallback(async (planId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this plan?', variant: 'danger' })) return;

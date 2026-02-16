@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import {
   DollarSign,
   TrendingUp,
@@ -37,6 +38,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 export function ExpensesPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [year, setYear] = useState(new Date().getFullYear());
   const [monthlyData, setMonthlyData] = useState<MonthlyResponse | null>(null);
   const [summaryData, setSummaryData] = useState<SummaryResponse | null>(null);
@@ -54,6 +56,7 @@ export function ExpensesPage() {
     description: '',
     notes: '',
   });
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -85,6 +88,18 @@ export function ExpensesPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchData(), 2000);
+  }, [fetchData]);
+
+  useEffect(() => {
+    const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
+      if (data.entity === 'expense') debouncedRefresh();
+    });
+    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [subscribe, debouncedRefresh]);
 
   const handleAddExpense = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();

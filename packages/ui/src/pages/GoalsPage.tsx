@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import { goalsApi, apiClient } from '../api';
 import type { Goal, GoalStep } from '../api';
 import { Target, Plus, Trash2, ChevronRight, CheckCircle2, Circle, AlertTriangle, Pause } from '../components/icons';
@@ -31,12 +32,14 @@ const priorityLabels: Record<number, string> = {
 export function GoalsPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<Goal['status'] | 'all'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [expandedGoal, setExpandedGoal] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchGoals = useCallback(async () => {
     try {
@@ -57,6 +60,18 @@ export function GoalsPage() {
   useEffect(() => {
     fetchGoals();
   }, [fetchGoals]);
+
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchGoals(), 2000);
+  }, [fetchGoals]);
+
+  useEffect(() => {
+    const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
+      if (data.entity === 'goal') debouncedRefresh();
+    });
+    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [subscribe, debouncedRefresh]);
 
   const handleDelete = useCallback(async (goalId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this goal?', variant: 'danger' })) return;

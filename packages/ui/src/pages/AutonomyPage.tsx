@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import {
   Shield,
   ShieldCheck,
@@ -37,6 +38,7 @@ const riskColors = {
 export function AutonomyPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [config, setConfig] = useState<AutonomyConfig | null>(null);
   const [levels, setLevels] = useState<AutonomyLevel[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
@@ -67,10 +69,16 @@ export function AutonomyPage() {
     Promise.all([fetchConfig(), fetchPendingApprovals()]).finally(() =>
       setIsLoading(false)
     );
-    // Refresh approvals every 10 seconds
-    const interval = setInterval(fetchPendingApprovals, 10000);
-    return () => clearInterval(interval);
   }, [fetchConfig, fetchPendingApprovals]);
+
+  // WS-triggered refresh when tools complete or system notifications arrive
+  useEffect(() => {
+    const unsubs = [
+      subscribe('tool:end', () => fetchPendingApprovals()),
+      subscribe('system:notification', () => fetchPendingApprovals()),
+    ];
+    return () => unsubs.forEach(fn => fn());
+  }, [subscribe, fetchPendingApprovals]);
 
   const handleLevelChange = useCallback(async (level: number) => {
     try {

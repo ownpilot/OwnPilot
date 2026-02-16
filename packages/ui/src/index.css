@@ -168,6 +168,26 @@ html.dark body {
   animation: slideOut 0.3s ease-in forwards;
 }
 
+/* List item animations */
+@keyframes listItemIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes listItemOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-20px); }
+}
+
+.animate-list-in {
+  animation: listItemIn 0.3s ease-out forwards;
+}
+
+.animate-list-out {
+  animation: listItemOut 0.25s ease-in forwards;
+  overflow: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

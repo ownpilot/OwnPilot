@@ -978,10 +978,27 @@ export type TriggerHistoryStatus = 'success' | 'failure' | 'skipped';
 
 export interface TriggerHistoryEntry {
   id: string;
-  triggerId: string;
+  triggerId: string | null;
+  triggerName: string | null;
   firedAt: string;
   status: TriggerHistoryStatus;
   result?: unknown;
   error: string | null;
   durationMs: number | null;
+}
+
+export interface TriggerHistoryParams {
+  status?: TriggerHistoryStatus;
+  triggerId?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface PaginatedHistory {
+  history: TriggerHistoryEntry[];
+  total: number;
+  limit: number;
+  offset: number;
 }

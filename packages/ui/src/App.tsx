@@ -3,8 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
 
-// Eagerly load the default route for instant first paint
-import { ChatPage } from './pages/ChatPage';
+// Lazy-load ChatPage like all other pages — keeps main bundle under 500 KB
+const ChatPage = lazy(() => import('./pages/ChatPage').then((m) => ({ default: m.ChatPage })));
 
 // Lazy-load all other pages for code splitting
 const InboxPage = lazy(() => import('./pages/InboxPage').then((m) => ({ default: m.InboxPage })));
@@ -64,7 +64,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<PageErrorBoundary><ChatPage /></PageErrorBoundary>} />
+        <Route index element={page(<ChatPage />)} />
         <Route path="dashboard" element={page(<DashboardPage />)} />
         <Route path="memories" element={page(<MemoriesPage />)} />
         <Route path="goals" element={page(<GoalsPage />)} />

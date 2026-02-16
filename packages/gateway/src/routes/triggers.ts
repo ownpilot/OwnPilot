@@ -95,14 +95,21 @@ triggersRoutes.get('/stats', async (c) => {
  */
 triggersRoutes.get('/history', async (c) => {
   const userId = getUserId(c);
-  const limit = getIntParam(c, 'limit', 50, 1, 200);
+  const limit = getIntParam(c, 'limit', 25, 1, 200);
+  const offset = getIntParam(c, 'offset', 0, 0, 100000);
+  const status = validateQueryEnum(c.req.query('status'), ['success', 'failure', 'skipped'] as const);
+  const triggerId = c.req.query('triggerId') || undefined;
+  const from = c.req.query('from') || undefined;
+  const to = c.req.query('to') || undefined;
 
   const service = getServiceRegistry().get(Services.Trigger);
-  const history = await service.getRecentHistory(userId, limit);
+  const { history, total } = await service.getRecentHistory(userId, { status, triggerId, from, to, limit, offset });
 
   return apiResponse(c, {
       history,
-      count: history.length,
+      total,
+      limit,
+      offset,
     });
 });
 
@@ -136,7 +143,7 @@ triggersRoutes.get('/:id', async (c) => {
   }
 
   // Get recent history for this trigger
-  const history = await service.getHistoryForTrigger(userId, id, 10);
+  const { history } = await service.getHistoryForTrigger(userId, id, { limit: 10 });
 
   return apiResponse(c, {
       ...trigger,
@@ -280,7 +287,11 @@ triggersRoutes.delete('/:id', async (c) => {
 triggersRoutes.get('/:id/history', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const limit = getIntParam(c, 'limit', 20, 1, 100);
+  const limit = getIntParam(c, 'limit', 25, 1, 200);
+  const offset = getIntParam(c, 'offset', 0, 0, 100000);
+  const status = validateQueryEnum(c.req.query('status'), ['success', 'failure', 'skipped'] as const);
+  const from = c.req.query('from') || undefined;
+  const to = c.req.query('to') || undefined;
 
   const service = getServiceRegistry().get(Services.Trigger);
   const trigger = await service.getTrigger(userId, id);
@@ -289,13 +300,15 @@ triggersRoutes.get('/:id/history', async (c) => {
     return notFoundError(c, 'Trigger', id);
   }
 
-  const history = await service.getHistoryForTrigger(userId, id, limit);
+  const { history, total } = await service.getHistoryForTrigger(userId, id, { status, from, to, limit, offset });
 
   return apiResponse(c, {
       triggerId: id,
       triggerName: trigger.name,
       history,
-      count: history.length,
+      total,
+      limit,
+      offset,
     });
 });
 

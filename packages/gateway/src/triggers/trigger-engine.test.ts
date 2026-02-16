@@ -44,6 +44,12 @@ const mockServices: Record<string, unknown> = {
   memory: mockMemoryService,
 };
 
+// Hoisted mock fns — stable references shared between factory and tests
+const { mockExecuteTool, mockHasTool } = vi.hoisted(() => ({
+  mockExecuteTool: vi.fn(),
+  mockHasTool: vi.fn(),
+}));
+
 vi.mock('@ownpilot/core', () => ({
   getServiceRegistry: () => ({ get: (token: { name: string }) => mockServices[token.name] }),
   Services: {
@@ -52,11 +58,19 @@ vi.mock('@ownpilot/core', () => ({
     Memory: { name: 'memory' },
   },
   getNextRunTime: vi.fn(),
+  // Needed by transitive imports (ws/events.ts, tool-executor.ts → custom-tools.ts)
+  getEventSystem: () => ({ scoped: () => ({ on: vi.fn(), emit: vi.fn() }) }),
+  createDynamicToolRegistry: vi.fn(() => ({ register: vi.fn(), execute: vi.fn() })),
+  ALL_TOOLS: [],
+}));
+
+vi.mock('../ws/server.js', () => ({
+  wsGateway: { broadcast: vi.fn() },
 }));
 
 vi.mock('../services/tool-executor.js', () => ({
-  executeTool: vi.fn(),
-  hasTool: vi.fn(),
+  executeTool: mockExecuteTool,
+  hasTool: mockHasTool,
 }));
 
 vi.mock('../db/repositories/execution-permissions.js', () => ({
@@ -79,7 +93,6 @@ vi.mock('../services/log.js', () => ({
 
 // Must import after mocks are declared
 import { TriggerEngine } from './engine.js';
-import { executeTool, hasTool } from '../services/tool-executor.js';
 import { getNextRunTime } from '@ownpilot/core';
 
 // ---------------------------------------------------------------------------
@@ -171,6 +184,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'default',
         'trigger-1',
+        'Test Trigger',
         'success',
         expect.anything(),
         undefined,
@@ -310,8 +324,8 @@ describe('TriggerEngine', () => {
       });
 
       it('has tool handler', async () => {
-        vi.mocked(hasTool).mockResolvedValueOnce(true);
-        vi.mocked(executeTool).mockResolvedValueOnce({ success: true, result: 'ok' });
+        mockHasTool.mockResolvedValueOnce(true);
+        mockExecuteTool.mockResolvedValueOnce({ success: true, result: 'ok' });
 
         const trigger = makeTrigger({
           action: { type: 'tool', payload: { tool: 'test_tool' } },
@@ -485,8 +499,8 @@ describe('TriggerEngine', () => {
 
     describe('tool handler', () => {
       it('calls executeTool when hasTool returns true', async () => {
-        vi.mocked(hasTool).mockResolvedValueOnce(true);
-        vi.mocked(executeTool).mockResolvedValueOnce({
+        mockHasTool.mockResolvedValueOnce(true);
+        mockExecuteTool.mockResolvedValueOnce({
           success: true,
           result: { output: 'data' },
         });
@@ -501,7 +515,7 @@ describe('TriggerEngine', () => {
         expect(result.success).toBe(true);
         expect(result.message).toBe('Tool web_search executed successfully');
         expect(result.data).toEqual({ output: 'data' });
-        expect(executeTool).toHaveBeenCalledWith(
+        expect(mockExecuteTool).toHaveBeenCalledWith(
           'web_search',
           expect.objectContaining({ query: 'vitest' }),
           'default',
@@ -510,8 +524,8 @@ describe('TriggerEngine', () => {
       });
 
       it('strips internal fields from tool args', async () => {
-        vi.mocked(hasTool).mockResolvedValueOnce(true);
-        vi.mocked(executeTool).mockResolvedValueOnce({ success: true, result: null });
+        mockHasTool.mockResolvedValueOnce(true);
+        mockExecuteTool.mockResolvedValueOnce({ success: true, result: null });
 
         const trigger = makeTrigger({
           action: { type: 'tool', payload: { tool: 'my_tool', param: 'value' } },
@@ -521,7 +535,7 @@ describe('TriggerEngine', () => {
         await engine.fireTrigger('trigger-1');
 
         // executeTool should NOT receive tool, triggerId, triggerName, manual
-        const callArgs = vi.mocked(executeTool).mock.calls[0]![1] as Record<string, unknown>;
+        const callArgs = mockExecuteTool.mock.calls[0]![1] as Record<string, unknown>;
         expect(callArgs).not.toHaveProperty('tool');
         expect(callArgs).not.toHaveProperty('triggerId');
         expect(callArgs).not.toHaveProperty('triggerName');
@@ -530,7 +544,7 @@ describe('TriggerEngine', () => {
       });
 
       it('returns error when hasTool returns false', async () => {
-        vi.mocked(hasTool).mockResolvedValueOnce(false);
+        mockHasTool.mockResolvedValueOnce(false);
 
         const trigger = makeTrigger({
           action: { type: 'tool', payload: { tool: 'nonexistent_tool' } },
@@ -541,7 +555,7 @@ describe('TriggerEngine', () => {
 
         expect(result.success).toBe(false);
         expect(result.error).toContain("'nonexistent_tool' not found");
-        expect(executeTool).not.toHaveBeenCalled();
+        expect(mockExecuteTool).not.toHaveBeenCalled();
       });
 
       it('returns error when no tool name specified', async () => {
@@ -557,8 +571,8 @@ describe('TriggerEngine', () => {
       });
 
       it('returns tool failure result', async () => {
-        vi.mocked(hasTool).mockResolvedValueOnce(true);
-        vi.mocked(executeTool).mockResolvedValueOnce({
+        mockHasTool.mockResolvedValueOnce(true);
+        mockExecuteTool.mockResolvedValueOnce({
           success: false,
           result: null,
           error: 'Permission denied',
@@ -753,6 +767,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'default',
         'sched-1',
+        'Test Trigger',
         'success',
         expect.anything(),
         undefined,
@@ -826,6 +841,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'default',
         'fail-trigger',
+        'Test Trigger',
         'failure',
         undefined,
         expect.stringContaining('No handler for action type'),
@@ -1404,6 +1420,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'default',
         'log-success',
+        'Test Trigger',
         'success',
         expect.objectContaining({ message: 'test' }),
         undefined,
@@ -1429,6 +1446,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'default',
         'log-fail',
+        'Test Trigger',
         'failure',
         undefined,
         'Chat broke',
@@ -1488,6 +1506,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'default',
         'exec-ok',
+        'Test Trigger',
         'success',
         expect.anything(),
         undefined,
@@ -1509,6 +1528,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'default',
         'exec-fail',
+        'Test Trigger',
         'failure',
         undefined,
         expect.stringContaining('No handler for action type'),
@@ -1530,6 +1550,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'default',
         'no-handler',
+        'Test Trigger',
         'failure',
         undefined,
         'No handler for action type: completely_unknown',
@@ -1622,6 +1643,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'user-42',
         'custom-user-trigger',
+        'Test Trigger',
         'success',
         expect.anything(),
         undefined,

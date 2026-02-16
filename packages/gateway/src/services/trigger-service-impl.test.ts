@@ -47,6 +47,7 @@ const mockTrigger = {
 const mockHistory = {
   id: 'hist-1',
   triggerId: 'trig-1',
+  triggerName: 'Test Trigger',
   firedAt: new Date('2024-06-01T09:00:00Z'),
   status: 'success' as const,
   result: { checked: 3 },
@@ -179,10 +180,11 @@ describe('TriggerServiceImpl', () => {
     it('logs execution with all parameters', async () => {
       mockTriggerService.logExecution.mockResolvedValue(undefined);
 
-      await service.logExecution('user-1', 'trig-1', 'success', { checked: 3 }, undefined, 150);
+      await service.logExecution('user-1', 'trig-1', 'Test Trigger', 'success', { checked: 3 }, undefined, 150);
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'user-1',
         'trig-1',
+        'Test Trigger',
         'success',
         { checked: 3 },
         undefined,
@@ -193,10 +195,11 @@ describe('TriggerServiceImpl', () => {
     it('logs failure with error', async () => {
       mockTriggerService.logExecution.mockResolvedValue(undefined);
 
-      await service.logExecution('user-1', 'trig-1', 'failure', undefined, 'timeout');
+      await service.logExecution('user-1', 'trig-1', 'Test Trigger', 'failure', undefined, 'timeout');
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'user-1',
         'trig-1',
+        'Test Trigger',
         'failure',
         undefined,
         'timeout',
@@ -207,22 +210,22 @@ describe('TriggerServiceImpl', () => {
 
   describe('getRecentHistory', () => {
     it('returns recent history', async () => {
-      mockTriggerService.getRecentHistory.mockResolvedValue([mockHistory]);
+      mockTriggerService.getRecentHistory.mockResolvedValue({ history: [mockHistory], total: 1 });
 
-      const result = await service.getRecentHistory('user-1', 10);
-      expect(result).toHaveLength(1);
-      expect(result[0].status).toBe('success');
-      expect(mockTriggerService.getRecentHistory).toHaveBeenCalledWith('user-1', 10);
+      const result = await service.getRecentHistory('user-1', { limit: 10 });
+      expect(result.history).toHaveLength(1);
+      expect(result.history[0].status).toBe('success');
+      expect(mockTriggerService.getRecentHistory).toHaveBeenCalledWith('user-1', { limit: 10 });
     });
   });
 
   describe('getHistoryForTrigger', () => {
     it('returns history for specific trigger', async () => {
-      mockTriggerService.getHistoryForTrigger.mockResolvedValue([mockHistory]);
+      mockTriggerService.getHistoryForTrigger.mockResolvedValue({ history: [mockHistory], total: 1 });
 
-      const result = await service.getHistoryForTrigger('user-1', 'trig-1', 5);
-      expect(result).toHaveLength(1);
-      expect(mockTriggerService.getHistoryForTrigger).toHaveBeenCalledWith('user-1', 'trig-1', 5);
+      const result = await service.getHistoryForTrigger('user-1', 'trig-1', { limit: 5 });
+      expect(result.history).toHaveLength(1);
+      expect(mockTriggerService.getHistoryForTrigger).toHaveBeenCalledWith('user-1', 'trig-1', { limit: 5 });
     });
   });
 

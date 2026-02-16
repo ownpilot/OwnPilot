@@ -38,9 +38,21 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-            'vendor-prism': ['prism-react-renderer'],
+          manualChunks(id) {
+            // Vendor chunks (node_modules only)
+            if (id.includes('node_modules')) {
+              if (id.includes('/react-dom/') || id.includes('/react/') || id.includes('/react-router') || id.includes('/scheduler/')) {
+                return 'vendor-react';
+              }
+              if (id.includes('/prism-react-renderer/')) {
+                return 'vendor-prism';
+              }
+              return; // let Rollup decide for other deps
+            }
+            // App chunks (source code only)
+            if (id.includes('/components/icons')) return 'icons';
+            if (id.includes('/src/api/')) return 'api';
+            if (id.includes('/src/hooks/')) return 'stores';
           },
         },
       },

@@ -34,6 +34,15 @@ import {
 } from '../db/repositories/index.js';
 import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, getOptionalIntParam, validateQueryEnum } from './helpers.js';
 import { MAX_DAYS_LOOKBACK, MAX_PAGINATION_OFFSET } from '../config/defaults.js';
+import { wsGateway } from '../ws/server.js';
+import type { ServerEvents } from '../ws/types.js';
+
+type DataEntity = ServerEvents['data:changed']['entity'];
+type DataAction = ServerEvents['data:changed']['action'];
+
+function emitDataChanged(entity: DataEntity, action: DataAction, id?: string): void {
+  wsGateway.broadcast('data:changed', { entity, action, id });
+}
 
 export const personalDataRoutes = new Hono();
 
@@ -102,6 +111,7 @@ tasksRoutes.post('/', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
   }
   const task = await repo.create(body);
+  emitDataChanged('task', 'created', task.id);
   return apiResponse(c, task, 201);
 });
 
@@ -117,6 +127,7 @@ tasksRoutes.patch('/:id', async (c) => {
   if (!task) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
   }
+  emitDataChanged('task', 'updated', task.id);
   return apiResponse(c, task);
 });
 
@@ -126,15 +137,18 @@ tasksRoutes.post('/:id/complete', async (c) => {
   if (!task) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
   }
+  emitDataChanged('task', 'updated', task.id);
   return apiResponse(c, task);
 });
 
 tasksRoutes.delete('/:id', async (c) => {
   const repo = new TasksRepository(getUserId(c));
-  const deleted = await repo.delete(c.req.param('id'));
+  const id = c.req.param('id');
+  const deleted = await repo.delete(id);
   if (!deleted) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
   }
+  emitDataChanged('task', 'deleted', id);
   return apiResponse(c, { deleted: true });
 });
 
@@ -195,6 +209,7 @@ bookmarksRoutes.post('/', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
   }
   const bookmark = await repo.create(body);
+  emitDataChanged('bookmark', 'created', bookmark.id);
   return apiResponse(c, bookmark, 201);
 });
 
@@ -210,6 +225,7 @@ bookmarksRoutes.patch('/:id', async (c) => {
   if (!bookmark) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
   }
+  emitDataChanged('bookmark', 'updated', bookmark.id);
   return apiResponse(c, bookmark);
 });
 
@@ -219,15 +235,18 @@ bookmarksRoutes.post('/:id/favorite', async (c) => {
   if (!bookmark) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
   }
+  emitDataChanged('bookmark', 'updated', bookmark.id);
   return apiResponse(c, bookmark);
 });
 
 bookmarksRoutes.delete('/:id', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
-  const deleted = await repo.delete(c.req.param('id'));
+  const id = c.req.param('id');
+  const deleted = await repo.delete(id);
   if (!deleted) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
   }
+  emitDataChanged('bookmark', 'deleted', id);
   return apiResponse(c, { deleted: true });
 });
 
@@ -288,6 +307,7 @@ notesRoutes.post('/', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
   }
   const note = await repo.create(body);
+  emitDataChanged('note', 'created', note.id);
   return apiResponse(c, note, 201);
 });
 
@@ -303,6 +323,7 @@ notesRoutes.patch('/:id', async (c) => {
   if (!note) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
+  emitDataChanged('note', 'updated', note.id);
   return apiResponse(c, note);
 });
 
@@ -312,6 +333,7 @@ notesRoutes.post('/:id/pin', async (c) => {
   if (!note) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
+  emitDataChanged('note', 'updated', note.id);
   return apiResponse(c, note);
 });
 
@@ -321,6 +343,7 @@ notesRoutes.post('/:id/archive', async (c) => {
   if (!note) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
+  emitDataChanged('note', 'updated', note.id);
   return apiResponse(c, note);
 });
 
@@ -330,15 +353,18 @@ notesRoutes.post('/:id/unarchive', async (c) => {
   if (!note) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
+  emitDataChanged('note', 'updated', note.id);
   return apiResponse(c, note);
 });
 
 notesRoutes.delete('/:id', async (c) => {
   const repo = new NotesRepository(getUserId(c));
-  const deleted = await repo.delete(c.req.param('id'));
+  const id = c.req.param('id');
+  const deleted = await repo.delete(id);
   if (!deleted) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
   }
+  emitDataChanged('note', 'deleted', id);
   return apiResponse(c, { deleted: true });
 });
 
@@ -400,6 +426,7 @@ calendarRoutes.post('/', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
   }
   const event = await repo.create(body);
+  emitDataChanged('calendar', 'created', event.id);
   return apiResponse(c, event, 201);
 });
 
@@ -415,15 +442,18 @@ calendarRoutes.patch('/:id', async (c) => {
   if (!event) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Event not found' }, 404);
   }
+  emitDataChanged('calendar', 'updated', event.id);
   return apiResponse(c, event);
 });
 
 calendarRoutes.delete('/:id', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
-  const deleted = await repo.delete(c.req.param('id'));
+  const id = c.req.param('id');
+  const deleted = await repo.delete(id);
   if (!deleted) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Event not found' }, 404);
   }
+  emitDataChanged('calendar', 'deleted', id);
   return apiResponse(c, { deleted: true });
 });
 
@@ -498,6 +528,7 @@ contactsRoutes.post('/', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
   }
   const contact = await repo.create(body);
+  emitDataChanged('contact', 'created', contact.id);
   return apiResponse(c, contact, 201);
 });
 
@@ -513,6 +544,7 @@ contactsRoutes.patch('/:id', async (c) => {
   if (!contact) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
   }
+  emitDataChanged('contact', 'updated', contact.id);
   return apiResponse(c, contact);
 });
 
@@ -522,15 +554,18 @@ contactsRoutes.post('/:id/favorite', async (c) => {
   if (!contact) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
   }
+  emitDataChanged('contact', 'updated', contact.id);
   return apiResponse(c, contact);
 });
 
 contactsRoutes.delete('/:id', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
-  const deleted = await repo.delete(c.req.param('id'));
+  const id = c.req.param('id');
+  const deleted = await repo.delete(id);
   if (!deleted) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
   }
+  emitDataChanged('contact', 'deleted', id);
   return apiResponse(c, { deleted: true });
 });
 

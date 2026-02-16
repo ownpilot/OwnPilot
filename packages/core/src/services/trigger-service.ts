@@ -64,7 +64,8 @@ export interface Trigger {
 
 export interface TriggerHistory {
   readonly id: string;
-  readonly triggerId: string;
+  readonly triggerId: string | null;
+  readonly triggerName: string | null;
   readonly firedAt: Date;
   readonly status: TriggerStatus;
   readonly result: unknown | null;
@@ -111,6 +112,15 @@ export interface TriggerQuery {
   readonly offset?: number;
 }
 
+export interface HistoryQuery {
+  readonly status?: TriggerStatus;
+  readonly triggerId?: string;
+  readonly from?: string;
+  readonly to?: string;
+  readonly limit?: number;
+  readonly offset?: number;
+}
+
 // ============================================================================
 // ITriggerService
 // ============================================================================
@@ -133,13 +143,14 @@ export interface ITriggerService {
   logExecution(
     userId: string,
     triggerId: string,
+    triggerName: string,
     status: TriggerStatus,
     result?: unknown,
     error?: string,
     durationMs?: number,
   ): Promise<void>;
-  getRecentHistory(userId: string, limit?: number): Promise<TriggerHistory[]>;
-  getHistoryForTrigger(userId: string, triggerId: string, limit?: number): Promise<TriggerHistory[]>;
+  getRecentHistory(userId: string, query?: HistoryQuery): Promise<{ history: TriggerHistory[]; total: number }>;
+  getHistoryForTrigger(userId: string, triggerId: string, query?: HistoryQuery): Promise<{ history: TriggerHistory[]; total: number }>;
   cleanupHistory(userId: string, maxAgeDays?: number): Promise<number>;
 
   // Stats

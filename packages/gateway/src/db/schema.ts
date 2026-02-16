@@ -438,7 +438,8 @@ CREATE TABLE IF NOT EXISTS triggers (
 -- Trigger history (execution log)
 CREATE TABLE IF NOT EXISTS trigger_history (
   id TEXT PRIMARY KEY,
-  trigger_id TEXT NOT NULL REFERENCES triggers(id) ON DELETE CASCADE,
+  trigger_id TEXT,
+  trigger_name TEXT,
   fired_at TIMESTAMP NOT NULL DEFAULT NOW(),
   status TEXT NOT NULL CHECK(status IN ('success', 'failure', 'skipped')),
   result TEXT,
@@ -1270,6 +1271,26 @@ DO $$ BEGIN
     ALTER TABLE execution_permissions ADD COLUMN mode TEXT NOT NULL DEFAULT 'local';
   END IF;
 END $$;
+
+-- =====================================================
+-- TRIGGER HISTORY: Add trigger_name, make trigger_id nullable
+-- =====================================================
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'trigger_history' AND column_name = 'trigger_name') THEN
+    ALTER TABLE trigger_history ADD COLUMN trigger_name TEXT;
+  END IF;
+END $$;
+
+-- Make trigger_id nullable (drop NOT NULL) for history preservation
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'trigger_history' AND column_name = 'trigger_id' AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE trigger_history ALTER COLUMN trigger_id DROP NOT NULL;
+  END IF;
+END $$;
 `;
 
 export const INDEXES_SQL = `
@@ -1351,6 +1372,7 @@ CREATE INDEX IF NOT EXISTS idx_triggers_enabled ON triggers(enabled);
 CREATE INDEX IF NOT EXISTS idx_triggers_next_fire ON triggers(next_fire);
 CREATE INDEX IF NOT EXISTS idx_trigger_history_trigger ON trigger_history(trigger_id);
 CREATE INDEX IF NOT EXISTS idx_trigger_history_fired ON trigger_history(fired_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trigger_history_status ON trigger_history(status);
 
 -- Plan indexes
 CREATE INDEX IF NOT EXISTS idx_plans_user ON plans(user_id);

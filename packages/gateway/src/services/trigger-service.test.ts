@@ -79,6 +79,7 @@ function fakeHistory(overrides: Partial<TriggerHistory> = {}): TriggerHistory {
   return {
     id: 'hist-1',
     triggerId: 'trg-1',
+    triggerName: 'Test Trigger',
     status: 'success',
     result: { ok: true },
     error: null,
@@ -275,34 +276,35 @@ describe('TriggerService', () => {
 
     it('logExecution delegates to repo with all params', async () => {
       mockRepo.logExecution.mockResolvedValue(undefined);
-      await service.logExecution('user-1', 'trg-1', 'success', { ok: true }, undefined, 150);
-      expect(mockRepo.logExecution).toHaveBeenCalledWith('trg-1', 'success', { ok: true }, undefined, 150);
+      await service.logExecution('user-1', 'trg-1', 'Test Trigger', 'success', { ok: true }, undefined, 150);
+      expect(mockRepo.logExecution).toHaveBeenCalledWith('trg-1', 'Test Trigger', 'success', { ok: true }, undefined, 150);
     });
 
     it('logExecution delegates failure with error', async () => {
       mockRepo.logExecution.mockResolvedValue(undefined);
-      await service.logExecution('user-1', 'trg-1', 'failure', undefined, 'timeout', 5000);
-      expect(mockRepo.logExecution).toHaveBeenCalledWith('trg-1', 'failure', undefined, 'timeout', 5000);
+      await service.logExecution('user-1', 'trg-1', 'Test Trigger', 'failure', undefined, 'timeout', 5000);
+      expect(mockRepo.logExecution).toHaveBeenCalledWith('trg-1', 'Test Trigger', 'failure', undefined, 'timeout', 5000);
     });
 
-    it('getRecentHistory delegates with default limit', async () => {
-      mockRepo.getRecentHistory.mockResolvedValue([fakeHistory()]);
+    it('getRecentHistory delegates with default query', async () => {
+      mockRepo.getRecentHistory.mockResolvedValue({ rows: [fakeHistory()], total: 1 });
       const result = await service.getRecentHistory('user-1');
-      expect(result).toHaveLength(1);
-      expect(mockRepo.getRecentHistory).toHaveBeenCalledWith(20);
+      expect(result.history).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(mockRepo.getRecentHistory).toHaveBeenCalledWith({});
     });
 
     it('getRecentHistory delegates with custom limit', async () => {
-      mockRepo.getRecentHistory.mockResolvedValue([]);
-      await service.getRecentHistory('user-1', 5);
-      expect(mockRepo.getRecentHistory).toHaveBeenCalledWith(5);
+      mockRepo.getRecentHistory.mockResolvedValue({ rows: [], total: 0 });
+      await service.getRecentHistory('user-1', { limit: 5 });
+      expect(mockRepo.getRecentHistory).toHaveBeenCalledWith({ limit: 5 });
     });
 
     it('getHistoryForTrigger delegates to repo', async () => {
-      mockRepo.getHistoryForTrigger.mockResolvedValue([fakeHistory()]);
-      const result = await service.getHistoryForTrigger('user-1', 'trg-1', 10);
-      expect(result).toHaveLength(1);
-      expect(mockRepo.getHistoryForTrigger).toHaveBeenCalledWith('trg-1', 10);
+      mockRepo.getHistoryForTrigger.mockResolvedValue({ rows: [fakeHistory()], total: 1 });
+      const result = await service.getHistoryForTrigger('user-1', 'trg-1', { limit: 10 });
+      expect(result.history).toHaveLength(1);
+      expect(mockRepo.getHistoryForTrigger).toHaveBeenCalledWith('trg-1', { limit: 10 });
     });
 
     it('cleanupHistory delegates with default maxAgeDays', async () => {

@@ -130,6 +130,7 @@ export type {
   WebhookConfig,
   TriggerAction,
   TriggerQuery,
+  HistoryQuery as TriggerHistoryQuery,
   CreateTriggerInput,
   UpdateTriggerInput,
 } from './trigger-service.js';

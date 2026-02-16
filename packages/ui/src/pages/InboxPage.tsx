@@ -6,10 +6,11 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import { Inbox, Telegram, Globe, RefreshCw, Check } from '../components/icons';
 import { channelsApi } from '../api';
 import type { Channel, ChannelMessage } from '../api';
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { SkeletonCard, SkeletonMessage } from '../components/Skeleton';
 import { MarkdownContent } from '../components/MarkdownContent';
 
 
@@ -42,6 +43,7 @@ function getStatusColor(status: string): string {
 }
 
 export function InboxPage() {
+  const { subscribe } = useGateway();
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
@@ -82,16 +84,20 @@ export function InboxPage() {
       .finally(() => setIsLoading(false));
   }, [fetchChannels, fetchInbox]);
 
-  // Auto-refresh every 10 seconds
+  // WS-triggered refresh when new channel messages arrive
+  const wsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    const interval = setInterval(() => {
-      const channelType = selectedChannel
-        ? channels.find(c => c.id === selectedChannel)?.type
-        : undefined;
-      fetchInbox(channelType);
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [fetchInbox, selectedChannel, channels]);
+    const unsub = subscribe('channel:message', () => {
+      if (wsDebounceRef.current) clearTimeout(wsDebounceRef.current);
+      wsDebounceRef.current = setTimeout(() => {
+        const channelType = selectedChannel
+          ? channels.find(c => c.id === selectedChannel)?.type
+          : undefined;
+        fetchInbox(channelType);
+      }, 1000);
+    });
+    return () => { unsub(); if (wsDebounceRef.current) clearTimeout(wsDebounceRef.current); };
+  }, [subscribe, fetchInbox, selectedChannel, channels]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -147,9 +153,29 @@ export function InboxPage() {
     return messages.filter(m => m.channelId === channelId && !m.read).length;
   };
 
-  // Loading state
+  // Loading state — show page shell with skeleton placeholders
   if (isLoading && messages.length === 0) {
-    return <LoadingSpinner message="Loading inbox..." />;
+    return (
+      <div className="flex flex-col h-full">
+        <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+          <div className="flex items-center gap-3">
+            <Inbox className="w-6 h-6 text-primary" />
+            <div>
+              <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Inbox</h2>
+              <p className="text-sm text-text-muted dark:text-dark-text-muted">Loading...</p>
+            </div>
+          </div>
+        </header>
+        <div className="flex-1 flex overflow-hidden">
+          <aside className="w-64 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary p-4">
+            <SkeletonCard count={3} />
+          </aside>
+          <div className="flex-1 px-6 py-4">
+            <SkeletonMessage count={6} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

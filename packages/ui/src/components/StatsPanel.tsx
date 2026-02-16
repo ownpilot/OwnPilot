@@ -81,15 +81,16 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
     debounceRef.current = setTimeout(() => fetchStats(), 2000);
   }, []);
 
-  // Polling fallback
+  // Fetch stats only when panel is expanded; poll every 30s
   useEffect(() => {
+    if (isCollapsed) return;
     fetchStats();
     const interval = setInterval(fetchStats, 30000);
     return () => {
       clearInterval(interval);
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, []);
+  }, [isCollapsed]);
 
   // WS-triggered refresh
   useEffect(() => {
@@ -97,6 +98,8 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
       subscribe('system:notification', debouncedRefresh),
       subscribe('channel:message', debouncedRefresh),
       subscribe('tool:end', debouncedRefresh),
+      subscribe('data:changed', debouncedRefresh),
+      subscribe('trigger:executed', debouncedRefresh),
     ];
     return () => unsubs.forEach(fn => fn());
   }, [subscribe, debouncedRefresh]);

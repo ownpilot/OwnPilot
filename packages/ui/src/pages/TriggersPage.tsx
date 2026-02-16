@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import { triggersApi } from '../api';
-import type { Trigger, TriggerAction, TriggerHistoryEntry } from '../api';
-import { Zap, Plus, Trash2, Play, Pause, Clock, History, Activity, Power, AlertCircle, CheckCircle2, BarChart } from '../components/icons';
+import type { Trigger, TriggerAction, TriggerHistoryEntry, TriggerHistoryStatus, TriggerHistoryParams } from '../api';
+import { Zap, Plus, Trash2, Play, Pause, Clock, History, Activity, Power, AlertCircle, CheckCircle2, BarChart, ChevronDown, ChevronRight, ChevronLeft, Filter, X } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { TriggerModal } from '../components/TriggerModal';
 import { TriggerHistoryModal } from '../components/TriggerHistoryModal';
+import { useAnimatedList } from '../hooks/useAnimatedList';
 
 const typeColors = {
   schedule: 'bg-blue-500/10 text-blue-500',
@@ -74,6 +77,7 @@ interface TriggerStats {
 export function TriggersPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<Trigger['type'] | 'all'>('all');
@@ -88,9 +92,16 @@ export function TriggersPage() {
   const [engineRunning, setEngineRunning] = useState<boolean | null>(null);
   const [engineLoading, setEngineLoading] = useState(false);
   const [globalHistory, setGlobalHistory] = useState<TriggerHistoryEntry[]>([]);
+  const [globalHistoryTotal, setGlobalHistoryTotal] = useState(0);
   const [globalHistoryLoading, setGlobalHistoryLoading] = useState(false);
+  const [activityStatusFilter, setActivityStatusFilter] = useState<TriggerHistoryStatus | undefined>();
+  const [activityTriggerFilter, setActivityTriggerFilter] = useState<string | undefined>();
+  const [activityDateRange, setActivityDateRange] = useState<'today' | '7d' | '30d' | 'all'>('all');
+  const [activityPage, setActivityPage] = useState(0);
+  const ACTIVITY_PAGE_SIZE = 25;
   const [dueTriggerIds, setDueTriggerIds] = useState<Set<string>>(new Set());
-  const activityRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activityRefreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(triggers);
 
   // Fetch triggers
   const fetchTriggers = useCallback(async () => {
@@ -139,18 +150,40 @@ export function TriggersPage() {
     }
   }, []);
 
+  // Build activity query params
+  const activityParams = useMemo((): TriggerHistoryParams => {
+    const params: TriggerHistoryParams = {
+      limit: ACTIVITY_PAGE_SIZE,
+      offset: activityPage * ACTIVITY_PAGE_SIZE,
+    };
+    if (activityStatusFilter) params.status = activityStatusFilter;
+    if (activityTriggerFilter) params.triggerId = activityTriggerFilter;
+    if (activityDateRange !== 'all') {
+      const now = new Date();
+      if (activityDateRange === 'today') {
+        params.from = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      } else if (activityDateRange === '7d') {
+        params.from = new Date(now.getTime() - 7 * 86400000).toISOString();
+      } else if (activityDateRange === '30d') {
+        params.from = new Date(now.getTime() - 30 * 86400000).toISOString();
+      }
+    }
+    return params;
+  }, [activityPage, activityStatusFilter, activityTriggerFilter, activityDateRange]);
+
   // Fetch global history
   const fetchGlobalHistory = useCallback(async () => {
     setGlobalHistoryLoading(true);
     try {
-      const data = await triggersApi.globalHistory(50);
+      const data = await triggersApi.globalHistory(activityParams);
       setGlobalHistory(data.history);
+      setGlobalHistoryTotal(data.total);
     } catch {
       // Global history is non-critical
     } finally {
       setGlobalHistoryLoading(false);
     }
-  }, []);
+  }, [activityParams]);
 
   // Initial load
   useEffect(() => {
@@ -160,25 +193,37 @@ export function TriggersPage() {
     fetchDueTriggers();
   }, [fetchTriggers, fetchStats, fetchEngineStatus, fetchDueTriggers]);
 
-  // Auto-refresh activity tab every 30s
+  // WS: refresh triggers list when a trigger fires (updates fireCount/lastFired)
+  useEffect(() => {
+    const unsub = subscribe('trigger:executed', () => fetchTriggers());
+    return unsub;
+  }, [subscribe, fetchTriggers]);
+
+  // Fetch activity on tab switch + WS-triggered refresh on trigger execution
   useEffect(() => {
     if (activeTab === 'activity') {
       fetchGlobalHistory();
-      activityRefreshRef.current = setInterval(() => {
-        fetchGlobalHistory();
-      }, 30000);
     }
-    return () => {
-      if (activityRefreshRef.current) {
-        clearInterval(activityRefreshRef.current);
-        activityRefreshRef.current = null;
-      }
-    };
   }, [activeTab, fetchGlobalHistory]);
+
+  useEffect(() => {
+    const unsub = subscribe('trigger:executed', () => {
+      if (activityRefreshRef.current) clearTimeout(activityRefreshRef.current);
+      activityRefreshRef.current = setTimeout(() => {
+        fetchGlobalHistory();
+        fetchStats();
+        fetchDueTriggers();
+      }, 1500);
+    });
+    return () => {
+      unsub();
+      if (activityRefreshRef.current) clearTimeout(activityRefreshRef.current);
+    };
+  }, [subscribe, fetchGlobalHistory, fetchStats, fetchDueTriggers]);
 
   const fetchHistory = useCallback(async (triggerId: string) => {
     try {
-      const data = await triggersApi.history(triggerId);
+      const data = await triggersApi.history(triggerId, { limit: 50 });
       setHistory(data.history);
       setShowHistory(triggerId);
     } catch {
@@ -190,7 +235,9 @@ export function TriggersPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this trigger?', variant: 'danger' })) return;
 
     try {
-      await triggersApi.delete(triggerId);
+      await animatedDelete(triggerId, async () => {
+        await triggersApi.delete(triggerId);
+      });
       toast.success('Trigger deleted');
       fetchTriggers();
       fetchStats();
@@ -366,7 +413,7 @@ export function TriggersPage() {
         {activeTab === 'triggers' ? (
           // Triggers List
           isLoading ? (
-            <LoadingSpinner message="Loading triggers..." />
+            <SkeletonCard count={4} />
           ) : triggers.length === 0 ? (
             <EmptyState
               icon={Zap}
@@ -376,23 +423,44 @@ export function TriggersPage() {
             />
           ) : (
             <div className="space-y-3">
-              {triggers.map((trigger) => (
-                <TriggerItem
-                  key={trigger.id}
-                  trigger={trigger}
-                  isDue={dueTriggerIds.has(trigger.id)}
-                  onEdit={() => setEditingTrigger(trigger)}
-                  onDelete={() => handleDelete(trigger.id)}
-                  onToggle={(enabled) => handleToggle(trigger.id, enabled)}
-                  onFireNow={() => handleFireNow(trigger.id)}
-                  onViewHistory={() => fetchHistory(trigger.id)}
-                />
+              {animatedItems.map(({ item: trigger, animClass }) => (
+                <div key={trigger.id} className={animClass}>
+                  <TriggerItem
+                    trigger={trigger}
+                    isDue={dueTriggerIds.has(trigger.id)}
+                    onEdit={() => setEditingTrigger(trigger)}
+                    onDelete={() => handleDelete(trigger.id)}
+                    onToggle={(enabled) => handleToggle(trigger.id, enabled)}
+                    onFireNow={() => handleFireNow(trigger.id)}
+                    onViewHistory={() => fetchHistory(trigger.id)}
+                  />
+                </div>
               ))}
             </div>
           )
         ) : (
           // Activity Tab - Global History
-          <ActivityLog history={globalHistory} loading={globalHistoryLoading} triggers={triggers} />
+          <ActivityLog
+            history={globalHistory}
+            total={globalHistoryTotal}
+            loading={globalHistoryLoading}
+            triggers={triggers}
+            statusFilter={activityStatusFilter}
+            triggerFilter={activityTriggerFilter}
+            dateRange={activityDateRange}
+            page={activityPage}
+            pageSize={ACTIVITY_PAGE_SIZE}
+            onStatusFilter={setActivityStatusFilter}
+            onTriggerFilter={setActivityTriggerFilter}
+            onDateRange={(d) => { setActivityDateRange(d); setActivityPage(0); }}
+            onPageChange={setActivityPage}
+            onResetFilters={() => {
+              setActivityStatusFilter(undefined);
+              setActivityTriggerFilter(undefined);
+              setActivityDateRange('all');
+              setActivityPage(0);
+            }}
+          />
         )}
       </div>
 
@@ -417,6 +485,8 @@ export function TriggersPage() {
       {/* History Modal */}
       {showHistory && (
         <TriggerHistoryModal
+          triggerId={showHistory}
+          triggerName={triggers.find(t => t.id === showHistory)?.name ?? 'Trigger'}
           history={history}
           onClose={() => setShowHistory(null)}
         />
@@ -447,87 +517,214 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
 // Activity Log
 // ============================================================================
 
-function ActivityLog({ history, loading, triggers }: { history: TriggerHistoryEntry[]; loading: boolean; triggers: Trigger[] }) {
-  const triggerMap = useMemo(() => {
-    const map = new Map<string, string>();
-    triggers.forEach((t) => map.set(t.id, t.name));
-    return map;
-  }, [triggers]);
+interface ActivityLogProps {
+  history: TriggerHistoryEntry[];
+  total: number;
+  loading: boolean;
+  triggers: Trigger[];
+  statusFilter?: TriggerHistoryStatus;
+  triggerFilter?: string;
+  dateRange: 'today' | '7d' | '30d' | 'all';
+  page: number;
+  pageSize: number;
+  onStatusFilter: (s: TriggerHistoryStatus | undefined) => void;
+  onTriggerFilter: (id: string | undefined) => void;
+  onDateRange: (d: 'today' | '7d' | '30d' | 'all') => void;
+  onPageChange: (p: number) => void;
+  onResetFilters: () => void;
+}
 
-  if (loading && history.length === 0) {
-    return <LoadingSpinner message="Loading activity..." />;
-  }
-
-  if (history.length === 0) {
-    return (
-      <EmptyState
-        icon={Activity}
-        title="No activity yet"
-        description="Trigger execution history will appear here."
-      />
-    );
-  }
+function ActivityLog({
+  history, total, loading, triggers,
+  statusFilter, triggerFilter, dateRange, page, pageSize,
+  onStatusFilter, onTriggerFilter, onDateRange, onPageChange, onResetFilters,
+}: ActivityLogProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const hasFilters = !!(statusFilter || triggerFilter || dateRange !== 'all');
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const showFrom = total === 0 ? 0 : page * pageSize + 1;
+  const showTo = Math.min((page + 1) * pageSize, total);
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-text-muted dark:text-dark-text-muted">
-          System-wide execution log (auto-refreshes every 30s)
-        </p>
+    <div className="space-y-3">
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <Filter className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+
+        {/* Status chips */}
+        {(['success', 'failure', 'skipped'] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => onStatusFilter(statusFilter === s ? undefined : s)}
+            className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+              statusFilter === s
+                ? s === 'success' ? 'bg-success text-white' : s === 'failure' ? 'bg-error text-white' : 'bg-text-muted text-white'
+                : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+            }`}
+          >
+            {s.charAt(0).toUpperCase() + s.slice(1)}
+          </button>
+        ))}
+
+        <span className="text-text-muted dark:text-dark-text-muted">|</span>
+
+        {/* Trigger dropdown */}
+        <select
+          value={triggerFilter ?? ''}
+          onChange={(e) => onTriggerFilter(e.target.value || undefined)}
+          className="px-2 py-1 text-xs rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary border border-border dark:border-dark-border"
+        >
+          <option value="">All Triggers</option>
+          {triggers.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+
+        <span className="text-text-muted dark:text-dark-text-muted">|</span>
+
+        {/* Date range */}
+        {(['today', '7d', '30d', 'all'] as const).map((d) => (
+          <button
+            key={d}
+            onClick={() => onDateRange(d)}
+            className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+              dateRange === d
+                ? 'bg-primary text-white'
+                : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+            }`}
+          >
+            {d === 'today' ? 'Today' : d === '7d' ? '7 Days' : d === '30d' ? '30 Days' : 'All Time'}
+          </button>
+        ))}
+
+        {hasFilters && (
+          <button
+            onClick={onResetFilters}
+            className="ml-2 px-2 py-1 text-xs text-text-muted dark:text-dark-text-muted hover:text-error transition-colors flex items-center gap-1"
+          >
+            <X className="w-3 h-3" />
+            Reset
+          </button>
+        )}
+
+        <div className="flex-1" />
         {loading && (
           <span className="text-xs text-text-muted dark:text-dark-text-muted animate-pulse">Refreshing...</span>
         )}
       </div>
 
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_140px_80px_80px_1fr] gap-2 px-3 py-2 text-xs font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wider">
-        <span>Trigger</span>
-        <span>Fired At</span>
-        <span>Status</span>
-        <span>Duration</span>
-        <span>Result / Error</span>
-      </div>
-
-      {history.map((entry) => {
-        const triggerName = triggerMap.get(entry.triggerId) ?? entry.triggerId.slice(0, 8);
-
-        return (
-          <div
-            key={entry.id}
-            className="grid grid-cols-[1fr_140px_80px_80px_1fr] gap-2 px-3 py-2.5 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg items-center text-sm"
-          >
-            <span className="text-text-primary dark:text-dark-text-primary font-medium truncate">
-              {triggerName}
-            </span>
-            <span className="text-text-muted dark:text-dark-text-muted text-xs">
-              {new Date(entry.firedAt).toLocaleString()}
-            </span>
-            <span
-              className={`px-2 py-0.5 text-xs rounded-full text-center ${
-                entry.status === 'success'
-                  ? 'bg-success/10 text-success'
-                  : entry.status === 'failure'
-                  ? 'bg-error/10 text-error'
-                  : 'bg-text-muted/10 text-text-muted'
-              }`}
-            >
-              {entry.status}
-            </span>
-            <span className="text-text-muted dark:text-dark-text-muted text-xs">
-              {entry.durationMs != null ? `${entry.durationMs}ms` : '-'}
-            </span>
-            <span className="text-xs text-text-muted dark:text-dark-text-muted truncate">
-              {entry.error ? (
-                <span className="text-error">{entry.error}</span>
-              ) : entry.result != null ? (
-                typeof entry.result === 'string' ? entry.result : JSON.stringify(entry.result).slice(0, 80)
-              ) : (
-                '-'
-              )}
-            </span>
+      {loading && history.length === 0 ? (
+        <LoadingSpinner message="Loading activity..." />
+      ) : history.length === 0 ? (
+        <EmptyState
+          icon={Activity}
+          title="No activity yet"
+          description={hasFilters ? 'No entries match current filters.' : 'Trigger execution history will appear here.'}
+        />
+      ) : (
+        <>
+          {/* Table header */}
+          <div className="grid grid-cols-[1fr_140px_80px_80px_24px] gap-2 px-3 py-2 text-xs font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wider">
+            <span>Trigger</span>
+            <span>Fired At</span>
+            <span>Status</span>
+            <span>Duration</span>
+            <span />
           </div>
-        );
-      })}
+
+          {history.map((entry) => {
+            const name = entry.triggerName ?? (entry.triggerId ? entry.triggerId.slice(0, 8) : 'Deleted');
+            const isExpanded = expandedId === entry.id;
+
+            return (
+              <div key={entry.id} className="bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">
+                <div
+                  className="grid grid-cols-[1fr_140px_80px_80px_24px] gap-2 px-3 py-2.5 items-center text-sm cursor-pointer hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50 transition-colors"
+                  onClick={() => setExpandedId(isExpanded ? null : entry.id)}
+                >
+                  <span className="text-text-primary dark:text-dark-text-primary font-medium truncate">
+                    {name}
+                    {!entry.triggerId && entry.triggerName && (
+                      <span className="ml-1.5 text-xs text-text-muted dark:text-dark-text-muted italic">(deleted)</span>
+                    )}
+                  </span>
+                  <span className="text-text-muted dark:text-dark-text-muted text-xs">
+                    {new Date(entry.firedAt).toLocaleString()}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 text-xs rounded-full text-center ${
+                      entry.status === 'success'
+                        ? 'bg-success/10 text-success'
+                        : entry.status === 'failure'
+                        ? 'bg-error/10 text-error'
+                        : 'bg-text-muted/10 text-text-muted'
+                    }`}
+                  >
+                    {entry.status}
+                  </span>
+                  <span className="text-text-muted dark:text-dark-text-muted text-xs">
+                    {entry.durationMs != null ? `${entry.durationMs}ms` : '-'}
+                  </span>
+                  <span className="text-text-muted dark:text-dark-text-muted">
+                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </span>
+                </div>
+
+                {/* Expanded details */}
+                {isExpanded && (
+                  <div className="px-3 pb-3 border-t border-border dark:border-dark-border">
+                    {entry.error && (
+                      <div className="mt-2">
+                        <p className="text-xs font-medium text-error mb-1">Error</p>
+                        <pre className="text-xs text-error/80 bg-error/5 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                          {entry.error}
+                        </pre>
+                      </div>
+                    )}
+                    {entry.result != null && (
+                      <div className="mt-2">
+                        <p className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Result</p>
+                        <pre className="text-xs text-text-secondary dark:text-dark-text-secondary bg-bg-tertiary dark:bg-dark-bg-tertiary p-2 rounded overflow-x-auto whitespace-pre-wrap max-h-48 overflow-y-auto">
+                          {typeof entry.result === 'string' ? entry.result : JSON.stringify(entry.result, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {!entry.error && entry.result == null && (
+                      <p className="mt-2 text-xs text-text-muted dark:text-dark-text-muted italic">No additional details.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-border dark:border-dark-border">
+            <span className="text-xs text-text-muted dark:text-dark-text-muted">
+              Showing {showFrom}–{showTo} of {total}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={page === 0}
+                onClick={() => onPageChange(page - 1)}
+                className="p-1.5 rounded-lg text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                Page {page + 1} of {totalPages}
+              </span>
+              <button
+                disabled={page >= totalPages - 1}
+                onClick={() => onPageChange(page + 1)}
+                className="p-1.5 rounded-lg text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

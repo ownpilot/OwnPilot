@@ -68,6 +68,7 @@ export class TriggerEngine {
   private eventHandlers: Map<string, EventHandler[]> = new Map();
   private actionHandlers: Map<string, (payload: Record<string, unknown>) => Promise<ActionResult>> = new Map();
   private chatHandler: ChatHandler | null = null;
+  private broadcaster: ((event: string, data: Record<string, unknown>) => void) | null = null;
 
   constructor(config: TriggerEngineConfig = {}) {
     this.config = {
@@ -97,6 +98,14 @@ export class TriggerEngine {
   setChatHandler(handler: ChatHandler): void {
     this.chatHandler = handler;
     log.info('Chat handler registered');
+  }
+
+  /**
+   * Set a broadcaster for real-time WS events.
+   * Called during server initialization once WebSocket gateway is available.
+   */
+  setBroadcaster(fn: (event: string, data: Record<string, unknown>) => void): void {
+    this.broadcaster = fn;
   }
 
   // ==========================================================================
@@ -477,11 +486,20 @@ export class TriggerEngine {
       await this.triggerService.logExecution(
         this.config.userId,
         trigger.id,
+        trigger.name,
         result.success ? 'success' : 'failure',
         result.data,
         result.error,
         durationMs
       );
+
+      this.broadcaster?.('trigger:executed', {
+        triggerId: trigger.id,
+        triggerName: trigger.name,
+        status: result.success ? 'success' : 'failure',
+        durationMs,
+        error: result.error,
+      });
 
       // Calculate next fire time for schedule triggers
       if (trigger.type === 'schedule') {
@@ -503,7 +521,14 @@ export class TriggerEngine {
       const errorMessage = getErrorMessage(error);
 
       // Log failure
-      await this.triggerService.logExecution(this.config.userId, trigger.id, 'failure', undefined, errorMessage, durationMs);
+      await this.triggerService.logExecution(this.config.userId, trigger.id, trigger.name, 'failure', undefined, errorMessage, durationMs);
+      this.broadcaster?.('trigger:executed', {
+        triggerId: trigger.id,
+        triggerName: trigger.name,
+        status: 'failure',
+        durationMs,
+        error: errorMessage,
+      });
       log.error('Trigger failed', { trigger: trigger.name, error });
     }
   }
@@ -561,18 +586,36 @@ export class TriggerEngine {
       await this.triggerService.logExecution(
         this.config.userId,
         trigger.id,
+        trigger.name,
         result.success ? 'success' : 'failure',
         result.data,
         result.error,
         durationMs
       );
 
+      this.broadcaster?.('trigger:executed', {
+        triggerId: trigger.id,
+        triggerName: trigger.name,
+        status: result.success ? 'success' : 'failure',
+        durationMs,
+        error: result.error,
+        manual: true,
+      });
+
       return result;
     } catch (error) {
       const durationMs = Date.now() - startTime;
       const errorMessage = getErrorMessage(error);
 
-      await this.triggerService.logExecution(this.config.userId, trigger.id, 'failure', undefined, errorMessage, durationMs);
+      await this.triggerService.logExecution(this.config.userId, trigger.id, trigger.name, 'failure', undefined, errorMessage, durationMs);
+      this.broadcaster?.('trigger:executed', {
+        triggerId: trigger.id,
+        triggerName: trigger.name,
+        status: 'failure',
+        durationMs,
+        error: errorMessage,
+        manual: true,
+      });
       return { success: false, error: errorMessage };
     }
   }

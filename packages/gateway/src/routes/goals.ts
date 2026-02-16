@@ -19,6 +19,7 @@ import { GoalServiceError } from '../services/goal-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
+import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Goals');
@@ -70,6 +71,7 @@ goalsRoutes.post('/', async (c) => {
     const goal = await service.createGoal(userId, body);
 
     log.info('Goal created', { userId, goalId: goal.id, title: goal.title, priority: goal.priority });
+    wsGateway.broadcast('data:changed', { entity: 'goal', action: 'created', id: goal.id });
     return apiResponse(c, {
         goal,
         message: 'Goal created successfully.',
@@ -161,6 +163,7 @@ goalsRoutes.patch('/:id', async (c) => {
     return notFoundError(c, 'Goal', id);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'goal', action: 'updated', id });
   return apiResponse(c, updated);
 });
 
@@ -178,6 +181,7 @@ goalsRoutes.delete('/:id', async (c) => {
     return notFoundError(c, 'Goal', id);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'goal', action: 'deleted', id });
   return apiResponse(c, {
       message: 'Goal deleted successfully.',
     });
@@ -207,6 +211,7 @@ goalsRoutes.post('/:id/steps', async (c) => {
     // Use decomposeGoal which validates goal exists and recalculates progress
     const createdSteps = await service.decomposeGoal(userId, goalId, validSteps);
 
+    wsGateway.broadcast('data:changed', { entity: 'goal', action: 'updated', id: goalId });
     return apiResponse(c, {
         steps: createdSteps,
         count: createdSteps.length,
@@ -260,6 +265,7 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
     return notFoundError(c, 'Step', stepId);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'goal', action: 'updated', id: c.req.param('goalId') });
   return apiResponse(c, updated);
 });
 
@@ -281,6 +287,7 @@ goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
     return notFoundError(c, 'Step', stepId);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'goal', action: 'updated', id: c.req.param('goalId') });
   return apiResponse(c, {
       step: updated,
       message: 'Step completed successfully.',
@@ -302,6 +309,7 @@ goalsRoutes.delete('/:goalId/steps/:stepId', async (c) => {
     return notFoundError(c, 'Step', stepId);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'goal', action: 'updated', id: c.req.param('goalId') });
   return apiResponse(c, {
       message: 'Step deleted successfully.',
     });
@@ -342,6 +350,7 @@ export async function executeGoalTool(
           parentId,
         });
 
+        wsGateway.broadcast('data:changed', { entity: 'goal', action: 'created', id: goal.id });
         return {
           success: true,
           result: {
@@ -422,6 +431,7 @@ export async function executeGoalTool(
           return { success: false, error: `Goal not found: ${sanitizeId(goalId)}` };
         }
 
+        wsGateway.broadcast('data:changed', { entity: 'goal', action: 'updated', id: goalId });
         return {
           success: true,
           result: {

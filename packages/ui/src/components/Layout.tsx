@@ -247,7 +247,7 @@ function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
 
 export function Layout() {
   const { status: wsStatus } = useGateway();
-  const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(false);
+  const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(true);
   const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
     return localStorage.getItem(STORAGE_KEYS.ADVANCED_MODE) === 'true';
   });
@@ -258,10 +258,13 @@ export function Layout() {
   );
   const location = useLocation();
 
-  // Reset inbox badge when navigating to /inbox
+  // Reset badges when navigating to their respective pages
   useEffect(() => {
     if (location.pathname === '/inbox' || location.pathname.startsWith('/inbox/')) {
       setBadgeCounts(prev => prev.inbox === 0 ? prev : { ...prev, inbox: 0 });
+    }
+    if (location.pathname === '/tasks' || location.pathname.startsWith('/tasks/')) {
+      setBadgeCounts(prev => prev.tasks === 0 ? prev : { ...prev, tasks: 0 });
     }
   }, [location.pathname]);
 
@@ -321,7 +324,7 @@ export function Layout() {
               <NavItemLink
                 key={item.to}
                 item={item}
-                badge={item.to === '/inbox' ? badgeCounts.inbox : undefined}
+                badge={item.to === '/inbox' ? badgeCounts.inbox : item.to === '/tasks' ? badgeCounts.tasks : undefined}
               />
             ))}
           </div>

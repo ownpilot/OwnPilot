@@ -19,6 +19,7 @@ import {
   createTriggersRepository,
   type Trigger,
   type TriggerHistory,
+  type HistoryQuery,
   type TriggerQuery,
   type CreateTriggerInput,
   type UpdateTriggerInput,
@@ -128,23 +129,26 @@ export class TriggerService {
   async logExecution(
     userId: string,
     triggerId: string,
+    triggerName: string,
     status: 'success' | 'failure' | 'skipped',
     result?: unknown,
     error?: string,
     durationMs?: number,
   ): Promise<void> {
     const repo = this.getRepo(userId);
-    await repo.logExecution(triggerId, status, result, error, durationMs);
+    await repo.logExecution(triggerId, triggerName, status, result, error, durationMs);
   }
 
-  async getRecentHistory(userId: string, limit = 20): Promise<TriggerHistory[]> {
+  async getRecentHistory(userId: string, query: HistoryQuery = {}): Promise<{ history: TriggerHistory[]; total: number }> {
     const repo = this.getRepo(userId);
-    return repo.getRecentHistory(limit);
+    const result = await repo.getRecentHistory(query);
+    return { history: result.rows, total: result.total };
   }
 
-  async getHistoryForTrigger(userId: string, triggerId: string, limit = 20): Promise<TriggerHistory[]> {
+  async getHistoryForTrigger(userId: string, triggerId: string, query: HistoryQuery = {}): Promise<{ history: TriggerHistory[]; total: number }> {
     const repo = this.getRepo(userId);
-    return repo.getHistoryForTrigger(triggerId, limit);
+    const result = await repo.getHistoryForTrigger(triggerId, query);
+    return { history: result.rows, total: result.total };
   }
 
   async cleanupHistory(userId: string, maxAgeDays = 30): Promise<number> {

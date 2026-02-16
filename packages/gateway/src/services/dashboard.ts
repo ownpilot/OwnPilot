@@ -331,10 +331,12 @@ export class DashboardService {
     let allTriggers: Trigger[] = [];
     let triggerHistory: TriggerHistory[] = [];
     try {
-      [allTriggers, triggerHistory] = await Promise.all([
+      const [triggers, historyResult] = await Promise.all([
         triggerService.listTriggers(this.userId, { limit: 100 }),
-        triggerService.getRecentHistory(this.userId, 10),
+        triggerService.getRecentHistory(this.userId, { limit: 10 }),
       ]);
+      allTriggers = triggers;
+      triggerHistory = historyResult.history;
     } catch (err) {
       log.error('[DashboardService] Failed to load triggers:', err);
     }

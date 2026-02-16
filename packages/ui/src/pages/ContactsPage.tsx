@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import { Users, Plus, Trash2, Phone, Mail, Building, Star, Search } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { useDebouncedValue, useModalClose } from '../hooks';
+import { useAnimatedList } from '../hooks/useAnimatedList';
 import { contactsApi } from '../api';
 import type { Contact } from '../api';
 
@@ -12,6 +14,7 @@ import type { Contact } from '../api';
 export function ContactsPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +22,8 @@ export function ContactsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(contacts);
 
   const fetchContacts = useCallback(async () => {
     try {
@@ -39,11 +44,25 @@ export function ContactsPage() {
     fetchContacts();
   }, [fetchContacts]);
 
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchContacts(), 2000);
+  }, [fetchContacts]);
+
+  useEffect(() => {
+    const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
+      if (data.entity === 'contact') debouncedRefresh();
+    });
+    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [subscribe, debouncedRefresh]);
+
   const handleDelete = useCallback(async (contactId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this contact?', variant: 'danger' })) return;
 
     try {
-      await contactsApi.delete(contactId);
+      await animatedDelete(contactId, async () => {
+        await contactsApi.delete(contactId);
+      });
       toast.success('Contact deleted');
       fetchContacts();
     } catch {
@@ -72,6 +91,7 @@ export function ContactsPage() {
   }, {} as Record<string, Contact[]>), [contacts]);
 
   const sortedGroups = useMemo(() => Object.entries(groupedContacts).sort(([a], [b]) => a.localeCompare(b)), [groupedContacts]);
+  const animClassMap = new Map(animatedItems.map(a => [a.item.id, a.animClass]));
 
   return (
     <div className="flex flex-col h-full">
@@ -126,7 +146,7 @@ export function ContactsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
-          <LoadingSpinner message="Loading contacts..." />
+          <SkeletonCard count={5} />
         ) : contacts.length === 0 ? (
           <EmptyState
             icon={Users}
@@ -143,13 +163,14 @@ export function ContactsPage() {
                 </h4>
                 <div className="space-y-2">
                   {letterContacts.map((contact) => (
-                    <ContactItem
-                      key={contact.id}
-                      contact={contact}
-                      onEdit={() => setEditingContact(contact)}
-                      onDelete={() => handleDelete(contact.id)}
-                      onToggleFavorite={() => handleToggleFavorite(contact)}
-                    />
+                    <div key={contact.id} className={animClassMap.get(contact.id) || ''}>
+                      <ContactItem
+                        contact={contact}
+                        onEdit={() => setEditingContact(contact)}
+                        onDelete={() => handleDelete(contact.id)}
+                        onToggleFavorite={() => handleToggleFavorite(contact)}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>

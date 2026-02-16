@@ -46,9 +46,14 @@ vi.mock('../services/memory-service.js', () => ({
   getMemoryService: () => mockMemoryService,
 }));
 
+const { mockExecuteTool, mockHasTool } = vi.hoisted(() => ({
+  mockExecuteTool: vi.fn(async () => ({ success: true, result: 'tool output' })),
+  mockHasTool: vi.fn(async () => true),
+}));
+
 vi.mock('../services/tool-executor.js', () => ({
-  executeTool: vi.fn(async () => ({ success: true, result: 'tool output' })),
-  hasTool: vi.fn(async () => true),
+  executeTool: mockExecuteTool,
+  hasTool: mockHasTool,
 }));
 
 vi.mock('../db/repositories/execution-permissions.js', () => ({
@@ -84,7 +89,6 @@ vi.mock('@ownpilot/core', async () => {
 });
 
 import { TriggerEngine } from './engine.js';
-import { executeTool, hasTool } from '../services/tool-executor.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -281,8 +285,8 @@ describe('TriggerEngine', () => {
 
   describe('tool action', () => {
     it('executes a tool when found', async () => {
-      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-      (executeTool as ReturnType<typeof vi.fn>).mockResolvedValue({
+      mockHasTool.mockResolvedValue(true);
+      mockExecuteTool.mockResolvedValue({
         success: true,
         result: { data: 'value' },
       });
@@ -295,7 +299,7 @@ describe('TriggerEngine', () => {
       const result = await engine.fireTrigger('trigger-1');
 
       expect(result.success).toBe(true);
-      expect(executeTool).toHaveBeenCalledWith(
+      expect(mockExecuteTool).toHaveBeenCalledWith(
         'my_tool',
         expect.objectContaining({ param1: 'a' }),
         'default',
@@ -304,7 +308,7 @@ describe('TriggerEngine', () => {
     });
 
     it('returns error when tool not found', async () => {
-      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+      mockHasTool.mockResolvedValue(false);
 
       const trigger = makeTrigger({
         action: { type: 'tool', payload: { tool: 'missing_tool' } },
@@ -367,6 +371,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'default',
         'trigger-1',
+        'Test Trigger',
         'success',
         expect.anything(),
         undefined,
@@ -387,6 +392,7 @@ describe('TriggerEngine', () => {
       expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
         'default',
         'trigger-1',
+        'Test Trigger',
         'failure',
         undefined,
         expect.any(String),

@@ -14,6 +14,7 @@ import type {
   CreateTriggerInput,
   UpdateTriggerInput,
   TriggerQuery,
+  TriggerHistoryQuery as HistoryQuery,
   TriggerExecutionStatus as TriggerStatus,
   ServiceTrigger as Trigger,
   ServiceTriggerHistory as TriggerHistory,
@@ -79,24 +80,25 @@ export class TriggerServiceImpl implements ITriggerService {
   async logExecution(
     userId: string,
     triggerId: string,
+    triggerName: string,
     status: TriggerStatus,
     result?: unknown,
     error?: string,
     durationMs?: number,
   ): Promise<void> {
-    return this.service.logExecution(userId, triggerId, status, result, error, durationMs);
+    return this.service.logExecution(userId, triggerId, triggerName, status, result, error, durationMs);
   }
 
-  async getRecentHistory(userId: string, limit?: number): Promise<TriggerHistory[]> {
-    return this.service.getRecentHistory(userId, limit);
+  async getRecentHistory(userId: string, query?: HistoryQuery): Promise<{ history: TriggerHistory[]; total: number }> {
+    return this.service.getRecentHistory(userId, query);
   }
 
   async getHistoryForTrigger(
     userId: string,
     triggerId: string,
-    limit?: number,
-  ): Promise<TriggerHistory[]> {
-    return this.service.getHistoryForTrigger(userId, triggerId, limit);
+    query?: HistoryQuery,
+  ): Promise<{ history: TriggerHistory[]; total: number }> {
+    return this.service.getHistoryForTrigger(userId, triggerId, query);
   }
 
   async cleanupHistory(userId: string, maxAgeDays?: number): Promise<number> {

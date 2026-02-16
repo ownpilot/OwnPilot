@@ -14,7 +14,7 @@ import {
 } from '../components/icons';
 import { AIBriefingCard } from '../components/AIBriefingCard';
 import { TimelineView } from '../components/TimelineView';
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { SkeletonStats, SkeletonCard } from '../components/Skeleton';
 
 import { summaryApi } from '../api';
 import type { SummaryData } from '../types';
@@ -54,12 +54,19 @@ export function DashboardPage() {
       subscribe('system:notification', debouncedRefresh),
       subscribe('channel:message', debouncedRefresh),
       subscribe('tool:end', debouncedRefresh),
+      subscribe('data:changed', debouncedRefresh),
+      subscribe('trigger:executed', debouncedRefresh),
     ];
     return () => unsubs.forEach(fn => fn());
   }, [subscribe, debouncedRefresh]);
 
   if (isLoading) {
-    return <LoadingSpinner message="Loading dashboard..." />;
+    return (
+      <div className="p-6 space-y-6">
+        <SkeletonStats count={4} />
+        <SkeletonCard count={3} />
+      </div>
+    );
   }
 
   const stats = summary

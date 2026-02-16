@@ -162,6 +162,24 @@ export interface ServerEvents {
   'workspace:updated': { workspace: WorkspaceInfo };
   'workspace:deleted': { workspaceId: string };
 
+  // Trigger events
+  'trigger:executed': {
+    triggerId: string;
+    triggerName: string;
+    status: 'success' | 'failure' | 'skipped';
+    durationMs?: number;
+    error?: string;
+    manual?: boolean;
+  };
+
+  // Data change events (personal data CRUD)
+  'data:changed': {
+    entity: 'task' | 'note' | 'bookmark' | 'contact' | 'calendar' | 'expense' | 'goal' | 'memory';
+    action: 'created' | 'updated' | 'deleted';
+    id?: string;
+    count?: number;
+  };
+
   // System events
   'system:notification': { type: 'info' | 'warning' | 'error' | 'success'; message: string; action?: string };
   'system:status': { online: boolean; version: string; uptime: number };

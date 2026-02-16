@@ -7,6 +7,7 @@
 
 import { useEffect } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
+import { useDesktopNotifications } from '../hooks/useDesktopNotifications';
 import { useToast } from './ToastProvider';
 import { apiClient } from '../api/client';
 
@@ -22,6 +23,7 @@ interface RealtimeBridgeProps {
 export function RealtimeBridge({ onBadgeUpdate }: RealtimeBridgeProps) {
   const { subscribe } = useGateway();
   const toast = useToast();
+  const { notify } = useDesktopNotifications();
 
   // Wire apiClient global error handler → toast
   useEffect(() => {
@@ -55,6 +57,38 @@ export function RealtimeBridge({ onBadgeUpdate }: RealtimeBridgeProps) {
       onBadgeUpdate((prev) => ({ ...prev, inbox: prev.inbox + 1 }));
     });
   }, [subscribe, onBadgeUpdate]);
+
+  // WS: data:changed → increment tasks badge when new tasks are created
+  useEffect(() => {
+    return subscribe<{ entity: string; action: string }>('data:changed', (data) => {
+      if (data.entity === 'task' && data.action === 'created') {
+        onBadgeUpdate((prev) => ({ ...prev, tasks: prev.tasks + 1 }));
+      }
+    });
+  }, [subscribe, onBadgeUpdate]);
+
+  // Desktop notification: incoming channel messages
+  useEffect(() => {
+    return subscribe<{ sender?: string; content?: string }>('channel:message', (data) => {
+      const sender = data.sender || 'New message';
+      const body = data.content
+        ? data.content.length > 120 ? data.content.slice(0, 120) + '...' : data.content
+        : 'You have a new message';
+      notify(sender, { body, tag: 'channel-message' });
+    });
+  }, [subscribe, notify]);
+
+  // Desktop notification: trigger execution failures
+  useEffect(() => {
+    return subscribe<{ triggerName?: string; status?: string; error?: string }>('trigger:executed', (data) => {
+      if (data.status === 'failure') {
+        notify(`Trigger failed: ${data.triggerName || 'Unknown'}`, {
+          body: data.error || 'Trigger execution failed',
+          tag: 'trigger-failure',
+        });
+      }
+    });
+  }, [subscribe, notify]);
 
   return null;
 }

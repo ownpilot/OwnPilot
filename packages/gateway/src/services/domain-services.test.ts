@@ -310,6 +310,7 @@ function fakeTriggerHistory(overrides: Partial<TriggerHistory> = {}): TriggerHis
   return {
     id: 'thist-1',
     triggerId: 'trg-1',
+    triggerName: 'Test Trigger',
     firedAt: new Date('2025-01-15'),
     status: 'success',
     result: { ok: true },
@@ -1703,49 +1704,50 @@ describe('TriggerService', () => {
   describe('logExecution', () => {
     it('should delegate success execution', async () => {
       triggerRepo.logExecution.mockResolvedValue(undefined);
-      await service.logExecution('user-1', 'trg-1', 'success', { data: 1 }, undefined, 50);
-      expect(triggerRepo.logExecution).toHaveBeenCalledWith('trg-1', 'success', { data: 1 }, undefined, 50);
+      await service.logExecution('user-1', 'trg-1', 'Test Trigger', 'success', { data: 1 }, undefined, 50);
+      expect(triggerRepo.logExecution).toHaveBeenCalledWith('trg-1', 'Test Trigger', 'success', { data: 1 }, undefined, 50);
     });
 
     it('should delegate failure execution with error', async () => {
       triggerRepo.logExecution.mockResolvedValue(undefined);
-      await service.logExecution('user-1', 'trg-1', 'failure', undefined, 'Timeout', 5000);
-      expect(triggerRepo.logExecution).toHaveBeenCalledWith('trg-1', 'failure', undefined, 'Timeout', 5000);
+      await service.logExecution('user-1', 'trg-1', 'Test Trigger', 'failure', undefined, 'Timeout', 5000);
+      expect(triggerRepo.logExecution).toHaveBeenCalledWith('trg-1', 'Test Trigger', 'failure', undefined, 'Timeout', 5000);
     });
 
     it('should delegate skipped execution', async () => {
       triggerRepo.logExecution.mockResolvedValue(undefined);
-      await service.logExecution('user-1', 'trg-1', 'skipped');
-      expect(triggerRepo.logExecution).toHaveBeenCalledWith('trg-1', 'skipped', undefined, undefined, undefined);
+      await service.logExecution('user-1', 'trg-1', 'Test Trigger', 'skipped');
+      expect(triggerRepo.logExecution).toHaveBeenCalledWith('trg-1', 'Test Trigger', 'skipped', undefined, undefined, undefined);
     });
   });
 
   describe('getRecentHistory', () => {
-    it('should use default limit of 20', async () => {
-      triggerRepo.getRecentHistory.mockResolvedValue([fakeTriggerHistory()]);
+    it('should use default empty query', async () => {
+      triggerRepo.getRecentHistory.mockResolvedValue({ rows: [fakeTriggerHistory()], total: 1 });
       const result = await service.getRecentHistory('user-1');
-      expect(result).toHaveLength(1);
-      expect(triggerRepo.getRecentHistory).toHaveBeenCalledWith(20);
+      expect(result.history).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(triggerRepo.getRecentHistory).toHaveBeenCalledWith({});
     });
 
     it('should accept custom limit', async () => {
-      triggerRepo.getRecentHistory.mockResolvedValue([]);
-      await service.getRecentHistory('user-1', 100);
-      expect(triggerRepo.getRecentHistory).toHaveBeenCalledWith(100);
+      triggerRepo.getRecentHistory.mockResolvedValue({ rows: [], total: 0 });
+      await service.getRecentHistory('user-1', { limit: 100 });
+      expect(triggerRepo.getRecentHistory).toHaveBeenCalledWith({ limit: 100 });
     });
   });
 
   describe('getHistoryForTrigger', () => {
-    it('should delegate with trigger id and default limit', async () => {
-      triggerRepo.getHistoryForTrigger.mockResolvedValue([]);
+    it('should delegate with trigger id and default query', async () => {
+      triggerRepo.getHistoryForTrigger.mockResolvedValue({ rows: [], total: 0 });
       await service.getHistoryForTrigger('user-1', 'trg-1');
-      expect(triggerRepo.getHistoryForTrigger).toHaveBeenCalledWith('trg-1', 20);
+      expect(triggerRepo.getHistoryForTrigger).toHaveBeenCalledWith('trg-1', {});
     });
 
     it('should accept custom limit', async () => {
-      triggerRepo.getHistoryForTrigger.mockResolvedValue([fakeTriggerHistory()]);
-      await service.getHistoryForTrigger('user-1', 'trg-1', 5);
-      expect(triggerRepo.getHistoryForTrigger).toHaveBeenCalledWith('trg-1', 5);
+      triggerRepo.getHistoryForTrigger.mockResolvedValue({ rows: [fakeTriggerHistory()], total: 1 });
+      await service.getHistoryForTrigger('user-1', 'trg-1', { limit: 5 });
+      expect(triggerRepo.getHistoryForTrigger).toHaveBeenCalledWith('trg-1', { limit: 5 });
     });
   });
 

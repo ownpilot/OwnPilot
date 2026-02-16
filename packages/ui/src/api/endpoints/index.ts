@@ -120,4 +120,6 @@ export type {
   TriggerAction,
   TriggerHistoryStatus,
   TriggerHistoryEntry,
+  TriggerHistoryParams,
+  PaginatedHistory,
 } from '../types';

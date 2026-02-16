@@ -17,7 +17,8 @@ import type {
   PlanStep,
   PlanHistoryEntry,
   Trigger,
-  TriggerHistoryEntry,
+  TriggerHistoryParams,
+  PaginatedHistory,
 } from '../types';
 
 // ---- Notes ----
@@ -116,8 +117,17 @@ export const plansApi = {
 export const triggersApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<{ triggers: Trigger[] }>('/triggers', { params }),
-  history: (id: string) =>
-    apiClient.get<{ history: TriggerHistoryEntry[] }>(`/triggers/${id}/history`),
+  history: (id: string, params?: TriggerHistoryParams) => {
+    const p: Record<string, string> = {};
+    if (params?.status) p.status = params.status;
+    if (params?.from) p.from = params.from;
+    if (params?.to) p.to = params.to;
+    if (params?.limit != null) p.limit = String(params.limit);
+    if (params?.offset != null) p.offset = String(params.offset);
+    return apiClient.get<PaginatedHistory>(`/triggers/${id}/history`, {
+      params: Object.keys(p).length ? p : undefined,
+    });
+  },
   delete: (id: string) => apiClient.delete<void>(`/triggers/${id}`),
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.patch<Trigger>(`/triggers/${id}`, data),
@@ -125,10 +135,18 @@ export const triggersApi = {
     apiClient.post<Record<string, unknown>>(`/triggers/${id}/fire`),
   stats: () =>
     apiClient.get<Record<string, unknown>>('/triggers/stats'),
-  globalHistory: (limit?: number) =>
-    apiClient.get<{ history: TriggerHistoryEntry[]; count: number }>('/triggers/history', {
-      params: limit ? { limit: String(limit) } : undefined,
-    }),
+  globalHistory: (params?: TriggerHistoryParams) => {
+    const p: Record<string, string> = {};
+    if (params?.status) p.status = params.status;
+    if (params?.triggerId) p.triggerId = params.triggerId;
+    if (params?.from) p.from = params.from;
+    if (params?.to) p.to = params.to;
+    if (params?.limit != null) p.limit = String(params.limit);
+    if (params?.offset != null) p.offset = String(params.offset);
+    return apiClient.get<PaginatedHistory>('/triggers/history', {
+      params: Object.keys(p).length ? p : undefined,
+    });
+  },
   due: () =>
     apiClient.get<{ triggers: Trigger[]; count: number }>('/triggers/due'),
   engineStatus: () =>

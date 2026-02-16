@@ -21,9 +21,9 @@ const mockTriggerService = {
   updateTrigger: vi.fn(),
   deleteTrigger: vi.fn(),
   getStats: vi.fn(async () => ({ total: 5, enabled: 3, byType: { schedule: 2, event: 1 } })),
-  getRecentHistory: vi.fn(async () => []),
+  getRecentHistory: vi.fn(async () => ({ history: [], total: 0 })),
   getDueTriggers: vi.fn(async () => []),
-  getHistoryForTrigger: vi.fn(async () => []),
+  getHistoryForTrigger: vi.fn(async () => ({ history: [], total: 0 })),
   cleanupHistory: vi.fn(async () => 0),
 };
 
@@ -225,9 +225,10 @@ describe('Triggers Routes', () => {
 
   describe('GET /triggers/history', () => {
     it('returns recent trigger history', async () => {
-      mockTriggerService.getRecentHistory.mockResolvedValue([
-        { id: 'h1', triggerId: 't1', firedAt: '2026-01-31' },
-      ]);
+      mockTriggerService.getRecentHistory.mockResolvedValue({
+        history: [{ id: 'h1', triggerId: 't1', firedAt: '2026-01-31' }],
+        total: 1,
+      });
 
       const res = await app.request('/triggers/history');
 
@@ -235,7 +236,7 @@ describe('Triggers Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.history).toHaveLength(1);
-      expect(json.data.count).toBe(1);
+      expect(json.data.total).toBe(1);
     });
   });
 
@@ -269,9 +270,10 @@ describe('Triggers Routes', () => {
         name: 'Morning',
         type: 'schedule',
       });
-      mockTriggerService.getHistoryForTrigger.mockResolvedValue([
-        { id: 'h1', firedAt: '2026-01-31' },
-      ]);
+      mockTriggerService.getHistoryForTrigger.mockResolvedValue({
+        history: [{ id: 'h1', firedAt: '2026-01-31' }],
+        total: 1,
+      });
 
       const res = await app.request('/triggers/t1');
 
@@ -437,9 +439,10 @@ describe('Triggers Routes', () => {
   describe('GET /triggers/:id/history', () => {
     it('returns history for a specific trigger', async () => {
       mockTriggerService.getTrigger.mockResolvedValue({ id: 't1', name: 'Morning' });
-      mockTriggerService.getHistoryForTrigger.mockResolvedValue([
-        { id: 'h1', firedAt: '2026-01-31' },
-      ]);
+      mockTriggerService.getHistoryForTrigger.mockResolvedValue({
+        history: [{ id: 'h1', firedAt: '2026-01-31' }],
+        total: 1,
+      });
 
       const res = await app.request('/triggers/t1/history');
 
@@ -448,6 +451,7 @@ describe('Triggers Routes', () => {
       expect(json.data.triggerId).toBe('t1');
       expect(json.data.triggerName).toBe('Morning');
       expect(json.data.history).toHaveLength(1);
+      expect(json.data.total).toBe(1);
     });
 
     it('returns 404 when trigger not found', async () => {

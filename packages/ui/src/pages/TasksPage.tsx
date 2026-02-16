@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
 import { CheckCircle2, Circle, AlertTriangle, Plus, Trash2, Calendar } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { useModalClose } from '../hooks';
+import { useAnimatedList } from '../hooks/useAnimatedList';
 import { tasksApi } from '../api';
 import type { Task } from '../types';
 
@@ -25,11 +27,14 @@ const priorityBg = {
 export function TasksPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(tasks);
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -46,6 +51,18 @@ export function TasksPage() {
     fetchTasks();
   }, [fetchTasks]);
 
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchTasks(), 2000);
+  }, [fetchTasks]);
+
+  useEffect(() => {
+    const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
+      if (data.entity === 'task') debouncedRefresh();
+    });
+    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [subscribe, debouncedRefresh]);
+
   const handleComplete = useCallback(async (taskId: string) => {
     try {
       await tasksApi.complete(taskId);
@@ -60,7 +77,9 @@ export function TasksPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this task?', variant: 'danger' })) return;
 
     try {
-      await tasksApi.delete(taskId);
+      await animatedDelete(taskId, async () => {
+        await tasksApi.delete(taskId);
+      });
       toast.success('Task deleted');
       fetchTasks();
     } catch {
@@ -112,7 +131,7 @@ export function TasksPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
         {isLoading ? (
-          <LoadingSpinner message="Loading tasks..." />
+          <SkeletonCard count={5} />
         ) : tasks.length === 0 ? (
           <EmptyState
             icon={CheckCircle2}
@@ -122,14 +141,15 @@ export function TasksPage() {
           />
         ) : (
           <div className="space-y-2">
-            {tasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                onComplete={() => handleComplete(task.id)}
-                onEdit={() => setEditingTask(task)}
-                onDelete={() => handleDelete(task.id)}
-              />
+            {animatedItems.map(({ item: task, animClass }) => (
+              <div key={task.id} className={animClass}>
+                <TaskItem
+                  task={task}
+                  onComplete={() => handleComplete(task.id)}
+                  onEdit={() => setEditingTask(task)}
+                  onDelete={() => handleDelete(task.id)}
+                />
+              </div>
             ))}
           </div>
         )}

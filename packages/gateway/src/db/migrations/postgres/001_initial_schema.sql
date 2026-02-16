@@ -413,7 +413,8 @@ CREATE TABLE IF NOT EXISTS triggers (
 
 CREATE TABLE IF NOT EXISTS trigger_history (
   id TEXT PRIMARY KEY,
-  trigger_id TEXT NOT NULL REFERENCES triggers(id) ON DELETE CASCADE,
+  trigger_id TEXT,
+  trigger_name TEXT,
   fired_at TIMESTAMP NOT NULL DEFAULT NOW(),
   status TEXT NOT NULL CHECK(status IN ('success', 'failure', 'skipped')),
   result TEXT,
@@ -889,6 +890,7 @@ CREATE INDEX IF NOT EXISTS idx_triggers_enabled ON triggers(enabled);
 CREATE INDEX IF NOT EXISTS idx_triggers_next_fire ON triggers(next_fire);
 CREATE INDEX IF NOT EXISTS idx_trigger_history_trigger ON trigger_history(trigger_id);
 CREATE INDEX IF NOT EXISTS idx_trigger_history_fired ON trigger_history(fired_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trigger_history_status ON trigger_history(status);
 CREATE INDEX IF NOT EXISTS idx_plans_user ON plans(user_id);
 CREATE INDEX IF NOT EXISTS idx_plans_status ON plans(status);
 CREATE INDEX IF NOT EXISTS idx_plans_priority ON plans(priority DESC);

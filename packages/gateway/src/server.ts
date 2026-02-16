@@ -309,6 +309,11 @@ async function main() {
   try {
     const triggerEngine = startTriggerEngine({ userId: 'default' });
 
+    // Wire up the broadcaster for real-time WS events
+    triggerEngine.setBroadcaster((_event, data) =>
+      wsGateway.broadcast('trigger:executed', data as import('./ws/types.js').ServerEvents['trigger:executed']),
+    );
+
     // Wire up the chat handler once agent system is available
     // The chat handler uses dynamic import to avoid circular dependencies
     triggerEngine.setChatHandler(async (message, _payload) => {
