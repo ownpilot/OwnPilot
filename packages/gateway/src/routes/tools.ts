@@ -144,12 +144,18 @@ async function getAllTools(): Promise<Array<ToolDefinition & { category: string;
   // (e.g. if plugins initialized after registry was created)
   try {
     const pluginService = getServiceRegistry().get(Services.Plugin);
-    const seen = new Set(allTools.map(t => t.name));
+    // Build seen sets for both qualified names and base names to prevent duplicates
+    const seenQualified = new Set(allTools.map(t => t.name));
+    const seenBase = new Set(allTools.map(t => {
+      const dot = t.name.lastIndexOf('.');
+      return dot >= 0 ? t.name.substring(dot + 1) : t.name;
+    }));
     const pluginTools = pluginService.getAllTools();
     for (const { definition } of pluginTools) {
-      if (!seen.has(definition.name)) {
+      if (!seenQualified.has(definition.name) && !seenBase.has(definition.name)) {
         allTools.push({ ...definition, category: 'plugins', source: 'plugin' });
-        seen.add(definition.name);
+        seenQualified.add(definition.name);
+        seenBase.add(definition.name);
       }
     }
   } catch {
