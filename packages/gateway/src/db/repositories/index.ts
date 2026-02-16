@@ -191,19 +191,6 @@ export {
   type CaptureQuery,
 } from './captures.js';
 
-// OAuth repositories
-export {
-  OAuthIntegrationsRepository,
-  createOAuthIntegrationsRepository,
-  oauthIntegrationsRepo,
-  type OAuthIntegration,
-  type OAuthProvider,
-  type OAuthService,
-  type IntegrationStatus,
-  type CreateIntegrationInput,
-  type UpdateIntegrationInput,
-} from './oauth-integrations.js';
-
 // AI Model Configs repository
 export {
   ModelConfigsRepository,

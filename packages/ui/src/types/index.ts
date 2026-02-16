@@ -21,8 +21,6 @@ export type {
   CostsData,
   AgentDetail,
 } from './api';
-export type { Integration, AvailableIntegration, OAuthConfig } from './integrations';
-
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';

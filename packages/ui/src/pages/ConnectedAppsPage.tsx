@@ -3,11 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import {
-  Search, RefreshCw, ExternalLink, Unlink, AlertCircle, Check, Link, Trash2,
+  Search, RefreshCw, ExternalLink, Unlink, AlertCircle, Check, Link,
 } from '../components/icons';
-import { composioApi, integrationsApi, authApi } from '../api';
+import { composioApi } from '../api';
 import type { ComposioApp, ComposioConnection } from '../api/endpoints/composio';
-import type { Integration, AvailableIntegration, OAuthConfig } from '../types';
 
 // =============================================================================
 // Status helpers
@@ -23,23 +22,6 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 
 const FALLBACK_STATUS = { bg: 'bg-text-muted/10', text: 'text-text-muted', label: 'Unknown' };
 
-/** Map Google OAuth statuses to the shared status key format */
-function normalizeGoogleStatus(status: Integration['status']): string {
-  switch (status) {
-    case 'active': return 'ACTIVE';
-    case 'expired': return 'EXPIRED';
-    case 'error': return 'FAILED';
-    case 'revoked': return 'INACTIVE';
-    default: return 'INACTIVE';
-  }
-}
-
-const SERVICE_ICONS: Record<string, string> = {
-  gmail: '\u{1F4E7}',
-  calendar: '\u{1F4C5}',
-  drive: '\u{1F4C1}',
-};
-
 function StatusBadge({ status }: { status: string }) {
   const style = STATUS_STYLES[status] ?? FALLBACK_STATUS;
   return (
@@ -48,65 +30,6 @@ function StatusBadge({ status }: { status: string }) {
       {status === 'FAILED' && <AlertCircle className="w-3 h-3" />}
       {style.label}
     </span>
-  );
-}
-
-// =============================================================================
-// Google Connected Service Card
-// =============================================================================
-
-function GoogleServiceCard({
-  integration,
-  onDisconnect,
-  onSync,
-  isSyncing,
-}: {
-  integration: Integration;
-  onDisconnect: () => void;
-  onSync: () => void;
-  isSyncing: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg">
-          {SERVICE_ICONS[integration.service] ?? '\u{1F517}'}
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-text-primary dark:text-dark-text-primary capitalize">
-              {integration.service}
-            </span>
-            <StatusBadge status={normalizeGoogleStatus(integration.status)} />
-          </div>
-          {integration.email && (
-            <p className="text-xs text-text-muted dark:text-dark-text-muted">
-              {integration.email}
-            </p>
-          )}
-          {integration.errorMessage && (
-            <p className="text-xs text-error">{integration.errorMessage}</p>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onSync}
-          disabled={isSyncing}
-          className="p-2 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
-          title="Sync / Refresh token"
-        >
-          <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-        </button>
-        <button
-          onClick={onDisconnect}
-          className="p-2 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
-          title="Disconnect"
-        >
-          <Unlink className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -214,24 +137,12 @@ export function ConnectedAppsPage() {
   const toast = useToast();
   const [searchParams] = useSearchParams();
 
-  // -- Composio state --
   const [composioConfigured, setComposioConfigured] = useState<boolean | null>(null);
   const [connections, setConnections] = useState<ComposioConnection[]>([]);
   const [apps, setApps] = useState<ComposioApp[]>([]);
   const [search, setSearch] = useState('');
   const [connectingApp, setConnectingApp] = useState<string | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
-
-  // -- Google OAuth state --
-  const [googleIntegrations, setGoogleIntegrations] = useState<Integration[]>([]);
-  const [googleAvailable, setGoogleAvailable] = useState<AvailableIntegration[]>([]);
-  const [googleConfigStatus, setGoogleConfigStatus] = useState<{ configured: boolean; redirectUri?: string } | null>(null);
-  const [showGoogleConfig, setShowGoogleConfig] = useState(false);
-  const [oauthConfig, setOauthConfig] = useState<OAuthConfig>({ clientId: '', clientSecret: '', redirectUri: '' });
-  const [isSavingConfig, setIsSavingConfig] = useState(false);
-  const [syncingId, setSyncingId] = useState<string | null>(null);
-
-  // -- Shared state --
   const [isLoading, setIsLoading] = useState(true);
 
   // =========================================================================
@@ -240,35 +151,20 @@ export function ConnectedAppsPage() {
 
   const loadData = useCallback(async () => {
     try {
-      // Load Google and Composio data in parallel
-      const [composioStatus, integrationsList, availableList, authStatus] = await Promise.allSettled([
-        composioApi.status(),
-        integrationsApi.list(),
-        integrationsApi.available(),
-        authApi.status(),
-      ]);
-
-      // Composio
-      if (composioStatus.status === 'fulfilled') {
-        setComposioConfigured(composioStatus.value.configured);
-        if (composioStatus.value.configured) {
-          try {
-            const [connectionsData, appsData] = await Promise.all([
-              composioApi.connections(),
-              composioApi.apps(),
-            ]);
-            setConnections(connectionsData.connections);
-            setApps(appsData.apps);
-          } catch {
-            // Composio data failed but page still works
-          }
+      const status = await composioApi.status();
+      setComposioConfigured(status.configured);
+      if (status.configured) {
+        try {
+          const [connectionsData, appsData] = await Promise.all([
+            composioApi.connections(),
+            composioApi.apps(),
+          ]);
+          setConnections(connectionsData.connections);
+          setApps(appsData.apps);
+        } catch {
+          // Composio data failed but page still works
         }
       }
-
-      // Google
-      if (integrationsList.status === 'fulfilled') setGoogleIntegrations(integrationsList.value);
-      if (availableList.status === 'fulfilled') setGoogleAvailable(availableList.value);
-      if (authStatus.status === 'fulfilled') setGoogleConfigStatus(authStatus.value.google);
     } catch {
       toast.error('Failed to load connected apps data');
     } finally {
@@ -280,92 +176,20 @@ export function ConnectedAppsPage() {
     loadData();
   }, [loadData]);
 
-  // Handle OAuth callback redirect (Composio or Google)
+  // Handle OAuth callback redirect
   useEffect(() => {
     const connected = searchParams.get('connected');
-    const oauthSuccess = searchParams.get('oauth_success');
     if (connected) {
       toast.success(`Successfully connected ${connected}`);
-      loadData();
-    }
-    if (oauthSuccess) {
-      toast.success(`Successfully connected ${oauthSuccess}`);
       loadData();
     }
   }, [searchParams, toast, loadData]);
 
   // =========================================================================
-  // Google OAuth handlers
+  // Handlers
   // =========================================================================
 
-  const handleSaveOAuthConfig = async () => {
-    if (!oauthConfig.clientId || !oauthConfig.clientSecret) {
-      toast.error('Client ID and Client Secret are required');
-      return;
-    }
-    setIsSavingConfig(true);
-    try {
-      await authApi.saveGoogleConfig(oauthConfig);
-      setShowGoogleConfig(false);
-      setOauthConfig({ clientId: '', clientSecret: '', redirectUri: '' });
-      toast.success('OAuth configuration saved');
-      await loadData();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save OAuth configuration');
-    } finally {
-      setIsSavingConfig(false);
-    }
-  };
-
-  const handleDeleteOAuthConfig = async () => {
-    if (!await confirm({ message: 'Remove Google OAuth configuration? All connected Google services will stop working.', variant: 'danger' })) {
-      return;
-    }
-    try {
-      await authApi.deleteGoogleConfig();
-      toast.success('OAuth configuration removed');
-      await loadData();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to remove OAuth configuration');
-    }
-  };
-
-  const handleGoogleConnect = (provider: string, service: string) => {
-    const returnUrl = '/settings/connected-apps';
-    window.location.href = authApi.startUrl(provider, service, returnUrl);
-  };
-
-  const handleGoogleDisconnect = async (integrationId: string, service: string) => {
-    if (!await confirm({ message: `Disconnect ${service}? You will need to re-authorize to use it again.`, variant: 'danger' })) {
-      return;
-    }
-    try {
-      await integrationsApi.delete(integrationId);
-      setGoogleIntegrations((prev) => prev.filter((i) => i.id !== integrationId));
-      toast.success(`${service} disconnected`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to disconnect');
-    }
-  };
-
-  const handleGoogleSync = async (integrationId: string) => {
-    setSyncingId(integrationId);
-    try {
-      await integrationsApi.sync(integrationId);
-      toast.success('Token refreshed');
-      await loadData();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to sync');
-    } finally {
-      setSyncingId(null);
-    }
-  };
-
-  // =========================================================================
-  // Composio handlers
-  // =========================================================================
-
-  const handleComposioConnect = async (appSlug: string) => {
+  const handleConnect = async (appSlug: string) => {
     setConnectingApp(appSlug);
     try {
       const result = await composioApi.connect(appSlug);
@@ -385,7 +209,7 @@ export function ConnectedAppsPage() {
     }
   };
 
-  const handleComposioDisconnect = async (connectionId: string, appName: string) => {
+  const handleDisconnect = async (connectionId: string, appName: string) => {
     if (!await confirm({ message: `Disconnect ${appName}? You will need to re-authorize to use it again.`, variant: 'danger' })) {
       return;
     }
@@ -398,7 +222,7 @@ export function ConnectedAppsPage() {
     }
   };
 
-  const handleComposioRefresh = async (connectionId: string) => {
+  const handleRefresh = async (connectionId: string) => {
     setRefreshingId(connectionId);
     try {
       await composioApi.refresh(connectionId);
@@ -427,13 +251,6 @@ export function ConnectedAppsPage() {
     );
   });
 
-  const googleConnectedServices = new Set(
-    googleIntegrations.filter((i) => i.status === 'active').map((i) => `${i.provider}:${i.service}`),
-  );
-  const googleUnconnected = googleAvailable.filter(
-    (a) => !googleConnectedServices.has(`${a.provider}:${a.service}`),
-  );
-
   // =========================================================================
   // Render
   // =========================================================================
@@ -447,7 +264,7 @@ export function ConnectedAppsPage() {
               Connected Apps
             </h2>
             <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              Manage Google services and 500+ Composio app integrations
+              Manage 500+ app integrations via Composio
             </p>
           </div>
           <button
@@ -469,178 +286,8 @@ export function ConnectedAppsPage() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* Google Services Section                                           */}
-        {/* ================================================================= */}
         {!isLoading && (
           <section>
-            <h3 className="text-sm font-semibold text-text-secondary dark:text-dark-text-secondary uppercase tracking-wider mb-4">
-              Google Services
-            </h3>
-
-            {/* OAuth Configuration Card */}
-            <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl mb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-text-primary dark:text-dark-text-primary text-sm">
-                    Google OAuth Configuration
-                  </div>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                    Required to connect Gmail, Calendar, and Drive
-                  </p>
-                </div>
-                {googleConfigStatus?.configured ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-success flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Configured
-                    </span>
-                    <button
-                      onClick={handleDeleteOAuthConfig}
-                      className="p-1.5 text-error/60 hover:text-error rounded"
-                      title="Remove configuration"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowGoogleConfig(!showGoogleConfig)}
-                    className="px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors"
-                  >
-                    Configure
-                  </button>
-                )}
-              </div>
-
-              {showGoogleConfig && (
-                <div className="space-y-4 pt-4 mt-4 border-t border-border dark:border-dark-border">
-                  <div>
-                    <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                      Client ID
-                    </label>
-                    <input
-                      type="text"
-                      value={oauthConfig.clientId}
-                      onChange={(e) => setOauthConfig((prev) => ({ ...prev, clientId: e.target.value }))}
-                      placeholder="123456789-xxxxx.apps.googleusercontent.com"
-                      className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                      Client Secret
-                    </label>
-                    <input
-                      type="password"
-                      value={oauthConfig.clientSecret}
-                      onChange={(e) => setOauthConfig((prev) => ({ ...prev, clientSecret: e.target.value }))}
-                      placeholder="GOCSPX-xxxxxxxxxxxxx"
-                      className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                      Redirect URI (optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={oauthConfig.redirectUri}
-                      onChange={(e) => setOauthConfig((prev) => ({ ...prev, redirectUri: e.target.value }))}
-                      placeholder={googleConfigStatus?.redirectUri || 'Auto-detected'}
-                      className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                    <p className="mt-1 text-xs text-text-muted dark:text-dark-text-muted">
-                      Add this URL to your Google Cloud Console authorized redirect URIs
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleSaveOAuthConfig}
-                      disabled={isSavingConfig}
-                      className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                    >
-                      {isSavingConfig ? 'Saving...' : 'Save Configuration'}
-                    </button>
-                    <button
-                      onClick={() => setShowGoogleConfig(false)}
-                      className="px-4 py-2 text-text-secondary dark:text-dark-text-secondary text-sm rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <a
-                      href="https://console.cloud.google.com/apis/credentials"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-auto flex items-center gap-1 text-xs text-primary hover:underline"
-                    >
-                      Google Cloud Console <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Connected Google Services */}
-            {googleIntegrations.length > 0 && (
-              <div className="space-y-2 mb-4">
-                {googleIntegrations.map((integration) => (
-                  <GoogleServiceCard
-                    key={integration.id}
-                    integration={integration}
-                    onDisconnect={() => handleGoogleDisconnect(integration.id, integration.service)}
-                    onSync={() => handleGoogleSync(integration.id)}
-                    isSyncing={syncingId === integration.id}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Available Google Services */}
-            {googleConfigStatus?.configured && googleUnconnected.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {googleUnconnected.map((avail) => (
-                  <div
-                    key={`${avail.provider}-${avail.service}`}
-                    className="flex flex-col p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl"
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-lg">{SERVICE_ICONS[avail.service] ?? '\u{1F517}'}</span>
-                      <div className="font-medium text-text-primary dark:text-dark-text-primary text-sm">
-                        {avail.name}
-                      </div>
-                    </div>
-                    <p className="text-xs text-text-muted dark:text-dark-text-muted mb-3 line-clamp-2">
-                      {avail.description}
-                    </p>
-                    <button
-                      onClick={() => handleGoogleConnect(avail.provider, avail.service)}
-                      className="mt-auto flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      <Link className="w-3 h-3" />
-                      Connect
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!googleConfigStatus?.configured && !showGoogleConfig && googleIntegrations.length === 0 && (
-              <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                Configure Google OAuth above to connect Gmail, Calendar, and Drive.
-              </p>
-            )}
-          </section>
-        )}
-
-        {/* ================================================================= */}
-        {/* Composio Apps Section                                             */}
-        {/* ================================================================= */}
-        {!isLoading && (
-          <section>
-            <h3 className="text-sm font-semibold text-text-secondary dark:text-dark-text-secondary uppercase tracking-wider mb-4">
-              Composio Apps
-            </h3>
-
             {/* Not configured warning */}
             {composioConfigured === false && (
               <div className="flex items-start gap-3 p-4 bg-warning/10 border border-warning/20 rounded-xl mb-4">
@@ -668,7 +315,7 @@ export function ConnectedAppsPage() {
               </div>
             )}
 
-            {/* Connected Composio Apps */}
+            {/* Connected Apps */}
             {composioConfigured && connections.length > 0 && (
               <div className="mb-4">
                 <div className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-2">
@@ -679,8 +326,8 @@ export function ConnectedAppsPage() {
                     <ConnectedAppCard
                       key={conn.id}
                       connection={conn}
-                      onDisconnect={() => handleComposioDisconnect(conn.id, conn.appName)}
-                      onRefresh={() => handleComposioRefresh(conn.id)}
+                      onDisconnect={() => handleDisconnect(conn.id, conn.appName)}
+                      onRefresh={() => handleRefresh(conn.id)}
                       isRefreshing={refreshingId === conn.id}
                     />
                   ))}
@@ -688,7 +335,7 @@ export function ConnectedAppsPage() {
               </div>
             )}
 
-            {/* Available Composio Apps */}
+            {/* Available Apps */}
             {composioConfigured && (
               <>
                 <div className="flex items-center justify-between mb-3">
@@ -717,7 +364,7 @@ export function ConnectedAppsPage() {
                         key={app.slug}
                         app={app}
                         isConnecting={connectingApp === app.slug}
-                        onConnect={() => handleComposioConnect(app.slug)}
+                        onConnect={() => handleConnect(app.slug)}
                       />
                     ))}
                   </div>

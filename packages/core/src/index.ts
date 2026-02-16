@@ -2,7 +2,7 @@
  * @ownpilot/core
  *
  * Secure AI agent engine and tool framework.
- * Core crypto/sandbox use only Node.js built-ins; Google integration requires googleapis.
+ * Core crypto/sandbox use only Node.js built-ins.
  *
  * @packageDocumentation
  */
@@ -42,9 +42,6 @@ export * from './plugins/index.js';
 
 // Assistant
 export * from './assistant/index.js';
-
-// Integrations
-export * from './integrations/index.js';
 
 // Services (ServiceRegistry, interfaces, tokens, media, weather)
 export * from './services/index.js';

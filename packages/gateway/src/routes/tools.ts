@@ -20,7 +20,6 @@ import {
 import type { ToolInfo } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js'
 import { getAgent } from './agents.js';
-import { initializeToolOverrides } from '../services/tool-overrides.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { initToolSourceMappings, getToolSource } from '../services/tool-source.js';
@@ -45,23 +44,12 @@ initToolSourceMappings({
 
 // Standalone tool registry for direct execution (no agent required)
 let toolRegistry: ToolRegistry | undefined;
-let toolOverridesInitialized = false;
 
 function getToolRegistry(): ToolRegistry {
   if (!toolRegistry) {
     toolRegistry = new ToolRegistry();
     registerCoreTools(toolRegistry);
     toolRegistry.setConfigCenter(gatewayConfigCenter);
-
-    // Initialize tool overrides (Gmail, Media, etc.)
-    if (!toolOverridesInitialized) {
-      try {
-        initializeToolOverrides(toolRegistry);
-        toolOverridesInitialized = true;
-      } catch (error) {
-        log.error('Failed to initialize tool overrides:', error);
-      }
-    }
   }
   return toolRegistry;
 }

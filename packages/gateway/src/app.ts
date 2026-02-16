@@ -41,9 +41,6 @@ import {
   fileWorkspaceRoutes,
   pluginsRoutes,
   productivityRoutes,
-  authRoutes,
-  integrationsRoutes,
-
   modelConfigsRoutes,
   dashboardRoutes,
   customToolsRoutes,
@@ -197,13 +194,6 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Productivity (Pomodoro, Habits, Captures)
   app.route('/api/v1', productivityRoutes);
 
-  // OAuth Authentication (Google, Microsoft)
-  app.route('/api/v1/auth', authRoutes);
-
-  // Integrations (Gmail, Calendar, Drive)
-  app.route('/api/v1/integrations', integrationsRoutes);
-
-
   // AI Model Configs (model management, custom providers)
   app.route('/api/v1/model-configs', modelConfigsRoutes);
 
@@ -293,11 +283,6 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         pomodoro: '/api/v1/pomodoro',
         habits: '/api/v1/habits',
         captures: '/api/v1/captures',
-        // OAuth Authentication
-        auth: '/api/v1/auth',
-        // Integrations (Gmail, Calendar, Drive)
-        integrations: '/api/v1/integrations',
-
         // AI Model Configs (model management)
         modelConfigs: '/api/v1/model-configs',
         // Dashboard (AI-powered daily briefing)

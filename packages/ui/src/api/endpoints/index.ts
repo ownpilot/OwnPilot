@@ -11,7 +11,6 @@ export { summaryApi, costsApi } from './summary';
 export { agentsApi } from './agents';
 export { customToolsApi } from './custom-tools';
 export { toolsApi } from './tools';
-export { integrationsApi, authApi } from './integrations';
 export { chatApi } from './chat';
 export type { ChatRequestBody } from './chat';
 export { executionPermissionsApi } from './execution-permissions';

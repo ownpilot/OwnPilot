@@ -64,10 +64,7 @@
     "typecheck:ci": "tsc --noEmit --skipLibCheck false",
     "clean": "rimraf dist coverage"
   },
-  "dependencies": {
-    "google-auth-library": "^10.5.0",
-    "googleapis": "^170.1.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^22.19.7",
     "@vitest/coverage-v8": "^2.1.8",
