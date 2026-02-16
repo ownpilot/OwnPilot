@@ -34,6 +34,8 @@ export {
   expensesApi,
 } from './misc';
 export { skillPackagesApi } from './skill-packages';
+export { composioApi } from './composio';
+export type { ComposioApp, ComposioConnection, ComposioConnectionRequest, ComposioStatus, ComposioActionInfo } from './composio';
 export {
   notesApi,
   bookmarksApi,

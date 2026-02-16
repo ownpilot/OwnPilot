@@ -29,6 +29,7 @@
     "migrate:postgres:dry": "tsx scripts/migrate-to-postgres.ts --dry-run"
   },
   "dependencies": {
+    "@composio/core": "^0.6.3",
     "@hono/node-server": "^1.19.9",
     "@ownpilot/core": "workspace:*",
     "archiver": "^7.0.1",
@@ -49,7 +50,7 @@
   },
   "devDependencies": {
     "@types/archiver": "^6.0.4",
-    "@types/better-sqlite3": "^7.6.14",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.19.11",
     "@types/pg": "^8.16.0",
     "@types/ws": "^8.18.1",

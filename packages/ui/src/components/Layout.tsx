@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import {
   MessageSquare,
   Inbox,
@@ -35,10 +36,11 @@ import {
   Globe,
   Server,
 
-  Link,
   Container,
   Info,
   Sparkles,
+  Menu,
+  X,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
@@ -124,7 +126,7 @@ const navGroups: NavGroup[] = [
       { to: '/settings/api-keys', icon: Key, label: 'API Keys' },
       { to: '/settings/providers', icon: Server, label: 'Providers' },
       { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
-      { to: '/settings/integrations', icon: Link, label: 'Integrations' },
+      { to: '/settings/connected-apps', icon: Puzzle, label: 'Connected Apps' },
 
       { to: '/settings/system', icon: Container, label: 'System' },
     ],
@@ -150,7 +152,7 @@ function NavItemLink({ item, compact = false, badge }: { item: NavItem; compact?
       to={item.to}
       end={item.to === '/'}
       className={({ isActive }) =>
-        `flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-sm ${
+        `flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-sm ${
           isActive
             ? 'bg-primary text-white shadow-sm'
             : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5'
@@ -177,7 +179,7 @@ function CollapsibleGroup({ group, isOpen, onToggle }: { group: NavGroup; isOpen
     <div className="space-y-0.5">
       <button
         onClick={onToggle}
-        className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors text-sm ${
+        className={`w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-colors text-sm ${
           isActive && !isOpen
             ? 'bg-primary/10 text-primary'
             : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
@@ -247,6 +249,8 @@ function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
 
 export function Layout() {
   const { status: wsStatus } = useGateway();
+  const isMobile = useIsMobile();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(true);
   const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
     return localStorage.getItem(STORAGE_KEYS.ADVANCED_MODE) === 'true';
@@ -257,6 +261,11 @@ export function Layout() {
     [],
   );
   const location = useLocation();
+
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    if (isMobile) setIsMobileSidebarOpen(false);
+  }, [location.pathname, isMobile]);
 
   // Reset badges when navigating to their respective pages
   useEffect(() => {
@@ -302,18 +311,66 @@ export function Layout() {
     setOpenGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
   };
 
+  const connectionStyle = CONNECTION_STYLES[wsStatus];
+
   return (
-    <div className="flex h-screen bg-bg-primary dark:bg-dark-bg-primary">
+    <div className="flex flex-col md:flex-row h-screen bg-bg-primary dark:bg-dark-bg-primary">
+      {/* Mobile Header — visible on small screens only */}
+      {isMobile && (
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="p-1 -ml-1 rounded-md text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <h1 className="font-semibold text-text-primary dark:text-dark-text-primary">OwnPilot</h1>
+          <span
+            className={`ml-auto w-2 h-2 rounded-full ${connectionStyle.color} ${connectionStyle.pulse ? 'animate-pulse' : ''}`}
+            title={connectionStyle.label}
+          />
+        </div>
+      )}
+
+      {/* Backdrop (mobile only, when sidebar open) */}
+      {isMobile && isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30"
+          onClick={() => setIsMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Left Sidebar - Navigation */}
-      <aside className="w-56 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col">
-        {/* Logo */}
-        <div className="p-3 border-b border-border dark:border-dark-border">
-          <h1 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-            OwnPilot
-          </h1>
-          <p className="text-xs text-text-muted dark:text-dark-text-muted">
-            Privacy-first AI Assistant
-          </p>
+      <aside
+        className={
+          isMobile
+            ? `fixed inset-y-0 left-0 z-40 w-64 bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col transform transition-transform duration-200 ease-out ${
+                isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+              }`
+            : 'w-56 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col'
+        }
+      >
+        {/* Logo / Close button */}
+        <div className="p-3 border-b border-border dark:border-dark-border flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+              OwnPilot
+            </h1>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted">
+              Privacy-first AI Assistant
+            </p>
+          </div>
+          {isMobile && (
+            <button
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="p-1 rounded-md text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Navigation */}
@@ -370,11 +427,13 @@ export function Layout() {
         <Outlet />
       </main>
 
-      {/* Right Sidebar - Stats Panel */}
-      <StatsPanel
-        isCollapsed={isStatsPanelCollapsed}
-        onToggle={() => setIsStatsPanelCollapsed(!isStatsPanelCollapsed)}
-      />
+      {/* Right Sidebar - Stats Panel (desktop only) */}
+      {!isMobile && (
+        <StatsPanel
+          isCollapsed={isStatsPanelCollapsed}
+          onToggle={() => setIsStatsPanelCollapsed(!isStatsPanelCollapsed)}
+        />
+      )}
 
       {/* Realtime WS→UI wiring (invisible) */}
       <RealtimeBridge onBadgeUpdate={handleBadgeUpdate} />

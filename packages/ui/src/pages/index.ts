@@ -6,6 +6,4 @@ export { ConfigCenterPage } from './ConfigCenterPage';
 export { ApiKeysPage } from './ApiKeysPage';
 export { ProvidersPage } from './ProvidersPage';
 export { AIModelsPage } from './AIModelsPage';
-export { IntegrationsPage } from './IntegrationsPage';
-
 export { SystemPage } from './SystemPage';

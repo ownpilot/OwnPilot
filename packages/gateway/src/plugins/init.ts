@@ -27,6 +27,7 @@ import { configServicesRepo } from '../db/repositories/config-services.js';
 import { registerToolConfigRequirements } from '../services/api-service-registrar.js';
 import { buildTelegramChannelPlugin } from '../channels/plugins/telegram/index.js';
 import { buildGatewayPlugin } from './gateway-plugin.js';
+import { buildComposioPlugin } from './composio.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Plugins');
@@ -1147,6 +1148,8 @@ function getAllBuiltinPlugins(): BuiltinPluginEntry[] {
     buildCalculatorPlugin(),
     buildTextUtilsPlugin(),
     buildPomodoroPlugin(),
+    // Integration plugins
+    buildComposioPlugin(),
     // Channel plugins
     buildTelegramChannelPlugin(),
   ];

@@ -56,6 +56,7 @@ import {
   executionPermissionsRoutes,
   heartbeatsRoutes,
   skillPackagesRoutes,
+  composioRoutes,
 } from './routes/index.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST } from './config/defaults.js';
 
@@ -229,6 +230,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   // Skill Packages (shareable tool + prompt + trigger bundles)
   app.route('/api/v1/skill-packages', skillPackagesRoutes);
+
+  // Composio (1000+ OAuth app integrations)
+  app.route('/api/v1/composio', composioRoutes);
 
   // Local AI Providers (LM Studio, Ollama, etc.)
   app.route('/api/v1/local-providers', localProvidersRoutes);
