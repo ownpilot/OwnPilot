@@ -67,7 +67,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 - **Web UI** - React 19 + Vite 6 + Tailwind CSS 4 with dark mode, ~40 routes, code-split
 - **Telegram Bot** - Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
 - **WebSocket** - Real-time updates, event subscriptions, session management
-- **REST API** - 38 route modules with standardized responses, pagination, and error codes
+- **REST API** - 40 route modules with standardized responses, pagination, and error codes
 
 ### Security
 - **Zero-Dependency Crypto** - AES-256-GCM encryption + PBKDF2 key derivation using only Node.js built-ins
@@ -100,7 +100,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
                        │
               ┌────────▼────────┐
               │    Gateway      │  Hono HTTP API Server
-              │  (Port 8080)    │  38 Route Modules
+              │  (Port 8080)    │  40 Route Modules
               ├─────────────────┤
               │  MessageBus     │  Middleware Pipeline
               │  Agent Engine   │  Tool Orchestration
@@ -108,8 +108,8 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
               │  Plugin System  │  Extensible Architecture
               │  EventBus       │  Typed Event System
               ├─────────────────┤
-              │     Core        │  Zero External Dependencies
-              │  50+ Tools      │  Multi-Provider Support
+              │     Core        │  AI Engine & Tool Framework
+              │  100+ Tools     │  Multi-Provider Support
               │  Sandbox, Crypto│  Privacy, Audit
               └────────┬────────┘
                        │
@@ -179,11 +179,11 @@ API keys and settings are stored in the PostgreSQL database. The web UI **Config
 ```
 ownpilot/
 ├── packages/
-│   ├── core/                    # AI runtime (zero external deps)
+│   ├── core/                    # AI engine & tool framework
 │   │   ├── src/
 │   │   │   ├── agent/           # Agent engine, orchestrator, providers
 │   │   │   │   ├── providers/   # Multi-provider implementations
-│   │   │   │   └── tools/       # 50+ built-in tool definitions
+│   │   │   │   └── tools/       # 100+ built-in tool definitions
 │   │   │   ├── plugins/         # Plugin system with isolation, marketplace
 │   │   │   ├── events/          # EventBus, HookBus, ScopedBus
 │   │   │   ├── services/        # Service registry (DI container)
@@ -256,15 +256,15 @@ ownpilot/
 
 ### Core (`@ownpilot/core`)
 
-The foundational runtime library with **zero external dependencies** (Node.js built-ins only). Contains the AI engine, tool system, plugin architecture, security primitives, and cryptography.
+The foundational runtime library. Contains the AI engine, tool system, plugin architecture, security primitives, and cryptography. Minimal dependencies (only `googleapis` for Google OAuth).
 
-**~25,000 LOC** across 158 TypeScript files.
+**~67,000 LOC** across 156 source files.
 
 | Module | Description |
 |--------|-------------|
 | `agent/` | Agent engine with multi-provider support, orchestrator, tool-calling loop |
 | `agent/providers/` | Provider implementations (OpenAI, Anthropic, Google, Zhipu, OpenAI-compatible) |
-| `agent/tools/` | 50+ built-in tool definitions and executors |
+| `agent/tools/` | 100+ built-in tool definitions and executors |
 | `plugins/` | Plugin system with isolation, marketplace, signing, runtime |
 | `events/` | 3-in-1 event system: EventBus (fire-and-forget), HookBus (interceptable), ScopedBus (namespaced) |
 | `services/` | Service registry (DI container) with typed tokens |
@@ -280,9 +280,9 @@ The foundational runtime library with **zero external dependencies** (Node.js bu
 
 The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, plugin management, and channel integration.
 
-**~60,000 LOC** across 293 TypeScript files. **66 test files** with **1,507 tests**.
+**~60,000 LOC** across 179 source files. **120 test files** with **4,524 tests**.
 
-**Route Modules (38):**
+**Route Modules (40):**
 
 | Category | Routes |
 |----------|--------|
@@ -582,7 +582,7 @@ Multi-step autonomous execution:
 
 ## Database
 
-PostgreSQL via `better-sqlite3` adapter pattern with 40+ repositories.
+PostgreSQL with 40+ repositories via the `pg` adapter.
 
 ### Key Tables
 
@@ -917,7 +917,7 @@ pnpm clean            # Clear all build artifacts
 | **Web UI** | React 19 + Vite 6 + Tailwind CSS 4 |
 | **Database** | PostgreSQL |
 | **Telegram** | Grammy |
-| **Testing** | Vitest 2.x (66 test files, 1,507 tests) |
+| **Testing** | Vitest 2.x (188 test files, 8,914 tests) |
 | **Linting** | ESLint 9 (flat config) |
 | **Formatting** | Prettier 3.x |
 | **Git Hooks** | Husky (pre-commit: lint + typecheck) |

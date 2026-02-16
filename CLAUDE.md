@@ -6,7 +6,7 @@ Privacy-first personal AI assistant platform. TypeScript monorepo with Turborepo
 
 ```
 packages/
-  core/      - Agent engine, tools, plugins, events, sandbox, privacy (zero external deps goal)
+  core/      - Agent engine, tools, plugins, events, sandbox, privacy
   gateway/   - Hono HTTP API server, routes, services, DB, channels, triggers, WebSocket
   ui/        - React 19 + Vite + Tailwind frontend (40 routes, code-split)
   cli/       - Commander.js CLI (bot, config, start, workspace commands)
@@ -20,7 +20,7 @@ packages/
 - **Pagination**: `parsePagination(c)` and `paginatedResponse(c, items, total, page, limit)` helpers
 - **Event system**: EventBus, HookBus, ScopedBus in `packages/core/src/events/`
 - **Plugin system**: PluginRegistry with isolation, marketplace, runtime in `packages/core/src/plugins/`
-- **Test framework**: Vitest across all packages. Gateway has 66 test files (1507 tests)
+- **Test framework**: Vitest across all packages. 188 test files, 8,914 tests total (gateway: 120 files, 4,524 tests)
 
 ## Commands
 
@@ -47,7 +47,7 @@ pnpm run typecheck    # TypeScript type checking
 
 ## Database
 
-SQLite via better-sqlite3. Repositories in `packages/gateway/src/db/repositories/`. Data stores abstraction in `packages/gateway/src/db/data-stores.ts`.
+PostgreSQL via pg adapter. Repositories in `packages/gateway/src/db/repositories/`. Adapter abstraction in `packages/gateway/src/db/adapters/`.
 
 ## Conventions
 
