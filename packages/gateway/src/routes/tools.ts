@@ -24,9 +24,6 @@ import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { initToolSourceMappings, getToolSource } from '../services/tool-source.js';
 import { TRIGGER_TOOLS, PLAN_TOOLS, HEARTBEAT_TOOLS, SKILL_PACKAGE_TOOLS } from '../tools/index.js';
-import { getLog } from '../services/log.js';
-
-const log = getLog('Tools');
 
 export const toolsRoutes = new Hono();
 
