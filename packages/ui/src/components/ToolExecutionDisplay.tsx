@@ -179,8 +179,11 @@ interface ToolResultDisplayProps {
 }
 
 function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
+  // Strip namespace prefix (e.g. 'core.read_file' → 'read_file') for display matching
+  const baseName = toolName.includes('.') ? toolName.substring(toolName.lastIndexOf('.') + 1) : toolName;
+
   // File system tools - show file content
-  if (toolName === 'read_file' && typeof result === 'object' && result !== null && result.content) {
+  if (baseName === 'read_file' && typeof result === 'object' && result !== null && result.content) {
     return (
       <div className="space-y-2">
         {result.path && (
@@ -200,7 +203,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   }
 
   // Directory listing
-  if (toolName === 'list_directory' && typeof result === 'object' && result !== null && result.files) {
+  if (baseName === 'list_directory' && typeof result === 'object' && result !== null && result.files) {
     return (
       <div className="space-y-1">
         {result.files.map((file: { isDirectory?: boolean; name?: string; size?: number }, i: number) => (
@@ -228,7 +231,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   }
 
   // Code execution results
-  if ((toolName.startsWith('execute_') || toolName === 'compile_code' || toolName === 'package_manager') && typeof result === 'object' && result !== null) {
+  if ((baseName.startsWith('execute_') || baseName === 'compile_code' || baseName === 'package_manager') && typeof result === 'object' && result !== null) {
     return (
       <div className="space-y-3">
         {result.stdout && (
@@ -273,7 +276,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   }
 
   // Web fetch results
-  if ((toolName === 'fetch_web_page' || toolName === 'http_request') && typeof result === 'object' && result !== null) {
+  if ((baseName === 'fetch_web_page' || baseName === 'http_request') && typeof result === 'object' && result !== null) {
     return (
       <div className="space-y-3">
         {result.status && (
@@ -322,7 +325,7 @@ function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
   }
 
   // Search results
-  if (toolName === 'search_web' && typeof result === 'object' && result !== null && result.results) {
+  if (baseName === 'search_web' && typeof result === 'object' && result !== null && result.results) {
     return (
       <div className="space-y-2">
         {result.results.map((item: { url?: string; title?: string; description?: string; snippet?: string }, i: number) => (
