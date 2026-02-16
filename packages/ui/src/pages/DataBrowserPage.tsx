@@ -19,6 +19,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
 import { useDebouncedValue, useModalClose } from '../hooks';
+import { apiClient } from '../api/client';
 
 // Data types
 type DataType = 'tasks' | 'bookmarks' | 'notes' | 'calendar' | 'contacts' | 'expenses';
@@ -35,7 +36,7 @@ const DATA_TYPES: Record<DataType, DataTypeConfig> = {
   tasks: {
     name: 'Tasks',
     icon: CheckCircle2,
-    endpoint: '/api/v1/tasks',
+    endpoint: '/tasks',
     columns: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'status', label: 'Status', type: 'text' },
@@ -48,7 +49,7 @@ const DATA_TYPES: Record<DataType, DataTypeConfig> = {
   bookmarks: {
     name: 'Bookmarks',
     icon: Bookmark,
-    endpoint: '/api/v1/bookmarks',
+    endpoint: '/bookmarks',
     columns: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'url', label: 'URL', type: 'text' },
@@ -61,7 +62,7 @@ const DATA_TYPES: Record<DataType, DataTypeConfig> = {
   notes: {
     name: 'Notes',
     icon: FileText,
-    endpoint: '/api/v1/notes',
+    endpoint: '/notes',
     columns: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'category', label: 'Category', type: 'text' },
@@ -73,7 +74,7 @@ const DATA_TYPES: Record<DataType, DataTypeConfig> = {
   calendar: {
     name: 'Calendar Events',
     icon: Calendar,
-    endpoint: '/api/v1/calendar',
+    endpoint: '/calendar',
     columns: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'startTime', label: 'Start', type: 'date' },
@@ -86,7 +87,7 @@ const DATA_TYPES: Record<DataType, DataTypeConfig> = {
   contacts: {
     name: 'Contacts',
     icon: Users,
-    endpoint: '/api/v1/contacts',
+    endpoint: '/contacts',
     columns: [
       { key: 'name', label: 'Name', type: 'text' },
       { key: 'email', label: 'Email', type: 'text' },
@@ -99,7 +100,7 @@ const DATA_TYPES: Record<DataType, DataTypeConfig> = {
   expenses: {
     name: 'Expenses',
     icon: DollarSign,
-    endpoint: '/api/v1/expenses',
+    endpoint: '/expenses',
     columns: [
       { key: 'date', label: 'Date', type: 'date' },
       { key: 'description', label: 'Description', type: 'text' },
@@ -110,12 +111,6 @@ const DATA_TYPES: Record<DataType, DataTypeConfig> = {
     searchable: true,
   },
 };
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
 
 function formatCellValue(value: unknown, type: string): string {
   if (value === null || value === undefined) return '-';
@@ -150,23 +145,21 @@ export function DataBrowserPage() {
   const fetchRecords = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams();
+      const params: Record<string, string> = { limit: '100' };
       if (debouncedSearch && config.searchable) {
-        params.append('search', debouncedSearch);
+        params.search = debouncedSearch;
       }
-      params.append('limit', '100');
 
-      const response = await fetch(`${config.endpoint}?${params}`);
-      const data: ApiResponse<Record<string, unknown>[] | Record<string, unknown>> = await response.json();
-      if (data.success && data.data) {
-        // Expenses API wraps array in { expenses: [...] }
-        const items = Array.isArray(data.data)
-          ? data.data
-          : (data.data as Record<string, unknown>).expenses as Record<string, unknown>[] ?? [];
-        setRecords(items);
-      }
+      const data = await apiClient.get<Record<string, unknown>[] | Record<string, unknown>>(
+        config.endpoint, { params },
+      );
+      // Expenses API wraps array in { expenses: [...] }
+      const items = Array.isArray(data)
+        ? data
+        : (data as Record<string, unknown>).expenses as Record<string, unknown>[] ?? [];
+      setRecords(items);
     } catch {
-      // API client handles error reporting
+      // apiClient fires global error handler
     } finally {
       setIsLoading(false);
     }
@@ -186,14 +179,9 @@ export function DataBrowserPage() {
     if (!await confirm({ message: 'Are you sure you want to delete this record?', variant: 'danger' })) return;
 
     try {
-      const response = await fetch(`${config.endpoint}/${recordId}`, {
-        method: 'DELETE',
-      });
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Record deleted');
-        fetchRecords();
-      }
+      await apiClient.delete(`${config.endpoint}/${recordId}`);
+      toast.success('Record deleted');
+      fetchRecords();
     } catch {
       toast.error('Failed to delete record');
     }
@@ -437,22 +425,13 @@ function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalP
     setIsSaving(true);
 
     try {
-      const url = record
-        ? `${config.endpoint}/${record.id}`
-        : config.endpoint;
-      const method = record ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success(record ? 'Record updated' : 'Record created');
-        onSave();
+      if (record) {
+        await apiClient.put(`${config.endpoint}/${record.id}`, formData);
+      } else {
+        await apiClient.post(config.endpoint, formData);
       }
+      toast.success(record ? 'Record updated' : 'Record created');
+      onSave();
     } catch {
       toast.error(record ? 'Failed to update record' : 'Failed to create record');
     } finally {
