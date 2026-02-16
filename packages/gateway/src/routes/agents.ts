@@ -46,7 +46,7 @@ import {
 } from './custom-tools.js';
 import { getToolSource } from '../services/tool-source.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
-import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool } from '../tools/index.js';
+import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool, HEARTBEAT_TOOLS, executeHeartbeatTool } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import {
   traceToolCallStart,
@@ -239,6 +239,7 @@ function registerGatewayTools(
     { definitions: CONFIG_TOOLS, executor: executeConfigTool as ToolExecutor, needsUserId: false },
     { definitions: TRIGGER_TOOLS, executor: executeTriggerTool, needsUserId: true },
     { definitions: PLAN_TOOLS, executor: executePlanTool, needsUserId: true },
+    { definitions: HEARTBEAT_TOOLS, executor: executeHeartbeatTool, needsUserId: true },
   ];
 
   for (const group of groups) {
@@ -900,7 +901,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Separate standard tools (from TOOL_GROUPS) and special tools that bypass filtering
   // Filter getToolDefinitions() to exclude stubs that were unregistered above
   const coreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS];
+  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS];
 
   // These tools ALWAYS bypass toolGroup filtering:
   // - DYNAMIC_TOOL_DEFINITIONS: Meta-tools for managing custom tools (create_tool, etc.)
@@ -1429,7 +1430,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // Get tool definitions for prompt injection (including all registered tools)
   // Filter getToolDefinitions() to exclude stubs removed above
   const chatCoreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs];
+  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs];
 
   // Inject personal memory into system prompt
   const basePrompt = BASE_SYSTEM_PROMPT;

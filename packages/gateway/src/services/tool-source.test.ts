@@ -88,6 +88,7 @@ describe('Tool Source Service', () => {
           personalDataNames: ['get_tasks'],
           triggerNames: ['create_trigger'],
           planNames: ['create_plan'],
+          heartbeatNames: ['create_heartbeat'],
         });
       }).not.toThrow();
     });

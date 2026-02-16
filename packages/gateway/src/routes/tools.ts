@@ -24,7 +24,7 @@ import { initializeToolOverrides } from '../services/tool-overrides.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { initToolSourceMappings, getToolSource } from '../services/tool-source.js';
-import { TRIGGER_TOOLS, PLAN_TOOLS } from '../tools/index.js';
+import { TRIGGER_TOOLS, PLAN_TOOLS, HEARTBEAT_TOOLS } from '../tools/index.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Tools');
@@ -39,6 +39,7 @@ initToolSourceMappings({
   personalDataNames: PERSONAL_DATA_TOOLS.map(t => t.name),
   triggerNames: TRIGGER_TOOLS.map(t => t.name),
   planNames: PLAN_TOOLS.map(t => t.name),
+  heartbeatNames: HEARTBEAT_TOOLS.map(t => t.name),
 });
 
 // Standalone tool registry for direct execution (no agent required)
