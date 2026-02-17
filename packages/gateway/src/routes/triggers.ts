@@ -13,6 +13,7 @@ import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression, getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
+import { wsGateway } from '../ws/server.js';
 
 export const triggersRoutes = new Hono();
 
@@ -72,6 +73,8 @@ triggersRoutes.post('/', async (c) => {
     const message = getErrorMessage(error, 'Failed to create trigger');
     return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message }, 400);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'created', id: trigger.id });
 
   return apiResponse(c, {
       trigger,
@@ -187,6 +190,8 @@ triggersRoutes.patch('/:id', async (c) => {
     return notFoundError(c, 'Trigger', id);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'updated', id });
+
   return apiResponse(c, updated);
 });
 
@@ -203,6 +208,8 @@ triggersRoutes.post('/:id/enable', async (c) => {
   if (!updated) {
     return notFoundError(c, 'Trigger', id);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'updated', id });
 
   return apiResponse(c, {
       trigger: updated,
@@ -223,6 +230,8 @@ triggersRoutes.post('/:id/disable', async (c) => {
   if (!updated) {
     return notFoundError(c, 'Trigger', id);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'updated', id });
 
   return apiResponse(c, {
       trigger: updated,
@@ -259,6 +268,8 @@ triggersRoutes.post('/:id/fire', async (c) => {
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error || 'Trigger execution failed.' }, 500);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'updated', id });
+
   return apiResponse(c, { result, message: 'Trigger fired successfully.' });
 });
 
@@ -275,6 +286,8 @@ triggersRoutes.delete('/:id', async (c) => {
   if (!deleted) {
     return notFoundError(c, 'Trigger', id);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'deleted', id });
 
   return apiResponse(c, {
       message: 'Trigger deleted successfully.',

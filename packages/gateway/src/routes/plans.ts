@@ -15,6 +15,7 @@ import { getPlanExecutor } from '../plans/index.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
+import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Plans');
@@ -61,6 +62,8 @@ plansRoutes.post('/', async (c) => {
 
   const service = getServiceRegistry().get(Services.Plan);
   const plan = await service.createPlan(userId, body);
+
+  wsGateway.broadcast('data:changed', { entity: 'plan', action: 'created', id: plan.id });
 
   return apiResponse(c, {
       plan,
@@ -149,6 +152,8 @@ plansRoutes.patch('/:id', async (c) => {
     return notFoundError(c, 'Plan', id);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
+
   return apiResponse(c, updated);
 });
 
@@ -165,6 +170,8 @@ plansRoutes.delete('/:id', async (c) => {
   if (!deleted) {
     return notFoundError(c, 'Plan', id);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'plan', action: 'deleted', id });
 
   return apiResponse(c, {
       message: 'Plan deleted successfully.',
@@ -201,8 +208,11 @@ plansRoutes.post('/:id/execute', async (c) => {
     log.info('Plan execution completed', { userId, planId: id, status: result.status, completedSteps: result.completedSteps });
 
     if (result.status !== 'completed') {
+      wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
       return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error ?? `Plan execution ended with status: ${result.status}` }, 500);
     }
+
+    wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     return apiResponse(c, {
         result,
@@ -231,6 +241,8 @@ plansRoutes.post('/:id/pause', async (c) => {
   try {
     const executor = getPlanExecutor({ userId });
     const paused = await executor.pause(id);
+
+    if (paused) wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     return apiResponse(c, {
         paused,
@@ -264,6 +276,8 @@ plansRoutes.post('/:id/resume', async (c) => {
     const executor = getPlanExecutor({ userId });
     const result = await executor.resume(id);
 
+    wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
+
     if (result.status !== 'completed') {
       return apiError(c, { code: ERROR_CODES.RESUME_ERROR, message: result.error ?? `Plan resume ended with status: ${result.status}` }, 500);
     }
@@ -295,6 +309,8 @@ plansRoutes.post('/:id/abort', async (c) => {
   try {
     const executor = getPlanExecutor({ userId });
     const aborted = await executor.abort(id);
+
+    if (aborted) wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     return apiResponse(c, {
         aborted,
@@ -330,6 +346,8 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
     const executor = getPlanExecutor({ userId });
     executor.checkpoint(id, body.data);
 
+    wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
+
     return apiResponse(c, {
         message: 'Checkpoint created.',
       });
@@ -363,6 +381,8 @@ plansRoutes.post('/:id/start', async (c) => {
     const result = await executor.execute(id);
 
     log.info('Plan execution completed', { userId, planId: id, status: result.status, completedSteps: result.completedSteps });
+
+    wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     if (result.status !== 'completed') {
       return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error ?? `Plan execution ended with status: ${result.status}` }, 500);
@@ -416,6 +436,8 @@ plansRoutes.post('/:id/rollback', async (c) => {
     await service.recalculateProgress(userId, id);
     await service.logEvent(userId, id, 'rollback', undefined, { checkpoint: checkpointData });
 
+    wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
+
     return apiResponse(c, {
         message: 'Plan rolled back to last checkpoint.',
         checkpoint: checkpointData,
@@ -467,6 +489,8 @@ plansRoutes.post('/:id/steps', async (c) => {
     const service = getServiceRegistry().get(Services.Plan);
     const step = await service.addStep(userId, id, body);
 
+    wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
+
     return apiResponse(c, {
         step,
         message: 'Step added successfully.',
@@ -512,6 +536,8 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
   if (!updated) {
     return notFoundError(c, 'Step', stepId);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id: c.req.param('id') });
 
   return apiResponse(c, updated);
 });

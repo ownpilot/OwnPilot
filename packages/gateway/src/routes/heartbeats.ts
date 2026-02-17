@@ -7,6 +7,7 @@
 import { Hono } from 'hono';
 import { getHeartbeatService, HeartbeatServiceError } from '../services/heartbeat-service.js';
 import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { wsGateway } from '../ws/server.js';
 
 export const heartbeatsRoutes = new Hono();
 
@@ -66,6 +67,7 @@ heartbeatsRoutes.post('/', async (c) => {
       enabled,
       tags,
     });
+    wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'created', id: heartbeat.id });
     return apiResponse(c, { heartbeat, message: 'Heartbeat created successfully.' }, 201);
   } catch (error) {
     if (error instanceof HeartbeatServiceError) {
@@ -143,6 +145,7 @@ heartbeatsRoutes.patch('/:id', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Heartbeat not found' }, 404);
     }
 
+    wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'updated', id });
     return apiResponse(c, { heartbeat, message: 'Heartbeat updated successfully.' });
   } catch (error) {
     if (error instanceof HeartbeatServiceError) {
@@ -166,6 +169,8 @@ heartbeatsRoutes.delete('/:id', async (c) => {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Heartbeat not found' }, 404);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'deleted', id });
+
   return apiResponse(c, { message: 'Heartbeat deleted successfully.' });
 });
 
@@ -183,6 +188,8 @@ heartbeatsRoutes.post('/:id/enable', async (c) => {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Heartbeat not found' }, 404);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'updated', id });
+
   return apiResponse(c, { heartbeat, message: 'Heartbeat enabled.' });
 });
 
@@ -199,6 +206,8 @@ heartbeatsRoutes.post('/:id/disable', async (c) => {
   if (!heartbeat) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Heartbeat not found' }, 404);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'updated', id });
 
   return apiResponse(c, { heartbeat, message: 'Heartbeat disabled.' });
 });

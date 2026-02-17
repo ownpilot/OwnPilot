@@ -15,6 +15,7 @@ import type {
 import { MemoryServiceError } from '../services/memory-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError, truncate, validateQueryEnum, getErrorMessage } from './helpers.js';
+import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Memories');
@@ -66,6 +67,7 @@ memoriesRoutes.post('/', async (c) => {
 
     if (deduplicated) {
       log.info('Memory deduplicated', { userId, memoryId: memory.id, type: memory.type });
+      wsGateway.broadcast('data:changed', { entity: 'memory', action: 'updated', id: memory.id });
       return apiResponse(c, {
         memory,
         message: 'Similar memory exists, boosted importance instead.',
@@ -74,6 +76,7 @@ memoriesRoutes.post('/', async (c) => {
     }
 
     log.info('Memory created', { userId, memoryId: memory.id, type: memory.type, importance: memory.importance });
+    wsGateway.broadcast('data:changed', { entity: 'memory', action: 'created', id: memory.id });
     return apiResponse(c, {
         memory,
         message: 'Memory created successfully.',
@@ -169,6 +172,8 @@ memoriesRoutes.patch('/:id', async (c) => {
     return notFoundError(c, 'Memory', id);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'memory', action: 'updated', id });
+
   return apiResponse(c, updated);
 });
 
@@ -194,6 +199,8 @@ memoriesRoutes.post('/:id/boost', async (c) => {
     return notFoundError(c, 'Memory', id);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'memory', action: 'updated', id });
+
   return apiResponse(c, {
       memory: boosted,
       message: `Memory importance boosted by ${amount}`,
@@ -216,6 +223,7 @@ memoriesRoutes.delete('/:id', async (c) => {
   }
 
   log.info('Memory deleted', { userId, memoryId: id });
+  wsGateway.broadcast('data:changed', { entity: 'memory', action: 'deleted', id });
   return apiResponse(c, {
       message: 'Memory deleted successfully.',
     });
@@ -235,6 +243,8 @@ memoriesRoutes.post('/decay', async (c) => {
 
   const service = getServiceRegistry().get(Services.Memory);
   const affected = await service.decayMemories(userId, body);
+
+  if (affected > 0) wsGateway.broadcast('data:changed', { entity: 'memory', action: 'updated' });
 
   return apiResponse(c, {
       affectedCount: affected,
@@ -256,6 +266,8 @@ memoriesRoutes.post('/cleanup', async (c) => {
 
   const service = getServiceRegistry().get(Services.Memory);
   const deleted = await service.cleanupMemories(userId, body);
+
+  if (deleted > 0) wsGateway.broadcast('data:changed', { entity: 'memory', action: 'deleted' });
 
   return apiResponse(c, {
       deletedCount: deleted,

@@ -21,6 +21,7 @@ import {
   type ProcessCaptureInput,
 } from '../db/repositories/captures.js';
 import { apiResponse, apiError, getUserId, getIntParam, ERROR_CODES, validateQueryEnum } from './helpers.js';
+import { wsGateway } from '../ws/server.js';
 
 export const productivityRoutes = new Hono();
 
@@ -67,6 +68,8 @@ pomodoroRoutes.post('/session/start', async (c) => {
 
   const session = await repo.startSession(body);
 
+  wsGateway.broadcast('data:changed', { entity: 'pomodoro', action: 'created', id: session.id });
+
   return apiResponse(c, { session, message: `${body.type} session started!` }, 201);
 });
 
@@ -83,6 +86,8 @@ pomodoroRoutes.post('/session/:id/complete', async (c) => {
   if (!session) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' }, 404);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'pomodoro', action: 'updated', id });
 
   return apiResponse(c, { session, message: 'Session completed!' });
 });
@@ -101,6 +106,8 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
   if (!session) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' }, 404);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'pomodoro', action: 'updated', id });
 
   return apiResponse(c, { session, message: 'Session interrupted.' });
 });
@@ -139,6 +146,8 @@ pomodoroRoutes.patch('/settings', async (c) => {
 
   const repo = getPomodoroRepo(userId);
   const settings = await repo.updateSettings(body);
+
+  wsGateway.broadcast('data:changed', { entity: 'pomodoro', action: 'updated' });
 
   return apiResponse(c, settings);
 });
@@ -206,6 +215,8 @@ habitsRoutes.post('/', async (c) => {
   const repo = getHabitsRepo(userId);
   const habit = await repo.create(body);
 
+  wsGateway.broadcast('data:changed', { entity: 'habit', action: 'created', id: habit.id });
+
   return apiResponse(c, { habit, message: 'Habit created!' }, 201);
 });
 
@@ -263,6 +274,8 @@ habitsRoutes.patch('/:id', async (c) => {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'habit', action: 'updated', id });
+
   return apiResponse(c, habit);
 });
 
@@ -280,6 +293,8 @@ habitsRoutes.delete('/:id', async (c) => {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'habit', action: 'deleted', id });
+
   return apiResponse(c, { message: 'Habit deleted.' });
 });
 
@@ -296,6 +311,8 @@ habitsRoutes.post('/:id/archive', async (c) => {
   if (!habit) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'habit', action: 'updated', id });
 
   return apiResponse(c, { habit, message: 'Habit archived.' });
 });
@@ -317,6 +334,8 @@ habitsRoutes.post('/:id/log', async (c) => {
 
   // Get updated habit stats
   const habit = await repo.get(id);
+
+  wsGateway.broadcast('data:changed', { entity: 'habit', action: 'updated', id });
 
   return apiResponse(c, { log, habit, message: 'Habit logged!' });
 });
@@ -384,6 +403,8 @@ capturesRoutes.post('/', async (c) => {
   const repo = getCapturesRepo(userId);
   const capture = await repo.create(body);
   const inboxCount = await repo.getInboxCount();
+
+  wsGateway.broadcast('data:changed', { entity: 'capture', action: 'created', id: capture.id });
 
   return apiResponse(c, {
       capture,
@@ -467,6 +488,8 @@ capturesRoutes.post('/:id/process', async (c) => {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' }, 404);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'capture', action: 'updated', id });
+
   return apiResponse(c, {
       capture,
       message: body.processedAsType === 'discarded'
@@ -488,6 +511,8 @@ capturesRoutes.delete('/:id', async (c) => {
   if (!deleted) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' }, 404);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'capture', action: 'deleted', id });
 
   return apiResponse(c, { message: 'Capture deleted.' });
 });

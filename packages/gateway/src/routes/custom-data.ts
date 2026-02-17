@@ -12,6 +12,7 @@ import { apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, sanitizeTe
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { CustomDataServiceError } from '../services/custom-data-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
+import { wsGateway } from '../ws/server.js';
 
 export const customDataRoutes = new Hono();
 
@@ -62,6 +63,8 @@ customDataRoutes.post('/tables', async (c) => {
       body.description,
     );
 
+    wsGateway.broadcast('data:changed', { entity: 'custom_table', action: 'created', id: table.id });
+
     return apiResponse(c, table, 201);
   } catch (err) {
     if (err instanceof CustomDataServiceError && err.code === 'VALIDATION_ERROR') {
@@ -111,6 +114,8 @@ customDataRoutes.put('/tables/:table', async (c) => {
     return notFoundError(c, 'Table', tableId);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'custom_table', action: 'updated', id: tableId });
+
   return apiResponse(c, updated);
 });
 
@@ -128,6 +133,8 @@ customDataRoutes.delete('/tables/:table', async (c) => {
     if (!deleted) {
       return notFoundError(c, 'Table', tableId);
     }
+
+    wsGateway.broadcast('data:changed', { entity: 'custom_table', action: 'deleted', id: tableId });
 
     return apiResponse(c, { deleted: true });
   } catch (err) {
@@ -193,6 +200,8 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
     const service = getServiceRegistry().get(Services.Database);
     const record = await service.addRecord(tableId, body.data);
 
+    wsGateway.broadcast('data:changed', { entity: 'custom_record', action: 'created', id: record.id });
+
     return apiResponse(c, record, 201);
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.ADD_FAILED, message: getErrorMessage(err, 'Failed to add record') }, 400);
@@ -257,6 +266,8 @@ customDataRoutes.put('/records/:id', async (c) => {
       return notFoundError(c, 'Record', recordId);
     }
 
+    wsGateway.broadcast('data:changed', { entity: 'custom_record', action: 'updated', id: recordId });
+
     return apiResponse(c, updated);
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(err, 'Failed to update record') }, 400);
@@ -274,6 +285,8 @@ customDataRoutes.delete('/records/:id', async (c) => {
   if (!deleted) {
     return notFoundError(c, 'Record', recordId);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'custom_record', action: 'deleted', id: recordId });
 
   return apiResponse(c, { deleted: true });
 });

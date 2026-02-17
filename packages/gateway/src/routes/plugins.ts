@@ -18,6 +18,7 @@ import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, validate
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
+import { wsGateway } from '../ws/server.js';
 
 const log = getLog('Plugins');
 
@@ -222,6 +223,8 @@ pluginsRoutes.post('/:id/enable', async (c) => {
 
   const plugin = registry.get(id)!;
 
+  wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'updated', id });
+
   return apiResponse(c, {
     message: `Plugin ${plugin.manifest.name} enabled`,
     plugin: toPluginInfo(plugin),
@@ -244,6 +247,8 @@ pluginsRoutes.post('/:id/disable', async (c) => {
   await pluginsRepo.updateStatus(id, 'disabled');
 
   const plugin = registry.get(id)!;
+
+  wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'updated', id });
 
   return apiResponse(c, {
     message: `Plugin ${plugin.manifest.name} disabled`,
@@ -273,6 +278,8 @@ pluginsRoutes.put('/:id/config', async (c) => {
   if (plugin.lifecycle.onConfigChange) {
     await plugin.lifecycle.onConfigChange(plugin.config.settings);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'updated', id });
 
   return apiResponse(c, {
     message: 'Configuration updated',
@@ -305,6 +312,8 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
   plugin.config.updatedAt = new Date().toISOString();
 
   await pluginsRepo.updatePermissions(id, body.permissions);
+
+  wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'updated', id });
 
   return apiResponse(c, {
     message: 'Permissions updated',
@@ -368,6 +377,8 @@ pluginsRoutes.put('/:id/settings', async (c) => {
     }
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'updated', id });
+
   return apiResponse(c, { settings: mergedSettings });
 });
 
@@ -420,6 +431,8 @@ pluginsRoutes.delete('/:id', async (c) => {
 
   const name = plugin.manifest.name;
   const success = await registry.unregister(id);
+
+  if (success) wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'deleted', id });
 
   return apiResponse(c, {
     message: `Plugin ${name} uninstalled`,

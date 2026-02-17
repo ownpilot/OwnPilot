@@ -31,6 +31,7 @@ import {
 import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam, sanitizeId, sanitizeText, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
 import { TOOL_TEMPLATES } from './tool-templates.js';
 import { TOOL_ARGS_MAX_SIZE } from '../config/defaults.js';
+import { wsGateway } from '../ws/server.js';
 
 export const customToolsRoutes = new Hono();
 
@@ -292,6 +293,8 @@ customToolsRoutes.post('/', async (c) => {
   // Invalidate agent cache so new tool is available
   invalidateAgentCache();
 
+  wsGateway.broadcast('data:changed', { entity: 'custom_tool', action: 'created', id: tool.id });
+
   return apiResponse(c, tool, 201);
 });
 
@@ -343,6 +346,8 @@ customToolsRoutes.patch('/:id', async (c) => {
   // Invalidate agent cache so tool changes take effect
   invalidateAgentCache();
 
+  wsGateway.broadcast('data:changed', { entity: 'custom_tool', action: 'updated', id });
+
   return apiResponse(c, tool);
 });
 
@@ -373,6 +378,8 @@ customToolsRoutes.delete('/:id', async (c) => {
   // Invalidate agent cache so tool removal takes effect
   invalidateAgentCache();
 
+  wsGateway.broadcast('data:changed', { entity: 'custom_tool', action: 'deleted', id });
+
   return apiResponse(c, { deleted: true });
 });
 
@@ -397,6 +404,8 @@ customToolsRoutes.post('/:id/enable', async (c) => {
   // Invalidate agent cache so enabled tool becomes available
   invalidateAgentCache();
 
+  wsGateway.broadcast('data:changed', { entity: 'custom_tool', action: 'updated', id });
+
   return apiResponse(c, tool);
 });
 
@@ -416,6 +425,8 @@ customToolsRoutes.post('/:id/disable', async (c) => {
 
   // Invalidate agent cache so disabled tool is removed
   invalidateAgentCache();
+
+  wsGateway.broadcast('data:changed', { entity: 'custom_tool', action: 'updated', id });
 
   return apiResponse(c, tool);
 });
@@ -441,6 +452,7 @@ customToolsRoutes.post('/:id/approve', async (c) => {
     syncToolToRegistry(approved);
     // Invalidate agent cache so approved tool becomes available
     invalidateAgentCache();
+    wsGateway.broadcast('data:changed', { entity: 'custom_tool', action: 'updated', id });
   }
 
   return apiResponse(c, approved);
@@ -463,6 +475,8 @@ customToolsRoutes.post('/:id/reject', async (c) => {
   }
 
   const rejected = await repo.reject(id);
+
+  wsGateway.broadcast('data:changed', { entity: 'custom_tool', action: 'updated', id });
 
   return apiResponse(c, rejected);
 });
@@ -906,6 +920,8 @@ customToolsRoutes.post('/templates/:templateId/create', async (c) => {
 
   syncToolToRegistry(tool);
   invalidateAgentCache();
+
+  wsGateway.broadcast('data:changed', { entity: 'custom_tool', action: 'created', id: tool.id });
 
   return apiResponse(c, tool, 201);
 });

@@ -174,7 +174,10 @@ export interface ServerEvents {
 
   // Data change events (personal data CRUD)
   'data:changed': {
-    entity: 'task' | 'note' | 'bookmark' | 'contact' | 'calendar' | 'expense' | 'goal' | 'memory';
+    entity: 'task' | 'note' | 'bookmark' | 'contact' | 'calendar' | 'expense' | 'goal' | 'memory'
+      | 'plan' | 'trigger' | 'heartbeat' | 'custom_tool' | 'custom_table' | 'custom_record'
+      | 'config_service' | 'workspace' | 'plugin'
+      | 'pomodoro' | 'habit' | 'capture';
     action: 'created' | 'updated' | 'deleted';
     id?: string;
     count?: number;

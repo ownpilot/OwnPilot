@@ -20,6 +20,7 @@ import {
   StorageSecurityError,
 } from '@ownpilot/core';
 import { apiResponse, apiError, ERROR_CODES, getIntParam, getUserId, zodValidationError, getErrorMessage } from './helpers.js';
+import { wsGateway } from '../ws/server.js';
 
 const app = new Hono();
 
@@ -171,6 +172,8 @@ app.post('/', async (c) => {
 
     await repo.logAudit('create', 'workspace', workspace.id);
 
+    wsGateway.broadcast('data:changed', { entity: 'workspace', action: 'created', id: workspace.id });
+
     return apiResponse(c, {
         id: workspace.id,
         userId: workspace.userId,
@@ -274,6 +277,8 @@ app.patch('/:id', async (c) => {
 
     await repo.logAudit('write', 'workspace', workspaceId);
 
+    wsGateway.broadcast('data:changed', { entity: 'workspace', action: 'updated', id: workspaceId });
+
     return apiResponse(c, { updated: true });
   } catch (error) {
     const msg = getErrorMessage(error, 'Failed to update workspace');
@@ -314,6 +319,8 @@ app.delete('/:id', async (c) => {
     // await storage.deleteUserStorage(`${userId}/${workspaceId}`);
 
     await repo.logAudit('delete', 'workspace', workspaceId);
+
+    wsGateway.broadcast('data:changed', { entity: 'workspace', action: 'deleted', id: workspaceId });
 
     return apiResponse(c, { deleted: true });
   } catch (error) {

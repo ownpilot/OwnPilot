@@ -11,6 +11,7 @@ import { configServicesRepo } from '../db/repositories/config-services.js';
 import type { CreateConfigServiceInput, UpdateConfigServiceInput, CreateConfigEntryInput, UpdateConfigEntryInput } from '../db/repositories/config-services.js';
 import type { ConfigServiceDefinition, ConfigEntry, ConfigFieldDefinition } from '@ownpilot/core';
 import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, maskSecret } from './helpers.js'
+import { wsGateway } from '../ws/server.js';
 
 export const configServicesRoutes = new Hono();
 
@@ -165,6 +166,8 @@ configServicesRoutes.post('/', async (c) => {
 
   const service = await configServicesRepo.create(body);
 
+  wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'created', id: service.name });
+
   return apiResponse(c, sanitizeService(service), 201);
 });
 
@@ -180,6 +183,8 @@ configServicesRoutes.put('/:name', async (c) => {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'updated', id: name });
+
   return apiResponse(c, sanitizeService(updated));
 });
 
@@ -193,6 +198,8 @@ configServicesRoutes.delete('/:name', async (c) => {
   if (!deleted) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'deleted', id: name });
 
   return apiResponse(c, { deleted: true });
 });
@@ -231,6 +238,8 @@ configServicesRoutes.post('/:name/entries', async (c) => {
 
   const body = await c.req.json<CreateConfigEntryInput>();
   const entry = await configServicesRepo.createEntry(name, body);
+
+  wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'updated', id: name });
 
   return apiResponse(c, sanitizeEntry(entry, service.configSchema), 201);
 });
@@ -275,6 +284,8 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
     return notFoundError(c, 'Config entry', entryId);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'updated', id: name });
+
   return apiResponse(c, sanitizeEntry(updated, service.configSchema));
 });
 
@@ -294,6 +305,8 @@ configServicesRoutes.delete('/:name/entries/:entryId', async (c) => {
   if (!deleted) {
     return notFoundError(c, 'Config entry', entryId);
   }
+
+  wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'updated', id: name });
 
   return apiResponse(c, { deleted: true });
 });
@@ -318,6 +331,8 @@ configServicesRoutes.put('/:name/entries/:entryId/default', async (c) => {
   }
 
   await configServicesRepo.setDefaultEntry(name, entryId);
+
+  wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'updated', id: name });
 
   // Fetch the updated entry from cache
   const updatedEntries = configServicesRepo.getEntries(name);

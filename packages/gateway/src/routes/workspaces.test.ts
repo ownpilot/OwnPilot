@@ -27,6 +27,11 @@ vi.mock('@ownpilot/core', () => ({
   },
 }));
 
+// Mock WebSocket gateway
+vi.mock('../ws/server.js', () => ({
+  wsGateway: { broadcast: vi.fn() },
+}));
+
 // Mock the repository
 vi.mock('../db/repositories/workspaces.js', () => ({
   WorkspacesRepository: vi.fn(),
