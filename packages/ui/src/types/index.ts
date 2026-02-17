@@ -145,6 +145,16 @@ export interface SessionInfo {
   contextFillPercent: number;
 }
 
+export interface ContextBreakdown {
+  systemPromptTokens: number;
+  messageHistoryTokens: number;
+  messageCount: number;
+  maxContextTokens: number;
+  modelName: string;
+  providerName: string;
+  sections: Array<{ name: string; tokens: number }>;
+}
+
 export interface ChatResponse {
   id?: string;
   message?: string;

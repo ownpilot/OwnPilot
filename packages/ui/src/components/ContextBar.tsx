@@ -4,6 +4,7 @@ import { Plus } from './icons';
 interface ContextBarProps {
   sessionInfo: SessionInfo | null;
   onNewSession: () => void;
+  onShowDetail?: () => void;
 }
 
 function formatTokens(n: number): string {
@@ -24,7 +25,7 @@ function getFillTextColor(percent: number): string {
   return 'text-emerald-600 dark:text-emerald-400';
 }
 
-export function ContextBar({ sessionInfo, onNewSession }: ContextBarProps) {
+export function ContextBar({ sessionInfo, onNewSession, onShowDetail }: ContextBarProps) {
   if (!sessionInfo) return null;
 
   const { messageCount, estimatedTokens, maxContextTokens, contextFillPercent } = sessionInfo;
@@ -36,18 +37,22 @@ export function ContextBar({ sessionInfo, onNewSession }: ContextBarProps) {
         {messageCount} msgs
       </span>
 
-      {/* Token progress bar */}
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <div className="flex-1 h-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-full overflow-hidden">
+      {/* Token progress bar — clickable for detail */}
+      <button
+        onClick={onShowDetail}
+        className="flex items-center gap-2 flex-1 min-w-0 group"
+        title="Click for context breakdown"
+      >
+        <div className="flex-1 h-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-full overflow-hidden group-hover:h-2 transition-all">
           <div
             className={`h-full rounded-full transition-all duration-300 ${getFillColor(contextFillPercent)}`}
             style={{ width: `${Math.min(100, contextFillPercent)}%` }}
           />
         </div>
-        <span className="text-text-secondary dark:text-dark-text-secondary whitespace-nowrap">
+        <span className="text-text-secondary dark:text-dark-text-secondary whitespace-nowrap group-hover:text-text-primary dark:group-hover:text-dark-text-primary transition-colors">
           {formatTokens(estimatedTokens)} / {formatTokens(maxContextTokens)}
         </span>
-      </div>
+      </button>
 
       {/* Fill % */}
       <span className={`font-medium whitespace-nowrap ${getFillTextColor(contextFillPercent)}`}>

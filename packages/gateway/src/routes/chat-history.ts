@@ -8,7 +8,8 @@
 import { Hono } from 'hono';
 import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
-import { resetChatAgentContext, clearAllChatAgentCaches, getDefaultModel } from './agents.js';
+import { resetChatAgentContext, clearAllChatAgentCaches, getDefaultModel, getContextBreakdown, compactContext } from './agents.js';
+import { getDefaultProvider } from './settings.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
 import { parseLimit, parseOffset } from '../utils/index.js';
 
@@ -354,4 +355,43 @@ chatHistoryRoutes.post('/reset-context', async (c) => {
       ? `Context reset for ${provider}/${model}`
       : `No cached agent found for ${provider}/${model}`,
   });
+});
+
+// =====================================================
+// CONTEXT MANAGEMENT
+// =====================================================
+
+/**
+ * Get detailed context breakdown for the current chat session.
+ * Shows system prompt sections, message history tokens, and model limits.
+ */
+chatHistoryRoutes.get('/context-detail', async (c) => {
+  const provider = c.req.query('provider') ?? await getDefaultProvider() ?? 'openai';
+  const model = c.req.query('model') ?? await getDefaultModel(provider) ?? 'gpt-4o';
+
+  const breakdown = getContextBreakdown(provider, model);
+  return apiResponse(c, { breakdown });
+});
+
+/**
+ * Compact conversation context by summarizing old messages.
+ * Keeps recent messages and replaces older ones with a concise AI-generated summary.
+ */
+chatHistoryRoutes.post('/compact', async (c) => {
+  const body = await c.req.json().catch(() => null) as {
+    provider?: string;
+    model?: string;
+    keepRecentMessages?: number;
+  } | null;
+
+  const provider = body?.provider ?? await getDefaultProvider() ?? 'openai';
+  const model = body?.model ?? await getDefaultModel(provider) ?? 'gpt-4o';
+  const keepRecent = body?.keepRecentMessages ?? 6;
+
+  try {
+    const result = await compactContext(provider, model, keepRecent);
+    return apiResponse(c, result);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
 });

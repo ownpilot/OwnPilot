@@ -37,6 +37,8 @@ import {
   qualifyToolName,
   getBaseName,
   getModelPricing,
+  createProvider,
+  type ProviderConfig,
 } from '@ownpilot/core';
 import { executeMemoryTool } from './memories.js';
 import { executeGoalTool } from './goals.js';
@@ -1729,6 +1731,173 @@ export function clearAllChatAgentCaches(): number {
   chatAgentCache.clear();
   log.info(`Cleared ${count} cached chat agents`);
   return count;
+}
+
+// =============================================================================
+// Context breakdown (detailed token usage)
+// =============================================================================
+
+export interface ContextBreakdown {
+  systemPromptTokens: number;
+  messageHistoryTokens: number;
+  messageCount: number;
+  maxContextTokens: number;
+  modelName: string;
+  providerName: string;
+  sections: Array<{ name: string; tokens: number }>;
+}
+
+/**
+ * Get detailed context breakdown for a cached chat agent.
+ * Parses the system prompt into sections and estimates token counts.
+ */
+export function getContextBreakdown(provider: string, model: string): ContextBreakdown | null {
+  const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
+  const agent = chatAgentCache.get(cacheKey);
+  if (!agent) return null;
+
+  const conversation = agent.getConversation();
+  const memory = agent.getMemory();
+  const pricing = getModelPricing(provider as AIProvider, model);
+  const systemPrompt = conversation.systemPrompt ?? '';
+  const stats = memory.getStats(conversation.id);
+
+  // Parse system prompt into sections by ## headings
+  const sections: Array<{ name: string; tokens: number }> = [];
+  const headingRegex = /^## (.+)/gm;
+  const headings: Array<{ name: string; start: number }> = [];
+  let m;
+  while ((m = headingRegex.exec(systemPrompt)) !== null) {
+    headings.push({ name: m[1]!, start: m.index });
+  }
+
+  // Base prompt (everything before first ## heading)
+  const firstHeading = headings[0];
+  if (firstHeading && firstHeading.start > 0) {
+    sections.push({ name: 'Base Prompt', tokens: Math.ceil(firstHeading.start / 4) });
+  } else if (headings.length === 0 && systemPrompt.length > 0) {
+    sections.push({ name: 'System Prompt', tokens: Math.ceil(systemPrompt.length / 4) });
+  }
+
+  // Each ## section
+  for (let i = 0; i < headings.length; i++) {
+    const heading = headings[i]!;
+    const end = headings[i + 1]?.start ?? systemPrompt.length;
+    sections.push({
+      name: heading.name,
+      tokens: Math.ceil((end - heading.start) / 4),
+    });
+  }
+
+  return {
+    systemPromptTokens: Math.ceil(systemPrompt.length / 4),
+    messageHistoryTokens: stats?.estimatedTokens ?? 0,
+    messageCount: stats?.messageCount ?? 0,
+    maxContextTokens: pricing?.contextWindow ?? 128_000,
+    modelName: model,
+    providerName: provider,
+    sections,
+  };
+}
+
+// =============================================================================
+// Context compaction (summarize old messages)
+// =============================================================================
+
+/**
+ * Compact conversation context by summarizing old messages.
+ * Keeps the most recent messages and replaces older ones with a concise summary.
+ */
+export async function compactContext(
+  provider: string,
+  model: string,
+  keepRecentMessages: number = 6,
+): Promise<{ compacted: boolean; summary?: string; removedMessages: number; newTokenEstimate: number }> {
+  const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
+  const agent = chatAgentCache.get(cacheKey);
+  if (!agent) {
+    return { compacted: false, removedMessages: 0, newTokenEstimate: 0 };
+  }
+
+  const conversation = agent.getConversation();
+  const memory = agent.getMemory();
+  const messages = memory.getContextMessages(conversation.id);
+
+  // Not enough messages to compact
+  if (messages.length <= keepRecentMessages + 2) {
+    return { compacted: false, removedMessages: 0, newTokenEstimate: 0 };
+  }
+
+  // Split: older messages to summarize, recent to keep
+  const olderMessages = messages.slice(0, messages.length - keepRecentMessages);
+  const recentMessages = messages.slice(messages.length - keepRecentMessages);
+
+  // Build conversation text for summarization
+  const conversationText = olderMessages
+    .map(m => `${m.role}: ${typeof m.content === 'string' ? m.content : '[complex content]'}`)
+    .join('\n');
+
+  const summaryPrompt = `Summarize the following conversation history into a concise summary (max 200 words). Focus on key topics discussed, decisions made, and important context needed to continue the conversation naturally:\n\n${conversationText}`;
+
+  // Get API key for the provider
+  const apiKey = await getApiKey(provider);
+  if (!apiKey) {
+    return { compacted: false, removedMessages: 0, newTokenEstimate: 0 };
+  }
+
+  const providerConfig = loadProviderConfig(provider);
+  const providerType = NATIVE_PROVIDERS.has(provider) ? provider : 'openai';
+
+  try {
+    const summaryProvider = createProvider({
+      provider: providerType as ProviderConfig['provider'],
+      apiKey,
+      baseUrl: providerConfig?.baseUrl,
+    });
+
+    const result = await summaryProvider.complete({
+      messages: [{ role: 'user', content: summaryPrompt }],
+      model: { model, maxTokens: 500, temperature: 0.3 },
+    });
+
+    if (!result.ok) {
+      log.warn('Context compaction failed: AI summarization error');
+      return { compacted: false, removedMessages: 0, newTokenEstimate: 0 };
+    }
+
+    const summary = result.value.content;
+
+    // Clear and rebuild conversation with summary + recent messages
+    memory.clearMessages(conversation.id);
+
+    memory.addMessage(conversation.id, {
+      role: 'user',
+      content: `[Previous conversation summary: ${summary}]`,
+    });
+    memory.addMessage(conversation.id, {
+      role: 'assistant',
+      content: 'Understood. I have the context from our earlier conversation. How can I help?',
+    });
+
+    for (const msg of recentMessages) {
+      memory.addMessage(conversation.id, msg);
+    }
+
+    const newStats = memory.getStats(conversation.id);
+    const removedCount = olderMessages.length;
+
+    log.info(`Compacted context: removed ${removedCount} messages, kept ${recentMessages.length} recent`);
+
+    return {
+      compacted: true,
+      summary,
+      removedMessages: removedCount,
+      newTokenEstimate: newStats?.estimatedTokens ?? 0,
+    };
+  } catch (err) {
+    log.error('Context compaction error:', err);
+    return { compacted: false, removedMessages: 0, newTokenEstimate: 0 };
+  }
 }
 
 /**

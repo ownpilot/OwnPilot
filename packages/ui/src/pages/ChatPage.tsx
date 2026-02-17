@@ -5,6 +5,7 @@ import { MessageList } from '../components/MessageList';
 import { SuggestionChips } from '../components/SuggestionChips';
 import { MemoryCards } from '../components/MemoryCards';
 import { ContextBar } from '../components/ContextBar';
+import { ContextDetailModal } from '../components/ContextDetailModal';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
 import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
@@ -55,6 +56,7 @@ export function ChatPage() {
   const [providerNames, setProviderNames] = useState<Record<string, string>>({});
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [currentAgent, setCurrentAgent] = useState<AgentDetail | null>(null);
+  const [showContextDetail, setShowContextDetail] = useState(false);
 
   // Fetch data on mount (only if provider not set - preserves state on navigation)
   useEffect(() => {
@@ -234,6 +236,10 @@ export function ChatPage() {
     }
   };
 
+  const handleCompactContext = async () => {
+    await chatApi.compactContext(provider, model);
+  };
+
   const currentProviderName = providerNames[provider] ?? provider;
   const isProviderConfigured = configuredProviders.includes(provider);
 
@@ -376,7 +382,19 @@ export function ChatPage() {
       </header>
 
       {/* Session context bar */}
-      <ContextBar sessionInfo={sessionInfo} onNewSession={handleNewChat} />
+      <ContextBar sessionInfo={sessionInfo} onNewSession={handleNewChat} onShowDetail={() => setShowContextDetail(true)} />
+
+      {/* Context detail modal */}
+      {showContextDetail && sessionInfo && (
+        <ContextDetailModal
+          sessionInfo={sessionInfo}
+          provider={provider}
+          model={model}
+          onClose={() => setShowContextDetail(false)}
+          onCompact={handleCompactContext}
+          onClear={handleNewChat}
+        />
+      )}
 
       {/* Click outside to close menu */}
       {showProviderMenu && (
