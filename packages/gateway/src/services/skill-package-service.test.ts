@@ -382,12 +382,10 @@ describe('SkillPackageService', () => {
   describe('install (file-based)', () => {
     // fs is mocked at module level — get reference to mocked functions
     let mockReadFileSync: ReturnType<typeof vi.fn>;
-    let mockExistsSync: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       const fs = await import('fs');
       mockReadFileSync = fs.readFileSync as ReturnType<typeof vi.fn>;
-      mockExistsSync = fs.existsSync as ReturnType<typeof vi.fn>;
     });
 
     it('installs from .json file', async () => {
