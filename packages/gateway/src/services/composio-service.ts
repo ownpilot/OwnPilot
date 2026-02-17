@@ -44,6 +44,21 @@ export interface ComposioConnectionRequest {
   connectionStatus: string;
 }
 
+/** Safely extract a string from a value that may be string, object, or other. */
+function toStr(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  if (value != null && typeof value === 'object') {
+    const v = value as Record<string, unknown>;
+    // SDK objects may have name, slug, or key fields
+    if (typeof v.name === 'string') return v.name;
+    if (typeof v.slug === 'string') return v.slug;
+    if (typeof v.key === 'string') return v.key;
+    if (typeof v.id === 'string') return v.id;
+  }
+  if (value != null) return String(value);
+  return fallback;
+}
+
 class ComposioService {
   private client: unknown = null;
   private appsCache: { data: ComposioApp[]; timestamp: number } | null = null;
@@ -112,11 +127,11 @@ class ComposioService {
     const apps: ComposioApp[] = (response.items || []).map((item: unknown) => {
       const t = item as Record<string, unknown>;
       return {
-        slug: String(t.slug ?? ''),
-        name: String(t.name ?? t.slug ?? ''),
-        description: t.description ? String(t.description) : undefined,
-        logo: t.logo ? String(t.logo) : undefined,
-        categories: Array.isArray(t.categories) ? t.categories.map(String) : undefined,
+        slug: toStr(t.slug),
+        name: toStr(t.name) || toStr(t.slug),
+        description: t.description ? toStr(t.description) : undefined,
+        logo: t.logo ? toStr(t.logo) : undefined,
+        categories: Array.isArray(t.categories) ? t.categories.map((c) => toStr(c)) : undefined,
       };
     });
 
@@ -143,12 +158,12 @@ class ComposioService {
     return (response.items || []).map((item: unknown) => {
       const t = item as Record<string, unknown>;
       return {
-        slug: String(t.slug ?? ''),
-        name: String(t.name ?? t.slug ?? ''),
-        description: String(t.description ?? ''),
-        appName: String(t.appName ?? t.toolkit ?? ''),
+        slug: toStr(t.slug),
+        name: toStr(t.name) || toStr(t.slug),
+        description: toStr(t.description),
+        appName: toStr(t.appName) || toStr(t.toolkit),
         parameters: t.parameters as Record<string, unknown> | undefined,
-        tags: Array.isArray(t.tags) ? t.tags.map(String) : undefined,
+        tags: Array.isArray(t.tags) ? t.tags.map((tag) => toStr(tag)) : undefined,
       };
     });
   }
@@ -185,11 +200,11 @@ class ComposioService {
     return (response.items || []).map((item: unknown) => {
       const c = item as Record<string, unknown>;
       return {
-        id: String(c.id ?? c.nanoid ?? ''),
-        appName: String(c.appName ?? c.toolkit ?? ''),
-        status: String(c.status ?? 'UNKNOWN'),
-        createdAt: c.createdAt ? String(c.createdAt) : undefined,
-        updatedAt: c.updatedAt ? String(c.updatedAt) : undefined,
+        id: toStr(c.id) || toStr(c.nanoid),
+        appName: toStr(c.appName) || toStr(c.toolkit),
+        status: toStr(c.status, 'UNKNOWN'),
+        createdAt: c.createdAt ? toStr(c.createdAt) : undefined,
+        updatedAt: c.updatedAt ? toStr(c.updatedAt) : undefined,
       };
     });
   }
@@ -212,9 +227,9 @@ class ComposioService {
     const result = await toolkits.authorize(userId, appName) as Record<string, unknown>;
 
     return {
-      redirectUrl: result.redirectUrl ? String(result.redirectUrl) : null,
-      connectedAccountId: String(result.connectedAccountId ?? ''),
-      connectionStatus: String(result.connectionStatus ?? 'INITIATED'),
+      redirectUrl: result.redirectUrl ? toStr(result.redirectUrl) : null,
+      connectedAccountId: toStr(result.connectedAccountId),
+      connectionStatus: toStr(result.connectionStatus, 'INITIATED'),
     };
   }
 
@@ -228,11 +243,11 @@ class ComposioService {
     const result = await accounts.waitForConnection(connectedAccountId, timeoutSeconds) as Record<string, unknown>;
 
     return {
-      id: String(result.id ?? result.nanoid ?? connectedAccountId),
-      appName: String(result.appName ?? result.toolkit ?? ''),
-      status: String(result.status ?? 'UNKNOWN'),
-      createdAt: result.createdAt ? String(result.createdAt) : undefined,
-      updatedAt: result.updatedAt ? String(result.updatedAt) : undefined,
+      id: toStr(result.id) || toStr(result.nanoid) || connectedAccountId,
+      appName: toStr(result.appName) || toStr(result.toolkit),
+      status: toStr(result.status, 'UNKNOWN'),
+      createdAt: result.createdAt ? toStr(result.createdAt) : undefined,
+      updatedAt: result.updatedAt ? toStr(result.updatedAt) : undefined,
     };
   }
 
@@ -254,9 +269,9 @@ class ComposioService {
     const result = await accounts.refresh(connectionId) as Record<string, unknown>;
 
     return {
-      id: String(result.id ?? result.nanoid ?? connectionId),
-      appName: String(result.appName ?? result.toolkit ?? ''),
-      status: String(result.status ?? 'UNKNOWN'),
+      id: toStr(result.id) || toStr(result.nanoid) || connectionId,
+      appName: toStr(result.appName) || toStr(result.toolkit),
+      status: toStr(result.status, 'UNKNOWN'),
     };
   }
 }

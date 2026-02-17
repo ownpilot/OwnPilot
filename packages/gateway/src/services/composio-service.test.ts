@@ -188,6 +188,20 @@ describe('ComposioService', () => {
         updatedAt: undefined,
       });
     });
+
+    it('handles object-valued fields from SDK (extracts name/slug)', async () => {
+      mockConfigServicesRepo.getFieldValue.mockReturnValue('comp-key');
+      mockComposioInstance.connectedAccounts.list.mockResolvedValue({
+        items: [
+          { id: 'c1', appName: { name: 'Google', slug: 'google' }, status: 'ACTIVE' },
+          { id: 'c2', appName: { slug: 'slack' }, status: 'ACTIVE' },
+        ],
+      });
+
+      const connections = await composioService.getConnections('user1');
+      expect(connections[0].appName).toBe('Google');
+      expect(connections[1].appName).toBe('slack');
+    });
   });
 
   // ========================================================================
