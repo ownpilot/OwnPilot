@@ -646,14 +646,7 @@ export class AnthropicProvider extends BaseProvider {
     const body = {
       model: request.model.model,
       max_tokens: request.model.maxTokens ?? 4096,
-      system: systemMessage
-        ? typeof systemMessage.content === 'string'
-          ? systemMessage.content
-          : systemMessage.content
-              .filter((c) => c.type === 'text')
-              .map((c) => (c as { text: string }).text)
-              .join('\n')
-        : undefined,
+      system: systemMessage ? this.buildSystemBlocks(systemMessage) : undefined,
       messages: this.buildAnthropicMessages(otherMessages),
       temperature: request.model.temperature,
       top_p: request.model.topP,
@@ -695,6 +688,7 @@ export class AnthropicProvider extends BaseProvider {
             'Content-Type': 'application/json',
             'x-api-key': this.config.apiKey!,
             'anthropic-version': '2023-06-01',
+            'anthropic-beta': 'prompt-caching-2024-07-31',
           },
           body: JSON.stringify(body),
           signal: this.abortController.signal,
@@ -735,6 +729,7 @@ export class AnthropicProvider extends BaseProvider {
             promptTokens: data.usage?.input_tokens ?? 0,
             completionTokens: data.usage?.output_tokens ?? 0,
             totalTokens: (data.usage?.input_tokens ?? 0) + (data.usage?.output_tokens ?? 0),
+            cachedTokens: (data.usage as Record<string, number> | undefined)?.cache_read_input_tokens,
           },
           model: data.model ?? request.model.model,
           createdAt: new Date(),
@@ -785,11 +780,7 @@ export class AnthropicProvider extends BaseProvider {
     const body = {
       model: request.model.model,
       max_tokens: request.model.maxTokens ?? 4096,
-      system: systemMessage
-        ? typeof systemMessage.content === 'string'
-          ? systemMessage.content
-          : undefined
-        : undefined,
+      system: systemMessage ? this.buildSystemBlocks(systemMessage) : undefined,
       messages: this.buildAnthropicMessages(otherMessages),
       temperature: request.model.temperature,
       stream: true,
@@ -823,6 +814,7 @@ export class AnthropicProvider extends BaseProvider {
           'Content-Type': 'application/json',
           'x-api-key': this.config.apiKey!,
           'anthropic-version': '2023-06-01',
+          'anthropic-beta': 'prompt-caching-2024-07-31',
         },
         body: JSON.stringify(body),
         signal: this.abortController.signal,
@@ -902,6 +894,43 @@ export class AnthropicProvider extends BaseProvider {
       'claude-3-sonnet-20240229',
       'claude-3-haiku-20240307',
     ]);
+  }
+
+  /**
+   * Split system message into cacheable blocks for Anthropic prompt caching.
+   * Static sections (persona, tools, capabilities) get cache_control so they
+   * are cached across requests. Dynamic sections (current context, execution
+   * info) are sent without cache_control and change per request.
+   */
+  private buildSystemBlocks(
+    systemMessage: Message
+  ): Array<{ type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }> {
+    const text = typeof systemMessage.content === 'string'
+      ? systemMessage.content
+      : systemMessage.content
+          .filter((c) => c.type === 'text')
+          .map((c) => (c as { text: string }).text)
+          .join('\n');
+
+    // Dynamic sections that change per-request — everything from here on is NOT cached
+    const dynamicMarkers = ['## Current Context', '## Code Execution', '## File Operations'];
+    let splitPoint = text.length;
+    for (const marker of dynamicMarkers) {
+      const idx = text.indexOf(marker);
+      if (idx >= 0 && idx < splitPoint) splitPoint = idx;
+    }
+
+    const staticPart = text.slice(0, splitPoint).trimEnd();
+    const dynamicPart = text.slice(splitPoint).trimStart();
+    const blocks: Array<{ type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }> = [];
+
+    if (staticPart) {
+      blocks.push({ type: 'text', text: staticPart, cache_control: { type: 'ephemeral' } });
+    }
+    if (dynamicPart) {
+      blocks.push({ type: 'text', text: dynamicPart });
+    }
+    return blocks;
   }
 
   private buildAnthropicMessages(messages: readonly Message[]) {

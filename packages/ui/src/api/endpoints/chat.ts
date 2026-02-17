@@ -5,6 +5,7 @@
 import { apiClient } from '../client';
 import type { StreamOptions } from '../client';
 import type { Conversation, HistoryMessage } from '../types';
+import type { ContextBreakdown } from '../../types';
 
 export interface ChatRequestBody {
   message: string;
@@ -75,4 +76,17 @@ export const chatApi = {
   /** Bulk archive/unarchive conversations */
   bulkArchiveHistory: (ids: string[], archived: boolean) =>
     apiClient.post<{ updated: number; archived: boolean }>('/chat/history/bulk-archive', { ids, archived }),
+
+  // ---- Context Management ----
+
+  /** Get detailed context breakdown for current session */
+  getContextDetail: (provider: string, model: string) =>
+    apiClient.get<{ breakdown: ContextBreakdown | null }>('/chat/context-detail', {
+      params: { provider, model } as Record<string, string>,
+    }),
+
+  /** Compact conversation context by summarizing old messages */
+  compactContext: (provider: string, model: string, keepRecentMessages?: number) =>
+    apiClient.post<{ compacted: boolean; summary?: string; removedMessages: number; newTokenEstimate: number }>(
+      '/chat/compact', { provider, model, keepRecentMessages }),
 };
