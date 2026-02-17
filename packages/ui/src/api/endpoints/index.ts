@@ -34,7 +34,9 @@ export {
 } from './misc';
 export { skillPackagesApi } from './skill-packages';
 export { composioApi } from './composio';
+export { mcpApi } from './mcp';
 export type { ComposioApp, ComposioConnection, ComposioConnectionRequest, ComposioStatus, ComposioActionInfo } from './composio';
+export type { McpServer, McpServerTool, CreateMcpServerInput, UpdateMcpServerInput } from './mcp';
 export {
   notesApi,
   bookmarksApi,

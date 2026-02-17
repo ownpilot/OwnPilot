@@ -179,7 +179,7 @@ export interface Conversation {
 /**
  * Where a tool originated from
  */
-export type ToolSource = 'core' | 'gateway' | 'plugin' | 'custom' | 'dynamic';
+export type ToolSource = 'core' | 'gateway' | 'plugin' | 'custom' | 'dynamic' | 'mcp';
 
 /**
  * Security/trust level derived from tool source

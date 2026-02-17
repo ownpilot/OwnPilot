@@ -49,6 +49,7 @@ import {
   getCustomToolDynamicRegistry,
 } from './custom-tools.js';
 import { getToolSource } from '../services/tool-source.js';
+import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool, HEARTBEAT_TOOLS, executeHeartbeatTool, SKILL_PACKAGE_TOOLS, executeSkillPackageTool } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
@@ -487,6 +488,49 @@ function registerSkillPackageTools(
   }
 
   return result;
+}
+
+/**
+ * Register MCP tools from connected external MCP servers.
+ * Copies tools from the shared ToolRegistry (where mcpClientService registers them)
+ * into the per-request ToolRegistry used by agents/chat.
+ */
+function registerMcpTools(
+  tools: ToolRegistry,
+  trace: boolean,
+): ToolDefinition[] {
+  const sharedRegistry = getSharedToolRegistry();
+  const mcpTools = sharedRegistry.getToolsBySource('mcp');
+  const mcpToolDefs: ToolDefinition[] = [];
+
+  for (const registeredTool of mcpTools) {
+    const { definition, executor } = registeredTool;
+
+    const wrappedExecutor = async (args: unknown, context: ToolContext): Promise<CoreToolResult> => {
+      const startTime = trace ? traceToolCallStart(getBaseName(definition.name), args as Record<string, unknown>) : 0;
+      try {
+        const result = await executor(args as Record<string, unknown>, context);
+        if (trace) traceToolCallEnd(getBaseName(definition.name), startTime, !result.isError, result.content, result.isError ? String(result.content) : undefined);
+        return result;
+      } catch (error) {
+        const errorMsg = getErrorMessage(error);
+        if (trace) traceToolCallEnd(getBaseName(definition.name), startTime, false, undefined, errorMsg);
+        return { content: errorMsg, isError: true };
+      }
+    };
+
+    if (!tools.has(definition.name)) {
+      tools.register(definition, wrappedExecutor, {
+        source: 'mcp',
+        pluginId: registeredTool.pluginId,
+        trustLevel: 'semi-trusted',
+        providerName: registeredTool.providerName,
+      });
+    }
+    mcpToolDefs.push(definition);
+  }
+
+  return mcpToolDefs;
 }
 
 // =============================================================================
@@ -1011,6 +1055,12 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     log.info(`Registered ${skillPackageToolDefs.length} skill package tools`);
   }
 
+  // Register MCP tools from connected external MCP servers
+  const mcpToolDefs = registerMcpTools(tools, true);
+  if (mcpToolDefs.length > 0) {
+    log.info(`Registered ${mcpToolDefs.length} MCP tools`);
+  }
+
   // Separate standard tools (from TOOL_GROUPS) and special tools that bypass filtering
   // Filter getToolDefinitions() to exclude stubs that were unregistered above
   const coreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
@@ -1021,7 +1071,8 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // - activeCustomToolDefs: User's custom tools (always available when active)
   // - pluginToolDefs: Plugin-provided tools (explicitly installed by user)
   // - skillPackageToolDefs: Skill package tools (explicitly installed by user)
-  const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...skillPackageToolDefs];
+  // - mcpToolDefs: MCP tools from connected external servers
+  const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...skillPackageToolDefs, ...mcpToolDefs];
 
   // Filter tools based on agent's toolGroups configuration
   const { tools: resolvedToolNames } = resolveRecordTools(record.config);
@@ -1557,10 +1608,13 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // Register skill package tools (from installed skill packages)
   const skillPackageToolDefs = registerSkillPackageTools(tools, userId, false);
 
+  // Register MCP tools from connected external MCP servers
+  const mcpToolDefs = registerMcpTools(tools, false);
+
   // Get tool definitions for prompt injection (including all registered tools)
   // Filter getToolDefinitions() to exclude stubs removed above
   const chatCoreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...SKILL_PACKAGE_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...skillPackageToolDefs];
+  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...SKILL_PACKAGE_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...skillPackageToolDefs, ...mcpToolDefs];
 
   // Inject personal memory into system prompt
   const basePrompt = BASE_SYSTEM_PROMPT;

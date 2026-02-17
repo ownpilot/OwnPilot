@@ -54,6 +54,7 @@ import {
   heartbeatsRoutes,
   skillPackagesRoutes,
   composioRoutes,
+  mcpRoutes,
   webhookRoutes,
 } from './routes/index.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST } from './config/defaults.js';
@@ -229,6 +230,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   // Composio (1000+ OAuth app integrations)
   app.route('/api/v1/composio', composioRoutes);
+
+  // MCP (Model Context Protocol — external server connections + tool exposure)
+  app.route('/api/v1/mcp', mcpRoutes);
 
   // Local AI Providers (LM Studio, Ollama, etc.)
   app.route('/api/v1/local-providers', localProvidersRoutes);

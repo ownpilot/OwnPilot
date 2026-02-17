@@ -31,8 +31,10 @@
   "dependencies": {
     "@composio/core": "^0.6.3",
     "@hono/node-server": "^1.19.9",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@ownpilot/core": "workspace:*",
     "archiver": "^7.0.1",
+    "discord.js": "^14.25.1",
     "dotenv": "^16.6.1",
     "grammy": "1.39.3",
     "hono": "^4.11.9",
@@ -45,7 +47,6 @@
     "pg": "^8.18.0",
     "pgvector": "^0.2.1",
     "sharp": "^0.34.5",
-    "discord.js": "^14.25.1",
     "ws": "^8.19.0",
     "zod": "^4.3.6"
   },

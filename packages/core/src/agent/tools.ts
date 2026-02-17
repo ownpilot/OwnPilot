@@ -513,6 +513,33 @@ export class ToolRegistry {
   }
 
   /**
+   * Register all tools from an MCP server into the shared registry.
+   * MCP tools are marked as 'semi-trusted' with the 'mcp' namespace.
+   */
+  registerMcpTools(
+    serverName: string,
+    tools: Map<string, { definition: ToolDefinition; executor: ToolExecutor }>
+  ): void {
+    const pid = `mcp:${serverName}` as PluginId;
+    for (const [, { definition, executor }] of tools) {
+      const qName = qualifyToolName(definition.name, 'mcp', serverName);
+      this.register({ ...definition, name: qName }, executor, {
+        source: 'mcp',
+        pluginId: pid,
+        trustLevel: 'semi-trusted',
+        providerName: `mcp:${serverName}`,
+      });
+    }
+  }
+
+  /**
+   * Unregister all tools from an MCP server (e.g. when disconnecting).
+   */
+  unregisterMcpTools(serverName: string): number {
+    return this.unregisterPlugin(`mcp:${serverName}` as PluginId);
+  }
+
+  /**
    * Register a custom (user/LLM-created) tool with sandboxed trust level.
    */
   registerCustomTool(

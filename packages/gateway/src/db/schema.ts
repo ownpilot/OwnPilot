@@ -741,6 +741,31 @@ CREATE TABLE IF NOT EXISTS execution_permissions (
   package_manager TEXT NOT NULL DEFAULT 'blocked' CHECK(package_manager IN ('blocked','prompt','allowed')),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- MCP Servers (external MCP server connections)
+CREATE TABLE IF NOT EXISTS mcp_servers (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  transport TEXT NOT NULL DEFAULT 'stdio'
+    CHECK(transport IN ('stdio', 'sse', 'streamable-http')),
+  command TEXT,
+  args JSONB DEFAULT '[]',
+  env JSONB DEFAULT '{}',
+  url TEXT,
+  headers JSONB DEFAULT '{}',
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  auto_connect BOOLEAN NOT NULL DEFAULT TRUE,
+  status TEXT NOT NULL DEFAULT 'disconnected'
+    CHECK(status IN ('connected', 'disconnected', 'error', 'connecting')),
+  error_message TEXT,
+  tool_count INTEGER NOT NULL DEFAULT 0,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, name)
+);
 `;
 
 /**
@@ -1493,6 +1518,10 @@ DO $$ BEGIN
     END IF;
   END IF;
 END $$;
+
+-- MCP server indexes
+CREATE INDEX IF NOT EXISTS idx_mcp_servers_user ON mcp_servers(user_id);
+CREATE INDEX IF NOT EXISTS idx_mcp_servers_enabled ON mcp_servers(enabled);
 `;
 
 /**

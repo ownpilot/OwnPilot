@@ -186,7 +186,8 @@ export interface ServerEvents {
       | 'plan' | 'trigger' | 'heartbeat' | 'custom_tool' | 'custom_table' | 'custom_record'
       | 'config_service' | 'workspace' | 'plugin'
       | 'pomodoro' | 'habit' | 'capture'
-      | 'agent' | 'skill_package' | 'local_provider' | 'model_config' | 'model_provider' | 'channel';
+      | 'agent' | 'skill_package' | 'local_provider' | 'model_config' | 'model_provider' | 'channel'
+      | 'mcp_server';
     action: 'created' | 'updated' | 'deleted';
     id?: string;
     count?: number;

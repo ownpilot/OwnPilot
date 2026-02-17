@@ -262,6 +262,14 @@ async function main() {
   await initializePlugins();
   log.info('Plugins initialized.');
 
+  // Initialize MCP Client Service — auto-connect configured external MCP servers
+  try {
+    const { mcpClientService } = await import('./services/mcp-client-service.js');
+    await mcpClientService.autoConnect();
+  } catch (err) {
+    log.warn('MCP auto-connect had errors', { error: String(err) });
+  }
+
   // Initialize Channel Service (unified channel access via plugin registry)
   log.info('Initializing Channel Service...');
   const pluginRegistry = await getDefaultPluginRegistry();
@@ -410,6 +418,12 @@ async function main() {
 
     // 2. Stop WebSocket gateway
     try { await wsGateway.stop(); } catch (e) { log.warn('WS shutdown error', { error: String(e) }); }
+
+    // 2.5. Disconnect MCP clients
+    try {
+      const { mcpClientService } = await import('./services/mcp-client-service.js');
+      await mcpClientService.disconnectAll();
+    } catch (e) { log.warn('MCP disconnect error', { error: String(e) }); }
 
     // 3. Stop trigger engine
     try { stopTriggerEngine(); } catch (e) { log.warn('Trigger engine stop error', { error: String(e) }); }

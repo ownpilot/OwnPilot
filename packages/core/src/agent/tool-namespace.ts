@@ -8,7 +8,7 @@
  * All other tools are accessed via use_tool("core.read_file", args) where the name is a string parameter.
  */
 
-export type ToolNamespacePrefix = 'core' | 'custom' | 'plugin' | 'skill';
+export type ToolNamespacePrefix = 'core' | 'custom' | 'plugin' | 'skill' | 'mcp';
 
 /**
  * Meta-tools that MUST stay unprefixed — they appear in LLM native tool schemas
