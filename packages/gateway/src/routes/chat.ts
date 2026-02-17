@@ -41,7 +41,7 @@ import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { createApprovalRequest, generateApprovalId } from '../services/execution-approval.js';
 import { wsGateway } from '../ws/server.js';
-import { extractSuggestions } from '../utils/index.js';
+import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Chat');
@@ -385,8 +385,10 @@ function createStreamCallbacks(config: StreamingConfig): { callbacks: StreamCall
       };
 
       if (chunk.done) {
-        const { suggestions } = extractSuggestions(state.streamedContent);
+        const { content: memStripped, memories } = extractMemoriesFromResponse(state.streamedContent);
+        const { suggestions } = extractSuggestions(memStripped);
         if (suggestions.length > 0) data.suggestions = suggestions;
+        if (memories.length > 0) data.memories = memories;
         const streamDuration = Math.round(performance.now() - state.startTime);
         data.trace = {
           duration: streamDuration,
@@ -1033,7 +1035,8 @@ chatRoutes.post('/', async (c) => {
 
     const conversation = agent.getConversation();
     const busUsage = busResult.response.metadata.tokens as { input: number; output: number } | undefined;
-    const { content: busCleanContent, suggestions: busSuggestions } = extractSuggestions(busResult.response.content);
+    const { content: busMemStripped, memories: busMemories } = extractMemoriesFromResponse(busResult.response.content);
+    const { content: busCleanContent, suggestions: busSuggestions } = extractSuggestions(busMemStripped);
 
     return c.json({
       success: true,
@@ -1054,6 +1057,7 @@ chatRoutes.post('/', async (c) => {
         finishReason: 'stop',
         session: getSessionInfo(agent, provider, model),
         suggestions: busSuggestions.length > 0 ? busSuggestions : undefined,
+        memories: busMemories.length > 0 ? busMemories : undefined,
         trace: {
           duration: processingTime,
           toolCalls: [],
@@ -1415,7 +1419,8 @@ chatRoutes.post('/', async (c) => {
       }
     : undefined;
 
-  const { content: legacyCleanContent, suggestions: legacySuggestions } = extractSuggestions(result.value.content);
+  const { content: legacyMemStripped, memories: legacyMemories } = extractMemoriesFromResponse(result.value.content);
+  const { content: legacyCleanContent, suggestions: legacySuggestions } = extractSuggestions(legacyMemStripped);
 
   const response = {
     success: true,
@@ -1440,6 +1445,7 @@ chatRoutes.post('/', async (c) => {
       finishReason: result.value.finishReason,
       session: getSessionInfo(agent, provider, model),
       suggestions: legacySuggestions.length > 0 ? legacySuggestions : undefined,
+      memories: legacyMemories.length > 0 ? legacyMemories : undefined,
       // Include trace info for debugging
       trace: traceInfo,
     },

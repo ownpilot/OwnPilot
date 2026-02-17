@@ -159,6 +159,8 @@ export interface StreamChunkResponse {
   usage?: UsageStats;
   /** Follow-up suggestions (only present on done event) */
   suggestions?: Array<{ title: string; detail: string }>;
+  /** AI-extracted memories pending user acceptance (only present on done event) */
+  memories?: Array<{ type: string; content: string; importance?: number }>;
 }
 
 /**

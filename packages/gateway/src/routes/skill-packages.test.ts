@@ -108,6 +108,10 @@ vi.mock('../db/repositories/index.js', () => ({
   },
 }));
 
+vi.mock('../ws/server.js', () => ({
+  wsGateway: { broadcast: vi.fn() },
+}));
+
 // Import after mocks
 const { skillPackagesRoutes } = await import('./skill-packages.js');
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { apiClient } from '../api';
+import { plansApi } from '../api';
 import type { Plan } from '../api';
 import { useModalClose } from '../hooks';
 import { useToast } from './ToastProvider';
@@ -31,10 +31,10 @@ export function PlanModal({ plan, onClose, onSave }: PlanModalProps) {
       };
 
 if (plan) {
-        await apiClient.patch(`/plans/${plan.id}`, body);
+        await plansApi.update(plan.id, body);
         toast.success('Plan updated');
       } else {
-        await apiClient.post('/plans', body);
+        await plansApi.create(body);
         toast.success('Plan created');
       }
       onSave();

@@ -6,7 +6,7 @@
 
 import { Hono } from 'hono';
 import { getHeartbeatService, HeartbeatServiceError } from '../services/heartbeat-service.js';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 
 export const heartbeatsRoutes = new Hono();
@@ -119,7 +119,7 @@ heartbeatsRoutes.get('/:id', async (c) => {
   const heartbeat = await service.getHeartbeat(userId, id);
 
   if (!heartbeat) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Heartbeat not found' }, 404);
+    return notFoundError(c, 'Heartbeat', id);
   }
 
   return apiResponse(c, { heartbeat });
@@ -142,7 +142,7 @@ heartbeatsRoutes.patch('/:id', async (c) => {
     const heartbeat = await service.updateHeartbeat(userId, id, body);
 
     if (!heartbeat) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Heartbeat not found' }, 404);
+      return notFoundError(c, 'Heartbeat', id);
     }
 
     wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'updated', id });
@@ -166,7 +166,7 @@ heartbeatsRoutes.delete('/:id', async (c) => {
   const deleted = await service.deleteHeartbeat(userId, id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Heartbeat not found' }, 404);
+    return notFoundError(c, 'Heartbeat', id);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'deleted', id });
@@ -185,7 +185,7 @@ heartbeatsRoutes.post('/:id/enable', async (c) => {
   const heartbeat = await service.enableHeartbeat(userId, id);
 
   if (!heartbeat) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Heartbeat not found' }, 404);
+    return notFoundError(c, 'Heartbeat', id);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'updated', id });
@@ -204,7 +204,7 @@ heartbeatsRoutes.post('/:id/disable', async (c) => {
   const heartbeat = await service.disableHeartbeat(userId, id);
 
   if (!heartbeat) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Heartbeat not found' }, 404);
+    return notFoundError(c, 'Heartbeat', id);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'updated', id });

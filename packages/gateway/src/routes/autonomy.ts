@@ -329,7 +329,7 @@ autonomyRoutes.delete('/approvals/:id', (c) => {
   const pending = manager.getPendingAction(id);
 
   if (!pending) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Pending action not found or already processed: ${sanitizeId(id)}` }, 404);
+    return notFoundError(c, 'Pending action', id);
   }
   if (pending.userId !== userId) {
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Not authorized to cancel this action' }, 403);

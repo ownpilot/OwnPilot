@@ -8,7 +8,8 @@ import { Hono } from 'hono';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { generateId } from '@ownpilot/core';
-import { apiResponse, getIntParam, notFoundError, validateQueryEnum } from './helpers.js';
+import { apiResponse, apiError, getIntParam, notFoundError, validateQueryEnum, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 
 // =============================================================================
@@ -118,7 +119,7 @@ expensesRoutes.get('/', async (c) => {
   const category = validateQueryEnum(c.req.query('category'), ['food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'education', 'travel', 'subscription', 'housing', 'other'] as const);
   const search = c.req.query('search');
   const limit = getIntParam(c, 'limit', 100, 1, 1000);
-  const offset = getIntParam(c, 'offset', 0, 0);
+  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
 
   let expenses = [...db.expenses];
 
@@ -345,27 +346,31 @@ expensesRoutes.post('/', async (c) => {
     notes?: string;
   };
 
-  const db = await loadExpenseDb();
+  try {
+    const db = await loadExpenseDb();
 
-  const expense: ExpenseEntry = {
-    id: generateExpenseId(),
-    date: body.date ?? new Date().toISOString().split('T')[0]!,
-    amount: body.amount,
-    currency: body.currency ?? 'TRY',
-    category: body.category,
-    description: body.description,
-    paymentMethod: body.paymentMethod,
-    tags: body.tags,
-    source: 'web',
-    createdAt: new Date().toISOString(),
-    notes: body.notes,
-  };
+    const expense: ExpenseEntry = {
+      id: generateExpenseId(),
+      date: body.date ?? new Date().toISOString().split('T')[0]!,
+      amount: body.amount,
+      currency: body.currency ?? 'TRY',
+      category: body.category,
+      description: body.description,
+      paymentMethod: body.paymentMethod,
+      tags: body.tags,
+      source: 'web',
+      createdAt: new Date().toISOString(),
+      notes: body.notes,
+    };
 
-  db.expenses.push(expense);
-  await saveExpenseDb(db);
+    db.expenses.push(expense);
+    await saveExpenseDb(db);
 
-  wsGateway.broadcast('data:changed', { entity: 'expense', action: 'created', id: expense.id });
-  return apiResponse(c, expense, 201);
+    wsGateway.broadcast('data:changed', { entity: 'expense', action: 'created', id: expense.id });
+    return apiResponse(c, expense, 201);
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error, 'Failed to create expense') }, 500);
+  }
 });
 
 /**
@@ -377,26 +382,30 @@ expensesRoutes.put('/:id', async (c) => {
   const { validateBody, updateExpenseSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateExpenseSchema, rawBody) as Partial<ExpenseEntry>;
 
-  const db = await loadExpenseDb();
-  const index = db.expenses.findIndex((e) => e.id === id);
+  try {
+    const db = await loadExpenseDb();
+    const index = db.expenses.findIndex((e) => e.id === id);
 
-  if (index === -1) {
-    return notFoundError(c, 'Expense', id);
+    if (index === -1) {
+      return notFoundError(c, 'Expense', id);
+    }
+
+    const existing = db.expenses[index]!;
+    const updated: ExpenseEntry = {
+      ...existing,
+      ...body,
+      id: existing.id,
+      createdAt: existing.createdAt,
+    };
+
+    db.expenses[index] = updated;
+    await saveExpenseDb(db);
+
+    wsGateway.broadcast('data:changed', { entity: 'expense', action: 'updated', id: updated.id });
+    return apiResponse(c, updated);
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error, 'Failed to update expense') }, 500);
   }
-
-  const existing = db.expenses[index]!;
-  const updated: ExpenseEntry = {
-    ...existing,
-    ...body,
-    id: existing.id,
-    createdAt: existing.createdAt,
-  };
-
-  db.expenses[index] = updated;
-  await saveExpenseDb(db);
-
-  wsGateway.broadcast('data:changed', { entity: 'expense', action: 'updated', id: updated.id });
-  return apiResponse(c, updated);
 });
 
 /**
@@ -405,16 +414,20 @@ expensesRoutes.put('/:id', async (c) => {
 expensesRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
 
-  const db = await loadExpenseDb();
-  const index = db.expenses.findIndex((e) => e.id === id);
+  try {
+    const db = await loadExpenseDb();
+    const index = db.expenses.findIndex((e) => e.id === id);
 
-  if (index === -1) {
-    return notFoundError(c, 'Expense', id);
+    if (index === -1) {
+      return notFoundError(c, 'Expense', id);
+    }
+
+    const deleted = db.expenses.splice(index, 1)[0];
+    await saveExpenseDb(db);
+
+    wsGateway.broadcast('data:changed', { entity: 'expense', action: 'deleted', id });
+    return apiResponse(c, { deleted });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error, 'Failed to delete expense') }, 500);
   }
-
-  const deleted = db.expenses.splice(index, 1)[0];
-  await saveExpenseDb(db);
-
-  wsGateway.broadcast('data:changed', { entity: 'expense', action: 'deleted', id });
-  return apiResponse(c, { deleted });
 });

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ChatInput, type ChatInputHandle } from '../components/ChatInput';
 import { MessageList } from '../components/MessageList';
 import { SuggestionChips } from '../components/SuggestionChips';
+import { MemoryCards } from '../components/MemoryCards';
 import { ContextBar } from '../components/ContextBar';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
 import { useChatStore } from '../hooks/useChatStore';
@@ -33,6 +34,7 @@ export function ChatPage() {
     setAgentId,
     setWorkspaceId,
     suggestions,
+    extractedMemories,
     pendingApproval,
     sessionInfo,
     sendMessage,
@@ -40,6 +42,8 @@ export function ChatPage() {
     clearMessages,
     cancelRequest,
     clearSuggestions,
+    acceptMemory,
+    rejectMemory,
     resolveApproval,
   } = useChatStore();
 
@@ -191,7 +195,7 @@ export function ChatPage() {
   // Auto-scroll to bottom when new messages or streaming content arrives
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingContent, progressEvents, suggestions]);
+  }, [messages, streamingContent, progressEvents, suggestions, extractedMemories]);
 
   // Group models by provider (only configured providers)
   const modelsByProvider = models.reduce<Record<string, ModelInfo[]>>((acc, m) => {
@@ -561,7 +565,7 @@ export function ChatPage() {
                 {/* Streaming text */}
                 {streamingContent && (
                   <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <div className="whitespace-pre-wrap">{streamingContent.replace(/<suggestions>[\s\S]*$/, '').trimEnd()}</div>
+                    <div className="whitespace-pre-wrap">{streamingContent.replace(/<memories>[\s\S]*$/, '').trimEnd()}</div>
                     <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
                   </div>
                 )}
@@ -577,6 +581,16 @@ export function ChatPage() {
                     <span>Thinking...</span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {!isLoading && extractedMemories.length > 0 && messages.length > 0 && (
+              <div className="px-4">
+                <MemoryCards
+                  memories={extractedMemories}
+                  onAccept={acceptMemory}
+                  onReject={rejectMemory}
+                />
               </div>
             )}
 

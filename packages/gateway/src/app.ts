@@ -54,6 +54,7 @@ import {
   heartbeatsRoutes,
   skillPackagesRoutes,
   composioRoutes,
+  webhookRoutes,
 } from './routes/index.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST } from './config/defaults.js';
 
@@ -142,6 +143,11 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   app.use('/api/*', auditMiddleware);
 
   // Mount routes
+
+  // Webhooks - mounted outside /api/v1 since external services (e.g. Telegram) cannot send API keys.
+  // Secret path segment provides authentication.
+  app.route('/webhooks', webhookRoutes);
+
   app.route('/health', healthRoutes);
   app.route('/api/v1/health', healthRoutes); // Also mount at /api/v1 for API consistency
   app.route('/api/v1/agents', agentRoutes);
@@ -297,6 +303,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         skillPackages: '/api/v1/skill-packages',
         // Local AI Providers (LM Studio, Ollama)
         localProviders: '/api/v1/local-providers',
+        // Webhooks (external service callbacks, no auth required)
+        webhooks: '/webhooks/telegram/:secret',
       },
     });
   });

@@ -37,20 +37,35 @@ export function createPostProcessingMiddleware(): MessageMiddleware {
     const content = result.response.content;
 
     // Fire-and-forget post-processing
-    Promise.all([
-      extractMemories(userId, message.content, content).catch(e =>
-        log.warn('Memory extraction failed', { error: e }),
-      ),
+    // Memory extraction only runs for channel messages (web UI handles accept/reject in frontend)
+    const isChannel = message.metadata?.source === 'channel';
+    const tasks: Promise<unknown>[] = [];
+
+    if (isChannel) {
+      tasks.push(
+        extractMemories(userId, message.content, content).catch(e =>
+          log.warn('Memory extraction failed', { error: e }),
+        ),
+      );
+    }
+    tasks.push(
       updateGoalProgress(userId, message.content, content, agentResult.value?.toolCalls).catch(e =>
         log.warn('Goal progress update failed', { error: e }),
       ),
       evaluateTriggers(userId, message.content, content).catch(e =>
         log.warn('Trigger evaluation failed', { error: e }),
       ),
-    ]).then(([memoriesExtracted, _, triggerResult]) => {
-      if (memoriesExtracted && (memoriesExtracted as number) > 0) {
-        log.info(`Extracted ${memoriesExtracted} new memories`);
+    );
+
+    Promise.all(tasks).then((results) => {
+      if (isChannel) {
+        const memoriesExtracted = results[0];
+        if (memoriesExtracted && (memoriesExtracted as number) > 0) {
+          log.info(`Extracted ${memoriesExtracted} new memories`);
+        }
       }
+      // Trigger result is always the last task
+      const triggerResult = results[results.length - 1];
       if (triggerResult && typeof triggerResult === 'object') {
         const { triggered, executed } = triggerResult as { triggered: string[]; executed: string[] };
         if (triggered.length > 0) log.info(`${triggered.length} triggers evaluated`);

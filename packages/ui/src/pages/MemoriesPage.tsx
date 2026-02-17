@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { memoriesApi, apiClient } from '../api';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useGateway } from '../hooks/useWebSocket';
+import { memoriesApi } from '../api';
 import type { Memory } from '../api';
 import { Brain, Plus, Trash2, Search, Star, Filter } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
@@ -25,6 +26,7 @@ const typeLabels = {
 export function MemoriesPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+  const { subscribe } = useGateway();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,6 +34,7 @@ export function MemoriesPage() {
   const [typeFilter, setTypeFilter] = useState<Memory['type'] | 'all'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchMemories = useCallback(async () => {
     try {
@@ -55,6 +58,18 @@ export function MemoriesPage() {
   useEffect(() => {
     fetchMemories();
   }, [fetchMemories]);
+
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchMemories(), 2000);
+  }, [fetchMemories]);
+
+  useEffect(() => {
+    const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
+      if (data.entity === 'memory') debouncedRefresh();
+    });
+    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [subscribe, debouncedRefresh]);
 
   const handleDelete = useCallback(async (memoryId: string) => {
     if (!await confirm({ message: 'Are you sure you want to delete this memory?', variant: 'danger' })) return;
@@ -261,9 +276,9 @@ function MemoryModal({ memory, onClose, onSave }: MemoryModalProps) {
       };
 
       if (memory) {
-        await apiClient.patch(`/memories/${memory.id}`, body);
+        await memoriesApi.update(memory.id, body);
       } else {
-        await apiClient.post('/memories', body);
+        await memoriesApi.create(body);
       }
       onSave();
     } catch {

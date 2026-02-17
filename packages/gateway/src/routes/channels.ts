@@ -10,6 +10,9 @@ import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
+import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
+import { refreshChannelApi } from '../plugins/init.js';
+import { wsGateway } from '../ws/server.js';
 
 export const channelRoutes = new Hono();
 
@@ -22,7 +25,7 @@ const readMessageIds = new Set<string>();
 channelRoutes.get('/messages/inbox', async (c) => {
   const channelId = c.req.query('channelId');
   const limit = getIntParam(c, 'limit', 100, 1, 500);
-  const offset = getIntParam(c, 'offset', 0, 0);
+  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
 
   try {
     const messagesRepo = new ChannelMessagesRepository();
@@ -31,7 +34,7 @@ channelRoutes.get('/messages/inbox', async (c) => {
     const messages = dbMessages.map((m) => ({
       id: m.id,
       channelId: m.channelId,
-      channelType: 'telegram' as const,
+      channelType: (m.channelId?.split('.')[1] ?? 'telegram') as string,
       sender: {
         id: m.senderId ?? (m.direction === 'outbound' ? 'assistant' : 'unknown'),
         name: m.senderName ?? (m.direction === 'outbound' ? 'Assistant' : 'Unknown'),
@@ -117,8 +120,9 @@ channelRoutes.get('/', (c) => {
     summary: {
       total: channels.length,
       connected: channels.filter((c) => c.status === 'connected').length,
+      disconnected: channels.filter((c) => c.status !== 'connected').length,
     },
-    availablePlatforms: [...new Set(channels.map((ch) => ch.platform))],
+    availableTypes: [...new Set(channels.map((ch) => ch.platform))],
   });
 });
 
@@ -130,6 +134,7 @@ channelRoutes.post('/:id/connect', async (c) => {
   try {
     const service = getChannelService();
     await service.connect(pluginId);
+    wsGateway.broadcast('data:changed', { entity: 'channel', action: 'updated', id: pluginId });
     return apiResponse(c, { pluginId, status: 'connected' });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: getErrorMessage(error, 'Failed to connect channel') }, 500);
@@ -144,9 +149,108 @@ channelRoutes.post('/:id/disconnect', async (c) => {
   try {
     const service = getChannelService();
     await service.disconnect(pluginId);
+    wsGateway.broadcast('data:changed', { entity: 'channel', action: 'updated', id: pluginId });
     return apiResponse(c, { pluginId, status: 'disconnected' });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.DISCONNECT_FAILED, message: getErrorMessage(error, 'Failed to disconnect channel') }, 500);
+  }
+});
+
+/**
+ * POST /channels/:id/reconnect - Disconnect then reconnect a channel plugin
+ *
+ * Useful after updating config (e.g. webhook URL) to apply changes.
+ */
+channelRoutes.post('/:id/reconnect', async (c) => {
+  const pluginId = c.req.param('id');
+  try {
+    await refreshChannelApi(pluginId);
+    const service = getChannelService();
+    try { await service.disconnect(pluginId); } catch { /* may already be disconnected */ }
+    await service.connect(pluginId);
+    wsGateway.broadcast('data:changed', { entity: 'channel', action: 'updated', id: pluginId });
+    return apiResponse(c, { pluginId, status: 'reconnected' });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: getErrorMessage(error, 'Failed to reconnect channel') }, 500);
+  }
+});
+
+/**
+ * POST /channels/:id/setup - Quick channel setup
+ *
+ * Saves config to Config Center and connects the channel in one step.
+ * Body: { config: { bot_token: string, ... } }
+ */
+channelRoutes.post('/:id/setup', async (c) => {
+  const pluginId = c.req.param('id');
+  const body = await c.req.json<{ config?: Record<string, unknown> }>().catch(() => null);
+
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
+
+  try {
+    if (!body.config || typeof body.config !== 'object') {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'config object is required' }, 400);
+    }
+
+    // 1. Find the plugin and its required service
+    const registry = await getDefaultPluginRegistry();
+    const plugin = registry.get(pluginId);
+    if (!plugin) {
+      return notFoundError(c, 'Channel', pluginId);
+    }
+
+    const requiredServices = plugin.manifest.requiredServices as Array<{ name: string }> | undefined;
+    if (!requiredServices?.length) {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel has no required services' }, 400);
+    }
+
+    const serviceName = requiredServices[0]!.name;
+
+    // 2. Create or update Config Center entry
+    const existingEntry = configServicesRepo.getDefaultEntry(serviceName);
+    if (existingEntry) {
+      await configServicesRepo.updateEntry(existingEntry.id, {
+        data: { ...existingEntry.data, ...body.config },
+      });
+    } else {
+      await configServicesRepo.createEntry(serviceName, {
+        label: 'Default',
+        data: body.config,
+      });
+    }
+
+    // 3. Broadcast config change
+    wsGateway.broadcast('data:changed', {
+      entity: 'config_service',
+      action: existingEntry ? 'updated' : 'created',
+      id: serviceName,
+    });
+
+    // 4. Refresh channel API with updated config
+    await refreshChannelApi(pluginId);
+
+    // 5. (Re)connect the channel
+    const service = getChannelService();
+    try { await service.disconnect(pluginId); } catch { /* may already be disconnected */ }
+    await service.connect(pluginId);
+
+    // 6. Get bot info for response
+    const api = service.getChannel(pluginId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const botInfo = api && 'getBotInfo' in api && typeof (api as any).getBotInfo === 'function'
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? (api as any).getBotInfo()
+      : null;
+
+    return apiResponse(c, {
+      pluginId,
+      status: 'connected',
+      ...(botInfo && { botInfo: { username: botInfo.username, firstName: botInfo.firstName } }),
+    });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: getErrorMessage(error, 'Channel setup failed') }, 500);
   }
 });
 
@@ -156,16 +260,25 @@ channelRoutes.post('/:id/disconnect', async (c) => {
 channelRoutes.get('/:id', (c) => {
   const pluginId = c.req.param('id');
   const service = getChannelService();
-  const api = service.getChannel(pluginId);
+  const channels = service.listChannels();
+  const ch = channels.find((x) => x.pluginId === pluginId);
 
-  if (!api) {
+  if (!ch) {
     return notFoundError(c, 'Channel', pluginId);
   }
 
+  const api = service.getChannel(pluginId);
+  const botInfo = api && 'getBotInfo' in api && typeof (api as Record<string, unknown>).getBotInfo === 'function'
+    ? (api as unknown as { getBotInfo(): { username?: string; firstName?: string } | null }).getBotInfo()
+    : null;
+
   return apiResponse(c, {
-    id: pluginId,
-    platform: api.getPlatform(),
-    status: api.getStatus(),
+    id: ch.pluginId,
+    type: ch.platform,
+    name: ch.name,
+    status: ch.status,
+    icon: ch.icon,
+    ...(botInfo && { botInfo: { username: botInfo.username, firstName: botInfo.firstName } }),
   });
 });
 
@@ -232,7 +345,7 @@ channelRoutes.post('/:id/send', async (c) => {
 channelRoutes.get('/:id/messages', async (c) => {
   const channelId = c.req.param('id');
   const limit = getIntParam(c, 'limit', 50, 1, 200);
-  const offset = getIntParam(c, 'offset', 0, 0);
+  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
 
   try {
     const messagesRepo = new ChannelMessagesRepository();

@@ -103,26 +103,6 @@ export function Send(props: IconProps) {
   );
 }
 
-export function Loader(props: IconProps) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="animate-spin"
-      {...props}
-    >
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg>
-  );
-}
-
 export function User(props: IconProps) {
   return (
     <svg
@@ -258,8 +238,30 @@ export function Telegram(props: IconProps) {
       strokeLinejoin="round"
       {...props}
     >
-      <path d="m22 2-7 20-4-9-9-4Z" />
-      <path d="M22 2 11 13" />
+      <path d="M21.2 4.4 2.4 10.8c-.6.2-.6 1.1 0 1.3l4.6 1.7 1.8 5.6c.1.4.6.6.9.3l2.6-2.1 4.5 3.3c.4.3 1 .1 1.1-.4L21.8 5.3c.2-.6-.3-1.1-.6-.9Z" />
+      <path d="m8.8 13.8 7.5-5.8" />
+    </svg>
+  );
+}
+
+export function Discord(props: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <path d="M8.5 17h0" />
+      <path d="M15.5 17h0" />
+      <circle cx="12" cy="12" r="10" />
     </svg>
   );
 }

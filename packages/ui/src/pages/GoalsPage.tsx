@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
-import { goalsApi, apiClient } from '../api';
+import { goalsApi } from '../api';
 import type { Goal, GoalStep } from '../api';
 import { Target, Plus, Trash2, ChevronRight, CheckCircle2, Circle, AlertTriangle, Pause } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
@@ -396,7 +396,7 @@ function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
       if (goal) {
         await goalsApi.update(goal.id, body);
       } else {
-        await apiClient.post('/goals', body);
+        await goalsApi.create(body);
       }
       onSave();
     } catch {

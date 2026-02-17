@@ -2,9 +2,11 @@
  * Telegram Channel API (grammy)
  *
  * Implements ChannelPluginAPI using the grammy library.
- * Handles long-polling, message normalization, and event emission.
+ * Supports both long-polling (default) and webhook mode.
+ * Handles message normalization, and event emission.
  */
 
+import { randomBytes } from 'node:crypto';
 import { Bot } from 'grammy';
 import type { Message } from 'grammy/types';
 import {
@@ -45,6 +47,10 @@ export interface TelegramChannelConfig {
   allowed_users?: string;
   allowed_chats?: string;
   parse_mode?: 'Markdown' | 'MarkdownV2' | 'HTML';
+  /** Public HTTPS base URL for webhook mode. Empty/undefined = polling mode. */
+  webhook_url?: string;
+  /** Secret token for webhook URL path. Auto-generated if webhook_url is set but this is empty. */
+  webhook_secret?: string;
 }
 
 // ============================================================================
@@ -60,6 +66,8 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
   private allowedChats: Set<string> = new Set();
   /** Maps platformMessageId → chatId for recent outgoing messages (edit/delete support) */
   private messageChatMap = new Map<string, string>();
+  /** True when connected via webhook (vs polling). Used by disconnect() for cleanup. */
+  private webhookMode = false;
 
   constructor(config: Record<string, unknown>, pluginId: string) {
     this.config = config as unknown as TelegramChannelConfig;
@@ -97,6 +105,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
       try { this.bot.stop(); } catch { /* already stopped */ }
       this.bot = null;
     }
+    this.webhookMode = false;
 
     this.status = 'connecting';
     this.emitConnectionEvent('connecting');
@@ -118,25 +127,49 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         );
       });
 
-      // Install error handler BEFORE starting polling
+      // Install error handler
       this.bot.catch((err) => {
         log.error('[Telegram] Bot error:', err);
         this.status = 'error';
         this.emitConnectionEvent('error');
       });
 
-      // Start long-polling (non-blocking) with error recovery
-      this.bot.start({
-        onStart: () => {
-          this.status = 'connected';
-          log.info('[Telegram] Bot connected and polling');
-          this.emitConnectionEvent('connected');
-        },
-      }).catch((err) => {
-        log.error('[Telegram] Bot polling crashed:', err);
-        this.status = 'error';
-        this.emitConnectionEvent('error');
-      });
+      if (this.config.webhook_url) {
+        // === WEBHOOK MODE ===
+        // Auto-generate secret if not provided
+        if (!this.config.webhook_secret) {
+          this.config.webhook_secret = randomBytes(32).toString('hex');
+        }
+
+        // Initialize bot info without starting polling
+        await this.bot.init();
+
+        // Register the webhook callback handler for the route
+        const { registerWebhookHandler } = await import('./webhook.js');
+        registerWebhookHandler(this.bot, this.config.webhook_secret);
+
+        // Tell Telegram to send updates to our webhook URL
+        const webhookUrl = `${this.config.webhook_url.replace(/\/$/, '')}/webhooks/telegram/${this.config.webhook_secret}`;
+        await this.bot.api.setWebhook(webhookUrl);
+
+        this.webhookMode = true;
+        this.status = 'connected';
+        log.info('[Telegram] Bot connected via webhook', { url: webhookUrl.replace(/\/[^/]+$/, '/***') });
+        this.emitConnectionEvent('connected');
+      } else {
+        // === POLLING MODE (default) ===
+        this.bot.start({
+          onStart: () => {
+            this.status = 'connected';
+            log.info('[Telegram] Bot connected and polling');
+            this.emitConnectionEvent('connected');
+          },
+        }).catch((err) => {
+          log.error('[Telegram] Bot polling crashed:', err);
+          this.status = 'error';
+          this.emitConnectionEvent('error');
+        });
+      }
     } catch (error) {
       this.status = 'error';
       this.emitConnectionEvent('error');
@@ -146,9 +179,22 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
 
   async disconnect(): Promise<void> {
     if (this.bot) {
+      // In webhook mode, deregister the webhook from Telegram and cleanup handler
+      if (this.webhookMode) {
+        try {
+          await this.bot.api.deleteWebhook();
+        } catch (err) {
+          log.warn('[Telegram] Failed to delete webhook:', getErrorMessage(err));
+        }
+        try {
+          const { unregisterWebhookHandler } = await import('./webhook.js');
+          unregisterWebhookHandler();
+        } catch { /* best effort */ }
+      }
       this.bot.stop();
       this.bot = null;
     }
+    this.webhookMode = false;
     this.status = 'disconnected';
     this.emitConnectionEvent('disconnected');
   }

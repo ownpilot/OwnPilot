@@ -8,7 +8,7 @@
 import { Hono } from 'hono';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { resolveApproval } from '../services/execution-approval.js';
-import { apiResponse, apiError, getUserId, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, getUserId, ERROR_CODES, notFoundError } from './helpers.js';
 import type { ExecutionPermissions, PermissionMode } from '@ownpilot/core';
 
 const VALID_PERM_MODES: ReadonlySet<string> = new Set(['blocked', 'prompt', 'allowed']);
@@ -82,7 +82,7 @@ app.post('/approvals/:id/resolve', async (c) => {
 
   const resolved = resolveApproval(approvalId, body.approved);
   if (!resolved) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Approval request not found or already expired' }, 404);
+    return notFoundError(c, 'Approval request', approvalId);
   }
 
   return apiResponse(c, { resolved: true, approved: body.approved });

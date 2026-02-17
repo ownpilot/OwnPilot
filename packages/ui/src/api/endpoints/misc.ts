@@ -16,6 +16,8 @@ import type {
   DatabaseStats,
   DebugInfo,
   LogDetail,
+  RequestLog,
+  LogStats,
   PluginInfo,
   PluginStats,
   ConfigServiceView,
@@ -95,6 +97,10 @@ export const debugApi = {
       { params: count ? { count: String(count) } : undefined },
     ),
   clear: () => apiClient.delete<void>('/debug'),
+  listLogs: (params?: Record<string, string>) =>
+    apiClient.get<{ logs: RequestLog[] }>('/chat/logs', { params }),
+  getLogStats: (params?: Record<string, string>) =>
+    apiClient.get<LogStats>('/chat/logs/stats', { params }),
   getLogs: (id: string) => apiClient.get<LogDetail>(`/chat/logs/${id}`),
   deleteLogs: (params: { olderThanDays?: number; all?: boolean }) => {
     const p: Record<string, string> = {};
@@ -248,6 +254,16 @@ export const channelsApi = {
     }>('/channels/messages/inbox', { params: params as Record<string, string> }),
   markRead: (messageId: string) =>
     apiClient.post<void>(`/channels/messages/${messageId}/read`),
+  setup: (channelId: string, config: Record<string, unknown>) =>
+    apiClient.post<{
+      pluginId: string;
+      status: string;
+      botInfo?: { username: string; firstName: string };
+    }>(`/channels/${channelId}/setup`, { config }),
+  connect: (channelId: string) =>
+    apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/connect`),
+  disconnect: (channelId: string) =>
+    apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/disconnect`),
 };
 
 // ---- Expenses ----

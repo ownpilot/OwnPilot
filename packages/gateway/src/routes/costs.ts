@@ -216,15 +216,19 @@ costRoutes.get('/models', (c) => {
  * POST /costs/estimate - Estimate cost for a request
  */
 costRoutes.post('/estimate', async (c) => {
-  try {
-    const body = await c.req.json<{
-      provider: AIProvider;
-      model: string;
-      inputTokens?: number;
-      outputTokens?: number;
-      text?: string;
-    }>();
+  const body = await c.req.json<{
+    provider: AIProvider;
+    model: string;
+    inputTokens?: number;
+    outputTokens?: number;
+    text?: string;
+  }>().catch(() => null);
 
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
+
+  try {
     if (!body.provider || !body.model) {
       return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'provider and model are required' }, 400);
     }
@@ -268,15 +272,19 @@ costRoutes.get('/budget', async (c) => {
  * POST /costs/budget - Set budget configuration
  */
 costRoutes.post('/budget', async (c) => {
-  try {
-    const body = await c.req.json<{
-      dailyLimit?: number;
-      weeklyLimit?: number;
-      monthlyLimit?: number;
-      alertThresholds?: number[];
-      limitAction?: 'warn' | 'block';
-    }>();
+  const body = await c.req.json<{
+    dailyLimit?: number;
+    weeklyLimit?: number;
+    monthlyLimit?: number;
+    alertThresholds?: number[];
+    limitAction?: 'warn' | 'block';
+  }>().catch(() => null);
 
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
+
+  try {
     const config: Partial<BudgetConfig> = {};
 
     const isPositiveFinite = (v: unknown): v is number =>
@@ -364,29 +372,35 @@ costRoutes.get('/expensive', async (c) => {
  * POST /costs/record - Record a usage (called internally after each API call)
  */
 costRoutes.post('/record', async (c) => {
-  try {
-    const body = await c.req.json<{
-      userId: string;
-      sessionId?: string;
-      provider: AIProvider;
-      model: string;
-      inputTokens: number;
-      outputTokens: number;
-      totalTokens?: number;
-      latencyMs: number;
-      requestType?: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'tool';
-      cached?: boolean;
-      error?: string;
-      metadata?: Record<string, unknown>;
-    }>();
+  const body = await c.req.json<{
+    userId: string;
+    sessionId?: string;
+    provider: AIProvider;
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens?: number;
+    latencyMs: number;
+    requestType?: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'tool';
+    cached?: boolean;
+    error?: string;
+    metadata?: Record<string, unknown>;
+  }>().catch(() => null);
 
-    if (!body.provider || !body.model || !body.userId) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'provider, model, and userId are required' }, 400);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
+
+  try {
+    if (!body.provider || !body.model) {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'provider and model are required' }, 400);
     }
+
+    const userId = getUserId(c);
 
     // Record usage
     const record = await usageTracker.record({
-      userId: body.userId,
+      userId,
       sessionId: body.sessionId,
       provider: body.provider,
       model: body.model,

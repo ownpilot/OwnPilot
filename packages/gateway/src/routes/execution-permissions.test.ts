@@ -507,7 +507,7 @@ describe('Execution Permissions Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(false);
       expect(json.error.code).toBe('NOT_FOUND');
-      expect(json.error.message).toContain('not found or already expired');
+      expect(json.error.message).toContain('not found');
     });
 
     it('returns 400 when approved is not a boolean', async () => {

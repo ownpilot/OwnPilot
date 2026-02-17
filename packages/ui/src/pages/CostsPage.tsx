@@ -17,7 +17,7 @@ export function CostsPage() {
     byProvider: ProviderBreakdown[];
     daily: DailyUsage[];
   } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'budget'>('overview');
 
@@ -28,7 +28,7 @@ export function CostsPage() {
   const [savingBudget, setSavingBudget] = useState(false);
 
   const fetchCosts = useCallback(async () => {
-    setLoading(true);
+    setIsLoading(true);
     setError(null);
 
     try {
@@ -46,7 +46,7 @@ export function CostsPage() {
     } catch {
       setError('Failed to fetch cost data');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, [period]);
 
@@ -72,7 +72,7 @@ export function CostsPage() {
     }
   }, [dailyLimit, weeklyLimit, monthlyLimit, toast]);
 
-  if (loading && !summary) {
+  if (isLoading && !summary) {
     return <LoadingSpinner message="Loading cost data..." />;
   }
 

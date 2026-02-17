@@ -42,6 +42,7 @@ export function ApiKeysPage() {
 
   const loadData = async () => {
     try {
+      setError(null);
       // Load settings, providers, categories, and models in parallel
       const [settingsData, providersData, categoriesData, modelsData] = await Promise.all([
         settingsApi.get(),

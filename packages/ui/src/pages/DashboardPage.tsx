@@ -23,14 +23,18 @@ export function DashboardPage() {
   const { subscribe } = useGateway();
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchSummary = async () => {
     try {
+      setError(null);
       const data = await summaryApi.get();
       setSummary(data);
       setLastUpdated(new Date());
+    } catch {
+      setError('Failed to load dashboard data');
     } finally {
       setIsLoading(false);
     }
@@ -65,6 +69,23 @@ export function DashboardPage() {
       <div className="p-6 space-y-6">
         <SkeletonStats count={4} />
         <SkeletonCard count={3} />
+      </div>
+    );
+  }
+
+  if (error && !summary) {
+    return (
+      <div className="p-6">
+        <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-lg text-center">
+          <AlertTriangle className="w-6 h-6 text-red-500 mx-auto mb-2" />
+          <p className="text-sm text-red-500">{error}</p>
+          <button
+            onClick={fetchSummary}
+            className="mt-3 px-4 py-1.5 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }

@@ -16,7 +16,7 @@ import {
 } from 'react';
 import type { Message, ChatResponse, ApiResponse, SessionInfo } from '../types';
 import type { ApprovalRequest } from '../api';
-import { executionPermissionsApi } from '../api';
+import { executionPermissionsApi, memoriesApi } from '../api';
 import { parseSSELine } from '../utils/sse-parser';
 
 // Progress event types from the stream
@@ -52,6 +52,8 @@ interface ChatState {
   progressEvents: ProgressEvent[];
   /** Follow-up suggestions from the latest AI response */
   suggestions: Array<{ title: string; detail: string }>;
+  /** AI-extracted memories pending user acceptance */
+  extractedMemories: Array<{ type: string; content: string; importance?: number }>;
   /** Pending approval request from SSE (real-time code execution approval) */
   pendingApproval: ApprovalRequest | null;
   /** Current session ID */
@@ -70,6 +72,8 @@ interface ChatStore extends ChatState {
   clearMessages: () => void;
   cancelRequest: () => void;
   clearSuggestions: () => void;
+  acceptMemory: (index: number) => void;
+  rejectMemory: (index: number) => void;
   resolveApproval: (approved: boolean) => void;
 }
 
@@ -87,6 +91,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [streamingContent, setStreamingContent] = useState('');
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
   const [suggestions, setSuggestions] = useState<Array<{ title: string; detail: string }>>([]);
+  const [extractedMemories, setExtractedMemories] = useState<Array<{ type: string; content: string; importance?: number }>>([]);
   const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
@@ -112,6 +117,29 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const clearSuggestions = useCallback(() => setSuggestions([]), []);
 
+  // Ref for auto-accept logic — keeps fresh reference without re-renders
+  const extractedMemoriesRef = useRef(extractedMemories);
+  extractedMemoriesRef.current = extractedMemories;
+
+  const acceptMemory = useCallback((index: number) => {
+    setExtractedMemories(prev => {
+      const mem = prev[index];
+      if (mem) {
+        memoriesApi.create({
+          type: mem.type,
+          content: mem.content,
+          source: 'conversation',
+          importance: mem.importance ?? 0.7,
+        }).catch(() => {});
+      }
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  const rejectMemory = useCallback((index: number) => {
+    setExtractedMemories(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
   const resolveApproval = useCallback((approved: boolean) => {
     const approval = pendingApproval;
     if (!approval) return;
@@ -135,11 +163,22 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
+      // Auto-accept any remaining memories from previous response
+      for (const mem of extractedMemoriesRef.current) {
+        memoriesApi.create({
+          type: mem.type,
+          content: mem.content,
+          source: 'conversation',
+          importance: mem.importance ?? 0.7,
+        }).catch(() => {});
+      }
+
       setError(null);
       setIsLoading(true);
       setStreamingContent('');
       setProgressEvents([]);
       setSuggestions([]);
+      setExtractedMemories([]);
 
       // Get current messages for history (need fresh reference)
       let currentMessages: Message[] = [];
@@ -257,6 +296,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                       trace: event.data.trace as ChatResponse['trace'],
                       session: event.data.session as ChatResponse['session'],
                       suggestions: event.data.suggestions as ChatResponse['suggestions'],
+                      memories: event.data.memories as ChatResponse['memories'],
                     };
                     // Update session context info
                     if (event.data.session) {
@@ -280,7 +320,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: (accumulatedContent || finalResponse?.response || '').replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '').trimEnd(),
+            content: (accumulatedContent || finalResponse?.response || '').replace(/<memories>[\s\S]*<\/memories>\s*/, '').replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '').trimEnd(),
             timestamp: new Date().toISOString(),
             toolCalls: finalResponse?.toolCalls,
             provider,
@@ -292,6 +332,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           // Set follow-up suggestions from the response
           if (finalResponse?.suggestions?.length) {
             setSuggestions(finalResponse.suggestions);
+          }
+
+          // Set extracted memories for user accept/reject
+          if (finalResponse?.memories?.length) {
+            setExtractedMemories(finalResponse.memories);
           }
 
         } else {
@@ -329,6 +374,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           // Set follow-up suggestions from the response
           if (data.data.suggestions?.length) {
             setSuggestions(data.data.suggestions);
+          }
+
+          // Set extracted memories for user accept/reject
+          if (data.data.memories?.length) {
+            setExtractedMemories(data.data.memories);
           }
         }
       } catch (err) {
@@ -383,6 +433,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setStreamingContent('');
     setProgressEvents([]);
     setSuggestions([]);
+    setExtractedMemories([]);
     setPendingApproval(null);
     setSessionId(null);
     setSessionInfo(null);
@@ -400,6 +451,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     streamingContent,
     progressEvents,
     suggestions,
+    extractedMemories,
     pendingApproval,
     sessionId,
     sessionInfo,
@@ -412,6 +464,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     clearMessages,
     cancelRequest,
     clearSuggestions,
+    acceptMemory,
+    rejectMemory,
     resolveApproval,
   };
 

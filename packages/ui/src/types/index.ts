@@ -162,6 +162,8 @@ export interface ChatResponse {
   finishReason?: string;
   /** AI-generated follow-up suggestions */
   suggestions?: Array<{ title: string; detail: string }>;
+  /** AI-extracted memories pending user acceptance */
+  memories?: Array<{ type: string; content: string; importance?: number }>;
 }
 
 export interface StreamChunk {

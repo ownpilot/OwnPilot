@@ -9,6 +9,7 @@
 
 import { Hono } from 'hono';
 import { apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, sanitizeText, notFoundError, getErrorMessage } from './helpers.js';
+import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { CustomDataServiceError } from '../services/custom-data-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
@@ -155,7 +156,7 @@ customDataRoutes.delete('/tables/:table', async (c) => {
 customDataRoutes.get('/tables/:table/records', async (c) => {
   const tableId = c.req.param('table');
   const limit = getIntParam(c, 'limit', 50, 1, 1000);
-  const offset = getIntParam(c, 'offset', 0, 0);
+  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
   const filterParam = c.req.query('filter');
 
   let filter: Record<string, unknown> | undefined;

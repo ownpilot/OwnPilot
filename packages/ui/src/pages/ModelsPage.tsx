@@ -64,6 +64,7 @@ export function ModelsPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
+      setError(null);
 
       const [modelsData, providersData] = await Promise.all([
         modelsApi.list(),

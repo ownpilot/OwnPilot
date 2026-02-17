@@ -798,6 +798,19 @@ describe('ChannelServiceImpl', () => {
       // Should not throw
       await service.autoConnectChannels();
     });
+
+    it('should broadcast channel:status error on connect failure', async () => {
+      mockConfigServicesRepo.isAvailable.mockReturnValue(true);
+      channelPlugin.api.connect.mockRejectedValueOnce(new Error('Bot token invalid'));
+
+      await service.autoConnectChannels();
+
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('channel:status', {
+        channelId: 'test-plugin',
+        status: 'error',
+        error: 'Bot token invalid',
+      });
+    });
   });
 
   // ==========================================================================
@@ -1004,9 +1017,7 @@ describe('ChannelServiceImpl', () => {
         // Still broadcasts and processes
         expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
           'channel:message',
-          expect.objectContaining({
-            message: expect.objectContaining({ direction: 'incoming' }),
-          }),
+          expect.objectContaining({ direction: 'incoming' }),
         );
       });
 
@@ -1016,11 +1027,9 @@ describe('ChannelServiceImpl', () => {
         expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
           'channel:message',
           expect.objectContaining({
-            message: expect.objectContaining({
-              id: 'msg-1',
-              channelId: 'test-plugin',
-              direction: 'incoming',
-            }),
+            id: 'msg-1',
+            channelId: 'test-plugin',
+            direction: 'incoming',
           }),
         );
       });
@@ -1239,11 +1248,9 @@ describe('ChannelServiceImpl', () => {
         expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
           'channel:message',
           expect.objectContaining({
-            message: expect.objectContaining({
-              direction: 'outgoing',
-              senderId: 'assistant',
-              content: 'AI bus response',
-            }),
+            direction: 'outgoing',
+            sender: 'Assistant',
+            content: 'AI bus response',
           }),
         );
       });

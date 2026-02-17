@@ -10,14 +10,14 @@ interface CodeTabProps {
 
 export function CodeTab({ tool }: CodeTabProps) {
   const [sourceCode, setSourceCode] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     const fetchSource = async () => {
-      setLoading(true);
+      setIsLoading(true);
       setError(null);
       try {
         const data = await toolsApi.source(tool.name);
@@ -30,7 +30,7 @@ export function CodeTab({ tool }: CodeTabProps) {
       } catch {
         if (!cancelled) setError('Failed to load source code.');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
@@ -38,7 +38,7 @@ export function CodeTab({ tool }: CodeTabProps) {
     return () => { cancelled = true; };
   }, [tool.name]);
 
-  if (loading) {
+  if (isLoading) {
     return <LoadingSpinner size="sm" message="Loading source code..." />;
   }
 

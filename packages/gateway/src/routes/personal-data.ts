@@ -32,7 +32,7 @@ import {
   type UpdateContactInput,
   type ContactQuery,
 } from '../db/repositories/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, getOptionalIntParam, validateQueryEnum } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, getOptionalIntParam, validateQueryEnum, notFoundError } from './helpers.js';
 import { MAX_DAYS_LOOKBACK, MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 import type { ServerEvents } from '../ws/types.js';
@@ -97,7 +97,7 @@ tasksRoutes.get('/:id', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const task = await repo.get(c.req.param('id'));
   if (!task) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
+    return notFoundError(c, 'Task', c.req.param('id'));
   }
   return apiResponse(c, task);
 });
@@ -125,7 +125,7 @@ tasksRoutes.patch('/:id', async (c) => {
   }
   const task = await repo.update(c.req.param('id'), body);
   if (!task) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
+    return notFoundError(c, 'Task', c.req.param('id'));
   }
   emitDataChanged('task', 'updated', task.id);
   return apiResponse(c, task);
@@ -135,7 +135,7 @@ tasksRoutes.post('/:id/complete', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const task = await repo.complete(c.req.param('id'));
   if (!task) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
+    return notFoundError(c, 'Task', c.req.param('id'));
   }
   emitDataChanged('task', 'updated', task.id);
   return apiResponse(c, task);
@@ -146,7 +146,7 @@ tasksRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
   const deleted = await repo.delete(id);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Task not found' }, 404);
+    return notFoundError(c, 'Task', c.req.param('id'));
   }
   emitDataChanged('task', 'deleted', id);
   return apiResponse(c, { deleted: true });
@@ -195,7 +195,7 @@ bookmarksRoutes.get('/:id', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
   const bookmark = await repo.get(c.req.param('id'));
   if (!bookmark) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
+    return notFoundError(c, 'Bookmark', c.req.param('id'));
   }
   return apiResponse(c, bookmark);
 });
@@ -223,7 +223,7 @@ bookmarksRoutes.patch('/:id', async (c) => {
   }
   const bookmark = await repo.update(c.req.param('id'), body);
   if (!bookmark) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
+    return notFoundError(c, 'Bookmark', c.req.param('id'));
   }
   emitDataChanged('bookmark', 'updated', bookmark.id);
   return apiResponse(c, bookmark);
@@ -233,7 +233,7 @@ bookmarksRoutes.post('/:id/favorite', async (c) => {
   const repo = new BookmarksRepository(getUserId(c));
   const bookmark = await repo.toggleFavorite(c.req.param('id'));
   if (!bookmark) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
+    return notFoundError(c, 'Bookmark', c.req.param('id'));
   }
   emitDataChanged('bookmark', 'updated', bookmark.id);
   return apiResponse(c, bookmark);
@@ -244,7 +244,7 @@ bookmarksRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
   const deleted = await repo.delete(id);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bookmark not found' }, 404);
+    return notFoundError(c, 'Bookmark', c.req.param('id'));
   }
   emitDataChanged('bookmark', 'deleted', id);
   return apiResponse(c, { deleted: true });
@@ -293,7 +293,7 @@ notesRoutes.get('/:id', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const note = await repo.get(c.req.param('id'));
   if (!note) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
+    return notFoundError(c, 'Note', c.req.param('id'));
   }
   return apiResponse(c, note);
 });
@@ -321,7 +321,7 @@ notesRoutes.patch('/:id', async (c) => {
   }
   const note = await repo.update(c.req.param('id'), body);
   if (!note) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
+    return notFoundError(c, 'Note', c.req.param('id'));
   }
   emitDataChanged('note', 'updated', note.id);
   return apiResponse(c, note);
@@ -331,7 +331,7 @@ notesRoutes.post('/:id/pin', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const note = await repo.togglePin(c.req.param('id'));
   if (!note) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
+    return notFoundError(c, 'Note', c.req.param('id'));
   }
   emitDataChanged('note', 'updated', note.id);
   return apiResponse(c, note);
@@ -341,7 +341,7 @@ notesRoutes.post('/:id/archive', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const note = await repo.archive(c.req.param('id'));
   if (!note) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
+    return notFoundError(c, 'Note', c.req.param('id'));
   }
   emitDataChanged('note', 'updated', note.id);
   return apiResponse(c, note);
@@ -351,7 +351,7 @@ notesRoutes.post('/:id/unarchive', async (c) => {
   const repo = new NotesRepository(getUserId(c));
   const note = await repo.unarchive(c.req.param('id'));
   if (!note) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
+    return notFoundError(c, 'Note', c.req.param('id'));
   }
   emitDataChanged('note', 'updated', note.id);
   return apiResponse(c, note);
@@ -362,7 +362,7 @@ notesRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
   const deleted = await repo.delete(id);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Note not found' }, 404);
+    return notFoundError(c, 'Note', c.req.param('id'));
   }
   emitDataChanged('note', 'deleted', id);
   return apiResponse(c, { deleted: true });
@@ -412,7 +412,7 @@ calendarRoutes.get('/:id', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
   const event = await repo.get(c.req.param('id'));
   if (!event) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Event not found' }, 404);
+    return notFoundError(c, 'Event', c.req.param('id'));
   }
   return apiResponse(c, event);
 });
@@ -440,7 +440,7 @@ calendarRoutes.patch('/:id', async (c) => {
   }
   const event = await repo.update(c.req.param('id'), body);
   if (!event) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Event not found' }, 404);
+    return notFoundError(c, 'Event', c.req.param('id'));
   }
   emitDataChanged('calendar', 'updated', event.id);
   return apiResponse(c, event);
@@ -451,7 +451,7 @@ calendarRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
   const deleted = await repo.delete(id);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Event not found' }, 404);
+    return notFoundError(c, 'Event', c.req.param('id'));
   }
   emitDataChanged('calendar', 'deleted', id);
   return apiResponse(c, { deleted: true });
@@ -514,7 +514,7 @@ contactsRoutes.get('/:id', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const contact = await repo.get(c.req.param('id'));
   if (!contact) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
+    return notFoundError(c, 'Contact', c.req.param('id'));
   }
   return apiResponse(c, contact);
 });
@@ -542,7 +542,7 @@ contactsRoutes.patch('/:id', async (c) => {
   }
   const contact = await repo.update(c.req.param('id'), body);
   if (!contact) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
+    return notFoundError(c, 'Contact', c.req.param('id'));
   }
   emitDataChanged('contact', 'updated', contact.id);
   return apiResponse(c, contact);
@@ -552,7 +552,7 @@ contactsRoutes.post('/:id/favorite', async (c) => {
   const repo = new ContactsRepository(getUserId(c));
   const contact = await repo.toggleFavorite(c.req.param('id'));
   if (!contact) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
+    return notFoundError(c, 'Contact', c.req.param('id'));
   }
   emitDataChanged('contact', 'updated', contact.id);
   return apiResponse(c, contact);
@@ -563,7 +563,7 @@ contactsRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
   const deleted = await repo.delete(id);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' }, 404);
+    return notFoundError(c, 'Contact', c.req.param('id'));
   }
   emitDataChanged('contact', 'deleted', id);
   return apiResponse(c, { deleted: true });

@@ -467,10 +467,22 @@ export class WorkspaceManager {
    * Setup forwarding of channel messages to workspaces
    */
   private setupChannelForwarding(): void {
-    const unsub = gatewayEvents.on('channel:message', async ({ message }) => {
+    const unsub = gatewayEvents.on('channel:message', async (data) => {
       try {
         // Find workspace for this channel
-        const workspace = this.getByChannel(message.channelId) as WorkspaceInstance | undefined;
+        const workspace = this.getByChannel(data.channelId) as WorkspaceInstance | undefined;
+
+        // Adapt flat WS shape to IncomingMessage for workspace processing
+        const message: IncomingMessage = {
+          id: data.id,
+          channelId: data.channelId,
+          channelType: data.channelType,
+          senderId: data.sender,
+          senderName: data.sender,
+          content: data.content,
+          timestamp: data.timestamp,
+          direction: data.direction,
+        };
 
         if (workspace) {
           await workspace.processIncomingMessage(message);

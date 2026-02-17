@@ -12,7 +12,7 @@ import {
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression, getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
-import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
+import { MAX_DAYS_LOOKBACK, MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 
 export const triggersRoutes = new Hono();
@@ -99,7 +99,7 @@ triggersRoutes.get('/stats', async (c) => {
 triggersRoutes.get('/history', async (c) => {
   const userId = getUserId(c);
   const limit = getIntParam(c, 'limit', 25, 1, 200);
-  const offset = getIntParam(c, 'offset', 0, 0, 100000);
+  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
   const status = validateQueryEnum(c.req.query('status'), ['success', 'failure', 'skipped'] as const);
   const triggerId = c.req.query('triggerId') || undefined;
   const from = c.req.query('from') || undefined;
@@ -301,7 +301,7 @@ triggersRoutes.get('/:id/history', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
   const limit = getIntParam(c, 'limit', 25, 1, 200);
-  const offset = getIntParam(c, 'offset', 0, 0, 100000);
+  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
   const status = validateQueryEnum(c.req.query('status'), ['success', 'failure', 'skipped'] as const);
   const from = c.req.query('from') || undefined;
   const to = c.req.query('to') || undefined;

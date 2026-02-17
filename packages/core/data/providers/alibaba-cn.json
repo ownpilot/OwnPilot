@@ -12,6 +12,40 @@
   },
   "models": [
     {
+      "id": "qwen3.5-397b-a17b",
+      "name": "Qwen3.5 397B-A17B",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.43,
+      "outputPrice": 2.58,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02"
+    },
+    {
+      "id": "qwen3.5-plus",
+      "name": "Qwen3.5 Plus",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 0.573,
+      "outputPrice": 3.44,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02"
+    },
+    {
       "id": "kimi-k2-thinking",
       "name": "Moonshot Kimi K2 Thinking",
       "contextWindow": 262144,
@@ -25,7 +59,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-11-06"
     },
     {

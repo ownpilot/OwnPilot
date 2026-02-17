@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { debugApi, apiClient } from '../api';
+import { debugApi } from '../api';
 import type { DebugInfo, DebugLogEntry, LogDetail, RequestLog, LogStats } from '../api';
 
 
@@ -24,7 +24,7 @@ export function LogsPage() {
   const [logs, setLogs] = useState<RequestLog[]>([]);
   const [stats, setStats] = useState<LogStats | null>(null);
   const [selectedLog, setSelectedLog] = useState<LogDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [errorFilter, setErrorFilter] = useState<ErrorFilter>('all');
@@ -37,7 +37,7 @@ export function LogsPage() {
   const [selectedDebugEntry, setSelectedDebugEntry] = useState<DebugLogEntry | null>(null);
 
   const fetchLogs = useCallback(async () => {
-    setLoading(true);
+    setIsLoading(true);
     setError(null);
 
     try {
@@ -46,18 +46,18 @@ export function LogsPage() {
       if (errorFilter === 'errors') params.errors = 'true';
       if (errorFilter === 'success') params.errors = 'false';
 
-      const data = await apiClient.get<{ logs: RequestLog[] }>('/chat/logs', { params });
+      const data = await debugApi.listLogs(params);
       setLogs(data.logs);
     } catch {
       setError('Failed to fetch logs');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, [filterType, errorFilter]);
 
   const fetchStats = useCallback(async () => {
     try {
-      const data = await apiClient.get<LogStats>('/chat/logs/stats', { params: { days: String(days) } });
+      const data = await debugApi.getLogStats({ days: String(days) });
       setStats(data);
     } catch {
       // Ignore stats errors
@@ -390,7 +390,7 @@ export function LogsPage() {
           <div className="flex-1 overflow-hidden flex">
             {/* Logs List */}
             <div className={`flex-1 overflow-auto ${selectedLog ? 'hidden md:block md:w-1/2' : ''}`}>
-              {loading ? (
+              {isLoading ? (
                 <div className="py-12">
                   <LoadingSpinner size="sm" message="Loading logs..." />
                 </div>

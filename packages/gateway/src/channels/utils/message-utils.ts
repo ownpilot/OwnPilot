@@ -1,5 +1,5 @@
 /**
- * Shared message utilities for Telegram channel plugin.
+ * Shared message utilities for channel plugins.
  */
 
 // ============================================================================
@@ -8,6 +8,7 @@
 
 export const PLATFORM_MESSAGE_LIMITS: Record<string, number> = {
   telegram: 4096,
+  discord: 2000,
 };
 
 // ============================================================================

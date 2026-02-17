@@ -56,8 +56,8 @@ function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
       await navigator.clipboard.writeText(displayContent);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+    } catch {
+      // Clipboard API may be unavailable in some browsers/contexts
     }
   };
 

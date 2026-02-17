@@ -1,251 +1,304 @@
 /**
- * Channel management commands
+ * Channel Management Commands
+ *
+ * Manages messaging channels (Telegram, Discord) via the gateway REST API.
+ * All state lives in the gateway — the CLI is a thin client.
  */
 
 import { input, select, confirm } from '@inquirer/prompts';
 
-interface ChannelConfig {
+// ============================================================================
+// Types
+// ============================================================================
+
+interface ChannelInfo {
   id: string;
   type: string;
   name: string;
-  config: Record<string, string>;
+  status: string;
+  botInfo?: { username: string; firstName: string };
 }
 
-// In-memory channel storage (would be persisted in real implementation)
-const channels = new Map<string, ChannelConfig>();
+interface ChannelListResponse {
+  channels: ChannelInfo[];
+  summary: { total: number; connected: number; disconnected: number };
+  availableTypes: string[];
+}
+
+interface SetupResponse {
+  pluginId: string;
+  status: string;
+  botInfo?: { username: string; firstName: string };
+}
+
+// ============================================================================
+// Gateway API Helper
+// ============================================================================
+
+const getBaseUrl = () =>
+  process.env.OWNPILOT_GATEWAY_URL ?? 'http://localhost:8080';
+
+async function apiFetch<T>(
+  path: string,
+  options?: RequestInit,
+): Promise<T> {
+  const url = `${getBaseUrl()}/api/v1${path}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as Record<string, unknown>;
+    // Gateway returns { error: { code, message } } or { error: "string" }
+    const errField = body.error;
+    const msg = typeof errField === 'object' && errField !== null
+      ? (errField as Record<string, string>).message ?? JSON.stringify(errField)
+      : (errField as string) ?? (body.message as string) ?? `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+
+  const json = (await res.json()) as Record<string, unknown>;
+  return (json.data ?? json) as T;
+}
+
+function ensureGatewayError(error: unknown): never {
+  const msg = error instanceof Error ? error.message : String(error);
+  if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
+    console.error(
+      '\nCould not reach gateway at ' + getBaseUrl() + '.\n' +
+      'Make sure the server is running: ownpilot start\n',
+    );
+  } else {
+    console.error(`\nError: ${msg}\n`);
+  }
+  process.exit(1);
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+const STATUS_ICONS: Record<string, string> = {
+  connected: '\u2705',    // green check
+  connecting: '\u23F3',   // hourglass
+  disconnected: '\u26AA', // white circle
+  error: '\u274C',        // red cross
+};
+
+function statusIcon(status: string): string {
+  return STATUS_ICONS[status] ?? '\u2753'; // question mark fallback
+}
+
+async function fetchChannels(): Promise<ChannelListResponse> {
+  return apiFetch<ChannelListResponse>('/channels');
+}
+
+async function pickChannel(
+  channels: ChannelInfo[],
+  message: string,
+): Promise<string> {
+  if (channels.length === 1) return channels[0]!.id;
+
+  return select({
+    message,
+    choices: channels.map((ch) => ({
+      name: `${ch.name} (${ch.type}) ${statusIcon(ch.status)} ${ch.status}`,
+      value: ch.id,
+    })),
+  });
+}
+
+// ============================================================================
+// Public Commands
+// ============================================================================
 
 /**
- * List all configured channels
+ * List all channels from the gateway.
  */
 export async function channelList(): Promise<void> {
-  console.log('\nConfigured Channels:');
-  console.log('─'.repeat(60));
+  try {
+    const data = await fetchChannels();
 
-  if (channels.size === 0) {
-    console.log('  No channels configured yet.');
-    console.log('  Use "ownpilot channel add" to add a channel.\n');
-    return;
-  }
+    console.log('\nChannels:');
+    console.log('\u2500'.repeat(74));
+    console.log(
+      `${'ID'.padEnd(24)} ${'TYPE'.padEnd(12)} ${'NAME'.padEnd(18)} ${'STATUS'.padEnd(14)} BOT`,
+    );
+    console.log('\u2500'.repeat(74));
 
-  for (const [id, channel] of channels) {
-    console.log(`  ${channel.type.padEnd(12)} ${channel.name.padEnd(20)} [${id}]`);
+    if (data.channels.length === 0) {
+      console.log('  No channels configured.');
+      console.log('  Use "ownpilot channel add" to add one.\n');
+      return;
+    }
+
+    for (const ch of data.channels) {
+      const bot = ch.botInfo?.username ? `@${ch.botInfo.username}` : '';
+      console.log(
+        `${ch.id.padEnd(24)} ${ch.type.padEnd(12)} ${ch.name.padEnd(18)} ${statusIcon(ch.status)} ${ch.status.padEnd(12)} ${bot}`,
+      );
+    }
+
+    console.log('\u2500'.repeat(74));
+    console.log(
+      `  ${data.summary.total} total, ${data.summary.connected} connected, ${data.summary.disconnected} disconnected\n`,
+    );
+  } catch (error) {
+    ensureGatewayError(error);
   }
-  console.log();
 }
 
 /**
- * Add a new channel
+ * Add and connect a new channel via quick setup.
  */
 export async function channelAdd(): Promise<void> {
-  console.log('\n📱 Add a new channel\n');
+  console.log('\nAdd a new channel\n');
 
-  // Select channel type
-  const type = await select({
-    message: 'Select channel type:',
-    choices: [
-      { name: 'Telegram', value: 'telegram', description: 'Telegram bot via Bot API' },
-    ],
-  });
+  try {
+    // 1. Select channel type
+    const type = await select({
+      message: 'Select channel type:',
+      choices: [
+        { name: 'Telegram', value: 'telegram', description: 'Telegram bot via Bot API' },
+        { name: 'Discord', value: 'discord', description: 'Discord bot via Gateway API' },
+      ],
+    });
 
-  // Get channel name
-  const name = await input({
-    message: 'Channel display name:',
-    default: `My ${type.charAt(0).toUpperCase() + type.slice(1)} Bot`,
-  });
+    // 2. Collect token
+    const config: Record<string, string> = {};
 
-  // Get type-specific configuration
-  const config: Record<string, string> = {};
-
-  switch (type) {
-    case 'telegram': {
-      config.botToken = await input({
+    if (type === 'telegram') {
+      config.bot_token = await input({
         message: 'Bot token (from @BotFather):',
-        validate: (value: string) => (value.includes(':') ? true : 'Invalid bot token format'),
+        validate: (v: string) => (v.includes(':') ? true : 'Invalid token format (expected number:string)'),
       });
 
       const restrictUsers = await confirm({
         message: 'Restrict to specific users?',
         default: false,
       });
-
       if (restrictUsers) {
-        config.allowedUsers = await input({
+        config.allowed_users = await input({
           message: 'Allowed user IDs (comma-separated):',
         });
       }
-      break;
+    } else if (type === 'discord') {
+      config.bot_token = await input({
+        message: 'Bot token (from Discord Developer Portal):',
+        validate: (v: string) => (v.length > 50 ? true : 'Token seems too short'),
+      });
+
+      const restrictGuilds = await confirm({
+        message: 'Restrict to specific servers?',
+        default: false,
+      });
+      if (restrictGuilds) {
+        config.guild_ids = await input({
+          message: 'Allowed server IDs (comma-separated):',
+        });
+      }
     }
 
-    default:
-      break;
-  }
+    // 3. Determine plugin ID
+    const pluginId = `channel.${type}`;
 
-  // Generate ID
-  const id = `${type}-${Date.now().toString(36)}`;
+    // 4. Call quick setup endpoint
+    console.log(`\nConnecting ${type} bot...`);
 
-  // Store channel
-  channels.set(id, { id, type, name, config });
-
-  console.log(`\n✅ Channel "${name}" added successfully!`);
-  console.log(`   ID: ${id}`);
-  console.log(`   Type: ${type}`);
-  console.log('\nRun "ownpilot start" to connect the channel.\n');
-}
-
-/**
- * Remove a channel
- */
-export async function channelRemove(options: { id?: string }): Promise<void> {
-  if (channels.size === 0) {
-    console.log('\nNo channels configured.\n');
-    return;
-  }
-
-  let channelId = options.id;
-
-  if (!channelId) {
-    // Interactive selection
-    const choices = Array.from(channels.entries()).map(([id, ch]) => ({
-      name: `${ch.name} (${ch.type})`,
-      value: id,
-    }));
-
-    channelId = await select({
-      message: 'Select channel to remove:',
-      choices,
+    const result = await apiFetch<SetupResponse>(`/channels/${pluginId}/setup`, {
+      method: 'POST',
+      body: JSON.stringify({ config }),
     });
-  }
 
-  if (!channelId) {
-    console.log('\n❌ No channel selected.\n');
-    return;
-  }
-
-  const channel = channels.get(channelId);
-  if (!channel) {
-    console.log(`\n❌ Channel not found: ${channelId}\n`);
-    return;
-  }
-
-  const confirmed = await confirm({
-    message: `Remove channel "${channel.name}"?`,
-    default: false,
-  });
-
-  if (confirmed) {
-    channels.delete(channelId);
-    console.log(`\n✅ Channel "${channel.name}" removed.\n`);
-  } else {
-    console.log('\nCancelled.\n');
+    // 5. Show result
+    console.log(`\nChannel connected!`);
+    console.log(`  Plugin: ${result.pluginId}`);
+    console.log(`  Status: ${statusIcon(result.status)} ${result.status}`);
+    if (result.botInfo) {
+      console.log(`  Bot:    @${result.botInfo.username} (${result.botInfo.firstName})`);
+    }
+    console.log('\nYou can now chat with your bot. Messages appear in the Inbox.\n');
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('ExitPromptError')) return;
+    ensureGatewayError(error);
   }
 }
 
 /**
- * Show channel status
+ * Show channel status (alias for list).
  */
 export async function channelStatus(): Promise<void> {
-  console.log('\n📊 Channel Status\n');
-  console.log('─'.repeat(70));
-  console.log(`${'TYPE'.padEnd(12)} ${'NAME'.padEnd(20)} ${'STATUS'.padEnd(12)} LAST ACTIVITY`);
-  console.log('─'.repeat(70));
-
-  if (channels.size === 0) {
-    console.log('  No channels configured.\n');
-    return;
-  }
-
-  // In real implementation, this would query the gateway
-  for (const channel of channels.values()) {
-    const status = '🔴 offline';
-    const lastActivity = 'N/A';
-    console.log(
-      `${channel.type.padEnd(12)} ${channel.name.padEnd(20)} ${status.padEnd(12)} ${lastActivity}`
-    );
-  }
-  console.log();
+  return channelList();
 }
 
 /**
- * Connect a channel (sends request to gateway)
+ * Connect a channel.
  */
 export async function channelConnect(options: { id?: string }): Promise<void> {
-  if (channels.size === 0) {
-    console.log('\nNo channels configured. Use "ownpilot channel add" first.\n');
-    return;
+  try {
+    const data = await fetchChannels();
+
+    if (data.channels.length === 0) {
+      console.log('\nNo channels configured. Use "ownpilot channel add" first.\n');
+      return;
+    }
+
+    const channelId = options.id ?? await pickChannel(data.channels, 'Select channel to connect:');
+
+    console.log(`\nConnecting ${channelId}...`);
+
+    const result = await apiFetch<{ pluginId: string; status: string }>(
+      `/channels/${channelId}/connect`,
+      { method: 'POST' },
+    );
+
+    console.log(`${statusIcon(result.status)} ${result.pluginId} — ${result.status}\n`);
+  } catch (error) {
+    ensureGatewayError(error);
   }
-
-  let channelId = options.id;
-
-  if (!channelId) {
-    const choices = Array.from(channels.entries()).map(([id, ch]) => ({
-      name: `${ch.name} (${ch.type})`,
-      value: id,
-    }));
-
-    channelId = await select({
-      message: 'Select channel to connect:',
-      choices,
-    });
-  }
-
-  if (!channelId) {
-    console.log('\n❌ No channel selected.\n');
-    return;
-  }
-
-  const channel = channels.get(channelId);
-  if (!channel) {
-    console.log(`\n❌ Channel not found: ${channelId}\n`);
-    return;
-  }
-
-  console.log(`\n🔄 Connecting "${channel.name}"...`);
-
-  // In real implementation, this would send WebSocket message to gateway
-  // For now, simulate connection
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  console.log(`✅ Channel "${channel.name}" connected!\n`);
 }
 
 /**
- * Disconnect a channel
+ * Disconnect a channel.
  */
 export async function channelDisconnect(options: { id?: string }): Promise<void> {
-  if (channels.size === 0) {
-    console.log('\nNo channels configured.\n');
-    return;
+  try {
+    const data = await fetchChannels();
+
+    if (data.channels.length === 0) {
+      console.log('\nNo channels configured.\n');
+      return;
+    }
+
+    const connected = data.channels.filter((ch) => ch.status === 'connected');
+    if (connected.length === 0) {
+      console.log('\nNo connected channels to disconnect.\n');
+      return;
+    }
+
+    const channelId = options.id ?? await pickChannel(connected, 'Select channel to disconnect:');
+
+    console.log(`\nDisconnecting ${channelId}...`);
+
+    const result = await apiFetch<{ pluginId: string; status: string }>(
+      `/channels/${channelId}/disconnect`,
+      { method: 'POST' },
+    );
+
+    console.log(`${statusIcon(result.status)} ${result.pluginId} — ${result.status}\n`);
+  } catch (error) {
+    ensureGatewayError(error);
   }
+}
 
-  let channelId = options.id;
-
-  if (!channelId) {
-    const choices = Array.from(channels.entries()).map(([id, ch]) => ({
-      name: `${ch.name} (${ch.type})`,
-      value: id,
-    }));
-
-    channelId = await select({
-      message: 'Select channel to disconnect:',
-      choices,
-    });
-  }
-
-  if (!channelId) {
-    console.log('\n❌ No channel selected.\n');
-    return;
-  }
-
-  const channel = channels.get(channelId);
-  if (!channel) {
-    console.log(`\n❌ Channel not found: ${channelId}\n`);
-    return;
-  }
-
-  console.log(`\n🔄 Disconnecting "${channel.name}"...`);
-
-  // In real implementation, this would send WebSocket message to gateway
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  console.log(`✅ Channel "${channel.name}" disconnected.\n`);
+/**
+ * Remove a channel — explains that channels are plugin-based.
+ */
+export async function channelRemove(_options: { id?: string }): Promise<void> {
+  console.log(
+    '\nChannels are managed as plugins and cannot be removed individually.\n' +
+    'Use "ownpilot channel disconnect" to stop a channel.\n' +
+    'To remove the configuration, delete the entry in Config Center.\n',
+  );
 }

@@ -24,7 +24,7 @@ export function ProvidersTab() {
   const { confirm } = useDialog();
   const toast = useToast();
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterConfigured, setFilterConfigured] = useState<'all' | 'configured' | 'unconfigured'>('all');
 
@@ -45,13 +45,13 @@ export function ProvidersTab() {
 
   const fetchProviders = useCallback(async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       const { providers: list } = await providersApi.list();
       setProviders(list as ProviderInfo[]);
     } catch {
       toast.error('Failed to load providers');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, []);
 
@@ -240,7 +240,7 @@ export function ProvidersTab() {
     );
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-gray-500">Loading providers...</p>

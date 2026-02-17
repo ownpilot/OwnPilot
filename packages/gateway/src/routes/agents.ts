@@ -70,6 +70,7 @@ import { agentsRepo, localProvidersRepo, type AgentRecord } from '../db/reposito
 import { getApiKey, resolveProviderAndModel, getDefaultProvider, getDefaultModel, getConfiguredProviderIds } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
+import { wsGateway } from '../ws/server.js';
 import { getApprovalManager } from '../autonomy/index.js';
 import type { ActionCategory } from '../autonomy/types.js';
 import {
@@ -136,8 +137,11 @@ All personal data is stored in a local database and persists across conversation
 
 ## Memory Protocol
 - Before answering questions about the user, call \`core.search_memories\` to recall relevant context.
-- Search before creating to avoid duplicate memories.
-- When you detect memorizable information (personal facts, preferences, events), do NOT save automatically. Instead, include a memory-save suggestion in your follow-up suggestions so the user can confirm.
+- When you detect memorizable information during conversation (personal facts, preferences, events, skills), embed them in a <memories> tag.
+- Format as a JSON array of objects: <memories>[{"type":"fact","content":"User's name is Alex"},{"type":"preference","content":"User prefers dark mode"}]</memories>
+- Valid types: fact, preference, conversation, event, skill
+- Place the <memories> tag after your response content but before the <suggestions> tag.
+- Only include genuinely new information — the system handles deduplication automatically.
 
 ## Behavior
 - Be concise. Elaborate only when asked or when the task requires it.
@@ -159,7 +163,6 @@ Rules:
 - title: concise chip label (under 40 chars)
 - detail: the full message placed in the input for the user to review and send (under 200 chars)
 - Max 5 suggestions, specific and actionable, not generic
-- If you detected memorizable information, include a suggestion like {"title":"Remember this","detail":"Remember that I prefer dark roast coffee"}
 - The <suggestions> tag must always be the very last thing in your response`;
 
 /** Sanitize user-supplied IDs for safe interpolation in error messages */
@@ -1193,6 +1196,7 @@ agentRoutes.post('/', async (c) => {
   const configuredToolGroups = safeStringArray(config.toolGroups);
   const tools = resolveToolGroups(configuredToolGroups, configuredTools);
 
+  wsGateway.broadcast('data:changed', { entity: 'agent', action: 'created', id: record.id });
   return apiResponse(c, {
     id: record.id,
     name: record.name,
@@ -1294,6 +1298,7 @@ agentRoutes.patch('/:id', async (c) => {
 
   const { configuredTools, configuredToolGroups, tools } = resolveRecordTools(newConfig);
 
+  wsGateway.broadcast('data:changed', { entity: 'agent', action: 'updated', id });
   return apiResponse(c, {
     id: updated.id,
     name: updated.name,
@@ -1322,6 +1327,7 @@ agentRoutes.delete('/:id', async (c) => {
   // Clear from cache
   evictAgentFromCache(id);
 
+  wsGateway.broadcast('data:changed', { entity: 'agent', action: 'deleted', id });
   return apiResponse(c, {});
 });
 

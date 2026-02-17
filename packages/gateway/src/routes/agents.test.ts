@@ -189,6 +189,10 @@ vi.mock('../db/seeds/default-agents.js', () => ({
   getDefaultAgents: vi.fn(() => []),
 }));
 
+vi.mock('../ws/server.js', () => ({
+  wsGateway: { broadcast: vi.fn() },
+}));
+
 // ─── Import route + mocked modules ──────────────────────────────
 
 import { agentRoutes } from './agents.js';

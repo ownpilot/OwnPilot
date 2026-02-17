@@ -18,7 +18,7 @@ import {
   type ToolDefinition,
 } from '@ownpilot/core';
 import type { ToolInfo } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js'
 import { getAgent } from './agents.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
@@ -214,7 +214,7 @@ toolsRoutes.get('/', async (c) => {
   if (agentId) {
     const agent = await getAgent(agentId);
     if (!agent) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${agentId}` }, 404);
+      return notFoundError(c, 'Agent', agentId);
     }
 
     tools = agent.getTools().map((t) => ({
@@ -288,7 +288,7 @@ toolsRoutes.get('/:name/source', async (c) => {
   // Try TypeScript source first, fall back to executor.toString()
   const source = getToolSource(name, fallbackToString);
   if (!source) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Tool not found: ${name}` }, 404);
+    return notFoundError(c, 'Tool', name);
   }
 
   return apiResponse(c, { name, source });
@@ -306,7 +306,7 @@ toolsRoutes.get('/:name', async (c) => {
   if (agentId) {
     const agent = await getAgent(agentId);
     if (!agent) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Agent not found: ${agentId}` }, 404);
+      return notFoundError(c, 'Agent', agentId);
     }
     // Match by exact name or base name (tools now have namespace prefixes)
     const baseName = name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name;
@@ -319,7 +319,7 @@ toolsRoutes.get('/:name', async (c) => {
   }
 
   if (!tool) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Tool not found: ${name}` }, 404);
+    return notFoundError(c, 'Tool', name);
   }
 
   return apiResponse(c, {
@@ -351,7 +351,7 @@ toolsRoutes.post('/:name/execute', async (c) => {
   } catch (err) {
     const message = getErrorMessage(err);
     if (message.startsWith('Tool not found:')) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message }, 404);
+      return notFoundError(c, 'Tool', name);
     }
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message }, 500);
   }

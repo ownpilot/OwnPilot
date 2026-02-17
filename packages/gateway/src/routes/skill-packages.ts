@@ -9,9 +9,10 @@ import { createProvider, getProviderConfig as coreGetProviderConfig, type AIProv
 import { getSkillPackageService, SkillPackageError } from '../services/skill-package-service.js';
 import { validateManifest, type SkillPackageManifest } from '../services/skill-package-types.js';
 import { serializeSkillMarkdown } from '../services/skill-package-markdown.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import { resolveProviderAndModel, getApiKey } from './settings.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
+import { wsGateway } from '../ws/server.js';
 
 export const skillPackagesRoutes = new Hono();
 
@@ -216,6 +217,7 @@ skillPackagesRoutes.post('/', async (c) => {
   try {
     const service = getSkillPackageService();
     const record = await service.installFromManifest((body as { manifest: unknown }).manifest as never, userId);
+    wsGateway.broadcast('data:changed', { entity: 'skill_package', action: 'created', id: record.id });
     return apiResponse(c, { package: record, message: 'Skill package installed successfully.' }, 201);
   } catch (error) {
     if (error instanceof SkillPackageError) {
@@ -239,6 +241,7 @@ skillPackagesRoutes.post('/install', async (c) => {
   try {
     const service = getSkillPackageService();
     const record = await service.install((body as { path: string }).path, userId);
+    wsGateway.broadcast('data:changed', { entity: 'skill_package', action: 'created', id: record.id });
     return apiResponse(c, { package: record, message: 'Skill package installed successfully.' }, 201);
   } catch (error) {
     if (error instanceof SkillPackageError) {
@@ -355,7 +358,7 @@ skillPackagesRoutes.get('/:id', async (c) => {
   const pkg = service.getById(id);
 
   if (!pkg) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Skill package not found' }, 404);
+    return notFoundError(c, 'Skill package', id);
   }
 
   return apiResponse(c, { package: pkg });
@@ -372,9 +375,10 @@ skillPackagesRoutes.delete('/:id', async (c) => {
   const deleted = await service.uninstall(id, userId);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Skill package not found' }, 404);
+    return notFoundError(c, 'Skill package', id);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'skill_package', action: 'deleted', id });
   return apiResponse(c, { message: 'Skill package uninstalled successfully.' });
 });
 
@@ -390,9 +394,10 @@ skillPackagesRoutes.post('/:id/enable', async (c) => {
     const pkg = await service.enable(id, userId);
 
     if (!pkg) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Skill package not found' }, 404);
+      return notFoundError(c, 'Skill package', id);
     }
 
+    wsGateway.broadcast('data:changed', { entity: 'skill_package', action: 'updated', id });
     return apiResponse(c, { package: pkg, message: 'Skill package enabled.' });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to enable skill package') }, 500);
@@ -411,9 +416,10 @@ skillPackagesRoutes.post('/:id/disable', async (c) => {
     const pkg = await service.disable(id, userId);
 
     if (!pkg) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Skill package not found' }, 404);
+      return notFoundError(c, 'Skill package', id);
     }
 
+    wsGateway.broadcast('data:changed', { entity: 'skill_package', action: 'updated', id });
     return apiResponse(c, { package: pkg, message: 'Skill package disabled.' });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to disable skill package') }, 500);
@@ -432,7 +438,7 @@ skillPackagesRoutes.post('/:id/reload', async (c) => {
     const pkg = await service.reload(id, userId);
 
     if (!pkg) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Skill package not found' }, 404);
+      return notFoundError(c, 'Skill package', id);
     }
 
     return apiResponse(c, { package: pkg, message: 'Skill package reloaded.' });

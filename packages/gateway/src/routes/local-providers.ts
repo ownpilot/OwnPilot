@@ -9,7 +9,8 @@ import { Hono } from 'hono';
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { discoverModels } from '../services/local-discovery.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, zodValidationError, getErrorMessage } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, zodValidationError, getErrorMessage, notFoundError } from './helpers.js';
+import { wsGateway } from '../ws/server.js';
 
 const log = getLog('LocalProviders');
 
@@ -114,6 +115,7 @@ localProvidersRoutes.post('/', async (c) => {
       discoveryEndpoint,
     });
 
+    wsGateway.broadcast('data:changed', { entity: 'local_provider', action: 'created', id: provider.id });
     return apiResponse(c, provider, 201);
   } catch (error) {
     log.error('Failed to create local provider:', error);
@@ -136,7 +138,7 @@ localProvidersRoutes.get('/:id', async (c) => {
     const provider = await localProvidersRepo.getProvider(id);
 
     if (!provider || provider.userId !== userId) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+      return notFoundError(c, 'Local provider', id);
     }
 
     const models = await localProvidersRepo.listModels(userId, id);
@@ -161,7 +163,7 @@ localProvidersRoutes.put('/:id', async (c) => {
   try {
     const existing = await localProvidersRepo.getProvider(id);
     if (!existing || existing.userId !== userId) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+      return notFoundError(c, 'Local provider', id);
     }
 
     const body = await c.req.json().catch(() => null);
@@ -187,9 +189,10 @@ localProvidersRoutes.put('/:id', async (c) => {
     });
 
     if (!updated) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+      return notFoundError(c, 'Local provider', id);
     }
 
+    wsGateway.broadcast('data:changed', { entity: 'local_provider', action: 'updated', id });
     return apiResponse(c, updated);
   } catch (error) {
     log.error('Failed to update local provider:', error);
@@ -207,15 +210,16 @@ localProvidersRoutes.delete('/:id', async (c) => {
   try {
     const existing = await localProvidersRepo.getProvider(id);
     if (!existing || existing.userId !== userId) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+      return notFoundError(c, 'Local provider', id);
     }
 
     const deleted = await localProvidersRepo.deleteProvider(id);
 
     if (!deleted) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+      return notFoundError(c, 'Local provider', id);
     }
 
+    wsGateway.broadcast('data:changed', { entity: 'local_provider', action: 'deleted', id });
     return apiResponse(c, { message: 'Local provider deleted', });
   } catch (error) {
     log.error('Failed to delete local provider:', error);
@@ -243,15 +247,16 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
 
     const existing = await localProvidersRepo.getProvider(id);
     if (!existing || existing.userId !== userId) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+      return notFoundError(c, 'Local provider', id);
     }
 
     const updated = await localProvidersRepo.updateProvider(id, { isEnabled: enabled });
 
     if (!updated) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+      return notFoundError(c, 'Local provider', id);
     }
 
+    wsGateway.broadcast('data:changed', { entity: 'local_provider', action: 'updated', id });
     return apiResponse(c, updated);
   } catch (error) {
     log.error('Failed to toggle local provider:', error);
@@ -269,11 +274,12 @@ localProvidersRoutes.patch('/:id/set-default', async (c) => {
   try {
     const existing = await localProvidersRepo.getProvider(id);
     if (!existing || existing.userId !== userId) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+      return notFoundError(c, 'Local provider', id);
     }
 
     await localProvidersRepo.setDefault(userId, id);
 
+    wsGateway.broadcast('data:changed', { entity: 'local_provider', action: 'updated', id });
     return apiResponse(c, { message: 'Default local provider updated', });
   } catch (error) {
     log.error('Failed to set default local provider:', error);
@@ -295,7 +301,7 @@ localProvidersRoutes.post('/:id/discover', async (c) => {
     const provider = await localProvidersRepo.getProvider(id);
 
     if (!provider || provider.userId !== userId) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Local provider not found' }, 404);
+      return notFoundError(c, 'Local provider', id);
     }
 
     const result = await discoverModels(provider);
@@ -392,11 +398,12 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
     const model = models.find((m) => m.modelId === modelId);
 
     if (!model) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Model not found' }, 404);
+      return notFoundError(c, 'Model', modelId);
     }
 
     await localProvidersRepo.toggleModel(model.id, enabled);
 
+    wsGateway.broadcast('data:changed', { entity: 'local_provider', action: 'updated', id });
     return apiResponse(c, { message: `Model ${enabled ? 'enabled' : 'disabled'}`,
       enabled, });
   } catch (error) {

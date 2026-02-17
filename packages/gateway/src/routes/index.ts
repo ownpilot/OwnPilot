@@ -38,3 +38,4 @@ export { executionPermissionsRoutes } from './execution-permissions.js';
 export { heartbeatsRoutes } from './heartbeats.js';
 export { skillPackagesRoutes } from './skill-packages.js';
 export { composioRoutes } from './composio.js';
+export { webhookRoutes } from './webhooks.js';

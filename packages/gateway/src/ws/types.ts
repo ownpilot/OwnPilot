@@ -135,7 +135,15 @@ export interface ServerEvents {
   'channel:connected': { channel: Channel };
   'channel:disconnected': { channelId: string; reason?: string };
   'channel:status': { channelId: string; status: ChannelStatus; error?: string };
-  'channel:message': { message: IncomingMessage };
+  'channel:message': {
+    id: string;
+    channelId: string;
+    channelType: string;
+    sender: string;
+    content: string;
+    timestamp: string;
+    direction: 'incoming' | 'outgoing';
+  };
   'channel:message:sent': { channelId: string; messageId: string };
   'channel:message:error': { channelId: string; error: string };
 
@@ -177,7 +185,8 @@ export interface ServerEvents {
     entity: 'task' | 'note' | 'bookmark' | 'contact' | 'calendar' | 'expense' | 'goal' | 'memory'
       | 'plan' | 'trigger' | 'heartbeat' | 'custom_tool' | 'custom_table' | 'custom_record'
       | 'config_service' | 'workspace' | 'plugin'
-      | 'pomodoro' | 'habit' | 'capture';
+      | 'pomodoro' | 'habit' | 'capture'
+      | 'agent' | 'skill_package' | 'local_provider' | 'model_config' | 'model_provider' | 'channel';
     action: 'created' | 'updated' | 'deleted';
     id?: string;
     count?: number;

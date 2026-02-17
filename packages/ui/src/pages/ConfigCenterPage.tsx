@@ -116,8 +116,11 @@ export function ConfigCenterPage() {
   const loadAll = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    await Promise.all([fetchServices(), fetchStats(), fetchCategories()]);
-    setIsLoading(false);
+    try {
+      await Promise.all([fetchServices(), fetchStats(), fetchCategories()]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [fetchServices, fetchStats, fetchCategories]);
 
   useEffect(() => {

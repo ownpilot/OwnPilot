@@ -26,6 +26,7 @@ import { pomodoroRepo } from '../db/repositories/pomodoro.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { registerToolConfigRequirements } from '../services/api-service-registrar.js';
 import { buildTelegramChannelPlugin } from '../channels/plugins/telegram/index.js';
+import { buildDiscordChannelPlugin } from '../channels/plugins/discord/index.js';
 import { buildGatewayPlugin } from './gateway-plugin.js';
 import { buildComposioPlugin } from './composio.js';
 import { getLog } from '../services/log.js';
@@ -1152,7 +1153,43 @@ function getAllBuiltinPlugins(): BuiltinPluginEntry[] {
     buildComposioPlugin(),
     // Channel plugins
     buildTelegramChannelPlugin(),
+    buildDiscordChannelPlugin(),
   ];
+}
+
+// =============================================================================
+// Channel API Factory Cache
+// =============================================================================
+
+/**
+ * Stores channel API factory functions by plugin ID so they can be re-invoked
+ * after config changes (e.g. via the quick setup endpoint).
+ */
+const channelApiFactories = new Map<string, (cfg: Record<string, unknown>) => PluginPublicAPI>();
+
+/**
+ * Re-create a channel plugin's API instance with fresh config from Config Center.
+ * Called after updating config entries so the channel reconnects with new credentials.
+ */
+export async function refreshChannelApi(pluginId: string): Promise<void> {
+  const factory = channelApiFactories.get(pluginId);
+  if (!factory) return;
+
+  const registry = await getDefaultPluginRegistry();
+  const plugin = registry.get(pluginId);
+  if (!plugin) return;
+
+  const configData: Record<string, unknown> = {};
+  const requiredServices = plugin.manifest.requiredServices as Array<{ name: string }> | undefined;
+  if (requiredServices?.length) {
+    const serviceName = requiredServices[0]!.name;
+    const entry = configServicesRepo.getDefaultEntry(serviceName);
+    if (entry?.data) {
+      Object.assign(configData, entry.data);
+    }
+  }
+
+  plugin.api = factory(configData);
 }
 
 // =============================================================================
@@ -1227,7 +1264,9 @@ export async function initializePlugins(): Promise<void> {
             Object.assign(configData, entry.data);
           }
         }
-        plugin.api = (channelFactory as (cfg: Record<string, unknown>) => PluginPublicAPI)(configData);
+        const typedFactory = channelFactory as (cfg: Record<string, unknown>) => PluginPublicAPI;
+        plugin.api = typedFactory(configData);
+        channelApiFactories.set(manifest.id, typedFactory);
       }
 
       // 5. Apply DB state

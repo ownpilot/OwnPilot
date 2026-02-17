@@ -100,6 +100,10 @@ vi.mock('./settings.js', () => ({
   getConfiguredProviderIds: vi.fn(async () => new Set(['openai'])),
 }));
 
+vi.mock('../ws/server.js', () => ({
+  wsGateway: { broadcast: vi.fn() },
+}));
+
 // Import after mocks
 const { modelConfigsRoutes } = await import('./model-configs.js');
 

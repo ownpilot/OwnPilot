@@ -8,6 +8,7 @@
 import { Hono } from 'hono';
 import { getAuditLogger } from '../audit/index.js';
 import { apiResponse, apiError, getIntParam, ERROR_CODES, validateQueryEnum } from './helpers.js';
+import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 
 const app = new Hono();
 
@@ -52,7 +53,7 @@ app.get('/', async (c) => {
     to: to ? new Date(to) : undefined,
     correlationId: c.req.query('correlationId'),
     limit: getIntParam(c, 'limit', 100, 1, 1000),
-    offset: getIntParam(c, 'offset', 0, 0),
+    offset: getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET),
     order: validateQueryEnum(c.req.query('order'), ['asc', 'desc'] as const),
   });
 
@@ -95,7 +96,7 @@ app.get('/tools', async (c) => {
   const result = await logger.query({
     types: ['tool.execute', 'tool.success', 'tool.error'],
     limit: getIntParam(c, 'limit', 50, 1, 1000),
-    offset: getIntParam(c, 'offset', 0, 0),
+    offset: getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET),
     order: 'desc',
   });
 
@@ -119,7 +120,7 @@ app.get('/sessions', async (c) => {
   const result = await logger.query({
     types: ['session.create', 'session.destroy', 'message.receive', 'message.send', 'system.error'],
     limit: getIntParam(c, 'limit', 50, 1, 1000),
-    offset: getIntParam(c, 'offset', 0, 0),
+    offset: getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET),
     order: 'desc',
   });
 
@@ -143,7 +144,7 @@ app.get('/errors', async (c) => {
   const result = await logger.query({
     minSeverity: 'error',
     limit: getIntParam(c, 'limit', 50, 1, 1000),
-    offset: getIntParam(c, 'offset', 0, 0),
+    offset: getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET),
     order: 'desc',
   });
 

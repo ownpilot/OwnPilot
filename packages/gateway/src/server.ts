@@ -420,7 +420,15 @@ async function main() {
     // 5. Stop approval manager cleanup
     try { getApprovalManager().stop(); } catch (e) { log.warn('ApprovalManager stop error', { error: String(e) }); }
 
-    // 6. Close DB connection pool
+    // 6. Cleanup webhook handler (if Telegram is in webhook mode)
+    try {
+      const { getWebhookHandler, unregisterWebhookHandler } = await import('./channels/plugins/telegram/webhook.js');
+      if (getWebhookHandler()) {
+        unregisterWebhookHandler();
+      }
+    } catch { /* webhook module not loaded */ }
+
+    // 7. Close DB connection pool
     try {
       const adapter = getAdapterSync();
       await adapter.close();

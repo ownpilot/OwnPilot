@@ -44,11 +44,28 @@ const mockService = {
   resolveUser: vi.fn(),
 };
 
+const mockPlugin = {
+  manifest: {
+    id: 'channel.telegram',
+    name: 'Telegram',
+    category: 'channel',
+    requiredServices: [{ name: 'telegram_bot' }],
+  },
+  status: 'enabled',
+  api: telegramApi,
+};
+
+const mockRegistry = {
+  get: vi.fn((id: string) => (id === 'channel.telegram' ? mockPlugin : undefined)),
+  getAll: vi.fn(() => [mockPlugin]),
+};
+
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     getChannelService: () => mockService,
+    getDefaultPluginRegistry: async () => mockRegistry,
   };
 });
 
@@ -59,6 +76,29 @@ const mockChannelMessagesRepo = {
 
 vi.mock('../db/repositories/channel-messages.js', () => ({
   ChannelMessagesRepository: vi.fn(function () { return mockChannelMessagesRepo; }),
+}));
+
+const mockConfigServicesRepo = {
+  getDefaultEntry: vi.fn(),
+  updateEntry: vi.fn(),
+  createEntry: vi.fn(),
+  getFieldValue: vi.fn(),
+};
+
+vi.mock('../db/repositories/config-services.js', () => ({
+  configServicesRepo: mockConfigServicesRepo,
+}));
+
+const mockRefreshChannelApi = vi.fn();
+
+vi.mock('../plugins/init.js', () => ({
+  refreshChannelApi: (...args: unknown[]) => mockRefreshChannelApi(...args),
+}));
+
+const mockWsGateway = { broadcast: vi.fn() };
+
+vi.mock('../ws/server.js', () => ({
+  wsGateway: mockWsGateway,
 }));
 
 // Import after mocks
@@ -134,7 +174,8 @@ describe('Channels Routes', () => {
       expect(json.data.summary).toBeDefined();
       expect(json.data.summary.total).toBe(2);
       expect(json.data.summary.connected).toBe(2);
-      expect(json.data.availablePlatforms).toContain('telegram');
+      expect(json.data.summary.disconnected).toBe(0);
+      expect(json.data.availableTypes).toContain('telegram');
     });
   });
 
@@ -212,8 +253,10 @@ describe('Channels Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.id).toBe('channel.telegram');
-      expect(json.data.platform).toBe('telegram');
+      expect(json.data.type).toBe('telegram');
+      expect(json.data.name).toBe('Telegram');
       expect(json.data.status).toBe('connected');
+      expect(json.data.icon).toBe('telegram');
     });
 
     it('returns 404 for unknown channel', async () => {
@@ -414,6 +457,154 @@ describe('Channels Routes', () => {
       expect(res.status).toBe(500);
       const json = await res.json();
       expect(json.error.code).toBe('FETCH_FAILED');
+    });
+  });
+
+  // ========================================================================
+  // POST /channels/:id/setup
+  // ========================================================================
+
+  describe('POST /channels/:id/setup', () => {
+    it('creates config entry and connects when no existing entry', async () => {
+      mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
+
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { bot_token: '123:ABC' } }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.pluginId).toBe('channel.telegram');
+      expect(json.data.status).toBe('connected');
+
+      // Should create entry
+      expect(mockConfigServicesRepo.createEntry).toHaveBeenCalledWith('telegram_bot', {
+        label: 'Default',
+        data: { bot_token: '123:ABC' },
+      });
+      expect(mockConfigServicesRepo.updateEntry).not.toHaveBeenCalled();
+
+      // Should refresh API and connect
+      expect(mockRefreshChannelApi).toHaveBeenCalledWith('channel.telegram');
+      expect(mockService.connect).toHaveBeenCalledWith('channel.telegram');
+
+      // Should broadcast config change
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({
+        entity: 'config_service',
+        action: 'created',
+        id: 'telegram_bot',
+      }));
+    });
+
+    it('updates existing config entry', async () => {
+      mockConfigServicesRepo.getDefaultEntry.mockReturnValue({
+        id: 'entry-1',
+        data: { bot_token: 'old-token' },
+      });
+
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { bot_token: 'new-token' } }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockConfigServicesRepo.updateEntry).toHaveBeenCalledWith('entry-1', {
+        data: { bot_token: 'new-token' },
+      });
+      expect(mockConfigServicesRepo.createEntry).not.toHaveBeenCalled();
+
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({
+        action: 'updated',
+      }));
+    });
+
+    it('returns 404 for unknown pluginId', async () => {
+      const res = await app.request('/channels/channel.unknown/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { bot_token: '123:ABC' } }),
+      });
+
+      expect(res.status).toBe(404);
+      const json = await res.json();
+      expect(json.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 400 when config is missing', async () => {
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_REQUEST');
+    });
+
+    it('returns 400 when config is not an object', async () => {
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: 'not-an-object' }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 500 on connection failure', async () => {
+      mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
+      mockService.connect.mockRejectedValueOnce(new Error('Bot token invalid'));
+
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { bot_token: 'bad-token' } }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('CONNECTION_FAILED');
+      expect(json.error.message).toContain('Bot token invalid');
+    });
+
+    it('includes botInfo when available', async () => {
+      mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
+      // Make getChannel return an API with getBotInfo
+      const apiWithBot = {
+        ...telegramApi,
+        getBotInfo: vi.fn(() => ({ username: 'mybot', firstName: 'My Bot' })),
+      };
+      mockService.getChannel.mockReturnValue(apiWithBot);
+
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { bot_token: '123:ABC' } }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.botInfo).toEqual({ username: 'mybot', firstName: 'My Bot' });
+    });
+
+    it('disconnects before connecting (best-effort)', async () => {
+      mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
+      mockService.disconnect.mockRejectedValueOnce(new Error('already disconnected'));
+
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { bot_token: '123:ABC' } }),
+      });
+
+      // Should still succeed — disconnect error is swallowed
+      expect(res.status).toBe(200);
+      expect(mockService.disconnect).toHaveBeenCalledWith('channel.telegram');
+      expect(mockService.connect).toHaveBeenCalledWith('channel.telegram');
     });
   });
 

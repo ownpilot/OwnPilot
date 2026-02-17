@@ -41,6 +41,10 @@ vi.mock('../services/local-discovery.js', () => ({
   })),
 }));
 
+vi.mock('../ws/server.js', () => ({
+  wsGateway: { broadcast: vi.fn() },
+}));
+
 // Import after mocks
 const { localProvidersRoutes } = await import('./local-providers.js');
 const { discoverModels } = await import('../services/local-discovery.js');

@@ -137,7 +137,7 @@ configServicesRoutes.get('/:name', async (c) => {
   const name = c.req.param('name');
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
+    return notFoundError(c, 'Config service', name);
   }
 
   return apiResponse(c, sanitizeService(service));
@@ -180,7 +180,7 @@ configServicesRoutes.put('/:name', async (c) => {
 
   const updated = await configServicesRepo.update(name, body);
   if (!updated) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
+    return notFoundError(c, 'Config service', name);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'updated', id: name });
@@ -196,7 +196,7 @@ configServicesRoutes.delete('/:name', async (c) => {
 
   const deleted = await configServicesRepo.delete(name);
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
+    return notFoundError(c, 'Config service', name);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'deleted', id: name });
@@ -215,7 +215,7 @@ configServicesRoutes.get('/:name/entries', async (c) => {
   const name = c.req.param('name');
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
+    return notFoundError(c, 'Config service', name);
   }
 
   const entries = configServicesRepo.getEntries(name);
@@ -233,7 +233,7 @@ configServicesRoutes.post('/:name/entries', async (c) => {
   const name = c.req.param('name');
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
+    return notFoundError(c, 'Config service', name);
   }
 
   const body = await c.req.json<CreateConfigEntryInput>();
@@ -253,7 +253,7 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
 
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
+    return notFoundError(c, 'Config service', name);
   }
 
   const body = await c.req.json<UpdateConfigEntryInput>();
@@ -298,7 +298,7 @@ configServicesRoutes.delete('/:name/entries/:entryId', async (c) => {
 
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
+    return notFoundError(c, 'Config service', name);
   }
 
   const deleted = await configServicesRepo.deleteEntry(entryId);
@@ -320,7 +320,7 @@ configServicesRoutes.put('/:name/entries/:entryId/default', async (c) => {
 
   const service = configServicesRepo.getByName(name);
   if (!service) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Config service not found: ${name}` }, 404);
+    return notFoundError(c, 'Config service', name);
   }
 
   // Verify the entry exists for this service

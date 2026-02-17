@@ -20,7 +20,8 @@ import {
   type CreateCaptureInput,
   type ProcessCaptureInput,
 } from '../db/repositories/captures.js';
-import { apiResponse, apiError, getUserId, getIntParam, ERROR_CODES, validateQueryEnum } from './helpers.js';
+import { apiResponse, apiError, getUserId, getIntParam, ERROR_CODES, validateQueryEnum, notFoundError } from './helpers.js';
+import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 
 export const productivityRoutes = new Hono();
@@ -84,7 +85,7 @@ pomodoroRoutes.post('/session/:id/complete', async (c) => {
   const session = await repo.completeSession(id);
 
   if (!session) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' }, 404);
+    return notFoundError(c, 'Session', id);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'pomodoro', action: 'updated', id });
@@ -104,7 +105,7 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
   const session = await repo.interruptSession(id, body.reason);
 
   if (!session) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' }, 404);
+    return notFoundError(c, 'Session', id);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'pomodoro', action: 'updated', id });
@@ -253,7 +254,7 @@ habitsRoutes.get('/:id', async (c) => {
   const stats = await repo.getHabitStats(id);
 
   if (!stats) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
+    return notFoundError(c, 'Habit', id);
   }
 
   return apiResponse(c, stats);
@@ -271,7 +272,7 @@ habitsRoutes.patch('/:id', async (c) => {
   const habit = await repo.update(id, body);
 
   if (!habit) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
+    return notFoundError(c, 'Habit', id);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'habit', action: 'updated', id });
@@ -290,7 +291,7 @@ habitsRoutes.delete('/:id', async (c) => {
   const deleted = await repo.delete(id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
+    return notFoundError(c, 'Habit', id);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'habit', action: 'deleted', id });
@@ -309,7 +310,7 @@ habitsRoutes.post('/:id/archive', async (c) => {
   const habit = await repo.archive(id);
 
   if (!habit) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
+    return notFoundError(c, 'Habit', id);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'habit', action: 'updated', id });
@@ -329,7 +330,7 @@ habitsRoutes.post('/:id/log', async (c) => {
   const log = await repo.logHabit(id, body);
 
   if (!log) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Habit not found' }, 404);
+    return notFoundError(c, 'Habit', id);
   }
 
   // Get updated habit stats
@@ -375,7 +376,7 @@ capturesRoutes.get('/', async (c) => {
   const tag = c.req.query('tag');
   const processed = c.req.query('processed');
   const limit = getIntParam(c, 'limit', 20, 1, 100);
-  const offset = getIntParam(c, 'offset', 0, 0);
+  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
 
   const repo = getCapturesRepo(userId);
   const captures = await repo.list({
@@ -463,7 +464,7 @@ capturesRoutes.get('/:id', async (c) => {
   const capture = await repo.get(id);
 
   if (!capture) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' }, 404);
+    return notFoundError(c, 'Capture', id);
   }
 
   return apiResponse(c, capture);
@@ -485,7 +486,7 @@ capturesRoutes.post('/:id/process', async (c) => {
   const capture = await repo.process(id, body);
 
   if (!capture) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' }, 404);
+    return notFoundError(c, 'Capture', id);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'capture', action: 'updated', id });
@@ -509,7 +510,7 @@ capturesRoutes.delete('/:id', async (c) => {
   const deleted = await repo.delete(id);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Capture not found' }, 404);
+    return notFoundError(c, 'Capture', id);
   }
 
   wsGateway.broadcast('data:changed', { entity: 'capture', action: 'deleted', id });

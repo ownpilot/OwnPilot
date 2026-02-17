@@ -362,57 +362,33 @@ export async function evaluateTriggers(
 }
 
 /**
- * Extract and store memories from a conversation
+ * Extract and store memories from a conversation.
+ *
+ * Parses <memories> tags embedded by the AI in its response,
+ * then stores them via batchRemember() for dedup-safe persistence.
  */
 export async function extractMemories(
   userId: string,
-  message: string,
-  _response: string
+  _message: string,
+  response: string
 ): Promise<number> {
+  const { extractMemoriesFromResponse } = await import('../utils/memory-extraction.js');
+  const { memories } = extractMemoriesFromResponse(response);
+
+  if (memories.length === 0) return 0;
+
   const memoryService = getServiceRegistry().get(Services.Memory);
+  const result = await memoryService.batchRemember(
+    userId,
+    memories.map(m => ({
+      type: m.type,
+      content: m.content,
+      source: 'conversation',
+      importance: m.importance ?? 0.7,
+    })),
+  );
 
-  // Simple pattern-based memory extraction
-  // In a real implementation, this would use the LLM to extract facts
-  const patterns = [
-    // "My name is X" pattern
-    { regex: /my name is (\w+)/i, type: 'fact' as const, template: "User's name is $1" },
-    // "I live in X" pattern
-    { regex: /i live in ([^,.]+)/i, type: 'fact' as const, template: 'User lives in $1' },
-    // "I like X" pattern
-    { regex: /i (?:like|love|prefer) ([^,.]+)/i, type: 'preference' as const, template: 'User likes $1' },
-    // "I don't like X" pattern
-    { regex: /i (?:don't like|hate|dislike) ([^,.]+)/i, type: 'preference' as const, template: "User doesn't like $1" },
-    // "I work as X" pattern
-    { regex: /i work as (?:a |an )?([^,.]+)/i, type: 'fact' as const, template: 'User works as $1' },
-    // "I'm X years old" pattern
-    { regex: /i'?m (\d+) years old/i, type: 'fact' as const, template: 'User is $1 years old' },
-  ];
-
-  let extracted = 0;
-
-  for (const pattern of patterns) {
-    const match = message.match(pattern.regex);
-    if (match) {
-      const content = pattern.template.replace('$1', match[1] ?? '');
-
-      // Check for duplicates using search
-      const existing = await memoryService.searchMemories(userId, content.substring(0, 20), {
-        type: pattern.type,
-        limit: 1,
-      });
-      if (existing.length === 0) {
-        await memoryService.createMemory(userId, {
-          type: pattern.type,
-          content,
-          source: 'conversation',
-          importance: 0.7,
-        });
-        extracted++;
-      }
-    }
-  }
-
-  return extracted;
+  return result.created;
 }
 
 /**

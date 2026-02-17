@@ -27,7 +27,8 @@ import {
 } from '@ownpilot/core';
 import { hasApiKey, getApiKey, getConfiguredProviderIds } from './settings.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, validateQueryEnum, getErrorMessage } from './helpers.js'
+import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, validateQueryEnum, getErrorMessage, notFoundError } from './helpers.js'
+import { wsGateway } from '../ws/server.js';
 
 const log = getLog('ModelConfigs');
 
@@ -369,9 +370,12 @@ modelConfigsRoutes.get('/', async (c) => {
 modelConfigsRoutes.post('/', async (c) => {
   const userId = getUserId(c);
 
-  try {
-    const body = await c.req.json<CreateModelConfigInput>();
+  const body = await c.req.json<CreateModelConfigInput>().catch(() => null);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  }
 
+  try {
     if (!body.providerId || !body.modelId) {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Provider ID and Model ID are required' }, 400);
     }
@@ -382,6 +386,7 @@ modelConfigsRoutes.post('/', async (c) => {
       isCustom: true,
     });
 
+    wsGateway.broadcast('data:changed', { entity: 'model_config', action: 'created' });
     return apiResponse(c, config);
   } catch (error) {
     log.error('Failed to create model:', error);
@@ -492,7 +497,7 @@ modelConfigsRoutes.get('/providers/:id', async (c) => {
   const provider = (await getMergedProviders(userId)).find((p) => p.id === providerId);
 
   if (!provider) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Provider not found' }, 404);
+    return notFoundError(c, 'Provider', providerId);
   }
 
   // Get models for this provider
@@ -510,9 +515,12 @@ modelConfigsRoutes.get('/providers/:id', async (c) => {
 modelConfigsRoutes.post('/providers', async (c) => {
   const userId = getUserId(c);
 
-  try {
-    const body = await c.req.json<CreateProviderInput>();
+  const body = await c.req.json<CreateProviderInput>().catch(() => null);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  }
 
+  try {
     if (!body.providerId || !body.displayName) {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Provider ID and display name are required' }, 400);
     }
@@ -522,6 +530,7 @@ modelConfigsRoutes.post('/providers', async (c) => {
       userId,
     });
 
+    wsGateway.broadcast('data:changed', { entity: 'model_provider', action: 'created', id: provider.id });
     return apiResponse(c, { message: 'Provider created',
       data: provider, });
   } catch (error) {
@@ -537,9 +546,12 @@ modelConfigsRoutes.put('/providers/:id', async (c) => {
   const userId = getUserId(c);
   const providerId = c.req.param('id');
 
-  try {
-    const body = await c.req.json<UpdateProviderInput>();
+  const body = await c.req.json<UpdateProviderInput>().catch(() => null);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  }
 
+  try {
     const existing = await modelConfigsRepo.getProvider(userId, providerId);
     if (!existing) {
       // Create new entry for aggregator
@@ -556,15 +568,17 @@ modelConfigsRoutes.put('/providers/:id', async (c) => {
           config: body.config,
         });
 
+        wsGateway.broadcast('data:changed', { entity: 'model_provider', action: 'updated', id: providerId });
         return apiResponse(c, { message: 'Provider configured',
           data: provider, });
       }
 
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Provider not found' }, 404);
+      return notFoundError(c, 'Provider', providerId);
     }
 
     const provider = await modelConfigsRepo.updateProvider(userId, providerId, body);
 
+    wsGateway.broadcast('data:changed', { entity: 'model_provider', action: 'updated', id: providerId });
     return apiResponse(c, { message: 'Provider updated',
       data: provider, });
   } catch (error) {
@@ -589,9 +603,10 @@ modelConfigsRoutes.delete('/providers/:id', async (c) => {
   const deleted = await modelConfigsRepo.deleteProvider(userId, providerId);
 
   if (!deleted) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Provider not found' }, 404);
+    return notFoundError(c, 'Provider', providerId);
   }
 
+  wsGateway.broadcast('data:changed', { entity: 'model_provider', action: 'deleted', id: providerId });
   return apiResponse(c, { message: 'Provider deleted', });
 });
 
@@ -603,9 +618,12 @@ modelConfigsRoutes.patch('/providers/:id/toggle', async (c) => {
   const userId = getUserId(c);
   const providerId = c.req.param('id');
 
-  try {
-    const body = await c.req.json<{ enabled: boolean }>();
+  const body = await c.req.json<{ enabled: boolean }>().catch(() => null);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  }
 
+  try {
     if (typeof body.enabled !== 'boolean') {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'enabled field required (boolean)' }, 400);
     }
@@ -624,6 +642,7 @@ modelConfigsRoutes.patch('/providers/:id/toggle', async (c) => {
         isEnabled: body.enabled,
       });
 
+      wsGateway.broadcast('data:changed', { entity: 'model_provider', action: 'updated', id: providerId });
       return apiResponse(c, { message: `Provider ${body.enabled ? 'enabled' : 'disabled'}`,
         enabled: body.enabled, });
     }
@@ -642,10 +661,11 @@ modelConfigsRoutes.patch('/providers/:id/toggle', async (c) => {
     } else {
       const toggled = await modelConfigsRepo.toggleProvider(userId, providerId, body.enabled);
       if (!toggled) {
-        return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Provider not found' }, 404);
+        return notFoundError(c, 'Provider', providerId);
       }
     }
 
+    wsGateway.broadcast('data:changed', { entity: 'model_provider', action: 'updated', id: providerId });
     return apiResponse(c, { message: `Provider ${body.enabled ? 'enabled' : 'disabled'}`,
       enabled: body.enabled, });
   } catch (error) {
@@ -941,6 +961,7 @@ modelConfigsRoutes.post('/sync/apply', async (c) => {
     // Clear the provider config cache so new configs are loaded
     clearConfigCache();
 
+    wsGateway.broadcast('data:changed', { entity: 'model_config', action: 'updated' });
     return apiResponse(c, { message: `Synced ${result.synced.length} providers from models.dev`,
       stats: {
         providers: result.synced.length,
@@ -1003,6 +1024,7 @@ modelConfigsRoutes.post('/sync/reset', async (c) => {
     // 4. Clear all caches
     clearConfigCache();
 
+    wsGateway.broadcast('data:changed', { entity: 'model_config', action: 'updated' });
     return apiResponse(c, { message: `FULL RESET complete! Cleared ${deletedFiles.length} config files, ${dbResult.providerConfigs} provider overrides, ${dbResult.modelConfigs} model configs, ${dbResult.customProviders} custom providers. Synced ${syncResult.synced.length} providers fresh from models.dev`,
       stats: {
         deletedFiles: deletedFiles.length,
@@ -1044,7 +1066,7 @@ modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
     const configPath = path.join(__dirname, '..', '..', '..', 'core', 'src', 'agent', 'providers', 'configs', `${providerId}.json`);
 
     if (!fs.existsSync(configPath)) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Provider config '${sanitizeId(providerId)}' not found` }, 404);
+      return notFoundError(c, 'Provider config', providerId);
     }
 
     // Delete the config file
@@ -1061,6 +1083,7 @@ modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
     // Clear cache
     clearConfigCache();
 
+    wsGateway.broadcast('data:changed', { entity: 'model_provider', action: 'deleted', id: providerId });
     return apiResponse(c, { message: resync
         ? `Deleted and resynced provider '${sanitizeId(providerId)}'`
         : `Deleted provider '${sanitizeId(providerId)}'`,
@@ -1133,7 +1156,7 @@ modelConfigsRoutes.get('/:provider/:model', async (c) => {
   );
 
   if (!model) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Model not found' }, 404);
+    return notFoundError(c, 'Model', modelId);
   }
 
   return apiResponse(c, model);
@@ -1147,16 +1170,19 @@ modelConfigsRoutes.put('/:provider/:model', async (c) => {
   const providerId = c.req.param('provider');
   const modelId = decodeURIComponent(c.req.param('model'));
 
-  try {
-    const body = await c.req.json<UpdateModelConfigInput>();
+  const body = await c.req.json<UpdateModelConfigInput>().catch(() => null);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  }
 
+  try {
     // Check if model exists in any source
     const existingModel = (await getMergedModels(userId)).find(
       (m) => m.providerId === providerId && m.modelId === modelId
     );
 
     if (!existingModel) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Model not found' }, 404);
+      return notFoundError(c, 'Model', modelId);
     }
 
     // Create or update override
@@ -1168,6 +1194,7 @@ modelConfigsRoutes.put('/:provider/:model', async (c) => {
       isCustom: existingModel.isCustom,
     });
 
+    wsGateway.broadcast('data:changed', { entity: 'model_config', action: 'updated' });
     return apiResponse(c, { message: 'Model updated',
       data: config, });
   } catch (error) {
@@ -1189,7 +1216,7 @@ modelConfigsRoutes.delete('/:provider/:model', async (c) => {
   );
 
   if (!existingModel) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Model not found' }, 404);
+    return notFoundError(c, 'Model', modelId);
   }
 
   if (!existingModel.isCustom && !existingModel.hasOverride) {
@@ -1198,6 +1225,7 @@ modelConfigsRoutes.delete('/:provider/:model', async (c) => {
 
   const deleted = await modelConfigsRepo.deleteModel(userId, providerId, modelId);
 
+  wsGateway.broadcast('data:changed', { entity: 'model_config', action: 'deleted' });
   return apiResponse(c, { message: existingModel.isCustom ? 'Custom model deleted' : 'Override removed',
     deleted, });
 });
@@ -1210,9 +1238,12 @@ modelConfigsRoutes.patch('/:provider/:model/toggle', async (c) => {
   const providerId = c.req.param('provider');
   const modelId = decodeURIComponent(c.req.param('model'));
 
-  try {
-    const body = await c.req.json<{ enabled: boolean }>();
+  const body = await c.req.json<{ enabled: boolean }>().catch(() => null);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  }
 
+  try {
     if (typeof body.enabled !== 'boolean') {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'enabled field required (boolean)' }, 400);
     }
@@ -1223,7 +1254,7 @@ modelConfigsRoutes.patch('/:provider/:model/toggle', async (c) => {
     );
 
     if (!existingModel) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Model not found' }, 404);
+      return notFoundError(c, 'Model', modelId);
     }
 
     // Create config entry if it doesn't exist, then toggle
@@ -1235,6 +1266,7 @@ modelConfigsRoutes.patch('/:provider/:model/toggle', async (c) => {
       isCustom: existingModel.isCustom,
     });
 
+    wsGateway.broadcast('data:changed', { entity: 'model_config', action: 'updated' });
     return apiResponse(c, { message: `Model ${body.enabled ? 'enabled' : 'disabled'}`,
       enabled: body.enabled, });
   } catch (error) {

@@ -6,6 +6,10 @@ describe('message-utils', () => {
     it('should have telegram limit of 4096', () => {
       expect(PLATFORM_MESSAGE_LIMITS.telegram).toBe(4096);
     });
+
+    it('should have discord limit of 2000', () => {
+      expect(PLATFORM_MESSAGE_LIMITS.discord).toBe(2000);
+    });
   });
 
   describe('splitMessage', () => {

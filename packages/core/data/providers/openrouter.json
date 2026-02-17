@@ -12,6 +12,40 @@
   },
   "models": [
     {
+      "id": "qwen/qwen3.5-397b-a17b",
+      "name": "Qwen3.5 397B A17B",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.6,
+      "outputPrice": 3.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-16"
+    },
+    {
+      "id": "qwen/qwen3.5-plus-02-15",
+      "name": "Qwen3.5 Plus 2026-02-15",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 0.4,
+      "outputPrice": 2.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-16"
+    },
+    {
       "id": "z-ai/glm-5",
       "name": "GLM-5",
       "contextWindow": 202752,
@@ -25,7 +59,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-12"
     },
     {
@@ -187,7 +221,7 @@
     },
     {
       "id": "z-ai/glm-4.7-flash",
-      "name": "GLM-4.7",
+      "name": "GLM-4.7-Flash",
       "contextWindow": 200000,
       "maxOutput": 65535,
       "inputPrice": 0.07,

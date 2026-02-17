@@ -69,6 +69,24 @@ export function buildTelegramChannelPlugin() {
               ],
               order: 3,
             },
+            {
+              name: 'webhook_url',
+              label: 'Webhook Base URL',
+              type: 'string',
+              description:
+                'Public HTTPS base URL for webhook mode (e.g. https://abc123.ngrok.io). Leave empty for polling mode.',
+              placeholder: 'https://your-domain.com',
+              order: 4,
+            },
+            {
+              name: 'webhook_secret',
+              label: 'Webhook Secret',
+              type: 'secret',
+              description:
+                'Secret token for webhook URL path. Auto-generated on first webhook connect if empty.',
+              placeholder: 'auto-generated',
+              order: 5,
+            },
           ],
         },
       ],
@@ -81,6 +99,14 @@ export function buildTelegramChannelPlugin() {
         bot_token:
           config.bot_token ??
           (configServicesRepo.getFieldValue('telegram_bot', 'bot_token') as string) ??
+          '',
+        webhook_url:
+          (config.webhook_url as string) ??
+          (configServicesRepo.getFieldValue('telegram_bot', 'webhook_url') as string) ??
+          '',
+        webhook_secret:
+          (config.webhook_secret as string) ??
+          (configServicesRepo.getFieldValue('telegram_bot', 'webhook_secret') as string) ??
           '',
       };
       return new TelegramChannelAPI(resolvedConfig, 'channel.telegram');

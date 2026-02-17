@@ -25,3 +25,9 @@ export {
   workspaceSwitch,
   workspaceInfo,
 } from './workspace.js';
+export {
+  tunnelStartNgrok,
+  tunnelStartCloudflare,
+  tunnelStop,
+  tunnelStatus,
+} from './tunnel.js';

@@ -1,17 +1,18 @@
 /**
  * Inbox Page — Read-Only Conversation View
  *
- * Displays Telegram conversations (incoming user messages + outgoing assistant responses)
- * in a chat-like thread. All interaction happens through Telegram; this is a log viewer.
+ * Displays channel conversations (incoming user messages + outgoing assistant responses)
+ * in a chat-like thread. All interaction happens via the channel; this is a log viewer.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
-import { Inbox, Telegram, Globe, RefreshCw, Check } from '../components/icons';
+import { Inbox, Telegram, Discord, Globe, RefreshCw, Check, Plus } from '../components/icons';
 import { channelsApi } from '../api';
 import type { Channel, ChannelMessage } from '../api';
 import { SkeletonCard, SkeletonMessage } from '../components/Skeleton';
 import { MarkdownContent } from '../components/MarkdownContent';
+import { ChannelSetupModal } from '../components/ChannelSetupModal';
 
 
 // Helper to get channel icon
@@ -19,6 +20,8 @@ function ChannelIcon({ type, className }: { type: string; className?: string }) 
   switch (type) {
     case 'telegram':
       return <Telegram className={className} />;
+    case 'discord':
+      return <Discord className={className} />;
     default:
       return <Globe className={className} />;
   }
@@ -51,6 +54,7 @@ export function InboxPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showSetupModal, setShowSetupModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch channels from API
@@ -58,6 +62,7 @@ export function InboxPage() {
     try {
       const data = await channelsApi.list();
       setChannels(data.channels);
+      setError(null);
     } catch {
       setError('Failed to load channels');
     }
@@ -72,6 +77,7 @@ export function InboxPage() {
       });
       setMessages(data.messages);
       setUnreadCount(data.unreadCount);
+      setError(null);
     } catch {
       setError('Failed to load messages');
     }
@@ -99,6 +105,12 @@ export function InboxPage() {
     return () => { unsub(); if (wsDebounceRef.current) clearTimeout(wsDebounceRef.current); };
   }, [subscribe, fetchInbox, selectedChannel, channels]);
 
+  // WS-triggered refresh when channel status changes (connect/disconnect/error)
+  useEffect(() => {
+    const unsub = subscribe('channel:status', () => fetchChannels());
+    return unsub;
+  }, [subscribe, fetchChannels]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -108,13 +120,14 @@ export function InboxPage() {
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     setError(null);
-
-    const channelType = selectedChannel
-      ? channels.find(c => c.id === selectedChannel)?.type
-      : undefined;
-
-    await Promise.all([fetchChannels(), fetchInbox(channelType)]);
-    setIsRefreshing(false);
+    try {
+      const channelType = selectedChannel
+        ? channels.find(c => c.id === selectedChannel)?.type
+        : undefined;
+      await Promise.all([fetchChannels(), fetchInbox(channelType)]);
+    } finally {
+      setIsRefreshing(false);
+    }
   }, [fetchChannels, fetchInbox, selectedChannel, channels]);
 
   // Filter messages by channel
@@ -189,7 +202,7 @@ export function InboxPage() {
               Inbox
             </h2>
             <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              {unreadCount > 0 ? `${unreadCount} unread` : 'Telegram conversation log'}
+              {unreadCount > 0 ? `${unreadCount} unread` : 'Channel conversation log'}
             </p>
           </div>
         </div>
@@ -220,9 +233,18 @@ export function InboxPage() {
         {/* Channel Sidebar */}
         <aside className="w-64 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary overflow-y-auto">
           <div className="p-4">
-            <h3 className="text-sm font-medium text-text-muted dark:text-dark-text-muted mb-3">
-              Channels ({channels.length})
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-text-muted dark:text-dark-text-muted">
+                Channels ({channels.length})
+              </h3>
+              <button
+                onClick={() => setShowSetupModal(true)}
+                className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors text-text-muted dark:text-dark-text-muted hover:text-primary"
+                title="Add channel"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
 
             {/* All Messages */}
             <button
@@ -252,9 +274,12 @@ export function InboxPage() {
             {/* Channel List */}
             <div className="space-y-1">
               {channels.length === 0 ? (
-                <p className="text-sm text-text-muted dark:text-dark-text-muted py-2 px-3">
-                  No channels connected
-                </p>
+                <button
+                  onClick={() => setShowSetupModal(true)}
+                  className="w-full text-sm text-primary hover:text-primary/80 py-2 px-3 text-left transition-colors"
+                >
+                  + Add a channel
+                </button>
               ) : (
                 channels.map((channel) => {
                   const channelUnread = getChannelUnread(channel.id);
@@ -310,11 +335,18 @@ export function InboxPage() {
               <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted">
                 <Inbox className="w-16 h-16 mb-4 opacity-20" />
                 <p>No messages yet</p>
-                <p className="text-sm mt-1">
-                  {channels.length === 0
-                    ? 'Configure Telegram in Config Center to start receiving messages'
-                    : 'Messages will appear here when you chat via Telegram'}
-                </p>
+                {channels.length === 0 ? (
+                  <button
+                    onClick={() => setShowSetupModal(true)}
+                    className="text-sm mt-1 text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Add a channel to start receiving messages
+                  </button>
+                ) : (
+                  <p className="text-sm mt-1">
+                    Messages will appear here when you chat via your channels
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-3 max-w-3xl mx-auto">
@@ -379,11 +411,21 @@ export function InboxPage() {
           {/* Read-only footer */}
           <div className="px-6 py-3 border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
             <p className="text-xs text-center text-text-muted dark:text-dark-text-muted">
-              Conversations happen on Telegram. This is a read-only log.
+              Conversations happen on your channels. This is a read-only log.
             </p>
           </div>
         </div>
       </div>
+      {showSetupModal && (
+        <ChannelSetupModal
+          onClose={() => setShowSetupModal(false)}
+          onSuccess={() => {
+            setShowSetupModal(false);
+            fetchChannels();
+            fetchInbox();
+          }}
+        />
+      )}
     </div>
   );
 }

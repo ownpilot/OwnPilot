@@ -413,6 +413,7 @@ export interface Channel {
   type: string;
   name: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'error';
+  icon?: string;
   botInfo?: {
     username: string;
     firstName: string;
@@ -422,7 +423,7 @@ export interface Channel {
 export interface ChannelMessage {
   id: string;
   channelId: string;
-  channelType: 'telegram';
+  channelType: string;
   sender: {
     id: string;
     name: string;
@@ -430,7 +431,6 @@ export interface ChannelMessage {
   };
   content: string;
   timestamp: string;
-  isRead: boolean;
   read: boolean;
   replied: boolean;
   direction: 'incoming' | 'outgoing';

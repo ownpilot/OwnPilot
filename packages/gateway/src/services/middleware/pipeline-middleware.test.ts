@@ -1212,9 +1212,9 @@ describe('Pipeline Middleware', () => {
       expect(mockEvaluateTriggers).not.toHaveBeenCalled();
     });
 
-    it('calls extractMemories with userId, user message, and response content', async () => {
+    it('calls extractMemories for channel messages', async () => {
       const middleware = createPostProcessingMiddleware();
-      const message = createMockMessage({ content: 'I love dogs' });
+      const message = createMockMessage({ content: 'I love dogs', metadata: { source: 'channel' } });
       const mockResult = createMockResult({
         response: {
           ...createMockResult().response,
@@ -1233,6 +1233,24 @@ describe('Pipeline Middleware', () => {
       await vi.waitFor(() => {
         expect(mockExtractMemories).toHaveBeenCalledWith('user-3', 'I love dogs', 'Dogs are great!');
       });
+    });
+
+    it('skips extractMemories for web messages (UI handles accept/reject)', async () => {
+      const middleware = createPostProcessingMiddleware();
+      const message = createMockMessage({ content: 'I love dogs' }); // default source: 'web'
+      const ctx = createMockContext({
+        userId: 'user-3',
+        agentResult: { ok: true, value: { content: 'Dogs are great!' } },
+      });
+      const next = createMockNext();
+
+      await middleware(message, ctx, next);
+
+      await vi.waitFor(() => {
+        expect(mockUpdateGoalProgress).toHaveBeenCalled();
+        expect(mockEvaluateTriggers).toHaveBeenCalled();
+      });
+      expect(mockExtractMemories).not.toHaveBeenCalled();
     });
 
     it('calls updateGoalProgress with userId, messages, and tool calls', async () => {
@@ -1285,9 +1303,9 @@ describe('Pipeline Middleware', () => {
       });
     });
 
-    it('calls all three functions in parallel (fire-and-forget)', async () => {
+    it('calls all three functions in parallel for channel messages (fire-and-forget)', async () => {
       const middleware = createPostProcessingMiddleware();
-      const message = createMockMessage();
+      const message = createMockMessage({ metadata: { source: 'channel' } });
       const ctx = createMockContext({
         userId: 'user-8',
         agentResult: { ok: true, value: { content: 'reply' } },
@@ -1296,7 +1314,7 @@ describe('Pipeline Middleware', () => {
 
       await middleware(message, ctx, next);
 
-      // All three should be called (fire-and-forget, but we can verify they were invoked)
+      // All three should be called for channel messages
       await vi.waitFor(() => {
         expect(mockExtractMemories).toHaveBeenCalled();
         expect(mockUpdateGoalProgress).toHaveBeenCalled();
@@ -1333,7 +1351,7 @@ describe('Pipeline Middleware', () => {
 
     it('uses default userId when not in context', async () => {
       const middleware = createPostProcessingMiddleware();
-      const message = createMockMessage();
+      const message = createMockMessage({ metadata: { source: 'channel' } });
       const ctx = createMockContext({
         agentResult: { ok: true, value: { content: 'reply' } },
       });
@@ -1351,7 +1369,7 @@ describe('Pipeline Middleware', () => {
       mockUpdateGoalProgress.mockRejectedValueOnce(new Error('Goal update failed'));
 
       const middleware = createPostProcessingMiddleware();
-      const message = createMockMessage();
+      const message = createMockMessage({ metadata: { source: 'channel' } });
       const ctx = createMockContext({
         agentResult: { ok: true, value: { content: 'reply' } },
       });

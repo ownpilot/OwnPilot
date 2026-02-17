@@ -20,7 +20,7 @@ export function TriggerHistoryModal({ triggerId, triggerName, history: initialHi
   const [total, setTotal] = useState(initialHistory.length);
   const [page, setPage] = useState(0);
   const [statusFilter, setStatusFilter] = useState<TriggerHistoryStatus | undefined>();
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -28,7 +28,7 @@ export function TriggerHistoryModal({ triggerId, triggerName, history: initialHi
   const showTo = Math.min((page + 1) * PAGE_SIZE, total);
 
   const fetchHistory = useCallback(async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const params: TriggerHistoryParams = { limit: PAGE_SIZE, offset: page * PAGE_SIZE };
       if (statusFilter) params.status = statusFilter;
@@ -38,7 +38,7 @@ export function TriggerHistoryModal({ triggerId, triggerName, history: initialHi
     } catch {
       // Error handled by API client
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, [triggerId, page, statusFilter]);
 
@@ -87,7 +87,7 @@ export function TriggerHistoryModal({ triggerId, triggerName, history: initialHi
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {loading && history.length === 0 ? (
+          {isLoading && history.length === 0 ? (
             <LoadingSpinner message="Loading history..." />
           ) : history.length === 0 ? (
             <p className="text-text-muted dark:text-dark-text-muted text-center">

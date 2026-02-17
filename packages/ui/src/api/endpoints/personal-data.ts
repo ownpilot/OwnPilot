@@ -77,6 +77,8 @@ export const calendarApi = {
 export const goalsApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<{ goals: Goal[] }>('/goals', { params }),
+  create: (data: Record<string, unknown>) =>
+    apiClient.post<Goal>('/goals', data),
   delete: (id: string) => apiClient.delete<void>(`/goals/${id}`),
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.patch<Goal>(`/goals/${id}`, data),
@@ -91,6 +93,10 @@ export const goalsApi = {
 export const memoriesApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<{ memories: Memory[] }>('/memories', { params }),
+  create: (data: Record<string, unknown>) =>
+    apiClient.post<Memory>('/memories', data),
+  update: (id: string, data: Record<string, unknown>) =>
+    apiClient.patch<Memory>(`/memories/${id}`, data),
   delete: (id: string) => apiClient.delete<void>(`/memories/${id}`),
 };
 
@@ -99,6 +105,10 @@ export const memoriesApi = {
 export const plansApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<{ plans: Plan[] }>('/plans', { params }),
+  create: (data: Record<string, unknown>) =>
+    apiClient.post<Plan>('/plans', data),
+  update: (id: string, data: Record<string, unknown>) =>
+    apiClient.patch<Plan>(`/plans/${id}`, data),
   delete: (id: string) => apiClient.delete<void>(`/plans/${id}`),
   action: (id: string, endpoint: string) =>
     apiClient.post<Plan>(`/plans/${id}/${endpoint}`),

@@ -400,6 +400,13 @@ export class ChannelServiceImpl implements IChannelService {
           pluginId: manifest.id,
           error: getErrorMessage(error),
         });
+
+        // Broadcast error status so UI can display the failure
+        wsGateway.broadcast('channel:status', {
+          channelId: manifest.id,
+          status: 'error',
+          error: getErrorMessage(error),
+        });
       }
     }
   }
@@ -500,19 +507,15 @@ export class ChannelServiceImpl implements IChannelService {
 
 
       // 5b. Broadcast incoming message to WebSocket clients
+      // Flat shape — matches what RealtimeBridge expects ({ sender, content })
       wsGateway.broadcast('channel:message', {
-        message: {
-          id: message.id,
-          channelId: message.channelPluginId,
-          channelType: message.platform,
-          senderId: message.sender.platformUserId,
-          senderName: message.sender.displayName,
-          content: message.text,
-          timestamp: message.timestamp,
-          direction: 'incoming',
-          replyToId: message.replyToId,
-          metadata: message.metadata as Record<string, unknown> | undefined,
-        },
+        id: message.id,
+        channelId: message.channelPluginId,
+        channelType: message.platform,
+        sender: message.sender.displayName,
+        content: message.text,
+        timestamp: message.timestamp.toISOString(),
+        direction: 'incoming',
       });
 
       // 5c. System notification for new message
@@ -628,17 +631,13 @@ export class ChannelServiceImpl implements IChannelService {
 
       // 8a. Broadcast outgoing message to WebSocket clients
       wsGateway.broadcast('channel:message', {
-        message: {
-          id: `${message.channelPluginId}:${sentMessageId}`,
-          channelId: message.channelPluginId,
-          channelType: message.platform,
-          senderId: 'assistant',
-          senderName: 'Assistant',
-          content: responseText,
-          timestamp: new Date().toISOString(),
-          direction: 'outgoing',
-          replyToId: message.id,
-        },
+        id: `${message.channelPluginId}:${sentMessageId}`,
+        channelId: message.channelPluginId,
+        channelType: message.platform,
+        sender: 'Assistant',
+        content: responseText,
+        timestamp: new Date().toISOString(),
+        direction: 'outgoing',
       });
 
       log.info('Responded to user', { displayName: message.sender.displayName, platform: message.platform });
@@ -728,7 +727,10 @@ export class ChannelServiceImpl implements IChannelService {
       },
     });
 
-    return result.response.content;
+    // Strip <memories> and <suggestions> tags from channel response
+    const { extractMemoriesFromResponse } = await import('../utils/memory-extraction.js');
+    const { content: stripped } = extractMemoriesFromResponse(result.response.content);
+    return stripped.replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '').trimEnd();
   }
 
   /**
@@ -749,7 +751,10 @@ export class ChannelServiceImpl implements IChannelService {
     const result = await agent.chat(message.text);
 
     if (result.ok) {
-      return result.value.content;
+      // Strip <memories> and <suggestions> tags from channel response
+      const { extractMemoriesFromResponse } = await import('../utils/memory-extraction.js');
+      const { content: stripped } = extractMemoriesFromResponse(result.value.content);
+      return stripped.replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '').trimEnd();
     }
     return `Sorry, I encountered an error: ${result.error.message}`;
   }
