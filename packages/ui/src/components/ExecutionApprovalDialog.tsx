@@ -47,6 +47,9 @@ export function ExecutionApprovalDialog({ approval, onResolve }: ExecutionApprov
   const [remaining, setRemaining] = useState(TIMEOUT_SECONDS);
   const backdropRef = useRef<HTMLDivElement>(null);
   const startRef = useRef(Date.now());
+  // Stable ref to latest onResolve — avoids stale closure in timer
+  const onResolveRef = useRef(onResolve);
+  onResolveRef.current = onResolve;
 
   // Countdown timer
   useEffect(() => {
@@ -56,13 +59,13 @@ export function ExecutionApprovalDialog({ approval, onResolve }: ExecutionApprov
       const left = TIMEOUT_SECONDS - elapsed;
       if (left <= 0) {
         clearInterval(interval);
-        onResolve(false);
+        onResolveRef.current(false);
       } else {
         setRemaining(left);
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [approval.approvalId, onResolve]);
+  }, [approval.approvalId]);
 
   // Keyboard: Enter = approve, Escape = reject
   useEffect(() => {
