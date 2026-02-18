@@ -6,7 +6,8 @@
  */
 
 import { readFileSync, readdirSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import {
   getEventBus,
   createEvent,
@@ -578,9 +579,14 @@ export class ExtensionService {
    * Bundled example skills shipped with the gateway package.
    */
   private getBundledExampleSkillsDirectory(): string | null {
-    // __dirname resolves to packages/gateway/src/services/ at runtime
-    const candidate = join(import.meta.dirname ?? '.', '..', '..', 'data', 'example-skills');
-    return existsSync(candidate) ? candidate : null;
+    try {
+      const thisDir = dirname(fileURLToPath(import.meta.url));
+      // thisDir = packages/gateway/src/services/ → go up 2 levels to packages/gateway/
+      const candidate = join(thisDir, '..', '..', 'data', 'example-skills');
+      return existsSync(candidate) ? candidate : null;
+    } catch {
+      return null;
+    }
   }
 }
 
