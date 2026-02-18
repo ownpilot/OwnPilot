@@ -12,7 +12,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { ChatRequest } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, notFoundError, getErrorMessage, truncate } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, notFoundError, getErrorMessage } from './helpers.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, getSessionInfo } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';

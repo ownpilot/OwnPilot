@@ -27,7 +27,7 @@ import {
   type ExtensionToolDefinition,
 } from './extension-types.js';
 import { parseExtensionMarkdown } from './extension-markdown.js';
-import { parseAgentSkillsMd, isAgentSkillsDir } from './agentskills-parser.js';
+import { parseAgentSkillsMd } from './agentskills-parser.js';
 import { registerToolConfigRequirements, unregisterDependencies } from './api-service-registrar.js';
 import { getDataDirectoryInfo } from '../paths/index.js';
 import { getLog } from './log.js';

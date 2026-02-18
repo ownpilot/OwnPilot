@@ -17,11 +17,8 @@ import { getSessionInfo } from './agent-service.js';
 import { usageTracker } from './costs.js';
 import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.js';
 import { generateApprovalId, createApprovalRequest } from '../services/execution-approval.js';
-import { getLog } from '../services/log.js';
 import type { getAgent } from './agent-service.js';
 import { saveStreamingChat, runPostChatProcessing } from './chat-persistence.js';
-
-const log = getLog('ChatStreaming');
 
 /**
  * Extract display-friendly tool name and args from a ToolCall.
