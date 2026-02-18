@@ -162,6 +162,7 @@ app.get('/:id/file/*', async (c) => {
   const workspaceId = c.req.param('id');
   const filePath = c.req.path.replace(`/file-workspaces/${workspaceId}/file/`, '');
   const download = c.req.query('download') === 'true';
+  const raw = c.req.query('raw') === 'true';
 
   try {
     const result = getOwnedWorkspace(c, workspaceId, userId);
@@ -181,6 +182,28 @@ app.get('/:id/file/*', async (c) => {
           'Content-Disposition': `attachment; filename="${filename}"`,
           'Content-Type': 'application/octet-stream',
           'Content-Length': String(content.length),
+        },
+      });
+    }
+
+    // If raw requested, return with proper MIME type (for images, PDFs, etc.)
+    if (raw) {
+      const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+      const mimeTypes: Record<string, string> = {
+        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+        gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+        bmp: 'image/bmp', ico: 'image/x-icon',
+        mp4: 'video/mp4', webm: 'video/webm',
+        pdf: 'application/pdf', txt: 'text/plain',
+        html: 'text/html', css: 'text/css', js: 'text/javascript',
+        json: 'application/json',
+      };
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+      return new Response(content, {
+        headers: {
+          'Content-Type': contentType,
+          'Content-Length': String(content.length),
+          'Cache-Control': 'private, max-age=300',
         },
       });
     }

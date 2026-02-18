@@ -163,7 +163,7 @@ export function ContextDetailModal({
           <button
             onClick={handleCompact}
             disabled={compacting || sessionInfo.messageCount < 10}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-accent text-white hover:bg-accent-hover disabled:opacity-40 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-40 transition-colors"
             title={sessionInfo.messageCount < 10 ? 'Need at least 10 messages to compact' : 'Summarize old messages'}
           >
             {compacting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}

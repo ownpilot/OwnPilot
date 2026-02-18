@@ -33,6 +33,7 @@ const mockGoalSvc = {
 
 const mockPluginSvc = {
   getAllTools: vi.fn(() => []),
+  getEnabled: vi.fn(() => []),
 };
 
 vi.mock('@ownpilot/core', () => ({
@@ -86,6 +87,8 @@ vi.mock('@ownpilot/core', () => ({
 vi.mock('../db/repositories/index.js', () => ({
   agentsRepo: {
     getAll: vi.fn(),
+    getPage: vi.fn(),
+    count: vi.fn(),
     getById: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -144,6 +147,16 @@ vi.mock('./custom-tools.js', () => ({
   executeCustomToolTool: vi.fn(),
   executeActiveCustomTool: vi.fn(),
   getActiveCustomToolDefinitions: vi.fn(async () => []),
+  getCustomToolDynamicRegistry: vi.fn(() => ({
+    has: vi.fn(() => false),
+    register: vi.fn(),
+  })),
+}));
+
+vi.mock('../services/tool-executor.js', () => ({
+  getSharedToolRegistry: vi.fn(() => ({
+    getToolsBySource: vi.fn(() => []),
+  })),
 }));
 
 vi.mock('../tools/index.js', () => ({
@@ -254,7 +267,8 @@ describe('Agent Routes', () => {
           config: { tools: ['calculate'], toolGroups: ['core'] },
         }),
       ];
-      vi.mocked(agentsRepo.getAll).mockResolvedValue(records);
+      vi.mocked(agentsRepo.count).mockResolvedValue(2);
+      vi.mocked(agentsRepo.getPage).mockResolvedValue(records);
 
       const res = await app.request('/agents');
 
@@ -276,7 +290,8 @@ describe('Agent Routes', () => {
     });
 
     it('should return empty list when no agents exist', async () => {
-      vi.mocked(agentsRepo.getAll).mockResolvedValue([]);
+      vi.mocked(agentsRepo.count).mockResolvedValue(0);
+      vi.mocked(agentsRepo.getPage).mockResolvedValue([]);
 
       const res = await app.request('/agents');
 
@@ -294,7 +309,8 @@ describe('Agent Routes', () => {
           config: { toolGroups: ['core', 'memory'], tools: undefined },
         }),
       ];
-      vi.mocked(agentsRepo.getAll).mockResolvedValue(records);
+      vi.mocked(agentsRepo.count).mockResolvedValue(1);
+      vi.mocked(agentsRepo.getPage).mockResolvedValue(records);
 
       const res = await app.request('/agents');
 
@@ -313,7 +329,8 @@ describe('Agent Routes', () => {
           config: { maxTokens: 4096, temperature: 0.7, maxTurns: 25, maxToolCalls: 200 },
         }),
       ];
-      vi.mocked(agentsRepo.getAll).mockResolvedValue(records);
+      vi.mocked(agentsRepo.count).mockResolvedValue(1);
+      vi.mocked(agentsRepo.getPage).mockResolvedValue(records);
 
       const res = await app.request('/agents');
 
@@ -323,7 +340,7 @@ describe('Agent Routes', () => {
     });
 
     it('should handle database error', async () => {
-      vi.mocked(agentsRepo.getAll).mockRejectedValue(new Error('DB connection failed'));
+      vi.mocked(agentsRepo.count).mockRejectedValue(new Error('DB connection failed'));
 
       const res = await app.request('/agents');
 

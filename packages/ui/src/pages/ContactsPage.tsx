@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { Users, Plus, Trash2, Phone, Mail, Building, Star, Search } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
-import { useDebouncedValue, useModalClose } from '../hooks';
+import { useDebouncedValue, useModalClose, useDebouncedCallback } from '../hooks';
 import { useAnimatedList } from '../hooks/useAnimatedList';
 import { contactsApi } from '../api';
 import type { Contact } from '../api';
@@ -22,7 +22,6 @@ export function ContactsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(contacts);
 
   const fetchContacts = useCallback(async () => {
@@ -44,16 +43,13 @@ export function ContactsPage() {
     fetchContacts();
   }, [fetchContacts]);
 
-  const debouncedRefresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchContacts(), 2000);
-  }, [fetchContacts]);
+  const debouncedRefresh = useDebouncedCallback(() => fetchContacts(), 2000);
 
   useEffect(() => {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'contact') debouncedRefresh();
     });
-    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => { unsub(); };
   }, [subscribe, debouncedRefresh]);
 
   const handleDelete = useCallback(async (contactId: string) => {

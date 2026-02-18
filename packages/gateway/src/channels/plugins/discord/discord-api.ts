@@ -28,6 +28,7 @@ import { getLog } from '../../../services/log.js';
 import { getErrorMessage } from '../../../routes/helpers.js';
 import { MAX_MESSAGE_CHAT_MAP_SIZE } from '../../../config/defaults.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../../utils/message-utils.js';
+import type { TextChannel } from 'discord.js';
 
 const log = getLog('Discord');
 
@@ -226,8 +227,7 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
     try {
       const channel = await this.client.channels.fetch(channelId);
       if (!channel?.isTextBased()) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const msg = await (channel as any).messages.fetch(platformMessageId);
+      const msg = await (channel as TextChannel).messages.fetch(platformMessageId);
       await msg.edit(newText);
     } catch (err) {
       log.warn('editMessage failed', { platformMessageId, error: getErrorMessage(err) });
@@ -244,8 +244,7 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
     try {
       const channel = await this.client.channels.fetch(channelId);
       if (!channel?.isTextBased()) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const msg = await (channel as any).messages.fetch(platformMessageId);
+      const msg = await (channel as TextChannel).messages.fetch(platformMessageId);
       await msg.delete();
       this.messageChatMap.delete(platformMessageId);
     } catch (err) {
@@ -260,8 +259,7 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
     try {
       const channel = await this.client.channels.fetch(channelId);
       if (!channel?.isTextBased()) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const msg = await (channel as any).messages.fetch(platformMessageId);
+      const msg = await (channel as TextChannel).messages.fetch(platformMessageId);
       await msg.react(emoji);
     } catch (err) {
       log.debug('React failed', { platformMessageId, error: err });

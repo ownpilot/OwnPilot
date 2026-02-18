@@ -228,3 +228,6 @@ export const EMBEDDING_QUEUE_BATCH_SIZE = 10;
 
 /** Background queue processing interval (ms) */
 export const EMBEDDING_QUEUE_INTERVAL_MS = 5_000;
+
+/** Maximum items in the embedding queue (prevents unbounded growth during backfill) */
+export const EMBEDDING_QUEUE_MAX_SIZE = 5_000;

@@ -449,6 +449,32 @@ describe('Channels Routes', () => {
       expect(json.data.messageId).toBe('inbox-msg-read');
     });
 
+    it('marked messages appear as read in subsequent inbox fetch', async () => {
+      // Mark a message as read
+      await app.request('/channels/messages/msg-to-read/read', { method: 'POST' });
+
+      // Fetch inbox — the marked message should have read: true
+      mockChannelMessagesRepo.getAll.mockResolvedValueOnce([
+        {
+          id: 'msg-to-read',
+          channelId: 'channel.telegram',
+          direction: 'inbound',
+          content: 'test',
+          senderId: 'user-1',
+          senderName: 'User',
+          replyToId: null,
+          metadata: null,
+          createdAt: new Date(),
+        },
+      ]);
+
+      const inboxRes = await app.request('/channels/messages/inbox');
+      const inbox = await inboxRes.json();
+      const msg = inbox.data.messages.find((m: { id: string }) => m.id === 'msg-to-read');
+      expect(msg).toBeDefined();
+      expect(msg.read).toBe(true);
+    });
+
     it('returns 500 on DB failure', async () => {
       mockChannelMessagesRepo.getAll.mockRejectedValue(new Error('DB error'));
 

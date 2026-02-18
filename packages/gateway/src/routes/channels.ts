@@ -17,7 +17,24 @@ import { wsGateway } from '../ws/server.js';
 export const channelRoutes = new Hono();
 
 // In-memory read tracking (message IDs that have been read)
+const MAX_READ_IDS = 2000;
 const readMessageIds = new Set<string>();
+
+function addReadMessageId(id: string): void {
+  if (readMessageIds.size >= MAX_READ_IDS) {
+    readMessageIds.delete(readMessageIds.values().next().value!);
+  }
+  readMessageIds.add(id);
+}
+
+interface ChannelAPIWithBotInfo {
+  getBotInfo(): Promise<{ id: string; username: string; [key: string]: unknown }>;
+}
+
+function hasBotInfo(api: unknown): api is ChannelAPIWithBotInfo {
+  return typeof api === 'object' && api !== null &&
+    'getBotInfo' in api && typeof (api as Record<string, unknown>).getBotInfo === 'function';
+}
 
 /**
  * GET /channels/messages/inbox - Get all messages from all channels (DB-backed)
@@ -68,7 +85,7 @@ channelRoutes.get('/messages/inbox', async (c) => {
  */
 channelRoutes.post('/messages/:messageId/read', (c) => {
   const messageId = c.req.param('messageId');
-  readMessageIds.add(messageId);
+  addReadMessageId(messageId);
   return apiResponse(c, { messageId, read: true });
 });
 
@@ -238,11 +255,7 @@ channelRoutes.post('/:id/setup', async (c) => {
 
     // 6. Get bot info for response
     const api = service.getChannel(pluginId);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const botInfo = api && 'getBotInfo' in api && typeof (api as any).getBotInfo === 'function'
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ? (api as any).getBotInfo()
-      : null;
+    const botInfo = hasBotInfo(api) ? await api.getBotInfo() : null;
 
     return apiResponse(c, {
       pluginId,

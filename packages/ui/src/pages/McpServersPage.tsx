@@ -248,7 +248,7 @@ function ServerFormDialog({
             Cancel
           </button>
           <button onClick={() => onSubmit(form)} disabled={!form.name || !form.displayName}
-            className="px-4 py-2 text-sm rounded-lg bg-accent text-white hover:bg-accent-hover disabled:opacity-50 transition-colors">
+            className="px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-50 transition-colors">
             Save
           </button>
         </div>
@@ -307,10 +307,10 @@ function PresetCard({
     <button
       onClick={onAdd}
       disabled={alreadyAdded}
-      className="flex items-start gap-3 p-3 rounded-xl border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary hover:border-accent/50 dark:hover:border-accent/50 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-border dark:disabled:hover:border-dark-border w-full"
+      className="flex items-start gap-3 p-3 rounded-xl border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary hover:border-primary/50 dark:hover:border-primary/50 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-border dark:disabled:hover:border-dark-border w-full"
     >
-      <div className="p-2 rounded-lg bg-accent/10 shrink-0">
-        <Icon className="w-4 h-4 text-accent" />
+      <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+        <Icon className="w-4 h-4 text-primary" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -525,7 +525,7 @@ export function McpServersPage() {
             <RefreshCw className="w-4 h-4" />
           </button>
           <button onClick={() => setShowForm({ mode: 'add' })}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
+            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors">
             <Plus className="w-4 h-4" />
             Add Server
           </button>

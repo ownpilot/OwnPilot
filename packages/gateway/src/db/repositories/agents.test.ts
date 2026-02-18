@@ -544,6 +544,52 @@ describe('AgentsRepository', () => {
   });
 
   // =========================================================================
+  // getPage
+  // =========================================================================
+
+  describe('getPage', () => {
+    it('should return paginated agent records', async () => {
+      mockAdapter.query.mockResolvedValueOnce([
+        makeAgentRow({ id: 'agent-1', name: 'Bot1' }),
+        makeAgentRow({ id: 'agent-2', name: 'Bot2' }),
+      ]);
+
+      const result = await repo.getPage(2, 0);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]!.id).toBe('agent-1');
+      expect(result[1]!.id).toBe('agent-2');
+    });
+
+    it('should pass LIMIT and OFFSET to SQL', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.getPage(10, 20);
+
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('LIMIT');
+      expect(sql).toContain('OFFSET');
+      const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
+      expect(params).toEqual([10, 20]);
+    });
+
+    it('should order by name ASC', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.getPage(100, 0);
+
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('ORDER BY name ASC');
+    });
+
+    it('should return empty array when no agents in range', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      expect(await repo.getPage(100, 999)).toEqual([]);
+    });
+  });
+
+  // =========================================================================
   // Factory
   // =========================================================================
 

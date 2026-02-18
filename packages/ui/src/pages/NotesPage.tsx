@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { FileText, Plus, Trash2, Pin, Search } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
-import { useDebouncedValue, useModalClose } from '../hooks';
+import { useDebouncedValue, useModalClose, useDebouncedCallback } from '../hooks';
 import { useAnimatedList } from '../hooks/useAnimatedList';
 import { notesApi } from '../api';
 import type { Note } from '../api';
@@ -21,7 +21,6 @@ export function NotesPage() {
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(notes);
 
   const fetchNotes = useCallback(async () => {
@@ -44,16 +43,13 @@ export function NotesPage() {
     fetchNotes();
   }, [fetchNotes]);
 
-  const debouncedRefresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchNotes(), 2000);
-  }, [fetchNotes]);
+  const debouncedRefresh = useDebouncedCallback(() => fetchNotes(), 2000);
 
   useEffect(() => {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'note') debouncedRefresh();
     });
-    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => { unsub(); };
   }, [subscribe, debouncedRefresh]);
 
   const handleDelete = useCallback(async (noteId: string) => {

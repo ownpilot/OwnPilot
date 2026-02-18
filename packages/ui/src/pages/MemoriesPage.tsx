@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { memoriesApi } from '../api';
 import type { Memory } from '../api';
@@ -7,7 +7,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
-import { useDebouncedValue, useModalClose } from '../hooks';
+import { useDebouncedValue, useModalClose, useDebouncedCallback } from '../hooks';
 
 const typeColors = {
   fact: 'bg-blue-500/10 text-blue-500',
@@ -34,8 +34,6 @@ export function MemoriesPage() {
   const [typeFilter, setTypeFilter] = useState<Memory['type'] | 'all'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const fetchMemories = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
@@ -59,16 +57,13 @@ export function MemoriesPage() {
     fetchMemories();
   }, [fetchMemories]);
 
-  const debouncedRefresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchMemories(), 2000);
-  }, [fetchMemories]);
+  const debouncedRefresh = useDebouncedCallback(() => fetchMemories(), 2000);
 
   useEffect(() => {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'memory') debouncedRefresh();
     });
-    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => { unsub(); };
   }, [subscribe, debouncedRefresh]);
 
   const handleDelete = useCallback(async (memoryId: string) => {

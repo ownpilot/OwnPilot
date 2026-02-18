@@ -91,6 +91,14 @@ export class AgentsRepository extends BaseRepository {
     return rows.map(rowToAgent);
   }
 
+  async getPage(limit: number, offset: number): Promise<AgentRecord[]> {
+    const rows = await this.query<AgentRow>(
+      `SELECT * FROM agents ORDER BY name ASC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    return rows.map(rowToAgent);
+  }
+
   async update(id: string, data: {
     name?: string;
     systemPrompt?: string;

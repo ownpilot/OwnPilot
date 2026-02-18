@@ -1906,6 +1906,63 @@ describe('ApprovalManager', () => {
   });
 
   // --------------------------------------------------------------------------
+  // TTL cleanup for rememberedDecisions and userConfigs
+  // --------------------------------------------------------------------------
+  describe('TTL cleanup', () => {
+    it('should evict rememberedDecisions older than 90 days', () => {
+      manager.processDecision({
+        actionId: 'nonexistent', // won't find action, but we can set via remember manually
+        decision: 'approve',
+        remember: false,
+      });
+
+      // Simulate remember=true by calling processDecision on a real action
+      // First create a pending action with remember=true
+      manager['rememberedDecisions'].set('user-1:system_command:run_script', {
+        decision: 'approve',
+        createdAt: new Date(Date.now() - 91 * 24 * 60 * 60 * 1000), // 91 days ago
+      });
+
+      // Advance time to trigger cleanup (1 minute tick)
+      vi.advanceTimersByTime(60000);
+
+      // Decision should be evicted (90 day TTL)
+      expect(manager['rememberedDecisions'].has('user-1:system_command:run_script')).toBe(false);
+    });
+
+    it('should NOT evict rememberedDecisions newer than 90 days', () => {
+      manager['rememberedDecisions'].set('user-1:system_command:run_script', {
+        decision: 'reject',
+        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+      });
+
+      vi.advanceTimersByTime(60000);
+
+      expect(manager['rememberedDecisions'].has('user-1:system_command:run_script')).toBe(true);
+    });
+
+    it('should evict userConfigs not updated in 30 days', () => {
+      manager.getUserConfig('stale-user');
+      // Manually backdate the updatedAt
+      const config = manager['userConfigs'].get('stale-user')!;
+      config.updatedAt = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000); // 31 days ago
+
+      vi.advanceTimersByTime(60000);
+
+      expect(manager['userConfigs'].has('stale-user')).toBe(false);
+    });
+
+    it('should NOT evict userConfigs updated within 30 days', () => {
+      manager.setUserConfig('active-user', { level: 2 });
+      // updatedAt set to now by setUserConfig
+
+      vi.advanceTimersByTime(60000);
+
+      expect(manager['userConfigs'].has('active-user')).toBe(true);
+    });
+  });
+
+  // --------------------------------------------------------------------------
   // stop
   // --------------------------------------------------------------------------
   describe('stop', () => {

@@ -97,7 +97,7 @@ vi.mock('../log.js', () => ({
 
 import { createAuditMiddleware } from './audit.js';
 import { createPersistenceMiddleware } from './persistence.js';
-import { createContextInjectionMiddleware } from './context-injection.js';
+import { createContextInjectionMiddleware, clearInjectionCache } from './context-injection.js';
 import { createPostProcessingMiddleware } from './post-processing.js';
 import { LogsRepository, ChatRepository } from '../../db/repositories/index.js';
 
@@ -882,6 +882,7 @@ describe('Pipeline Middleware', () => {
     const defaultStats = { memoriesUsed: 0, goalsUsed: 0 };
 
     beforeEach(() => {
+      clearInjectionCache(); // flush module-level cache between tests
       mockBuildEnhancedSystemPrompt.mockResolvedValue({
         prompt: 'Enhanced system prompt with context',
         stats: defaultStats,
@@ -1149,6 +1150,57 @@ describe('Pipeline Middleware', () => {
       await middleware(message, ctx, next);
 
       expect(mockLogInfo).not.toHaveBeenCalled();
+    });
+
+    it('serves subsequent calls from cache (skips buildEnhancedSystemPrompt)', async () => {
+      const mockAgent = {
+        getConversation: () => ({ systemPrompt: 'Original' }),
+        updateSystemPrompt: vi.fn(),
+      };
+      mockBuildEnhancedSystemPrompt.mockResolvedValue({
+        prompt: 'Enhanced prompt',
+        stats: { memoriesUsed: 2, goalsUsed: 1 },
+      });
+
+      const middleware = createContextInjectionMiddleware();
+      const ctx1 = createMockContext({ agent: mockAgent, userId: 'u1', agentId: 'a1' });
+      const ctx2 = createMockContext({ agent: mockAgent, userId: 'u1', agentId: 'a1' });
+
+      // First call — populates cache
+      await middleware(createMockMessage(), ctx1, createMockNext());
+      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledTimes(1);
+
+      // Second call — same userId/agentId, should hit cache
+      await middleware(createMockMessage(), ctx2, createMockNext());
+      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledTimes(1); // not called again
+    });
+
+    it('bypasses cache when TTL expires (2 minutes)', async () => {
+      vi.useFakeTimers();
+      const mockAgent = {
+        getConversation: () => ({ systemPrompt: 'Original' }),
+        updateSystemPrompt: vi.fn(),
+      };
+      mockBuildEnhancedSystemPrompt.mockResolvedValue({
+        prompt: 'Enhanced',
+        stats: { memoriesUsed: 1, goalsUsed: 0 },
+      });
+
+      const middleware = createContextInjectionMiddleware();
+      const ctx1 = createMockContext({ agent: mockAgent, userId: 'u2', agentId: 'a2' });
+
+      // First call — populates cache
+      await middleware(createMockMessage(), ctx1, createMockNext());
+      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledTimes(1);
+
+      // Advance past 2-minute TTL
+      vi.advanceTimersByTime(2 * 60 * 1000 + 1);
+
+      const ctx2 = createMockContext({ agent: mockAgent, userId: 'u2', agentId: 'a2' });
+      await middleware(createMockMessage(), ctx2, createMockNext());
+      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledTimes(2); // called again after TTL
+
+      vi.useRealTimers();
     });
   });
 

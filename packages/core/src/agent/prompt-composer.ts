@@ -13,7 +13,6 @@
 
 import type { ToolDefinition } from './types.js';
 import type { UserProfile } from '../memory/conversation.js';
-import { TOOL_GROUPS, FAMILIAR_TOOLS, TOOL_CATEGORY_CAPABILITIES } from './tool-config.js';
 import { getBaseName } from './tool-namespace.js';
 
 // =============================================================================
@@ -127,23 +126,13 @@ const PROMPT_SECTIONS = {
 {{userInfo}}`,
 
   workspace: `## File System Access
-You have file system tools for reading, writing, listing, searching, and downloading files.
-
-**Allowed directories for file operations:**
+Allowed directories:
 {{allowedDirs}}
 
-**Important**: When saving files, always use the workspace directory. Example paths:
-- Save to workspace: \`{{workspaceDir}}/my-file.txt\`
-- Temporary files: \`{{tempDir}}/temp-file.txt\`
-
-Do NOT attempt to write files outside these directories - access will be denied.`,
+Save files in workspace (\`{{workspaceDir}}\`). Access outside these dirs is denied.`,
 
   tools: `## Available Tools
-You have access to the following tools. Use them proactively to help the user:
-
-{{toolList}}
-
-**Important**: When a task can be accomplished using a tool, use it immediately. Don't ask for permission unless the action is destructive or irreversible.`,
+{{toolList}}`,
 
   capabilities: `## Your Capabilities
 {{capabilitiesList}}`,
@@ -162,9 +151,7 @@ The user has provided the following instructions. Always follow them:
 {{contextInfo}}`,
 
   automation: `## Automation
-You can create **triggers** (recurring automated actions) and **plans** (multi-step workflows).
-Use search_tools("trigger") or search_tools("plan") to discover automation tools.
-Use get_tool_help with tool_names array to get parameter docs for multiple tools at once.`,
+Create **triggers** (recurring actions) and **plans** (multi-step workflows) via \`search_tools("trigger")\` / \`search_tools("plan")\`.`,
 };
 
 // =============================================================================
@@ -248,83 +235,21 @@ function formatUserProfile(profile: UserProfile): string {
 }
 
 /**
- * Map a display category name to its TOOL_GROUPS key.
- * Falls back to lowercase concatenation.
- */
-function categoryToGroupId(category: string): string {
-  for (const [id, group] of Object.entries(TOOL_GROUPS)) {
-    if (group.name === category) return id;
-  }
-  return category.toLowerCase().replace(/[\s&]+/g, '');
-}
-
-/**
- * Format tools for prompt — categorical capabilities + usage strategy + familiar tools
+ * Format tools for prompt — compact summary (detailed capabilities are in BASE_SYSTEM_PROMPT)
  */
 function formatTools(tools: readonly ToolDefinition[]): string {
   if (tools.length === 0) {
     return 'No tools available.';
   }
 
-  // Group tools by category and count
+  // Count categories
   const categoryCounts = new Map<string, number>();
   for (const tool of tools) {
     const category = tool.category ?? 'General';
     categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
   }
 
-  // Build categorical capabilities
-  const capabilityLines: string[] = [];
-  for (const [category, count] of categoryCounts.entries()) {
-    const groupId = categoryToGroupId(category);
-    const capability = TOOL_CATEGORY_CAPABILITIES[groupId] ?? `${category} operations`;
-    capabilityLines.push(`- **${category}** (${count}): ${capability}`);
-  }
-
-  // Build familiar tools quick-reference
-  const familiarToolLines: string[] = [];
-  for (const tool of tools) {
-    if (FAMILIAR_TOOLS.has(getBaseName(tool.name))) {
-      const brief = tool.brief ?? tool.description.slice(0, 60);
-      familiarToolLines.push(`  ${tool.name} — ${brief}`);
-    }
-  }
-
-  const sections: string[] = [];
-
-  // 1. Overview
-  sections.push(`${tools.length} tools available across ${categoryCounts.size} categories:`);
-  sections.push('');
-  sections.push(capabilityLines.join('\n'));
-
-  // 2. Strategy section
-  sections.push('');
-  sections.push('### How to Use Tools');
-  sections.push('');
-  sections.push('**Discovery flow:**');
-  sections.push('1. For common tasks (see Familiar Tools below), call `use_tool` directly.');
-  sections.push('2. For unfamiliar tasks, call `search_tools("keyword")` — results include parameter docs.');
-  sections.push('3. For detailed parameter info, call `get_tool_help("tool_name")` or pass `tool_names` array for batch lookup.');
-  sections.push('');
-  sections.push('**Parallel execution:**');
-  sections.push('- Use `batch_use_tool` with an array of `{ tool_name, arguments }` for independent operations. Faster than sequential calls.');
-  sections.push('');
-  sections.push('**Error handling:**');
-  sections.push('- On error, read the error message — it shows the correct parameter schema. Fix and retry.');
-  sections.push('- Tool not found → use `search_tools` to discover the correct name.');
-  sections.push('');
-  sections.push('**Custom tools:**');
-  sections.push('- Users may have custom tools. Use `search_tools` to discover them.');
-  sections.push('- Use `create_tool` to build new reusable tools when needed.');
-
-  // 3. Familiar tools quick-reference
-  if (familiarToolLines.length > 0) {
-    sections.push('');
-    sections.push('### Familiar Tools (call directly via use_tool)');
-    sections.push(familiarToolLines.join('\n'));
-  }
-
-  return sections.join('\n');
+  return `${tools.length} tools registered across ${categoryCounts.size} categories: ${[...categoryCounts.entries()].map(([cat, n]) => `${cat} (${n})`).join(', ')}.`;
 }
 
 /**

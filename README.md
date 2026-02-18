@@ -1,6 +1,6 @@
 # OwnPilot
 
-Privacy-first personal AI assistant platform with autonomous agents, tool orchestration, multi-provider support, and Telegram integration.
+Privacy-first personal AI assistant platform with autonomous agents, tool orchestration, multi-provider support, MCP integration, and Telegram connectivity.
 
 **Self-hosted. Your data stays yours.**
 
@@ -21,6 +21,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 - [AI Providers](#ai-providers)
 - [Agent System](#agent-system)
 - [Tool System](#tool-system)
+- [MCP Integration](#mcp-integration)
 - [Personal Data](#personal-data)
 - [Autonomy & Automation](#autonomy--automation)
 - [Database](#database)
@@ -37,47 +38,55 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 ## Features
 
 ### AI & Agents
-- **Multi-Provider Support** - 4 native providers (OpenAI, Anthropic, Google, Zhipu) + 7 OpenAI-compatible providers + any custom endpoint
-- **Local AI Support** - Ollama and LM Studio auto-discovery on the local network
-- **Smart Provider Routing** - Cheapest, fastest, smartest, balanced, or fallback strategies
-- **Streaming Responses** - Server-Sent Events (SSE) for real-time streaming with tool execution progress
-- **Configurable Agents** - Custom system prompts, model preferences, tool assignments, and execution limits
+- **Multi-Provider Support** — 4 native providers (OpenAI, Anthropic, Google, Zhipu) + 8 aggregator providers (Together AI, Groq, Fireworks, DeepInfra, OpenRouter, Perplexity, Cerebras, fal.ai) + any OpenAI-compatible endpoint
+- **Local AI Support** — Ollama, LM Studio, LocalAI, and vLLM auto-discovery on the local network
+- **Smart Provider Routing** — Cheapest, fastest, smartest, balanced, or fallback strategies
+- **Anthropic Prompt Caching** — Static system prompt blocks cached via `cache_control` to reduce input tokens on repeated requests
+- **Context Management** — Real-time context usage tracking, detail modal with per-section token breakdown, context compaction (AI-powered message summarization), session clear
+- **Streaming Responses** — Server-Sent Events (SSE) for real-time streaming with tool execution progress
+- **Configurable Agents** — Custom system prompts, model preferences, tool assignments, and execution limits
 
-### Tools
-- **100+ Built-in Tools** across 20+ categories (personal data, files, code execution, web, email, media, finance, automation, utilities)
-- **Meta-tool Proxy** - Only 4 meta-tools sent to the LLM (`search_tools`, `get_tool_help`, `use_tool`, `batch_use_tool`); all tools remain available via dynamic discovery
-- **Custom Tools** - Create new tools at runtime via LLM (sandboxed JavaScript)
-- **Tool Limits** - Automatic parameter capping to prevent unbounded queries
-- **Search Tags** - Natural language tool discovery with keyword matching
+### Tools & Extensions
+- **170+ Built-in Tools** across 28 categories (personal data, files, code execution, web, email, media, git, translation, weather, finance, automation, vector search, data extraction, utilities)
+- **Meta-tool Proxy** — Only 4 meta-tools sent to the LLM (`search_tools`, `get_tool_help`, `use_tool`, `batch_use_tool`); all tools remain available via dynamic discovery
+- **Tool Namespaces** — Qualified tool names with prefixes (`core.`, `custom.`, `plugin.`, `skill.`, `mcp.`) for clear origin tracking
+- **MCP Client** — Connect to external MCP servers (Filesystem, GitHub, Brave Search, etc.) and use their tools natively
+- **MCP Server** — Expose OwnPilot's tools as an MCP endpoint for Claude Desktop and other MCP clients
+- **Skill Packages** — AI-generated installable skill packs with custom tools, prompt templates, and configurations
+- **Custom Tools** — Create new tools at runtime via LLM (sandboxed JavaScript)
+- **Connected Apps** — 1000+ OAuth app integrations via Composio (Google, GitHub, Slack, Notion, Stripe, etc.)
+- **Tool Limits** — Automatic parameter capping to prevent unbounded queries
+- **Search Tags** — Natural language tool discovery with keyword matching
 
 ### Personal Data
-- **Notes, Tasks, Bookmarks, Contacts, Calendar, Expenses** - Full CRUD with categories, tags, and search
-- **Productivity** - Pomodoro timer with sessions/stats, habit tracker with streaks, quick capture inbox
-- **Memories** - Long-term persistent memory (facts, preferences, events) with importance scoring and auto-injection
-- **Goals** - Goal creation, decomposition into steps, progress tracking, next-action recommendations
-- **Custom Data Tables** - Create your own structured data types with AI-determined schemas
+- **Notes, Tasks, Bookmarks, Contacts, Calendar, Expenses** — Full CRUD with categories, tags, and search
+- **Productivity** — Pomodoro timer with sessions/stats, habit tracker with streaks, quick capture inbox
+- **Memories** — Long-term persistent memory (facts, preferences, events) with importance scoring, vector search, and auto-injection
+- **Goals** — Goal creation, decomposition into steps, progress tracking, next-action recommendations
+- **Custom Data Tables** — Create your own structured data types with AI-determined schemas
 
 ### Autonomy & Automation
-- **5 Autonomy Levels** - Manual, Assisted, Supervised, Autonomous, Full
-- **Triggers** - Schedule-based (cron), event-driven, condition-based, webhook
-- **Plans** - Multi-step autonomous execution with checkpoints, retry logic, and timeout handling
-- **Risk Assessment** - Automatic risk scoring for tool executions with approval workflows
+- **5 Autonomy Levels** — Manual, Assisted, Supervised, Autonomous, Full
+- **Triggers** — Schedule-based (cron), event-driven, condition-based, webhook
+- **Heartbeats** — Natural language to cron conversion for periodic tasks ("every weekday at 9am")
+- **Plans** — Multi-step autonomous execution with checkpoints, retry logic, and timeout handling
+- **Risk Assessment** — Automatic risk scoring for tool executions with approval workflows
 
 ### Communication
-- **Web UI** - React 19 + Vite 6 + Tailwind CSS 4 with dark mode, ~40 routes, code-split
-- **Telegram Bot** - Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
-- **WebSocket** - Real-time updates, event subscriptions, session management
-- **REST API** - 40 route modules with standardized responses, pagination, and error codes
+- **Web UI** — React 19 + Vite 6 + Tailwind CSS 4 with dark mode, 35 pages, 43+ components, code-split
+- **Telegram Bot** — Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
+- **WebSocket** — Real-time broadcasts for all data mutations, event subscriptions, session management
+- **REST API** — 39 route modules with standardized responses, pagination, and error codes
 
 ### Security
-- **Zero-Dependency Crypto** - AES-256-GCM encryption + PBKDF2 key derivation using only Node.js built-ins
-- **PII Detection & Redaction** - 15+ categories (SSN, credit cards, emails, phone, etc.)
-- **Sandboxed Code Execution** - Docker container isolation, local execution with approval, critical pattern blocking
-- **4-Layer Security** - Critical patterns -> permission matrix -> approval callback -> sandbox isolation
-- **Code Execution Approval** - Real-time SSE approval dialog for sensitive operations with 120s timeout
-- **Authentication** - None, API Key, or JWT modes
-- **Rate Limiting** - Sliding window with burst support
-- **Tamper-Evident Audit** - Hash chain verification for audit logs
+- **Zero-Dependency Crypto** — AES-256-GCM encryption + PBKDF2 key derivation using only Node.js built-ins
+- **PII Detection & Redaction** — 15+ categories (SSN, credit cards, emails, phone, etc.)
+- **Sandboxed Code Execution** — Docker container isolation, local execution with approval, critical pattern blocking
+- **4-Layer Security** — Critical patterns -> permission matrix -> approval callback -> sandbox isolation
+- **Code Execution Approval** — Real-time SSE approval dialog for sensitive operations with 120s timeout
+- **Authentication** — None, API Key, or JWT modes
+- **Rate Limiting** — Sliding window with burst support
+- **Tamper-Evident Audit** — Hash chain verification for audit logs
 
 ---
 
@@ -88,35 +97,38 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
                          │   Web UI     │  React 19 + Vite 6
                          │  (Port 5173) │  Tailwind CSS 4
                          └──────┬───────┘
-                                │ HTTP + SSE
+                                │ HTTP + SSE + WebSocket
               ┌─────────────────┼─────────────────┐
               │                 │                  │
      ┌────────┴────────┐       │        ┌─────────┴──────────┐
-     │  Telegram Bot   │       │        │     WebSocket      │
-     │   (Channels)    │       │        │    (Port 18789)    │
+     │  Telegram Bot   │       │        │  External MCP      │
+     │   (Channels)    │       │        │  Clients/Servers   │
      └────────┬────────┘       │        └─────────┬──────────┘
               │                │                   │
               └────────┬───────┘───────────────────┘
                        │
               ┌────────▼────────┐
               │    Gateway      │  Hono HTTP API Server
-              │  (Port 8080)    │  40 Route Modules
+              │  (Port 8080)    │  39 Route Modules
               ├─────────────────┤
               │  MessageBus     │  Middleware Pipeline
               │  Agent Engine   │  Tool Orchestration
               │  Provider Router│  Smart Model Selection
+              │  MCP Client     │  External Tool Servers
               │  Plugin System  │  Extensible Architecture
               │  EventBus       │  Typed Event System
+              │  WebSocket      │  Real-time Broadcasts
               ├─────────────────┤
               │     Core        │  AI Engine & Tool Framework
-              │  100+ Tools     │  Multi-Provider Support
+              │  170+ Tools     │  Multi-Provider Support
               │  Sandbox, Crypto│  Privacy, Audit
               └────────┬────────┘
                        │
               ┌────────▼────────┐
-              │   PostgreSQL    │  40+ Repositories
+              │   PostgreSQL    │  36 Repositories
               │                 │  Conversations, Personal Data,
-              │                 │  Memories, Goals, Triggers, Plans
+              │                 │  Memories, Goals, Triggers, Plans,
+              │                 │  MCP Servers, Skill Packages
               └─────────────────┘
 ```
 
@@ -183,7 +195,7 @@ ownpilot/
 │   │   ├── src/
 │   │   │   ├── agent/           # Agent engine, orchestrator, providers
 │   │   │   │   ├── providers/   # Multi-provider implementations
-│   │   │   │   └── tools/       # 100+ built-in tool definitions
+│   │   │   │   └── tools/       # 170+ built-in tool definitions
 │   │   │   ├── plugins/         # Plugin system with isolation, marketplace
 │   │   │   ├── events/          # EventBus, HookBus, ScopedBus
 │   │   │   ├── services/        # Service registry (DI container)
@@ -199,12 +211,12 @@ ownpilot/
 │   │   │   └── types/           # Branded types, Result<T,E>, guards
 │   │   └── package.json
 │   │
-│   ├── gateway/                 # Hono API server (~60K LOC)
+│   ├── gateway/                 # Hono API server (~67K LOC)
 │   │   ├── src/
-│   │   │   ├── routes/          # 38 route modules
-│   │   │   ├── services/        # 32 business logic services
+│   │   │   ├── routes/          # 39 route modules
+│   │   │   ├── services/        # 40 business logic services
 │   │   │   ├── db/
-│   │   │   │   ├── repositories/  # 40+ data access repositories
+│   │   │   │   ├── repositories/  # 36 data access repositories
 │   │   │   │   ├── adapters/      # PostgreSQL adapter
 │   │   │   │   ├── migrations/    # Schema migrations
 │   │   │   │   └── seeds/         # Default data
@@ -213,19 +225,19 @@ ownpilot/
 │   │   │   ├── triggers/        # Proactive automation engine
 │   │   │   ├── plans/           # Plan executor with step handlers
 │   │   │   ├── autonomy/        # Risk assessment, approval manager
-│   │   │   ├── ws/              # WebSocket server & session management
+│   │   │   ├── ws/              # WebSocket server & real-time broadcasts
 │   │   │   ├── middleware/      # Auth, rate limiting, CORS, audit
 │   │   │   ├── assistant/       # AI orchestration (memories, goals)
 │   │   │   ├── tracing/         # Request tracing (AsyncLocalStorage)
 │   │   │   └── audit/           # Gateway audit logging
 │   │   └── package.json
 │   │
-│   ├── ui/                      # React 19 web interface
+│   ├── ui/                      # React 19 web interface (~36K LOC)
 │   │   ├── src/
-│   │   │   ├── pages/           # ~40 page components
-│   │   │   ├── components/      # 30+ reusable components
+│   │   │   ├── pages/           # 35 page components
+│   │   │   ├── components/      # 43+ reusable components
 │   │   │   ├── hooks/           # Custom hooks (chat store, theme, WebSocket)
-│   │   │   ├── api/             # Typed fetch wrapper + 18 endpoint modules
+│   │   │   ├── api/             # Typed fetch wrapper + endpoint modules
 │   │   │   ├── types/           # UI type definitions
 │   │   │   └── App.tsx          # Route definitions with lazy loading
 │   │   └── package.json
@@ -258,17 +270,17 @@ ownpilot/
 
 The foundational runtime library. Contains the AI engine, tool system, plugin architecture, security primitives, and cryptography. Minimal dependencies (only `googleapis` for Google OAuth).
 
-**~67,000 LOC** across 156 source files.
+**~65,000 LOC** across 160+ source files.
 
 | Module | Description |
 |--------|-------------|
 | `agent/` | Agent engine with multi-provider support, orchestrator, tool-calling loop |
-| `agent/providers/` | Provider implementations (OpenAI, Anthropic, Google, Zhipu, OpenAI-compatible) |
-| `agent/tools/` | 100+ built-in tool definitions and executors |
+| `agent/providers/` | Provider implementations (OpenAI, Anthropic, Google, Zhipu, OpenAI-compatible, 8 aggregators) |
+| `agent/tools/` | 170+ built-in tool definitions across 28 tool files |
 | `plugins/` | Plugin system with isolation, marketplace, signing, runtime |
 | `events/` | 3-in-1 event system: EventBus (fire-and-forget), HookBus (interceptable), ScopedBus (namespaced) |
 | `services/` | Service registry (DI container) with typed tokens |
-| `memory/` | AES-256-GCM encrypted personal memory with deduplication and TTL |
+| `memory/` | AES-256-GCM encrypted personal memory with vector search and deduplication |
 | `sandbox/` | 5 sandbox implementations: VM, Docker, Worker threads, Local, Scoped APIs |
 | `crypto/` | PBKDF2, AES-256-GCM, RSA, SHA256 — zero dependency |
 | `audit/` | Tamper-evident logging with hash chain verification |
@@ -278,32 +290,31 @@ The foundational runtime library. Contains the AI engine, tool system, plugin ar
 
 ### Gateway (`@ownpilot/gateway`)
 
-The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, plugin management, and channel integration.
+The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, MCP integration, plugin management, and channel connectivity.
 
-**~60,000 LOC** across 179 source files. **120 test files** with **4,524 tests**.
+**~67,000 LOC** across 200+ source files. **137 test files** with **4,800+ tests**.
 
-**Route Modules (40):**
+**Route Modules (39):**
 
 | Category | Routes |
 |----------|--------|
-| **Chat & Agents** | `chat.ts`, `agents.ts` |
+| **Chat & Agents** | `chat.ts`, `chat-history.ts`, `agents.ts` |
 | **AI Configuration** | `models.ts`, `providers.ts`, `model-configs.ts`, `local-providers.ts` |
-| **Personal Data** | `personal-data.ts`, `memories.ts`, `goals.ts`, `expenses.ts`, `custom-data.ts` |
+| **Personal Data** | `personal-data.ts`, `personal-data-tools.ts`, `memories.ts`, `goals.ts`, `expenses.ts`, `custom-data.ts` |
 | **Productivity** | `productivity.ts` (Pomodoro, Habits, Captures) |
-| **Automation** | `triggers.ts`, `plans.ts`, `autonomy.ts` |
-| **Tools & Plugins** | `tools.ts`, `custom-tools.ts`, `plugins.ts` |
-| **Channels** | `channels.ts`, `channel-auth.ts` |
+| **Automation** | `triggers.ts`, `heartbeats.ts`, `plans.ts`, `autonomy.ts` |
+| **Tools & Extensions** | `tools.ts`, `custom-tools.ts`, `plugins.ts`, `skill-packages.ts`, `mcp.ts`, `composio.ts` |
+| **Channels** | `channels.ts`, `channel-auth.ts`, `webhooks.ts` |
 | **Configuration** | `settings.ts`, `config-services.ts` |
-| **Integration** | `integrations.ts`, `auth.ts` |
 | **System** | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts`, `execution-permissions.ts` |
 
-**Services (32):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, and more.
+**Services (40):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, SkillPackageService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, and more.
 
-**Repositories (40+):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, and more.
+**Repositories (36):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, skill-packages, local-providers, heartbeats, embedding-cache.
 
 ### UI (`@ownpilot/ui`)
 
-Modern web interface built with React 19, Vite 6.4, and Tailwind CSS 4. Minimal dependencies — no Redux/Zustand, no axios, no component library.
+Modern web interface built with React 19, Vite 6, and Tailwind CSS 4. Minimal dependencies — no Redux/Zustand, no axios, no component library.
 
 | Technology | Version |
 |-----------|---------|
@@ -313,11 +324,11 @@ Modern web interface built with React 19, Vite 6.4, and Tailwind CSS 4. Minimal 
 | Tailwind CSS | 4.0.6 |
 | prism-react-renderer | 2.4.1 |
 
-**Pages (~40):**
+**Pages (35):**
 
 | Page | Description |
 |------|-------------|
-| **Chat** | Main AI conversation with streaming, tool execution display, approval dialogs |
+| **Chat** | Main AI conversation with streaming, tool execution display, context bar, approval dialogs |
 | **Dashboard** | Overview with stats, AI briefing, quick actions |
 | **Inbox** | Read-only channel messages from Telegram |
 | **History** | Conversation history with search, archive, bulk operations |
@@ -328,18 +339,23 @@ Modern web interface built with React 19, Vite 6.4, and Tailwind CSS 4. Minimal 
 | **Triggers / Plans / Autonomy** | Automation configuration |
 | **Agents** | Agent selection and configuration |
 | **Tools / Custom Tools** | Tool browser and custom tool management |
-| **Models / Costs** | AI model browser and usage tracking |
+| **Skill Packages** | Browse and install AI-generated skill packs |
+| **MCP Servers** | Manage external MCP server connections with preset quick-add |
+| **Connected Apps** | Composio OAuth integrations (1000+ apps) |
+| **Models / AI Models / Costs** | AI model browser, configuration, and usage tracking |
+| **Providers** | Provider management and status |
 | **Plugins / Workspaces** | Extension and workspace management |
-| **Data Browser / Custom Data** | Universal data exploration |
-| **Settings** | Config Center, API Keys, Providers, AI Models, Integrations, System |
+| **Data Browser / Custom Data** | Universal data exploration and custom tables |
+| **Settings / Config Center / API Keys** | Service configuration, API key management |
+| **System** | Database backup/restore, sandbox status, theme, notifications |
 | **Profile / Logs / About** | User profile, request logs, system info |
 
-**Key Components:** Layout (sidebar nav), ChatInput, MessageList, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, SuggestionChips, ToastProvider, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
+**Key Components (43+):** Layout, ChatInput, MessageList, ContextBar, ContextDetailModal, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, ExecutionSecurityPanel, SuggestionChips, MemoryCards, WorkspaceSelector, ToastProvider, ConfirmDialog, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
 
 **State Management (Context + Hooks):**
-- `useChatStore` - Global chat state with SSE streaming, tool progress, approval flow
-- `useTheme` - Dark/light/system theme with localStorage persistence
-- `useWebSocket` - WebSocket connection with auto-reconnect and event subscriptions
+- `useChatStore` — Global chat state with SSE streaming, tool progress, approval flow
+- `useTheme` — Dark/light/system theme with localStorage persistence
+- `useWebSocket` — WebSocket connection with auto-reconnect and event subscriptions
 
 ### Channels (`@ownpilot/channels`)
 
@@ -394,14 +410,23 @@ All API keys are managed via the **Config Center UI** (Settings page) or the `ow
 
 ### Supported Providers
 
-| Provider | Integration Type |
-|----------|-----------------|
-| OpenAI | Native |
-| Anthropic | Native |
-| Google (Gemini) | Native (with OAuth) |
-| Zhipu AI | Native |
-| DeepSeek, Groq, xAI, Mistral, Together AI, Fireworks, Perplexity | OpenAI-compatible |
-| Ollama, LM Studio | Local (auto-discovered, no API key needed) |
+| Provider | Integration Type | Key Models |
+|----------|-----------------|------------|
+| **OpenAI** | Native | GPT-4o, GPT-4o-mini, o1, o3-mini |
+| **Anthropic** | Native (with prompt caching) | Claude Sonnet 4.6, Claude Opus 4.6, Claude 3.7 Sonnet, Claude 3 Haiku |
+| **Google** | Native (with OAuth) | Gemini 2.0 Flash, Gemini 1.5 Pro |
+| **Zhipu AI** | Native | GLM-4 |
+| **Together AI** | Aggregator (OpenAI-compatible) | Llama 3.3 70B, DeepSeek R1/V3, Qwen 2.5 Coder |
+| **Groq** | Aggregator (ultra-fast LPU) | Llama 3.3 70B, Mixtral 8x7B, Gemma 2 9B |
+| **Fireworks AI** | Aggregator | Llama 3.3 70B, Qwen 2.5, FLUX image models |
+| **DeepInfra** | Aggregator | Serverless open-source inference |
+| **OpenRouter** | Aggregator | Unified API for all providers |
+| **Perplexity** | Aggregator | Sonar Pro, Sonar Reasoning (with citations) |
+| **Cerebras** | Aggregator (fastest inference) | Llama 3.3 70B, Llama 3.1 8B |
+| **fal.ai** | Aggregator (image/video) | FLUX Pro/Dev/Schnell, Stable Diffusion, Recraft v3 |
+| **Ollama** | Local (auto-discovered) | Any GGUF model |
+| **LM Studio** | Local (auto-discovered) | Any loaded model |
+| **LocalAI / vLLM** | Local | Self-hosted models |
 
 Any OpenAI-compatible endpoint can be added as a custom provider.
 
@@ -414,6 +439,12 @@ Any OpenAI-compatible endpoint can be added as a custom provider.
 | `smartest` | Best quality/reasoning |
 | `balanced` | Cost + quality balance (default) |
 | `fallback` | Try providers sequentially until one succeeds |
+
+### Token Efficiency
+
+- **Anthropic Prompt Caching** — Static system prompt sections (persona, tools, capabilities) marked with `cache_control: { type: 'ephemeral' }`. Dynamic sections (current context, code execution) sent without caching. Reduces input token costs on multi-turn conversations.
+- **Context Compaction** — When context grows large, old messages can be AI-summarized into a compact summary, preserving recent messages. Reduces token usage while maintaining conversation continuity.
+- **Meta-tool Proxy** — Only 4 small tool definitions sent to the LLM instead of 170+ full schemas.
 
 ---
 
@@ -442,12 +473,13 @@ Agents are AI assistants with specific system prompts, tool assignments, model p
 
 ### Agent Capabilities
 
-- **Tool Orchestration** - Automatic tool calling with multi-step planning via meta-tool proxy
-- **Memory Injection** - Relevant memories automatically included in system prompt
-- **Goal Awareness** - Active goals and progress injected into context
-- **Dynamic System Prompts** - Context-aware enhancement with memories, goals, available resources
-- **Execution Context** - Code execution instructions injected into system prompt (not user message)
-- **Streaming** - Real-time SSE responses with tool execution progress events
+- **Tool Orchestration** — Automatic tool calling with multi-step planning via meta-tool proxy
+- **Memory Injection** — Relevant memories automatically included in system prompt (vector + full-text hybrid search)
+- **Goal Awareness** — Active goals and progress injected into context
+- **Dynamic System Prompts** — Context-aware enhancement with memories, goals, available resources
+- **Execution Context** — Code execution instructions injected into system prompt (not user message)
+- **Context Tracking** — Real-time context bar showing token usage, fill percentage, and per-section breakdown
+- **Streaming** — Real-time SSE responses with tool execution progress events
 
 ---
 
@@ -455,12 +487,12 @@ Agents are AI assistants with specific system prompts, tool assignments, model p
 
 ### Overview
 
-OwnPilot has **100+ tools** organized into **20+ categories**. Rather than sending all tool definitions to the LLM (which would consume too many tokens), OwnPilot uses a **meta-tool proxy pattern**:
+OwnPilot has **170+ tools** organized into **28 categories**. Rather than sending all tool definitions to the LLM (which would consume too many tokens), OwnPilot uses a **meta-tool proxy pattern**:
 
-1. **`search_tools`** - Find tools by keyword with optional `include_params` for inline parameter schemas
-2. **`get_tool_help`** - Get detailed help for a specific tool (supports batch lookup)
-3. **`use_tool`** - Execute a tool with parameter validation and limit enforcement
-4. **`batch_use_tool`** - Execute multiple tools in a single call
+1. **`search_tools`** — Find tools by keyword with optional `include_params` for inline parameter schemas
+2. **`get_tool_help`** — Get detailed help for a specific tool (supports batch lookup)
+3. **`use_tool`** — Execute a tool with parameter validation and limit enforcement
+4. **`batch_use_tool`** — Execute multiple tools in a single call
 
 ### Tool Categories
 
@@ -478,12 +510,36 @@ OwnPilot has **100+ tools** organized into **20+ categories**. Rather than sendi
 | **Web & API** | http_request, fetch_web_page, search_web |
 | **Email** | send_email, list_emails, read_email, search_emails |
 | **Image** | analyze_image, resize_image |
-| **Audio** | audio_info |
+| **Audio** | audio_info, translate_audio |
 | **Finance** | add_expense, query_expenses, expense_summary |
 | **Memory** | remember, recall, forget, list_memories, memory_stats |
 | **Goals** | create_goal, list_goals, decompose_goal, get_next_actions, complete_step |
+| **Git** | git_status, git_log, git_diff, git_commit, git_branch |
+| **Translation** | translate_text, detect_language |
+| **Weather** | get_weather, weather_forecast |
+| **Data Extraction** | extract_structured_data, parse_document |
+| **Vector Search** | semantic_search, index_documents |
+| **Scheduler** | schedule_task, list_scheduled |
+| **Utilities (Math)** | calculate, statistics, convert_units |
+| **Utilities (Text)** | regex, word_count, text_transform |
+| **Utilities (Date)** | date_math, format_date, timezone_convert |
+| **Utilities (Data)** | json_query, csv_parse, data_transform |
+| **Utilities (Gen)** | generate_uuid, hash_text, random_number |
 | **Dynamic Tools** | create_tool, list_custom_tools, delete_custom_tool |
-| **Utilities** | calculate, statistics, convert_units, generate_uuid, hash_text, regex |
+
+### Tool Namespaces
+
+All tools use qualified names with dot-prefixed namespaces:
+
+| Prefix | Source | Example |
+|--------|--------|---------|
+| `core.` | Built-in tools | `core.add_task` |
+| `custom.` | User-created tools | `custom.my_helper` |
+| `plugin.{id}.` | Plugin tools | `plugin.telegram.send_message` |
+| `skill.{id}.` | Skill package tools | `skill.web-scraper.scrape` |
+| `mcp.{server}.` | MCP server tools | `mcp.filesystem.read_file` |
+
+The LLM can use base names (without prefix) for backward compatibility — the registry resolves them automatically.
 
 ### Tool Trust Levels
 
@@ -501,6 +557,40 @@ The AI can create new tools at runtime:
 2. Tool is validated, sandboxed, and stored in the database
 3. Tool is available to all agents via `use_tool`
 4. Tools can be enabled/disabled and have permission controls
+
+---
+
+## MCP Integration
+
+OwnPilot supports the [Model Context Protocol](https://modelcontextprotocol.io/) in both directions:
+
+### MCP Client (connect to external servers)
+
+Connect to any MCP server to extend OwnPilot's capabilities:
+
+```
+Settings → MCP Servers → Add (or use Quick Add presets)
+```
+
+**Pre-configured presets:**
+- **Filesystem** — Read, write, and manage local files
+- **GitHub** — Manage repos, issues, PRs, and branches
+- **Brave Search** — Web and local search
+- **Fetch** — Extract content from web pages
+- **Memory** — Persistent knowledge graph
+- **Sequential Thinking** — Structured problem-solving
+
+Tools from connected MCP servers appear in the AI's catalog with `mcp.{servername}.` prefix and are available via `search_tools` / `use_tool`.
+
+### MCP Server (expose tools to external clients)
+
+OwnPilot exposes its full tool registry as an MCP endpoint:
+
+```
+POST /mcp/serve   — Streamable HTTP transport
+```
+
+External MCP clients (Claude Desktop, other agents) can connect and use OwnPilot's 170+ tools.
 
 ---
 
@@ -532,7 +622,7 @@ Persistent long-term memory for the AI assistant with AES-256-GCM encryption:
 | `relationship` | People and contacts |
 | `temporal` | Time-based reminders |
 
-Memories have **importance scoring**, are **automatically injected** into agent system prompts, support **deduplication** via content hash, and have optional **TTL expiration**.
+Memories have **importance scoring**, are **automatically injected** into agent system prompts via hybrid search (vector + full-text + RRF ranking), support **deduplication** via content hash, and have optional **TTL expiration**.
 
 ### Goals System
 
@@ -541,8 +631,8 @@ Hierarchical goal tracking with decomposition:
 - **Create goals** with title, description, due date
 - **Decompose** into actionable steps (pending, in_progress, completed, skipped)
 - **Track progress** (0-100%) with status (active/completed/abandoned)
-- **Get next actions** - AI recommends what to do next
-- **Complete steps** - Auto-update parent goal progress
+- **Get next actions** — AI recommends what to do next
+- **Complete steps** — Auto-update parent goal progress
 
 ---
 
@@ -569,6 +659,18 @@ Proactive automation with 4 trigger types:
 | `condition` | IF-THEN rules | "If expenses > $500/day, alert me" |
 | `webhook` | External HTTP triggers | "When GitHub webhook fires, create a task" |
 
+### Heartbeats
+
+Natural language periodic scheduling:
+
+```
+"every weekday at 9am" → 0 9 * * 1-5
+"twice a day"          → 0 9,18 * * *
+"every 30 minutes"     → */30 * * * *
+```
+
+The AI parses natural language into cron expressions for trigger scheduling.
+
 ### Plans
 
 Multi-step autonomous execution:
@@ -582,7 +684,7 @@ Multi-step autonomous execution:
 
 ## Database
 
-PostgreSQL with 40+ repositories via the `pg` adapter.
+PostgreSQL with 36 repositories via the `pg` adapter.
 
 ### Key Tables
 
@@ -592,15 +694,25 @@ PostgreSQL with 40+ repositories via the `pg` adapter.
 
 **Productivity:** `pomodoro_sessions`, `habits`, `captures`
 
-**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`
+**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`, `heartbeats`
 
-**Channels:** `channel_messages`, `channel_users`, `channel_sessions`
+**Channels:** `channel_messages`, `channel_users`, `channel_sessions`, `channel_verification`
 
-**System:** `plugins`, `custom_tools`, `custom_data_tables`, `config_services`, `execution_permissions`, `workspaces`, `model_configs`
+**Extensions:** `plugins`, `custom_tools`, `skill_packages`, `mcp_servers`, `embedding_cache`
+
+**System:** `custom_data_tables`, `config_services`, `execution_permissions`, `workspaces`, `model_configs`, `local_providers`
 
 ### Migration
 
 Schema migrations are auto-applied on startup via `autoMigrateIfNeeded()`. Migration files are in `packages/gateway/src/db/migrations/`.
+
+### Backup & Restore
+
+```
+System → Database → Backup / Restore
+```
+
+Full PostgreSQL backup and restore through the web UI or API.
 
 ---
 
@@ -723,9 +835,15 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/api/v1/chat` | Send message (supports SSE streaming) |
+| `POST` | `/api/v1/chat/reset-context` | Reset conversation context |
+| `GET` | `/api/v1/chat/context-detail` | Get detailed context token breakdown |
+| `POST` | `/api/v1/chat/compact` | Compact context by summarizing old messages |
 | `GET` | `/api/v1/chat/history` | List conversations |
 | `GET` | `/api/v1/chat/history/:id` | Get conversation with messages |
 | `DELETE` | `/api/v1/chat/history/:id` | Delete conversation |
+| `PATCH` | `/api/v1/chat/history/:id/archive` | Archive/unarchive conversation |
+| `POST` | `/api/v1/chat/history/bulk-delete` | Bulk delete conversations |
+| `POST` | `/api/v1/chat/history/bulk-archive` | Bulk archive conversations |
 
 ### Agents
 
@@ -733,16 +851,21 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 |--------|----------|-------------|
 | `GET` | `/api/v1/agents` | List all agents |
 | `POST` | `/api/v1/agents` | Create new agent |
+| `GET` | `/api/v1/agents/:id` | Get agent details |
 | `PUT` | `/api/v1/agents/:id` | Update agent |
 | `DELETE` | `/api/v1/agents/:id` | Delete agent |
+| `POST` | `/api/v1/agents/:id/chat` | Send message to specific agent |
 
 ### AI Configuration
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/v1/models` | List available models |
+| `GET` | `/api/v1/models` | List available models across all providers |
 | `GET` | `/api/v1/providers` | List providers with status |
-| `GET` | `/api/v1/tools` | List all tools |
+| `GET` | `/api/v1/model-configs` | List model configurations |
+| `GET` | `/api/v1/local-providers` | List discovered local providers |
+| `GET` | `/api/v1/tools` | List all registered tools |
+| `GET` | `/api/v1/costs` | Cost tracking and usage stats |
 
 ### Personal Data
 
@@ -756,14 +879,27 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 | `GET/POST` | `/api/v1/expenses` | Expenses CRUD |
 | `GET/POST` | `/api/v1/memories` | Memories CRUD |
 | `GET/POST` | `/api/v1/goals` | Goals CRUD |
+| `GET/POST` | `/api/v1/custom-data` | Custom data tables CRUD |
 
 ### Automation
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET/POST` | `/api/v1/triggers` | Trigger management |
+| `GET/POST` | `/api/v1/heartbeats` | Heartbeat scheduling |
 | `GET/POST` | `/api/v1/plans` | Plan management |
 | `GET/PUT` | `/api/v1/autonomy` | Autonomy settings |
+
+### Extensions
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET/POST` | `/api/v1/mcp` | MCP server management |
+| `POST` | `/mcp/serve` | MCP server endpoint (Streamable HTTP) |
+| `GET/POST` | `/api/v1/skill-packages` | Skill package management |
+| `GET/POST` | `/api/v1/plugins` | Plugin management |
+| `GET/POST` | `/api/v1/custom-tools` | Custom tool management |
+| `GET/POST` | `/api/v1/composio` | Connected apps (Composio) |
 
 ### System
 
@@ -771,8 +907,23 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 |--------|----------|-------------|
 | `GET` | `/health` | Health check |
 | `GET` | `/api/v1/dashboard` | Dashboard data |
-| `GET` | `/api/v1/costs` | Cost tracking |
 | `GET` | `/api/v1/audit/logs` | Audit trail |
+| `GET/POST` | `/api/v1/database` | Database backup/restore |
+| `GET/PUT` | `/api/v1/settings` | System settings |
+| `GET/PUT` | `/api/v1/config-services` | Config Center entries |
+| `GET/PUT` | `/api/v1/execution-permissions` | Code execution permissions |
+
+### WebSocket Events
+
+Real-time broadcasts on `ws://localhost:18789`:
+
+| Event | Description |
+|-------|-------------|
+| `data:changed` | CRUD mutation on any entity (tasks, notes, etc.) |
+| `chat:stream:*` | Streaming response chunks |
+| `tool:start/progress/end` | Tool execution lifecycle |
+| `channel:message` | Incoming Telegram message |
+| `trigger:executed` | Trigger execution result |
 
 ### Response Format
 
@@ -917,7 +1068,8 @@ pnpm clean            # Clear all build artifacts
 | **Web UI** | React 19 + Vite 6 + Tailwind CSS 4 |
 | **Database** | PostgreSQL |
 | **Telegram** | Grammy |
-| **Testing** | Vitest 2.x (188 test files, 8,914 tests) |
+| **MCP** | @modelcontextprotocol/sdk |
+| **Testing** | Vitest 2.x (211 test files, 9,307 tests) |
 | **Linting** | ESLint 9 (flat config) |
 | **Formatting** | Prettier 3.x |
 | **Git Hooks** | Husky (pre-commit: lint + typecheck) |
@@ -935,7 +1087,9 @@ pnpm clean            # Clear all build artifacts
 | **EventBus + HookBus** | Event-driven state + interceptable hooks |
 | **Repository** | Data access abstraction with BaseRepository |
 | **Meta-tool Proxy** | Token-efficient tool discovery and execution |
+| **Tool Namespaces** | Qualified names (`core.`, `mcp.`, `plugin.`, `custom.`, `skill.`) |
 | **Context + Hooks** | React state management (no Redux/Zustand) |
+| **WebSocket Broadcasts** | Real-time data synchronization across all mutation endpoints |
 
 ---
 

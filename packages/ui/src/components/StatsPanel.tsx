@@ -7,9 +7,10 @@
  * - Provider/model info
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { formatNumber } from '../utils/formatters';
 import { useGateway } from '../hooks/useWebSocket';
+import { useDebouncedCallback } from '../hooks';
 import {
   Activity,
   Brain,
@@ -74,12 +75,8 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
   const [providerCount, setProviderCount] = useState(0);
   const [modelCount, setModelCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const debouncedRefresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchStats(), 2000);
-  }, []);
+  const debouncedRefresh = useDebouncedCallback(() => fetchStats(), 2000);
 
   // Fetch stats only when panel is expanded; poll every 30s
   useEffect(() => {
@@ -88,7 +85,6 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
     const interval = setInterval(fetchStats, 30000);
     return () => {
       clearInterval(interval);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [isCollapsed]);
 

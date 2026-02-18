@@ -25,13 +25,15 @@ interface ToolCall {
 interface ToolExecutionDisplayProps {
   toolCalls: ToolCall[];
   onRerun?: (toolCall: ToolCall) => void;
+  /** Workspace ID for resolving file paths to image URLs */
+  workspaceId?: string | null;
 }
 
-export function ToolExecutionDisplay({ toolCalls, onRerun }: ToolExecutionDisplayProps) {
+export function ToolExecutionDisplay({ toolCalls, onRerun, workspaceId }: ToolExecutionDisplayProps) {
   return (
     <div className="space-y-2 mt-3">
       {toolCalls.map((call) => (
-        <ToolCallCard key={call.id} toolCall={call} onRerun={onRerun} />
+        <ToolCallCard key={call.id} toolCall={call} onRerun={onRerun} workspaceId={workspaceId} />
       ))}
     </div>
   );
@@ -40,9 +42,10 @@ export function ToolExecutionDisplay({ toolCalls, onRerun }: ToolExecutionDispla
 interface ToolCallCardProps {
   toolCall: ToolCall;
   onRerun?: (toolCall: ToolCall) => void;
+  workspaceId?: string | null;
 }
 
-function ToolCallCard({ toolCall, onRerun }: ToolCallCardProps) {
+function ToolCallCard({ toolCall, onRerun, workspaceId }: ToolCallCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showArgs, setShowArgs] = useState(false);
 
@@ -158,7 +161,7 @@ function ToolCallCard({ toolCall, onRerun }: ToolCallCardProps) {
                 <p className="text-sm text-red-500">{toolCall.error}</p>
               </div>
             ) : toolCall.result !== undefined ? (
-              <ToolResultDisplay result={toolCall.result} toolName={toolCall.name} />
+              <ToolResultDisplay result={toolCall.result} toolName={toolCall.name} workspaceId={workspaceId} />
             ) : status === 'running' ? (
               <div className="flex items-center gap-2 text-text-muted dark:text-dark-text-muted">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -176,11 +179,35 @@ interface ToolResultDisplayProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic tool output (string | object)
   result: any;
   toolName: string;
+  workspaceId?: string | null;
 }
 
-function ToolResultDisplay({ result, toolName }: ToolResultDisplayProps) {
+function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayProps) {
   // Strip namespace prefix (e.g. 'core.read_file' → 'read_file') for display matching
   const baseName = toolName.includes('.') ? toolName.substring(toolName.lastIndexOf('.') + 1) : toolName;
+
+  // Image tools — show inline preview
+  if (isImageToolResult(baseName, result)) {
+    const imagePath = result.output || result.source || result.outputPath;
+    const src = resolveWorkspaceImageUrl(imagePath, workspaceId);
+    return (
+      <div className="space-y-2">
+        {imagePath && (
+          <div className="flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted">
+            <File className="w-4 h-4" />
+            <span className="font-mono text-xs truncate">{imagePath}</span>
+          </div>
+        )}
+        {src && <ToolImagePreview src={src} alt={imagePath || 'Generated image'} />}
+        <CodeBlock
+          code={JSON.stringify(result, null, 2)}
+          language="json"
+          showLineNumbers={false}
+          maxHeight="200px"
+        />
+      </div>
+    );
+  }
 
   // File system tools - show file content
   if (baseName === 'read_file' && typeof result === 'object' && result !== null && result.content) {
@@ -458,4 +485,62 @@ function detectLanguage(path: string): string {
     yaml: 'yaml',
   };
   return langMap[ext] || 'plaintext';
+}
+
+// =============================================================================
+// Image tool result helpers
+// =============================================================================
+
+const IMAGE_TOOLS = new Set(['resize_image', 'generate_image', 'edit_image', 'image_variation', 'analyze_image']);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic tool output
+function isImageToolResult(baseName: string, result: any): boolean {
+  if (!IMAGE_TOOLS.has(baseName)) return false;
+  if (typeof result !== 'object' || result === null) return false;
+  return !!(result.output || result.outputPath || result.source);
+}
+
+function resolveWorkspaceImageUrl(path: string | undefined, workspaceId?: string | null): string | null {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('data:')) return path;
+  if (workspaceId) {
+    const cleanPath = path.replace(/^[/\\]+/, '').replace(/\\/g, '/');
+    return `/api/v1/file-workspaces/${encodeURIComponent(workspaceId)}/file/${cleanPath}?raw=true`;
+  }
+  return null;
+}
+
+function ToolImagePreview({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  if (error) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary rounded text-text-muted dark:text-dark-text-muted">
+        [Image: {alt || src}]
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <img
+        src={src}
+        alt={alt}
+        onClick={() => setExpanded(true)}
+        onError={() => setError(true)}
+        className="max-w-sm max-h-64 rounded-lg border border-border dark:border-dark-border cursor-pointer hover:opacity-90 transition-opacity"
+        loading="lazy"
+      />
+      {expanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 cursor-pointer"
+          onClick={() => setExpanded(false)}
+        >
+          <img src={src} alt={alt} className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl" />
+        </div>
+      )}
+    </>
+  );
 }

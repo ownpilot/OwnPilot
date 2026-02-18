@@ -3,6 +3,8 @@ import { Plus } from './icons';
 
 interface ContextBarProps {
   sessionInfo: SessionInfo | null;
+  /** Context window size from model config, used as default before first API response */
+  defaultMaxTokens?: number;
   onNewSession: () => void;
   onShowDetail?: () => void;
 }
@@ -25,10 +27,13 @@ function getFillTextColor(percent: number): string {
   return 'text-emerald-600 dark:text-emerald-400';
 }
 
-export function ContextBar({ sessionInfo, onNewSession, onShowDetail }: ContextBarProps) {
-  if (!sessionInfo) return null;
-
-  const { messageCount, estimatedTokens, maxContextTokens, contextFillPercent } = sessionInfo;
+export function ContextBar({ sessionInfo, defaultMaxTokens, onNewSession, onShowDetail }: ContextBarProps) {
+  // Show immediately with defaults — don't wait for first message
+  const messageCount = sessionInfo?.messageCount ?? 0;
+  const estimatedTokens = sessionInfo?.estimatedTokens ?? 0;
+  const maxContextTokens = sessionInfo?.maxContextTokens ?? defaultMaxTokens ?? 128_000;
+  const contextFillPercent = sessionInfo?.contextFillPercent ?? 0;
+  const cachedTokens = sessionInfo?.cachedTokens;
 
   return (
     <div className="flex items-center gap-3 px-4 py-1.5 bg-bg-secondary dark:bg-dark-bg-secondary border-b border-border dark:border-dark-border text-xs">
@@ -54,10 +59,15 @@ export function ContextBar({ sessionInfo, onNewSession, onShowDetail }: ContextB
         </span>
       </button>
 
-      {/* Fill % */}
+      {/* Fill % + cached indicator */}
       <span className={`font-medium whitespace-nowrap ${getFillTextColor(contextFillPercent)}`}>
         {contextFillPercent}%
       </span>
+      {cachedTokens != null && cachedTokens > 0 && (
+        <span className="text-text-tertiary dark:text-dark-text-tertiary whitespace-nowrap" title={`${formatTokens(cachedTokens)} tokens served from prompt cache`}>
+          {formatTokens(cachedTokens)} cached
+        </span>
+      )}
 
       {/* New Session button */}
       <button

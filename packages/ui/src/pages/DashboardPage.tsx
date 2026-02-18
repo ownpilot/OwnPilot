@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
+import { useDebouncedCallback } from '../hooks';
 import { Link } from 'react-router-dom';
 import {
   CheckCircle2,
@@ -25,8 +26,6 @@ export function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const fetchSummary = async () => {
     try {
       setError(null);
@@ -40,16 +39,10 @@ export function DashboardPage() {
     }
   };
 
-  const debouncedRefresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchSummary(), 2000);
-  }, []);
+  const debouncedRefresh = useDebouncedCallback(() => fetchSummary(), 2000);
 
   useEffect(() => {
     fetchSummary();
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
   }, []);
 
   // WS-triggered refresh

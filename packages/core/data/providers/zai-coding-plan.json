@@ -28,6 +28,22 @@
       "releaseDate": "2026-02-11"
     },
     {
+      "id": "glm-4.7-flashx",
+      "name": "GLM-4.7-FlashX",
+      "contextWindow": 200000,
+      "maxOutput": 131072,
+      "inputPrice": 0.07,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-19"
+    },
+    {
       "id": "glm-4.7-flash",
       "name": "GLM-4.7-Flash",
       "contextWindow": 200000,

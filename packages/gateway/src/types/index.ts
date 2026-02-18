@@ -40,7 +40,8 @@ export interface ChatRequest {
   conversationId?: string;
   agentId?: string;
   stream?: boolean;
-  history?: Array<{ role: string; content: string }>;
+  /** Message count for logging (agent maintains its own conversation memory) */
+  historyLength?: number;
   /** Tool names to expose directly to the LLM (bypasses use_tool proxy) */
   directTools?: string[];
   /** Include full tool catalog in the message (first message only) */
@@ -144,6 +145,8 @@ export interface SessionInfo {
   estimatedTokens: number;
   maxContextTokens: number;
   contextFillPercent: number;
+  /** Cached input tokens from prompt caching (Anthropic) */
+  cachedTokens?: number;
 }
 
 /**

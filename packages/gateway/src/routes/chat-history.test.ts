@@ -132,6 +132,22 @@ const mockLogsRepo = {
 const mockResetChatAgentContext = vi.fn(() => ({ reset: true, newSessionId: 'new-session-1' }));
 const mockClearAllChatAgentCaches = vi.fn(() => 3);
 const mockGetDefaultModel = vi.fn(async () => 'gpt-4o');
+const mockGetDefaultProvider = vi.fn(async () => 'openai');
+const mockGetContextBreakdown = vi.fn(() => ({
+  systemPromptTokens: 1200,
+  messageHistoryTokens: 800,
+  messageCount: 5,
+  maxContextTokens: 128000,
+  modelName: 'gpt-4o',
+  providerName: 'openai',
+  sections: [{ name: 'Base Prompt', tokens: 400 }, { name: 'User Context', tokens: 800 }],
+}));
+const mockCompactContext = vi.fn(async () => ({
+  compacted: true,
+  summary: 'Summary of conversation',
+  removedMessages: 8,
+  newTokenEstimate: 450,
+}));
 
 vi.mock('../db/repositories/index.js', () => ({
   ChatRepository: class {
@@ -146,14 +162,35 @@ vi.mock('../db/repositories/index.js', () => ({
   },
 }));
 
+vi.mock('../db/repositories/model-configs.js', () => ({
+  modelConfigsRepo: {
+    getModel: vi.fn(async () => null),
+  },
+}));
+
+vi.mock('./settings.js', () => ({
+  getDefaultProvider: (...args: unknown[]) => mockGetDefaultProvider(...args),
+}));
+
 vi.mock('./agents.js', () => ({
   resetChatAgentContext: (...args: unknown[]) => mockResetChatAgentContext(...args),
   clearAllChatAgentCaches: (...args: unknown[]) => mockClearAllChatAgentCaches(...args),
   getDefaultModel: (...args: unknown[]) => mockGetDefaultModel(...args),
+  getContextBreakdown: (...args: unknown[]) => mockGetContextBreakdown(...args),
+  compactContext: (...args: unknown[]) => mockCompactContext(...args),
+}));
+
+vi.mock('./chat.js', () => ({
+  promptInitializedConversations: new Set<string>(),
 }));
 
 vi.mock('../config/defaults.js', () => ({
   MAX_DAYS_LOOKBACK: 365,
+  WS_PORT: 18789,
+  WS_HEARTBEAT_INTERVAL_MS: 30000,
+  WS_SESSION_TIMEOUT_MS: 300000,
+  WS_MAX_PAYLOAD_BYTES: 1048576,
+  WS_MAX_CONNECTIONS: 50,
 }));
 
 // Import after mocks
@@ -1020,6 +1057,100 @@ describe('Chat History & Logs Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.error.message).toContain('Invalid JSON body');
+    });
+  });
+
+  // ========================================================================
+  // GET /context-detail - Context breakdown
+  // ========================================================================
+
+  describe('GET /api/context-detail', () => {
+    it('returns context breakdown for given provider/model', async () => {
+      const res = await app.request('/api/context-detail?provider=openai&model=gpt-4o');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.breakdown).toBeDefined();
+      expect(json.data.breakdown.systemPromptTokens).toBe(1200);
+      expect(json.data.breakdown.messageHistoryTokens).toBe(800);
+      expect(json.data.breakdown.sections).toHaveLength(2);
+      expect(mockGetContextBreakdown).toHaveBeenCalledWith('openai', 'gpt-4o', undefined);
+    });
+
+    it('returns null breakdown when no cached agent exists', async () => {
+      mockGetContextBreakdown.mockReturnValueOnce(null);
+
+      const res = await app.request('/api/context-detail?provider=openai&model=gpt-4o');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.breakdown).toBeNull();
+    });
+
+    it('uses defaults when provider/model not specified', async () => {
+      const res = await app.request('/api/context-detail');
+
+      expect(res.status).toBe(200);
+      expect(mockGetDefaultProvider).toHaveBeenCalled();
+    });
+  });
+
+  // ========================================================================
+  // POST /compact - Context compaction
+  // ========================================================================
+
+  describe('POST /api/compact', () => {
+    it('compacts context and returns result', async () => {
+      const res = await app.request('/api/compact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'openai', model: 'gpt-4o', keepRecentMessages: 4 }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.compacted).toBe(true);
+      expect(json.data.removedMessages).toBe(8);
+      expect(json.data.newTokenEstimate).toBe(450);
+      expect(mockCompactContext).toHaveBeenCalledWith('openai', 'gpt-4o', 4);
+    });
+
+    it('uses default keepRecentMessages of 6', async () => {
+      const res = await app.request('/api/compact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'anthropic', model: 'claude-3' }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockCompactContext).toHaveBeenCalledWith('anthropic', 'claude-3', 6);
+    });
+
+    it('uses provider/model defaults when not specified', async () => {
+      const res = await app.request('/api/compact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockGetDefaultProvider).toHaveBeenCalled();
+    });
+
+    it('returns 500 on compaction error', async () => {
+      mockCompactContext.mockRejectedValueOnce(new Error('Agent not found'));
+
+      const res = await app.request('/api/compact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'openai', model: 'gpt-4o' }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.message).toContain('Agent not found');
     });
   });
 });

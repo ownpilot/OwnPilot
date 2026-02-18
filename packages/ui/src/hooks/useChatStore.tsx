@@ -218,13 +218,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             ...(directTools?.length && { directTools }),
             // Send tool catalog only on the first message of a new chat
             ...(currentMessages.length === 0 && !isRetry && { includeToolList: true }),
-            history: currentMessages
-              .filter((m) => !m.isError)
-              .slice(-10)
-              .map((m) => ({
-                role: m.role,
-                content: m.content,
-              })),
+            // Agent maintains its own conversation memory — only send count for logging
+            historyLength: currentMessages.filter((m) => !m.isError).length,
           }),
           signal: controller.signal,
         });
@@ -298,11 +293,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                       suggestions: event.data.suggestions as ChatResponse['suggestions'],
                       memories: event.data.memories as ChatResponse['memories'],
                     };
-                    // Update session context info
+                    // Update session context info (merge cachedTokens from usage)
                     if (event.data.session) {
                       const s = event.data.session as SessionInfo;
+                      const usage = event.data.usage as { cachedTokens?: number } | undefined;
                       setSessionId(s.sessionId);
-                      setSessionInfo(s);
+                      setSessionInfo(usage?.cachedTokens != null ? { ...s, cachedTokens: usage.cachedTokens } : s);
                     }
                   }
                   break;

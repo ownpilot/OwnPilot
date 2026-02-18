@@ -60,7 +60,30 @@ export async function buildEnhancedSystemPrompt(
   const maxMemories = options.maxMemories ?? 10;
   const maxGoals = options.maxGoals ?? 5;
 
-  const sections: string[] = [basePrompt];
+  // Strip previously injected sections to prevent accumulation.
+  // The context-injection middleware calls this function on every request,
+  // passing the agent's current systemPrompt which already contains sections
+  // from the previous invocation. Without stripping, memories/goals/autonomy
+  // sections duplicate on each request, bloating the prompt indefinitely.
+  const injectedHeaders = [
+    '\n---\n## User Context (from memory)',
+    '\n---\n## Active Goals',
+    '\n---\n## Available Data Resources',
+    '\n---\n## Autonomy Level:',
+  ];
+  let cleanPrompt = basePrompt;
+  let earliestIndex = cleanPrompt.length;
+  for (const header of injectedHeaders) {
+    const idx = cleanPrompt.indexOf(header);
+    if (idx >= 0 && idx < earliestIndex) {
+      earliestIndex = idx;
+    }
+  }
+  if (earliestIndex < cleanPrompt.length) {
+    cleanPrompt = cleanPrompt.slice(0, earliestIndex);
+  }
+
+  const sections: string[] = [cleanPrompt];
   let memoriesUsed = 0;
   let goalsUsed = 0;
 

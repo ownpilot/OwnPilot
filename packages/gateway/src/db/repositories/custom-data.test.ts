@@ -950,6 +950,54 @@ describe('CustomDataRepository', () => {
   });
 
   // =========================================================================
+  // listTablesWithCounts
+  // =========================================================================
+
+  describe('listTablesWithCounts', () => {
+    it('should return tables with record counts', async () => {
+      mockAdapter.query.mockResolvedValueOnce([
+        { ...makeSchemaRow({ id: 'tbl-1', name: 'contacts' }), record_count: '10' },
+        { ...makeSchemaRow({ id: 'tbl-2', name: 'orders' }), record_count: '25' },
+      ]);
+
+      const result = await repo.listTablesWithCounts();
+
+      expect(result).toHaveLength(2);
+      expect(result[0]!.id).toBe('tbl-1');
+      expect(result[0]!.recordCount).toBe(10);
+      expect(result[1]!.id).toBe('tbl-2');
+      expect(result[1]!.recordCount).toBe(25);
+    });
+
+    it('should return empty array when no tables exist', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      expect(await repo.listTablesWithCounts()).toEqual([]);
+    });
+
+    it('should use LEFT JOIN with GROUP BY in SQL', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.listTablesWithCounts();
+
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('LEFT JOIN');
+      expect(sql).toContain('GROUP BY');
+      expect(sql).toContain('COUNT');
+    });
+
+    it('should return 0 count for tables with no records', async () => {
+      mockAdapter.query.mockResolvedValueOnce([
+        { ...makeSchemaRow(), record_count: '0' },
+      ]);
+
+      const result = await repo.listTablesWithCounts();
+
+      expect(result[0]!.recordCount).toBe(0);
+    });
+  });
+
+  // =========================================================================
   // Factory
   // =========================================================================
 

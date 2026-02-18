@@ -64,6 +64,11 @@ packages/gateway/workspace/
 # Old tool artifacts
 .serena/
 
+# Data analysis artifacts (not part of the codebase)
+packages/gateway/*.py
+packages/gateway/*.csv
+packages/gateway/*.png
+
 # Debug/cache
 .cache/
 *.cache

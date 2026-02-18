@@ -1,17 +1,75 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { CodeBlock } from './CodeBlock';
+
+// =============================================================================
+// Image URL helpers
+// =============================================================================
+
+function resolveImageUrl(url: string, workspaceId?: string | null): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('data:')) return url;
+  if (workspaceId) {
+    const cleanPath = url.replace(/^[/\\]+/, '');
+    return `/api/v1/file-workspaces/${encodeURIComponent(workspaceId)}/file/${cleanPath}?raw=true`;
+  }
+  return url;
+}
+
+// =============================================================================
+// ImagePreview — inline thumbnail with lightbox expand
+// =============================================================================
+
+function ImagePreview({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  if (error) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary rounded text-text-muted dark:text-dark-text-muted">
+        [Image: {alt || src}]
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <img
+        src={src}
+        alt={alt}
+        onClick={() => setExpanded(true)}
+        onError={() => setError(true)}
+        className="inline-block max-w-sm max-h-64 rounded-lg border border-border dark:border-dark-border my-2 cursor-pointer hover:opacity-90 transition-opacity"
+        loading="lazy"
+      />
+      {expanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 cursor-pointer"
+          onClick={() => setExpanded(false)}
+        >
+          <img src={src} alt={alt} className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl" />
+        </div>
+      )}
+    </>
+  );
+}
+
+// =============================================================================
+// MarkdownContent
+// =============================================================================
 
 interface MarkdownContentProps {
   content: string;
   className?: string;
   /** Smaller code blocks for compact views (history/inbox) */
   compact?: boolean;
+  /** Workspace ID for resolving relative image paths */
+  workspaceId?: string | null;
 }
 
-export const MarkdownContent = memo(function MarkdownContent({ content, className, compact }: MarkdownContentProps) {
+export const MarkdownContent = memo(function MarkdownContent({ content, className, compact, workspaceId }: MarkdownContentProps) {
   const maxHeight = compact ? '200px' : '300px';
 
-  // Render inline elements (bold, italic, inline code, links)
+  // Render inline elements (bold, italic, inline code, links, images)
   const renderInlineElements = (text: string): (string | React.ReactElement)[] => {
     const elements: (string | React.ReactElement)[] = [];
     let remaining = text;
@@ -46,6 +104,16 @@ export const MarkdownContent = memo(function MarkdownContent({ content, classNam
         continue;
       }
 
+      // Image: ![alt](url) — must come before link pattern
+      const imageMatch = remaining.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+      if (imageMatch) {
+        const imgAlt = imageMatch[1] ?? '';
+        const imgSrc = resolveImageUrl(imageMatch[2]!, workspaceId);
+        elements.push(<ImagePreview key={key++} src={imgSrc} alt={imgAlt} />);
+        remaining = remaining.slice(imageMatch[0].length);
+        continue;
+      }
+
       // Links
       const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
       if (linkMatch) {
@@ -64,8 +132,8 @@ export const MarkdownContent = memo(function MarkdownContent({ content, classNam
         continue;
       }
 
-      // No match, add next character
-      const nextSpecial = remaining.search(/[`*\[]/);
+      // No match, advance to next special character
+      const nextSpecial = remaining.search(/[`*\[!]/);
       if (nextSpecial === -1) {
         elements.push(remaining);
         break;
@@ -130,7 +198,7 @@ export const MarkdownContent = memo(function MarkdownContent({ content, classNam
     return parts.length > 0 ? parts : <span className="whitespace-pre-wrap break-words">{text}</span>;
   };
 
-  const rendered = useMemo(() => renderContent(content), [content, compact]);
+  const rendered = useMemo(() => renderContent(content), [content, compact, workspaceId]);
 
   return (
     <div className={className}>

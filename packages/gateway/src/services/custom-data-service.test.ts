@@ -48,6 +48,7 @@ const mockRepo = {
   deleteRecord: vi.fn(),
   searchRecords: vi.fn(),
   getTableStats: vi.fn(),
+  listTablesWithCounts: vi.fn(),
   transaction: vi.fn(async <T>(fn: () => Promise<T>) => fn()),
 };
 
@@ -187,16 +188,17 @@ describe('CustomDataService', () => {
 
   describe('listTablesWithStats', () => {
     it('attaches record count to each table', async () => {
-      mockRepo.listTables.mockResolvedValue([fakeTable(), fakeTable({ id: 'tbl-2', name: 'orders' })]);
-      mockRepo.getTableStats
-        .mockResolvedValueOnce({ recordCount: 10 })
-        .mockResolvedValueOnce({ recordCount: 25 });
+      mockRepo.listTablesWithCounts.mockResolvedValue([
+        { ...fakeTable(), recordCount: 10 },
+        { ...fakeTable({ id: 'tbl-2', name: 'orders' }), recordCount: 25 },
+      ]);
 
       const result = await service.listTablesWithStats();
 
       expect(result).toHaveLength(2);
       expect(result[0]!.recordCount).toBe(10);
       expect(result[1]!.recordCount).toBe(25);
+      expect(mockRepo.listTablesWithCounts).toHaveBeenCalled();
     });
 
     it('filters by pluginId when provided', async () => {
@@ -207,12 +209,11 @@ describe('CustomDataService', () => {
 
       expect(result).toHaveLength(1);
       expect(mockRepo.getTablesByPlugin).toHaveBeenCalledWith('gmail');
-      expect(mockRepo.listTables).not.toHaveBeenCalled();
+      expect(mockRepo.listTablesWithCounts).not.toHaveBeenCalled();
     });
 
-    it('handles null stats gracefully', async () => {
-      mockRepo.listTables.mockResolvedValue([fakeTable()]);
-      mockRepo.getTableStats.mockResolvedValue(null);
+    it('returns zero count when no records exist', async () => {
+      mockRepo.listTablesWithCounts.mockResolvedValue([{ ...fakeTable(), recordCount: 0 }]);
 
       const result = await service.listTablesWithStats();
       expect(result[0]!.recordCount).toBe(0);

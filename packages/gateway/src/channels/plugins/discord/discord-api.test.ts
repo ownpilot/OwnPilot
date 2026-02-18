@@ -36,7 +36,7 @@ vi.mock('../../../services/log.js', () => ({
 // Mock discord.js
 const mockSend = vi.fn(async () => ({ id: 'sent-msg-001' }));
 const mockSendTyping = vi.fn(async () => undefined);
-const mockFetchMessages = vi.fn();
+const _mockFetchMessages = vi.fn();
 const mockFetchChannel = vi.fn();
 const mockLogin = vi.fn(async () => 'token');
 const mockDestroy = vi.fn();

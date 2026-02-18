@@ -12,6 +12,7 @@ import { createMemoriesRepository } from '../db/repositories/memories.js';
 import {
   EMBEDDING_QUEUE_BATCH_SIZE,
   EMBEDDING_QUEUE_INTERVAL_MS,
+  EMBEDDING_QUEUE_MAX_SIZE,
 } from '../config/defaults.js';
 
 const log = getLog('EmbeddingQueue');
@@ -36,6 +37,7 @@ const MAX_PRIORITY = 20;
 
 export class EmbeddingQueue {
   private queue: QueueItem[] = [];
+  private queuedIds = new Set<string>(); // O(1) dedup lookup
   private processing = false;
   private timer: ReturnType<typeof setInterval> | null = null;
   private running = false;
@@ -70,9 +72,13 @@ export class EmbeddingQueue {
    * Add a memory to the embedding queue.
    */
   enqueue(memoryId: string, userId: string, content: string, priority = 5): void {
-    // Deduplicate: don't add if already queued
-    if (this.queue.some(item => item.memoryId === memoryId)) return;
+    // Deduplicate: O(1) check via Set
+    if (this.queuedIds.has(memoryId)) return;
 
+    // Cap queue size to prevent unbounded growth
+    if (this.queue.length >= EMBEDDING_QUEUE_MAX_SIZE) return;
+
+    this.queuedIds.add(memoryId);
     this.queue.push({ memoryId, userId, content, priority });
 
     // Sort by priority (lower number = higher priority)
@@ -115,8 +121,9 @@ export class EmbeddingQueue {
         return;
       }
 
-      // Take a batch
+      // Take a batch (remove from dedup Set as well)
       const batch = this.queue.splice(0, EMBEDDING_QUEUE_BATCH_SIZE);
+      for (const item of batch) this.queuedIds.delete(item.memoryId);
       const texts = batch.map(item => item.content);
 
       // Generate embeddings in batch

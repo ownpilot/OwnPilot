@@ -6,6 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EmbeddingQueue } from './embedding-queue.js';
+import { EMBEDDING_QUEUE_MAX_SIZE } from '../config/defaults.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -81,6 +82,28 @@ describe('EmbeddingQueue', () => {
       queue.enqueue('mem-high', 'user-1', 'high priority', 1);
       queue.enqueue('mem-mid', 'user-1', 'mid priority', 5);
       expect(queue.getStats().queueSize).toBe(3);
+    });
+
+    it('does not exceed EMBEDDING_QUEUE_MAX_SIZE', () => {
+      for (let i = 0; i < EMBEDDING_QUEUE_MAX_SIZE + 10; i++) {
+        queue.enqueue(`mem-${i}`, 'user-1', `content ${i}`);
+      }
+      expect(queue.getStats().queueSize).toBe(EMBEDDING_QUEUE_MAX_SIZE);
+    });
+
+    it('allows re-enqueue after item is processed (dedup set is updated)', async () => {
+      // Fill and process the item
+      queue.enqueue('mem-1', 'user-1', 'content');
+      expect(queue.getStats().queueSize).toBe(1);
+
+      // Start processing (drains the queue)
+      mockGenerateBatch.mockResolvedValueOnce([{ embedding: [0.1, 0.2], cached: false }]);
+      queue.start();
+      await vi.advanceTimersByTimeAsync(6000); // Past the interval
+
+      // After processing, should allow re-enqueue of same ID
+      queue.enqueue('mem-1', 'user-1', 'updated content');
+      expect(queue.getStats().queueSize).toBe(1);
     });
   });
 

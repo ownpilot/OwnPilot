@@ -166,6 +166,56 @@ describe('ConversationMemory', () => {
       const messages = memory.getContextMessages('nonexistent');
       expect(messages).toHaveLength(0);
     });
+
+    it('truncates tool results in messages older than the last 4', () => {
+      const conversation = memory.create();
+      const longContent = 'x'.repeat(3000); // exceeds 2000 char limit
+
+      // Add 5 messages so the first one is outside the 4-message safe zone
+      memory.addUserMessage(conversation.id, 'msg 1');
+      memory.addToolResults(conversation.id, [{ toolCallId: 'tc1', content: longContent }]);
+      memory.addUserMessage(conversation.id, 'msg 2');
+      memory.addUserMessage(conversation.id, 'msg 3');
+      memory.addUserMessage(conversation.id, 'msg 4');
+      memory.addUserMessage(conversation.id, 'msg 5');
+
+      const messages = memory.getContextMessages(conversation.id);
+      const toolMsg = messages.find(m => m.role === 'tool');
+      expect(toolMsg).toBeDefined();
+      expect(toolMsg!.toolResults![0]!.content).toContain('[...truncated]');
+      expect(toolMsg!.toolResults![0]!.content.length).toBeLessThan(longContent.length);
+    });
+
+    it('does NOT truncate tool results in the last 4 messages', () => {
+      const conversation = memory.create();
+      const longContent = 'y'.repeat(3000);
+
+      // Add exactly 4 messages — all within safe zone
+      memory.addUserMessage(conversation.id, 'msg 1');
+      memory.addToolResults(conversation.id, [{ toolCallId: 'tc1', content: longContent }]);
+      memory.addUserMessage(conversation.id, 'msg 2');
+      memory.addUserMessage(conversation.id, 'msg 3');
+
+      const messages = memory.getContextMessages(conversation.id);
+      const toolMsg = messages.find(m => m.role === 'tool');
+      expect(toolMsg).toBeDefined();
+      expect(toolMsg!.toolResults![0]!.content).toBe(longContent); // intact
+    });
+
+    it('does NOT truncate tool results within 2000 chars', () => {
+      const conversation = memory.create();
+      const shortContent = 'z'.repeat(100);
+
+      // Add 6 messages so first tool result is outside safe zone
+      for (let i = 0; i < 4; i++) memory.addUserMessage(conversation.id, `msg ${i}`);
+      memory.addToolResults(conversation.id, [{ toolCallId: 'tc1', content: shortContent }]);
+      memory.addUserMessage(conversation.id, 'msg 5');
+      memory.addUserMessage(conversation.id, 'msg 6');
+
+      const messages = memory.getContextMessages(conversation.id);
+      const toolMsg = messages.find(m => m.role === 'tool');
+      expect(toolMsg!.toolResults![0]!.content).toBe(shortContent); // not truncated
+    });
   });
 
   describe('getFullContext', () => {

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { Calendar, Plus, Trash2, Clock, MapPin } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
-import { useModalClose } from '../hooks';
+import { useModalClose, useDebouncedCallback } from '../hooks';
 import { SkeletonCard } from '../components/Skeleton';
 import { calendarApi } from '../api';
 import type { CalendarEvent } from '../api';
@@ -27,8 +27,6 @@ export function CalendarPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const fetchEvents = useCallback(async () => {
     try {
       const startDate = getViewStartDate(selectedDate, viewMode);
@@ -52,16 +50,13 @@ export function CalendarPage() {
     fetchEvents();
   }, [fetchEvents]);
 
-  const debouncedRefresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchEvents(), 2000);
-  }, [fetchEvents]);
+  const debouncedRefresh = useDebouncedCallback(() => fetchEvents(), 2000);
 
   useEffect(() => {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'calendar') debouncedRefresh();
     });
-    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => { unsub(); };
   }, [subscribe, debouncedRefresh]);
 
   const handleDelete = async (eventId: string) => {

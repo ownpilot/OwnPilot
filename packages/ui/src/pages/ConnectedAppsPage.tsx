@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -177,6 +177,12 @@ export function ConnectedAppsPage() {
   const [connectingApp, setConnectingApp] = useState<string | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const pollTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Clear poll timers on unmount to prevent state updates on unmounted component
+  useEffect(() => {
+    return () => { pollTimersRef.current.forEach(clearTimeout); };
+  }, []);
 
   // =========================================================================
   // Data loading — connections and apps load independently
@@ -233,8 +239,8 @@ export function ConnectedAppsPage() {
       if (result.redirectUrl) {
         window.open(result.redirectUrl, '_blank', 'width=600,height=700');
         toast.success(`OAuth window opened for ${appSlug}. Complete authorization to connect.`);
-        setTimeout(() => loadData(), 5000);
-        setTimeout(() => loadData(), 15000);
+        pollTimersRef.current.push(setTimeout(() => loadData(), 5000));
+        pollTimersRef.current.push(setTimeout(() => loadData(), 15000));
       } else {
         toast.success(`${appSlug} connected (status: ${result.status})`);
         await loadData();

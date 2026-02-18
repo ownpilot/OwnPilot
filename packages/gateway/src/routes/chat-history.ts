@@ -9,8 +9,11 @@ import { Hono } from 'hono';
 import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { resetChatAgentContext, clearAllChatAgentCaches, getDefaultModel, getContextBreakdown, compactContext } from './agents.js';
+import { promptInitializedConversations } from './chat.js';
+import { clearInjectionCache } from '../services/middleware/context-injection.js';
 import { getDefaultProvider } from './settings.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
+import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { parseLimit, parseOffset } from '../utils/index.js';
 
 export const chatHistoryRoutes = new Hono();
@@ -331,8 +334,10 @@ chatHistoryRoutes.post('/reset-context', async (c) => {
   }
 
   if (body.clearAll) {
-    // Clear all cached chat agents
+    // Clear all cached chat agents + prompt initialization tracking
     const count = clearAllChatAgentCaches();
+    promptInitializedConversations.clear();
+    clearInjectionCache();
 
     return apiResponse(c, {
       cleared: count,
@@ -345,6 +350,9 @@ chatHistoryRoutes.post('/reset-context', async (c) => {
   const model = body.model ?? await getDefaultModel(provider) ?? 'gpt-4o';
 
   const result = resetChatAgentContext(provider, model);
+  // Clear prompt tracking for the old conversation (new one will re-initialize)
+  promptInitializedConversations.clear();
+  clearInjectionCache();
 
   return apiResponse(c, {
     reset: result.reset,
@@ -369,7 +377,16 @@ chatHistoryRoutes.get('/context-detail', async (c) => {
   const provider = c.req.query('provider') ?? await getDefaultProvider() ?? 'openai';
   const model = c.req.query('model') ?? await getDefaultModel(provider) ?? 'gpt-4o';
 
-  const breakdown = getContextBreakdown(provider, model);
+  // Use user-configured context window from AI Models settings if available
+  let userContextWindow: number | undefined;
+  try {
+    const userConfig = await modelConfigsRepo.getModel(getUserId(c), provider, model);
+    userContextWindow = userConfig?.contextWindow ?? undefined;
+  } catch {
+    // Fall back to pricing defaults
+  }
+
+  const breakdown = getContextBreakdown(provider, model, userContextWindow);
   return apiResponse(c, { breakdown });
 });
 

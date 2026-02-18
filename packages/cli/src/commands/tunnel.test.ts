@@ -198,10 +198,15 @@ describe('tunnel commands', () => {
     it('should exit(1) if ngrok URL is null', async () => {
       mockListener.url.mockReturnValueOnce(undefined as unknown as string);
 
-      // This will throw internally → process.exit(1)
-      await tunnelStartNgrok({});
+      // Don't await — function may block at signal wait if the error path is somehow
+      // not taken; use vi.waitFor to assert side-effects instead.
+      const p = tunnelStartNgrok({});
+      floatingPromises.push(p.catch(() => {}));
 
-      expect(exitSpy).toHaveBeenCalledWith(1);
+      await vi.waitFor(() => {
+        expect(exitSpy).toHaveBeenCalledWith(1);
+      });
+
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('ngrok tunnel failed'),
       );

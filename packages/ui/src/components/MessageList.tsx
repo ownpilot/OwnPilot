@@ -9,9 +9,11 @@ interface MessageListProps {
   messages: Message[];
   onRetry?: () => void;
   canRetry?: boolean;
+  /** Workspace ID for resolving relative image paths */
+  workspaceId?: string | null;
 }
 
-export function MessageList({ messages, onRetry, canRetry }: MessageListProps) {
+export function MessageList({ messages, onRetry, canRetry, workspaceId }: MessageListProps) {
   return (
     <div className="space-y-6">
       {messages.map((message, index) => (
@@ -20,6 +22,7 @@ export function MessageList({ messages, onRetry, canRetry }: MessageListProps) {
           message={message}
           onRetry={onRetry}
           showRetry={canRetry && message.isError && index === messages.length - 1}
+          workspaceId={workspaceId}
         />
       ))}
     </div>
@@ -30,9 +33,10 @@ interface MessageBubbleProps {
   message: Message;
   onRetry?: () => void;
   showRetry?: boolean;
+  workspaceId?: string | null;
 }
 
-function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
+function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [toolCallsExpanded, setToolCallsExpanded] = useState(false);
@@ -89,7 +93,7 @@ function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
                   : 'bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary rounded-tl-md border border-border dark:border-dark-border'
               }`}
             >
-              <MarkdownContent content={displayContent} />
+              <MarkdownContent content={displayContent} workspaceId={workspaceId} />
             </div>
           );
         })()}
@@ -219,7 +223,7 @@ function MessageBubble({ message, onRetry, showRetry }: MessageBubbleProps) {
 
                 {toolCallsExpanded && (
                   <div className="border-t border-border dark:border-dark-border p-2">
-                    <ToolExecutionDisplay toolCalls={toolCallItems} />
+                    <ToolExecutionDisplay toolCalls={toolCallItems} workspaceId={workspaceId} />
                   </div>
                 )}
               </div>

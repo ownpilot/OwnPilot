@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "anthropic/claude-sonnet-4.6",
+      "name": "Claude-Sonnet-4.6",
+      "contextWindow": 983040,
+      "maxOutput": 128000,
+      "inputPrice": 2.6,
+      "outputPrice": 13,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-05"
+    },
+    {
       "id": "anthropic/claude-opus-4.6",
       "name": "Claude-Opus-4.6",
       "contextWindow": 983040,
@@ -25,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-04"
     },
     {
@@ -607,7 +623,7 @@
     },
     {
       "id": "xai/grok-4-fast-reasoning",
-      "name": "Grok 4 Fast Reasoning",
+      "name": "Grok-4-Fast-Reasoning",
       "contextWindow": 2000000,
       "maxOutput": 128000,
       "inputPrice": 0.2,
@@ -802,7 +818,7 @@
     },
     {
       "id": "xai/grok-4",
-      "name": "Grok 4",
+      "name": "Grok-4",
       "contextWindow": 256000,
       "maxOutput": 128000,
       "inputPrice": 3,

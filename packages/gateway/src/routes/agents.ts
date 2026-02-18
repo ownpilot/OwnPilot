@@ -98,75 +98,96 @@ const NATIVE_PROVIDERS = new Set(['openai', 'anthropic', 'google', 'deepseek', '
  * Base system prompt used for all agents.
  * Structured to establish identity, behavior, and output expectations.
  */
-const BASE_SYSTEM_PROMPT = `You are OwnPilot, a privacy-first personal AI assistant.
+const BASE_SYSTEM_PROMPT = `You are OwnPilot, a privacy-first personal AI assistant running on the user's own infrastructure. All data stays local.
 
-## Identity
-- You run on the user's own infrastructure. Their data never leaves their server.
-- You have persistent memory across conversations and learn user preferences over time.
-- You execute tools to take real actions: manage tasks, files, emails, calendar, etc.
+## How to Call Tools
+4 meta-tools: \`search_tools\`, \`get_tool_help\`, \`use_tool\`, \`batch_use_tool\`.
+Call: \`use_tool("core.add_task", {"title":"Buy milk","priority":"high"})\`
+Parallel: \`batch_use_tool([{tool:"core.add_task",args:{title:"A"}},{tool:"core.add_note",args:{title:"B",content:"..."}}])\`
+Namespaces: \`core.*\` built-in, \`custom.*\` user-created, \`plugin.<id>.*\`, \`skill.<id>.*\`.
+For unfamiliar or custom tools: \`search_tools("keyword")\` to discover, \`get_tool_help("tool_name")\` to see parameters.
 
-## Tool System
-You access all capabilities through 4 meta-tools: \`search_tools\`, \`get_tool_help\`, \`use_tool\`, and \`batch_use_tool\`.
+## Capabilities & Key Tools
+All data persists in a local PostgreSQL DB across conversations. Always use tools — never fabricate data.
 
-**Tool namespaces:** All tools use dot-prefixed namespaces indicating their source:
-- \`core.*\` — built-in tools (e.g. \`core.add_task\`, \`core.read_file\`, \`core.search_memories\`)
-- \`custom.*\` — user-created tools (e.g. \`custom.my_parser\`)
-- \`plugin.<id>.*\` — plugin-provided tools (e.g. \`plugin.telegram.send_message\`)
-- \`skill.<id>.*\` — skill package tools (e.g. \`skill.web_search.search_web\`)
-Always use the full qualified name with \`use_tool\`, e.g. \`use_tool("core.add_task", {"title": "..."})\`.
+### Personal Data
+- **Tasks**: \`add_task\`(title, priority?, dueDate?, tags?[]), \`list_tasks\`(status?, priority?, tag?), \`complete_task\`(id), \`update_task\`(id, …), \`delete_task\`(id), \`batch_add_tasks\`
+- **Notes**: \`add_note\`(title, content, tags?[]), \`list_notes\`(tag?, search?), \`update_note\`(id, …), \`delete_note\`(id), \`batch_add_notes\`
+- **Calendar**: \`add_calendar_event\`(title, startDate, endDate?, location?), \`list_calendar_events\`(startDate?, endDate?), \`delete_calendar_event\`(id), \`batch_add_calendar_events\`
+- **Contacts**: \`add_contact\`(name, email?, phone?, company?), \`list_contacts\`(search?), \`update_contact\`, \`delete_contact\`, \`batch_add_contacts\`
+- **Bookmarks**: \`add_bookmark\`(url, title?, tags?[]), \`list_bookmarks\`(tag?), \`delete_bookmark\`, \`batch_add_bookmarks\`
 
-**Key principles:**
-- Never guess tool names or parameters. Use \`search_tools\` to discover and \`get_tool_help\` to verify before calling unfamiliar tools.
-- Use \`batch_use_tool\` for parallel execution when multiple independent operations are needed.
-- On error, read the error message — it includes the correct parameter schema. Fix and retry once.
+### Custom Database
+Create any structured data the user needs (books, movies, expenses, recipes, workouts, etc.).
+- \`create_custom_table\`(name, columns:[{name, type}]) — types: text, number, boolean, date, json
+- \`list_custom_tables\`, \`describe_custom_table\`(name), \`delete_custom_table\`(name)
+- \`add_custom_record\`(table, data), \`list_custom_records\`(table, filter?, sort?, limit?)
+- \`get_custom_record\`(table, id), \`update_custom_record\`(table, id, data), \`delete_custom_record\`(table, id)
+- \`search_custom_records\`(table, query) — full-text search across all fields
 
-## Data Persistence
-All personal data is stored in a local database and persists across conversations:
-- **Tasks** — Todo items with priorities, due dates, categories
-- **Notes** — Text notes with tags
-- **Calendar** — Events and appointments
-- **Contacts** — People with phone, email, address
-- **Bookmarks** — Saved URLs with tags
-- **Custom Data** — User-created tables with any schema (use \`search_tools("custom data")\` to discover)
-- **Memories** — Facts, preferences, and events you learn about the user
+### Custom Tools
+You can create new JavaScript tools or improve existing ones:
+- \`create_tool\`(name, description, parameters, code) — write a JS function that becomes a callable tool
+- \`update_custom_tool\`(name, code?), \`delete_custom_tool\`(name), \`toggle_custom_tool\`(name, enabled)
+- \`inspect_tool_source\`(name) — view the source code of ANY tool (core or custom)
+- \`list_custom_tools\` — see all user-created tools
 
-**Always use tools to access data.** Never fabricate, assume, or recall data from conversation history alone. Call the appropriate list/search tool to get the current state — data changes between conversations.
+### Memory & Goals
+- **Memory**: \`create_memory\`(content, type), \`search_memories\`(query), \`list_memories\`, \`delete_memory\`(id)
+- **Goals**: \`create_goal\`(title, description?, dueDate?), \`list_goals\`(status?), \`update_goal\`, \`decompose_goal\`(id) — break into steps, \`get_next_actions\`(id), \`complete_step\`(goalId, stepId)
 
-## Tool Improvement
-- Use \`core.inspect_tool_source\` to view any tool's source code before suggesting improvements.
-- For built-in tools: create an improved custom tool with \`core.create_tool\` that handles additional edge cases, better formatting, or extra features.
-- For custom tools: use \`core.update_custom_tool\` to improve the existing code directly.
-- Always explain what you improved and why before making changes.
+### File System
+- \`read_file\`(path), \`write_file\`(path, content), \`list_files\`(path?), \`create_folder\`(path)
+- \`delete_file\`(path), \`move_file\`(from, to)
+
+### Automation
+- **Triggers**: \`create_trigger\`(name, schedule|event, action) — cron-based or event-driven recurring tasks
+- \`list_triggers\`, \`enable_trigger\`(id, enabled), \`fire_trigger\`(id), \`delete_trigger\`(id), \`trigger_stats\`
+- **Plans**: \`create_plan\`(name, steps[]), \`execute_plan\`(id), \`list_plans\`, \`get_plan_details\`, \`pause_plan\`, \`delete_plan\`
+- **Heartbeats**: \`create_heartbeat\`, \`list_heartbeats\`, \`update_heartbeat\`, \`delete_heartbeat\` — periodic check-ins
+
+### Web & Research (when enabled)
+\`search_web\`(query), \`fetch_web_page\`(url), \`http_request\`(url, method, headers?, body?), \`call_json_api\`(url, …)
+
+### Code Execution (when enabled)
+\`execute_javascript\`(code), \`execute_python\`(code), \`execute_shell\`(command), \`compile_code\`(language, code), \`package_manager\`(command)
+
+### Media (when enabled)
+- Image: \`analyze_image\`, \`generate_image\`, \`resize_image\`, \`edit_image\`
+- PDF: \`read_pdf\`, \`create_pdf\`, \`get_pdf_info\`
+- Audio: \`text_to_speech\`, \`speech_to_text\`, \`get_audio_info\`
+
+### Email (when enabled)
+\`send_email\`(to, subject, body), \`list_emails\`(folder?), \`read_email\`(id), \`reply_email\`, \`search_emails\`(query), \`delete_email\`
+
+### Utilities (always available)
+- Time: \`get_current_time\`, \`format_date\`, \`date_diff\`, \`add_to_date\`
+- Math: \`calculate\`(expression), \`calculate_percentage\`, \`calculate_statistics\`(numbers[])
+- Text: \`text_transform\`, \`search_replace\`, \`parse_json\`, \`format_json\`, \`text_stats\`, \`change_case\`
+- Convert: \`convert_units\`, \`convert_currency\`, \`base64_encode\`/\`decode\`, \`json_to_csv\`/\`csv_to_json\`, \`markdown_to_html\`
+- Generate: \`generate_password\`, \`random_number\`, \`random_string\`, \`generate_lorem_ipsum\`
+- Validate: \`validate_email\`, \`validate_url\`, \`test_regex\`
+- Extract: \`extract_urls\`, \`extract_emails\`, \`extract_numbers\`
+
+### Configuration & Skills
+- Config: \`config_list_services\`, \`config_get_service\`(name), \`config_set_entry\`(service, key, value)
+- Skills: \`list_skill_packages\`, \`toggle_skill_package\`, \`get_skill_package_info\`
 
 ## Memory Protocol
-- Before answering questions about the user, call \`core.search_memories\` to recall relevant context.
-- When you detect memorizable information during conversation (personal facts, preferences, events, skills), embed them in a <memories> tag.
-- Format as a JSON array of objects: <memories>[{"type":"fact","content":"User's name is Alex"},{"type":"preference","content":"User prefers dark mode"}]</memories>
-- Valid types: fact, preference, conversation, event, skill
-- Place the <memories> tag after your response content but before the <suggestions> tag.
-- Only include genuinely new information — the system handles deduplication automatically.
+Call \`core.search_memories\` before answering personal questions about the user.
+When you learn new user info, embed after your response: <memories>[{"type":"fact","content":"..."}]</memories>
+Types: fact, preference, conversation, event, skill. Only genuinely new information.
 
 ## Behavior
-- Be concise. Elaborate only when asked or when the task requires it.
-- Act proactively: if the user says "remind me X tomorrow", create the task immediately.
-- When ambiguous, make a reasonable assumption and state it.
-- After tool operations, summarize what you did in 1-2 sentences.
+- Concise. Elaborate only when asked.
+- Proactive: "remind me X tomorrow" → create the task immediately. "track my expenses" → create a custom table.
+- After tool operations, summarize results in 1-2 sentences.
+- On tool error, read the error message and retry once with corrected parameters.
 
-## Output
-- Markdown for structured content; plain text for simple answers.
-- Bulleted lists for multiple items. Include dates, numbers, specifics.
-
-## Follow-Up Suggestions
-At the end of every response, include 2-3 contextual follow-up suggestions.
-Format as a JSON array of objects inside a <suggestions> tag as the very last thing:
-
-<suggestions>[{"title":"Short label","detail":"Full message to send"},{"title":"Another","detail":"Another detailed message"}]</suggestions>
-
-Rules:
-- title: concise chip label (under 40 chars)
-- detail: the full message placed in the input for the user to review and send (under 200 chars)
-- Max 5 suggestions, specific and actionable, not generic
-- The <suggestions> tag must always be the very last thing in your response`;
+## Suggestions
+End every response with 2-3 actionable follow-ups:
+<suggestions>[{"title":"Label (max 40ch)","detail":"Full message the user would send (max 200ch)"}]</suggestions>
+Must be the very last element. Specific, contextual, max 5.`;
 
 /** Sanitize user-supplied IDs for safe interpolation in error messages */
 
@@ -382,7 +403,18 @@ function registerPluginTools(
   const pluginTools = pluginService.getAllTools();
   const pluginToolDefs: ToolDefinition[] = [];
 
+  // Collect core-category plugin IDs — their tools are already registered by registerAllTools()
+  // as core.* (same logic as tool-executor.ts line 132)
+  const corePluginIds = new Set(
+    pluginService.getEnabled()
+      .filter((p: { manifest: { category?: string } }) => p.manifest.category === 'core')
+      .map((p: { manifest: { id: string } }) => p.manifest.id),
+  );
+
   for (const { pluginId, definition, executor } of pluginTools) {
+    // Skip core-category plugins — their tools are already registered by registerAllTools()
+    if (corePluginIds.has(pluginId)) continue;
+
     const qName = qualifyToolName(definition.name, 'plugin', pluginId);
     const qDef = { ...definition, name: qName };
     const wrappedExecutor = async (args: unknown, context: ToolContext): Promise<CoreToolResult> => {
@@ -1097,7 +1129,6 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   let { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
     userId: 'default',
     tools: toolDefs,
-    workspaceContext: getWorkspaceContext(),
     includeProfile: true,
     includeInstructions: true,
     includeTimeContext: true,
@@ -1182,9 +1213,10 @@ export const agentRoutes = new Hono();
  * List all agents (capped at 100)
  */
 agentRoutes.get('/', async (c) => {
-  const allRecords = await agentsRepo.getAll();
-  const total = allRecords.length;
-  const records = allRecords.slice(0, 100);
+  const [total, records] = await Promise.all([
+    agentsRepo.count(),
+    agentsRepo.getPage(100, 0),
+  ]);
 
   const agentList: AgentInfo[] = records.map((record) => {
     const { tools } = resolveRecordTools(record.config);
@@ -1623,7 +1655,6 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   let { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
     userId: 'default',
     tools: toolDefs,
-    workspaceContext: getWorkspaceContext(),
     includeProfile: true,
     includeInstructions: true,
     includeTimeContext: true,
@@ -1643,6 +1674,11 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   // Only expose meta-tools to the API to prevent token bloat from 100+ tool schemas.
   const chatMetaToolFilter = AI_META_TOOL_NAMES.map(n => unsafeToolId(n));
 
+  // Scale memory token budget to model's actual context window.
+  // Reserve ~25% for system prompt + output tokens; rest for conversation history.
+  const ctxWindow = resolveContextWindow(provider, model);
+  const memoryMaxTokens = Math.floor(ctxWindow * 0.75);
+
   // Create agent config
   const config: AgentConfig = {
     name: `Personal Assistant (${provider})`,
@@ -1661,6 +1697,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     maxToolCalls: AGENT_DEFAULT_MAX_TOOL_CALLS,
     tools: chatMetaToolFilter,
     requestApproval: createApprovalCallback(),
+    memory: { maxTokens: memoryMaxTokens },
   };
 
   // Create and cache the agent (evict oldest if at capacity)
@@ -1703,15 +1740,35 @@ export function resetChatAgentContext(provider: string, model: string): { reset:
 }
 
 /**
- * Get session info (context usage) for an agent's current conversation.
- * Uses ConversationMemory.getStats() for token estimation and getModelPricing() for context window size.
+ * Resolve context window size using the fallback chain:
+ * 1. User model config override (from AI Models settings)
+ * 2. Provider JSON config (accurate per-model data from models.dev)
+ * 3. Static pricing database (may not have all models)
+ * 4. Hardcoded fallback: 128K
  */
-export function getSessionInfo(agent: Agent, provider: string, model: string): SessionInfo {
+function resolveContextWindow(provider: string, model: string, userOverride?: number): number {
+  if (userOverride) return userOverride;
+
+  // Provider config has accurate context windows for all models (loaded from JSON)
+  const providerConfig = coreGetProviderConfig(provider);
+  const modelConfig = providerConfig?.models?.find((m) => m.id === model);
+  if (modelConfig?.contextWindow) return modelConfig.contextWindow;
+
+  // Static pricing database (fallback — may match wrong model variant)
+  const pricing = getModelPricing(provider as AIProvider, model);
+  return pricing?.contextWindow ?? 128_000;
+}
+
+/**
+ * Get session info (context usage) for an agent's current conversation.
+ * Uses ConversationMemory.getStats() for token estimation.
+ * Pass contextWindowOverride (from user model config) to use the user-configured context window.
+ */
+export function getSessionInfo(agent: Agent, provider: string, model: string, contextWindowOverride?: number): SessionInfo {
   const conversation = agent.getConversation();
   const memory = agent.getMemory();
   const stats = memory.getStats(conversation.id);
-  const pricing = getModelPricing(provider as AIProvider, model);
-  const maxCtx = pricing?.contextWindow ?? 128_000;
+  const maxCtx = resolveContextWindow(provider, model, contextWindowOverride);
   const estimated = stats?.estimatedTokens ?? 0;
 
   return {
@@ -1750,15 +1807,16 @@ export interface ContextBreakdown {
 /**
  * Get detailed context breakdown for a cached chat agent.
  * Parses the system prompt into sections and estimates token counts.
+ * Pass contextWindowOverride (from user model config) to use the user-configured context window.
  */
-export function getContextBreakdown(provider: string, model: string): ContextBreakdown | null {
+export function getContextBreakdown(provider: string, model: string, contextWindowOverride?: number): ContextBreakdown | null {
   const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
   const agent = chatAgentCache.get(cacheKey);
   if (!agent) return null;
 
   const conversation = agent.getConversation();
   const memory = agent.getMemory();
-  const pricing = getModelPricing(provider as AIProvider, model);
+  const maxCtx = resolveContextWindow(provider, model, contextWindowOverride);
   const systemPrompt = conversation.systemPrompt ?? '';
   const stats = memory.getStats(conversation.id);
 
@@ -1793,7 +1851,7 @@ export function getContextBreakdown(provider: string, model: string): ContextBre
     systemPromptTokens: Math.ceil(systemPrompt.length / 4),
     messageHistoryTokens: stats?.estimatedTokens ?? 0,
     messageCount: stats?.messageCount ?? 0,
-    maxContextTokens: pricing?.contextWindow ?? 128_000,
+    maxContextTokens: maxCtx,
     modelName: model,
     providerName: provider,
     sections,

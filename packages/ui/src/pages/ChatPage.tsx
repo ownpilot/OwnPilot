@@ -37,6 +37,7 @@ export function ChatPage() {
     suggestions,
     extractedMemories,
     pendingApproval,
+    sessionId,
     sessionInfo,
     sendMessage,
     retryLastMessage,
@@ -381,13 +382,18 @@ export function ChatPage() {
         </button>
       </header>
 
-      {/* Session context bar */}
-      <ContextBar sessionInfo={sessionInfo} onNewSession={handleNewChat} onShowDetail={() => setShowContextDetail(true)} />
+      {/* Session context bar — visible immediately, even before first message */}
+      <ContextBar
+        sessionInfo={sessionInfo}
+        defaultMaxTokens={models.find(m => m.id === model && m.provider === provider)?.contextWindow}
+        onNewSession={handleNewChat}
+        onShowDetail={() => setShowContextDetail(true)}
+      />
 
       {/* Context detail modal */}
-      {showContextDetail && sessionInfo && (
+      {showContextDetail && (
         <ContextDetailModal
-          sessionInfo={sessionInfo}
+          sessionInfo={sessionInfo ?? { sessionId: '', messageCount: 0, estimatedTokens: 0, maxContextTokens: models.find(m => m.id === model && m.provider === provider)?.contextWindow ?? 128_000, contextFillPercent: 0 }}
           provider={provider}
           model={model}
           onClose={() => setShowContextDetail(false)}
@@ -445,27 +451,31 @@ export function ChatPage() {
                 </>
               )}
 
-              {/* Example prompts organized by category */}
-              <div className="space-y-4 text-left">
-                {/* General */}
-                <div>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">General</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {[
-                      'What can you help me with?',
-                      'Tell me about your capabilities',
-                    ].map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        onClick={() => sendMessage(suggestion)}
-                        className="px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary rounded-full hover:bg-primary hover:text-white transition-colors"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              {/* Suggestion cards grid */}
+              <div className="grid grid-cols-2 gap-2 max-w-lg mx-auto">
+                {[
+                  { icon: '💡', label: 'Brainstorm ideas', prompt: 'Help me brainstorm creative ideas for a weekend side project' },
+                  { icon: '📝', label: 'Write an email', prompt: 'Help me write a professional email to follow up after a meeting' },
+                  { icon: '📊', label: 'Analyze data', prompt: 'I have some data I need help analyzing. What formats can you work with?' },
+                  { icon: '🔍', label: 'Research a topic', prompt: 'Search the web for the latest developments in AI agents and give me a summary' },
+                  { icon: '💻', label: 'Write code', prompt: 'Write a Python script that reads a CSV file and generates a summary report with statistics' },
+                  { icon: '🌐', label: 'Translate text', prompt: 'Translate the following text to English, French, and German: "Teknoloji hayatımızı her gün biraz daha kolaylaştırıyor."' },
+                  { icon: '📅', label: 'Plan my day', prompt: 'Help me create a structured daily plan. I have meetings at 10am and 2pm, need to exercise, and want to read for 30 minutes.' },
+                  { icon: '📖', label: 'Summarize text', prompt: 'I\'ll paste a long article. Please summarize it in 3-5 bullet points highlighting the key takeaways.' },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={() => sendMessage(item.prompt)}
+                    className="flex items-center gap-2.5 px-3 py-2.5 text-left rounded-xl border border-border dark:border-dark-border hover:border-primary/40 dark:hover:border-primary/40 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-all group"
+                  >
+                    <span className="text-base shrink-0">{item.icon}</span>
+                    <span className="text-sm text-text-secondary dark:text-dark-text-secondary group-hover:text-text-primary dark:group-hover:text-dark-text-primary transition-colors">{item.label}</span>
+                  </button>
+                ))}
+              </div>
 
+              {/* Quick-action pills */}
+              <div className="space-y-3 mt-5 max-w-lg mx-auto">
                 {/* Code Execution */}
                 <div>
                   <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">Code Execution (Docker sandbox)</p>
@@ -492,7 +502,7 @@ export function ChatPage() {
                   <div className="flex flex-wrap gap-2 justify-center">
                     {[
                       { label: 'Web Search', prompt: 'Search the web for the latest news about AI developments' },
-                      { label: 'Weather', prompt: 'What is the current weather in Istanbul?' },
+                      { label: 'Weather', prompt: 'What is the current weather in my city?' },
                       { label: 'Calculator', prompt: 'Calculate: (15 * 27) + (sqrt(144) / 3) - 18^2' },
                     ].map((item) => (
                       <button
@@ -514,6 +524,7 @@ export function ChatPage() {
               messages={messages}
               onRetry={retryLastMessage}
               canRetry={!!lastFailedMessage && !isLoading}
+              workspaceId={workspaceId || sessionId}
             />
 
             {/* Streaming content and progress */}

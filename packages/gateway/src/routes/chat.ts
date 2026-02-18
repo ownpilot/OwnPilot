@@ -15,6 +15,7 @@ import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, ge
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
+import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import type { AIProvider } from '@ownpilot/core';
 import {
   buildEnhancedSystemPrompt,
@@ -45,6 +46,36 @@ import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.
 import { getLog } from '../services/log.js';
 
 const log = getLog('Chat');
+
+/** Add value to a Set, evicting the oldest entry when at capacity (insertion-order LRU). */
+function boundedSetAdd<T>(set: Set<T>, value: T, maxSize: number): void {
+  if (set.size >= maxSize) {
+    set.delete(set.values().next().value!);
+  }
+  set.add(value);
+}
+
+/** Add key-value pair to a Map, evicting the oldest entry when at capacity. */
+function boundedMapSet<K, V>(map: Map<K, V>, key: K, value: V, maxSize: number): void {
+  if (!map.has(key) && map.size >= maxSize) {
+    map.delete(map.keys().next().value!);
+  }
+  map.set(key, value);
+}
+
+/**
+ * Tracks which conversation IDs have had their system prompt fully initialized
+ * (workspace, execution, tool catalog). Skip redundant rebuilds on subsequent messages.
+ * Cleared on new session / agent cache eviction.
+ */
+export const promptInitializedConversations = new Set<string>();
+
+/** Last execution permissions hash per user, to detect changes between messages */
+const lastExecPermHash = new Map<string, string>();
+
+function execPermHash(perms: ExecutionPermissions): string {
+  return `${perms.enabled}|${perms.mode}|${perms.execute_javascript}|${perms.execute_python}|${perms.execute_shell}|${perms.compile_code}|${perms.package_manager}`;
+}
 
 /**
  * Extract display-friendly tool name and args from a ToolCall.
@@ -171,51 +202,26 @@ const EXEC_CATEGORIES = ['execute_javascript', 'execute_python', 'execute_shell'
 
 function buildExecutionSystemPrompt(perms: ExecutionPermissions): string {
   if (!perms.enabled) {
-    return '\n\n## Code Execution\nCode execution is DISABLED. Do not call execute_javascript, execute_python, execute_shell, compile_code, or package_manager — they will all fail. If the user asks you to run code, explain that code execution is turned off and they can enable it in the Execution Security panel.';
+    return '\n\n## Code Execution\nCode execution is DISABLED. Do not attempt to call execution tools.';
   }
 
   const modeDesc = MODE_LABELS[perms.mode] ?? perms.mode;
 
+  // Build compact permission table: tool → Allow/Ask/Blocked
   const catLines = EXEC_CATEGORIES
-    .map(k => `- \`${k}\`: **${PERM_LABELS[perms[k]] ?? perms[k]}**`)
-    .join('\n');
-
-  const allowedTools = EXEC_CATEGORIES.filter(k => perms[k] === 'allowed' || perms[k] === 'prompt');
+    .map(k => `\`${k}\`: ${PERM_LABELS[perms[k]] ?? perms[k]}`)
+    .join(' | ');
 
   let section = `\n\n## Code Execution`;
-  section += `\nCode execution is **ENABLED**. Environment: ${modeDesc}.`;
-  section += `\n\n### How to run code`;
-  section += `\nWhen the user asks you to run, execute, test, or try code, you MUST use the appropriate execution tool via use_tool. Do NOT just explain the code — actually run it.`;
-  section += `\n\nExamples:`;
-  section += `\n- JavaScript: \`use_tool(tool_name="execute_javascript", arguments={"code": "console.log('hello')"})\``;
-  section += `\n- Python: \`use_tool(tool_name="execute_python", arguments={"code": "print('hello')"})\``;
-  section += `\n- Shell: \`use_tool(tool_name="execute_shell", arguments={"command": "echo hello"})\``;
-  section += `\n\n### Permission levels`;
-  section += `\n${catLines}`;
-
-  if (allowedTools.length > 0) {
-    section += `\n\nYou have permission to use: ${allowedTools.map(t => `\`${t}\``).join(', ')}.`;
-  }
-
-  section += `\n\n- **Allow** = runs immediately, go ahead and use it`;
-  section += `\n- **Ask** = will pause for user approval before running`;
-  section += `\n- **Blocked** = will fail, do not attempt`;
+  section += `\nENABLED (${modeDesc}). When asked to run code, use the execution tool via \`use_tool\` — don't just explain.`;
+  section += `\nPermissions: ${catLines}`;
+  section += `\nAllow = run immediately, Ask = needs user approval, Blocked = don't attempt.`;
 
   if (perms.mode === 'docker') {
-    section += '\n\nNote: compile_code and package_manager are unavailable in Docker mode (they require host access).';
+    section += '\ncompile_code and package_manager unavailable in Docker mode.';
   }
 
   return section;
-}
-
-/**
- * Short execution hint for user message (supplements system prompt).
- */
-function buildExecutionMessageHint(perms: ExecutionPermissions): string {
-  if (!perms.enabled) return '';
-  const allowed = EXEC_CATEGORIES.filter(k => perms[k] === 'allowed' || perms[k] === 'prompt');
-  if (allowed.length === 0) return '';
-  return `\n[Code execution: ON. Available tools: ${allowed.join(', ')}]`;
 }
 
 /**
@@ -329,12 +335,13 @@ interface StreamingConfig {
   provider: string;
   model: string;
   historyLength: number;
+  contextWindowOverride?: number;
 }
 
 /** Accumulated state from streaming, available after stream completes. */
 interface StreamState {
   streamedContent: string;
-  lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+  lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number; cachedTokens?: number } | undefined;
   traceToolCalls: Array<{
     name: string;
     arguments?: Record<string, unknown>;
@@ -380,6 +387,7 @@ function createStreamCallbacks(config: StreamingConfig): { callbacks: StreamCall
               promptTokens: chunk.usage.promptTokens,
               completionTokens: chunk.usage.completionTokens,
               totalTokens: chunk.usage.totalTokens,
+              ...(chunk.usage.cachedTokens != null && { cachedTokens: chunk.usage.cachedTokens }),
             }
           : undefined,
       };
@@ -429,7 +437,10 @@ function createStreamCallbacks(config: StreamingConfig): { callbacks: StreamCall
             finishReason: chunk.finishReason,
           },
         };
-        data.session = getSessionInfo(config.agent, config.provider, config.model);
+        data.session = {
+          ...getSessionInfo(config.agent, config.provider, config.model, config.contextWindowOverride),
+          ...(chunk.usage?.cachedTokens != null && { cachedTokens: chunk.usage.cachedTokens }),
+        };
       }
 
       if (chunk.usage) {
@@ -437,6 +448,7 @@ function createStreamCallbacks(config: StreamingConfig): { callbacks: StreamCall
           promptTokens: chunk.usage.promptTokens,
           completionTokens: chunk.usage.completionTokens,
           totalTokens: chunk.usage.totalTokens,
+          cachedTokens: chunk.usage.cachedTokens,
         };
       }
 
@@ -610,9 +622,10 @@ async function processStreamingViaBus(
     userId: string;
     agentId: string;
     conversationId: string;
+    contextWindowOverride?: number;
   },
 ): Promise<void> {
-  const { agent, chatMessage, body, provider, model, userId, agentId, conversationId } = params;
+  const { agent, chatMessage, body, provider, model, userId, agentId, conversationId, contextWindowOverride } = params;
 
   const { callbacks, state } = createStreamCallbacks({
     sseStream,
@@ -622,7 +635,8 @@ async function processStreamingViaBus(
     agentId,
     provider,
     model,
-    historyLength: body.history?.length ?? 0,
+    historyLength: body.historyLength ?? 0,
+    contextWindowOverride,
   });
 
   // Normalize into NormalizedMessage
@@ -700,6 +714,15 @@ chatRoutes.post('/', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `No model available for provider: ${provider}. Configure a default model in Settings.` }, 400);
   }
 
+  // Look up user-configured context window from AI Models settings
+  let userContextWindow: number | undefined;
+  try {
+    const userConfig = await modelConfigsRepo.getModel(getUserId(c), provider, model);
+    userContextWindow = userConfig?.contextWindow ?? undefined;
+  } catch {
+    // Fall back to pricing defaults if DB lookup fails
+  }
+
   // Get agent based on agentId or provider/model from request
   let agent: Awaited<ReturnType<typeof getAgent>>;
 
@@ -726,73 +749,80 @@ chatRoutes.post('/', async (c) => {
     }
   }
 
-  // Set workspace directory for file operations
-  // Use session-based workspaces for isolated file storage
-  const sessionId = body.workspaceId || body.conversationId || agent.getConversation().id;
+  // ── System prompt initialization ──────────────────────────────────────────
+  // Static sections (workspace, execution, tool catalog) are injected once per
+  // conversation and skipped on subsequent messages. Only execution permissions
+  // are re-checked (cheap hash compare) in case the user changed them mid-chat.
+  const conversationId = agent.getConversation().id;
+  const isPromptInitialized = promptInitializedConversations.has(conversationId);
+  const chatUserId = getUserId(c);
+
+  // Workspace — set on every request (cheap), but prompt section only on first
+  const sessionId = body.workspaceId || body.conversationId || conversationId;
   let _sessionWorkspacePath: string | undefined;
   try {
-    // Get or create a session workspace for this chat
     const sessionWorkspace = getOrCreateSessionWorkspace(sessionId, body.agentId);
     _sessionWorkspacePath = sessionWorkspace.path;
     agent.setWorkspaceDir(sessionWorkspace.path);
 
-    // Update the system prompt with the correct workspace path
-    const currentPrompt = agent.getConversation().systemPrompt || '';
-    const wsContext = getWorkspaceContext(sessionWorkspace.path);
-
-    // Replace any existing workspace path reference or add new one
-    const workspaceInfo = `\n\n## File Operations\nYour workspace directory for file operations is: \`${wsContext.workspaceDir}\`\nWhen creating files, use relative paths (e.g., "script.py") and they will be saved in your workspace.\nFull workspace path: ${wsContext.workspaceDir}`;
-
-    // Remove any old workspace info and add new one
-    const promptWithoutOldWs = currentPrompt.replace(/\n\n## File Operations[\s\S]*?(?=\n\n## [^#]|$)/g, '');
-    const updatedPrompt = promptWithoutOldWs + workspaceInfo;
-    agent.updateSystemPrompt(updatedPrompt);
-
-    log.info(`Using session workspace: ${sessionWorkspace.id} at ${sessionWorkspace.path}`);
+    if (!isPromptInitialized) {
+      const currentPrompt = agent.getConversation().systemPrompt || '';
+      const wsContext = getWorkspaceContext(sessionWorkspace.path);
+      const workspaceInfo = `\n\n## File Operations\nWorkspace: \`${wsContext.workspaceDir}\`. Use relative paths for new files.`;
+      if (!currentPrompt.includes(workspaceInfo)) {
+        const promptWithoutOldWs = currentPrompt.replace(/\n\n## File Operations[\s\S]*?(?=\n\n## [^#]|$)/g, '');
+        agent.updateSystemPrompt(promptWithoutOldWs + workspaceInfo);
+      }
+    }
   } catch (err) {
     log.warn(`Failed to create session workspace:`, err);
-    // Continue without workspace - use global default
   }
 
-  // Load persistent execution permissions from DB (fail-safe: use all-blocked defaults)
-  let execPermissions;
+  // Execution permissions — DB query only on first message or when hash differs
+  let execPermissions: ExecutionPermissions;
   try {
-    execPermissions = await executionPermissionsRepo.get(getUserId(c));
+    execPermissions = await executionPermissionsRepo.get(chatUserId);
   } catch (err) {
     log.warn('[ExecSecurity] Failed to load permissions, using all-blocked defaults:', err);
     execPermissions = { ...DEFAULT_EXECUTION_PERMISSIONS };
   }
   agent.setExecutionPermissions(execPermissions);
-  log.info(`[ExecSecurity] Loaded permissions: enabled=${execPermissions.enabled}, mode=${execPermissions.mode}, js=${execPermissions.execute_javascript}, py=${execPermissions.execute_python}, sh=${execPermissions.execute_shell}, compile=${execPermissions.compile_code}, pkg=${execPermissions.package_manager}`);
 
-  // Inject execution context into SYSTEM PROMPT (AI treats this as core instructions)
-  {
-    const currentPrompt = agent.getConversation().systemPrompt || '';
-    // Strip old execution context section and add fresh one
-    // Match until next level-2 heading (## followed by space+non-#) or end of string
-    const promptWithoutExec = currentPrompt.replace(/\n\n## Code Execution[\s\S]*?(?=\n\n## [^#]|$)/g, '');
+  const currentHash = execPermHash(execPermissions);
+  const previousHash = lastExecPermHash.get(chatUserId);
+  if (!isPromptInitialized || currentHash !== previousHash) {
+    boundedMapSet(lastExecPermHash, chatUserId, currentHash, 200);
     const execSection = buildExecutionSystemPrompt(execPermissions);
-    agent.updateSystemPrompt(promptWithoutExec + execSection);
-    log.info(`[ExecSecurity] Injected execution context into system prompt (enabled=${execPermissions.enabled})`);
+    const currentPrompt = agent.getConversation().systemPrompt || '';
+    if (!currentPrompt.includes(execSection)) {
+      const promptWithoutExec = currentPrompt.replace(/\n\n## Code Execution[\s\S]*?(?=\n\n## [^#]|$)/g, '');
+      agent.updateSystemPrompt(promptWithoutExec + execSection);
+      log.info(`[ExecSecurity] Updated execution context (enabled=${execPermissions.enabled})`);
+    }
   }
 
-  // Build tool catalog for the first message (sent only once per chat)
-  let chatMessage = body.message;
-  if (body.includeToolList) {
+  // Tool catalog — system prompt, first message only
+  const chatMessage = body.message;
+  if (body.includeToolList && !isPromptInitialized) {
     try {
       const allToolDefs = agent.getAllToolDefinitions();
       const catalog = await buildToolCatalog(allToolDefs);
       if (catalog) {
-        chatMessage = body.message + catalog;
-        log.info('Tool context injected: custom tools/tables');
+        const currentPrompt = agent.getConversation().systemPrompt || '';
+        if (!currentPrompt.includes('## Active Custom Tools') && !currentPrompt.includes('## Custom Data Tables')) {
+          agent.updateSystemPrompt(currentPrompt + catalog);
+          log.info('Tool catalog injected into system prompt');
+        }
       }
     } catch (err) {
       log.warn('Failed to build tool catalog:', err);
     }
   }
 
-  // Add short execution hint to user message (supplements system prompt)
-  chatMessage += buildExecutionMessageHint(execPermissions);
+  // Mark prompt as initialized for this conversation
+  if (!isPromptInitialized) {
+    boundedSetAdd(promptInitializedConversations, conversationId, 1000);
+  }
 
   // Handle streaming
   if (body.stream) {
@@ -818,6 +848,7 @@ chatRoutes.post('/', async (c) => {
             userId: streamUserId,
             agentId: streamAgentId,
             conversationId,
+            contextWindowOverride: userContextWindow,
           });
         } finally {
           agent.setRequestApproval(undefined);
@@ -840,7 +871,8 @@ chatRoutes.post('/', async (c) => {
         agentId: streamAgentId,
         provider,
         model,
-        historyLength: body.history?.length ?? 0,
+        historyLength: body.historyLength ?? 0,
+        contextWindowOverride: userContextWindow,
       });
 
       // Wire real-time approval for 'prompt' mode execution
@@ -919,7 +951,7 @@ chatRoutes.post('/', async (c) => {
               provider,
               model,
               endpoint: '/api/v1/chat',
-              messageCount: (body.history?.length ?? 0) + 1,
+              messageCount: (body.historyLength ?? 0) + 1,
               streaming: true,
             },
             response: {
@@ -973,7 +1005,7 @@ chatRoutes.post('/', async (c) => {
             method: 'POST',
             requestBody: {
               message: body.message,
-              history: body.history?.length ?? 0,
+              history: body.historyLength ?? 0,
               streaming: true,
               payload: streamPayloadInfo?.payload ?? null,
             },
@@ -1055,7 +1087,7 @@ chatRoutes.post('/', async (c) => {
             }
           : undefined,
         finishReason: 'stop',
-        session: getSessionInfo(agent, provider, model),
+        session: getSessionInfo(agent, provider, model, userContextWindow),
         suggestions: busSuggestions.length > 0 ? busSuggestions : undefined,
         memories: busMemories.length > 0 ? busMemories : undefined,
         trace: {
@@ -1443,7 +1475,7 @@ chatRoutes.post('/', async (c) => {
           }
         : undefined,
       finishReason: result.value.finishReason,
-      session: getSessionInfo(agent, provider, model),
+      session: getSessionInfo(agent, provider, model, userContextWindow),
       suggestions: legacySuggestions.length > 0 ? legacySuggestions : undefined,
       memories: legacyMemories.length > 0 ? legacyMemories : undefined,
       // Include trace info for debugging
@@ -1506,7 +1538,7 @@ chatRoutes.post('/', async (c) => {
       method: 'POST',
       requestBody: {
         message: body.message,
-        history: body.history?.length ?? 0,
+        history: body.historyLength ?? 0,
         payload: payloadInfo?.payload ?? null,
       },
       responseBody: { contentLength: result.value.content.length, toolCalls: result.value.toolCalls?.length ?? 0 },

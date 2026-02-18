@@ -23,7 +23,7 @@ export const createAgentSchema = z.object({
   tools: z.array(z.string().max(100)).max(200).optional(),
   toolGroups: z.array(z.string().max(100)).max(50).optional(),
   isDefault: z.boolean().optional(),
-}).passthrough();
+});
 
 export const updateAgentSchema = createAgentSchema.partial();
 
@@ -37,11 +37,10 @@ export const chatMessageSchema = z.object({
   agentId: z.string().max(200).optional(),
   workspaceId: z.string().max(200).optional(),
   directTools: z.array(z.string().max(100)).optional(),
-  history: z.array(z.object({
-    role: z.enum(['user', 'assistant', 'system', 'tool']),
-    content: z.string(),
-  }).passthrough()).optional(),
-}).passthrough();
+  historyLength: z.number().int().min(0).optional(),
+  stream: z.boolean().optional(),
+  streamingMode: z.enum(['auto', 'always', 'never']).optional(),
+});
 
 // ─── Trigger Schemas ─────────────────────────────────────────────
 
@@ -53,7 +52,7 @@ export const createTriggerSchema = z.object({
   priority: z.number().int().min(0).max(100).optional(),
   config: z.record(z.string(), z.unknown()),
   action: z.record(z.string(), z.unknown()),
-}).passthrough();
+});
 
 // ─── Plan Schemas ────────────────────────────────────────────────
 
@@ -63,7 +62,7 @@ export const createPlanSchema = z.object({
   goal: z.string().min(1).max(5000),
   deadline: z.string().max(100).optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-}).passthrough();
+});
 
 export const updatePlanSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -72,7 +71,7 @@ export const updatePlanSchema = z.object({
   deadline: z.string().max(100).optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   status: z.enum(['pending', 'running', 'paused', 'completed', 'failed', 'cancelled']).optional(),
-}).passthrough();
+});
 
 export const createPlanStepSchema = z.object({
   name: z.string().min(1).max(500),
@@ -81,7 +80,7 @@ export const createPlanStepSchema = z.object({
   description: z.string().max(5000).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
   action: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
+});
 
 export const updatePlanStepSchema = z.object({
   title: z.string().min(1).max(500).optional(),
@@ -91,7 +90,7 @@ export const updatePlanStepSchema = z.object({
   orderNum: z.number().int().min(0).max(1000).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
   action: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
+});
 
 // ─── Autonomy Schemas ────────────────────────────────────────────
 
@@ -102,7 +101,7 @@ export const autonomyConfigSchema = z.object({
   requireApproval: z.boolean().optional(),
   maxCostPerAction: z.number().min(0).max(1000).optional(),
   dailyBudget: z.number().min(0).max(10000).optional(),
-}).passthrough();
+});
 
 export const autonomyLevelSchema = z.object({
   level: z.number().int().min(0).max(5),
@@ -134,7 +133,7 @@ export const createCustomToolSchema = z.object({
     category: z.string().max(50).optional(),
     docsUrl: z.string().url().max(2000).optional(),
   })).max(10).optional(),
-}).passthrough();
+});
 
 export const updateCustomToolSchema = z.object({
   name: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, 'Tool name must be lowercase with underscores').optional(),
@@ -152,7 +151,7 @@ export const updateCustomToolSchema = z.object({
     category: z.string().max(50).optional(),
     docsUrl: z.string().url().max(2000).optional(),
   })).max(10).optional(),
-}).passthrough();
+});
 
 // ─── Autonomy Decision Schemas ───────────────────────────────────
 
@@ -161,23 +160,23 @@ export const autonomyDecisionSchema = z.object({
   reason: z.string().max(2000).optional(),
   remember: z.boolean().optional(),
   modifications: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
+});
 
 export const autonomyApproveRejectSchema = z.object({
   reason: z.string().max(2000).optional(),
   remember: z.boolean().optional(),
-}).passthrough();
+});
 
 export const autonomyToolPermissionSchema = z.object({
   tool: z.string().min(1).max(200),
-}).passthrough();
+});
 
 export const autonomyAssessSchema = z.object({
   category: z.string().min(1).max(100),
   actionType: z.string().min(1).max(200),
   params: z.record(z.string(), z.unknown()).optional(),
   context: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
+});
 
 export const autonomyApprovalRequestSchema = z.object({
   category: z.string().min(1).max(100),
@@ -185,7 +184,7 @@ export const autonomyApprovalRequestSchema = z.object({
   description: z.string().min(1).max(5000),
   params: z.record(z.string(), z.unknown()).optional(),
   context: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
+});
 
 // ─── Goal Schemas ───────────────────────────────────────────────
 
@@ -197,7 +196,7 @@ export const createGoalSchema = z.object({
   parentId: z.string().max(200).optional(),
   dueDate: z.string().max(100).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
+});
 
 export const updateGoalSchema = z.object({
   title: z.string().min(1).max(500).optional(),
@@ -207,14 +206,14 @@ export const updateGoalSchema = z.object({
   dueDate: z.string().max(100).optional(),
   progress: z.number().min(0).max(100).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
+});
 
 export const createGoalStepSchema = z.object({
   title: z.string().min(1).max(500),
   description: z.string().max(5000).optional(),
   orderNum: z.number().int().min(0).max(10000).optional(),
   dependencies: z.array(z.string().max(200)).max(50).optional(),
-}).passthrough();
+});
 
 export const createGoalStepsSchema = z.union([
   z.object({
@@ -223,14 +222,14 @@ export const createGoalStepsSchema = z.union([
       description: z.string().max(5000).optional(),
       orderNum: z.number().int().min(0).max(10000).optional(),
       dependencies: z.array(z.string().max(200)).max(50).optional(),
-    }).passthrough()).min(1).max(100),
-  }).passthrough(),
+    })).min(1).max(100),
+  }),
   z.object({
     title: z.string().min(1).max(500),
     description: z.string().max(5000).optional(),
     orderNum: z.number().int().min(0).max(10000).optional(),
     dependencies: z.array(z.string().max(200)).max(50).optional(),
-  }).passthrough(),
+  }),
 ]);
 
 export const updateGoalStepSchema = z.object({
@@ -238,11 +237,11 @@ export const updateGoalStepSchema = z.object({
   description: z.string().max(5000).optional(),
   status: z.enum(['pending', 'in_progress', 'completed', 'blocked', 'skipped']).optional(),
   result: z.string().max(10000).optional(),
-}).passthrough();
+});
 
 export const completeGoalStepSchema = z.object({
   result: z.string().max(10000).optional(),
-}).passthrough();
+});
 
 // ─── Memory Schemas ─────────────────────────────────────────────
 
@@ -254,27 +253,27 @@ export const createMemorySchema = z.object({
   source: z.string().max(200).optional(),
   sourceId: z.string().max(200).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
+});
 
 export const updateMemorySchema = z.object({
   content: z.string().min(1).max(50000).optional(),
   importance: z.number().min(0).max(1).optional(),
   tags: z.array(z.string().max(100)).max(50).optional(),
-}).passthrough();
+});
 
 export const boostMemorySchema = z.object({
   amount: z.number().min(0).max(1).optional(),
-}).passthrough();
+});
 
 export const decayMemoriesSchema = z.object({
   daysThreshold: z.number().int().min(1).max(3650).optional(),
   decayFactor: z.number().min(0).max(1).optional(),
-}).passthrough();
+});
 
 export const cleanupMemoriesSchema = z.object({
   maxAge: z.number().int().min(1).max(3650).optional(),
   minImportance: z.number().min(0).max(1).optional(),
-}).passthrough();
+});
 
 // ─── Expense Schemas ────────────────────────────────────────────
 
@@ -292,7 +291,7 @@ export const createExpenseSchema = z.object({
   paymentMethod: z.string().max(100).optional(),
   tags: z.array(z.string().max(100)).max(20).optional(),
   notes: z.string().max(5000).optional(),
-}).passthrough();
+});
 
 export const updateExpenseSchema = z.object({
   date: z.string().max(100).optional(),
@@ -303,7 +302,7 @@ export const updateExpenseSchema = z.object({
   paymentMethod: z.string().max(100).optional(),
   tags: z.array(z.string().max(100)).max(20).optional(),
   notes: z.string().max(5000).optional(),
-}).passthrough();
+});
 
 // ─── Media Settings Schemas ─────────────────────────────────────
 
@@ -311,7 +310,7 @@ export const mediaSettingsSchema = z.object({
   provider: z.string().min(1).max(100),
   model: z.string().max(200).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
+});
 
 // ─── Custom Data Schemas ────────────────────────────────────────
 
@@ -321,28 +320,28 @@ const columnDefinitionSchema = z.object({
   required: z.boolean().optional(),
   defaultValue: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
   description: z.string().max(500).optional(),
-}).passthrough();
+});
 
 export const createCustomTableSchema = z.object({
   name: z.string().min(1).max(100),
   displayName: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
   columns: z.array(columnDefinitionSchema).min(1).max(100),
-}).passthrough();
+});
 
 export const updateCustomTableSchema = z.object({
   displayName: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional(),
   columns: z.array(columnDefinitionSchema).min(1).max(100).optional(),
-}).passthrough();
+});
 
 export const createCustomRecordSchema = z.object({
   data: z.record(z.string(), z.unknown()),
-}).passthrough();
+});
 
 export const updateCustomRecordSchema = z.object({
   data: z.record(z.string(), z.unknown()),
-}).passthrough();
+});
 
 // ─── Workspace Schemas ──────────────────────────────────────────
 
@@ -353,19 +352,19 @@ const containerConfigSchema = z.object({
   timeoutMs: z.number().min(5000).max(120000).optional(),
   networkPolicy: z.enum(['none', 'restricted', 'full']).optional(),
   allowedHosts: z.array(z.string().max(500)).max(50).optional(),
-}).passthrough();
+});
 
 export const createWorkspaceSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
   containerConfig: containerConfigSchema.optional(),
-}).passthrough();
+});
 
 export const updateWorkspaceSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional(),
   containerConfig: containerConfigSchema.optional(),
-}).passthrough();
+});
 
 // ─── Local Provider Schemas ──────────────────────────────────────
 
@@ -375,7 +374,7 @@ export const createLocalProviderSchema = z.object({
   baseUrl: z.string().min(1).max(2048),
   apiKey: z.string().max(500).optional(),
   discoveryEndpoint: z.string().max(500).optional(),
-}).passthrough();
+});
 
 export const updateLocalProviderSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -383,11 +382,11 @@ export const updateLocalProviderSchema = z.object({
   apiKey: z.string().max(500).optional(),
   discoveryEndpoint: z.string().max(500).optional(),
   isEnabled: z.boolean().optional(),
-}).passthrough();
+});
 
 export const toggleEnabledSchema = z.object({
   enabled: z.boolean(),
-}).passthrough();
+});
 
 // ─── Profile Schemas ────────────────────────────────────────────
 
@@ -399,16 +398,16 @@ export const profileSetDataSchema = z.object({
   confidence: z.number().min(0).max(1).optional(),
   source: z.enum(['user_stated', 'user_confirmed', 'ai_inferred', 'imported']).optional(),
   sensitive: z.boolean().optional(),
-}).passthrough();
+});
 
 export const profileDeleteDataSchema = z.object({
   category: z.string().min(1).max(100),
   key: z.string().min(1).max(200),
-}).passthrough();
+});
 
 export const profileImportSchema = z.object({
   entries: z.array(z.record(z.string(), z.unknown())).min(1).max(10000),
-}).passthrough();
+});
 
 export const profileQuickSetupSchema = z.object({
   name: z.string().max(200).optional(),
@@ -419,7 +418,7 @@ export const profileQuickSetupSchema = z.object({
   language: z.string().max(100).optional(),
   communicationStyle: z.string().max(200).optional(),
   autonomyLevel: z.string().max(100).optional(),
-}).passthrough();
+});
 
 // ─── Provider Config Schemas ────────────────────────────────────
 
@@ -429,13 +428,13 @@ export const providerConfigSchema = z.object({
   isEnabled: z.boolean().optional(),
   apiKeyEnv: z.string().max(200).optional(),
   notes: z.string().max(2000).optional(),
-}).passthrough();
+});
 
 // ─── Workspace File & Execute Schemas ───────────────────────────
 
 export const workspaceWriteFileSchema = z.object({
   content: z.string(),
-}).passthrough();
+});
 
 export const workspaceExecuteCodeSchema = z.object({
   code: z.string().min(1).max(100000),
@@ -445,7 +444,7 @@ export const workspaceExecuteCodeSchema = z.object({
     path: z.string().min(1).max(500),
     content: z.string().max(1000000),
   })).max(50).optional(),
-}).passthrough();
+});
 
 // ─── Validation Helper ──────────────────────────────────────────
 

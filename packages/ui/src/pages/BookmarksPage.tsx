@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { Bookmark, Plus, Trash2, Star, ExternalLink, Search, Folder } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
-import { useDebouncedValue, useModalClose } from '../hooks';
+import { useDebouncedValue, useModalClose, useDebouncedCallback } from '../hooks';
 import { useAnimatedList } from '../hooks/useAnimatedList';
 import { bookmarksApi } from '../api';
 import type { BookmarkItem } from '../api';
@@ -23,7 +23,6 @@ export function BookmarksPage() {
   const [editingBookmark, setEditingBookmark] = useState<BookmarkItem | null>(null);
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(bookmarks);
 
   const fetchBookmarks = useCallback(async () => {
@@ -46,16 +45,13 @@ export function BookmarksPage() {
     fetchBookmarks();
   }, [fetchBookmarks]);
 
-  const debouncedRefresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchBookmarks(), 2000);
-  }, [fetchBookmarks]);
+  const debouncedRefresh = useDebouncedCallback(() => fetchBookmarks(), 2000);
 
   useEffect(() => {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'bookmark') debouncedRefresh();
     });
-    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => { unsub(); };
   }, [subscribe, debouncedRefresh]);
 
   const handleDelete = useCallback(async (bookmarkId: string) => {

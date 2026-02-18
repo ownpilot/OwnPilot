@@ -20,7 +20,7 @@ packages/
 - **Pagination**: `parsePagination(c)` and `paginatedResponse(c, items, total, page, limit)` helpers
 - **Event system**: EventBus, HookBus, ScopedBus in `packages/core/src/events/`
 - **Plugin system**: PluginRegistry with isolation, marketplace, runtime in `packages/core/src/plugins/`
-- **Test framework**: Vitest across all packages. 188 test files, 8,914 tests total (gateway: 120 files, 4,524 tests)
+- **Test framework**: Vitest across all packages. 211 test files, 9,307 tests total (gateway: 137 files, 4,892 tests; core: 65 files, 4,319 tests)
 
 ## Commands
 

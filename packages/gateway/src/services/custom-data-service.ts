@@ -88,16 +88,20 @@ export class CustomDataService {
     options?: { pluginId?: string },
   ): Promise<Array<CustomTableSchema & { recordCount: number }>> {
     const repo = this.getRepo();
-    const tables = options?.pluginId
-      ? await repo.getTablesByPlugin(options.pluginId)
-      : await repo.listTables();
 
-    return Promise.all(
-      tables.map(async (table) => {
-        const stats = await repo.getTableStats(table.id);
-        return { ...table, recordCount: stats?.recordCount ?? 0 };
-      }),
-    );
+    // For plugin-specific queries, fall back to per-table stats (rare path)
+    if (options?.pluginId) {
+      const tables = await repo.getTablesByPlugin(options.pluginId);
+      return Promise.all(
+        tables.map(async (table) => {
+          const stats = await repo.getTableStats(table.id);
+          return { ...table, recordCount: stats?.recordCount ?? 0 };
+        }),
+      );
+    }
+
+    // Single JOIN query instead of N+1 per-table queries
+    return repo.listTablesWithCounts();
   }
 
   async updateTable(

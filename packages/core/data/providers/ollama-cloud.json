@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "qwen3.5:397b",
+      "name": "qwen3.5:397b",
+      "contextWindow": 262144,
+      "maxOutput": 81920,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-15"
+    },
+    {
       "id": "minimax-m2.5",
       "name": "minimax-m2.5",
       "contextWindow": 204800,
@@ -24,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-12"
     },
     {

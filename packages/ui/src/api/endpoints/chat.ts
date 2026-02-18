@@ -16,7 +16,7 @@ export interface ChatRequestBody {
   workspaceId?: string;
   directTools?: string[];
   includeToolList?: boolean;
-  history?: Array<{ role: string; content: string }>;
+  historyLength?: number;
 }
 
 export const chatApi = {

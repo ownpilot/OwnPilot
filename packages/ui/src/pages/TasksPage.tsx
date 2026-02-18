@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { CheckCircle2, Circle, AlertTriangle, Plus, Trash2, Calendar } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
-import { useModalClose } from '../hooks';
+import { useModalClose, useDebouncedCallback } from '../hooks';
 import { useAnimatedList } from '../hooks/useAnimatedList';
 import { tasksApi } from '../api';
 import type { Task } from '../types';
@@ -33,7 +33,6 @@ export function TasksPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(tasks);
 
   const fetchTasks = useCallback(async () => {
@@ -51,16 +50,13 @@ export function TasksPage() {
     fetchTasks();
   }, [fetchTasks]);
 
-  const debouncedRefresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchTasks(), 2000);
-  }, [fetchTasks]);
+  const debouncedRefresh = useDebouncedCallback(() => fetchTasks(), 2000);
 
   useEffect(() => {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'task') debouncedRefresh();
     });
-    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => { unsub(); };
   }, [subscribe, debouncedRefresh]);
 
   const handleComplete = useCallback(async (taskId: string) => {

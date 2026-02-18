@@ -179,11 +179,11 @@ describe('createAgentSchema', () => {
     expect(createAgentSchema.safeParse({ ...validAgent, temperature: 2 }).success).toBe(true);
   });
 
-  it('allows extra fields via passthrough', () => {
+  it('strips unknown fields (no passthrough)', () => {
     const result = createAgentSchema.safeParse({ ...validAgent, customField: 'hello' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect((result.data as Record<string, unknown>).customField).toBe('hello');
+      expect((result.data as Record<string, unknown>).customField).toBeUndefined();
     }
   });
 
@@ -265,28 +265,47 @@ describe('chatMessageSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('rejects history with invalid role', () => {
+  it('accepts historyLength as a number', () => {
     const result = chatMessageSchema.safeParse({
       message: 'Hello',
-      history: [{ role: 'admin', content: 'test' }],
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects history entry missing content', () => {
-    const result = chatMessageSchema.safeParse({
-      message: 'Hello',
-      history: [{ role: 'user' }],
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('allows extra fields on history entries via passthrough', () => {
-    const result = chatMessageSchema.safeParse({
-      message: 'Hello',
-      history: [{ role: 'user', content: 'Hi', toolCallId: 'tc-1' }],
+      historyLength: 5,
     });
     expect(result.success).toBe(true);
+  });
+
+  it('rejects historyLength as negative', () => {
+    const result = chatMessageSchema.safeParse({
+      message: 'Hello',
+      historyLength: -1,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts stream as boolean', () => {
+    expect(chatMessageSchema.safeParse({ message: 'Hi', stream: true }).success).toBe(true);
+    expect(chatMessageSchema.safeParse({ message: 'Hi', stream: false }).success).toBe(true);
+  });
+
+  it('rejects stream as non-boolean', () => {
+    expect(chatMessageSchema.safeParse({ message: 'Hi', stream: 'yes' }).success).toBe(false);
+  });
+
+  it('accepts valid streamingMode values', () => {
+    for (const mode of ['auto', 'always', 'never'] as const) {
+      expect(chatMessageSchema.safeParse({ message: 'Hi', streamingMode: mode }).success).toBe(true);
+    }
+  });
+
+  it('rejects invalid streamingMode', () => {
+    expect(chatMessageSchema.safeParse({ message: 'Hi', streamingMode: 'sometimes' }).success).toBe(false);
+  });
+
+  it('strips unknown fields', () => {
+    const result = chatMessageSchema.safeParse({ message: 'Hi', unknownField: 'value' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as Record<string, unknown>).unknownField).toBeUndefined();
+    }
   });
 });
 
@@ -509,11 +528,11 @@ describe('autonomyConfigSchema', () => {
     expect(autonomyConfigSchema.safeParse({ dailyBudget: 10000 }).success).toBe(true);
   });
 
-  it('allows extra fields via passthrough', () => {
+  it('strips unknown fields (no passthrough)', () => {
     const result = autonomyConfigSchema.safeParse({ customSetting: true });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect((result.data as Record<string, unknown>).customSetting).toBe(true);
+      expect((result.data as Record<string, unknown>).customSetting).toBeUndefined();
     }
   });
 });
@@ -1240,11 +1259,11 @@ describe('mediaSettingsSchema', () => {
     expect(mediaSettingsSchema.safeParse({ provider: 'p'.repeat(101) }).success).toBe(false);
   });
 
-  it('allows extra fields via passthrough', () => {
+  it('strips unknown fields (no passthrough)', () => {
     const result = mediaSettingsSchema.safeParse({ provider: 'test', customKey: 'value' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect((result.data as Record<string, unknown>).customKey).toBe('value');
+      expect((result.data as Record<string, unknown>).customKey).toBeUndefined();
     }
   });
 });

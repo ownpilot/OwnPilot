@@ -45,7 +45,7 @@ export class ApprovalManager extends EventEmitter {
   private config: Required<ApprovalManagerConfig>;
   private pendingActions: Map<string, PendingAction> = new Map();
   private userConfigs: Map<string, AutonomyConfig> = new Map();
-  private rememberedDecisions: Map<string, 'approve' | 'reject'> = new Map();
+  private rememberedDecisions: Map<string, { decision: 'approve' | 'reject'; createdAt: Date }> = new Map();
   private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor(config: ApprovalManagerConfig = {}) {
@@ -132,11 +132,11 @@ export class ApprovalManager extends EventEmitter {
     // Check for remembered decision
     const decisionKey = `${userId}:${category}:${actionType}`;
     const remembered = this.rememberedDecisions.get(decisionKey);
-    if (remembered === 'approve') {
+    if (remembered?.decision === 'approve') {
       this.logAutoApproval(userId, category, actionType, description, params, risk);
       return null;
     }
-    if (remembered === 'reject') {
+    if (remembered?.decision === 'reject') {
       // Return a rejected request
       const action = this.createPendingAction(
         userId, category, actionType, description, params, context, risk
@@ -217,10 +217,10 @@ export class ApprovalManager extends EventEmitter {
     // Remember decision if requested
     if (decision.remember) {
       const decisionKey = `${action.userId}:${action.category}:${action.type}`;
-      this.rememberedDecisions.set(
-        decisionKey,
-        decision.decision === 'reject' ? 'reject' : 'approve'
-      );
+      this.rememberedDecisions.set(decisionKey, {
+        decision: decision.decision === 'reject' ? 'reject' : 'approve',
+        createdAt: new Date(),
+      });
     }
 
     // Remove from pending
@@ -412,15 +412,33 @@ export class ApprovalManager extends EventEmitter {
   }
 
   private startCleanup(): void {
-    // Clean up expired actions every minute (unref so timer doesn't block process exit)
+    // Clean up expired/stale entries every minute (unref so timer doesn't block process exit)
     this.cleanupInterval = setInterval(() => {
       const now = new Date();
+
+      // Remove expired pending actions
       for (const [id, action] of this.pendingActions) {
         if (action.status === 'pending' && action.expiresAt < now) {
           action.status = 'expired';
           action.reason = 'Timed out';
           this.pendingActions.delete(id);
           this.emit('action:expired', action);
+        }
+      }
+
+      // Remove user configs not updated in 30 days
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * MS_PER_DAY);
+      for (const [userId, config] of this.userConfigs) {
+        if (config.updatedAt < thirtyDaysAgo) {
+          this.userConfigs.delete(userId);
+        }
+      }
+
+      // Remove remembered decisions older than 90 days
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * MS_PER_DAY);
+      for (const [key, entry] of this.rememberedDecisions) {
+        if (entry.createdAt < ninetyDaysAgo) {
+          this.rememberedDecisions.delete(key);
         }
       }
     }, 60000);

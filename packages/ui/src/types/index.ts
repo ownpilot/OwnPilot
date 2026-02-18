@@ -143,6 +143,8 @@ export interface SessionInfo {
   estimatedTokens: number;
   maxContextTokens: number;
   contextFillPercent: number;
+  /** Cached input tokens from prompt caching (Anthropic) */
+  cachedTokens?: number;
 }
 
 export interface ContextBreakdown {

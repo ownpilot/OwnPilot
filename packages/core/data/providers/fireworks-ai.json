@@ -125,38 +125,6 @@
       "releaseDate": "2025-11-06"
     },
     {
-      "id": "accounts/fireworks/models/minimax-m2",
-      "name": "MiniMax-M2",
-      "contextWindow": 192000,
-      "maxOutput": 192000,
-      "inputPrice": 0.3,
-      "outputPrice": 1.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-10-27"
-    },
-    {
-      "id": "accounts/fireworks/models/glm-4p6",
-      "name": "GLM 4.6",
-      "contextWindow": 198000,
-      "maxOutput": 198000,
-      "inputPrice": 0.55,
-      "outputPrice": 2.19,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-10-01"
-    },
-    {
       "id": "accounts/fireworks/models/deepseek-v3p1",
       "name": "DeepSeek V3.1",
       "contextWindow": 163840,
@@ -237,21 +205,6 @@
       "releaseDate": "2025-07-29"
     },
     {
-      "id": "accounts/fireworks/models/qwen3-coder-480b-a35b-instruct",
-      "name": "Qwen3 Coder 480B A35B Instruct",
-      "contextWindow": 256000,
-      "maxOutput": 32768,
-      "inputPrice": 0.45,
-      "outputPrice": 1.8,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-22"
-    },
-    {
       "id": "accounts/fireworks/models/kimi-k2-instruct",
       "name": "Kimi K2 Instruct",
       "contextWindow": 128000,
@@ -265,53 +218,6 @@
       ],
       "default": false,
       "releaseDate": "2025-07-11"
-    },
-    {
-      "id": "accounts/fireworks/models/deepseek-r1-0528",
-      "name": "Deepseek R1 05/28",
-      "contextWindow": 160000,
-      "maxOutput": 16384,
-      "inputPrice": 3,
-      "outputPrice": 8,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-05-28"
-    },
-    {
-      "id": "accounts/fireworks/models/qwen3-235b-a22b",
-      "name": "Qwen3 235B-A22B",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.22,
-      "outputPrice": 0.88,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-29"
-    },
-    {
-      "id": "accounts/fireworks/models/deepseek-v3-0324",
-      "name": "Deepseek V3 03-24",
-      "contextWindow": 160000,
-      "maxOutput": 16384,
-      "inputPrice": 0.9,
-      "outputPrice": 0.9,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-24"
     }
   ],
   "baseUrl": "https://api.fireworks.ai/inference/v1",

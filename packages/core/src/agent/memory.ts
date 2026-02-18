@@ -141,7 +141,8 @@ export class ConversationMemory {
   }
 
   /**
-   * Get messages for context (applies token limit)
+   * Get messages for context (applies token limit).
+   * Older tool results are truncated to save tokens — recent ones kept intact.
    */
   getContextMessages(conversationId: string): readonly Message[] {
     const conversation = this.conversations.get(conversationId);
@@ -168,10 +169,10 @@ export class ConversationMemory {
         startIndex = i;
       }
 
-      return messages.slice(startIndex);
+      return this.truncateOldToolResults(messages.slice(startIndex));
     }
 
-    return messages;
+    return this.truncateOldToolResults(messages);
   }
 
   /**
@@ -191,6 +192,33 @@ export class ConversationMemory {
     }
 
     return contextMessages;
+  }
+
+  /**
+   * Truncate large tool results in older messages to save context tokens.
+   * Keeps the last 4 messages fully intact (the current turn + previous turn).
+   * Older tool results > 2000 chars are truncated with a "[truncated]" note.
+   */
+  private truncateOldToolResults(messages: Message[]): Message[] {
+    if (messages.length <= 4) return messages;
+
+    const TOOL_RESULT_LIMIT = 2000;
+    const safeCount = 4; // keep last N messages intact
+    const cutoff = messages.length - safeCount;
+
+    return messages.map((msg, i) => {
+      if (i >= cutoff) return msg; // recent — keep intact
+      if (!msg.toolResults || msg.toolResults.length === 0) return msg;
+
+      const truncatedResults = msg.toolResults.map(tr => {
+        if (tr.content.length <= TOOL_RESULT_LIMIT) return tr;
+        return {
+          ...tr,
+          content: tr.content.slice(0, TOOL_RESULT_LIMIT) + '\n[...truncated]',
+        };
+      });
+      return { ...msg, toolResults: truncatedResults };
+    });
   }
 
   /**

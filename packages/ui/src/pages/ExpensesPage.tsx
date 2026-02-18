@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
+import { useDebouncedCallback } from '../hooks';
 import {
   DollarSign,
   TrendingUp,
@@ -56,8 +57,6 @@ export function ExpensesPage() {
     description: '',
     notes: '',
   });
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -89,16 +88,13 @@ export function ExpensesPage() {
     fetchData();
   }, [fetchData]);
 
-  const debouncedRefresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchData(), 2000);
-  }, [fetchData]);
+  const debouncedRefresh = useDebouncedCallback(() => fetchData(), 2000);
 
   useEffect(() => {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'expense') debouncedRefresh();
     });
-    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => { unsub(); };
   }, [subscribe, debouncedRefresh]);
 
   const handleAddExpense = useCallback(async (e: React.FormEvent) => {

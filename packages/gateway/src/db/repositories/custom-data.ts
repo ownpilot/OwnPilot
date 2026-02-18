@@ -462,6 +462,23 @@ export class CustomDataRepository extends BaseRepository {
   }
 
   /**
+   * List all tables with record count stats in a single query (avoids N+1).
+   */
+  async listTablesWithCounts(): Promise<Array<CustomTableSchema & { recordCount: number }>> {
+    const rows = await this.query<SchemaRow & { record_count: string }>(
+      `SELECT cs.*, COALESCE(COUNT(cdr.id), 0) as record_count
+       FROM custom_table_schemas cs
+       LEFT JOIN custom_data_records cdr ON cs.id = cdr.table_id
+       GROUP BY cs.id
+       ORDER BY cs.display_name ASC`
+    );
+    return rows.map((row) => ({
+      ...this.mapSchemaRow(row),
+      recordCount: parseInt(row.record_count, 10),
+    }));
+  }
+
+  /**
    * Get statistics for a table
    */
   async getTableStats(tableNameOrId: string): Promise<{
