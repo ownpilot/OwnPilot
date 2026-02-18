@@ -427,6 +427,7 @@ export class ExtensionService {
         this.getDefaultExtensionsDirectory(),
         this.getDefaultSkillsDirectory(),
         this.getWorkspaceSkillsDirectory(),
+        this.getBundledExampleSkillsDirectory(),
       ].filter((d): d is string => d !== null);
 
       let totalInstalled = 0;
@@ -570,6 +571,15 @@ export class ExtensionService {
   private getWorkspaceSkillsDirectory(): string | null {
     const workspaceDir = process.env.WORKSPACE_DIR ?? process.cwd();
     const candidate = join(workspaceDir, 'data', 'skills');
+    return existsSync(candidate) ? candidate : null;
+  }
+
+  /**
+   * Bundled example skills shipped with the gateway package.
+   */
+  private getBundledExampleSkillsDirectory(): string | null {
+    // __dirname resolves to packages/gateway/src/services/ at runtime
+    const candidate = join(import.meta.dirname ?? '.', '..', '..', 'data', 'example-skills');
     return existsSync(candidate) ? candidate : null;
   }
 }
