@@ -40,6 +40,7 @@ export const chatMessageSchema = z.object({
   historyLength: z.number().int().min(0).optional(),
   stream: z.boolean().optional(),
   streamingMode: z.enum(['auto', 'always', 'never']).optional(),
+  maxToolCalls: z.number().int().min(0).max(1000).optional(),
 });
 
 // ─── Trigger Schemas ─────────────────────────────────────────────

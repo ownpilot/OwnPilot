@@ -1,19 +1,19 @@
 /**
- * Skill Package Management Tools
+ * Extension Management Tools
  *
- * AI agent tools for listing, toggling, and inspecting installed skill packages.
+ * AI agent tools for listing, toggling, and inspecting installed extensions.
  */
 
 import { type ToolDefinition, getErrorMessage } from '@ownpilot/core';
-import { getSkillPackageService } from '../services/skill-package-service.js';
+import { getExtensionService } from '../services/extension-service.js';
 
 // =============================================================================
 // Tool Definitions
 // =============================================================================
 
-const listSkillPackagesDef: ToolDefinition = {
-  name: 'list_skill_packages',
-  description: 'List installed skill packages with their status, tools, and triggers.',
+const listExtensionsDef: ToolDefinition = {
+  name: 'list_extensions',
+  description: 'List installed extensions with their status, tools, and triggers.',
   parameters: {
     type: 'object',
     properties: {
@@ -31,15 +31,15 @@ const listSkillPackagesDef: ToolDefinition = {
   category: 'System',
 };
 
-const toggleSkillPackageDef: ToolDefinition = {
-  name: 'toggle_skill_package',
-  description: 'Enable or disable a skill package. Enabling activates its tools and triggers; disabling deactivates them.',
+const toggleExtensionDef: ToolDefinition = {
+  name: 'toggle_extension',
+  description: 'Enable or disable a extension. Enabling activates its tools and triggers; disabling deactivates them.',
   parameters: {
     type: 'object',
     properties: {
       id: {
         type: 'string',
-        description: 'Skill package ID',
+        description: 'Extension ID',
       },
       enabled: {
         type: 'boolean',
@@ -51,15 +51,15 @@ const toggleSkillPackageDef: ToolDefinition = {
   category: 'System',
 };
 
-const getSkillPackageInfoDef: ToolDefinition = {
-  name: 'get_skill_package_info',
-  description: 'Get detailed information about a skill package including its tools, triggers, and configuration.',
+const getExtensionInfoDef: ToolDefinition = {
+  name: 'get_extension_info',
+  description: 'Get detailed information about a extension including its tools, triggers, and configuration.',
   parameters: {
     type: 'object',
     properties: {
       id: {
         type: 'string',
-        description: 'Skill package ID',
+        description: 'Extension ID',
       },
     },
     required: ['id'],
@@ -67,25 +67,25 @@ const getSkillPackageInfoDef: ToolDefinition = {
   category: 'System',
 };
 
-export const SKILL_PACKAGE_TOOLS: ToolDefinition[] = [
-  listSkillPackagesDef,
-  toggleSkillPackageDef,
-  getSkillPackageInfoDef,
+export const EXTENSION_TOOLS: ToolDefinition[] = [
+  listExtensionsDef,
+  toggleExtensionDef,
+  getExtensionInfoDef,
 ];
 
 // =============================================================================
 // Executor
 // =============================================================================
 
-export async function executeSkillPackageTool(
+export async function executeExtensionTool(
   toolName: string,
   args: Record<string, unknown>,
   userId = 'default',
 ): Promise<{ success: boolean; result?: unknown; error?: string }> {
-  const service = getSkillPackageService();
+  const service = getExtensionService();
 
   switch (toolName) {
-    case 'list_skill_packages': {
+    case 'list_extensions': {
       let packages = service.getAll();
 
       if (args.status) {
@@ -112,7 +112,7 @@ export async function executeSkillPackageTool(
       };
     }
 
-    case 'toggle_skill_package': {
+    case 'toggle_extension': {
       const id = args.id as string;
       const enabled = args.enabled as boolean;
 
@@ -122,7 +122,7 @@ export async function executeSkillPackageTool(
           : await service.disable(id, userId);
 
         if (!updated) {
-          return { success: false, error: `Skill package not found: ${id}` };
+          return { success: false, error: `Extension not found: ${id}` };
         }
 
         return {
@@ -131,7 +131,7 @@ export async function executeSkillPackageTool(
             id: updated.id,
             name: updated.name,
             status: updated.status,
-            message: `Skill package "${updated.name}" ${enabled ? 'enabled' : 'disabled'}.`,
+            message: `Extension "${updated.name}" ${enabled ? 'enabled' : 'disabled'}.`,
           },
         };
       } catch (e) {
@@ -139,12 +139,12 @@ export async function executeSkillPackageTool(
       }
     }
 
-    case 'get_skill_package_info': {
+    case 'get_extension_info': {
       const id = args.id as string;
       const pkg = service.getById(id);
 
       if (!pkg) {
-        return { success: false, error: `Skill package not found: ${id}` };
+        return { success: false, error: `Extension not found: ${id}` };
       }
 
       return {
@@ -185,6 +185,6 @@ export async function executeSkillPackageTool(
     }
 
     default:
-      return { success: false, error: `Unknown skill package tool: ${toolName}` };
+      return { success: false, error: `Unknown extension tool: ${toolName}` };
   }
 }

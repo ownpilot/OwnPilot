@@ -41,9 +41,9 @@ import {
 import { getToolSource } from '../services/tool-source.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
-import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool, HEARTBEAT_TOOLS, executeHeartbeatTool, SKILL_PACKAGE_TOOLS, executeSkillPackageTool } from '../tools/index.js';
+import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool, HEARTBEAT_TOOLS, executeHeartbeatTool, EXTENSION_TOOLS, executeExtensionTool } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
-import { getSkillPackageService } from '../services/skill-package-service.js';
+import { getExtensionService } from '../services/extension-service.js';
 import {
   traceToolCallStart,
   traceToolCallEnd,
@@ -153,7 +153,7 @@ export function registerGatewayTools(
     { definitions: TRIGGER_TOOLS, executor: executeTriggerTool, needsUserId: true },
     { definitions: PLAN_TOOLS, executor: executePlanTool, needsUserId: true },
     { definitions: HEARTBEAT_TOOLS, executor: executeHeartbeatTool, needsUserId: true },
-    { definitions: SKILL_PACKAGE_TOOLS, executor: executeSkillPackageTool, needsUserId: true },
+    { definitions: EXTENSION_TOOLS, executor: executeExtensionTool, needsUserId: true },
   ];
 
   for (const group of groups) {
@@ -319,51 +319,51 @@ export function registerPluginTools(
 }
 
 /**
- * Register skill package tools (from installed skill packages).
- * Skill tools are registered in the DynamicToolRegistry (same sandbox as custom tools)
+ * Register extension tools (from installed user extensions).
+ * Extension tools are registered in the DynamicToolRegistry (same sandbox as custom tools)
  * and then exposed on the ToolRegistry for agent access.
  *
- * @returns The skill package tool definitions (needed for tool-list assembly).
+ * @returns The extension tool definitions (needed for tool-list assembly).
  */
-export function registerSkillPackageTools(
+export function registerExtensionTools(
   tools: ToolRegistry,
   _userId: string,
   trace: boolean,
 ): ToolDefinition[] {
-  let service: ReturnType<typeof getSkillPackageService>;
+  let service: ReturnType<typeof getExtensionService>;
   try {
-    service = getSkillPackageService();
+    service = getExtensionService();
   } catch {
-    log.debug('Skill package service not initialized, skipping tool registration');
+    log.debug('Extension service not initialized, skipping tool registration');
     return [];
   }
 
-  const skillToolDefs = service.getToolDefinitions();
-  if (skillToolDefs.length === 0) return [];
+  const extToolDefs = service.getToolDefinitions();
+  if (extToolDefs.length === 0) return [];
 
   // Get the shared DynamicToolRegistry (same sandbox as custom tools)
   const dynamicRegistry = getCustomToolDynamicRegistry();
 
   const result: ToolDefinition[] = [];
 
-  for (const def of skillToolDefs) {
+  for (const def of extToolDefs) {
     // Register in DynamicToolRegistry if not already there (uses base name)
     if (!dynamicRegistry.has(def.name)) {
       try {
         dynamicRegistry.register({
           name: def.name,
           description: def.description,
-          parameters: def.skillTool.parameters as never,
-          code: def.skillTool.code,
-          permissions: def.skillTool.permissions as never,
+          parameters: def.extensionTool.parameters as never,
+          code: def.extensionTool.code,
+          permissions: def.extensionTool.permissions as never,
         });
       } catch (error) {
-        log.warn(`Failed to register skill tool "${def.name}"`, { error: String(error) });
+        log.warn(`Failed to register extension tool "${def.name}"`, { error: String(error) });
         continue;
       }
     }
 
-    const qName = qualifyToolName(def.name, 'skill', def.skillPackageId);
+    const qName = qualifyToolName(def.name, 'ext', def.extensionId);
     const toolDef: ToolDefinition = {
       name: def.name,
       description: def.description,
@@ -387,7 +387,7 @@ export function registerSkillPackageTools(
     });
 
     if (!registerResult.ok) {
-      log.warn(`Skill tool "${def.name}" skipped: ${registerResult.error.message}`);
+      log.warn(`Extension tool "${def.name}" skipped: ${registerResult.error.message}`);
       continue;
     }
 
@@ -738,4 +738,4 @@ export async function executeGetToolHelp(
 }
 
 // Re-export symbols used by agent-service.ts for agent creation
-export { registerAllTools, getToolDefinitions, MEMORY_TOOLS, GOAL_TOOLS, CUSTOM_DATA_TOOLS, PERSONAL_DATA_TOOLS, DYNAMIC_TOOL_DEFINITIONS, SKILL_PACKAGE_TOOLS, CONFIG_TOOLS, TRIGGER_TOOLS, PLAN_TOOLS, HEARTBEAT_TOOLS };
+export { registerAllTools, getToolDefinitions, MEMORY_TOOLS, GOAL_TOOLS, CUSTOM_DATA_TOOLS, PERSONAL_DATA_TOOLS, DYNAMIC_TOOL_DEFINITIONS, EXTENSION_TOOLS, CONFIG_TOOLS, TRIGGER_TOOLS, PLAN_TOOLS, HEARTBEAT_TOOLS };

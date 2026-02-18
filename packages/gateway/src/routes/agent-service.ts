@@ -24,16 +24,16 @@ import {
 } from '@ownpilot/core';
 import type { SessionInfo } from '../types/index.js';
 import { agentsRepo, type AgentRecord } from '../db/repositories/index.js';
-import { resolveProviderAndModel, getDefaultProvider, getDefaultModel, getApiKey, getConfiguredProviderIds } from './settings.js';
+import { resolveProviderAndModel, getDefaultProvider, getDefaultModel, getConfiguredProviderIds } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
-import { getSkillPackageService } from '../services/skill-package-service.js';
+import { getExtensionService } from '../services/extension-service.js';
 import { getLog } from '../services/log.js';
 import { BASE_SYSTEM_PROMPT } from './agent-prompt.js';
 import {
   registerGatewayTools,
   registerDynamicTools,
   registerPluginTools,
-  registerSkillPackageTools,
+  registerExtensionTools,
   registerMcpTools,
   registerAllTools,
   getToolDefinitions,
@@ -45,7 +45,7 @@ import {
   TRIGGER_TOOLS,
   PLAN_TOOLS,
   HEARTBEAT_TOOLS,
-  SKILL_PACKAGE_TOOLS,
+  EXTENSION_TOOLS,
   DYNAMIC_TOOL_DEFINITIONS,
 } from './agent-tools.js';
 import {
@@ -129,10 +129,10 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   const pluginToolDefs = registerPluginTools(tools, true);
   log.info(`Registered ${pluginToolDefs.length} plugin tools`);
 
-  // Register skill package tools (from installed skill packages)
-  const skillPackageToolDefs = registerSkillPackageTools(tools, userId, true);
-  if (skillPackageToolDefs.length > 0) {
-    log.info(`Registered ${skillPackageToolDefs.length} skill package tools`);
+  // Register extension tools (from installed extensions)
+  const extensionToolDefs = registerExtensionTools(tools, userId, true);
+  if (extensionToolDefs.length > 0) {
+    log.info(`Registered ${extensionToolDefs.length} extension tools`);
   }
 
   // Register MCP tools from connected external MCP servers
@@ -144,10 +144,10 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Separate standard tools (from TOOL_GROUPS) and special tools that bypass filtering
   // Filter getToolDefinitions() to exclude stubs that were unregistered above
   const coreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...SKILL_PACKAGE_TOOLS];
+  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...EXTENSION_TOOLS];
 
   // These tools ALWAYS bypass toolGroup filtering:
-  const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...skillPackageToolDefs, ...mcpToolDefs];
+  const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...extensionToolDefs, ...mcpToolDefs];
 
   // Filter tools based on agent's toolGroups configuration
   const { tools: resolvedToolNames } = resolveRecordTools(record.config);
@@ -170,14 +170,14 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     includeToolDescriptions: true,
   });
 
-  // Inject skill package system prompts
+  // Inject extension system prompts
   try {
-    const skillPromptSections = getSkillPackageService().getSystemPromptSections();
-    if (skillPromptSections.length > 0) {
-      enhancedPrompt += '\n\n' + skillPromptSections.join('\n\n');
+    const extPromptSections = getExtensionService().getSystemPromptSections();
+    if (extPromptSections.length > 0) {
+      enhancedPrompt += '\n\n' + extPromptSections.join('\n\n');
     }
   } catch {
-    log.debug('Skill package service not initialized, skipping system prompt injection');
+    log.debug('Extension service not initialized, skipping system prompt injection');
   }
 
   const metaToolFilter = AI_META_TOOL_NAMES.map(n => unsafeToolId(n));
@@ -364,11 +364,11 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
 
   const activeCustomToolDefs = await registerDynamicTools(tools, userId, `chat_${provider}_${model}`, false);
   const pluginToolDefs = registerPluginTools(tools, false);
-  const skillPackageToolDefs = registerSkillPackageTools(tools, userId, false);
+  const extensionToolDefs = registerExtensionTools(tools, userId, false);
   const mcpToolDefs = registerMcpTools(tools, false);
 
   const chatCoreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...SKILL_PACKAGE_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...skillPackageToolDefs, ...mcpToolDefs];
+  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...EXTENSION_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...extensionToolDefs, ...mcpToolDefs];
 
   const basePrompt = BASE_SYSTEM_PROMPT;
   let { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
@@ -381,12 +381,12 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   });
 
   try {
-    const skillPromptSections = getSkillPackageService().getSystemPromptSections();
-    if (skillPromptSections.length > 0) {
-      enhancedPrompt += '\n\n' + skillPromptSections.join('\n\n');
+    const extPromptSections = getExtensionService().getSystemPromptSections();
+    if (extPromptSections.length > 0) {
+      enhancedPrompt += '\n\n' + extPromptSections.join('\n\n');
     }
   } catch {
-    log.debug('Skill package service not initialized, skipping system prompt injection');
+    log.debug('Extension service not initialized, skipping system prompt injection');
   }
 
   const chatMetaToolFilter = AI_META_TOOL_NAMES.map(n => unsafeToolId(n));
@@ -573,7 +573,7 @@ export async function compactContext(
 
   const summaryPrompt = `Summarize the following conversation history into a concise summary (max 200 words). Focus on key topics discussed, decisions made, and important context needed to continue the conversation naturally:\n\n${conversationText}`;
 
-  const apiKey = await getApiKey(provider);
+  const apiKey = await getProviderApiKey(provider);
   if (!apiKey) {
     return { compacted: false, removedMessages: 0, newTokenEstimate: 0 };
   }

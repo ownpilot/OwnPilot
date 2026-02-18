@@ -1,35 +1,35 @@
 /**
- * Skill Package Markdown Parser & Serializer
+ * Extension Markdown Parser & Serializer
  *
- * Parses `.md` skill package files into SkillPackageManifest objects,
+ * Parses `.md` extension files into ExtensionManifest objects,
  * and serializes manifests back to readable markdown.
  *
  * Format: YAML frontmatter + ## sections for System Prompt, Tools,
- * Required Services, Triggers.  See skill-development-guide.md for the full spec.
+ * Required Services, Triggers.
  */
 
 import type {
-  SkillPackageManifest,
-  SkillPackageCategory,
-  SkillToolDefinition,
-  SkillTriggerDefinition,
-  SkillRequiredService,
-  SkillConfigField,
-} from './skill-package-types.js';
+  ExtensionManifest,
+  ExtensionCategory,
+  ExtensionToolDefinition,
+  ExtensionTriggerDefinition,
+  ExtensionRequiredService,
+  ExtensionConfigField,
+} from './extension-types.js';
 
 // =============================================================================
 // Public API
 // =============================================================================
 
 /**
- * Parse a skill markdown file into a SkillPackageManifest.
+ * Parse an extension markdown file into an ExtensionManifest.
  * Throws on structural errors (missing frontmatter, etc.).
  */
-export function parseSkillMarkdown(content: string): SkillPackageManifest {
+export function parseExtensionMarkdown(content: string): ExtensionManifest {
   const { metadata, body } = parseFrontmatter(content);
   const sections = splitSections(body);
 
-  const manifest: SkillPackageManifest = {
+  const manifest: ExtensionManifest = {
     id: String(metadata.id ?? ''),
     name: String(metadata.name ?? ''),
     version: String(metadata.version ?? ''),
@@ -38,7 +38,7 @@ export function parseSkillMarkdown(content: string): SkillPackageManifest {
   };
 
   // Optional frontmatter fields
-  if (metadata.category) manifest.category = String(metadata.category) as SkillPackageCategory;
+  if (metadata.category) manifest.category = String(metadata.category) as ExtensionCategory;
   if (metadata.icon) manifest.icon = String(metadata.icon);
   if (metadata.author) manifest.author = { name: String(metadata.author) };
   if (metadata.docs) manifest.docs = String(metadata.docs);
@@ -73,9 +73,9 @@ export function parseSkillMarkdown(content: string): SkillPackageManifest {
 }
 
 /**
- * Serialize a SkillPackageManifest to readable markdown.
+ * Serialize an ExtensionManifest to readable markdown.
  */
-export function serializeSkillMarkdown(manifest: SkillPackageManifest): string {
+export function serializeExtensionMarkdown(manifest: ExtensionManifest): string {
   const lines: string[] = [];
 
   // Frontmatter
@@ -426,12 +426,12 @@ function extractCodeBlock(content: string, lang?: string): string | null {
 // Tool Section Parser
 // =============================================================================
 
-function parseToolsSection(content: string): SkillToolDefinition[] {
+function parseToolsSection(content: string): ExtensionToolDefinition[] {
   const subs = splitSubsections(content);
   return subs.map(parseOneTool);
 }
 
-function parseOneTool(sub: { name: string; content: string }): SkillToolDefinition {
+function parseOneTool(sub: { name: string; content: string }): ExtensionToolDefinition {
   const content = sub.content;
   const lines = content.split('\n');
 
@@ -467,7 +467,7 @@ function parseOneTool(sub: { name: string; content: string }): SkillToolDefiniti
     ?? extractCodeBlock(content)
     ?? '';
 
-  const tool: SkillToolDefinition = {
+  const tool: ExtensionToolDefinition = {
     name: sub.name,
     description,
     parameters,
@@ -482,7 +482,7 @@ function parseOneTool(sub: { name: string; content: string }): SkillToolDefiniti
 
 function buildParametersSchema(
   tableRows: Array<Record<string, string>>,
-): SkillToolDefinition['parameters'] {
+): ExtensionToolDefinition['parameters'] {
   const properties: Record<string, unknown> = {};
   const required: string[] = [];
 
@@ -514,15 +514,15 @@ function buildParametersSchema(
 // Required Services Section Parser
 // =============================================================================
 
-function parseRequiredServicesSection(content: string): SkillRequiredService[] {
+function parseRequiredServicesSection(content: string): ExtensionRequiredService[] {
   const subs = splitSubsections(content);
   return subs.map(parseOneService);
 }
 
-function parseOneService(sub: { name: string; content: string }): SkillRequiredService {
+function parseOneService(sub: { name: string; content: string }): ExtensionRequiredService {
   const meta = parseBoldMetadata(sub.content);
 
-  const service: SkillRequiredService = {
+  const service: ExtensionRequiredService = {
     name: sub.name,
     display_name: meta['display name'] ?? sub.name,
   };
@@ -534,7 +534,7 @@ function parseOneService(sub: { name: string; content: string }): SkillRequiredS
   // Config schema table
   const tableRows = parseMarkdownTable(sub.content);
   if (tableRows.length > 0) {
-    service.config_schema = tableRows.map((row): SkillConfigField => ({
+    service.config_schema = tableRows.map((row): ExtensionConfigField => ({
       name: row['field'] || row['name'] || '',
       label: row['label'] || '',
       type: row['type'] || 'string',
@@ -550,12 +550,12 @@ function parseOneService(sub: { name: string; content: string }): SkillRequiredS
 // Triggers Section Parser
 // =============================================================================
 
-function parseTriggersSection(content: string): SkillTriggerDefinition[] {
+function parseTriggersSection(content: string): ExtensionTriggerDefinition[] {
   const subs = splitSubsections(content);
   return subs.map(parseOneTrigger);
 }
 
-function parseOneTrigger(sub: { name: string; content: string }): SkillTriggerDefinition {
+function parseOneTrigger(sub: { name: string; content: string }): ExtensionTriggerDefinition {
   const meta = parseBoldMetadata(sub.content);
 
   // Extract JSON code block for config/action
@@ -572,11 +572,11 @@ function parseOneTrigger(sub: { name: string; content: string }): SkillTriggerDe
       if (parsed.config) config = parsed.config as Record<string, unknown>;
       if (parsed.action) action = parsed.action as typeof action;
     } catch {
-      // Invalid JSON — leave defaults
+      // Invalid JSON -- leave defaults
     }
   }
 
-  const trigger: SkillTriggerDefinition = {
+  const trigger: ExtensionTriggerDefinition = {
     name: sub.name,
     type: (meta['type'] as 'schedule' | 'event') ?? 'schedule',
     config,

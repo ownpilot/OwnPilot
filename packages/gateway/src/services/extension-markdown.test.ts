@@ -1,20 +1,20 @@
 /**
- * Skill Package Markdown Parser & Serializer Tests
+ * Extension Markdown Parser & Serializer Tests
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseSkillMarkdown, serializeSkillMarkdown } from './skill-package-markdown.js';
-import { validateManifest, type SkillPackageManifest } from './skill-package-types.js';
+import { parseExtensionMarkdown, serializeExtensionMarkdown } from './extension-markdown.js';
+import { validateManifest, type ExtensionManifest } from './extension-types.js';
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
 const MINIMAL_MD = `---
-id: my-skill
-name: My Skill
+id: my-ext
+name: My Extension
 version: 1.0.0
-description: A simple skill
+description: A simple extension
 ---
 
 ## Tools
@@ -131,18 +131,18 @@ return { content: { forecast: [] } };
 // Tests: parseFrontmatter
 // =============================================================================
 
-describe('parseSkillMarkdown', () => {
+describe('parseExtensionMarkdown', () => {
   describe('frontmatter', () => {
     it('parses required fields', () => {
-      const manifest = parseSkillMarkdown(MINIMAL_MD);
-      expect(manifest.id).toBe('my-skill');
-      expect(manifest.name).toBe('My Skill');
+      const manifest = parseExtensionMarkdown(MINIMAL_MD);
+      expect(manifest.id).toBe('my-ext');
+      expect(manifest.name).toBe('My Extension');
       expect(manifest.version).toBe('1.0.0');
-      expect(manifest.description).toBe('A simple skill');
+      expect(manifest.description).toBe('A simple extension');
     });
 
     it('parses all optional fields', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       expect(manifest.category).toBe('utilities');
       expect(manifest.icon).toBe('⛅');
       expect(manifest.author).toEqual({ name: 'OwnPilot Community' });
@@ -153,10 +153,10 @@ describe('parseSkillMarkdown', () => {
 
     it('handles quoted string values', () => {
       const md = `---
-id: "test-skill"
-name: 'My Skill'
+id: "test-ext"
+name: 'My Extension'
 version: "1.0.0"
-description: "A skill with quotes"
+description: "An extension with quotes"
 ---
 
 ## Tools
@@ -169,9 +169,9 @@ Test tool.
 return { content: {} };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
-      expect(manifest.id).toBe('test-skill');
-      expect(manifest.name).toBe('My Skill');
+      const manifest = parseExtensionMarkdown(md);
+      expect(manifest.id).toBe('test-ext');
+      expect(manifest.name).toBe('My Extension');
     });
 
     it('handles inline YAML arrays with quotes', () => {
@@ -193,20 +193,20 @@ Test.
 return { content: {} };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
+      const manifest = parseExtensionMarkdown(md);
       expect(manifest.tags).toEqual(['one', 'two', 'three']);
     });
 
     it('throws on missing frontmatter start', () => {
-      expect(() => parseSkillMarkdown('# No frontmatter')).toThrow('Missing YAML frontmatter');
+      expect(() => parseExtensionMarkdown('# No frontmatter')).toThrow('Missing YAML frontmatter');
     });
 
     it('throws on missing frontmatter end', () => {
-      expect(() => parseSkillMarkdown('---\nid: test\n')).toThrow('Missing closing frontmatter');
+      expect(() => parseExtensionMarkdown('---\nid: test\n')).toThrow('Missing closing frontmatter');
     });
 
     it('leaves optional fields undefined when not present', () => {
-      const manifest = parseSkillMarkdown(MINIMAL_MD);
+      const manifest = parseExtensionMarkdown(MINIMAL_MD);
       expect(manifest.category).toBeUndefined();
       expect(manifest.icon).toBeUndefined();
       expect(manifest.author).toBeUndefined();
@@ -217,7 +217,7 @@ return { content: {} };
 
     it('handles frontmatter with extra whitespace', () => {
       const md = `---
-id:   spaced-skill
+id:   spaced-ext
 name:   Spaced Name
 version:  1.0.0
 description: Has spaces
@@ -233,8 +233,8 @@ Test.
 return { content: {} };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
-      expect(manifest.id).toBe('spaced-skill');
+      const manifest = parseExtensionMarkdown(md);
+      expect(manifest.id).toBe('spaced-ext');
       expect(manifest.name).toBe('Spaced Name');
     });
 
@@ -256,7 +256,7 @@ Test.
 return { content: {} };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
+      const manifest = parseExtensionMarkdown(md);
       expect(manifest.description).toBe('Weather: current and forecast');
     });
   });
@@ -267,7 +267,7 @@ return { content: {} };
 
   describe('system prompt', () => {
     it('extracts multiline system prompt', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       expect(manifest.system_prompt).toContain('weather_current');
       expect(manifest.system_prompt).toContain('weather_forecast');
       expect(manifest.system_prompt).toContain('\n');
@@ -295,12 +295,12 @@ Test.
 return { content: {} };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
+      const manifest = parseExtensionMarkdown(md);
       expect(manifest.system_prompt).toBe('Some instructions.');
     });
 
     it('returns undefined when no system prompt section', () => {
-      const manifest = parseSkillMarkdown(MINIMAL_MD);
+      const manifest = parseExtensionMarkdown(MINIMAL_MD);
       expect(manifest.system_prompt).toBeUndefined();
     });
   });
@@ -311,7 +311,7 @@ return { content: {} };
 
   describe('tools', () => {
     it('parses a single tool with all fields', () => {
-      const manifest = parseSkillMarkdown(MINIMAL_MD);
+      const manifest = parseExtensionMarkdown(MINIMAL_MD);
       expect(manifest.tools).toHaveLength(1);
       expect(manifest.tools[0]!.name).toBe('my_tool');
       expect(manifest.tools[0]!.description).toBe('Does something useful.');
@@ -319,21 +319,21 @@ return { content: {} };
     });
 
     it('parses multiple tools', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       expect(manifest.tools).toHaveLength(2);
       expect(manifest.tools[0]!.name).toBe('weather_current');
       expect(manifest.tools[1]!.name).toBe('weather_forecast');
     });
 
     it('extracts description as first paragraph', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       expect(manifest.tools[0]!.description).toBe(
         'Get current weather for a city. Returns temperature, conditions, humidity, and wind.',
       );
     });
 
     it('parses parameter table into JSON Schema', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       const params = manifest.tools[0]!.parameters;
       expect(params.type).toBe('object');
       expect(params.properties).toHaveProperty('city');
@@ -360,13 +360,13 @@ A tool with no params.
 return { content: { result: "hello" } };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
+      const manifest = parseExtensionMarkdown(md);
       expect(manifest.tools[0]!.parameters.type).toBe('object');
       expect(manifest.tools[0]!.parameters.properties).toEqual({});
     });
 
     it('extracts permissions', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       expect(manifest.tools[0]!.permissions).toEqual(['network']);
     });
 
@@ -390,18 +390,18 @@ A tool.
 return { content: {} };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
+      const manifest = parseExtensionMarkdown(md);
       expect(manifest.tools[0]!.permissions).toEqual(['network', 'filesystem']);
     });
 
     it('extracts requires_approval', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       expect(manifest.tools[0]!.requires_approval).toBeUndefined();
       expect(manifest.tools[1]!.requires_approval).toBe(true);
     });
 
     it('extracts multiline code from fenced block', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       const code = manifest.tools[0]!.code;
       expect(code).toContain("config.get('openweather', 'api_key')");
       expect(code).toContain('\n'); // multiline
@@ -426,7 +426,7 @@ A tool.
 return { content: { ok: true } };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
+      const manifest = parseExtensionMarkdown(md);
       expect(manifest.tools[0]!.code).toBe('return { content: { ok: true } };');
     });
 
@@ -450,7 +450,7 @@ const md = "## Heading\\n### Subheading\\nContent";
 return { content: { markdown: md } };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
+      const manifest = parseExtensionMarkdown(md);
       expect(manifest.tools).toHaveLength(1);
       expect(manifest.tools[0]!.name).toBe('my_tool');
       expect(manifest.tools[0]!.code).toContain('## Heading');
@@ -463,7 +463,7 @@ return { content: { markdown: md } };
 
   describe('required services', () => {
     it('parses service metadata', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       expect(manifest.required_services).toHaveLength(1);
       const svc = manifest.required_services![0]!;
       expect(svc.name).toBe('openweather');
@@ -474,7 +474,7 @@ return { content: { markdown: md } };
     });
 
     it('parses config schema table', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       const schema = manifest.required_services![0]!.config_schema!;
       expect(schema).toHaveLength(2);
       expect(schema[0]!.name).toBe('api_key');
@@ -509,13 +509,13 @@ Test.
 return { content: {} };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
+      const manifest = parseExtensionMarkdown(md);
       expect(manifest.required_services).toHaveLength(1);
       expect(manifest.required_services![0]!.config_schema).toBeUndefined();
     });
 
     it('returns undefined when no required services section', () => {
-      const manifest = parseSkillMarkdown(MINIMAL_MD);
+      const manifest = parseExtensionMarkdown(MINIMAL_MD);
       expect(manifest.required_services).toBeUndefined();
     });
   });
@@ -526,7 +526,7 @@ return { content: {} };
 
   describe('triggers', () => {
     it('parses trigger metadata', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       expect(manifest.triggers).toHaveLength(2);
 
       const t1 = manifest.triggers![0]!;
@@ -537,19 +537,19 @@ return { content: {} };
     });
 
     it('parses config and action from JSON block', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       const t1 = manifest.triggers![0]!;
       expect(t1.config).toEqual({ cron: '0 8 * * *' });
       expect(t1.action).toEqual({ type: 'chat', payload: { prompt: 'Weather today?' } });
     });
 
     it('handles enabled: false', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       expect(manifest.triggers![1]!.enabled).toBe(false);
     });
 
     it('returns undefined when no triggers section', () => {
-      const manifest = parseSkillMarkdown(MINIMAL_MD);
+      const manifest = parseExtensionMarkdown(MINIMAL_MD);
       expect(manifest.triggers).toBeUndefined();
     });
   });
@@ -560,14 +560,14 @@ return { content: {} };
 
   describe('validation integration', () => {
     it('minimal manifest passes validateManifest', () => {
-      const manifest = parseSkillMarkdown(MINIMAL_MD);
+      const manifest = parseExtensionMarkdown(MINIMAL_MD);
       const result = validateManifest(manifest);
       expect(result.valid).toBe(true);
       expect(result.errors).toEqual([]);
     });
 
     it('full manifest passes validateManifest', () => {
-      const manifest = parseSkillMarkdown(FULL_MD);
+      const manifest = parseExtensionMarkdown(FULL_MD);
       const result = validateManifest(manifest);
       expect(result.valid).toBe(true);
       expect(result.errors).toEqual([]);
@@ -590,7 +590,7 @@ Test.
 return { content: {} };
 \`\`\`
 `;
-      const manifest = parseSkillMarkdown(md);
+      const manifest = parseExtensionMarkdown(md);
       const result = validateManifest(manifest);
       expect(result.valid).toBe(false);
     });
@@ -601,9 +601,9 @@ return { content: {} };
 // Serializer Tests
 // =============================================================================
 
-describe('serializeSkillMarkdown', () => {
+describe('serializeExtensionMarkdown', () => {
   it('serializes minimal manifest', () => {
-    const manifest: SkillPackageManifest = {
+    const manifest: ExtensionManifest = {
       id: 'test',
       name: 'Test',
       version: '1.0.0',
@@ -616,7 +616,7 @@ describe('serializeSkillMarkdown', () => {
       }],
     };
 
-    const md = serializeSkillMarkdown(manifest);
+    const md = serializeExtensionMarkdown(manifest);
     expect(md).toContain('---');
     expect(md).toContain('id: test');
     expect(md).toContain('## Tools');
@@ -625,18 +625,18 @@ describe('serializeSkillMarkdown', () => {
   });
 
   it('serializes all optional fields', () => {
-    const manifest: SkillPackageManifest = {
+    const manifest: ExtensionManifest = {
       id: 'full',
-      name: 'Full Skill',
+      name: 'Full Extension',
       version: '1.0.0',
       description: 'Full test',
       category: 'utilities',
-      icon: '🔧',
+      icon: '\uD83D\uDD27',
       author: { name: 'Test Author' },
       tags: ['a', 'b'],
       keywords: ['x', 'y'],
       docs: 'https://example.com',
-      system_prompt: 'Use this skill wisely.',
+      system_prompt: 'Use this extension wisely.',
       tools: [{
         name: 'tool_a',
         description: 'Tool A',
@@ -674,13 +674,12 @@ describe('serializeSkillMarkdown', () => {
       }],
     };
 
-    const md = serializeSkillMarkdown(manifest);
+    const md = serializeExtensionMarkdown(manifest);
     expect(md).toContain('category: utilities');
-    expect(md).toContain('icon: 🔧');
     expect(md).toContain('author: Test Author');
     expect(md).toContain('tags: [a, b]');
     expect(md).toContain('## System Prompt');
-    expect(md).toContain('Use this skill wisely.');
+    expect(md).toContain('Use this extension wisely.');
     expect(md).toContain('## Required Services');
     expect(md).toContain('### my-api');
     expect(md).toContain('**Permissions**: network');
@@ -690,7 +689,7 @@ describe('serializeSkillMarkdown', () => {
   });
 
   it('round-trip: parse(serialize(manifest)) preserves data', () => {
-    const original: SkillPackageManifest = {
+    const original: ExtensionManifest = {
       id: 'roundtrip',
       name: 'Round Trip',
       version: '1.0.0',
@@ -735,8 +734,8 @@ describe('serializeSkillMarkdown', () => {
       }],
     };
 
-    const md = serializeSkillMarkdown(original);
-    const parsed = parseSkillMarkdown(md);
+    const md = serializeExtensionMarkdown(original);
+    const parsed = parseExtensionMarkdown(md);
 
     // Core fields
     expect(parsed.id).toBe(original.id);

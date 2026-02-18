@@ -77,6 +77,12 @@ export function generateAgentId(): string {
 /**
  * Create a requestApproval callback for agent configs.
  * Bridges the Agent tool system to the ApprovalManager.
+ *
+ * NOTE: This callback is used in non-streaming contexts where there is no
+ * bidirectional channel to the user. If approval is required and no remembered
+ * decision exists, the action is rejected immediately and the pending action
+ * is cleaned up. Streaming paths use wireStreamApproval() instead, which can
+ * send approval_required SSE events and await user response.
  */
 export function createApprovalCallback(): AgentConfig['requestApproval'] {
   return async (category, actionType, description, params) => {
@@ -90,6 +96,13 @@ export function createApprovalCallback(): AgentConfig['requestApproval'] {
     );
     if (!result) return true;
     if (result.action.status === 'rejected') return false;
+
+    // Non-streaming: no way to prompt user — reject and clean up the pending action
+    approvalMgr.processDecision({
+      actionId: result.action.id,
+      decision: 'reject',
+      reason: 'Auto-rejected: approval not available in non-streaming context',
+    });
     return false;
   };
 }
@@ -149,7 +162,7 @@ export function loadProviderConfig(providerId: string): { baseUrl?: string; apiK
  * 4. Hardcoded fallback: 128K
  */
 export function resolveContextWindow(provider: string, model: string, userOverride?: number): number {
-  if (userOverride) return userOverride;
+  if (userOverride !== undefined) return userOverride;
 
   // Provider config has accurate context windows for all models (loaded from JSON)
   const providerConfig = coreGetProviderConfig(provider);

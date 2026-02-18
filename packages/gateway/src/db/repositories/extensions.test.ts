@@ -1,5 +1,5 @@
 /**
- * SkillPackagesRepository Tests
+ * ExtensionsRepository Tests
  *
  * Tests initialize/refreshCache, getById (sync), getAll (sync),
  * getEnabled (sync), upsert, updateStatus, updateSettings, delete,
@@ -46,7 +46,7 @@ vi.mock('../../services/log.js', () => ({
   }),
 }));
 
-const { SkillPackagesRepository, initializeSkillPackagesRepo } = await import('./skill-packages.js');
+const { ExtensionsRepository, initializeExtensionsRepo } = await import('./extensions.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -96,12 +96,12 @@ function makeRow(overrides: Record<string, unknown> = {}) {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('SkillPackagesRepository', () => {
-  let repo: InstanceType<typeof SkillPackagesRepository>;
+describe('ExtensionsRepository', () => {
+  let repo: InstanceType<typeof ExtensionsRepository>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    repo = new SkillPackagesRepository();
+    repo = new ExtensionsRepository();
   });
 
   // ========================================================================
@@ -389,13 +389,13 @@ describe('SkillPackagesRepository', () => {
   });
 
   // ========================================================================
-  // initializeSkillPackagesRepo
+  // initializeExtensionsRepo
   // ========================================================================
 
-  describe('initializeSkillPackagesRepo', () => {
+  describe('initializeExtensionsRepo', () => {
     it('initializes the singleton repo', async () => {
       mockAdapter.query.mockResolvedValue([makeRow()]);
-      await initializeSkillPackagesRepo();
+      await initializeExtensionsRepo();
       // No error = success (singleton is already initialized)
     });
   });

@@ -1,11 +1,11 @@
 /**
- * SkillPackageTypes Tests
+ * ExtensionTypes Tests
  *
  * Tests for manifest validation logic.
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateManifest } from './skill-package-types.js';
+import { validateManifest } from './extension-types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -13,10 +13,10 @@ import { validateManifest } from './skill-package-types.js';
 
 function validManifest(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'test-skill',
-    name: 'Test Skill',
+    id: 'test-ext',
+    name: 'Test Extension',
     version: '1.0.0',
-    description: 'A test skill',
+    description: 'A test extension',
     tools: [
       {
         name: 'test_tool',
@@ -59,8 +59,8 @@ describe('validateManifest', () => {
   });
 
   it('validates id format (lowercase + hyphens)', () => {
-    expect(validateManifest(validManifest({ id: 'my-skill' })).valid).toBe(true);
-    expect(validateManifest(validManifest({ id: 'skill123' })).valid).toBe(true);
+    expect(validateManifest(validManifest({ id: 'my-ext' })).valid).toBe(true);
+    expect(validateManifest(validManifest({ id: 'ext123' })).valid).toBe(true);
     expect(validateManifest(validManifest({ id: 'Invalid_ID' })).valid).toBe(false);
     expect(validateManifest(validManifest({ id: '-starts-with-hyphen' })).valid).toBe(false);
   });

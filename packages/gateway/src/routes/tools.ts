@@ -23,7 +23,7 @@ import { getAgent } from './agents.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { initToolSourceMappings, getToolSource } from '../services/tool-source.js';
-import { TRIGGER_TOOLS, PLAN_TOOLS, HEARTBEAT_TOOLS, SKILL_PACKAGE_TOOLS } from '../tools/index.js';
+import { TRIGGER_TOOLS, PLAN_TOOLS, HEARTBEAT_TOOLS, EXTENSION_TOOLS } from '../tools/index.js';
 
 export const toolsRoutes = new Hono();
 
@@ -36,7 +36,7 @@ initToolSourceMappings({
   triggerNames: TRIGGER_TOOLS.map(t => t.name),
   planNames: PLAN_TOOLS.map(t => t.name),
   heartbeatNames: HEARTBEAT_TOOLS.map(t => t.name),
-  skillPackageNames: SKILL_PACKAGE_TOOLS.map(t => t.name),
+  extensionNames: EXTENSION_TOOLS.map(t => t.name),
 });
 
 // Standalone tool registry for direct execution (no agent required)

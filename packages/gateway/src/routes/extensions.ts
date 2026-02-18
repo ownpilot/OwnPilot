@@ -1,20 +1,20 @@
 /**
- * Skill Packages Routes
+ * Extensions Routes
  *
- * API for installing, managing, and inspecting skill packages.
+ * API for installing, managing, and inspecting extensions.
  */
 
 import { Hono } from 'hono';
 import { createProvider, getProviderConfig as coreGetProviderConfig, type AIProvider } from '@ownpilot/core';
-import { getSkillPackageService, SkillPackageError } from '../services/skill-package-service.js';
-import { validateManifest, type SkillPackageManifest } from '../services/skill-package-types.js';
-import { serializeSkillMarkdown } from '../services/skill-package-markdown.js';
+import { getExtensionService, ExtensionError } from '../services/extension-service.js';
+import { validateManifest, type ExtensionManifest } from '../services/extension-types.js';
+import { serializeExtensionMarkdown } from '../services/extension-markdown.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import { resolveProviderAndModel, getApiKey } from './settings.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
 import { wsGateway } from '../ws/server.js';
 
-export const skillPackagesRoutes = new Hono();
+export const extensionsRoutes = new Hono();
 
 /** Providers with native SDK support (others use OpenAI-compatible) */
 const NATIVE_PROVIDERS = new Set([
@@ -26,18 +26,18 @@ const NATIVE_PROVIDERS = new Set([
 // AI Generation Prompt
 // ============================================================================
 
-const SKILL_GENERATION_PROMPT = `You are an expert at generating OwnPilot skill package manifests.
+const EXTENSION_GENERATION_PROMPT = `You are an expert at generating OwnPilot User Extension manifests.
 
-A skill package is a JSON file (skill.json) that bundles tools, system prompts, and metadata into a shareable package.
+An extension is a JSON file (extension.json) that bundles tools, system prompts, and metadata into a shareable package.
 
-## skill.json Schema
+## extension.json Schema
 
 \`\`\`
 {
   "id": string,           // REQUIRED. Lowercase + hyphens only (e.g. "weather-tools"). Pattern: /^[a-z0-9][a-z0-9-]*$/
   "name": string,         // REQUIRED. Human-readable name (e.g. "Weather Tools")
   "version": string,      // REQUIRED. Semver (e.g. "1.0.0")
-  "description": string,  // REQUIRED. What this skill does
+  "description": string,  // REQUIRED. What this extension does
   "category": string,     // One of: developer, productivity, communication, data, utilities, integrations, media, lifestyle, other
   "icon": string,         // Optional emoji (e.g. "🌤️")
   "author": { "name": string },  // Optional
@@ -45,7 +45,7 @@ A skill package is a JSON file (skill.json) that bundles tools, system prompts, 
   "keywords": string[],   // Optional tool-selection hint words
   "docs": string,         // Optional documentation URL
 
-  "system_prompt": string, // Optional. Instructions injected when this skill is active. Guides the AI on WHEN and HOW to use the tools.
+  "system_prompt": string, // Optional. Instructions injected when this extension is active. Guides the AI on WHEN and HOW to use the tools.
 
   "tools": [              // REQUIRED. At least 1 tool.
     {
@@ -100,7 +100,7 @@ On error: \`{ content: { error: "message" } }\`
 
 ## Examples
 
-### Simple utility skill (no external services):
+### Simple utility extension (no external services):
 {
   "id": "text-utilities",
   "name": "Text Utilities",
@@ -127,7 +127,7 @@ On error: \`{ content: { error: "message" } }\`
   "keywords": ["text", "word count", "character count"]
 }
 
-### Skill with external service:
+### Extension with external service:
 {
   "id": "web-search",
   "name": "Web Search",
@@ -171,11 +171,11 @@ On error: \`{ content: { error: "message" } }\`
 1. Return ONLY valid JSON. No markdown code blocks. No explanation text.
 2. Every tool must have name, description, parameters, and code.
 3. Tool names: lowercase with underscores only.
-4. Skill ID: lowercase with hyphens only.
+4. Extension ID: lowercase with hyphens only.
 5. Code must be a single string (escaped properly for JSON).
 6. Always include a helpful system_prompt.
 7. Add relevant tags and keywords for discoverability.
-8. If the skill needs an external API, define it in required_services with config_schema.
+8. If the extension needs an external API, define it in required_services with config_schema.
 9. Include "network" in permissions for tools that make HTTP requests.
 10. Make tool descriptions clear and specific — the AI uses them to decide which tool to call.`;
 
@@ -184,15 +184,19 @@ On error: \`{ content: { error: "message" } }\`
 // ============================================================================
 
 /**
- * GET / - List skill packages
+ * GET / - List extensions
  */
-skillPackagesRoutes.get('/', async (c) => {
+extensionsRoutes.get('/', async (c) => {
   const status = c.req.query('status');
   const category = c.req.query('category');
+  const format = c.req.query('format'); // 'ownpilot' | 'agentskills'
 
-  const service = getSkillPackageService();
+  const service = getExtensionService();
   let packages = service.getAll();
 
+  if (format) {
+    packages = packages.filter(p => (p.manifest.format ?? 'ownpilot') === format);
+  }
   if (status) {
     packages = packages.filter(p => p.status === status);
   }
@@ -206,7 +210,7 @@ skillPackagesRoutes.get('/', async (c) => {
 /**
  * POST / - Install from inline manifest
  */
-skillPackagesRoutes.post('/', async (c) => {
+extensionsRoutes.post('/', async (c) => {
   const userId = getUserId(c);
   const body = await c.req.json().catch(() => null);
 
@@ -215,22 +219,22 @@ skillPackagesRoutes.post('/', async (c) => {
   }
 
   try {
-    const service = getSkillPackageService();
+    const service = getExtensionService();
     const record = await service.installFromManifest((body as { manifest: unknown }).manifest as never, userId);
-    wsGateway.broadcast('data:changed', { entity: 'skill_package', action: 'created', id: record.id });
-    return apiResponse(c, { package: record, message: 'Skill package installed successfully.' }, 201);
+    wsGateway.broadcast('data:changed', { entity: 'extension', action: 'created', id: record.id });
+    return apiResponse(c, { package: record, message: 'Extension installed successfully.' }, 201);
   } catch (error) {
-    if (error instanceof SkillPackageError) {
+    if (error instanceof ExtensionError) {
       return apiError(c, { code: error.code, message: error.message }, 400);
     }
-    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(error, 'Failed to install skill package') }, 500);
+    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(error, 'Failed to install extension') }, 500);
   }
 });
 
 /**
  * POST /install - Install from file path
  */
-skillPackagesRoutes.post('/install', async (c) => {
+extensionsRoutes.post('/install', async (c) => {
   const userId = getUserId(c);
   const body = await c.req.json().catch(() => null);
 
@@ -239,27 +243,27 @@ skillPackagesRoutes.post('/install', async (c) => {
   }
 
   try {
-    const service = getSkillPackageService();
+    const service = getExtensionService();
     const record = await service.install((body as { path: string }).path, userId);
-    wsGateway.broadcast('data:changed', { entity: 'skill_package', action: 'created', id: record.id });
-    return apiResponse(c, { package: record, message: 'Skill package installed successfully.' }, 201);
+    wsGateway.broadcast('data:changed', { entity: 'extension', action: 'created', id: record.id });
+    return apiResponse(c, { package: record, message: 'Extension installed successfully.' }, 201);
   } catch (error) {
-    if (error instanceof SkillPackageError) {
+    if (error instanceof ExtensionError) {
       return apiError(c, { code: error.code, message: error.message }, 400);
     }
-    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(error, 'Failed to install skill package') }, 500);
+    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(error, 'Failed to install extension') }, 500);
   }
 });
 
 /**
  * POST /scan - Scan directory for packages
  */
-skillPackagesRoutes.post('/scan', async (c) => {
+extensionsRoutes.post('/scan', async (c) => {
   const userId = getUserId(c);
   const body = await c.req.json().catch(() => ({})) as { directory?: string };
 
   try {
-    const service = getSkillPackageService();
+    const service = getExtensionService();
     const result = await service.scanDirectory(body.directory, userId);
     return apiResponse(c, result);
   } catch (error) {
@@ -268,9 +272,9 @@ skillPackagesRoutes.post('/scan', async (c) => {
 });
 
 /**
- * POST /generate - Generate skill manifest from description using AI
+ * POST /generate - Generate extension manifest from description using AI
  */
-skillPackagesRoutes.post('/generate', async (c) => {
+extensionsRoutes.post('/generate', async (c) => {
   const body = await c.req.json().catch(() => null) as { description?: string; format?: 'json' | 'markdown' } | null;
 
   if (!body?.description || typeof body.description !== 'string' || body.description.trim().length === 0) {
@@ -305,7 +309,7 @@ skillPackagesRoutes.post('/generate', async (c) => {
     const result = await providerInstance.complete({
       model: { model, maxTokens: 4096, temperature: 0.7 },
       messages: [
-        { role: 'system' as const, content: SKILL_GENERATION_PROMPT },
+        { role: 'system' as const, content: EXTENSION_GENERATION_PROMPT },
         { role: 'user' as const, content: body.description.trim() },
       ],
     });
@@ -338,7 +342,7 @@ skillPackagesRoutes.post('/generate', async (c) => {
 
     // 7. Optionally serialize to markdown
     if (body?.format === 'markdown' && validation.valid) {
-      const markdown = serializeSkillMarkdown(manifest as SkillPackageManifest);
+      const markdown = serializeExtensionMarkdown(manifest as ExtensionManifest);
       return apiResponse(c, { manifest, validation, markdown });
     }
 
@@ -351,14 +355,14 @@ skillPackagesRoutes.post('/generate', async (c) => {
 /**
  * GET /:id - Get package details
  */
-skillPackagesRoutes.get('/:id', async (c) => {
+extensionsRoutes.get('/:id', async (c) => {
   const id = c.req.param('id');
 
-  const service = getSkillPackageService();
+  const service = getExtensionService();
   const pkg = service.getById(id);
 
   if (!pkg) {
-    return notFoundError(c, 'Skill package', id);
+    return notFoundError(c, 'Extension', id);
   }
 
   return apiResponse(c, { package: pkg });
@@ -367,85 +371,85 @@ skillPackagesRoutes.get('/:id', async (c) => {
 /**
  * DELETE /:id - Uninstall package
  */
-skillPackagesRoutes.delete('/:id', async (c) => {
+extensionsRoutes.delete('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getSkillPackageService();
+  const service = getExtensionService();
   const deleted = await service.uninstall(id, userId);
 
   if (!deleted) {
-    return notFoundError(c, 'Skill package', id);
+    return notFoundError(c, 'Extension', id);
   }
 
-  wsGateway.broadcast('data:changed', { entity: 'skill_package', action: 'deleted', id });
-  return apiResponse(c, { message: 'Skill package uninstalled successfully.' });
+  wsGateway.broadcast('data:changed', { entity: 'extension', action: 'deleted', id });
+  return apiResponse(c, { message: 'Extension uninstalled successfully.' });
 });
 
 /**
  * POST /:id/enable - Enable package + triggers
  */
-skillPackagesRoutes.post('/:id/enable', async (c) => {
+extensionsRoutes.post('/:id/enable', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
   try {
-    const service = getSkillPackageService();
+    const service = getExtensionService();
     const pkg = await service.enable(id, userId);
 
     if (!pkg) {
-      return notFoundError(c, 'Skill package', id);
+      return notFoundError(c, 'Extension', id);
     }
 
-    wsGateway.broadcast('data:changed', { entity: 'skill_package', action: 'updated', id });
-    return apiResponse(c, { package: pkg, message: 'Skill package enabled.' });
+    wsGateway.broadcast('data:changed', { entity: 'extension', action: 'updated', id });
+    return apiResponse(c, { package: pkg, message: 'Extension enabled.' });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to enable skill package') }, 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to enable extension') }, 500);
   }
 });
 
 /**
  * POST /:id/disable - Disable package + triggers
  */
-skillPackagesRoutes.post('/:id/disable', async (c) => {
+extensionsRoutes.post('/:id/disable', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
   try {
-    const service = getSkillPackageService();
+    const service = getExtensionService();
     const pkg = await service.disable(id, userId);
 
     if (!pkg) {
-      return notFoundError(c, 'Skill package', id);
+      return notFoundError(c, 'Extension', id);
     }
 
-    wsGateway.broadcast('data:changed', { entity: 'skill_package', action: 'updated', id });
-    return apiResponse(c, { package: pkg, message: 'Skill package disabled.' });
+    wsGateway.broadcast('data:changed', { entity: 'extension', action: 'updated', id });
+    return apiResponse(c, { package: pkg, message: 'Extension disabled.' });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to disable skill package') }, 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to disable extension') }, 500);
   }
 });
 
 /**
  * POST /:id/reload - Reload manifest from disk
  */
-skillPackagesRoutes.post('/:id/reload', async (c) => {
+extensionsRoutes.post('/:id/reload', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
   try {
-    const service = getSkillPackageService();
+    const service = getExtensionService();
     const pkg = await service.reload(id, userId);
 
     if (!pkg) {
-      return notFoundError(c, 'Skill package', id);
+      return notFoundError(c, 'Extension', id);
     }
 
-    return apiResponse(c, { package: pkg, message: 'Skill package reloaded.' });
+    return apiResponse(c, { package: pkg, message: 'Extension reloaded.' });
   } catch (error) {
-    if (error instanceof SkillPackageError) {
+    if (error instanceof ExtensionError) {
       return apiError(c, { code: error.code, message: error.message }, 400);
     }
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to reload skill package') }, 500);
+    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to reload extension') }, 500);
   }
 });

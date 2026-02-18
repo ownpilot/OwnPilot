@@ -236,6 +236,11 @@ chatRoutes.post('/', async (c) => {
   }
   agent.setExecutionPermissions(execPermissions);
 
+  // Apply per-request tool call limit (0 = unlimited)
+  if (body.maxToolCalls !== undefined) {
+    agent.setMaxToolCalls(body.maxToolCalls);
+  }
+
   const currentHash = execPermHash(execPermissions);
   const previousHash = lastExecPermHash.get(chatUserId);
   if (!isPromptInitialized || currentHash !== previousHash) {
@@ -300,6 +305,7 @@ chatRoutes.post('/', async (c) => {
         } finally {
           agent.setRequestApproval(undefined);
           agent.setExecutionPermissions(undefined);
+          agent.setMaxToolCalls(undefined);
         }
       });
     }
@@ -343,9 +349,10 @@ chatRoutes.post('/', async (c) => {
         agent.clearAdditionalTools();
       }
 
-      // Reset execution permissions and approval callback
+      // Reset per-request overrides
       agent.setRequestApproval(undefined);
       agent.setExecutionPermissions(undefined);
+      agent.setMaxToolCalls(undefined);
 
       if (!result.ok) {
         await stream.writeSSE({
@@ -410,9 +417,10 @@ chatRoutes.post('/', async (c) => {
       conversationId: body.conversationId ?? agent.getConversation().id,
     });
 
-    // Reset execution state
+    // Reset per-request overrides
     agent.setExecutionPermissions(undefined);
     agent.setRequestApproval(undefined);
+    agent.setMaxToolCalls(undefined);
 
     const processingTime = Math.round(performance.now() - startTime);
 
@@ -425,6 +433,44 @@ chatRoutes.post('/', async (c) => {
     const { content: busMemStripped, memories: busMemories } = extractMemoriesFromResponse(busResult.response.content);
     const { content: busCleanContent, suggestions: busSuggestions } = extractSuggestions(busMemStripped);
 
+    const busToolCalls = busResult.response.metadata.toolCalls as unknown[] | undefined;
+    const busTrace = {
+      duration: processingTime,
+      toolCalls: [],
+      modelCalls: [{ provider, model, duration: processingTime }],
+      autonomyChecks: [],
+      dbOperations: { reads: 0, writes: 0 },
+      memoryOps: { adds: 0, recalls: 0 },
+      triggersFired: [],
+      errors: busResult.warnings ?? [],
+      events: busResult.stages.map(s => ({ type: 'stage', name: s })),
+    };
+
+    // Persistence middleware saves to ChatRepository but NOT LogsRepository.
+    // Save logs here to match what the legacy path does.
+    saveChatToDatabase({
+      userId,
+      conversationId: body.conversationId || conversation.id,
+      agentId: body.agentId,
+      provider,
+      model,
+      userMessage: body.message,
+      assistantContent: busCleanContent,
+      toolCalls: busToolCalls,
+      trace: busTrace as Record<string, unknown>,
+      usage: busUsage ? {
+        promptTokens: busUsage.input,
+        completionTokens: busUsage.output,
+        totalTokens: busUsage.input + busUsage.output,
+      } : undefined,
+      historyLength: body.historyLength,
+      ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
+      userAgent: c.req.header('user-agent'),
+    }).catch(() => { /* logged internally */ });
+
+    // Post-processing middleware skips web UI memory extraction — run it here.
+    runPostChatProcessing(userId, body.message, busCleanContent, busToolCalls as never);
+
     return c.json({
       success: true,
       data: {
@@ -433,7 +479,7 @@ chatRoutes.post('/', async (c) => {
         message: busCleanContent,
         response: busCleanContent,
         model,
-        toolCalls: (busResult.response.metadata.toolCalls as Array<{ id: string; name: string; arguments: Record<string, unknown> }>) ?? undefined,
+        toolCalls: (busToolCalls as Array<{ id: string; name: string; arguments: Record<string, unknown> }>) ?? undefined,
         usage: busUsage
           ? {
               promptTokens: busUsage.input,
@@ -445,17 +491,7 @@ chatRoutes.post('/', async (c) => {
         session: getSessionInfo(agent, provider, model, userContextWindow),
         suggestions: busSuggestions.length > 0 ? busSuggestions : undefined,
         memories: busMemories.length > 0 ? busMemories : undefined,
-        trace: {
-          duration: processingTime,
-          toolCalls: [],
-          modelCalls: [{ provider, model, duration: processingTime }],
-          autonomyChecks: [],
-          dbOperations: { reads: 0, writes: 0 },
-          memoryOps: { adds: 0, recalls: 0 },
-          triggersFired: [],
-          errors: busResult.warnings ?? [],
-          events: busResult.stages.map(s => ({ type: 'stage', name: s })),
-        },
+        trace: busTrace,
       },
       meta: {
         requestId,
@@ -552,6 +588,7 @@ chatRoutes.post('/', async (c) => {
     }
 
     agent.setExecutionPermissions(undefined);
+    agent.setMaxToolCalls(undefined);
 
     if (result.ok) {
       traceModelCall(

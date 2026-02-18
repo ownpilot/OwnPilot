@@ -1,28 +1,29 @@
 /**
- * Skill Packages Repository
+ * Extensions Repository
  *
- * Manages installed skill package state (status, settings, manifest).
+ * Manages installed extension state (status, settings, manifest).
  * Uses in-memory cache for fast synchronous access (same pattern as
  * PluginsRepository and ConfigServicesRepository).
  */
 
 import { BaseRepository } from './base.js';
 import { getLog } from '../../services/log.js';
-import type { SkillPackageManifest } from '../../services/skill-package-types.js';
+import type { ExtensionManifest, ExtensionFormat } from '../../services/extension-types.js';
 
-const log = getLog('SkillPkgRepo');
+const log = getLog('ExtRepo');
 
 // =============================================================================
 // ROW TYPES (database representation)
 // =============================================================================
 
-interface SkillPackageRow {
+interface ExtensionRow {
   id: string;
   user_id: string;
   name: string;
   version: string;
   description: string | null;
   category: string;
+  format: string;
   icon: string | null;
   author_name: string | null;
   manifest: string;         // JSONB string
@@ -40,16 +41,18 @@ interface SkillPackageRow {
 // PUBLIC TYPES
 // =============================================================================
 
-export interface SkillPackageRecord {
+export interface ExtensionRecord {
   id: string;
   userId: string;
   name: string;
   version: string;
   description?: string;
   category: string;
+  /** Package format: 'ownpilot' (native tool bundles) or 'agentskills' (open standard SKILL.md) */
+  format: ExtensionFormat;
   icon?: string;
   authorName?: string;
-  manifest: SkillPackageManifest;
+  manifest: ExtensionManifest;
   status: 'enabled' | 'disabled' | 'error';
   sourcePath?: string;
   settings: Record<string, unknown>;
@@ -60,16 +63,17 @@ export interface SkillPackageRecord {
   updatedAt: string;
 }
 
-export interface UpsertSkillPackageInput {
+export interface UpsertExtensionInput {
   id: string;
   userId?: string;
   name: string;
   version: string;
   description?: string;
   category?: string;
+  format?: ExtensionFormat;
   icon?: string;
   authorName?: string;
-  manifest: SkillPackageManifest;
+  manifest: ExtensionManifest;
   status?: string;
   sourcePath?: string;
   settings?: Record<string, unknown>;
@@ -81,7 +85,7 @@ export interface UpsertSkillPackageInput {
 // CACHE
 // =============================================================================
 
-let cache = new Map<string, SkillPackageRecord>();
+let cache = new Map<string, ExtensionRecord>();
 let cacheInitialized = false;
 
 // =============================================================================
@@ -100,7 +104,7 @@ function parseJsonb<T>(raw: unknown, fallback: T): T {
   return raw as T;
 }
 
-function rowToRecord(row: SkillPackageRow): SkillPackageRecord {
+function rowToRecord(row: ExtensionRow): ExtensionRecord {
   return {
     id: row.id,
     userId: row.user_id,
@@ -108,10 +112,11 @@ function rowToRecord(row: SkillPackageRow): SkillPackageRecord {
     version: row.version,
     description: row.description ?? undefined,
     category: row.category,
+    format: (row.format ?? 'ownpilot') as ExtensionRecord['format'],
     icon: row.icon ?? undefined,
     authorName: row.author_name ?? undefined,
-    manifest: parseJsonb<SkillPackageManifest>(row.manifest, { id: '', name: '', version: '', description: '', tools: [] }),
-    status: row.status as SkillPackageRecord['status'],
+    manifest: parseJsonb<ExtensionManifest>(row.manifest, { id: '', name: '', version: '', description: '', tools: [] }),
+    status: row.status as ExtensionRecord['status'],
     sourcePath: row.source_path ?? undefined,
     settings: parseJsonb<Record<string, unknown>>(row.settings, {}),
     errorMessage: row.error_message ?? undefined,
@@ -126,7 +131,7 @@ function rowToRecord(row: SkillPackageRow): SkillPackageRecord {
 // REPOSITORY
 // =============================================================================
 
-export class SkillPackagesRepository extends BaseRepository {
+export class ExtensionsRepository extends BaseRepository {
   // ---------------------------------------------------------------------------
   // Initialization
   // ---------------------------------------------------------------------------
@@ -136,14 +141,14 @@ export class SkillPackagesRepository extends BaseRepository {
   }
 
   async refreshCache(): Promise<void> {
-    const rows = await this.query<SkillPackageRow>('SELECT * FROM skill_packages');
+    const rows = await this.query<ExtensionRow>('SELECT * FROM user_extensions');
     cache = new Map(rows.map(r => [r.id, rowToRecord(r)]));
     cacheInitialized = true;
   }
 
   private async refreshRecordCache(id: string): Promise<void> {
-    const row = await this.queryOne<SkillPackageRow>(
-      'SELECT * FROM skill_packages WHERE id = $1',
+    const row = await this.queryOne<ExtensionRow>(
+      'SELECT * FROM user_extensions WHERE id = $1',
       [id],
     );
     if (row) {
@@ -157,7 +162,7 @@ export class SkillPackagesRepository extends BaseRepository {
   // Accessors (sync, from cache)
   // ---------------------------------------------------------------------------
 
-  getById(id: string): SkillPackageRecord | null {
+  getById(id: string): ExtensionRecord | null {
     if (!cacheInitialized) {
       log.warn(`Cache not initialized, returning null for: ${id}`);
       return null;
@@ -165,7 +170,7 @@ export class SkillPackagesRepository extends BaseRepository {
     return cache.get(id) ?? null;
   }
 
-  getAll(): SkillPackageRecord[] {
+  getAll(): ExtensionRecord[] {
     if (!cacheInitialized) {
       log.warn('Cache not initialized, returning empty list');
       return [];
@@ -173,7 +178,7 @@ export class SkillPackagesRepository extends BaseRepository {
     return Array.from(cache.values());
   }
 
-  getEnabled(): SkillPackageRecord[] {
+  getEnabled(): ExtensionRecord[] {
     return this.getAll().filter(p => p.status === 'enabled');
   }
 
@@ -181,15 +186,16 @@ export class SkillPackagesRepository extends BaseRepository {
   // CRUD (async, writes to DB + refreshes cache)
   // ---------------------------------------------------------------------------
 
-  async upsert(input: UpsertSkillPackageInput): Promise<SkillPackageRecord> {
+  async upsert(input: UpsertExtensionInput): Promise<ExtensionRecord> {
     await this.execute(
-      `INSERT INTO skill_packages (id, user_id, name, version, description, category, icon, author_name, manifest, status, source_path, settings, tool_count, trigger_count, installed_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+      `INSERT INTO user_extensions (id, user_id, name, version, description, category, format, icon, author_name, manifest, status, source_path, settings, tool_count, trigger_count, installed_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          version = EXCLUDED.version,
          description = EXCLUDED.description,
          category = EXCLUDED.category,
+         format = EXCLUDED.format,
          icon = EXCLUDED.icon,
          author_name = EXCLUDED.author_name,
          manifest = EXCLUDED.manifest,
@@ -204,6 +210,7 @@ export class SkillPackagesRepository extends BaseRepository {
         input.version,
         input.description ?? null,
         input.category ?? 'other',
+        input.format ?? 'ownpilot',
         input.icon ?? null,
         input.authorName ?? null,
         JSON.stringify(input.manifest),
@@ -221,14 +228,14 @@ export class SkillPackagesRepository extends BaseRepository {
 
   async updateStatus(
     id: string,
-    status: SkillPackageRecord['status'],
+    status: ExtensionRecord['status'],
     errorMessage?: string,
-  ): Promise<SkillPackageRecord | null> {
+  ): Promise<ExtensionRecord | null> {
     const existing = cache.get(id);
     if (!existing) return null;
 
     await this.execute(
-      'UPDATE skill_packages SET status = $1, error_message = $2, updated_at = NOW() WHERE id = $3',
+      'UPDATE user_extensions SET status = $1, error_message = $2, updated_at = NOW() WHERE id = $3',
       [status, errorMessage ?? null, id],
     );
 
@@ -236,12 +243,12 @@ export class SkillPackagesRepository extends BaseRepository {
     return cache.get(id) ?? null;
   }
 
-  async updateSettings(id: string, settings: Record<string, unknown>): Promise<SkillPackageRecord | null> {
+  async updateSettings(id: string, settings: Record<string, unknown>): Promise<ExtensionRecord | null> {
     const existing = cache.get(id);
     if (!existing) return null;
 
     await this.execute(
-      'UPDATE skill_packages SET settings = $1, updated_at = NOW() WHERE id = $2',
+      'UPDATE user_extensions SET settings = $1, updated_at = NOW() WHERE id = $2',
       [JSON.stringify(settings), id],
     );
 
@@ -250,7 +257,7 @@ export class SkillPackagesRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute('DELETE FROM skill_packages WHERE id = $1', [id]);
+    const result = await this.execute('DELETE FROM user_extensions WHERE id = $1', [id]);
     cache.delete(id);
     return result.changes > 0;
   }
@@ -260,8 +267,8 @@ export class SkillPackagesRepository extends BaseRepository {
 // SINGLETON & INIT
 // =============================================================================
 
-export const skillPackagesRepo = new SkillPackagesRepository();
+export const extensionsRepo = new ExtensionsRepository();
 
-export async function initializeSkillPackagesRepo(): Promise<void> {
-  await skillPackagesRepo.initialize();
+export async function initializeExtensionsRepo(): Promise<void> {
+  await extensionsRepo.initialize();
 }

@@ -52,7 +52,7 @@ import {
   debugRoutes,
   executionPermissionsRoutes,
   heartbeatsRoutes,
-  skillPackagesRoutes,
+  extensionsRoutes,
   composioRoutes,
   mcpRoutes,
   webhookRoutes,
@@ -225,8 +225,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Heartbeats (NL-to-cron periodic tasks)
   app.route('/api/v1/heartbeats', heartbeatsRoutes);
 
-  // Skill Packages (shareable tool + prompt + trigger bundles)
-  app.route('/api/v1/skill-packages', skillPackagesRoutes);
+  // User Extensions (shareable tool + prompt + trigger bundles)
+  app.route('/api/v1/extensions', extensionsRoutes);
 
   // Composio (1000+ OAuth app integrations)
   app.route('/api/v1/composio', composioRoutes);
@@ -303,8 +303,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         configServices: '/api/v1/config-services',
         // Heartbeats (NL-to-cron periodic tasks)
         heartbeats: '/api/v1/heartbeats',
-        // Skill Packages (shareable tool bundles)
-        skillPackages: '/api/v1/skill-packages',
+        // User Extensions (shareable tool bundles)
+        extensions: '/api/v1/extensions',
         // Local AI Providers (LM Studio, Ollama)
         localProviders: '/api/v1/local-providers',
         // Webhooks (external service callbacks, no auth required)

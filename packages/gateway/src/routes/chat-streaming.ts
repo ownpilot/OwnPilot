@@ -19,6 +19,7 @@ import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.
 import { generateApprovalId, createApprovalRequest } from '../services/execution-approval.js';
 import { getLog } from '../services/log.js';
 import type { getAgent } from './agent-service.js';
+import { saveStreamingChat, runPostChatProcessing } from './chat-persistence.js';
 
 const log = getLog('ChatStreaming');
 
@@ -246,7 +247,7 @@ export function createStreamCallbacks(config: StreamingConfig): { callbacks: Str
     onToolEnd(toolCall: ToolCall, result: ToolEndResult) {
       const { displayName } = extractToolDisplay(toolCall);
 
-      const traceEntry = state.traceToolCalls.find(tc => tc.name === displayName && !tc.result);
+      const traceEntry = state.traceToolCalls.find(tc => tc.name === displayName && tc.result === undefined);
       if (traceEntry) {
         traceEntry.result = result.content;
         traceEntry.success = !(result.isError ?? false);
@@ -416,4 +417,27 @@ export async function processStreamingViaBus(
     model,
     error: result.response.metadata.error as string | undefined,
   });
+
+  // Persistence middleware saves to ChatRepository but NOT LogsRepository.
+  // Save streaming trace/logs here to match what the legacy path does.
+  const assistantContent = result.response.content || state.streamedContent;
+  if (assistantContent) {
+    const toolCalls = result.response.metadata.toolCalls as unknown[] | undefined;
+    await saveStreamingChat(state, {
+      userId,
+      conversationId,
+      agentId,
+      provider,
+      model,
+      userMessage: chatMessage,
+      assistantContent,
+      toolCalls,
+      finishReason: result.response.metadata.finishReason as string | undefined,
+      historyLength: body.historyLength,
+    });
+
+    // Post-processing middleware skips web UI memory extraction.
+    // Run it here so web chat messages also generate memories.
+    runPostChatProcessing(userId, chatMessage, assistantContent, toolCalls as never);
+  }
 }

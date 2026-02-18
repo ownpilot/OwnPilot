@@ -32,7 +32,7 @@ export {
   fileWorkspacesApi,
   expensesApi,
 } from './misc';
-export { skillPackagesApi } from './skill-packages';
+export { extensionsApi } from './extensions';
 export { composioApi } from './composio';
 export { mcpApi } from './mcp';
 export type { ComposioApp, ComposioConnection, ComposioConnectionRequest, ComposioStatus, ComposioActionInfo } from './composio';
@@ -73,10 +73,10 @@ export type {
   ConfigEntryView,
   ConfigServiceView,
   ConfigServiceStats,
-  SkillPackageInfo,
-  SkillToolInfo,
-  SkillTriggerInfo,
-  SkillRequiredService,
+  ExtensionInfo,
+  ExtensionToolInfo,
+  ExtensionTriggerInfo,
+  ExtensionRequiredService,
   WorkspaceSelectorInfo,
   FileWorkspaceInfo,
   WorkspaceFile,

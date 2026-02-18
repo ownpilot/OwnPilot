@@ -289,14 +289,14 @@ export {
   type HeartbeatQuery,
 } from './heartbeats.js';
 
-// Skill packages repository
+// Extensions repository
 export {
-  SkillPackagesRepository,
-  skillPackagesRepo,
-  initializeSkillPackagesRepo,
-  type SkillPackageRecord,
-  type UpsertSkillPackageInput,
-} from './skill-packages.js';
+  ExtensionsRepository,
+  extensionsRepo,
+  initializeExtensionsRepo,
+  type ExtensionRecord,
+  type UpsertExtensionInput,
+} from './extensions.js';
 
 // Workspaces repository
 export {

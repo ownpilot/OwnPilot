@@ -46,6 +46,8 @@ export interface ChatRequest {
   directTools?: string[];
   /** Include full tool catalog in the message (first message only) */
   includeToolList?: boolean;
+  /** Override max tool calls for this request (0 = unlimited) */
+  maxToolCalls?: number;
 }
 
 /**

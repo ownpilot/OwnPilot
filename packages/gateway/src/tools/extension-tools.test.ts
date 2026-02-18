@@ -1,11 +1,11 @@
 /**
- * SkillPackageTools Tests
+ * ExtensionTools Tests
  *
- * Tests for all 3 skill package AI tools.
+ * Tests for all 3 extension AI tools.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { executeSkillPackageTool } from './skill-package-tools.js';
+import { executeExtensionTool } from './extension-tools.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -18,8 +18,8 @@ const mockService = {
   disable: vi.fn(),
 };
 
-vi.mock('../services/skill-package-service.js', () => ({
-  getSkillPackageService: () => mockService,
+vi.mock('../services/extension-service.js', () => ({
+  getExtensionService: () => mockService,
 }));
 
 vi.mock('@ownpilot/core', () => ({
@@ -68,16 +68,16 @@ const samplePackage = {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('executeSkillPackageTool', () => {
+describe('executeExtensionTool', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('list_skill_packages', () => {
+  describe('list_extensions', () => {
     it('lists all packages', async () => {
       mockService.getAll.mockReturnValue([samplePackage]);
 
-      const result = await executeSkillPackageTool('list_skill_packages', {});
+      const result = await executeExtensionTool('list_extensions', {});
 
       expect(result.success).toBe(true);
       expect(result.result).toHaveLength(1);
@@ -90,7 +90,7 @@ describe('executeSkillPackageTool', () => {
         { ...samplePackage, id: 'disabled-pkg', status: 'disabled' },
       ]);
 
-      const result = await executeSkillPackageTool('list_skill_packages', { status: 'enabled' });
+      const result = await executeExtensionTool('list_extensions', { status: 'enabled' });
 
       expect(result.success).toBe(true);
       expect(result.result).toHaveLength(1);
@@ -102,7 +102,7 @@ describe('executeSkillPackageTool', () => {
         { ...samplePackage, id: 'other-pkg', category: 'productivity' },
       ]);
 
-      const result = await executeSkillPackageTool('list_skill_packages', { category: 'developer' });
+      const result = await executeExtensionTool('list_extensions', { category: 'developer' });
 
       expect(result.success).toBe(true);
       expect(result.result).toHaveLength(1);
@@ -111,18 +111,18 @@ describe('executeSkillPackageTool', () => {
     it('returns empty list when no packages match', async () => {
       mockService.getAll.mockReturnValue([]);
 
-      const result = await executeSkillPackageTool('list_skill_packages', {});
+      const result = await executeExtensionTool('list_extensions', {});
 
       expect(result.success).toBe(true);
       expect(result.result).toHaveLength(0);
     });
   });
 
-  describe('toggle_skill_package', () => {
+  describe('toggle_extension', () => {
     it('enables a package', async () => {
       mockService.enable.mockResolvedValue({ ...samplePackage, status: 'enabled' });
 
-      const result = await executeSkillPackageTool('toggle_skill_package', {
+      const result = await executeExtensionTool('toggle_extension', {
         id: 'github-assistant',
         enabled: true,
       });
@@ -135,7 +135,7 @@ describe('executeSkillPackageTool', () => {
     it('disables a package', async () => {
       mockService.disable.mockResolvedValue({ ...samplePackage, status: 'disabled' });
 
-      const result = await executeSkillPackageTool('toggle_skill_package', {
+      const result = await executeExtensionTool('toggle_extension', {
         id: 'github-assistant',
         enabled: false,
       });
@@ -148,7 +148,7 @@ describe('executeSkillPackageTool', () => {
     it('returns error when package not found', async () => {
       mockService.enable.mockResolvedValue(null);
 
-      const result = await executeSkillPackageTool('toggle_skill_package', {
+      const result = await executeExtensionTool('toggle_extension', {
         id: 'missing',
         enabled: true,
       });
@@ -160,7 +160,7 @@ describe('executeSkillPackageTool', () => {
     it('returns error on failure', async () => {
       mockService.enable.mockRejectedValue(new Error('DB error'));
 
-      const result = await executeSkillPackageTool('toggle_skill_package', {
+      const result = await executeExtensionTool('toggle_extension', {
         id: 'github-assistant',
         enabled: true,
       });
@@ -170,11 +170,11 @@ describe('executeSkillPackageTool', () => {
     });
   });
 
-  describe('get_skill_package_info', () => {
+  describe('get_extension_info', () => {
     it('returns detailed package info', async () => {
       mockService.getById.mockReturnValue(samplePackage);
 
-      const result = await executeSkillPackageTool('get_skill_package_info', {
+      const result = await executeExtensionTool('get_extension_info', {
         id: 'github-assistant',
       });
 
@@ -192,7 +192,7 @@ describe('executeSkillPackageTool', () => {
     it('returns error when package not found', async () => {
       mockService.getById.mockReturnValue(null);
 
-      const result = await executeSkillPackageTool('get_skill_package_info', {
+      const result = await executeExtensionTool('get_extension_info', {
         id: 'missing',
       });
 
@@ -203,7 +203,7 @@ describe('executeSkillPackageTool', () => {
 
   describe('unknown tool', () => {
     it('returns error for unknown tool name', async () => {
-      const result = await executeSkillPackageTool('unknown_tool', {});
+      const result = await executeExtensionTool('unknown_tool', {});
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unknown');
     });

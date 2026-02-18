@@ -1,12 +1,12 @@
 /**
- * SkillPackageService Tests
+ * ExtensionService Tests
  *
  * Tests for install, uninstall, enable/disable, validation, trigger sync, and scan.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SkillPackageService, SkillPackageError } from './skill-package-service.js';
-import type { SkillPackageManifest } from './skill-package-types.js';
+import { ExtensionService, ExtensionError } from './extension-service.js';
+import type { ExtensionManifest } from './extension-types.js';
 
 // ---------------------------------------------------------------------------
 // Mocks (vi.hoisted so they're available in vi.mock factories)
@@ -51,9 +51,9 @@ vi.mock('@ownpilot/core', () => ({
   Services: { Trigger: 'trigger' },
 }));
 
-vi.mock('../db/repositories/skill-packages.js', () => ({
-  skillPackagesRepo: mockRepo,
-  SkillPackagesRepository: vi.fn(),
+vi.mock('../db/repositories/extensions.js', () => ({
+  extensionsRepo: mockRepo,
+  ExtensionsRepository: vi.fn(),
 }));
 
 vi.mock('./api-service-registrar.js', () => ({
@@ -85,12 +85,12 @@ vi.mock('fs', () => ({
 // Fixtures
 // ---------------------------------------------------------------------------
 
-function validManifest(overrides: Partial<SkillPackageManifest> = {}): SkillPackageManifest {
+function validManifest(overrides: Partial<ExtensionManifest> = {}): ExtensionManifest {
   return {
-    id: 'test-skill',
-    name: 'Test Skill',
+    id: 'test-ext',
+    name: 'Test Extension',
     version: '1.0.0',
-    description: 'A test skill package',
+    description: 'A test extension',
     tools: [
       {
         name: 'test_tool',
@@ -105,11 +105,11 @@ function validManifest(overrides: Partial<SkillPackageManifest> = {}): SkillPack
 
 function fakeRecord(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'test-skill',
+    id: 'test-ext',
     userId: 'default',
-    name: 'Test Skill',
+    name: 'Test Extension',
     version: '1.0.0',
-    description: 'A test skill package',
+    description: 'A test extension',
     category: 'other',
     status: 'enabled',
     manifest: validManifest(),
@@ -126,15 +126,15 @@ function fakeRecord(overrides: Record<string, unknown> = {}) {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('SkillPackageService', () => {
-  let service: SkillPackageService;
+describe('ExtensionService', () => {
+  let service: ExtensionService;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockRepo.getById.mockReset();
     mockRepo.getAll.mockReturnValue([]);
     mockRepo.getEnabled.mockReturnValue([]);
-    service = new SkillPackageService();
+    service = new ExtensionService();
   });
 
   // ========================================================================
@@ -150,8 +150,8 @@ describe('SkillPackageService', () => {
 
       expect(result).toBe(record);
       expect(mockRepo.upsert).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'test-skill',
-        name: 'Test Skill',
+        id: 'test-ext',
+        name: 'Test Extension',
         toolCount: 1,
       }));
       expect(mockEmit).toHaveBeenCalledWith(expect.objectContaining({
@@ -161,11 +161,11 @@ describe('SkillPackageService', () => {
 
     it('throws VALIDATION_ERROR for invalid manifest', async () => {
       await expect(
-        service.installFromManifest({ id: '', name: '', version: '', description: '', tools: [] } as unknown as SkillPackageManifest),
-      ).rejects.toThrow(SkillPackageError);
+        service.installFromManifest({ id: '', name: '', version: '', description: '', tools: [] } as unknown as ExtensionManifest),
+      ).rejects.toThrow(ExtensionError);
     });
 
-    it('activates triggers when package is enabled', async () => {
+    it('activates triggers when extension is enabled', async () => {
       const manifest = validManifest({
         triggers: [
           { name: 'Daily check', type: 'schedule', config: { cron: '0 9 * * *' }, action: { type: 'chat', payload: { prompt: 'Check status' } } },
@@ -177,13 +177,13 @@ describe('SkillPackageService', () => {
       await service.installFromManifest(manifest);
 
       expect(mockTriggerService.createTrigger).toHaveBeenCalledWith('default', expect.objectContaining({
-        name: expect.stringContaining('[Skill:test-skill]'),
+        name: expect.stringContaining('[Ext:test-ext]'),
         type: 'schedule',
         config: { cron: '0 9 * * *' },
       }));
     });
 
-    it('does not activate triggers when package is disabled', async () => {
+    it('does not activate triggers when extension is disabled', async () => {
       const manifest = validManifest({
         triggers: [
           { name: 'Daily check', type: 'schedule', config: { cron: '0 9 * * *' }, action: { type: 'chat', payload: { prompt: 'Check' } } },
@@ -203,21 +203,21 @@ describe('SkillPackageService', () => {
   // ========================================================================
 
   describe('uninstall', () => {
-    it('uninstalls an existing package', async () => {
+    it('uninstalls an existing extension', async () => {
       mockRepo.getById.mockReturnValue(fakeRecord());
       mockTriggerService.listTriggers.mockResolvedValue([]);
       mockRepo.delete.mockResolvedValue(true);
 
-      const result = await service.uninstall('test-skill');
+      const result = await service.uninstall('test-ext');
 
       expect(result).toBe(true);
-      expect(mockRepo.delete).toHaveBeenCalledWith('test-skill');
+      expect(mockRepo.delete).toHaveBeenCalledWith('test-ext');
       expect(mockEmit).toHaveBeenCalledWith(expect.objectContaining({
         type: 'resource.deleted',
       }));
     });
 
-    it('returns false when package not found', async () => {
+    it('returns false when extension not found', async () => {
       mockRepo.getById.mockReturnValue(null);
       const result = await service.uninstall('missing');
       expect(result).toBe(false);
@@ -226,13 +226,13 @@ describe('SkillPackageService', () => {
     it('deactivates triggers before deleting', async () => {
       mockRepo.getById.mockReturnValue(fakeRecord());
       mockTriggerService.listTriggers.mockResolvedValue([
-        { id: 't1', name: '[Skill:test-skill] Daily check' },
-        { id: 't2', name: '[Skill:test-skill] Weekly report' },
+        { id: 't1', name: '[Ext:test-ext] Daily check' },
+        { id: 't2', name: '[Ext:test-ext] Weekly report' },
         { id: 't3', name: 'Other trigger' },
       ]);
       mockRepo.delete.mockResolvedValue(true);
 
-      await service.uninstall('test-skill');
+      await service.uninstall('test-ext');
 
       expect(mockTriggerService.deleteTrigger).toHaveBeenCalledTimes(2);
       expect(mockTriggerService.deleteTrigger).toHaveBeenCalledWith('default', 't1');
@@ -245,7 +245,7 @@ describe('SkillPackageService', () => {
   // ========================================================================
 
   describe('enable', () => {
-    it('enables a disabled package and activates triggers', async () => {
+    it('enables a disabled extension and activates triggers', async () => {
       const manifest = validManifest({
         triggers: [
           { name: 'Check', type: 'schedule', config: { cron: '0 9 * * *' }, action: { type: 'chat', payload: { prompt: 'Check' } } },
@@ -257,7 +257,7 @@ describe('SkillPackageService', () => {
       mockRepo.getById.mockReturnValue(record);
       mockRepo.updateStatus.mockResolvedValue(updatedRecord);
 
-      const result = await service.enable('test-skill');
+      const result = await service.enable('test-ext');
 
       expect(result?.status).toBe('enabled');
       expect(mockTriggerService.createTrigger).toHaveBeenCalled();
@@ -266,7 +266,7 @@ describe('SkillPackageService', () => {
       }));
     });
 
-    it('returns null when package not found', async () => {
+    it('returns null when extension not found', async () => {
       mockRepo.getById.mockReturnValue(null);
       const result = await service.enable('missing');
       expect(result).toBeNull();
@@ -276,14 +276,14 @@ describe('SkillPackageService', () => {
       const record = fakeRecord({ status: 'enabled' });
       mockRepo.getById.mockReturnValue(record);
 
-      const result = await service.enable('test-skill');
+      const result = await service.enable('test-ext');
       expect(result).toBe(record);
       expect(mockRepo.updateStatus).not.toHaveBeenCalled();
     });
   });
 
   describe('disable', () => {
-    it('disables an enabled package and deactivates triggers', async () => {
+    it('disables an enabled extension and deactivates triggers', async () => {
       const record = fakeRecord({ status: 'enabled' });
       const updatedRecord = fakeRecord({ status: 'disabled' });
 
@@ -291,7 +291,7 @@ describe('SkillPackageService', () => {
       mockTriggerService.listTriggers.mockResolvedValue([]);
       mockRepo.updateStatus.mockResolvedValue(updatedRecord);
 
-      const result = await service.disable('test-skill');
+      const result = await service.disable('test-ext');
 
       expect(result?.status).toBe('disabled');
     });
@@ -300,7 +300,7 @@ describe('SkillPackageService', () => {
       const record = fakeRecord({ status: 'disabled' });
       mockRepo.getById.mockReturnValue(record);
 
-      const result = await service.disable('test-skill');
+      const result = await service.disable('test-ext');
       expect(result).toBe(record);
       expect(mockRepo.updateStatus).not.toHaveBeenCalled();
     });
@@ -311,7 +311,7 @@ describe('SkillPackageService', () => {
   // ========================================================================
 
   describe('getToolDefinitions', () => {
-    it('returns tool defs from all enabled packages', () => {
+    it('returns tool defs from all enabled extensions', () => {
       mockRepo.getEnabled.mockReturnValue([
         fakeRecord({ manifest: validManifest() }),
         fakeRecord({
@@ -331,7 +331,7 @@ describe('SkillPackageService', () => {
       expect(defs.map(d => d.name)).toEqual(['test_tool', 'tool_a', 'tool_b']);
     });
 
-    it('returns empty when no enabled packages', () => {
+    it('returns empty when no enabled extensions', () => {
       mockRepo.getEnabled.mockReturnValue([]);
       const defs = service.getToolDefinitions();
       expect(defs).toHaveLength(0);
@@ -343,16 +343,16 @@ describe('SkillPackageService', () => {
   // ========================================================================
 
   describe('getSystemPromptSections', () => {
-    it('returns sections from enabled packages with system prompts', () => {
+    it('returns sections from enabled extensions with system prompts', () => {
       mockRepo.getEnabled.mockReturnValue([
         fakeRecord({ manifest: validManifest({ system_prompt: 'Use GitHub tools for repos.' }) }),
-        fakeRecord({ manifest: validManifest({ system_prompt: '' }) }), // empty → skipped
-        fakeRecord({ manifest: validManifest({ system_prompt: undefined }) }), // undefined → skipped
+        fakeRecord({ manifest: validManifest({ system_prompt: '' }) }), // empty -> skipped
+        fakeRecord({ manifest: validManifest({ system_prompt: undefined }) }), // undefined -> skipped
       ]);
 
       const sections = service.getSystemPromptSections();
       expect(sections).toHaveLength(1);
-      expect(sections[0]).toContain('## Skill: Test Skill');
+      expect(sections[0]).toContain('## Extension: Test Extension');
       expect(sections[0]).toContain('Use GitHub tools for repos.');
     });
   });
@@ -365,7 +365,7 @@ describe('SkillPackageService', () => {
     it('delegates to repo', () => {
       const record = fakeRecord();
       mockRepo.getById.mockReturnValue(record);
-      expect(service.getById('test-skill')).toBe(record);
+      expect(service.getById('test-ext')).toBe(record);
 
       mockRepo.getAll.mockReturnValue([record]);
       expect(service.getAll()).toEqual([record]);
@@ -376,11 +376,11 @@ describe('SkillPackageService', () => {
   });
 
   // ========================================================================
-  // install (file-based) — JSON vs Markdown
+  // install (file-based) -- JSON vs Markdown
   // ========================================================================
 
   describe('install (file-based)', () => {
-    // fs is mocked at module level — get reference to mocked functions
+    // fs is mocked at module level -- get reference to mocked functions
     let mockReadFileSync: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
@@ -393,18 +393,18 @@ describe('SkillPackageService', () => {
       mockReadFileSync.mockReturnValue(JSON.stringify(manifest));
       mockRepo.upsert.mockResolvedValue(fakeRecord());
 
-      const result = await service.install('/path/to/skill.json');
+      const result = await service.install('/path/to/extension.json');
 
-      expect(result.id).toBe('test-skill');
-      expect(mockReadFileSync).toHaveBeenCalledWith('/path/to/skill.json', 'utf-8');
+      expect(result.id).toBe('test-ext');
+      expect(mockReadFileSync).toHaveBeenCalledWith('/path/to/extension.json', 'utf-8');
     });
 
     it('installs from .md file', async () => {
       const mdContent = `---
-id: md-skill
-name: MD Skill
+id: md-ext
+name: MD Extension
 version: 1.0.0
-description: A markdown skill
+description: A markdown extension
 ---
 
 ## Tools
@@ -418,33 +418,33 @@ return { content: { ok: true } };
 \`\`\`
 `;
       mockReadFileSync.mockReturnValue(mdContent);
-      mockRepo.upsert.mockResolvedValue(fakeRecord({ id: 'md-skill', name: 'MD Skill' }));
+      mockRepo.upsert.mockResolvedValue(fakeRecord({ id: 'md-ext', name: 'MD Extension' }));
 
-      const result = await service.install('/path/to/skill.md');
+      const result = await service.install('/path/to/extension.md');
 
-      expect(result.id).toBe('md-skill');
+      expect(result.id).toBe('md-ext');
       expect(mockRepo.upsert).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'md-skill',
-        name: 'MD Skill',
+        id: 'md-ext',
+        name: 'MD Extension',
       }));
     });
 
     it('throws VALIDATION_ERROR for invalid .md file', async () => {
-      mockReadFileSync.mockReturnValue('# Not a valid skill markdown');
+      mockReadFileSync.mockReturnValue('# Not a valid extension markdown');
 
-      await expect(service.install('/path/to/bad.md')).rejects.toThrow(SkillPackageError);
+      await expect(service.install('/path/to/bad.md')).rejects.toThrow(ExtensionError);
       await expect(service.install('/path/to/bad.md')).rejects.toThrow('Invalid markdown manifest');
     });
 
     it('throws IO_ERROR when file cannot be read', async () => {
       mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
 
-      await expect(service.install('/missing/skill.json')).rejects.toThrow('Cannot read manifest');
+      await expect(service.install('/missing/extension.json')).rejects.toThrow('Cannot read manifest');
     });
   });
 
   // ========================================================================
-  // scanDirectory — .md support
+  // scanDirectory -- .md support
   // ========================================================================
 
   describe('scanDirectory (.md support)', () => {
@@ -459,7 +459,7 @@ return { content: { ok: true } };
       mockReaddirSync = fs.readdirSync as ReturnType<typeof vi.fn>;
     });
 
-    it('discovers skill.md files', async () => {
+    it('discovers extension.md files', async () => {
       const mdContent = `---
 id: md-pkg
 name: MD Pkg
@@ -480,8 +480,8 @@ return { content: {} };
       // Use includes to handle both forward and backslash path separators
       mockExistsSync.mockImplementation((p: string) => {
         const n = p.replace(/\\/g, '/');
-        if (n.endsWith('skill-packages')) return true;
-        if (n.endsWith('my-pkg/skill.md')) return true;
+        if (n.endsWith('extensions')) return true;
+        if (n.endsWith('my-pkg/extension.md')) return true;
         return false;
       });
       mockReaddirSync.mockReturnValue([
@@ -495,14 +495,14 @@ return { content: {} };
       expect(result.installed).toBe(1);
     });
 
-    it('prefers skill.json over skill.md when both exist', async () => {
+    it('prefers extension.json over extension.md when both exist', async () => {
       const manifest = validManifest({ id: 'dual-pkg' });
 
       mockExistsSync.mockImplementation((p: string) => {
         const n = p.replace(/\\/g, '/');
-        if (n.endsWith('skill-packages')) return true;
-        if (n.endsWith('dual-pkg/skill.json')) return true;
-        if (n.endsWith('dual-pkg/skill.md')) return true;
+        if (n.endsWith('extensions')) return true;
+        if (n.endsWith('dual-pkg/extension.json')) return true;
+        if (n.endsWith('dual-pkg/extension.md')) return true;
         return false;
       });
       mockReaddirSync.mockReturnValue([
@@ -516,7 +516,7 @@ return { content: {} };
       expect(result.installed).toBe(1);
       // readFileSync should have been called with .json path, not .md
       expect(mockReadFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('skill.json'),
+        expect.stringContaining('extension.json'),
         'utf-8',
       );
     });

@@ -36,7 +36,7 @@ export { channelAuthRoutes } from './channel-auth.js';
 export { debugRoutes } from './debug.js';
 export { executionPermissionsRoutes } from './execution-permissions.js';
 export { heartbeatsRoutes } from './heartbeats.js';
-export { skillPackagesRoutes } from './skill-packages.js';
+export { extensionsRoutes } from './extensions.js';
 export { composioRoutes } from './composio.js';
 export { mcpRoutes } from './mcp.js';
 export { webhookRoutes } from './webhooks.js';

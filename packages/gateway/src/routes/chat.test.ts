@@ -55,6 +55,12 @@ const mockAgent = {
     finishReason: 'stop',
   })),
   reset: vi.fn(() => ({ id: 'new-conv' })),
+  setExecutionPermissions: vi.fn(),
+  setRequestApproval: vi.fn(),
+  setMaxToolCalls: vi.fn(),
+  setAdditionalTools: vi.fn(),
+  clearAdditionalTools: vi.fn(),
+  getAllToolDefinitions: vi.fn(() => []),
 };
 
 vi.mock('./agents.js', () => ({

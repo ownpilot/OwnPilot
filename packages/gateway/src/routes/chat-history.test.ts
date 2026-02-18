@@ -180,7 +180,7 @@ vi.mock('./agents.js', () => ({
   compactContext: (...args: unknown[]) => mockCompactContext(...args),
 }));
 
-vi.mock('./chat.js', () => ({
+vi.mock('./chat-state.js', () => ({
   promptInitializedConversations: new Set<string>(),
 }));
 

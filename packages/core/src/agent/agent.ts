@@ -41,6 +41,8 @@ export class Agent {
   private state: AgentState;
   /** Additional tool names exposed to the LLM (for direct tool calls from picker) */
   private additionalToolNames: string[] = [];
+  /** Per-request override for max tool calls (0 = unlimited, undefined = use config) */
+  private maxToolCallsOverride?: number;
 
   constructor(
     config: AgentConfig,
@@ -198,7 +200,8 @@ export class Agent {
   }): Promise<Result<CompletionResponse, InternalError | ValidationError | TimeoutError>> {
     let turnCount = 0;
     const maxTurns = this.config.maxTurns ?? 10;
-    const maxToolCalls = this.config.maxToolCalls ?? 200;
+    const maxToolCalls = this.maxToolCallsOverride ?? this.config.maxToolCalls ?? 200;
+    const isUnlimited = maxToolCalls === 0;
 
     while (turnCount < maxTurns) {
       turnCount++;
@@ -252,8 +255,8 @@ export class Agent {
       // Check for tool calls - execute if present regardless of finishReason
       // (Some providers like Google may return 'stop' even with tool calls)
       if (response.toolCalls && response.toolCalls.length > 0) {
-        // Check tool call limit
-        if (this.state.toolCallCount + response.toolCalls.length > maxToolCalls) {
+        // Check tool call limit (0 = unlimited)
+        if (!isUnlimited && this.state.toolCallCount + response.toolCalls.length > maxToolCalls) {
           return err(
             new ValidationError(`Tool call limit exceeded (max ${maxToolCalls})`)
           );
@@ -511,6 +514,14 @@ export class Agent {
    */
   setRequestApproval(fn: ((category: string, actionType: string, description: string, params: Record<string, unknown>) => Promise<boolean>) | undefined): void {
     (this.config as { requestApproval?: typeof fn }).requestApproval = fn;
+  }
+
+  /**
+   * Override max tool calls at runtime (per-request).
+   * 0 = unlimited, undefined = use config default.
+   */
+  setMaxToolCalls(n: number | undefined): void {
+    this.maxToolCallsOverride = n;
   }
 
   /**

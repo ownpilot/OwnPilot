@@ -204,23 +204,23 @@ async function main() {
   // 7. Resource Service (wraps ResourceRegistry)
   registry.register(Services.Resource, createResourceServiceImpl());
 
-  // Initialize Skill Packages repository + scan for new packages
-  log.info('Initializing Skill Packages...');
+  // Initialize Extensions repository + scan for new extensions
+  log.info('Initializing Extensions...');
   try {
-    const { initializeSkillPackagesRepo } = await import('./db/repositories/skill-packages.js');
-    await initializeSkillPackagesRepo();
+    const { initializeExtensionsRepo } = await import('./db/repositories/extensions.js');
+    await initializeExtensionsRepo();
 
-    const { getSkillPackageService } = await import('./services/skill-package-service.js');
-    const skillService = getSkillPackageService();
-    const scanResult = await skillService.scanDirectory(undefined, 'default');
-    const totalPackages = skillService.getAll().length;
+    const { getExtensionService } = await import('./services/extension-service.js');
+    const extService = getExtensionService();
+    const scanResult = await extService.scanDirectory(undefined, 'default');
+    const totalExtensions = extService.getAll().length;
     if (scanResult.installed > 0) {
-      log.info(`Skill Packages: ${totalPackages} total, ${scanResult.installed} newly installed`);
-    } else if (totalPackages > 0) {
-      log.info(`Skill Packages: ${totalPackages} installed`);
+      log.info(`Extensions: ${totalExtensions} total, ${scanResult.installed} newly installed`);
+    } else if (totalExtensions > 0) {
+      log.info(`Extensions: ${totalExtensions} installed`);
     }
   } catch (error) {
-    log.warn('Skill Packages initialization failed', { error: String(error) });
+    log.warn('Extensions initialization failed', { error: String(error) });
   }
 
   // Initialize Plugins repository

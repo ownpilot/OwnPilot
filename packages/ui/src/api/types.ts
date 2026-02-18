@@ -236,16 +236,16 @@ export interface PluginStats {
   byPermission: Record<string, number>;
 }
 
-// ---- Skill Packages ----
+// ---- User Extensions ----
 
-export interface SkillToolInfo {
+export interface ExtensionToolInfo {
   name: string;
   description: string;
   permissions?: string[];
   requires_approval?: boolean;
 }
 
-export interface SkillTriggerInfo {
+export interface ExtensionTriggerInfo {
   name: string;
   description?: string;
   type: 'schedule' | 'event';
@@ -253,7 +253,7 @@ export interface SkillTriggerInfo {
   enabled?: boolean;
 }
 
-export interface SkillRequiredService {
+export interface ExtensionRequiredService {
   name: string;
   display_name: string;
   description?: string;
@@ -261,7 +261,7 @@ export interface SkillRequiredService {
   docs_url?: string;
 }
 
-export interface SkillPackageInfo {
+export interface ExtensionInfo {
   id: string;
   name: string;
   version: string;
@@ -281,14 +281,21 @@ export interface SkillPackageInfo {
     name: string;
     version: string;
     description: string;
-    tools: SkillToolInfo[];
-    triggers?: SkillTriggerInfo[];
-    required_services?: SkillRequiredService[];
+    format?: 'ownpilot' | 'agentskills';
+    tools: ExtensionToolInfo[];
+    triggers?: ExtensionTriggerInfo[];
+    required_services?: ExtensionRequiredService[];
     system_prompt?: string;
+    instructions?: string;
     tags?: string[];
     keywords?: string[];
     docs?: string;
     author?: { name: string; email?: string; url?: string };
+    license?: string;
+    compatibility?: string;
+    allowed_tools?: string[];
+    script_paths?: string[];
+    reference_paths?: string[];
   };
 }
 

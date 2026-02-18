@@ -1,8 +1,8 @@
 /**
- * Skill Packages Routes Tests
+ * Extensions Routes Tests
  *
- * Integration tests for the skill-packages API endpoints.
- * Mocks the SkillPackageService, validateManifest, AI provider, and settings.
+ * Integration tests for the extensions API endpoints.
+ * Mocks the ExtensionService, validateManifest, AI provider, and settings.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -17,7 +17,7 @@ const sampleManifest = {
   id: 'test-skill',
   name: 'Test Skill',
   version: '1.0.0',
-  description: 'A test skill package',
+  description: 'A test extension',
   category: 'utilities',
   icon: '🔧',
   author: { name: 'Test Author' },
@@ -38,13 +38,13 @@ const sampleRecord = {
   userId: 'default',
   name: 'Test Skill',
   version: '1.0.0',
-  description: 'A test skill package',
+  description: 'A test extension',
   category: 'utilities',
   icon: '🔧',
   authorName: 'Test Author',
   manifest: sampleManifest,
   status: 'enabled' as const,
-  sourcePath: '/path/to/skill.json',
+  sourcePath: '/path/to/extension.json',
   settings: {},
   toolCount: 1,
   triggerCount: 0,
@@ -70,19 +70,19 @@ const mockService = {
 
 const mockComplete = vi.fn();
 
-vi.mock('../services/skill-package-service.js', () => ({
-  getSkillPackageService: () => mockService,
-  SkillPackageError: class SkillPackageError extends Error {
+vi.mock('../services/extension-service.js', () => ({
+  getExtensionService: () => mockService,
+  ExtensionError: class ExtensionError extends Error {
     code: string;
     constructor(message: string, code: string) {
       super(message);
       this.code = code;
-      this.name = 'SkillPackageError';
+      this.name = 'ExtensionError';
     }
   },
 }));
 
-vi.mock('../services/skill-package-types.js', () => ({
+vi.mock('../services/extension-types.js', () => ({
   validateManifest: vi.fn(() => ({ valid: true, errors: [] })),
 }));
 
@@ -113,7 +113,7 @@ vi.mock('../ws/server.js', () => ({
 }));
 
 // Import after mocks
-const { skillPackagesRoutes } = await import('./skill-packages.js');
+const { extensionsRoutes } = await import('./extensions.js');
 
 // ---------------------------------------------------------------------------
 // App setup
@@ -121,7 +121,7 @@ const { skillPackagesRoutes } = await import('./skill-packages.js');
 
 function createApp() {
   const app = new Hono();
-  app.route('/skill-packages', skillPackagesRoutes);
+  app.route('/extensions', extensionsRoutes);
   app.onError(errorHandler);
   return app;
 }
@@ -130,7 +130,7 @@ function createApp() {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('Skill Packages Routes', () => {
+describe('Extensions Routes', () => {
   let app: Hono;
 
   beforeEach(() => {
@@ -151,9 +151,9 @@ describe('Skill Packages Routes', () => {
   // GET / - List
   // ========================================================================
 
-  describe('GET /skill-packages', () => {
+  describe('GET /extensions', () => {
     it('returns all packages', async () => {
-      const res = await app.request('/skill-packages');
+      const res = await app.request('/extensions');
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -164,7 +164,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('filters by status', async () => {
-      const res = await app.request('/skill-packages?status=disabled');
+      const res = await app.request('/extensions?status=disabled');
       const json = await res.json();
 
       expect(json.data.packages).toHaveLength(0);
@@ -172,14 +172,14 @@ describe('Skill Packages Routes', () => {
     });
 
     it('filters by category', async () => {
-      const res = await app.request('/skill-packages?category=utilities');
+      const res = await app.request('/extensions?category=utilities');
       const json = await res.json();
 
       expect(json.data.packages).toHaveLength(1);
     });
 
     it('filters by non-matching category', async () => {
-      const res = await app.request('/skill-packages?category=developer');
+      const res = await app.request('/extensions?category=developer');
       const json = await res.json();
 
       expect(json.data.packages).toHaveLength(0);
@@ -190,9 +190,9 @@ describe('Skill Packages Routes', () => {
   // POST / - Install from inline manifest
   // ========================================================================
 
-  describe('POST /skill-packages', () => {
+  describe('POST /extensions', () => {
     it('installs from inline manifest', async () => {
-      const res = await app.request('/skill-packages', {
+      const res = await app.request('/extensions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ manifest: sampleManifest }),
@@ -207,7 +207,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('returns 400 when manifest is missing', async () => {
-      const res = await app.request('/skill-packages', {
+      const res = await app.request('/extensions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -219,7 +219,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('returns 400 for invalid body', async () => {
-      const res = await app.request('/skill-packages', {
+      const res = await app.request('/extensions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: 'not json',
@@ -228,11 +228,11 @@ describe('Skill Packages Routes', () => {
       expect(res.status).toBe(400);
     });
 
-    it('returns 400 when service throws SkillPackageError', async () => {
-      const { SkillPackageError } = await import('../services/skill-package-service.js');
-      mockService.installFromManifest.mockRejectedValue(new SkillPackageError('Invalid', 'VALIDATION_ERROR'));
+    it('returns 400 when service throws ExtensionError', async () => {
+      const { ExtensionError } = await import('../services/extension-service.js');
+      mockService.installFromManifest.mockRejectedValue(new ExtensionError('Invalid', 'VALIDATION_ERROR'));
 
-      const res = await app.request('/skill-packages', {
+      const res = await app.request('/extensions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ manifest: sampleManifest }),
@@ -244,7 +244,7 @@ describe('Skill Packages Routes', () => {
     it('returns 500 for unexpected errors', async () => {
       mockService.installFromManifest.mockRejectedValue(new Error('DB down'));
 
-      const res = await app.request('/skill-packages', {
+      const res = await app.request('/extensions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ manifest: sampleManifest }),
@@ -258,22 +258,22 @@ describe('Skill Packages Routes', () => {
   // POST /install - Install from path
   // ========================================================================
 
-  describe('POST /skill-packages/install', () => {
+  describe('POST /extensions/install', () => {
     it('installs from file path', async () => {
-      const res = await app.request('/skill-packages/install', {
+      const res = await app.request('/extensions/install', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: '/path/to/skill.json' }),
+        body: JSON.stringify({ path: '/path/to/extension.json' }),
       });
 
       expect(res.status).toBe(201);
       const json = await res.json();
       expect(json.data.package.id).toBe('test-skill');
-      expect(mockService.install).toHaveBeenCalledWith('/path/to/skill.json', 'default');
+      expect(mockService.install).toHaveBeenCalledWith('/path/to/extension.json', 'default');
     });
 
     it('returns 400 when path is missing', async () => {
-      const res = await app.request('/skill-packages/install', {
+      const res = await app.request('/extensions/install', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -283,7 +283,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('returns 400 when path is not a string', async () => {
-      const res = await app.request('/skill-packages/install', {
+      const res = await app.request('/extensions/install', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: 123 }),
@@ -297,9 +297,9 @@ describe('Skill Packages Routes', () => {
   // POST /scan - Scan directory
   // ========================================================================
 
-  describe('POST /skill-packages/scan', () => {
+  describe('POST /extensions/scan', () => {
     it('scans default directory', async () => {
-      const res = await app.request('/skill-packages/scan', {
+      const res = await app.request('/extensions/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -312,7 +312,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('scans custom directory', async () => {
-      const res = await app.request('/skill-packages/scan', {
+      const res = await app.request('/extensions/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ directory: '/custom/dir' }),
@@ -325,7 +325,7 @@ describe('Skill Packages Routes', () => {
     it('returns 500 on scan failure', async () => {
       mockService.scanDirectory.mockRejectedValue(new Error('Permission denied'));
 
-      const res = await app.request('/skill-packages/scan', {
+      const res = await app.request('/extensions/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -339,7 +339,7 @@ describe('Skill Packages Routes', () => {
   // POST /generate - AI generation
   // ========================================================================
 
-  describe('POST /skill-packages/generate', () => {
+  describe('POST /extensions/generate', () => {
     it('generates manifest from description', async () => {
       const generatedManifest = JSON.stringify(sampleManifest);
       mockComplete.mockResolvedValue({
@@ -347,7 +347,7 @@ describe('Skill Packages Routes', () => {
         value: { content: generatedManifest },
       });
 
-      const res = await app.request('/skill-packages/generate', {
+      const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: 'Create a math helper skill' }),
@@ -367,7 +367,7 @@ describe('Skill Packages Routes', () => {
         value: { content: generatedManifest },
       });
 
-      const res = await app.request('/skill-packages/generate', {
+      const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: 'Create a math helper skill' }),
@@ -379,7 +379,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('returns 400 when description is missing', async () => {
-      const res = await app.request('/skill-packages/generate', {
+      const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -389,7 +389,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('returns 400 for empty description', async () => {
-      const res = await app.request('/skill-packages/generate', {
+      const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: '   ' }),
@@ -404,7 +404,7 @@ describe('Skill Packages Routes', () => {
         value: { content: 'not valid json at all' },
       });
 
-      const res = await app.request('/skill-packages/generate', {
+      const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: 'Create something' }),
@@ -421,7 +421,7 @@ describe('Skill Packages Routes', () => {
         value: { content: '' },
       });
 
-      const res = await app.request('/skill-packages/generate', {
+      const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: 'Create something' }),
@@ -436,7 +436,7 @@ describe('Skill Packages Routes', () => {
         error: { message: 'Rate limit exceeded' },
       });
 
-      const res = await app.request('/skill-packages/generate', {
+      const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: 'Create something' }),
@@ -451,7 +451,7 @@ describe('Skill Packages Routes', () => {
       const { resolveProviderAndModel } = await import('./settings.js');
       vi.mocked(resolveProviderAndModel).mockResolvedValueOnce({ provider: '', model: '' });
 
-      const res = await app.request('/skill-packages/generate', {
+      const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: 'Create something' }),
@@ -466,7 +466,7 @@ describe('Skill Packages Routes', () => {
       const { getApiKey } = await import('./settings.js');
       vi.mocked(getApiKey).mockResolvedValueOnce(undefined as unknown as string);
 
-      const res = await app.request('/skill-packages/generate', {
+      const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: 'Create something' }),
@@ -480,9 +480,9 @@ describe('Skill Packages Routes', () => {
   // GET /:id - Get by ID
   // ========================================================================
 
-  describe('GET /skill-packages/:id', () => {
+  describe('GET /extensions/:id', () => {
     it('returns package details', async () => {
-      const res = await app.request('/skill-packages/test-skill');
+      const res = await app.request('/extensions/test-skill');
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -491,7 +491,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('returns 404 for unknown package', async () => {
-      const res = await app.request('/skill-packages/nonexistent');
+      const res = await app.request('/extensions/nonexistent');
 
       expect(res.status).toBe(404);
     });
@@ -501,9 +501,9 @@ describe('Skill Packages Routes', () => {
   // DELETE /:id - Uninstall
   // ========================================================================
 
-  describe('DELETE /skill-packages/:id', () => {
+  describe('DELETE /extensions/:id', () => {
     it('uninstalls a package', async () => {
-      const res = await app.request('/skill-packages/test-skill', { method: 'DELETE' });
+      const res = await app.request('/extensions/test-skill', { method: 'DELETE' });
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -512,7 +512,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('returns 404 for unknown package', async () => {
-      const res = await app.request('/skill-packages/nonexistent', { method: 'DELETE' });
+      const res = await app.request('/extensions/nonexistent', { method: 'DELETE' });
 
       expect(res.status).toBe(404);
     });
@@ -522,9 +522,9 @@ describe('Skill Packages Routes', () => {
   // POST /:id/enable
   // ========================================================================
 
-  describe('POST /skill-packages/:id/enable', () => {
+  describe('POST /extensions/:id/enable', () => {
     it('enables a package', async () => {
-      const res = await app.request('/skill-packages/test-skill/enable', { method: 'POST' });
+      const res = await app.request('/extensions/test-skill/enable', { method: 'POST' });
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -533,7 +533,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('returns 404 for unknown package', async () => {
-      const res = await app.request('/skill-packages/nonexistent/enable', { method: 'POST' });
+      const res = await app.request('/extensions/nonexistent/enable', { method: 'POST' });
 
       expect(res.status).toBe(404);
     });
@@ -541,7 +541,7 @@ describe('Skill Packages Routes', () => {
     it('returns 500 when enable throws', async () => {
       mockService.enable.mockRejectedValue(new Error('DB error'));
 
-      const res = await app.request('/skill-packages/test-skill/enable', { method: 'POST' });
+      const res = await app.request('/extensions/test-skill/enable', { method: 'POST' });
 
       expect(res.status).toBe(500);
     });
@@ -551,9 +551,9 @@ describe('Skill Packages Routes', () => {
   // POST /:id/disable
   // ========================================================================
 
-  describe('POST /skill-packages/:id/disable', () => {
+  describe('POST /extensions/:id/disable', () => {
     it('disables a package', async () => {
-      const res = await app.request('/skill-packages/test-skill/disable', { method: 'POST' });
+      const res = await app.request('/extensions/test-skill/disable', { method: 'POST' });
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -562,7 +562,7 @@ describe('Skill Packages Routes', () => {
     });
 
     it('returns 404 for unknown package', async () => {
-      const res = await app.request('/skill-packages/nonexistent/disable', { method: 'POST' });
+      const res = await app.request('/extensions/nonexistent/disable', { method: 'POST' });
 
       expect(res.status).toBe(404);
     });
@@ -570,7 +570,7 @@ describe('Skill Packages Routes', () => {
     it('returns 500 when disable throws', async () => {
       mockService.disable.mockRejectedValue(new Error('DB error'));
 
-      const res = await app.request('/skill-packages/test-skill/disable', { method: 'POST' });
+      const res = await app.request('/extensions/test-skill/disable', { method: 'POST' });
 
       expect(res.status).toBe(500);
     });
@@ -580,9 +580,9 @@ describe('Skill Packages Routes', () => {
   // POST /:id/reload
   // ========================================================================
 
-  describe('POST /skill-packages/:id/reload', () => {
+  describe('POST /extensions/:id/reload', () => {
     it('reloads a package from disk', async () => {
-      const res = await app.request('/skill-packages/test-skill/reload', { method: 'POST' });
+      const res = await app.request('/extensions/test-skill/reload', { method: 'POST' });
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -591,16 +591,16 @@ describe('Skill Packages Routes', () => {
     });
 
     it('returns 404 for unknown package', async () => {
-      const res = await app.request('/skill-packages/nonexistent/reload', { method: 'POST' });
+      const res = await app.request('/extensions/nonexistent/reload', { method: 'POST' });
 
       expect(res.status).toBe(404);
     });
 
-    it('returns 400 for SkillPackageError', async () => {
-      const { SkillPackageError } = await import('../services/skill-package-service.js');
-      mockService.reload.mockRejectedValue(new SkillPackageError('No source path', 'IO_ERROR'));
+    it('returns 400 for ExtensionError', async () => {
+      const { ExtensionError } = await import('../services/extension-service.js');
+      mockService.reload.mockRejectedValue(new ExtensionError('No source path', 'IO_ERROR'));
 
-      const res = await app.request('/skill-packages/test-skill/reload', { method: 'POST' });
+      const res = await app.request('/extensions/test-skill/reload', { method: 'POST' });
 
       expect(res.status).toBe(400);
       const json = await res.json();
@@ -610,7 +610,7 @@ describe('Skill Packages Routes', () => {
     it('returns 500 for unexpected errors', async () => {
       mockService.reload.mockRejectedValue(new Error('FS error'));
 
-      const res = await app.request('/skill-packages/test-skill/reload', { method: 'POST' });
+      const res = await app.request('/extensions/test-skill/reload', { method: 'POST' });
 
       expect(res.status).toBe(500);
     });

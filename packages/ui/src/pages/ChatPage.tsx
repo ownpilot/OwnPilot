@@ -9,6 +9,7 @@ import { ContextDetailModal } from '../components/ContextDetailModal';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
 import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
+import { ToolCallLimitPanel } from '../components/ToolCallLimitPanel';
 
 // Lazy-load rarely-used components
 const SetupWizard = lazy(() => import('../components/SetupWizard').then(m => ({ default: m.SetupWizard })));
@@ -454,14 +455,14 @@ export function ChatPage() {
               {/* Suggestion cards grid */}
               <div className="grid grid-cols-2 gap-2 max-w-lg mx-auto">
                 {[
-                  { icon: '💡', label: 'Brainstorm ideas', prompt: 'Help me brainstorm creative ideas for a weekend side project' },
-                  { icon: '📝', label: 'Write an email', prompt: 'Help me write a professional email to follow up after a meeting' },
-                  { icon: '📊', label: 'Analyze data', prompt: 'I have some data I need help analyzing. What formats can you work with?' },
-                  { icon: '🔍', label: 'Research a topic', prompt: 'Search the web for the latest developments in AI agents and give me a summary' },
-                  { icon: '💻', label: 'Write code', prompt: 'Write a Python script that reads a CSV file and generates a summary report with statistics' },
-                  { icon: '🌐', label: 'Translate text', prompt: 'Translate the following text to English, French, and German: "Teknoloji hayatımızı her gün biraz daha kolaylaştırıyor."' },
-                  { icon: '📅', label: 'Plan my day', prompt: 'Help me create a structured daily plan. I have meetings at 10am and 2pm, need to exercise, and want to read for 30 minutes.' },
-                  { icon: '📖', label: 'Summarize text', prompt: 'I\'ll paste a long article. Please summarize it in 3-5 bullet points highlighting the key takeaways.' },
+                  { icon: '🚀', label: 'What can you do?', prompt: 'What are all the things you can help me with? Give me a quick overview of your capabilities, tools, and what makes you different from a regular chatbot.' },
+                  { icon: '🧠', label: 'My setup & limits', prompt: 'Tell me about my current setup — which model am I using, what tools are available, and what are the context window limits? How much can you remember in a single conversation?' },
+                  { icon: '✅', label: 'Manage my tasks', prompt: 'Show me all my current tasks and help me prioritize them. If I have none yet, help me create a task list for today.' },
+                  { icon: '📝', label: 'Take a note', prompt: 'I want to save a quick note. Help me organize it with tags so I can find it later.' },
+                  { icon: '💡', label: 'Brainstorm with me', prompt: 'I need fresh ideas. Let\'s brainstorm — ask me what topic I\'m working on and then generate creative angles I haven\'t considered.' },
+                  { icon: '🔍', label: 'Search the web', prompt: 'Search the web for the most interesting tech news from this week and give me a brief summary of the top 3 stories.' },
+                  { icon: '💻', label: 'Write & run code', prompt: 'Show me what you can do with code execution. Write a quick Python script that does something fun and run it.' },
+                  { icon: '📊', label: 'Track something', prompt: 'I want to start tracking something — maybe expenses, habits, books I\'ve read, or workouts. Help me set up a custom data table for it.' },
                 ].map((item) => (
                   <button
                     key={item.label}
@@ -478,12 +479,12 @@ export function ChatPage() {
               <div className="space-y-3 mt-5 max-w-lg mx-auto">
                 {/* Code Execution */}
                 <div>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">Code Execution (Docker sandbox)</p>
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">Code Execution</p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {[
-                      { label: 'Run JavaScript', prompt: 'Run this JavaScript code: console.log("Hello from Node.js!"); const sum = [1,2,3,4,5].reduce((a,b) => a+b, 0); console.log("Sum:", sum);' },
-                      { label: 'Run Python', prompt: 'Run this Python code: import sys; print(f"Python {sys.version}"); print("Fibonacci:", [0,1,1,2,3,5,8,13,21])' },
-                      { label: 'Run Shell', prompt: 'Run this shell command: echo "System info:" && uname -a && echo "Current date:" && date' },
+                      { label: 'Run JavaScript', prompt: 'Run this JavaScript code:\n\nconsole.log("Hello from Node.js!");\nconst arr = [1, 2, 3, 4, 5];\nconsole.log("Sum:", arr.reduce((a, b) => a + b, 0));\nconsole.log("Reversed:", arr.reverse());' },
+                      { label: 'Run Python', prompt: 'Run this Python code:\n\nimport sys, os, datetime\nprint(f"Python {sys.version}")\nprint(f"Platform: {sys.platform}")\nprint(f"Current time: {datetime.datetime.now()}")\nprint(f"Fibonacci:", [0,1,1,2,3,5,8,13,21,34])' },
+                      { label: 'Run Shell', prompt: 'Run this shell command: echo "=== System Info ===" && uname -a && echo "\\n=== Disk Usage ===" && df -h / && echo "\\n=== Memory ===" && free -h 2>/dev/null || echo "(memory info not available)"' },
                     ].map((item) => (
                       <button
                         key={item.label}
@@ -496,14 +497,14 @@ export function ChatPage() {
                   </div>
                 </div>
 
-                {/* Tools */}
+                {/* Tools & Productivity */}
                 <div>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">Tools & Search</p>
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">Tools & Productivity</p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {[
-                      { label: 'Web Search', prompt: 'Search the web for the latest news about AI developments' },
-                      { label: 'Weather', prompt: 'What is the current weather in my city?' },
+                      { label: 'Web Search', prompt: 'Search the web for the most interesting tech news this week and summarize the top 3 stories.' },
                       { label: 'Calculator', prompt: 'Calculate: (15 * 27) + (sqrt(144) / 3) - 18^2' },
+                      { label: 'Plan my day', prompt: 'Help me plan my day. Ask me what I need to get done and create a structured schedule with time blocks.' },
                     ].map((item) => (
                       <button
                         key={item.label}
@@ -647,6 +648,7 @@ export function ChatPage() {
       {/* Input */}
       <div className="px-6 py-4 border-t border-border dark:border-dark-border">
         <ExecutionSecurityPanel />
+        <ToolCallLimitPanel />
         <ChatInput ref={chatInputRef} onSend={sendMessage} onStop={cancelRequest} isLoading={isLoading} />
       </div>
 

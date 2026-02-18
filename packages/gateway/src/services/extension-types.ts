@@ -1,16 +1,16 @@
 /**
- * Skill Package Manifest Types
+ * Extension Manifest Types
  *
- * Defines the JSON manifest format for skill packages —
+ * Defines the JSON manifest format for user extensions --
  * shareable bundles of tools, system prompts, triggers, and config requirements.
  */
 
 // =============================================================================
-// Manifest Types (parsed from skill.json)
+// Manifest Types (parsed from extension.json)
 // =============================================================================
 
-export interface SkillPackageManifest {
-  /** Unique skill package ID (lowercase + hyphens, e.g. "github-assistant") */
+export interface ExtensionManifest {
+  /** Unique extension ID (lowercase + hyphens, e.g. "github-assistant") */
   id: string;
   /** Human-readable name */
   name: string;
@@ -18,10 +18,12 @@ export interface SkillPackageManifest {
   version: string;
   /** Description */
   description: string;
+  /** Package format: 'ownpilot' (native) or 'agentskills' (open standard) */
+  format?: ExtensionFormat;
   /** Author info */
   author?: { name: string; email?: string; url?: string };
   /** Category for UI grouping */
-  category?: SkillPackageCategory;
+  category?: ExtensionCategory;
   /** Tags for search/discovery */
   tags?: string[];
   /** Icon (emoji or URL) */
@@ -30,18 +32,36 @@ export interface SkillPackageManifest {
   docs?: string;
 
   /** Tool definitions with inline JavaScript executors */
-  tools: SkillToolDefinition[];
-  /** Additional system prompt text injected when this skill is active */
+  tools: ExtensionToolDefinition[];
+  /** Additional system prompt text injected when this extension is active */
   system_prompt?: string;
-  /** Triggers to auto-create when skill is installed */
-  triggers?: SkillTriggerDefinition[];
-  /** External services this skill needs (registered in Config Center) */
-  required_services?: SkillRequiredService[];
-  /** Keywords that hint this skill's tools should be prioritized */
+  /** Triggers to auto-create when extension is installed */
+  triggers?: ExtensionTriggerDefinition[];
+  /** External services this extension needs (registered in Config Center) */
+  required_services?: ExtensionRequiredService[];
+  /** Keywords that hint this extension's tools should be prioritized */
   keywords?: string[];
+
+  // -- AgentSkills.io format fields (populated when format === 'agentskills') --
+
+  /** Full markdown body from SKILL.md (loaded as system prompt on activation) */
+  instructions?: string;
+  /** License identifier or reference */
+  license?: string;
+  /** Environment requirements / compatibility notes */
+  compatibility?: string;
+  /** Pre-approved tools the extension may use (space-delimited in SKILL.md) */
+  allowed_tools?: string[];
+  /** Paths to bundled scripts (relative to extension directory) */
+  script_paths?: string[];
+  /** Paths to bundled references (relative to extension directory) */
+  reference_paths?: string[];
 }
 
-export type SkillPackageCategory =
+/** Manifest format: 'ownpilot' = native tool bundles, 'agentskills' = open standard (SKILL.md) */
+export type ExtensionFormat = 'ownpilot' | 'agentskills';
+
+export type ExtensionCategory =
   | 'developer'
   | 'productivity'
   | 'communication'
@@ -52,8 +72,8 @@ export type SkillPackageCategory =
   | 'lifestyle'
   | 'other';
 
-export interface SkillToolDefinition {
-  /** Tool name (must be unique across all skills, recommended: prefix with skill id) */
+export interface ExtensionToolDefinition {
+  /** Tool name (must be unique across all extensions, recommended: prefix with extension id) */
   name: string;
   /** Human-readable description */
   description: string;
@@ -71,7 +91,7 @@ export interface SkillToolDefinition {
   requires_approval?: boolean;
 }
 
-export interface SkillTriggerDefinition {
+export interface ExtensionTriggerDefinition {
   /** Trigger name */
   name: string;
   /** Trigger description */
@@ -89,7 +109,7 @@ export interface SkillTriggerDefinition {
   enabled?: boolean;
 }
 
-export interface SkillRequiredService {
+export interface ExtensionRequiredService {
   /** Config Center service name */
   name: string;
   /** Display name */
@@ -101,10 +121,10 @@ export interface SkillRequiredService {
   /** Docs URL */
   docs_url?: string;
   /** Config schema fields */
-  config_schema?: SkillConfigField[];
+  config_schema?: ExtensionConfigField[];
 }
 
-export interface SkillConfigField {
+export interface ExtensionConfigField {
   name: string;
   label: string;
   type: string;
@@ -116,7 +136,7 @@ export interface SkillConfigField {
 // Validation
 // =============================================================================
 
-const SKILL_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+const EXTENSION_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 const TOOL_NAME_PATTERN = /^[a-z0-9_.]+$/;
 
 export interface ValidationResult {
@@ -136,7 +156,7 @@ export function validateManifest(manifest: unknown): ValidationResult {
   // Required top-level fields
   if (!m.id || typeof m.id !== 'string') {
     errors.push('Missing or invalid "id" (must be a string)');
-  } else if (!SKILL_ID_PATTERN.test(m.id)) {
+  } else if (!EXTENSION_ID_PATTERN.test(m.id)) {
     errors.push(`Invalid "id" format: "${m.id}" (must be lowercase alphanumeric + hyphens, start with letter/digit)`);
   }
 
@@ -208,6 +228,65 @@ export function validateManifest(manifest: unknown): ValidationResult {
         }
       }
     }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+// =============================================================================
+// AgentSkills.io format validation
+// =============================================================================
+
+/** AgentSkills.io SKILL.md name pattern: lowercase alphanumeric + hyphens, no consecutive hyphens */
+const AGENTSKILLS_NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+
+/** Parsed frontmatter from an AgentSkills.io SKILL.md file */
+export interface AgentSkillsFrontmatter {
+  name: string;
+  description: string;
+  license?: string;
+  compatibility?: string;
+  metadata?: Record<string, string>;
+  'allowed-tools'?: string;
+}
+
+export function validateAgentSkillsFrontmatter(fm: unknown): ValidationResult {
+  const errors: string[] = [];
+
+  if (!fm || typeof fm !== 'object') {
+    return { valid: false, errors: ['Frontmatter must be a YAML object'] };
+  }
+
+  const f = fm as Record<string, unknown>;
+
+  if (!f.name || typeof f.name !== 'string') {
+    errors.push('Missing or invalid "name" (required)');
+  } else if (f.name.length > 64) {
+    errors.push(`"name" exceeds 64 characters: ${f.name.length}`);
+  } else if (!AGENTSKILLS_NAME_PATTERN.test(f.name)) {
+    errors.push(`Invalid "name" format: "${f.name}" (lowercase alphanumeric + hyphens, no consecutive hyphens, cannot start/end with hyphen)`);
+  }
+
+  if (!f.description || typeof f.description !== 'string') {
+    errors.push('Missing or invalid "description" (required)');
+  } else if (f.description.length > 1024) {
+    errors.push(`"description" exceeds 1024 characters: ${f.description.length}`);
+  }
+
+  if (f.license !== undefined && typeof f.license !== 'string') {
+    errors.push('"license" must be a string');
+  }
+
+  if (f.compatibility !== undefined) {
+    if (typeof f.compatibility !== 'string') {
+      errors.push('"compatibility" must be a string');
+    } else if (f.compatibility.length > 500) {
+      errors.push(`"compatibility" exceeds 500 characters`);
+    }
+  }
+
+  if (f.metadata !== undefined && (typeof f.metadata !== 'object' || Array.isArray(f.metadata))) {
+    errors.push('"metadata" must be a key-value mapping');
   }
 
   return { valid: errors.length === 0, errors };

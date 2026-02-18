@@ -220,6 +220,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             ...(currentMessages.length === 0 && !isRetry && { includeToolList: true }),
             // Agent maintains its own conversation memory — only send count for logging
             historyLength: currentMessages.filter((m) => !m.isError).length,
+            // Per-request tool call limit from chat settings panel
+            ...(() => {
+              try {
+                const raw = localStorage.getItem('ownpilot_maxToolCalls');
+                if (raw !== null) {
+                  const n = parseInt(raw, 10);
+                  if (!isNaN(n) && n >= 0 && n !== 200) return { maxToolCalls: n };
+                }
+              } catch { /* localStorage unavailable */ }
+              return {};
+            })(),
           }),
           signal: controller.signal,
         });

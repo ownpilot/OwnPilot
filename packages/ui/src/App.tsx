@@ -29,7 +29,8 @@ const TriggersPage = lazy(() => import('./pages/TriggersPage').then((m) => ({ de
 const PlansPage = lazy(() => import('./pages/PlansPage').then((m) => ({ default: m.PlansPage })));
 const AutonomyPage = lazy(() => import('./pages/AutonomyPage').then((m) => ({ default: m.AutonomyPage })));
 const PluginsPage = lazy(() => import('./pages/PluginsPage').then((m) => ({ default: m.PluginsPage })));
-const SkillPackagesPage = lazy(() => import('./pages/SkillPackagesPage').then((m) => ({ default: m.SkillPackagesPage })));
+const ExtensionsPage = lazy(() => import('./pages/ExtensionsPage').then((m) => ({ default: m.ExtensionsPage })));
+const SkillsPage = lazy(() => import('./pages/SkillsPage').then((m) => ({ default: m.SkillsPage })));
 const WorkspacesPage = lazy(() => import('./pages/WorkspacesPage').then((m) => ({ default: m.WorkspacesPage })));
 const LogsPage = lazy(() => import('./pages/LogsPage').then((m) => ({ default: m.LogsPage })));
 const CustomToolsPage = lazy(() => import('./pages/CustomToolsPage').then((m) => ({ default: m.CustomToolsPage })));
@@ -86,7 +87,8 @@ export function App() {
         <Route path="tools" element={page(<ToolsPage />)} />
         <Route path="custom-tools" element={page(<CustomToolsPage />)} />
         <Route path="plugins" element={page(<PluginsPage />)} />
-        <Route path="skill-packages" element={page(<SkillPackagesPage />)} />
+        <Route path="extensions" element={page(<ExtensionsPage />)} />
+        <Route path="skills" element={page(<SkillsPage />)} />
         <Route path="workspaces" element={page(<WorkspacesPage />)} />
         <Route path="models" element={page(<ModelsPage />)} />
         <Route path="costs" element={page(<CostsPage />)} />

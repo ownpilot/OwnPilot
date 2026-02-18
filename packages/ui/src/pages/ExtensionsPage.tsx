@@ -3,8 +3,8 @@ import { Sparkles, Power, Wrench, Zap, RefreshCw, Globe, Clock, AlertTriangle, S
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
-import { skillPackagesApi } from '../api/endpoints/skill-packages';
-import type { SkillPackageInfo } from '../api/types';
+import { extensionsApi } from '../api/endpoints/extensions';
+import type { ExtensionInfo } from '../api/types';
 
 const STATUS_COLORS: Record<string, string> = {
   enabled: 'bg-success/20 text-success',
@@ -24,18 +24,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   other: 'bg-gray-500/20 text-gray-600 dark:text-gray-400',
 };
 
-export function SkillPackagesPage() {
+export function ExtensionsPage() {
   const toast = useToast();
-  const [packages, setPackages] = useState<SkillPackageInfo[]>([]);
+  const [packages, setPackages] = useState<ExtensionInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPackage, setSelectedPackage] = useState<SkillPackageInfo | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<ExtensionInfo | null>(null);
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [showCreatorModal, setShowCreatorModal] = useState(false);
 
   const fetchPackages = useCallback(async () => {
     try {
-      const data = await skillPackagesApi.list();
+      const data = await extensionsApi.list({ format: 'ownpilot' });
       setPackages(Array.isArray(data) ? data : []);
     } catch {
       // API client handles error reporting
@@ -48,24 +48,24 @@ export function SkillPackagesPage() {
     fetchPackages();
   }, [fetchPackages]);
 
-  const togglePackage = async (pkg: SkillPackageInfo) => {
+  const togglePackage = async (pkg: ExtensionInfo) => {
     const action = pkg.status === 'enabled' ? 'disable' : 'enable';
     try {
       if (action === 'enable') {
-        await skillPackagesApi.enable(pkg.id);
+        await extensionsApi.enable(pkg.id);
       } else {
-        await skillPackagesApi.disable(pkg.id);
+        await extensionsApi.disable(pkg.id);
       }
-      toast.success(action === 'enable' ? 'Skill package enabled' : 'Skill package disabled');
+      toast.success(action === 'enable' ? 'Extension enabled' : 'Extension disabled');
       fetchPackages();
     } catch {
       // API client handles error reporting
     }
   };
 
-  const uninstallPackage = async (pkg: SkillPackageInfo) => {
+  const uninstallPackage = async (pkg: ExtensionInfo) => {
     try {
-      await skillPackagesApi.uninstall(pkg.id);
+      await extensionsApi.uninstall(pkg.id);
       toast.success(`Uninstalled "${pkg.name}"`);
       setSelectedPackage(null);
       fetchPackages();
@@ -76,11 +76,11 @@ export function SkillPackagesPage() {
 
   const scanDirectory = async () => {
     try {
-      const result = await skillPackagesApi.scan();
+      const result = await extensionsApi.scan();
       if (result.installed > 0) {
         toast.success(`Scan complete: ${result.installed} package(s) installed`);
       } else {
-        toast.info('Scan complete: no new packages found');
+        toast.info('Scan complete: no new extensions found');
       }
       if (result.errors?.length) {
         toast.warning(`${result.errors.length} error(s) during scan`);
@@ -111,7 +111,7 @@ export function SkillPackagesPage() {
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
           <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-            Skill Packages
+            User Extensions
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
             Shareable bundles of tools, prompts, and triggers
@@ -121,7 +121,7 @@ export function SkillPackagesPage() {
           <button
             onClick={scanDirectory}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
-            title="Scan skill-packages directory for new packages"
+            title="Scan extensions directory for new packages"
           >
             <FolderOpen className="w-4 h-4" />
             Scan
@@ -206,19 +206,19 @@ export function SkillPackagesPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <LoadingSpinner message="Loading skill packages..." />
+          <LoadingSpinner message="Loading extensions..." />
         ) : filteredPackages.length === 0 ? (
           <EmptyState
             icon={Sparkles}
-            title={`No skill packages ${filter !== 'all' ? filter : 'installed'}`}
+            title={`No extensions ${filter !== 'all' ? filter : 'installed'}`}
             description={filter === 'all'
-              ? 'Click "Install" to add a skill from JSON manifest, or "Scan" to discover packages from the skill-packages directory.'
-              : `No ${filter} skill packages found.`}
+              ? 'Click "Install" to add an extension from a JSON manifest, or "Scan" to discover packages from the extensions directory.'
+              : `No ${filter} extensions found.`}
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredPackages.map((pkg) => (
-              <SkillPackageCard
+              <ExtensionCard
                 key={pkg.id}
                 pkg={pkg}
                 onToggle={() => togglePackage(pkg)}
@@ -231,7 +231,7 @@ export function SkillPackagesPage() {
 
       {/* Detail Modal */}
       {selectedPackage && (
-        <SkillPackageDetailModal
+        <ExtensionDetailModal
           pkg={selectedPackage}
           onClose={() => setSelectedPackage(null)}
           onToggle={() => togglePackage(selectedPackage)}
@@ -252,7 +252,7 @@ export function SkillPackagesPage() {
 
       {/* Creator Modal */}
       {showCreatorModal && (
-        <SkillCreatorModal
+        <ExtensionCreatorModal
           onClose={() => setShowCreatorModal(false)}
           onCreated={() => {
             setShowCreatorModal(false);
@@ -268,13 +268,13 @@ export function SkillPackagesPage() {
 // Card
 // ---------------------------------------------------------------------------
 
-interface SkillPackageCardProps {
-  pkg: SkillPackageInfo;
+interface ExtensionCardProps {
+  pkg: ExtensionInfo;
   onToggle: () => void;
   onClick: () => void;
 }
 
-function SkillPackageCard({ pkg, onToggle, onClick }: SkillPackageCardProps) {
+function ExtensionCard({ pkg, onToggle, onClick }: ExtensionCardProps) {
   const isEnabled = pkg.status === 'enabled';
   const categoryColor = pkg.category
     ? CATEGORY_COLORS[pkg.category] || CATEGORY_COLORS.other
@@ -310,7 +310,7 @@ function SkillPackageCard({ pkg, onToggle, onClick }: SkillPackageCardProps) {
               ? 'bg-success/10 text-success hover:bg-success/20'
               : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted hover:bg-bg-primary dark:hover:bg-dark-bg-primary'
           }`}
-          title={isEnabled ? 'Disable skill package' : 'Enable skill package'}
+          title={isEnabled ? 'Disable extension' : 'Enable extension'}
         >
           <Power className="w-4 h-4" />
         </button>
@@ -385,7 +385,7 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
     try {
       if (mode === 'json') {
         if (!jsonText.trim()) {
-          setError('Please paste the skill.json or skill.md manifest content.');
+          setError('Please paste the extension manifest (JSON) content.');
           setIsInstalling(false);
           return;
         }
@@ -397,16 +397,16 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
           setIsInstalling(false);
           return;
         }
-        await skillPackagesApi.install(manifest);
+        await extensionsApi.install(manifest);
       } else {
         if (!filePath.trim()) {
-          setError('Please enter the path to the skill.json or skill.md file.');
+          setError('Please enter the path to the extension manifest file.');
           setIsInstalling(false);
           return;
         }
-        await skillPackagesApi.installFromPath(filePath.trim());
+        await extensionsApi.installFromPath(filePath.trim());
       }
-      toast.success('Skill package installed successfully');
+      toast.success('Extension installed successfully');
       onInstalled();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Installation failed';
@@ -423,7 +423,7 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
         <div className="p-6 border-b border-border dark:border-dark-border">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              Install Skill Package
+              Install Extension
             </h3>
             <button
               onClick={onClose}
@@ -433,7 +433,7 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
             </button>
           </div>
           <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
-            Install a skill package from a JSON manifest or file path.
+            Install an extension from a JSON manifest or file path.
           </p>
         </div>
 
@@ -466,29 +466,29 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
           {mode === 'json' ? (
             <div>
               <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
-                Paste skill.json or skill.md content
+                Paste extension manifest content
               </label>
               <textarea
                 value={jsonText}
                 onChange={(e) => setJsonText(e.target.value)}
-                placeholder={'{\n  "id": "my-skill",\n  "name": "My Skill",\n  "version": "1.0.0",\n  "description": "...",\n  "tools": [...]\n}'}
+                placeholder={'{\n  "id": "my-extension",\n  "name": "My Extension",\n  "version": "1.0.0",\n  "description": "...",\n  "tools": [...]\n}'}
                 className="w-full h-64 px-3 py-2 text-sm font-mono bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
               />
             </div>
           ) : (
             <div>
               <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
-                Path to skill.json or skill.md file
+                Path to extension manifest file
               </label>
               <input
                 type="text"
                 value={filePath}
                 onChange={(e) => setFilePath(e.target.value)}
-                placeholder="/path/to/skill-packages/my-skill/skill.json or skill.md"
+                placeholder="/path/to/extensions/my-ext/extension.json"
                 className="w-full px-3 py-2 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
               <p className="text-xs text-text-muted dark:text-dark-text-muted mt-2">
-                Enter the absolute path to the skill.json or skill.md manifest file on the server.
+                Enter the absolute path to the extension manifest file on the server.
               </p>
             </div>
           )}
@@ -535,14 +535,14 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
 // Detail Modal
 // ---------------------------------------------------------------------------
 
-interface SkillPackageDetailModalProps {
-  pkg: SkillPackageInfo;
+interface ExtensionDetailModalProps {
+  pkg: ExtensionInfo;
   onClose: () => void;
   onToggle: () => void;
   onUninstall: () => void;
 }
 
-function SkillPackageDetailModal({ pkg, onClose, onToggle, onUninstall }: SkillPackageDetailModalProps) {
+function ExtensionDetailModal({ pkg, onClose, onToggle, onUninstall }: ExtensionDetailModalProps) {
   const isEnabled = pkg.status === 'enabled';
   const manifest = pkg.manifest;
   const showServicesTab = (manifest.required_services?.length ?? 0) > 0;
@@ -827,7 +827,7 @@ function SkillPackageDetailModal({ pkg, onClose, onToggle, onUninstall }: SkillP
             <div className="p-4 space-y-3">
               {manifest.required_services.length === 0 ? (
                 <p className="text-text-muted dark:text-dark-text-muted text-sm">
-                  This skill package has no external service requirements.
+                  This extension has no external service requirements.
                 </p>
               ) : (
                 manifest.required_services.map((svc) => (
@@ -875,7 +875,7 @@ function SkillPackageDetailModal({ pkg, onClose, onToggle, onUninstall }: SkillP
               <button
                 onClick={() => setConfirmUninstall(true)}
                 className="px-4 py-2 rounded-lg flex items-center gap-2 text-text-muted hover:text-error hover:bg-error/10 transition-colors"
-                title="Uninstall this skill package"
+                title="Uninstall this extension"
               >
                 <Trash2 className="w-4 h-4" />
                 Uninstall
@@ -904,10 +904,10 @@ function SkillPackageDetailModal({ pkg, onClose, onToggle, onUninstall }: SkillP
 }
 
 // ---------------------------------------------------------------------------
-// Skill Creator Modal
+// Extension Creator Modal
 // ---------------------------------------------------------------------------
 
-const SKILL_CATEGORIES = [
+const EXTENSION_CATEGORIES = [
   'developer', 'productivity', 'communication', 'data',
   'utilities', 'integrations', 'media', 'lifestyle', 'other',
 ] as const;
@@ -927,7 +927,7 @@ interface ToolDraft {
   expanded: boolean;
 }
 
-function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const toast = useToast();
 
   // Step
@@ -938,7 +938,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Metadata
-  const [skillId, setSkillId] = useState('');
+  const [extensionId, setExtensionId] = useState('');
   const [idManuallyEdited, setIdManuallyEdited] = useState(false);
   const [name, setName] = useState('');
   const [version, setVersion] = useState('1.0.0');
@@ -964,7 +964,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
   // Populate wizard from AI-generated manifest
   const populateFromManifest = (m: Record<string, unknown>) => {
     setName((m.name as string) || '');
-    setSkillId((m.id as string) || '');
+    setExtensionId((m.id as string) || '');
     setIdManuallyEdited(true);
     setVersion((m.version as string) || '1.0.0');
     setDescription((m.description as string) || '');
@@ -1000,18 +1000,18 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
   const handleGenerate = async () => {
     if (!aiDescription.trim()) {
-      setError('Please describe the skill you want to create.');
+      setError('Please describe the extension you want to create.');
       return;
     }
     setError(null);
     setIsGenerating(true);
     try {
-      const result = await skillPackagesApi.generate(aiDescription.trim());
+      const result = await extensionsApi.generate(aiDescription.trim());
       if (result.validation && !result.validation.valid) {
         toast.warning(`Generated with ${result.validation.errors.length} warning(s). Review and fix in the next steps.`);
       }
       populateFromManifest(result.manifest);
-      toast.success('Skill manifest generated! Review and edit below.');
+      toast.success('Extension manifest generated! Review and edit below.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Generation failed. Try rephrasing your description.');
     } finally {
@@ -1023,13 +1023,13 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
   const handleNameChange = (val: string) => {
     setName(val);
     if (!idManuallyEdited) {
-      setSkillId(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+      setExtensionId(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
     }
   };
 
   const handleIdChange = (val: string) => {
     setIdManuallyEdited(true);
-    setSkillId(val.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+    setExtensionId(val.toLowerCase().replace(/[^a-z0-9-]/g, ''));
   };
 
   // Tool helpers
@@ -1063,7 +1063,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
   };
 
   // Validation
-  const metadataValid = skillId.length > 0 && /^[a-z0-9][a-z0-9-]*$/.test(skillId) && name.trim().length > 0 && version.trim().length > 0 && description.trim().length > 0;
+  const metadataValid = extensionId.length > 0 && /^[a-z0-9][a-z0-9-]*$/.test(extensionId) && name.trim().length > 0 && version.trim().length > 0 && description.trim().length > 0;
 
   const toolsValid = tools.length > 0 && tools.every((t) => {
     if (!t.name || !/^[a-z0-9_]+$/.test(t.name)) return false;
@@ -1076,7 +1076,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
   // Build manifest
   const buildManifest = () => {
     const manifest: Record<string, unknown> = {
-      id: skillId,
+      id: extensionId,
       name,
       version,
       description,
@@ -1106,8 +1106,8 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
     setIsInstalling(true);
     try {
       const manifest = buildManifest();
-      await skillPackagesApi.install(manifest);
-      toast.success(`Skill "${name}" installed successfully`);
+      await extensionsApi.install(manifest);
+      toast.success(`Extension "${name}" installed successfully`);
       onCreated();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Installation failed');
@@ -1160,7 +1160,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary flex items-center gap-2">
               <Code className="w-5 h-5 text-primary" />
-              Create Skill Package
+              Create Extension
             </h3>
             <button onClick={onClose} className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary rounded transition-colors">
               <X className="w-5 h-5" />
@@ -1195,19 +1195,19 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
           {step === 'describe' && (
             <div className="space-y-4">
               <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                Describe the skill you want to create and let AI generate the manifest for you,
+                Describe the extension you want to create and let AI generate the manifest for you,
                 or skip to create one manually.
               </p>
 
               <div>
                 <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                  What should this skill do?
+                  What should this extension do?
                 </label>
                 <textarea
                   value={aiDescription}
                   onChange={(e) => setAiDescription(e.target.value)}
                   rows={5}
-                  placeholder="Example: I want a skill that can fetch weather data for any city using a free weather API, with tools for current weather and 5-day forecast..."
+                  placeholder="Example: I want an extension that can fetch weather data for any city using a free weather API, with tools for current weather and 5-day forecast..."
                   className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
                   disabled={isGenerating}
                 />
@@ -1242,7 +1242,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
               {isGenerating && (
                 <p className="text-xs text-text-muted dark:text-dark-text-muted animate-pulse">
-                  AI is generating your skill manifest. This may take a moment...
+                  AI is generating your extension manifest. This may take a moment...
                 </p>
               )}
             </div>
@@ -1259,7 +1259,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
                   type="text"
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="My Awesome Skill"
+                  placeholder="My Awesome Extension"
                   className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
@@ -1270,9 +1270,9 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
                 </label>
                 <input
                   type="text"
-                  value={skillId}
+                  value={extensionId}
                   onChange={(e) => handleIdChange(e.target.value)}
-                  placeholder="my-awesome-skill"
+                  placeholder="my-awesome-extension"
                   className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
                 <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
@@ -1302,7 +1302,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
-                    {SKILL_CATEGORIES.map((c) => (
+                    {EXTENSION_CATEGORIES.map((c) => (
                       <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
                     ))}
                   </select>
@@ -1317,7 +1317,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={2}
-                  placeholder="What does this skill package do?"
+                  placeholder="What does this extension do?"
                   className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
                 />
               </div>
@@ -1418,11 +1418,11 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
                   rows={4}
-                  placeholder="Additional instructions injected when this skill is active..."
+                  placeholder="Additional instructions injected when this extension is active..."
                   className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
                 />
                 <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
-                  Guides the AI on when and how to use this skill's tools
+                  Guides the AI on when and how to use this extension's tools
                 </p>
               </div>
 
@@ -1462,7 +1462,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary">
-                  skill.json Preview
+                  extension.json Preview
                 </h4>
                 <button
                   onClick={handleCopy}
@@ -1516,7 +1516,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    Install Skill
+                    Install Extension
                   </>
                 )}
               </button>
@@ -1536,7 +1536,7 @@ function SkillCreatorModal({ onClose, onCreated }: { onClose: () => void; onCrea
 }
 
 // ---------------------------------------------------------------------------
-// Tool Draft Card (used inside SkillCreatorModal)
+// Tool Draft Card (used inside ExtensionCreatorModal)
 // ---------------------------------------------------------------------------
 
 interface ToolDraftCardProps {

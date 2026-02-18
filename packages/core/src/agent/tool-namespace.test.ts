@@ -23,8 +23,8 @@ describe('tool-namespace', () => {
       expect(qualifyToolName('email_send', 'plugin', 'email')).toBe('plugin.email.email_send');
     });
 
-    it('prefixes skill tools with skill.{id}.', () => {
-      expect(qualifyToolName('search_web', 'skill', 'web_search')).toBe('skill.web_search.search_web');
+    it('prefixes extension tools with ext.{id}.', () => {
+      expect(qualifyToolName('search_web', 'ext', 'web_search')).toBe('ext.web_search.search_web');
     });
 
     it('does NOT prefix meta-tools', () => {
@@ -34,9 +34,9 @@ describe('tool-namespace', () => {
       expect(qualifyToolName('batch_use_tool', 'core')).toBe('batch_use_tool');
     });
 
-    it('meta-tools stay unprefixed even with plugin/skill prefix', () => {
+    it('meta-tools stay unprefixed even with plugin/ext prefix', () => {
       expect(qualifyToolName('use_tool', 'plugin', 'some_plugin')).toBe('use_tool');
-      expect(qualifyToolName('search_tools', 'skill', 'some_skill')).toBe('search_tools');
+      expect(qualifyToolName('search_tools', 'ext', 'some_ext')).toBe('search_tools');
     });
   });
 

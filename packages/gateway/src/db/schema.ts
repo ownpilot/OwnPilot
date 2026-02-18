@@ -1257,16 +1257,44 @@ CREATE TABLE IF NOT EXISTS heartbeats (
 );
 
 -- =====================================================
--- SKILL PACKAGES (shareable tool + prompt + trigger bundles)
+-- MIGRATION: Rename skill_packages → user_extensions (MUST run BEFORE CREATE TABLE)
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS skill_packages (
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'skill_packages')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_extensions') THEN
+    ALTER TABLE skill_packages RENAME TO user_extensions;
+  END IF;
+END $$;
+
+-- Add format column to user_extensions (for AgentSkills.io support)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_extensions')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_extensions' AND column_name = 'format') THEN
+    ALTER TABLE user_extensions ADD COLUMN format TEXT NOT NULL DEFAULT 'ownpilot';
+  END IF;
+END $$;
+
+-- Drop old indexes if they exist (new ones are created below via CREATE INDEX IF NOT EXISTS)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_skill_packages_user') THEN
+    DROP INDEX idx_skill_packages_user;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_skill_packages_status') THEN
+    DROP INDEX idx_skill_packages_status;
+  END IF;
+END $$;
+
+-- Now create the table (only if neither old nor new table existed — fresh install)
+CREATE TABLE IF NOT EXISTS user_extensions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
   name TEXT NOT NULL,
   version TEXT NOT NULL DEFAULT '1.0.0',
   description TEXT,
   category TEXT DEFAULT 'other',
+  format TEXT NOT NULL DEFAULT 'ownpilot'
+    CHECK(format IN ('ownpilot', 'agentskills')),
   icon TEXT,
   author_name TEXT,
   manifest JSONB NOT NULL DEFAULT '{}',
@@ -1481,9 +1509,9 @@ CREATE INDEX IF NOT EXISTS idx_heartbeats_user ON heartbeats(user_id);
 CREATE INDEX IF NOT EXISTS idx_heartbeats_enabled ON heartbeats(enabled);
 CREATE INDEX IF NOT EXISTS idx_heartbeats_trigger ON heartbeats(trigger_id);
 
--- Skill package indexes
-CREATE INDEX IF NOT EXISTS idx_skill_packages_user ON skill_packages(user_id);
-CREATE INDEX IF NOT EXISTS idx_skill_packages_status ON skill_packages(status);
+-- Extension indexes
+CREATE INDEX IF NOT EXISTS idx_user_extensions_user ON user_extensions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_extensions_status ON user_extensions(status);
 
 -- Composite indexes for high-frequency multi-column queries
 CREATE INDEX IF NOT EXISTS idx_tasks_user_status ON tasks(user_id, status);
