@@ -189,10 +189,14 @@ export function createStreamCallbacks(config: StreamingConfig): { callbacks: Str
         };
       }
 
-      sseStream.writeSSE({
-        data: JSON.stringify(data),
-        event: chunk.done ? 'done' : 'chunk',
-      });
+      try {
+        sseStream.writeSSE({
+          data: JSON.stringify(data),
+          event: chunk.done ? 'done' : 'chunk',
+        });
+      } catch {
+        // Client disconnected — stream closed
+      }
     },
 
     async onBeforeToolCall(toolCall: ToolCall) {

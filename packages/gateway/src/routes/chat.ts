@@ -335,62 +335,60 @@ chatRoutes.post('/', async (c) => {
         agent.setAdditionalTools(body.directTools);
       }
 
-      const result = await agent.chat(chatMessage, {
-        stream: true,
-        onBeforeToolCall: callbacks.onBeforeToolCall,
-        onChunk: callbacks.onChunk,
-        onToolStart: callbacks.onToolStart,
-        onToolEnd: callbacks.onToolEnd,
-        onProgress: callbacks.onProgress,
-      });
-
-      // Clear direct tools after chat completes
-      if (body.directTools?.length) {
-        agent.clearAdditionalTools();
-      }
-
-      // Reset per-request overrides
-      agent.setRequestApproval(undefined);
-      agent.setExecutionPermissions(undefined);
-      agent.setMaxToolCalls(undefined);
-
-      if (!result.ok) {
-        await stream.writeSSE({
-          data: JSON.stringify({ error: result.error.message }),
-          event: 'error',
+      try {
+        const result = await agent.chat(chatMessage, {
+          stream: true,
+          onBeforeToolCall: callbacks.onBeforeToolCall,
+          onChunk: callbacks.onChunk,
+          onToolStart: callbacks.onToolStart,
+          onToolEnd: callbacks.onToolEnd,
+          onProgress: callbacks.onProgress,
         });
-        await recordStreamUsage(state, {
-          userId: streamUserId,
-          conversationId,
-          provider,
-          model,
-          error: result.error.message,
-        });
-      } else {
-        await recordStreamUsage(state, {
-          userId: streamUserId,
-          conversationId,
-          provider,
-          model,
-        });
-      }
 
-      // Save streaming chat to database
-      if (result.ok) {
-        await saveStreamingChat(state, {
-          userId: streamUserId,
-          conversationId: body.conversationId || conversationId,
-          agentId: body.agentId,
-          provider,
-          model,
-          userMessage: body.message,
-          assistantContent: result.value.content,
-          toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
-          finishReason: result.value.finishReason,
-          historyLength: body.historyLength,
-          ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
-          userAgent: c.req.header('user-agent'),
-        });
+        if (!result.ok) {
+          await stream.writeSSE({
+            data: JSON.stringify({ error: result.error.message }),
+            event: 'error',
+          });
+          await recordStreamUsage(state, {
+            userId: streamUserId,
+            conversationId,
+            provider,
+            model,
+            error: result.error.message,
+          });
+        } else {
+          await recordStreamUsage(state, {
+            userId: streamUserId,
+            conversationId,
+            provider,
+            model,
+          });
+
+          // Save streaming chat to database
+          await saveStreamingChat(state, {
+            userId: streamUserId,
+            conversationId: body.conversationId || conversationId,
+            agentId: body.agentId,
+            provider,
+            model,
+            userMessage: body.message,
+            assistantContent: result.value.content,
+            toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
+            finishReason: result.value.finishReason,
+            historyLength: body.historyLength,
+            ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
+            userAgent: c.req.header('user-agent'),
+          });
+        }
+      } finally {
+        // Always clean up per-request overrides, even on error
+        if (body.directTools?.length) {
+          agent.clearAdditionalTools();
+        }
+        agent.setRequestApproval(undefined);
+        agent.setExecutionPermissions(undefined);
+        agent.setMaxToolCalls(undefined);
       }
     });
   }
@@ -405,17 +403,25 @@ chatRoutes.post('/', async (c) => {
   // ── MessageBus Pipeline Path ──────────────────────────────────────────────
   const bus = tryGetMessageBus();
   if (bus) {
-    const busResult = await processNonStreamingViaBus(bus, {
-      agent,
-      chatMessage,
-      body,
-      provider,
-      model,
-      userId,
-      agentId,
-      requestId,
-      conversationId: body.conversationId ?? agent.getConversation().id,
-    });
+    let busResult;
+    try {
+      busResult = await processNonStreamingViaBus(bus, {
+        agent,
+        chatMessage,
+        body,
+        provider,
+        model,
+        userId,
+        agentId,
+        requestId,
+        conversationId: body.conversationId ?? agent.getConversation().id,
+      });
+    } catch (busError) {
+      agent.setExecutionPermissions(undefined);
+      agent.setRequestApproval(undefined);
+      agent.setMaxToolCalls(undefined);
+      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(busError, 'MessageBus processing failed') }, 500);
+    }
 
     // Reset per-request overrides
     agent.setExecutionPermissions(undefined);
@@ -466,7 +472,7 @@ chatRoutes.post('/', async (c) => {
       historyLength: body.historyLength,
       ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
       userAgent: c.req.header('user-agent'),
-    }).catch(() => { /* logged internally */ });
+    }).catch((err) => { log.warn('Failed to save chat history (MessageBus path):', err); });
 
     // Post-processing middleware skips web UI memory extraction — run it here.
     runPostChatProcessing(userId, body.message, busCleanContent, busToolCalls as never);

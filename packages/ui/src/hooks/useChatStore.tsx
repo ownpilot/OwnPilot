@@ -257,67 +257,71 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           let buffer = '';
           let finalResponse: ChatResponse | null = null;
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            if (controller.signal.aborted) {
-              reader.cancel();
-              return;
-            }
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              if (controller.signal.aborted) break;
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
-            for (const line of lines) {
-              const event = parseSSELine(line);
-              switch (event.kind) {
-                case 'approval':
-                  setPendingApproval({
-                    approvalId: event.data.approvalId,
-                    category: event.data.category,
-                    description: event.data.description,
-                    code: event.data.code,
-                    riskAnalysis: event.data.riskAnalysis as ApprovalRequest['riskAnalysis'],
-                  });
-                  break;
-                case 'progress':
-                  setProgressEvents(prev => [...prev, event.data as unknown as ProgressEvent]);
-                  break;
-                case 'delta':
-                  if (event.data.delta) {
-                    accumulatedContent += event.data.delta;
-                    setStreamingContent(accumulatedContent);
-                  }
-                  if (event.data.done) {
-                    finalResponse = {
-                      id: event.data.id,
-                      conversationId: event.data.conversationId ?? '',
-                      message: accumulatedContent,
-                      response: accumulatedContent,
-                      model: model,
-                      toolCalls: event.data.toolCalls as ChatResponse['toolCalls'],
-                      usage: event.data.usage as ChatResponse['usage'],
-                      finishReason: event.data.finishReason,
-                      trace: event.data.trace as ChatResponse['trace'],
-                      session: event.data.session as ChatResponse['session'],
-                      suggestions: event.data.suggestions as ChatResponse['suggestions'],
-                      memories: event.data.memories as ChatResponse['memories'],
-                    };
-                    // Update session context info (merge cachedTokens from usage)
-                    if (event.data.session) {
-                      const s = event.data.session as SessionInfo;
-                      const usage = event.data.usage as { cachedTokens?: number } | undefined;
-                      setSessionId(s.sessionId);
-                      setSessionInfo(usage?.cachedTokens != null ? { ...s, cachedTokens: usage.cachedTokens } : s);
+              for (const line of lines) {
+                const event = parseSSELine(line);
+                switch (event.kind) {
+                  case 'approval':
+                    setPendingApproval({
+                      approvalId: event.data.approvalId,
+                      category: event.data.category,
+                      description: event.data.description,
+                      code: event.data.code,
+                      riskAnalysis: event.data.riskAnalysis as ApprovalRequest['riskAnalysis'],
+                    });
+                    break;
+                  case 'progress':
+                    setProgressEvents(prev => [...prev, event.data as unknown as ProgressEvent]);
+                    break;
+                  case 'delta':
+                    if (event.data.delta) {
+                      accumulatedContent += event.data.delta;
+                      setStreamingContent(accumulatedContent);
                     }
-                  }
-                  break;
-                case 'error':
-                  throw new Error(event.message);
+                    if (event.data.done) {
+                      finalResponse = {
+                        id: event.data.id,
+                        conversationId: event.data.conversationId ?? '',
+                        message: accumulatedContent,
+                        response: accumulatedContent,
+                        model: model,
+                        toolCalls: event.data.toolCalls as ChatResponse['toolCalls'],
+                        usage: event.data.usage as ChatResponse['usage'],
+                        finishReason: event.data.finishReason,
+                        trace: event.data.trace as ChatResponse['trace'],
+                        session: event.data.session as ChatResponse['session'],
+                        suggestions: event.data.suggestions as ChatResponse['suggestions'],
+                        memories: event.data.memories as ChatResponse['memories'],
+                      };
+                      // Update session context info (merge cachedTokens from usage)
+                      if (event.data.session) {
+                        const s = event.data.session as SessionInfo;
+                        const usage = event.data.usage as { cachedTokens?: number } | undefined;
+                        setSessionId(s.sessionId);
+                        setSessionInfo(usage?.cachedTokens != null ? { ...s, cachedTokens: usage.cachedTokens } : s);
+                      }
+                    }
+                    break;
+                  case 'error':
+                    throw new Error(event.message);
+                }
               }
             }
+          } finally {
+            // Always release the reader — prevents dangling HTTP connections
+            reader.cancel().catch(() => {});
           }
+
+          if (controller.signal.aborted) return;
 
           // Stream complete - add final message
           setLastFailedMessage(null);
