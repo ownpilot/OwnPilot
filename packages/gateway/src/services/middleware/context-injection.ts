@@ -90,17 +90,17 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
       const injectedSuffix = enhancedPrompt.slice(basePrompt.length);
 
       // Cache it
+      // Evict oldest before insert to enforce cap
+      if (injectionCache.size >= 50) {
+        const oldest = injectionCache.keys().next().value;
+        if (oldest) injectionCache.delete(oldest);
+      }
+
       injectionCache.set(cacheKey, {
         injectedSuffix,
         stats,
         cachedAt: Date.now(),
       });
-
-      // Limit cache size
-      if (injectionCache.size > 50) {
-        const oldest = injectionCache.keys().next().value;
-        if (oldest) injectionCache.delete(oldest);
-      }
 
       // Only update if prompt actually changed
       if (enhancedPrompt !== currentSystemPrompt) {
