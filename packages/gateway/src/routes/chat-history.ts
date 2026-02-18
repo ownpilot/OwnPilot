@@ -9,7 +9,7 @@ import { Hono } from 'hono';
 import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { resetChatAgentContext, clearAllChatAgentCaches, getDefaultModel, getContextBreakdown, compactContext } from './agents.js';
-import { promptInitializedConversations } from './chat.js';
+import { promptInitializedConversations } from './chat-state.js';
 import { clearInjectionCache } from '../services/middleware/context-injection.js';
 import { getDefaultProvider } from './settings.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';

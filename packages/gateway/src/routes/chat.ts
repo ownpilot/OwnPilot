@@ -1,16 +1,18 @@
 /**
  * Chat routes
+ *
+ * Implementation split:
+ * - chat-state.ts:       Shared module-level state (breaks circular dep)
+ * - chat-streaming.ts:   SSE streaming types, callbacks, processing
+ * - chat-prompt.ts:      System prompt init, execution context, demo mode
+ * - chat-persistence.ts: DB save, logging, post-chat processing
+ * - chat.ts:             Route handlers (this file) + backward compat re-exports
  */
 
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import type {
-  ChatRequest,
-  StreamChunkResponse,
-  SessionInfo,
-} from '../types/index.js';
+import type { ChatRequest } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, getUserId, notFoundError, getErrorMessage, truncate } from './helpers.js';
-import { AI_META_TOOL_NAMES } from '../config/defaults.js';
 import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, getSessionInfo } from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
@@ -20,9 +22,6 @@ import type { AIProvider } from '@ownpilot/core';
 import {
   buildEnhancedSystemPrompt,
   checkToolCallApproval,
-  extractMemories,
-  updateGoalProgress,
-  evaluateTriggers,
 } from '../assistant/index.js';
 import {
   createTraceContext,
@@ -35,99 +34,50 @@ import {
   traceError as recordTraceError,
   getTraceSummary,
 } from '../tracing/index.js';
-import { debugLog, type ToolDefinition, hasServiceRegistry, getServiceRegistry, Services, DEFAULT_EXECUTION_PERMISSIONS, type ExecutionPermissions } from '@ownpilot/core';
-import type { IMessageBus, NormalizedMessage, MessageProcessingResult, StreamCallbacks, ToolEndResult } from '@ownpilot/core';
-import type { StreamChunk, ToolCall } from '@ownpilot/core';
+import { debugLog, DEFAULT_EXECUTION_PERMISSIONS, type ExecutionPermissions } from '@ownpilot/core';
+import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
-import { createApprovalRequest, generateApprovalId } from '../services/execution-approval.js';
-import { wsGateway } from '../ws/server.js';
 import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.js';
 import { getLog } from '../services/log.js';
 
+// Import from split modules
+import {
+  promptInitializedConversations,
+  lastExecPermHash,
+  execPermHash,
+  boundedSetAdd,
+  boundedMapSet,
+} from './chat-state.js';
+import {
+  createStreamCallbacks,
+  recordStreamUsage,
+  processStreamingViaBus,
+  wireStreamApproval,
+} from './chat-streaming.js';
+import {
+  buildExecutionSystemPrompt,
+  buildToolCatalog,
+  generateDemoResponse,
+  tryGetMessageBus,
+} from './chat-prompt.js';
+import {
+  saveChatToDatabase,
+  saveStreamingChat,
+  runPostChatProcessing,
+} from './chat-persistence.js';
+
 const log = getLog('Chat');
 
-/** Add value to a Set, evicting the oldest entry when at capacity (insertion-order LRU). */
-function boundedSetAdd<T>(set: Set<T>, value: T, maxSize: number): void {
-  if (set.size >= maxSize) {
-    set.delete(set.values().next().value!);
-  }
-  set.add(value);
-}
+// =============================================================================
+// Backward compatibility re-export
+// =============================================================================
+// chat-history.ts imports promptInitializedConversations from './chat.js'
+export { promptInitializedConversations } from './chat-state.js';
 
-/** Add key-value pair to a Map, evicting the oldest entry when at capacity. */
-function boundedMapSet<K, V>(map: Map<K, V>, key: K, value: V, maxSize: number): void {
-  if (!map.has(key) && map.size >= maxSize) {
-    map.delete(map.keys().next().value!);
-  }
-  map.set(key, value);
-}
-
-/**
- * Tracks which conversation IDs have had their system prompt fully initialized
- * (workspace, execution, tool catalog). Skip redundant rebuilds on subsequent messages.
- * Cleared on new session / agent cache eviction.
- */
-export const promptInitializedConversations = new Set<string>();
-
-/** Last execution permissions hash per user, to detect changes between messages */
-const lastExecPermHash = new Map<string, string>();
-
-function execPermHash(perms: ExecutionPermissions): string {
-  return `${perms.enabled}|${perms.mode}|${perms.execute_javascript}|${perms.execute_python}|${perms.execute_shell}|${perms.compile_code}|${perms.package_manager}`;
-}
-
-/**
- * Extract display-friendly tool name and args from a ToolCall.
- * For use_tool calls, unwraps the inner tool_name and arguments.
- */
-function extractToolDisplay(toolCall: ToolCall): { displayName: string; displayArgs?: Record<string, unknown> } {
-  let parsedArgs: Record<string, unknown> | undefined;
-  try { parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined; } catch { /* malformed */ }
-  const displayName = toolCall.name === 'use_tool' && parsedArgs?.tool_name
-    ? String(parsedArgs.tool_name)
-    : toolCall.name;
-  const displayArgs = toolCall.name === 'use_tool' && parsedArgs?.arguments
-    ? parsedArgs.arguments as Record<string, unknown>
-    : parsedArgs;
-  return { displayName, displayArgs };
-}
-
-/**
- * Wire real-time execution approval via SSE stream.
- * Sends approval_required event and returns a pending ApprovalRequest.
- */
-type ApprovalFn = ((category: string, actionType: string, description: string, params: Record<string, unknown>) => Promise<boolean>) | undefined;
-function wireStreamApproval(
-  agent: { setRequestApproval: (fn: ApprovalFn) => void },
-  stream: { writeSSE: (data: { data: string; event: string }) => Promise<void> },
-) {
-  agent.setRequestApproval(async (_category: string, actionType: string, description: string, params: Record<string, unknown>) => {
-    const approvalId = generateApprovalId();
-    await stream.writeSSE({
-      data: JSON.stringify({
-        type: 'approval_required',
-        approvalId,
-        category: actionType,
-        description,
-        code: params.code,
-        riskAnalysis: params.riskAnalysis,
-      }),
-      event: 'approval',
-    });
-    return createApprovalRequest(approvalId);
-  });
-}
-
-/** Broadcast chat history update to WebSocket clients */
-function broadcastChatUpdate(conversation: { id: string; title: string | null; messageCount: number }) {
-  wsGateway.broadcast('chat:history:updated', {
-    conversationId: conversation.id,
-    title: conversation.title ?? '',
-    source: 'web',
-    messageCount: conversation.messageCount + 2,
-  });
-}
+// =============================================================================
+// Routes
+// =============================================================================
 
 export const chatRoutes = new Hono();
 
@@ -136,152 +86,10 @@ import { chatHistoryRoutes } from './chat-history.js';
 chatRoutes.route('/', chatHistoryRoutes);
 
 /**
- * Build a minimal first-message context addendum.
- *
- * The system prompt already contains categorical capabilities and familiar
- * tool quick-references. This function only appends dynamic context that
- * cannot be known at system-prompt composition time:
- * - Custom data tables (user-created dynamic tables)
- * - Active custom/user-created tools
- */
-async function buildToolCatalog(allTools: readonly ToolDefinition[]): Promise<string> {
-  const lines: string[] = [];
-
-  // 1. List active custom/user-created tools (if any)
-  const skipTools = new Set<string>(AI_META_TOOL_NAMES);
-  const customTools = allTools.filter(
-    t => !skipTools.has(t.name) && (t.category === 'Custom' || t.category === 'User' || t.category === 'Dynamic Tools')
-  );
-  if (customTools.length > 0) {
-    lines.push('');
-    lines.push('---');
-    lines.push('## Active Custom Tools');
-    for (const t of customTools) {
-      const brief = t.brief ?? t.description.slice(0, 80);
-      lines.push(`  ${t.name} — ${brief}`);
-    }
-  }
-
-  // 2. Fetch custom data tables
-  try {
-    const service = getServiceRegistry().get(Services.Database);
-    const tables = await service.listTables();
-    if (tables.length > 0) {
-      if (lines.length === 0) {
-        lines.push('');
-        lines.push('---');
-      }
-      lines.push('');
-      lines.push('## Custom Data Tables');
-      for (const t of tables) {
-        const display = t.displayName && t.displayName !== t.name ? `${t.displayName} (${t.name})` : t.name;
-        lines.push(`  ${display}`);
-      }
-    }
-  } catch {
-    // Custom data not available — skip
-  }
-
-  return lines.join('\n');
-}
-
-/**
- * Build execution context for the system prompt.
- * Moved from user message to system prompt so AI models treat it as core instructions.
- */
-const PERM_LABELS: Record<string, string> = {
-  blocked: 'Blocked', prompt: 'Ask', allowed: 'Allow',
-};
-const MODE_LABELS: Record<string, string> = {
-  local: 'Local (host machine)',
-  docker: 'Docker sandbox',
-  auto: 'Auto (Docker if available, else local)',
-};
-
-const EXEC_CATEGORIES = ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager'] as const;
-
-function buildExecutionSystemPrompt(perms: ExecutionPermissions): string {
-  if (!perms.enabled) {
-    return '\n\n## Code Execution\nCode execution is DISABLED. Do not attempt to call execution tools.';
-  }
-
-  const modeDesc = MODE_LABELS[perms.mode] ?? perms.mode;
-
-  // Build compact permission table: tool → Allow/Ask/Blocked
-  const catLines = EXEC_CATEGORIES
-    .map(k => `\`${k}\`: ${PERM_LABELS[perms[k]] ?? perms[k]}`)
-    .join(' | ');
-
-  let section = `\n\n## Code Execution`;
-  section += `\nENABLED (${modeDesc}). When asked to run code, use the execution tool via \`use_tool\` — don't just explain.`;
-  section += `\nPermissions: ${catLines}`;
-  section += `\nAllow = run immediately, Ask = needs user approval, Blocked = don't attempt.`;
-
-  if (perms.mode === 'docker') {
-    section += '\ncompile_code and package_manager unavailable in Docker mode.';
-  }
-
-  return section;
-}
-
-/**
- * Generate demo response based on user message
- */
-function generateDemoResponse(message: string, provider: string, model: string): string {
-  const providerName: Record<string, string> = {
-    openai: 'OpenAI',
-    anthropic: 'Anthropic',
-    zhipu: 'Zhipu AI (GLM)',
-    deepseek: 'DeepSeek',
-    groq: 'Groq',
-    google: 'Google AI',
-    xai: 'xAI',
-    mistral: 'Mistral AI',
-    together: 'Together AI',
-    perplexity: 'Perplexity',
-  };
-
-  const name = providerName[provider] ?? provider;
-
-  // Simple demo responses
-  if (message.toLowerCase().includes('help') || message.toLowerCase().includes('what can you')) {
-    return `Hello! I'm running in **demo mode** using ${name} (${model}).\n\nTo enable full functionality, please configure your API key in Settings.\n\nIn demo mode, I can:\n- Show you the UI capabilities\n- Demonstrate the chat interface\n- Help you configure your API keys\n\nOnce configured, I'll be able to:\n- Answer questions with AI\n- Execute tools\n- Remember conversation context`;
-  }
-
-  if (message.toLowerCase().includes('capabilities') || message.toLowerCase().includes('yetenekler')) {
-    return `**OwnPilot Capabilities**\n\nThis is a privacy-first AI assistant platform. Currently in demo mode with ${name}.\n\n**Supported Providers:**\n- OpenAI (GPT-4o, o1, o1-mini)\n- Anthropic (Claude Sonnet 4, Opus 4)\n- Zhipu AI (GLM-4)\n- DeepSeek (DeepSeek-V3)\n- Groq (Llama 3.3)\n- Google AI (Gemini 1.5)\n- xAI (Grok 2)\n- And more!\n\n**Features:**\n- Multi-provider support\n- Tool/function calling\n- Conversation memory\n- Encrypted credential storage\n- Privacy-first design`;
-  }
-
-  if (message.toLowerCase().includes('tool')) {
-    return `**Tools in OwnPilot**\n\nTools allow the AI to perform actions:\n\n- **get_current_time**: Get current date/time\n- **calculate**: Perform calculations\n- **search_web**: Search the internet\n- **read_file**: Read local files\n\nTo use tools, configure your API key and the AI will automatically use them when needed.`;
-  }
-
-  return `*Demo Mode Response*\n\nI received your message: "${message}"\n\nI'm currently running in demo mode with **${name}** (${model}). To get real AI responses, please configure your API key in the Settings page.\n\n---\n_This is a simulated response. Configure your API key for actual AI capabilities._`;
-}
-
-/**
- * Try to get the MessageBus from the ServiceRegistry.
- * Returns null if not available (graceful fallback to direct path).
- */
-function tryGetMessageBus(): IMessageBus | null {
-  if (hasServiceRegistry()) {
-    try {
-      return getServiceRegistry().get(Services.Message);
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-/**
  * Process a non-streaming chat message through the MessageBus pipeline.
- *
- * This replaces the inline agent.chat() + post-processing + persistence + audit
- * logic with a clean pipeline call.
  */
 async function processNonStreamingViaBus(
-  bus: IMessageBus,
+  bus: NonNullable<ReturnType<typeof tryGetMessageBus>>,
   params: {
     agent: NonNullable<Awaited<ReturnType<typeof getAgent>>>;
     chatMessage: string;
@@ -325,360 +133,6 @@ async function processNonStreamingViaBus(
   });
 }
 
-/** Shared configuration for creating stream callbacks. */
-interface StreamingConfig {
-  sseStream: Parameters<Parameters<typeof streamSSE>[1]>[0];
-  agent: NonNullable<Awaited<ReturnType<typeof getAgent>>>;
-  conversationId: string;
-  userId: string;
-  agentId: string;
-  provider: string;
-  model: string;
-  historyLength: number;
-  contextWindowOverride?: number;
-}
-
-/** Accumulated state from streaming, available after stream completes. */
-interface StreamState {
-  streamedContent: string;
-  lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number; cachedTokens?: number } | undefined;
-  traceToolCalls: Array<{
-    name: string;
-    arguments?: Record<string, unknown>;
-    result?: string;
-    success: boolean;
-    duration?: number;
-    startTime?: number;
-  }>;
-  startTime: number;
-}
-
-/**
- * Create shared StreamCallbacks for SSE streaming.
- * Used by both the MessageBus and Legacy streaming paths to eliminate duplication.
- */
-function createStreamCallbacks(config: StreamingConfig): { callbacks: StreamCallbacks; state: StreamState } {
-  const { sseStream, conversationId, userId, agentId, provider, model, historyLength } = config;
-
-  const state: StreamState = {
-    streamedContent: '',
-    lastUsage: undefined,
-    traceToolCalls: [],
-    startTime: performance.now(),
-  };
-
-  const callbacks: StreamCallbacks = {
-    onChunk(chunk: StreamChunk) {
-      if (chunk.content) state.streamedContent += chunk.content;
-
-      const data: StreamChunkResponse & { trace?: Record<string, unknown>; session?: SessionInfo } = {
-        id: chunk.id,
-        conversationId,
-        delta: chunk.content,
-        toolCalls: chunk.toolCalls?.map((tc) => {
-          let args: Record<string, unknown> | undefined;
-          try { args = tc.arguments ? JSON.parse(tc.arguments) : undefined; } catch { args = undefined; }
-          return { id: tc.id!, name: tc.name!, arguments: args };
-        }),
-        done: chunk.done,
-        finishReason: chunk.finishReason,
-        usage: chunk.usage
-          ? {
-              promptTokens: chunk.usage.promptTokens,
-              completionTokens: chunk.usage.completionTokens,
-              totalTokens: chunk.usage.totalTokens,
-              ...(chunk.usage.cachedTokens != null && { cachedTokens: chunk.usage.cachedTokens }),
-            }
-          : undefined,
-      };
-
-      if (chunk.done) {
-        const { content: memStripped, memories } = extractMemoriesFromResponse(state.streamedContent);
-        const { suggestions } = extractSuggestions(memStripped);
-        if (suggestions.length > 0) data.suggestions = suggestions;
-        if (memories.length > 0) data.memories = memories;
-        const streamDuration = Math.round(performance.now() - state.startTime);
-        data.trace = {
-          duration: streamDuration,
-          toolCalls: state.traceToolCalls.map(tc => ({
-            name: tc.name,
-            arguments: tc.arguments,
-            result: tc.result,
-            success: tc.success,
-            duration: tc.duration,
-          })),
-          modelCalls: state.lastUsage ? [{
-            provider,
-            model,
-            inputTokens: state.lastUsage.promptTokens,
-            outputTokens: state.lastUsage.completionTokens,
-            tokens: state.lastUsage.totalTokens,
-            duration: streamDuration,
-          }] : [],
-          autonomyChecks: [],
-          dbOperations: { reads: 0, writes: 0 },
-          memoryOps: { adds: 0, recalls: 0 },
-          triggersFired: [],
-          errors: [],
-          events: state.traceToolCalls.map(tc => ({
-            type: 'tool_call',
-            name: tc.name,
-            duration: tc.duration,
-            success: tc.success,
-          })),
-          request: {
-            provider,
-            model,
-            endpoint: `/api/v1/chat`,
-            messageCount: historyLength + 1,
-          },
-          response: {
-            status: 'success' as const,
-            finishReason: chunk.finishReason,
-          },
-        };
-        data.session = {
-          ...getSessionInfo(config.agent, config.provider, config.model, config.contextWindowOverride),
-          ...(chunk.usage?.cachedTokens != null && { cachedTokens: chunk.usage.cachedTokens }),
-        };
-      }
-
-      if (chunk.usage) {
-        state.lastUsage = {
-          promptTokens: chunk.usage.promptTokens,
-          completionTokens: chunk.usage.completionTokens,
-          totalTokens: chunk.usage.totalTokens,
-          cachedTokens: chunk.usage.cachedTokens,
-        };
-      }
-
-      sseStream.writeSSE({
-        data: JSON.stringify(data),
-        event: chunk.done ? 'done' : 'chunk',
-      });
-    },
-
-    async onBeforeToolCall(toolCall: ToolCall) {
-      const approval = await checkToolCallApproval(userId, toolCall, {
-        agentId,
-        conversationId,
-        provider,
-        model,
-      });
-
-      if (!approval.approved) {
-        await sseStream.writeSSE({
-          data: JSON.stringify({
-            type: 'tool_blocked',
-            toolCall: { id: toolCall.id, name: toolCall.name },
-            reason: approval.reason,
-          }),
-          event: 'autonomy',
-        });
-      }
-
-      return { approved: approval.approved, reason: approval.reason };
-    },
-
-    onToolStart(toolCall: ToolCall) {
-      const { displayName, displayArgs } = extractToolDisplay(toolCall);
-
-      state.traceToolCalls.push({
-        name: displayName,
-        arguments: displayArgs,
-        success: true,
-        startTime: performance.now(),
-      });
-
-      sseStream.writeSSE({
-        data: JSON.stringify({
-          type: 'tool_start',
-          tool: {
-            id: toolCall.id,
-            name: displayName,
-            arguments: displayArgs,
-          },
-          timestamp: new Date().toISOString(),
-        }),
-        event: 'progress',
-      });
-    },
-
-    onToolEnd(toolCall: ToolCall, result: ToolEndResult) {
-      const { displayName } = extractToolDisplay(toolCall);
-
-      const traceEntry = state.traceToolCalls.find(tc => tc.name === displayName && !tc.result);
-      if (traceEntry) {
-        traceEntry.result = result.content;
-        traceEntry.success = !(result.isError ?? false);
-        traceEntry.duration = result.durationMs ?? (traceEntry.startTime ? Math.round(performance.now() - traceEntry.startTime) : undefined);
-        delete traceEntry.startTime;
-      }
-
-      let sandboxed: boolean | undefined;
-      let executionMode: string | undefined;
-      try {
-        const parsed = JSON.parse(result.content);
-        if (typeof parsed === 'object' && parsed !== null && 'sandboxed' in parsed) {
-          sandboxed = parsed.sandboxed;
-          executionMode = parsed.executionMode;
-        }
-      } catch { /* not JSON or no sandbox info */ }
-
-      sseStream.writeSSE({
-        data: JSON.stringify({
-          type: 'tool_end',
-          tool: {
-            id: toolCall.id,
-            name: displayName,
-          },
-          result: {
-            success: !(result.isError ?? false),
-            preview: result.content.substring(0, 500),
-            durationMs: result.durationMs,
-            ...(sandboxed !== undefined && { sandboxed }),
-            ...(executionMode && { executionMode }),
-          },
-          timestamp: new Date().toISOString(),
-        }),
-        event: 'progress',
-      });
-    },
-
-    onProgress(message: string, data?: Record<string, unknown>) {
-      sseStream.writeSSE({
-        data: JSON.stringify({
-          type: 'status',
-          message,
-          data,
-          timestamp: new Date().toISOString(),
-        }),
-        event: 'progress',
-      });
-    },
-
-    onError(error: Error) {
-      sseStream.writeSSE({
-        data: JSON.stringify({ error: error.message }),
-        event: 'error',
-      });
-    },
-  };
-
-  return { callbacks, state };
-}
-
-/**
- * Record streaming usage/cost metrics.
- */
-async function recordStreamUsage(
-  state: StreamState,
-  params: { userId: string; conversationId: string; provider: string; model: string; error?: string },
-): Promise<void> {
-  const latencyMs = Math.round(performance.now() - state.startTime);
-  if (state.lastUsage) {
-    try {
-      await usageTracker.record({
-        userId: params.userId,
-        sessionId: params.conversationId,
-        provider: params.provider as AIProvider,
-        model: params.model,
-        inputTokens: state.lastUsage.promptTokens,
-        outputTokens: state.lastUsage.completionTokens,
-        totalTokens: state.lastUsage.totalTokens,
-        latencyMs,
-        requestType: 'chat',
-      });
-    } catch { /* Ignore tracking errors */ }
-  } else if (params.error) {
-    try {
-      await usageTracker.record({
-        userId: params.userId,
-        provider: params.provider as AIProvider,
-        model: params.model,
-        inputTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-        latencyMs,
-        requestType: 'chat',
-        error: params.error,
-      });
-    } catch { /* Ignore */ }
-  }
-}
-
-/**
- * Process a streaming request through the MessageBus pipeline.
- */
-async function processStreamingViaBus(
-  bus: IMessageBus,
-  sseStream: Parameters<Parameters<typeof streamSSE>[1]>[0],
-  params: {
-    agent: NonNullable<Awaited<ReturnType<typeof getAgent>>>;
-    chatMessage: string;
-    body: ChatRequest & { provider?: string; model?: string; workspaceId?: string };
-    provider: string;
-    model: string;
-    userId: string;
-    agentId: string;
-    conversationId: string;
-    contextWindowOverride?: number;
-  },
-): Promise<void> {
-  const { agent, chatMessage, body, provider, model, userId, agentId, conversationId, contextWindowOverride } = params;
-
-  const { callbacks, state } = createStreamCallbacks({
-    sseStream,
-    agent,
-    conversationId,
-    userId,
-    agentId,
-    provider,
-    model,
-    historyLength: body.historyLength ?? 0,
-    contextWindowOverride,
-  });
-
-  // Normalize into NormalizedMessage
-  const normalized: NormalizedMessage = {
-    id: crypto.randomUUID(),
-    sessionId: conversationId,
-    role: 'user',
-    content: chatMessage,
-    metadata: {
-      source: 'web',
-      provider,
-      model,
-      conversationId,
-      agentId,
-      stream: true,
-    },
-    timestamp: new Date(),
-  };
-
-  // Process through the pipeline
-  const result = await bus.process(normalized, {
-    stream: callbacks,
-    context: {
-      agent,
-      userId,
-      agentId,
-      provider,
-      model,
-      conversationId,
-      directTools: body.directTools,
-    },
-  });
-
-  await recordStreamUsage(state, {
-    userId,
-    conversationId,
-    provider,
-    model,
-    error: result.response.metadata.error as string | undefined,
-  });
-}
-
 /**
  * Send a chat message
  */
@@ -690,7 +144,6 @@ chatRoutes.post('/', async (c) => {
   // Get provider and model from request
   const provider = body.provider ?? 'openai';
   const requestedModel = body.model ?? await getDefaultModel(provider);
-  // Use a fallback model for demo mode display, but validate for real requests
   const model = requestedModel ?? 'gpt-4o';
 
   // Check for demo mode
@@ -727,13 +180,11 @@ chatRoutes.post('/', async (c) => {
   let agent: Awaited<ReturnType<typeof getAgent>>;
 
   if (body.agentId) {
-    // Use specific agent if agentId provided
     agent = await getAgent(body.agentId);
     if (!agent) {
       return notFoundError(c, 'Agent', body.agentId);
     }
   } else {
-    // Use provider/model from request to create chat agent
     try {
       agent = await getOrCreateChatAgent(provider, model);
     } catch (error) {
@@ -750,9 +201,6 @@ chatRoutes.post('/', async (c) => {
   }
 
   // ── System prompt initialization ──────────────────────────────────────────
-  // Static sections (workspace, execution, tool catalog) are injected once per
-  // conversation and skipped on subsequent messages. Only execution permissions
-  // are re-checked (cheap hash compare) in case the user changed them mid-chat.
   const conversationId = agent.getConversation().id;
   const isPromptInitialized = promptInitializedConversations.has(conversationId);
   const chatUserId = getUserId(c);
@@ -834,7 +282,6 @@ chatRoutes.post('/', async (c) => {
         const streamAgentId = body.agentId ?? `chat-${provider}`;
         const streamUserId = getUserId(c);
 
-        // Wire real-time approval for 'prompt' mode execution
         wireStreamApproval(agent, stream);
         log.info(`[ExecSecurity] SSE requestApproval callback wired on agent (MessageBus path)`);
 
@@ -875,7 +322,6 @@ chatRoutes.post('/', async (c) => {
         contextWindowOverride: userContextWindow,
       });
 
-      // Wire real-time approval for 'prompt' mode execution
       wireStreamApproval(agent, stream);
 
       // Expose direct tools to LLM if requested (from picker selection)
@@ -924,107 +370,20 @@ chatRoutes.post('/', async (c) => {
 
       // Save streaming chat to database
       if (result.ok) {
-        try {
-          const chatRepo = new ChatRepository(streamUserId);
-          const logsRepo = new LogsRepository(streamUserId);
-          const streamLatency = Math.round(performance.now() - state.startTime);
-
-          // Build trace info from collected data
-          const streamTraceInfo = {
-            duration: streamLatency,
-            toolCalls: state.traceToolCalls.map(tc => ({
-              name: tc.name,
-              arguments: tc.arguments,
-              result: tc.result,
-              success: tc.success,
-              duration: tc.duration,
-            })),
-            modelCalls: state.lastUsage ? [{
-              provider,
-              model,
-              inputTokens: state.lastUsage.promptTokens,
-              outputTokens: state.lastUsage.completionTokens,
-              tokens: state.lastUsage.totalTokens,
-              duration: streamLatency,
-            }] : [],
-            request: {
-              provider,
-              model,
-              endpoint: '/api/v1/chat',
-              messageCount: (body.historyLength ?? 0) + 1,
-              streaming: true,
-            },
-            response: {
-              status: 'success' as const,
-              finishReason: result.value.finishReason,
-            },
-          };
-
-          // Get or create conversation
-          const dbConversation = await chatRepo.getOrCreateConversation(body.conversationId || conversationId, {
-            title: truncate(body.message),
-            agentId: body.agentId,
-            agentName: body.agentId ? undefined : 'Chat',
-            provider,
-            model,
-          });
-
-          // Save user message
-          await chatRepo.addMessage({
-            conversationId: dbConversation.id,
-            role: 'user',
-            content: body.message,
-            provider,
-            model,
-          });
-
-          // Save assistant message with trace
-          await chatRepo.addMessage({
-            conversationId: dbConversation.id,
-            role: 'assistant',
-            content: result.value.content,
-            provider,
-            model,
-            toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
-            trace: streamTraceInfo as Record<string, unknown>,
-            inputTokens: state.lastUsage?.promptTokens,
-            outputTokens: state.lastUsage?.completionTokens,
-          });
-
-          // Extract payload breakdown from debug log
-          const streamPayloadEntry = debugLog.getRecent(5).find(e => e.type === 'request');
-          const streamPayloadInfo = streamPayloadEntry?.data as { payload?: Record<string, unknown> } | undefined;
-
-          // Log the request with payload breakdown
-          logsRepo.log({
-            conversationId: dbConversation.id,
-            type: 'chat',
-            provider,
-            model,
-            endpoint: 'chat/completions',
-            method: 'POST',
-            requestBody: {
-              message: body.message,
-              history: body.historyLength ?? 0,
-              streaming: true,
-              payload: streamPayloadInfo?.payload ?? null,
-            },
-            responseBody: { contentLength: result.value.content.length, toolCalls: result.value.toolCalls?.length ?? 0 },
-            statusCode: 200,
-            inputTokens: state.lastUsage?.promptTokens,
-            outputTokens: state.lastUsage?.completionTokens,
-            totalTokens: state.lastUsage?.totalTokens,
-            durationMs: streamLatency,
-            ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
-            userAgent: c.req.header('user-agent'),
-          });
-
-          log.info(`Saved streaming to history: conversation=${dbConversation.id}, messages=+2`);
-
-          broadcastChatUpdate(dbConversation);
-        } catch (err) {
-          log.warn('Failed to save streaming chat history:', err);
-        }
+        await saveStreamingChat(state, {
+          userId: streamUserId,
+          conversationId: body.conversationId || conversationId,
+          agentId: body.agentId,
+          provider,
+          model,
+          userMessage: body.message,
+          assistantContent: result.value.content,
+          toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
+          finishReason: result.value.finishReason,
+          historyLength: body.historyLength,
+          ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
+          userAgent: c.req.header('user-agent'),
+        });
       }
     });
   }
@@ -1037,9 +396,6 @@ chatRoutes.post('/', async (c) => {
   const workspaceId = body.workspaceId ?? null;
 
   // ── MessageBus Pipeline Path ──────────────────────────────────────────────
-  // If the MessageBus is available, route through the unified pipeline.
-  // This handles: context injection, agent execution, post-processing,
-  // persistence, and audit in composable middleware stages.
   const bus = tryGetMessageBus();
   if (bus) {
     const busResult = await processNonStreamingViaBus(bus, {
@@ -1060,7 +416,6 @@ chatRoutes.post('/', async (c) => {
 
     const processingTime = Math.round(performance.now() - startTime);
 
-    // Check for errors
     if (busResult.response.metadata.error) {
       return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: busResult.response.metadata.error as string }, 500);
     }
@@ -1111,16 +466,11 @@ chatRoutes.post('/', async (c) => {
   }
 
   // ── Legacy Direct Path (fallback) ─────────────────────────────────────────
-  // Used when MessageBus is not available. Will be removed after full migration.
-
-  // Create trace context for this request
   const traceCtx = createTraceContext(requestId, userId);
 
-  // Run chat logic within trace context
   const { result, traceSummary } = await withTraceContextAsync(traceCtx, async () => {
     recordTraceInfo('Chat request started', { provider, model, agentId, workspaceId });
 
-    // Inject memories and goals into system prompt (Personal AI Assistant feature)
     try {
       const { prompt: enhancedPrompt, stats } = await buildEnhancedSystemPrompt(
         agent.getConversation().systemPrompt || 'You are a helpful AI assistant.',
@@ -1135,7 +485,6 @@ chatRoutes.post('/', async (c) => {
       );
       agent.updateSystemPrompt(enhancedPrompt);
 
-      // Log orchestrator stats if any context was injected
       if (stats.memoriesUsed > 0 || stats.goalsUsed > 0) {
         recordTraceInfo('Context injected', {
           memoriesUsed: stats.memoriesUsed,
@@ -1144,12 +493,10 @@ chatRoutes.post('/', async (c) => {
         log.info(`Injected ${stats.memoriesUsed} memories, ${stats.goalsUsed} goals`);
       }
     } catch (error) {
-      // Don't fail chat if orchestrator fails, just log
       recordTraceError('Orchestrator failed', { error: getErrorMessage(error) });
       log.warn('Failed to build enhanced prompt:', error);
     }
 
-    // Log chat start
     logChatEvent({
       type: 'start',
       agentId,
@@ -1159,18 +506,14 @@ chatRoutes.post('/', async (c) => {
       requestId,
     }).catch((e) => log.warn('Event logging failed:', e));
 
-    // Expose direct tools to LLM if requested (from picker selection)
     if (body.directTools?.length) {
       agent.setAdditionalTools(body.directTools);
     }
 
-    // Track model call timing
     const modelCallStart = Date.now();
 
-    // Call chat with autonomy check callback for tool calls
     const result = await agent.chat(chatMessage, {
       onBeforeToolCall: async (toolCall) => {
-        // Parse arguments if it's a string
         let toolArgs: Record<string, unknown>;
         try {
           toolArgs = typeof toolCall.arguments === 'string'
@@ -1188,7 +531,6 @@ chatRoutes.post('/', async (c) => {
           model,
         });
 
-        // Record autonomy check
         traceAutonomyCheck(toolCall.name, approval.approved, approval.reason);
 
         if (!approval.approved) {
@@ -1205,15 +547,12 @@ chatRoutes.post('/', async (c) => {
       },
     });
 
-    // Clear direct tools after chat completes
     if (body.directTools?.length) {
       agent.clearAdditionalTools();
     }
 
-    // Reset local execution permission
     agent.setExecutionPermissions(undefined);
 
-    // Record model call
     if (result.ok) {
       traceModelCall(
         provider,
@@ -1227,7 +566,6 @@ chatRoutes.post('/', async (c) => {
       traceModelCall(provider, model, modelCallStart, undefined, result.error.message);
     }
 
-    // Get trace summary before returning
     const summary = getTraceSummary();
     return { result, traceSummary: summary };
   });
@@ -1235,7 +573,6 @@ chatRoutes.post('/', async (c) => {
   const processingTime = performance.now() - startTime;
 
   if (!result.ok) {
-    // Record failed request
     try {
       await usageTracker.record({
         userId,
@@ -1248,11 +585,8 @@ chatRoutes.post('/', async (c) => {
         requestType: 'chat',
         error: result.error.message,
       });
-    } catch {
-      // Ignore tracking errors
-    }
+    } catch { /* Ignore tracking errors */ }
 
-    // Log chat error
     logChatEvent({
       type: 'error',
       agentId,
@@ -1264,7 +598,6 @@ chatRoutes.post('/', async (c) => {
       requestId,
     }).catch((e) => log.warn('Event logging failed:', e));
 
-    // Log error to database
     try {
       const logsRepo = new LogsRepository(userId);
       logsRepo.log({
@@ -1282,9 +615,7 @@ chatRoutes.post('/', async (c) => {
         ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
         userAgent: c.req.header('user-agent'),
       });
-    } catch {
-      // Ignore logging errors
-    }
+    } catch { /* Ignore logging errors */ }
 
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error.message }, 500);
   }
@@ -1305,12 +636,9 @@ chatRoutes.post('/', async (c) => {
         latencyMs: Math.round(processingTime),
         requestType: 'chat',
       });
-    } catch {
-      // Ignore tracking errors - don't fail the request
-    }
+    } catch { /* Ignore tracking errors */ }
   }
 
-  // Log chat completion with tool call count
   logChatEvent({
     type: 'complete',
     agentId,
@@ -1324,54 +652,17 @@ chatRoutes.post('/', async (c) => {
     requestId,
   }).catch((e) => log.warn('Event logging failed:', e));
 
-  // Post-chat processing: Extract memories, update goals, evaluate triggers
-  // This runs asynchronously to not block the response
-  Promise.all([
-    extractMemories(userId, body.message, result.value.content).catch((e) =>
-      log.warn('Memory extraction failed:', e)
-    ),
-    updateGoalProgress(userId, body.message, result.value.content, result.value.toolCalls).catch((e) =>
-      log.warn('Goal progress update failed:', e)
-    ),
-    evaluateTriggers(userId, body.message, result.value.content).catch((e) =>
-      log.warn('Trigger evaluation failed:', e)
-    ),
-  ]).then(([memoriesExtracted, _, triggerResult]) => {
-    if (memoriesExtracted && (memoriesExtracted as number) > 0) {
-      log.info(`Extracted ${memoriesExtracted} new memories from conversation`);
-    }
-    if (triggerResult && typeof triggerResult === 'object') {
-      const { triggered, pending, executed } = triggerResult as {
-        triggered: string[];
-        pending: string[];
-        executed: string[];
-      };
-      if (triggered.length > 0) {
-        log.info(`${triggered.length} triggers evaluated`);
-      }
-      if (executed.length > 0) {
-        log.info(`${executed.length} triggers executed successfully`);
-      }
-      if (pending.length > 0) {
-        log.info(`${pending.length} triggers pending/failed`);
-      }
-    }
-  }).catch((error) => {
-    log.error('Post-chat processing failed', { error: getErrorMessage(error) });
-  });
+  // Post-chat processing (async, non-blocking)
+  runPostChatProcessing(userId, body.message, result.value.content, result.value.toolCalls);
 
-  // Build trace info for response with enhanced debug data
+  // Build trace info
   const recentDebugEntries = debugLog.getRecent(20);
-
-  // Extract request info from debug log
   const requestEntry = recentDebugEntries.find(e => e.type === 'request');
   const responseEntry = recentDebugEntries.find(e => e.type === 'response');
   const retryEntries = recentDebugEntries.filter(e => e.type === 'retry');
   const toolCallEntries = recentDebugEntries.filter(e => e.type === 'tool_call' || e.type === 'tool_result');
 
-  // Build enhanced tool calls with arguments and results
   const enhancedToolCalls = traceSummary?.toolCalls.map((tc) => {
-    // Find matching debug entries for arguments and results
     const callEntry = toolCallEntries.find(
       e => e.type === 'tool_call' && (e.data as { name?: string })?.name === tc.name
     );
@@ -1394,7 +685,6 @@ chatRoutes.post('/', async (c) => {
         duration: traceSummary.totalDuration,
         toolCalls: enhancedToolCalls,
         modelCalls: traceSummary.modelCalls.map((mc) => {
-          // Try to find matching response entry for token breakdown
           const respData = responseEntry?.data as { usage?: { promptTokens?: number; completionTokens?: number } } | undefined;
           return {
             provider: mc.provider,
@@ -1422,7 +712,6 @@ chatRoutes.post('/', async (c) => {
           duration: e.duration,
           success: e.success,
         })),
-        // Enhanced debug info from debug log
         request: requestEntry ? {
           provider: (requestEntry.data as { provider?: string })?.provider ?? provider,
           model: (requestEntry.data as { model?: string })?.model ?? model,
@@ -1433,7 +722,7 @@ chatRoutes.post('/', async (c) => {
           provider,
           model,
           endpoint: 'chat/completions',
-          messageCount: 1, // Single user message
+          messageCount: 1,
         },
         response: responseEntry ? {
           status: (responseEntry.data as { status?: 'success' | 'error' })?.status ?? 'success',
@@ -1478,7 +767,6 @@ chatRoutes.post('/', async (c) => {
       session: getSessionInfo(agent, provider, model, userContextWindow),
       suggestions: legacySuggestions.length > 0 ? legacySuggestions : undefined,
       memories: legacyMemories.length > 0 ? legacyMemories : undefined,
-      // Include trace info for debugging
       trace: traceInfo,
     },
     meta: {
@@ -1488,76 +776,26 @@ chatRoutes.post('/', async (c) => {
     },
   };
 
-  // Save chat history to database (async, non-blocking)
-  try {
-    const chatRepo = new ChatRepository(userId);
-    const logsRepo = new LogsRepository(userId);
-
-    // Get or create conversation
-    const dbConversation = await chatRepo.getOrCreateConversation(body.conversationId || conversation.id, {
-      title: truncate(body.message),
-      agentId: body.agentId,
-      agentName: body.agentId ? undefined : 'Chat',
-      provider,
-      model,
-    });
-
-    // Save user message
-    await chatRepo.addMessage({
-      conversationId: dbConversation.id,
-      role: 'user',
-      content: body.message,
-      provider,
-      model,
-    });
-
-    // Save assistant message (use cleaned content without suggestions tag)
-    await chatRepo.addMessage({
-      conversationId: dbConversation.id,
-      role: 'assistant',
-      content: legacyCleanContent,
-      provider,
-      model,
-      toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
-      trace: traceInfo as Record<string, unknown>,
-      inputTokens: result.value.usage?.promptTokens,
-      outputTokens: result.value.usage?.completionTokens,
-    });
-
-    // Extract payload breakdown from debug log
-    const payloadEntry = recentDebugEntries.find(e => e.type === 'request');
-    const payloadInfo = payloadEntry?.data as { payload?: Record<string, unknown> } | undefined;
-
-    // Log the request with payload breakdown
-    logsRepo.log({
-      conversationId: dbConversation.id,
-      type: 'chat',
-      provider,
-      model,
-      endpoint: 'chat/completions',
-      method: 'POST',
-      requestBody: {
-        message: body.message,
-        history: body.historyLength ?? 0,
-        payload: payloadInfo?.payload ?? null,
-      },
-      responseBody: { contentLength: result.value.content.length, toolCalls: result.value.toolCalls?.length ?? 0 },
-      statusCode: 200,
-      inputTokens: result.value.usage?.promptTokens,
-      outputTokens: result.value.usage?.completionTokens,
-      totalTokens: result.value.usage?.totalTokens,
-      durationMs: Math.round(processingTime),
-      ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
-      userAgent: c.req.header('user-agent'),
-    });
-
-    log.info(`Saved to history: conversation=${dbConversation.id}, messages=+2`);
-
-    broadcastChatUpdate(dbConversation);
-  } catch (err) {
-    // Don't fail the request if history save fails
-    log.warn('Failed to save chat history:', err);
-  }
+  // Save chat history to database
+  await saveChatToDatabase({
+    userId,
+    conversationId: body.conversationId || conversation.id,
+    agentId: body.agentId,
+    provider,
+    model,
+    userMessage: body.message,
+    assistantContent: legacyCleanContent,
+    toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
+    trace: traceInfo as Record<string, unknown>,
+    usage: result.value.usage ? {
+      promptTokens: result.value.usage.promptTokens,
+      completionTokens: result.value.usage.completionTokens,
+      totalTokens: result.value.usage.totalTokens,
+    } : undefined,
+    historyLength: body.historyLength,
+    ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
+    userAgent: c.req.header('user-agent'),
+  });
 
   return c.json(response);
 });
@@ -1569,7 +807,6 @@ chatRoutes.get('/conversations/:id', async (c) => {
   const id = c.req.param('id');
   const agentId = c.req.query('agentId');
 
-  // In demo mode, return empty conversation
   if (await isDemoMode()) {
     return apiResponse(c, {
       id,
@@ -1614,7 +851,6 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   const id = c.req.param('id');
   const agentId = c.req.query('agentId');
 
-  // In demo mode, just return success
   if (await isDemoMode()) {
     return apiResponse(c, {});
   }
