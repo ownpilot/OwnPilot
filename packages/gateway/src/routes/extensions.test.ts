@@ -14,8 +14,8 @@ import { errorHandler } from '../middleware/error-handler.js';
 // ---------------------------------------------------------------------------
 
 const sampleManifest = {
-  id: 'test-skill',
-  name: 'Test Skill',
+  id: 'test-ext',
+  name: 'Test Extension',
   version: '1.0.0',
   description: 'A test extension',
   category: 'utilities',
@@ -34,9 +34,9 @@ const sampleManifest = {
 };
 
 const sampleRecord = {
-  id: 'test-skill',
+  id: 'test-ext',
   userId: 'default',
-  name: 'Test Skill',
+  name: 'Test Extension',
   version: '1.0.0',
   description: 'A test extension',
   category: 'utilities',
@@ -58,13 +58,13 @@ const sampleRecord = {
 
 const mockService = {
   getAll: vi.fn(() => [sampleRecord]),
-  getById: vi.fn((id: string) => (id === 'test-skill' ? sampleRecord : null)),
+  getById: vi.fn((id: string) => (id === 'test-ext' ? sampleRecord : null)),
   installFromManifest: vi.fn(async () => sampleRecord),
   install: vi.fn(async () => sampleRecord),
-  uninstall: vi.fn(async (id: string) => id === 'test-skill'),
-  enable: vi.fn(async (id: string) => (id === 'test-skill' ? { ...sampleRecord, status: 'enabled' } : null)),
-  disable: vi.fn(async (id: string) => (id === 'test-skill' ? { ...sampleRecord, status: 'disabled' } : null)),
-  reload: vi.fn(async (id: string) => (id === 'test-skill' ? sampleRecord : null)),
+  uninstall: vi.fn(async (id: string) => id === 'test-ext'),
+  enable: vi.fn(async (id: string) => (id === 'test-ext' ? { ...sampleRecord, status: 'enabled' } : null)),
+  disable: vi.fn(async (id: string) => (id === 'test-ext' ? { ...sampleRecord, status: 'disabled' } : null)),
+  reload: vi.fn(async (id: string) => (id === 'test-ext' ? sampleRecord : null)),
   scanDirectory: vi.fn(async () => ({ installed: 2, errors: [] })),
 };
 
@@ -136,13 +136,13 @@ describe('Extensions Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockService.getAll.mockReturnValue([sampleRecord]);
-    mockService.getById.mockImplementation((id: string) => (id === 'test-skill' ? sampleRecord : null));
+    mockService.getById.mockImplementation((id: string) => (id === 'test-ext' ? sampleRecord : null));
     mockService.installFromManifest.mockResolvedValue(sampleRecord);
     mockService.install.mockResolvedValue(sampleRecord);
-    mockService.uninstall.mockImplementation(async (id: string) => id === 'test-skill');
-    mockService.enable.mockImplementation(async (id: string) => (id === 'test-skill' ? { ...sampleRecord, status: 'enabled' } : null));
-    mockService.disable.mockImplementation(async (id: string) => (id === 'test-skill' ? { ...sampleRecord, status: 'disabled' } : null));
-    mockService.reload.mockImplementation(async (id: string) => (id === 'test-skill' ? sampleRecord : null));
+    mockService.uninstall.mockImplementation(async (id: string) => id === 'test-ext');
+    mockService.enable.mockImplementation(async (id: string) => (id === 'test-ext' ? { ...sampleRecord, status: 'enabled' } : null));
+    mockService.disable.mockImplementation(async (id: string) => (id === 'test-ext' ? { ...sampleRecord, status: 'disabled' } : null));
+    mockService.reload.mockImplementation(async (id: string) => (id === 'test-ext' ? sampleRecord : null));
     mockService.scanDirectory.mockResolvedValue({ installed: 2, errors: [] });
     app = createApp();
   });
@@ -159,7 +159,7 @@ describe('Extensions Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.packages).toHaveLength(1);
-      expect(json.data.packages[0].id).toBe('test-skill');
+      expect(json.data.packages[0].id).toBe('test-ext');
       expect(json.data.total).toBe(1);
     });
 
@@ -201,7 +201,7 @@ describe('Extensions Routes', () => {
       expect(res.status).toBe(201);
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(json.data.package.id).toBe('test-skill');
+      expect(json.data.package.id).toBe('test-ext');
       expect(json.data.message).toContain('installed');
       expect(mockService.installFromManifest).toHaveBeenCalled();
     });
@@ -268,7 +268,7 @@ describe('Extensions Routes', () => {
 
       expect(res.status).toBe(201);
       const json = await res.json();
-      expect(json.data.package.id).toBe('test-skill');
+      expect(json.data.package.id).toBe('test-ext');
       expect(mockService.install).toHaveBeenCalledWith('/path/to/extension.json', 'default');
     });
 
@@ -350,7 +350,7 @@ describe('Extensions Routes', () => {
       const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: 'Create a math helper skill' }),
+        body: JSON.stringify({ description: 'Create a math helper extension' }),
       });
 
       expect(res.status).toBe(200);
@@ -370,12 +370,12 @@ describe('Extensions Routes', () => {
       const res = await app.request('/extensions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: 'Create a math helper skill' }),
+        body: JSON.stringify({ description: 'Create a math helper extension' }),
       });
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.manifest.id).toBe('test-skill');
+      expect(json.data.manifest.id).toBe('test-ext');
     });
 
     it('returns 400 when description is missing', async () => {
@@ -482,12 +482,12 @@ describe('Extensions Routes', () => {
 
   describe('GET /extensions/:id', () => {
     it('returns package details', async () => {
-      const res = await app.request('/extensions/test-skill');
+      const res = await app.request('/extensions/test-ext');
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.package.id).toBe('test-skill');
-      expect(json.data.package.name).toBe('Test Skill');
+      expect(json.data.package.id).toBe('test-ext');
+      expect(json.data.package.name).toBe('Test Extension');
     });
 
     it('returns 404 for unknown package', async () => {
@@ -503,12 +503,12 @@ describe('Extensions Routes', () => {
 
   describe('DELETE /extensions/:id', () => {
     it('uninstalls a package', async () => {
-      const res = await app.request('/extensions/test-skill', { method: 'DELETE' });
+      const res = await app.request('/extensions/test-ext', { method: 'DELETE' });
 
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.message).toContain('uninstalled');
-      expect(mockService.uninstall).toHaveBeenCalledWith('test-skill', 'default');
+      expect(mockService.uninstall).toHaveBeenCalledWith('test-ext', 'default');
     });
 
     it('returns 404 for unknown package', async () => {
@@ -524,7 +524,7 @@ describe('Extensions Routes', () => {
 
   describe('POST /extensions/:id/enable', () => {
     it('enables a package', async () => {
-      const res = await app.request('/extensions/test-skill/enable', { method: 'POST' });
+      const res = await app.request('/extensions/test-ext/enable', { method: 'POST' });
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -541,7 +541,7 @@ describe('Extensions Routes', () => {
     it('returns 500 when enable throws', async () => {
       mockService.enable.mockRejectedValue(new Error('DB error'));
 
-      const res = await app.request('/extensions/test-skill/enable', { method: 'POST' });
+      const res = await app.request('/extensions/test-ext/enable', { method: 'POST' });
 
       expect(res.status).toBe(500);
     });
@@ -553,7 +553,7 @@ describe('Extensions Routes', () => {
 
   describe('POST /extensions/:id/disable', () => {
     it('disables a package', async () => {
-      const res = await app.request('/extensions/test-skill/disable', { method: 'POST' });
+      const res = await app.request('/extensions/test-ext/disable', { method: 'POST' });
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -570,7 +570,7 @@ describe('Extensions Routes', () => {
     it('returns 500 when disable throws', async () => {
       mockService.disable.mockRejectedValue(new Error('DB error'));
 
-      const res = await app.request('/extensions/test-skill/disable', { method: 'POST' });
+      const res = await app.request('/extensions/test-ext/disable', { method: 'POST' });
 
       expect(res.status).toBe(500);
     });
@@ -582,11 +582,11 @@ describe('Extensions Routes', () => {
 
   describe('POST /extensions/:id/reload', () => {
     it('reloads a package from disk', async () => {
-      const res = await app.request('/extensions/test-skill/reload', { method: 'POST' });
+      const res = await app.request('/extensions/test-ext/reload', { method: 'POST' });
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.package.id).toBe('test-skill');
+      expect(json.data.package.id).toBe('test-ext');
       expect(json.data.message).toContain('reloaded');
     });
 
@@ -600,7 +600,7 @@ describe('Extensions Routes', () => {
       const { ExtensionError } = await import('../services/extension-service.js');
       mockService.reload.mockRejectedValue(new ExtensionError('No source path', 'IO_ERROR'));
 
-      const res = await app.request('/extensions/test-skill/reload', { method: 'POST' });
+      const res = await app.request('/extensions/test-ext/reload', { method: 'POST' });
 
       expect(res.status).toBe(400);
       const json = await res.json();
@@ -610,7 +610,7 @@ describe('Extensions Routes', () => {
     it('returns 500 for unexpected errors', async () => {
       mockService.reload.mockRejectedValue(new Error('FS error'));
 
-      const res = await app.request('/extensions/test-skill/reload', { method: 'POST' });
+      const res = await app.request('/extensions/test-ext/reload', { method: 'POST' });
 
       expect(res.status).toBe(500);
     });

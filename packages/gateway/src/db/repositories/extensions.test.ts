@@ -55,10 +55,10 @@ const { ExtensionsRepository, initializeExtensionsRepo } = await import('./exten
 const NOW = '2026-01-01T00:00:00.000Z';
 
 const sampleManifest = {
-  id: 'test-skill',
-  name: 'Test Skill',
+  id: 'test-ext',
+  name: 'Test Extension',
   version: '1.0.0',
-  description: 'A test skill',
+  description: 'A test extension',
   tools: [
     {
       name: 'test_tool',
@@ -71,11 +71,11 @@ const sampleManifest = {
 
 function makeRow(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'test-skill',
+    id: 'test-ext',
     user_id: 'default',
-    name: 'Test Skill',
+    name: 'Test Extension',
     version: '1.0.0',
-    description: 'A test skill',
+    description: 'A test extension',
     category: 'utilities',
     icon: null,
     author_name: null,
@@ -110,15 +110,15 @@ describe('ExtensionsRepository', () => {
 
   describe('initialize / refreshCache', () => {
     it('loads all rows into cache', async () => {
-      const row1 = makeRow({ id: 'skill-a' });
-      const row2 = makeRow({ id: 'skill-b', status: 'disabled' });
+      const row1 = makeRow({ id: 'ext-a' });
+      const row2 = makeRow({ id: 'ext-b', status: 'disabled' });
       mockAdapter.query.mockResolvedValue([row1, row2]);
 
       await repo.initialize();
 
       expect(repo.getAll()).toHaveLength(2);
-      expect(repo.getById('skill-a')).toBeTruthy();
-      expect(repo.getById('skill-b')).toBeTruthy();
+      expect(repo.getById('ext-a')).toBeTruthy();
+      expect(repo.getById('ext-b')).toBeTruthy();
     });
 
     it('clears cache on re-initialize', async () => {
@@ -141,10 +141,10 @@ describe('ExtensionsRepository', () => {
       mockAdapter.query.mockResolvedValue([makeRow()]);
       await repo.initialize();
 
-      const record = repo.getById('test-skill');
+      const record = repo.getById('test-ext');
       expect(record).not.toBeNull();
-      expect(record!.id).toBe('test-skill');
-      expect(record!.name).toBe('Test Skill');
+      expect(record!.id).toBe('test-ext');
+      expect(record!.name).toBe('Test Extension');
       expect(record!.status).toBe('enabled');
     });
 
@@ -205,20 +205,20 @@ describe('ExtensionsRepository', () => {
       mockAdapter.queryOne.mockResolvedValue(row);
 
       const result = await repo.upsert({
-        id: 'test-skill',
+        id: 'test-ext',
         userId: 'default',
-        name: 'Test Skill',
+        name: 'Test Extension',
         version: '1.0.0',
-        description: 'A test skill',
+        description: 'A test extension',
         category: 'utilities',
         manifest: sampleManifest as never,
         toolCount: 1,
         triggerCount: 0,
       });
 
-      expect(result.id).toBe('test-skill');
+      expect(result.id).toBe('test-ext');
       expect(mockAdapter.execute).toHaveBeenCalled();
-      expect(repo.getById('test-skill')).not.toBeNull();
+      expect(repo.getById('test-ext')).not.toBeNull();
     });
 
     it('uses defaults for optional fields', async () => {
@@ -229,8 +229,8 @@ describe('ExtensionsRepository', () => {
       mockAdapter.queryOne.mockResolvedValue(makeRow());
 
       await repo.upsert({
-        id: 'test-skill',
-        name: 'Test Skill',
+        id: 'test-ext',
+        name: 'Test Extension',
         version: '1.0.0',
         manifest: sampleManifest as never,
       });
@@ -250,7 +250,7 @@ describe('ExtensionsRepository', () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(makeRow({ status: 'disabled' }));
 
-      const result = await repo.updateStatus('test-skill', 'disabled');
+      const result = await repo.updateStatus('test-ext', 'disabled');
       expect(result).not.toBeNull();
       expect(result!.status).toBe('disabled');
     });
@@ -262,7 +262,7 @@ describe('ExtensionsRepository', () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(makeRow({ status: 'error', error_message: 'Something broke' }));
 
-      const result = await repo.updateStatus('test-skill', 'error', 'Something broke');
+      const result = await repo.updateStatus('test-ext', 'error', 'Something broke');
       expect(result!.status).toBe('error');
       expect(result!.errorMessage).toBe('Something broke');
     });
@@ -285,7 +285,7 @@ describe('ExtensionsRepository', () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(makeRow({ settings: '{"key":"value"}' }));
 
-      const result = await repo.updateSettings('test-skill', { key: 'value' });
+      const result = await repo.updateSettings('test-ext', { key: 'value' });
       expect(result).not.toBeNull();
       expect(result!.settings).toEqual({ key: 'value' });
     });
@@ -303,13 +303,13 @@ describe('ExtensionsRepository', () => {
     it('removes from DB and cache', async () => {
       mockAdapter.query.mockResolvedValue([makeRow()]);
       await repo.initialize();
-      expect(repo.getById('test-skill')).not.toBeNull();
+      expect(repo.getById('test-ext')).not.toBeNull();
 
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
 
-      const deleted = await repo.delete('test-skill');
+      const deleted = await repo.delete('test-ext');
       expect(deleted).toBe(true);
-      expect(repo.getById('test-skill')).toBeNull();
+      expect(repo.getById('test-ext')).toBeNull();
     });
 
     it('returns false when record does not exist', async () => {
@@ -332,8 +332,8 @@ describe('ExtensionsRepository', () => {
       mockAdapter.query.mockResolvedValue([makeRow()]);
       await repo.initialize();
 
-      const record = repo.getById('test-skill');
-      expect(record!.manifest.id).toBe('test-skill');
+      const record = repo.getById('test-ext');
+      expect(record!.manifest.id).toBe('test-ext');
       expect(record!.manifest.tools).toHaveLength(1);
     });
 
@@ -343,8 +343,8 @@ describe('ExtensionsRepository', () => {
       ]);
       await repo.initialize();
 
-      const record = repo.getById('test-skill');
-      expect(record!.manifest.id).toBe('test-skill');
+      const record = repo.getById('test-ext');
+      expect(record!.manifest.id).toBe('test-ext');
     });
 
     it('handles null optional fields', async () => {
@@ -357,7 +357,7 @@ describe('ExtensionsRepository', () => {
       })]);
       await repo.initialize();
 
-      const record = repo.getById('test-skill');
+      const record = repo.getById('test-ext');
       expect(record!.description).toBeUndefined();
       expect(record!.icon).toBeUndefined();
       expect(record!.authorName).toBeUndefined();
@@ -371,7 +371,7 @@ describe('ExtensionsRepository', () => {
       ]);
       await repo.initialize();
 
-      const record = repo.getById('test-skill');
+      const record = repo.getById('test-ext');
       // Falls back to default empty manifest
       expect(record!.manifest.id).toBe('');
       expect(record!.manifest.tools).toHaveLength(0);
@@ -383,7 +383,7 @@ describe('ExtensionsRepository', () => {
       ]);
       await repo.initialize();
 
-      const record = repo.getById('test-skill');
+      const record = repo.getById('test-ext');
       expect(record!.settings).toEqual({ foo: 'bar' });
     });
   });
