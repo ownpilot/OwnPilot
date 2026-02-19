@@ -36,7 +36,7 @@ import {
   type ToolNodeData, type ToolNodeType, type TriggerNodeData, type LlmNodeData,
   type ConditionNodeData, type CodeNodeData, type TransformerNodeData, type ForEachNodeData,
 } from '../components/workflows';
-import { ChevronLeft, Save, Play, StopCircle, Code, Zap, Brain, GitBranch, Terminal, RefreshCw } from '../components/icons';
+import { ChevronLeft, Save, Play, StopCircle, Code, Zap, Brain, GitBranch, Terminal, RefreshCw, Repeat } from '../components/icons';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
@@ -119,6 +119,7 @@ export function WorkflowEditorPage() {
           target: e.target,
           sourceHandle: e.sourceHandle,
           targetHandle: e.targetHandle,
+          ...getEdgeLabelProps(e.sourceHandle),
         }));
 
         setNodes(rfNodes);
@@ -153,7 +154,8 @@ export function WorkflowEditorPage() {
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      setEdges((eds) => addEdge(connection, eds));
+      const edgeProps = getEdgeLabelProps(connection.sourceHandle);
+      setEdges((eds) => addEdge({ ...connection, ...edgeProps }, eds));
       setHasUnsavedChanges(true);
     },
     [setEdges],
@@ -894,7 +896,7 @@ export function WorkflowEditorPage() {
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 hover:bg-sky-200 dark:hover:bg-sky-900/50 border border-sky-300 dark:border-sky-700 rounded-md transition-colors"
           title="Add ForEach (loop) node"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
+          <Repeat className="w-3.5 h-3.5" />
           ForEach
         </button>
 
@@ -1002,4 +1004,33 @@ function formatToolName(name: string): string {
   return base
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Edge label + color config for named source handles */
+const HANDLE_EDGE_PROPS: Record<string, { label: string; style: Record<string, string> }> = {
+  true:  { label: 'True',  style: { stroke: '#10b981' } },   // emerald
+  false: { label: 'False', style: { stroke: '#ef4444' } },   // red
+  each:  { label: 'Each',  style: { stroke: '#0ea5e9' } },   // sky
+  done:  { label: 'Done',  style: { stroke: '#8b5cf6' } },   // violet
+};
+
+const EDGE_LABEL_STYLE = {
+  fontSize: 10,
+  fontWeight: 600,
+  fill: 'var(--color-text-muted)',
+} as const;
+
+function getEdgeLabelProps(sourceHandle: string | null | undefined) {
+  if (!sourceHandle) return {};
+  const cfg = HANDLE_EDGE_PROPS[sourceHandle];
+  if (!cfg) return {};
+  return {
+    label: cfg.label,
+    labelStyle: EDGE_LABEL_STYLE,
+    labelBgPadding: [6, 3] as [number, number],
+    labelBgBorderRadius: 4,
+    labelBgStyle: { fill: 'var(--color-bg-secondary)', opacity: 0.9 },
+    style: { ...defaultEdgeOptions.style, ...cfg.style },
+    markerEnd: { ...defaultEdgeOptions.markerEnd, color: cfg.style.stroke },
+  };
 }

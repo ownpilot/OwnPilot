@@ -6,7 +6,7 @@
 
 import { memo } from 'react';
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
-import { RefreshCw, CheckCircle2, XCircle, Activity, AlertCircle } from '../icons';
+import { Repeat, CheckCircle2, XCircle, Activity, AlertCircle } from '../icons';
 import type { NodeExecutionStatus } from '../../api/types';
 
 export interface ForEachNodeData extends Record<string, unknown> {
@@ -73,7 +73,7 @@ function ForEachNodeComponent({ data, selected }: NodeProps<ForEachNodeType>) {
         {/* Header */}
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-full bg-sky-500/20 flex items-center justify-center shrink-0">
-            <RefreshCw className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <Repeat className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
           </div>
           <span className="font-medium text-sm text-sky-900 dark:text-sky-100 truncate flex-1">
             {(data.label as string) || 'ForEach'}
