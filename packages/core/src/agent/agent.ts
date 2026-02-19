@@ -9,6 +9,7 @@ import type {
   AgentConfig,
   AgentState,
   CompletionResponse,
+  ContentPart,
   Message,
   Conversation,
   StreamChunk,
@@ -141,7 +142,7 @@ export class Agent {
    * Send a message and get a response
    */
   async chat(
-    message: string,
+    message: string | readonly ContentPart[],
     options?: {
       stream?: boolean;
       onChunk?: (chunk: StreamChunk) => void;

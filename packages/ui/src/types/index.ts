@@ -21,6 +21,16 @@ export type {
   CostsData,
   AgentDetail,
 } from './api';
+export interface MessageAttachment {
+  type: 'image' | 'file';
+  mimeType?: string;
+  filename?: string;
+  size?: number;
+  path?: string;
+  /** Base64 data — only present for local (unsaved) attachments */
+  data?: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -31,6 +41,7 @@ export interface Message {
   model?: string;
   trace?: TraceInfo;
   isError?: boolean;
+  attachments?: MessageAttachment[];
 }
 
 export interface ToolCall {

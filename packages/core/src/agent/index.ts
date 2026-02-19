@@ -38,6 +38,10 @@ export type {
   PermissionMode,
   ExecutionCategory,
   ExecutionPermissions,
+  ContentPart,
+  TextContent,
+  ImageContent,
+  FileContent,
 } from './types.js';
 
 export { DEFAULT_EXECUTION_PERMISSIONS } from './types.js';

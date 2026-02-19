@@ -1373,6 +1373,16 @@ DO $$ BEGIN
     ALTER TABLE trigger_history ALTER COLUMN trigger_id DROP NOT NULL;
   END IF;
 END $$;
+
+-- =====================================================
+-- MESSAGES: Add attachments column
+-- =====================================================
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'attachments') THEN
+    ALTER TABLE messages ADD COLUMN attachments JSONB;
+  END IF;
+END $$;
 `;
 
 export const INDEXES_SQL = `

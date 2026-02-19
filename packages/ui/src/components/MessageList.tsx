@@ -80,6 +80,29 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
 
       {/* Content */}
       <div className={`group flex-1 max-w-[85%] ${isUser ? 'text-right' : 'text-left'}`}>
+        {/* User image attachments */}
+        {isUser && message.attachments && message.attachments.length > 0 && (
+          <div className={`flex gap-2 mb-2 ${isUser ? 'justify-end' : ''} flex-wrap`}>
+            {message.attachments.filter(a => a.type === 'image').map((att, i) => {
+              const src = att.data
+                ? `data:${att.mimeType || 'image/png'};base64,${att.data}`
+                : att.path
+                  ? `/api/v1/files/workspace/${att.path}`
+                  : undefined;
+              if (!src) return null;
+              return (
+                <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block">
+                  <img
+                    src={src}
+                    alt={att.filename || 'Attached image'}
+                    className="max-w-[200px] max-h-[200px] rounded-xl border border-border dark:border-dark-border object-cover hover:opacity-90 transition-opacity"
+                  />
+                </a>
+              );
+            })}
+          </div>
+        )}
+
         {/* Message Bubble */}
         {(() => {
           const hasCodeBlock = /```[\s\S]*?```/.test(displayContent);

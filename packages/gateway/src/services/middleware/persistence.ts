@@ -55,13 +55,23 @@ export function createPersistenceMiddleware(): MessageMiddleware {
         model,
       });
 
-      // Save user message
+      // Save user message (store attachment metadata, not base64 blobs)
       await chatRepo.addMessage({
         conversationId: dbConversation.id,
         role: 'user',
         content: message.content,
         provider,
         model,
+        ...(message.attachments?.length && {
+          attachments: message.attachments
+            .filter((a): a is typeof a & { type: 'image' | 'file' } => a.type === 'image' || a.type === 'file')
+            .map(a => ({
+              type: a.type,
+              mimeType: a.mimeType,
+              filename: a.filename,
+              size: a.size,
+            })),
+        }),
       });
 
       // Save assistant message

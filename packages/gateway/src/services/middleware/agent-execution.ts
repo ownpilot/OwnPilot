@@ -6,7 +6,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { MessageMiddleware, StreamCallbacks } from '@ownpilot/core';
+import type { MessageMiddleware, StreamCallbacks, ContentPart } from '@ownpilot/core';
 import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core';
 import { checkToolCallApproval } from '../../assistant/index.js';
 import { getLog } from '../log.js';
@@ -15,7 +15,7 @@ const log = getLog('Middleware:AgentExecution');
 
 /** Minimal agent interface needed by this middleware */
 interface ChatAgent {
-  chat(message: string, options?: Record<string, unknown>): Promise<{
+  chat(message: string | readonly ContentPart[], options?: Record<string, unknown>): Promise<{
     ok: boolean;
     value?: {
       id: string;
@@ -104,7 +104,19 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
         };
       }
 
-      const result = await agent.chat(message.content, chatOptions);
+      // Convert attachments to ContentPart[] for vision models
+      let chatContent: string | readonly ContentPart[] = message.content;
+      if (message.attachments?.length) {
+        const parts: ContentPart[] = [{ type: 'text', text: message.content }];
+        for (const att of message.attachments) {
+          if (att.type === 'image' && att.data) {
+            parts.push({ type: 'image', data: att.data, mediaType: att.mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' });
+          }
+        }
+        chatContent = parts;
+      }
+
+      const result = await agent.chat(chatContent, chatOptions);
 
       // Clear direct tools after chat
       if (directTools?.length && agent.clearAdditionalTools) {

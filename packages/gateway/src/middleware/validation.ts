@@ -41,6 +41,12 @@ export const chatMessageSchema = z.object({
   stream: z.boolean().optional(),
   streamingMode: z.enum(['auto', 'always', 'never']).optional(),
   maxToolCalls: z.number().int().min(0).max(1000).optional(),
+  attachments: z.array(z.object({
+    type: z.enum(['image', 'file']),
+    data: z.string().max(20_000_000),
+    mimeType: z.string().max(100),
+    filename: z.string().max(255).optional(),
+  })).max(5).optional(),
 });
 
 // ─── Trigger Schemas ─────────────────────────────────────────────

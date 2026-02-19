@@ -37,6 +37,7 @@ import {
 } from '../routes/custom-tools.js';
 import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from './log.js';
+import { registerImageOverrides } from './image-overrides.js';
 import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
 import type { IAuditService } from '@ownpilot/core';
 
@@ -81,6 +82,9 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
 
   // Register all modular tools (file system, code exec, web fetch, etc.)
   registerAllTools(tools);
+
+  // Override image tool placeholders with real implementations
+  registerImageOverrides(tools).catch((err) => log.debug('registerImageOverrides:', String(err)));
 
   // Register legacy core tools (get_current_time, calculate, etc.)
   // Duplicates are safely ignored by ToolRegistry

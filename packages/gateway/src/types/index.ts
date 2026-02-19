@@ -48,6 +48,13 @@ export interface ChatRequest {
   includeToolList?: boolean;
   /** Override max tool calls for this request (0 = unlimited) */
   maxToolCalls?: number;
+  /** File/image attachments (base64 encoded) */
+  attachments?: Array<{
+    type: 'image' | 'file';
+    data: string;
+    mimeType: string;
+    filename?: string;
+  }>;
 }
 
 /**

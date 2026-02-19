@@ -4,6 +4,15 @@
 
 import { BaseRepository, parseJsonFieldNullable } from './base.js';
 
+export interface MessageAttachment {
+  type: 'image' | 'file';
+  mimeType?: string;
+  filename?: string;
+  size?: number;
+  /** Path to the saved file in workspace (base64 NOT stored in DB) */
+  path?: string;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -15,6 +24,7 @@ export interface Message {
     arguments: string;
   }>;
   toolCallId?: string;
+  attachments?: MessageAttachment[];
   createdAt: Date;
 }
 
@@ -25,6 +35,7 @@ interface MessageRow {
   content: string;
   tool_calls: string | null;
   tool_call_id: string | null;
+  attachments: string | null;
   created_at: string;
 }
 
@@ -36,6 +47,7 @@ function rowToMessage(row: MessageRow): Message {
     content: row.content,
     toolCalls: parseJsonFieldNullable(row.tool_calls) ?? undefined,
     toolCallId: row.tool_call_id ?? undefined,
+    attachments: parseJsonFieldNullable<MessageAttachment[]>(row.attachments) ?? undefined,
     createdAt: new Date(row.created_at),
   };
 }
@@ -48,10 +60,11 @@ export class MessagesRepository extends BaseRepository {
     content: string;
     toolCalls?: Message['toolCalls'];
     toolCallId?: string;
+    attachments?: MessageAttachment[];
   }): Promise<Message> {
     await this.execute(
-      `INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+      `INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id, attachments)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         data.id,
         data.conversationId,
@@ -59,6 +72,7 @@ export class MessagesRepository extends BaseRepository {
         data.content,
         data.toolCalls ? JSON.stringify(data.toolCalls) : null,
         data.toolCallId ?? null,
+        data.attachments?.length ? JSON.stringify(data.attachments) : null,
       ]
     );
 

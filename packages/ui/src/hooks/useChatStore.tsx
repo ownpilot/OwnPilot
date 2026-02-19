@@ -14,7 +14,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import type { Message, ChatResponse, ApiResponse, SessionInfo } from '../types';
+import type { Message, MessageAttachment, ChatResponse, ApiResponse, SessionInfo } from '../types';
 import type { ApprovalRequest } from '../api';
 import { executionPermissionsApi, memoriesApi } from '../api';
 import { parseSSELine } from '../utils/sse-parser';
@@ -67,7 +67,7 @@ interface ChatStore extends ChatState {
   setModel: (model: string) => void;
   setAgentId: (agentId: string | null) => void;
   setWorkspaceId: (workspaceId: string | null) => void;
-  sendMessage: (content: string, directTools?: string[]) => Promise<void>;
+  sendMessage: (content: string, directTools?: string[], imageAttachments?: MessageAttachment[]) => Promise<void>;
   retryLastMessage: () => Promise<void>;
   clearMessages: () => void;
   cancelRequest: () => void;
@@ -150,10 +150,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [pendingApproval]);
 
   const sendMessage = useCallback(
-    async (content: string, directToolsOrRetry?: string[] | boolean, isRetryArg?: boolean) => {
-      // Support both old signature (content, isRetry) and new (content, directTools, isRetry)
+    async (content: string, directToolsOrRetry?: string[] | boolean, isRetryOrAttachments?: boolean | MessageAttachment[]) => {
+      // Support both old signature (content, isRetry) and new (content, directTools, isRetry/attachments)
       const directTools = Array.isArray(directToolsOrRetry) ? directToolsOrRetry : undefined;
-      const isRetry = typeof directToolsOrRetry === 'boolean' ? directToolsOrRetry : (isRetryArg ?? false);
+      const isRetry = typeof directToolsOrRetry === 'boolean' ? directToolsOrRetry : (typeof isRetryOrAttachments === 'boolean' ? isRetryOrAttachments : false);
+      const imageAttachments = Array.isArray(isRetryOrAttachments) ? isRetryOrAttachments : undefined;
       // Cancel any previous ongoing request before starting a new one
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -197,6 +198,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             role: 'user',
             content,
             timestamp: new Date().toISOString(),
+            ...(imageAttachments?.length && { attachments: imageAttachments }),
           };
           return [...prev, userMessage];
         }
@@ -216,6 +218,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             ...(agentId && { agentId }),
             ...(workspaceId && { workspaceId }),
             ...(directTools?.length && { directTools }),
+            ...(imageAttachments?.length && {
+              attachments: imageAttachments.map(a => ({
+                type: a.type,
+                data: a.data,
+                mimeType: a.mimeType,
+                filename: a.filename,
+              })),
+            }),
             // Send tool catalog only on the first message of a new chat
             ...(currentMessages.length === 0 && !isRetry && { includeToolList: true }),
             // Agent maintains its own conversation memory — only send count for logging

@@ -357,7 +357,7 @@ export async function processStreamingViaBus(
   params: {
     agent: NonNullable<Awaited<ReturnType<typeof getAgent>>>;
     chatMessage: string;
-    body: { historyLength?: number; directTools?: string[]; provider?: string; model?: string; workspaceId?: string };
+    body: { historyLength?: number; directTools?: string[]; provider?: string; model?: string; workspaceId?: string; attachments?: Array<{ type: string; data: string; mimeType: string; filename?: string }> };
     provider: string;
     model: string;
     userId: string;
@@ -386,6 +386,14 @@ export async function processStreamingViaBus(
     sessionId: conversationId,
     role: 'user',
     content: chatMessage,
+    ...(body.attachments?.length && {
+      attachments: body.attachments.map((a) => ({
+        type: a.type as 'image' | 'file',
+        data: a.data,
+        mimeType: a.mimeType,
+        filename: a.filename,
+      })),
+    }),
     metadata: {
       source: 'web',
       provider,

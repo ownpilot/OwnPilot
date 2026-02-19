@@ -109,6 +109,14 @@ async function processNonStreamingViaBus(
     sessionId: conversationId ?? agent.getConversation().id,
     role: 'user',
     content: chatMessage,
+    ...(body.attachments?.length && {
+      attachments: body.attachments.map((a: { type: string; data: string; mimeType: string; filename?: string }) => ({
+        type: a.type as 'image' | 'file',
+        data: a.data,
+        mimeType: a.mimeType,
+        filename: a.filename,
+      })),
+    }),
     metadata: {
       source: 'web',
       provider,

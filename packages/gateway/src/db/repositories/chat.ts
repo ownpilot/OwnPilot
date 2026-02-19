@@ -27,6 +27,15 @@ export interface Conversation {
   metadata: Record<string, unknown>;
 }
 
+export interface MessageAttachment {
+  type: 'image' | 'file';
+  mimeType?: string;
+  filename?: string;
+  size?: number;
+  /** Path to the saved file in workspace (base64 NOT stored in DB) */
+  path?: string;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -40,6 +49,7 @@ export interface Message {
   isError: boolean;
   inputTokens: number | null;
   outputTokens: number | null;
+  attachments: MessageAttachment[] | null;
   createdAt: Date;
 }
 
@@ -65,6 +75,7 @@ export interface CreateMessageInput {
   isError?: boolean;
   inputTokens?: number;
   outputTokens?: number;
+  attachments?: MessageAttachment[];
 }
 
 export interface ConversationQuery {
@@ -108,6 +119,7 @@ interface MessageRow {
   is_error: boolean;
   input_tokens: number | null;
   output_tokens: number | null;
+  attachments: string | null;
   created_at: string;
 }
 
@@ -147,6 +159,7 @@ function rowToMessage(row: MessageRow): Message {
     isError: row.is_error,
     inputTokens: row.input_tokens,
     outputTokens: row.output_tokens,
+    attachments: parseJsonFieldNullable<MessageAttachment[]>(row.attachments),
     createdAt: new Date(row.created_at),
   };
 }
@@ -356,8 +369,8 @@ export class ChatRepository extends BaseRepository {
     const now = new Date().toISOString();
 
     await this.execute(
-      `INSERT INTO messages (id, conversation_id, role, content, provider, model, tool_calls, tool_call_id, trace, is_error, input_tokens, output_tokens, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      `INSERT INTO messages (id, conversation_id, role, content, provider, model, tool_calls, tool_call_id, trace, is_error, input_tokens, output_tokens, attachments, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [
         id,
         input.conversationId,
@@ -371,6 +384,7 @@ export class ChatRepository extends BaseRepository {
         input.isError || false,
         input.inputTokens || null,
         input.outputTokens || null,
+        input.attachments?.length ? JSON.stringify(input.attachments) : null,
         now,
       ]
     );

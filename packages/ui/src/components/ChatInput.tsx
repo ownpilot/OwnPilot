@@ -1,9 +1,18 @@
 import { useState, useRef, useEffect, useImperativeHandle, forwardRef, type KeyboardEvent, type FormEvent } from 'react';
-import { Send, StopCircle, X } from './icons';
+import { Send, StopCircle, X, Image } from './icons';
 import { ToolPicker, type ResourceAttachment, type ResourceType } from './ToolPicker';
+import type { MessageAttachment } from '../types';
+
+/** File attachment being previewed (with base64 data) */
+interface ImagePreview {
+  file: File;
+  data: string; // base64
+  mimeType: string;
+  previewUrl: string; // object URL for thumbnail
+}
 
 interface ChatInputProps {
-  onSend: (message: string, directTools?: string[]) => void;
+  onSend: (message: string, directTools?: string[], imageAttachments?: MessageAttachment[]) => void;
   onStop?: () => void;
   isLoading?: boolean;
   placeholder?: string;
@@ -56,7 +65,9 @@ function buildContextBlock(attachments: ResourceAttachment[]): string {
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput({ onSend, onStop, isLoading, placeholder = 'Type a message...' }, ref) {
   const [value, setValue] = useState('');
   const [attachments, setAttachments] = useState<ResourceAttachment[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useImperativeHandle(ref, () => ({
     setValue: (text: string) => {
@@ -75,11 +86,63 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     }
   }, [value]);
 
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      for (const p of imagePreviews) URL.revokeObjectURL(p.previewUrl);
+    };
+  }, []);
+
+  const handleImageSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newPreviews: ImagePreview[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
+      if (imagePreviews.length + newPreviews.length >= 5) break; // max 5
+
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Strip "data:image/xxx;base64," prefix
+          resolve(result.split(',')[1] ?? '');
+        };
+        reader.readAsDataURL(file);
+      });
+
+      newPreviews.push({
+        file,
+        data: base64,
+        mimeType: file.type,
+        previewUrl: URL.createObjectURL(file),
+      });
+    }
+
+    setImagePreviews(prev => [...prev, ...newPreviews]);
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const removeImage = (index: number) => {
+    setImagePreviews(prev => {
+      URL.revokeObjectURL(prev[index]!.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (value.trim() && !isLoading) {
+    const hasContent = value.trim() || imagePreviews.length > 0;
+    if (hasContent && !isLoading) {
       // Build final message: user text + hidden context block
-      const userText = value.trim();
+      const userText = value.trim() || (imagePreviews.length > 0 ? 'Analyze this image.' : '');
       const contextBlock = buildContextBlock(attachments);
       const finalMessage = userText + contextBlock;
 
@@ -88,9 +151,24 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         .filter(a => a.type === 'tool' || a.type === 'custom-tool')
         .map(a => a.name);
 
-      onSend(finalMessage, directToolNames.length > 0 ? directToolNames : undefined);
+      // Convert image previews to MessageAttachment[]
+      const imageAttachments: MessageAttachment[] = imagePreviews.map(p => ({
+        type: 'image' as const,
+        data: p.data,
+        mimeType: p.mimeType,
+        filename: p.file.name,
+      }));
+
+      onSend(
+        finalMessage,
+        directToolNames.length > 0 ? directToolNames : undefined,
+        imageAttachments.length > 0 ? imageAttachments : undefined,
+      );
       setValue('');
       setAttachments([]);
+      // Cleanup previews
+      for (const p of imagePreviews) URL.revokeObjectURL(p.previewUrl);
+      setImagePreviews([]);
     }
   };
 
@@ -119,7 +197,41 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
 
   return (
     <form onSubmit={handleSubmit} className="flex gap-3 items-end">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileChange}
+        className="hidden"
+        aria-hidden="true"
+      />
+
       <div className="flex-1 relative">
+        {/* Image previews */}
+        {imagePreviews.length > 0 && (
+          <div className="flex gap-2 mb-2 px-1">
+            {imagePreviews.map((preview, index) => (
+              <div key={preview.previewUrl} className="relative group/img w-16 h-16 rounded-lg overflow-hidden border border-border dark:border-dark-border">
+                <img
+                  src={preview.previewUrl}
+                  alt={preview.file.name}
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-0 right-0 p-0.5 bg-black/60 text-white rounded-bl-lg opacity-0 group-hover/img:opacity-100 transition-opacity"
+                  aria-label={`Remove ${preview.file.name}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Attachment chips */}
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2 px-1">
@@ -147,6 +259,18 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           {/* Resource Picker Button */}
           <ToolPicker onSelect={handleResourceSelect} disabled={isLoading} />
 
+          {/* Image Upload Button */}
+          <button
+            type="button"
+            onClick={handleImageSelect}
+            disabled={isLoading || imagePreviews.length >= 5}
+            className="p-2.5 text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-primary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Attach image"
+            title="Attach image (max 5)"
+          >
+            <Image className="w-5 h-5" />
+          </button>
+
           {/* Textarea */}
           <div className="flex-1">
             <textarea
@@ -154,7 +278,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={attachments.length > 0 ? 'Ask about the attached context...' : placeholder}
+              placeholder={imagePreviews.length > 0 ? 'Describe what you want to know about the image...' : attachments.length > 0 ? 'Ask about the attached context...' : placeholder}
               disabled={isLoading}
               rows={1}
               className="w-full px-4 py-3 bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted border border-border dark:border-dark-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
@@ -177,7 +301,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       ) : (
         <button
           type="submit"
-          disabled={!value.trim()}
+          disabled={!value.trim() && imagePreviews.length === 0}
           className="px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           aria-label="Send message"
         >

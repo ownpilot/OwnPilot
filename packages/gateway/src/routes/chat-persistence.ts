@@ -29,6 +29,15 @@ export function broadcastChatUpdate(conversation: { id: string; title: string | 
   });
 }
 
+/** Attachment metadata for persistence (base64 NOT stored in DB) */
+export interface AttachmentMeta {
+  type: 'image' | 'file';
+  mimeType?: string;
+  filename?: string;
+  size?: number;
+  path?: string;
+}
+
 /** Parameters for saving chat to database */
 export interface SaveChatParams {
   userId: string;
@@ -49,6 +58,7 @@ export interface SaveChatParams {
   streaming?: boolean;
   ipAddress?: string;
   userAgent?: string;
+  attachments?: AttachmentMeta[];
 }
 
 /**
@@ -82,6 +92,7 @@ export async function saveChatToDatabase(params: SaveChatParams): Promise<void> 
       content: userMessage,
       provider,
       model,
+      ...(params.attachments?.length && { attachments: params.attachments }),
     });
 
     // Save assistant message with trace

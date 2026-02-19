@@ -19,6 +19,7 @@ export type MessageRole = 'user' | 'assistant' | 'system' | 'tool';
 export interface NormalizedAttachment {
   readonly type: 'image' | 'file' | 'audio' | 'video';
   readonly url?: string;
+  readonly data?: string;
   readonly mimeType?: string;
   readonly filename?: string;
   readonly size?: number;
