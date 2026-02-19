@@ -74,6 +74,7 @@ export function ContextBar({ sessionInfo, defaultMaxTokens, onNewSession, onShow
         onClick={onNewSession}
         className="flex items-center gap-1 px-2 py-1 text-text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-primary rounded transition-colors"
         title="Start new session"
+        aria-label="Start new chat session"
       >
         <Plus className="w-3 h-3" />
         <span className="hidden sm:inline">New</span>

@@ -157,7 +157,7 @@ function NavItemLink({ item, compact = false, badge }: { item: NavItem; compact?
       className={({ isActive }) =>
         `flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-sm ${
           isActive
-            ? 'bg-primary text-white shadow-sm'
+            ? 'bg-primary text-white shadow-sm border-l-[3px] border-white/50'
             : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5'
         } ${compact ? 'pl-8' : ''}`
       }
@@ -308,10 +308,21 @@ export function Layout() {
     return openGroups;
   };
 
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(getInitialOpenGroups);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    // Restore from localStorage, fallback to initial
+    try {
+      const saved = localStorage.getItem('ownpilot_nav_groups');
+      if (saved) return { ...getInitialOpenGroups(), ...JSON.parse(saved) };
+    } catch { /* ignore */ }
+    return getInitialOpenGroups();
+  });
 
   const toggleGroup = (groupId: string) => {
-    setOpenGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+    setOpenGroups(prev => {
+      const next = { ...prev, [groupId]: !prev[groupId] };
+      try { localStorage.setItem('ownpilot_nav_groups', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
   };
 
   const connectionStyle = CONNECTION_STYLES[wsStatus];

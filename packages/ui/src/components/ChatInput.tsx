@@ -168,7 +168,8 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         <button
           type="button"
           onClick={handleStop}
-          className="px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors flex items-center justify-center"
+          className="px-4 py-3 bg-error hover:bg-error/90 text-white rounded-xl transition-colors flex items-center justify-center"
+          aria-label="Stop generation"
           title="Stop generation"
         >
           <StopCircle className="w-5 h-5" />
@@ -178,6 +179,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           type="submit"
           disabled={!value.trim()}
           className="px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+          aria-label="Send message"
         >
           <Send className="w-5 h-5" />
         </button>

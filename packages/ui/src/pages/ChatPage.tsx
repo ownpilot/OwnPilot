@@ -60,6 +60,14 @@ export function ChatPage() {
   const [currentAgent, setCurrentAgent] = useState<AgentDetail | null>(null);
   const [showContextDetail, setShowContextDetail] = useState(false);
 
+  // Close dropdowns on Escape key
+  useEffect(() => {
+    if (!showProviderMenu) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowProviderMenu(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showProviderMenu]);
+
   // Fetch data on mount (only if provider not set - preserves state on navigation)
   useEffect(() => {
     if (!provider) {
@@ -312,7 +320,7 @@ export function ChatPage() {
 
             {/* Dropdown Menu */}
             {showProviderMenu && (
-              <div className="absolute top-full left-0 mt-1 w-80 bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+              <div className="absolute top-full left-0 mt-1 w-full sm:w-80 max-w-[90vw] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg dark:shadow-black/50 z-50 max-h-96 overflow-y-auto">
                 {configuredProviders.length === 0 ? (
                   <div className="p-4 text-center">
                     <p className="text-sm text-text-muted dark:text-dark-text-muted mb-2">
@@ -453,7 +461,7 @@ export function ChatPage() {
               )}
 
               {/* Suggestion cards grid */}
-              <div className="grid grid-cols-2 gap-2 max-w-lg mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">
                 {[
                   { icon: '🚀', label: 'What can you do?', prompt: 'What are all the things you can help me with? Give me a quick overview of your capabilities, tools, and what makes you different from a regular chatbot.' },
                   { icon: '🧠', label: 'My setup & limits', prompt: 'Tell me about my current setup — which model am I using, what tools are available, and what are the context window limits? How much can you remember in a single conversation?' },
