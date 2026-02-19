@@ -473,10 +473,10 @@ const triggerNodeDataSchema = z.object({
 
 const llmNodeDataSchema = z.object({
   label: z.string().min(1).max(200),
-  provider: z.string().min(1).max(100),
-  model: z.string().min(1).max(200),
+  provider: z.string().max(100),
+  model: z.string().max(200),
   systemPrompt: z.string().max(50000).optional(),
-  userMessage: z.string().min(1).max(100000),
+  userMessage: z.string().max(100000),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().int().min(1).max(128000).optional(),
   apiKey: z.string().max(500).optional(),
@@ -485,20 +485,20 @@ const llmNodeDataSchema = z.object({
 
 const conditionNodeDataSchema = z.object({
   label: z.string().min(1).max(200),
-  expression: z.string().min(1).max(10000),
+  expression: z.string().max(10000),
   description: z.string().max(2000).optional(),
 });
 
 const codeNodeDataSchema = z.object({
   label: z.string().min(1).max(200),
   language: z.enum(['javascript', 'python', 'shell']),
-  code: z.string().min(1).max(100000),
+  code: z.string().max(100000),
   description: z.string().max(2000).optional(),
 });
 
 const transformerNodeDataSchema = z.object({
   label: z.string().min(1).max(200),
-  expression: z.string().min(1).max(50000),
+  expression: z.string().max(50000),
   description: z.string().max(2000).optional(),
 });
 
