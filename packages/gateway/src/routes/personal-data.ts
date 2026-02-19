@@ -592,12 +592,14 @@ personalDataRoutes.get('/summary', async (c) => {
   const [
     tasksTotal,
     tasksPending,
+    tasksCompleted,
     tasksOverdue,
     tasksDueToday,
     bookmarksTotal,
     bookmarksFavorites,
     notesTotal,
     notesPinned,
+    notesRecent,
     calendarTotal,
     calendarToday,
     calendarUpcoming,
@@ -607,12 +609,14 @@ personalDataRoutes.get('/summary', async (c) => {
   ] = await Promise.all([
     tasksRepo.count(),
     tasksRepo.count({ status: 'pending' }),
+    tasksRepo.count({ status: 'completed' }),
     tasksRepo.getOverdue(),
     tasksRepo.getDueToday(),
     bookmarksRepo.count(),
     bookmarksRepo.getFavorites(),
     notesRepo.count(),
     notesRepo.getPinned(),
+    notesRepo.getRecent(7),
     calendarRepo.count(),
     calendarRepo.getToday(),
     calendarRepo.getUpcoming(7),
@@ -625,6 +629,7 @@ personalDataRoutes.get('/summary', async (c) => {
     tasks: {
       total: tasksTotal,
       pending: tasksPending,
+      completed: tasksCompleted,
       overdue: tasksOverdue.length,
       dueToday: tasksDueToday.length,
     },
@@ -635,6 +640,7 @@ personalDataRoutes.get('/summary', async (c) => {
     notes: {
       total: notesTotal,
       pinned: notesPinned.length,
+      recent: notesRecent.length,
     },
     calendar: {
       total: calendarTotal,

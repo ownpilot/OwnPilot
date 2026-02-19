@@ -122,6 +122,13 @@ export const plansApi = {
     apiClient.post<PlanStep>(`/plans/${id}/steps`, data),
 };
 
+// ---- Captures ----
+
+export const capturesApi = {
+  create: (body: Record<string, unknown>) =>
+    apiClient.post<Record<string, unknown>>('/captures', body),
+};
+
 // ---- Triggers ----
 
 export const triggersApi = {

@@ -30,6 +30,7 @@ import {
 import { summaryApi, costsApi, providersApi, modelsApi } from '../api';
 import type { SummaryData, CostsData } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
+import { QuickAddGrid } from './QuickAddModal';
 
 interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -62,6 +63,10 @@ function StatCard({ icon: Icon, label, value, subValue, color = 'text-primary', 
 function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`;
 }
+
+// QuickAddSection is now extracted to QuickAddModal.tsx (shared with DashboardPage)
+
+// ---- Stats Panel ----
 
 interface StatsPanelProps {
   isCollapsed: boolean;
@@ -179,6 +184,9 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
           <LoadingSpinner size="sm" message="Loading..." />
         ) : (
           <>
+            {/* Quick Add */}
+            <QuickAddGrid onCreated={fetchStats} />
+
             {/* Personal Data */}
             {summary && (
               <div className="space-y-2">
