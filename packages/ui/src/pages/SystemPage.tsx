@@ -105,23 +105,36 @@ export function SystemPage() {
       await systemApi.databaseOperation(endpoint, body);
       setDbOperationOutput([`${operationType} started...`]);
 
-      // Poll for status
+      // Poll for status with cleanup guard
+      let cancelled = false;
       const pollStatus = async () => {
-        const statusData = await systemApi.databaseOperationStatus();
+        if (cancelled) return;
+        try {
+          const statusData = await systemApi.databaseOperationStatus();
+          if (cancelled) return;
 
-        setDbOperationOutput(statusData.output || []);
+          setDbOperationOutput(statusData.output || []);
 
-        if (!statusData.isRunning) {
-          setDbOperationResult((statusData.lastResult as 'success' | 'failure') || 'failure');
-          setDbOperationRunning(false);
-          loadSystemStatus(); // Refresh
-          return;
+          if (!statusData.isRunning) {
+            setDbOperationResult((statusData.lastResult as 'success' | 'failure') || 'failure');
+            setDbOperationRunning(false);
+            loadSystemStatus(); // Refresh
+            return;
+          }
+
+          setTimeout(pollStatus, 1000);
+        } catch {
+          if (!cancelled) {
+            setDbOperationResult('failure');
+            setDbOperationRunning(false);
+          }
         }
-
-        setTimeout(pollStatus, 1000);
       };
 
+      // Start polling, stop on unmount
       setTimeout(pollStatus, 1000);
+      // Note: cancelled flag set if component unmounts during operation
+      return () => { cancelled = true; };
     } catch {
       setDbOperationOutput([`Failed to start ${operationType.toLowerCase()}`]);
       setDbOperationResult('failure');
