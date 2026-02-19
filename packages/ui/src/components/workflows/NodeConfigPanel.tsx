@@ -5,7 +5,7 @@
  * output tree browser for upstream nodes, and fallback JSON editor.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { X, Trash2, Code, Play, CheckCircle2, XCircle, Activity, AlertCircle, Brain, GitBranch, Terminal, RefreshCw } from '../icons';
 import { toolsApi, providersApi } from '../../api';
 import type { ToolParams } from '../../pages/tools/types';
@@ -689,16 +689,6 @@ function TriggerConfigPanel({ node, onUpdate, onDelete, onClose, className = '' 
 // LLM Config Panel
 // ============================================================================
 
-/** Commonly used provider/model presets */
-const LLM_PRESETS = [
-  { provider: 'openai', model: 'gpt-4o', label: 'GPT-4o' },
-  { provider: 'openai', model: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-  { provider: 'anthropic', model: 'claude-sonnet-4-5-20250514', label: 'Claude Sonnet 4.5' },
-  { provider: 'anthropic', model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5' },
-  { provider: 'google', model: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-  { provider: 'deepseek', model: 'deepseek-chat', label: 'DeepSeek Chat' },
-] as const;
-
 function LlmConfigPanel({
   node,
   upstreamNodes,
@@ -710,8 +700,8 @@ function LlmConfigPanel({
   const data = node.data as LlmNodeData;
 
   const [label, setLabel] = useState(data.label ?? 'LLM');
-  const [provider, setProvider] = useState(data.provider ?? 'openai');
-  const [model, setModel] = useState(data.model ?? 'gpt-4o');
+  const [provider, setProvider] = useState(data.provider ?? '');
+  const [model, setModel] = useState(data.model ?? '');
   const [systemPrompt, setSystemPrompt] = useState(data.systemPrompt ?? '');
   const [userMessage, setUserMessage] = useState(data.userMessage ?? '');
   const [temperature, setTemperature] = useState(data.temperature ?? 0.7);
@@ -720,8 +710,8 @@ function LlmConfigPanel({
   const [baseUrl, setBaseUrl] = useState(data.baseUrl ?? '');
   const [showAdvanced, setShowAdvanced] = useState(!!data.apiKey || !!data.baseUrl);
 
-  // Available providers from API
-  const [providers, setProviders] = useState<Array<{ id: string; name: string }>>([]);
+  // Available providers from API (with configuration status)
+  const [providers, setProviders] = useState<Array<{ id: string; name: string; isConfigured: boolean }>>([]);
   const [models, setModels] = useState<Array<{ id: string; name: string }>>([]);
 
   const hasResults = !!(data.executionStatus as string) && data.executionStatus !== 'pending';
@@ -730,8 +720,8 @@ function LlmConfigPanel({
   // Reset on node change
   useEffect(() => {
     setLabel(data.label ?? 'LLM');
-    setProvider(data.provider ?? 'openai');
-    setModel(data.model ?? 'gpt-4o');
+    setProvider(data.provider ?? '');
+    setModel(data.model ?? '');
     setSystemPrompt(data.systemPrompt ?? '');
     setUserMessage(data.userMessage ?? '');
     setTemperature(data.temperature ?? 0.7);
@@ -746,6 +736,16 @@ function LlmConfigPanel({
     if (hasResults) setActiveTab('results');
   }, [hasResults]);
 
+  // Derived: configured providers sorted first
+  const configuredProviders = useMemo(
+    () => providers.filter((p) => p.isConfigured),
+    [providers],
+  );
+  const isProviderConfigured = useMemo(
+    () => configuredProviders.some((p) => p.id === provider),
+    [configuredProviders, provider],
+  );
+
   // Fetch available providers
   useEffect(() => {
     let cancelled = false;
@@ -754,21 +754,46 @@ function LlmConfigPanel({
       const items = resp.providers.map((p) => ({
         id: p.id,
         name: p.name ?? p.id,
+        isConfigured: 'isConfigured' in p ? !!(p as unknown as Record<string, unknown>).isConfigured : false,
       })).filter((p) => p.id);
       setProviders(items);
     }).catch(() => { /* non-critical */ });
     return () => { cancelled = true; };
   }, []);
 
-  // Fetch models when provider changes
+  // Fetch models when provider changes, auto-select first if model empty
   useEffect(() => {
-    if (!provider) return;
+    if (!provider) { setModels([]); return; }
     let cancelled = false;
     providersApi.models(provider).then((resp) => {
-      if (!cancelled) setModels(resp.models ?? []);
+      if (cancelled) return;
+      const list = resp.models ?? [];
+      setModels(list);
+      // Auto-select first model when current model is empty
+      const firstModel = list[0];
+      if (!model && firstModel) {
+        setModel(firstModel.id);
+        onUpdate(node.id, { ...data, model: firstModel.id });
+      }
     }).catch(() => { if (!cancelled) setModels([]); });
     return () => { cancelled = true; };
   }, [provider]);
+
+  // Auto-select first configured provider when provider is empty/unconfigured
+  useEffect(() => {
+    const first = configuredProviders[0];
+    if (first && !provider) {
+      setProvider(first.id);
+      onUpdate(node.id, { ...data, provider: first.id });
+    }
+  }, [configuredProviders.length]); // only on initial provider load
+
+  // Auto-expand advanced section when provider is not configured (needs manual API key)
+  useEffect(() => {
+    if (providers.length > 0 && !isProviderConfigured && !apiKey) {
+      setShowAdvanced(true);
+    }
+  }, [isProviderConfigured, providers.length]);
 
   const pushUpdate = useCallback((partial: Partial<LlmNodeData>) => {
     onUpdate(node.id, { ...data, ...partial });
@@ -895,32 +920,39 @@ function LlmConfigPanel({
          * ================================================================ */
         <>
           <div className="flex-1 overflow-y-auto p-3 space-y-4">
-            {/* Quick Presets */}
-            <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1.5">
-                Quick Presets
-              </label>
-              <div className="flex flex-wrap gap-1">
-                {LLM_PRESETS.map((preset) => (
-                  <button
-                    key={`${preset.provider}-${preset.model}`}
-                    type="button"
-                    onClick={() => {
-                      setProvider(preset.provider);
-                      setModel(preset.model);
-                      pushUpdate({ provider: preset.provider, model: preset.model });
-                    }}
-                    className={`px-2 py-0.5 text-[10px] rounded border transition-colors ${
-                      provider === preset.provider && model === preset.model
-                        ? 'bg-indigo-500/20 border-indigo-400 text-indigo-600 dark:text-indigo-400'
-                        : 'bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border text-text-muted hover:border-indigo-400/50'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
+            {/* Configured Providers — quick select */}
+            {configuredProviders.length > 0 ? (
+              <div>
+                <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1.5">
+                  Your AI Providers
+                </label>
+                <div className="flex flex-wrap gap-1">
+                  {configuredProviders.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setProvider(p.id);
+                        setModel('');
+                        pushUpdate({ provider: p.id, model: '' });
+                      }}
+                      className={`px-2 py-1 text-[10px] rounded border transition-colors flex items-center gap-1 ${
+                        provider === p.id
+                          ? 'bg-indigo-500/20 border-indigo-400 text-indigo-600 dark:text-indigo-400'
+                          : 'bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border text-text-muted hover:border-indigo-400/50'
+                      }`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : providers.length > 0 ? (
+              <div className="px-3 py-2 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md text-text-muted">
+                No AI providers configured. Add API keys in <span className="font-medium">Settings → AI Providers</span>.
+              </div>
+            ) : null}
 
             {/* Label */}
             <div>
@@ -943,14 +975,23 @@ function LlmConfigPanel({
                   onChange={(e) => {
                     const p = e.target.value;
                     setProvider(p);
-                    setModel(''); // reset model on provider change
+                    setModel('');
                     pushUpdate({ provider: p, model: '' });
                   }}
                   className={INPUT_CLS}
                 >
-                  {providers.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
+                  {configuredProviders.length > 0 && (
+                    <optgroup label="Configured">
+                      {configuredProviders.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="Other">
+                    {providers.filter((p) => !p.isConfigured).map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} (no key)</option>
+                    ))}
+                  </optgroup>
                 </select>
               ) : (
                 <input
@@ -961,6 +1002,12 @@ function LlmConfigPanel({
                   placeholder="openai, anthropic, google..."
                   className={INPUT_CLS}
                 />
+              )}
+              {/* Warning for unconfigured provider */}
+              {providers.length > 0 && !isProviderConfigured && provider && (
+                <p className="mt-1.5 px-2.5 py-1.5 text-[10px] bg-warning/10 text-warning border border-warning/20 rounded-md">
+                  No API key for <span className="font-medium">{provider}</span>. Configure it in Settings → AI Providers, or enter a key below.
+                </p>
               )}
             </div>
 

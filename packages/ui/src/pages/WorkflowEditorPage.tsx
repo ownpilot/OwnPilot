@@ -592,8 +592,8 @@ export function WorkflowEditorPage() {
       position: { x, y },
       data: {
         label: 'LLM',
-        provider: 'openai',
-        model: 'gpt-4o',
+        provider: '',
+        model: '',
         userMessage: '',
         temperature: 0.7,
         maxTokens: 4096,
