@@ -58,6 +58,34 @@ function getNamespaceMiddle(name: string): string | undefined {
 
 const SOURCE_ORDER: ToolSource[] = ['core', 'mcp', 'custom', 'plugin'];
 
+// Tools excluded from the workflow palette — meta-tools, management tools, and
+// tools that create recursion (plan/trigger/workflow management).
+const WORKFLOW_EXCLUDED_TOOLS = new Set([
+  // Meta-tools (LLM native API, not useful as workflow nodes)
+  'search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool',
+  // Dynamic tool management
+  'create_tool', 'list_custom_tools', 'delete_custom_tool', 'toggle_custom_tool',
+  'inspect_tool_source', 'update_custom_tool',
+  // Trigger management (workflows already have trigger nodes)
+  'create_trigger', 'list_triggers', 'enable_trigger', 'fire_trigger',
+  'delete_trigger', 'trigger_stats',
+  // Plan management (workflows ARE plans — recursive)
+  'create_plan', 'add_plan_step', 'list_plans', 'get_plan_details',
+  'execute_plan', 'pause_plan', 'delete_plan',
+  // Extension management
+  'list_extensions', 'toggle_extension', 'get_extension_info',
+  // Heartbeat management (use trigger node instead)
+  'create_heartbeat', 'list_heartbeats', 'update_heartbeat', 'delete_heartbeat',
+  // Scheduler (use trigger node instead)
+  'create_scheduled_task', 'list_scheduled_tasks', 'update_scheduled_task',
+  'delete_scheduled_task', 'get_task_history', 'trigger_task',
+]);
+
+/** Extract base name from namespaced tool: 'core.get_time' → 'get_time' */
+function getToolBaseName(name: string): string {
+  return name.includes('.') ? name.split('.').pop()! : name;
+}
+
 const SOURCE_CONFIG: Record<ToolSource, {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -181,11 +209,13 @@ export function ToolPalette({ className = '', onAddTool }: ToolPaletteProps) {
 
   // Build source-based sections from category-grouped data
   const sections = useMemo(() => {
-    // Flatten all tools from categories
+    // Flatten all tools from categories, excluding non-workflow tools
     const allTools: (Tool & { categoryKey: string })[] = [];
     for (const [catKey, cat] of Object.entries(groupedData)) {
       for (const tool of cat.tools) {
-        allTools.push({ ...tool, categoryKey: catKey });
+        if (!WORKFLOW_EXCLUDED_TOOLS.has(getToolBaseName(tool.name))) {
+          allTools.push({ ...tool, categoryKey: catKey });
+        }
       }
     }
 
