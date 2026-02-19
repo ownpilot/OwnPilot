@@ -185,7 +185,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (input: Omit<Toast, 'id' | 'duration'> & { duration?: number }) => {
       const id = `toast-${++toastCounter}`;
       const duration = input.duration ?? DEFAULT_DURATION[input.type];
-      setToasts(prev => [...prev, { ...input, id, duration }]);
+      setToasts(prev => {
+        // Deduplicate: skip if same message already visible
+        if (prev.some(t => t.message === input.message && !t.exiting)) return prev;
+        // Cap at 5 visible toasts — drop oldest
+        const capped = prev.length >= 5 ? prev.slice(1) : prev;
+        return [...capped, { ...input, id, duration }];
+      });
     },
     [],
   );
