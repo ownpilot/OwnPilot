@@ -202,7 +202,7 @@ export class WSGateway {
       if (removed > 0) {
         log.info('Cleaned up stale sessions', { removed });
       }
-    }, this.config.sessionTimeout / 2);
+    }, Math.min(this.config.sessionTimeout / 3, 60_000));
     this.cleanupTimer.unref();
   }
 

@@ -173,8 +173,8 @@ export function cleanTempFiles(maxAgeHours: number = 24): number {
         }
         cleaned++;
       }
-    } catch {
-      // Ignore cleanup errors
+    } catch (err) {
+      log.warn('Failed to clean temp file', { file, error: String(err) });
     }
   }
 

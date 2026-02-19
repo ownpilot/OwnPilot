@@ -65,6 +65,7 @@ export class TriggerEngine {
   private running = false;
   private isProcessingSchedule = false;
   private isProcessingConditions = false;
+  private executingTriggers: Set<string> = new Set();
   private eventHandlers: Map<string, EventHandler[]> = new Map();
   private actionHandlers: Map<string, (payload: Record<string, unknown>) => Promise<ActionResult>> = new Map();
   private chatHandler: ChatHandler | null = null;
@@ -461,6 +462,10 @@ export class TriggerEngine {
     trigger: Trigger,
     eventPayload?: Record<string, unknown>
   ): Promise<void> {
+    // Prevent overlapping execution of the same trigger
+    if (this.executingTriggers.has(trigger.id)) return;
+    this.executingTriggers.add(trigger.id);
+
     const startTime = Date.now();
 
     try {
@@ -530,6 +535,8 @@ export class TriggerEngine {
         error: errorMessage,
       });
       log.error('Trigger failed', { trigger: trigger.name, error });
+    } finally {
+      this.executingTriggers.delete(trigger.id);
     }
   }
 
