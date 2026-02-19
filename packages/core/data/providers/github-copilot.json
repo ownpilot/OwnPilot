@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "claude-sonnet-4.6",
+      "name": "Claude Sonnet 4.6",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-17"
+    },
+    {
       "id": "claude-opus-4.6",
       "name": "Claude Opus 4.6",
       "contextWindow": 128000,
@@ -25,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-05"
     },
     {
@@ -135,10 +152,10 @@
       "releaseDate": "2025-11-18"
     },
     {
-      "id": "gpt-5.1",
-      "name": "GPT-5.1",
+      "id": "gpt-5.1-codex",
+      "name": "GPT-5.1-Codex",
       "contextWindow": 128000,
-      "maxOutput": 64000,
+      "maxOutput": 128000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -169,10 +186,10 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "gpt-5.1-codex",
-      "name": "GPT-5.1-Codex",
+      "id": "gpt-5.1",
+      "name": "GPT-5.1",
       "contextWindow": 128000,
-      "maxOutput": 128000,
+      "maxOutput": 64000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [

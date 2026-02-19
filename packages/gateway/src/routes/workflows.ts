@@ -15,8 +15,12 @@ import { wsGateway } from '../ws/server.js';
 import { validateBody } from '../middleware/validation.js';
 import { createWorkflowSchema, updateWorkflowSchema } from '../middleware/validation.js';
 import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
+import { workflowCopilotRoute } from './workflow-copilot.js';
 
 export const workflowRoutes = new Hono();
+
+// Mount copilot sub-route
+workflowRoutes.route('/copilot', workflowCopilotRoute);
 
 // ============================================================================
 // List Workflows

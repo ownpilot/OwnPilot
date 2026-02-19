@@ -63,12 +63,12 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "gpt-5",
-      "name": "gpt-5",
+      "id": "gpt-5-nano",
+      "name": "gpt-5-nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -99,12 +99,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "gpt-5-nano",
-      "name": "gpt-5-nano",
+      "id": "gpt-5",
+      "name": "gpt-5",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
@@ -117,12 +117,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "anthropic--claude-4-sonnet",
-      "name": "anthropic--claude-4-sonnet",
+      "id": "anthropic--claude-4-opus",
+      "name": "anthropic--claude-4-opus",
       "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
         "vision",
@@ -134,12 +134,12 @@
       "releaseDate": "2025-05-22"
     },
     {
-      "id": "anthropic--claude-4-opus",
-      "name": "anthropic--claude-4-opus",
+      "id": "anthropic--claude-4-sonnet",
+      "name": "anthropic--claude-4-sonnet",
       "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",

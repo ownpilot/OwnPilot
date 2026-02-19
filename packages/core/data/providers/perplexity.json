@@ -12,20 +12,19 @@
   },
   "models": [
     {
-      "id": "sonar-reasoning-pro",
-      "name": "Sonar Reasoning Pro",
+      "id": "sonar-deep-research",
+      "name": "Perplexity Sonar Deep Research",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 32768,
       "inputPrice": 2,
       "outputPrice": 8,
       "capabilities": [
         "chat",
-        "vision",
         "reasoning",
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2024-01-01"
+      "releaseDate": "2025-02-01"
     },
     {
       "id": "sonar",
@@ -51,6 +50,22 @@
       "capabilities": [
         "chat",
         "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-01"
+    },
+    {
+      "id": "sonar-reasoning-pro",
+      "name": "Sonar Reasoning Pro",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 2,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "reasoning",
         "streaming"
       ],
       "default": false,

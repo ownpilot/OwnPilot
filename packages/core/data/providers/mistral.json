@@ -12,6 +12,21 @@
   },
   "models": [
     {
+      "id": "devstral-2512",
+      "name": "Devstral 2",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-09"
+    },
+    {
       "id": "labs-devstral-small-2512",
       "name": "Devstral Small 2",
       "contextWindow": 256000,
@@ -21,21 +36,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2025-12-09"
-    },
-    {
-      "id": "devstral-2512",
-      "name": "Devstral 2",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0.4,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
         "function_calling",
         "streaming"
       ],

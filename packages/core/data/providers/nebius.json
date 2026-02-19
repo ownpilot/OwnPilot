@@ -29,23 +29,6 @@
       "releaseDate": "2026-02-01"
     },
     {
-      "id": "NousResearch/hermes-4-405b",
-      "name": "Hermes-4-405B",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 1,
-      "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-30"
-    },
-    {
       "id": "NousResearch/hermes-4-70b",
       "name": "Hermes-4-70B",
       "contextWindow": 128000,
@@ -63,12 +46,12 @@
       "releaseDate": "2026-01-30"
     },
     {
-      "id": "qwen/qwen3-next-80b-a3b-thinking",
-      "name": "Qwen3-Next-80B-A3B-Thinking",
+      "id": "NousResearch/hermes-4-405b",
+      "name": "Hermes-4-405B",
       "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.15,
-      "outputPrice": 1.2,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 3,
       "capabilities": [
         "chat",
         "function_calling",
@@ -77,19 +60,36 @@
         "streaming"
       ],
       "default": false,
+      "releaseDate": "2026-01-30"
+    },
+    {
+      "id": "qwen/qwen3-32b-fast",
+      "name": "Qwen3-32B (Fast)",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-01-28"
     },
     {
-      "id": "qwen/qwen3-32b",
-      "name": "Qwen3-32B",
+      "id": "qwen/qwen3-30b-a3b-thinking-2507",
+      "name": "Qwen3-30B-A3B-Thinking-2507",
       "contextWindow": 128000,
-      "maxOutput": 8192,
+      "maxOutput": 16384,
       "inputPrice": 0.1,
       "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
         "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -128,12 +128,12 @@
       "releaseDate": "2026-01-28"
     },
     {
-      "id": "qwen/qwen3-30b-a3b-thinking-2507",
-      "name": "Qwen3-30B-A3B-Thinking-2507",
+      "id": "qwen/qwen3-next-80b-a3b-thinking",
+      "name": "Qwen3-Next-80B-A3B-Thinking",
       "contextWindow": 128000,
       "maxOutput": 16384,
-      "inputPrice": 0.1,
-      "outputPrice": 0.3,
+      "inputPrice": 0.15,
+      "outputPrice": 1.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -145,12 +145,12 @@
       "releaseDate": "2026-01-28"
     },
     {
-      "id": "qwen/qwen3-32b-fast",
-      "name": "Qwen3-32B (Fast)",
+      "id": "qwen/qwen3-32b",
+      "name": "Qwen3-32B",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 0.2,
-      "outputPrice": 0.6,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
@@ -175,23 +175,6 @@
       ],
       "default": false,
       "releaseDate": "2026-01-25"
-    },
-    {
-      "id": "deepseek-ai/deepseek-v3.2",
-      "name": "DeepSeek-V3.2",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.3,
-      "outputPrice": 0.45,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-20"
     },
     {
       "id": "google/gemma-3-27b-it-fast",
@@ -222,6 +205,23 @@
         "vision",
         "function_calling",
         "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-20"
+    },
+    {
+      "id": "deepseek-ai/deepseek-v3.2",
+      "name": "DeepSeek-V3.2",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.3,
+      "outputPrice": 0.45,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -261,14 +261,16 @@
       "releaseDate": "2026-01-15"
     },
     {
-      "id": "qwen/qwen3-embedding-8b",
-      "name": "Qwen3-Embedding-8B",
-      "contextWindow": 32768,
-      "maxOutput": 0,
-      "inputPrice": 0.01,
-      "outputPrice": 0,
+      "id": "openai/gpt-oss-20b",
+      "name": "gpt-oss-20b",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.05,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
+        "function_calling",
+        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -292,37 +294,18 @@
       "releaseDate": "2026-01-10"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "gpt-oss-20b",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.05,
-      "outputPrice": 0.2,
+      "id": "qwen/qwen3-embedding-8b",
+      "name": "Qwen3-Embedding-8B",
+      "contextWindow": 32768,
+      "maxOutput": 0,
+      "inputPrice": 0.01,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2026-01-10"
-    },
-    {
-      "id": "moonshotai/kimi-k2-instruct",
-      "name": "Kimi-K2-Instruct",
-      "contextWindow": 200000,
-      "maxOutput": 8192,
-      "inputPrice": 0.5,
-      "outputPrice": 2.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-05"
     },
     {
       "id": "moonshotai/kimi-k2-thinking",
@@ -336,6 +319,23 @@
         "function_calling",
         "json_mode",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-05"
+    },
+    {
+      "id": "moonshotai/kimi-k2-instruct",
+      "name": "Kimi-K2-Instruct",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
+      "inputPrice": 0.5,
+      "outputPrice": 2.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -360,22 +360,6 @@
       "releaseDate": "2025-12-15"
     },
     {
-      "id": "meta-llama/Llama-3.3-70B-Instruct",
-      "name": "Llama-3.3-70B-Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.13,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-05"
-    },
-    {
       "id": "meta-llama/llama-3.3-70b-instruct-fast",
       "name": "Llama-3.3-70B-Instruct (Fast)",
       "contextWindow": 128000,
@@ -392,12 +376,28 @@
       "releaseDate": "2025-12-05"
     },
     {
-      "id": "zai-org/glm-4.5-air",
-      "name": "GLM-4.5-Air",
+      "id": "meta-llama/Llama-3.3-70B-Instruct",
+      "name": "Llama-3.3-70B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.13,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-05"
+    },
+    {
+      "id": "zai-org/glm-4.5",
+      "name": "GLM-4.5",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.2,
-      "outputPrice": 1.2,
+      "inputPrice": 0.6,
+      "outputPrice": 2.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -408,12 +408,12 @@
       "releaseDate": "2025-11-15"
     },
     {
-      "id": "zai-org/glm-4.5",
-      "name": "GLM-4.5",
+      "id": "zai-org/glm-4.5-air",
+      "name": "GLM-4.5-Air",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.6,
-      "outputPrice": 2.2,
+      "inputPrice": 0.2,
+      "outputPrice": 1.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -670,12 +670,12 @@
       "releaseDate": "2024-07-30"
     },
     {
-      "id": "meta-llama/meta-llama-3.1-8b-instruct",
-      "name": "Meta-Llama-3.1-8B-Instruct",
+      "id": "meta-llama/meta-llama-3.1-8b-instruct-fast",
+      "name": "Meta-Llama-3.1-8B-Instruct (Fast)",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.02,
-      "outputPrice": 0.06,
+      "inputPrice": 0.03,
+      "outputPrice": 0.09,
       "capabilities": [
         "chat",
         "function_calling",
@@ -686,12 +686,12 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "meta-llama/meta-llama-3.1-8b-instruct-fast",
-      "name": "Meta-Llama-3.1-8B-Instruct (Fast)",
+      "id": "meta-llama/meta-llama-3.1-8b-instruct",
+      "name": "Meta-Llama-3.1-8B-Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.03,
-      "outputPrice": 0.09,
+      "inputPrice": 0.02,
+      "outputPrice": 0.06,
       "capabilities": [
         "chat",
         "function_calling",

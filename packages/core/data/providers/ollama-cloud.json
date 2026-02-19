@@ -157,21 +157,6 @@
       "releaseDate": "2025-12-15"
     },
     {
-      "id": "devstral-2:123b",
-      "name": "devstral-2:123b",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-09"
-    },
-    {
       "id": "devstral-small-2:24b",
       "name": "devstral-small-2:24b",
       "contextWindow": 262144,
@@ -181,6 +166,21 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-09"
+    },
+    {
+      "id": "devstral-2:123b",
+      "name": "devstral-2:123b",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "function_calling",
         "streaming"
       ],
@@ -299,22 +299,6 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "qwen3-vl:235b-instruct",
-      "name": "qwen3-vl:235b-instruct",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-22"
-    },
-    {
       "id": "qwen3-vl:235b",
       "name": "qwen3-vl:235b",
       "contextWindow": 262144,
@@ -326,6 +310,22 @@
         "vision",
         "function_calling",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-22"
+    },
+    {
+      "id": "qwen3-vl:235b-instruct",
+      "name": "qwen3-vl:235b-instruct",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -364,8 +364,8 @@
       "releaseDate": "2025-08-21"
     },
     {
-      "id": "gpt-oss:120b",
-      "name": "gpt-oss:120b",
+      "id": "gpt-oss:20b",
+      "name": "gpt-oss:20b",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -380,8 +380,8 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "gpt-oss:20b",
-      "name": "gpt-oss:20b",
+      "id": "gpt-oss:120b",
+      "name": "gpt-oss:120b",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -473,6 +473,21 @@
       "releaseDate": "2024-12-01"
     },
     {
+      "id": "gemma3:4b",
+      "name": "gemma3:4b",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
       "id": "ministral-3:14b",
       "name": "ministral-3:14b",
       "contextWindow": 262144,
@@ -491,21 +506,6 @@
     {
       "id": "gemma3:12b",
       "name": "gemma3:12b",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "gemma3:4b",
-      "name": "gemma3:4b",
       "contextWindow": 131072,
       "maxOutput": 131072,
       "inputPrice": 0,

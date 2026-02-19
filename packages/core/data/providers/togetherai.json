@@ -171,12 +171,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "zai-org/GLM-4.7",
-      "name": "GLM-4.7",
-      "contextWindow": 200000,
-      "maxOutput": 200000,
-      "inputPrice": 0.45,
-      "outputPrice": 2,
+      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
+      "name": "Qwen3 235B A22B Instruct 2507 FP8",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -202,12 +202,12 @@
       "releaseDate": "2025-07-25"
     },
     {
-      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
-      "name": "Qwen3 235B A22B Instruct 2507 FP8",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0.2,
-      "outputPrice": 0.6,
+      "id": "zai-org/GLM-4.7",
+      "name": "GLM-4.7",
+      "contextWindow": 200000,
+      "maxOutput": 200000,
+      "inputPrice": 0.45,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "function_calling",

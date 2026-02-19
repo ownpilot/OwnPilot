@@ -12,22 +12,6 @@
   },
   "models": [
     {
-      "id": "grok-4-1-fast-non-reasoning",
-      "name": "Grok 4.1 Fast (Non-Reasoning)",
-      "contextWindow": 2000000,
-      "maxOutput": 30000,
-      "inputPrice": 0.2,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2025-11-19"
-    },
-    {
       "id": "grok-4-1-fast",
       "name": "Grok 4.1 Fast",
       "contextWindow": 2000000,
@@ -41,8 +25,40 @@
         "reasoning",
         "streaming"
       ],
+      "default": true,
+      "releaseDate": "2025-11-19"
+    },
+    {
+      "id": "grok-4-1-fast-non-reasoning",
+      "name": "Grok 4.1 Fast (Non-Reasoning)",
+      "contextWindow": 2000000,
+      "maxOutput": 30000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
       "default": false,
       "releaseDate": "2025-11-19"
+    },
+    {
+      "id": "grok-4-fast-non-reasoning",
+      "name": "Grok 4 Fast (Non-Reasoning)",
+      "contextWindow": 2000000,
+      "maxOutput": 30000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-19"
     },
     {
       "id": "grok-4-fast",
@@ -56,22 +72,6 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-19"
-    },
-    {
-      "id": "grok-4-fast-non-reasoning",
-      "name": "Grok 4 Fast (Non-Reasoning)",
-      "contextWindow": 2000000,
-      "maxOutput": 30000,
-      "inputPrice": 0.2,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -110,8 +110,8 @@
       "releaseDate": "2025-07-09"
     },
     {
-      "id": "grok-3-fast-latest",
-      "name": "Grok 3 Fast Latest",
+      "id": "grok-3-fast",
+      "name": "Grok 3 Fast",
       "contextWindow": 131072,
       "maxOutput": 8192,
       "inputPrice": 5,
@@ -119,84 +119,6 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-02-17"
-    },
-    {
-      "id": "grok-3",
-      "name": "Grok 3",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 3,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-02-17"
-    },
-    {
-      "id": "grok-3-mini-fast",
-      "name": "Grok 3 Mini Fast",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.6,
-      "outputPrice": 4,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-02-17"
-    },
-    {
-      "id": "grok-3-latest",
-      "name": "Grok 3 Latest",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 3,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-02-17"
-    },
-    {
-      "id": "grok-3-mini-latest",
-      "name": "Grok 3 Mini Latest",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.3,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-02-17"
-    },
-    {
-      "id": "grok-3-mini",
-      "name": "Grok 3 Mini",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.3,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -219,8 +141,23 @@
       "releaseDate": "2025-02-17"
     },
     {
-      "id": "grok-3-fast",
-      "name": "Grok 3 Fast",
+      "id": "grok-3",
+      "name": "Grok 3",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-02-17"
+    },
+    {
+      "id": "grok-3-fast-latest",
+      "name": "Grok 3 Fast Latest",
       "contextWindow": 131072,
       "maxOutput": 8192,
       "inputPrice": 5,
@@ -228,6 +165,69 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-02-17"
+    },
+    {
+      "id": "grok-3-latest",
+      "name": "Grok 3 Latest",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-02-17"
+    },
+    {
+      "id": "grok-3-mini",
+      "name": "Grok 3 Mini",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.3,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-02-17"
+    },
+    {
+      "id": "grok-3-mini-latest",
+      "name": "Grok 3 Mini Latest",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.3,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-02-17"
+    },
+    {
+      "id": "grok-3-mini-fast",
+      "name": "Grok 3 Mini Fast",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.6,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -249,21 +249,6 @@
       "releaseDate": "2024-12-12"
     },
     {
-      "id": "grok-beta",
-      "name": "Grok Beta",
-      "contextWindow": 131072,
-      "maxOutput": 4096,
-      "inputPrice": 5,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-11-01"
-    },
-    {
       "id": "grok-vision-beta",
       "name": "Grok Vision Beta",
       "contextWindow": 8192,
@@ -280,19 +265,19 @@
       "releaseDate": "2024-11-01"
     },
     {
-      "id": "grok-2",
-      "name": "Grok 2",
+      "id": "grok-beta",
+      "name": "Grok Beta",
       "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 2,
-      "outputPrice": 10,
+      "maxOutput": 4096,
+      "inputPrice": 5,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "function_calling",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-08-20"
+      "releaseDate": "2024-11-01"
     },
     {
       "id": "grok-2-vision",
@@ -304,6 +289,21 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-20"
+    },
+    {
+      "id": "grok-2",
+      "name": "Grok 2",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
         "function_calling",
         "streaming"
       ],
@@ -327,6 +327,21 @@
       "releaseDate": "2024-08-20"
     },
     {
+      "id": "grok-2-latest",
+      "name": "Grok 2 Latest",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-20"
+    },
+    {
       "id": "grok-2-vision-latest",
       "name": "Grok 2 Vision Latest",
       "contextWindow": 8192,
@@ -336,21 +351,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-08-20"
-    },
-    {
-      "id": "grok-2-latest",
-      "name": "Grok 2 Latest",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 2,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
         "function_calling",
         "streaming"
       ],

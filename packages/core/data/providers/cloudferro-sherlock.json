@@ -1,0 +1,81 @@
+{
+  "id": "cloudferro-sherlock",
+  "name": "CloudFerro Sherlock",
+  "type": "openai-compatible",
+  "apiKeyEnv": "CLOUDFERRO_SHERLOCK_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "OpenAI GPT OSS 120B",
+      "contextWindow": 131000,
+      "maxOutput": 131000,
+      "inputPrice": 2.92,
+      "outputPrice": 2.92,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-08-28"
+    },
+    {
+      "id": "speakleash/Bielik-11B-v3.0-Instruct",
+      "name": "Bielik 11B v3.0 Instruct",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.67,
+      "outputPrice": 0.67,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-13"
+    },
+    {
+      "id": "speakleash/Bielik-11B-v2.6-Instruct",
+      "name": "Bielik 11B v2.6 Instruct",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.67,
+      "outputPrice": 0.67,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-13"
+    },
+    {
+      "id": "meta-llama/Llama-3.3-70B-Instruct",
+      "name": "Llama 3.3 70B Instruct",
+      "contextWindow": 70000,
+      "maxOutput": 70000,
+      "inputPrice": 2.92,
+      "outputPrice": 2.92,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-06"
+    }
+  ],
+  "baseUrl": "https://api-sherlock.cloudferro.com/openai/v1/",
+  "docsUrl": "https://docs.sherlock.cloudferro.com/"
+}

@@ -63,6 +63,23 @@
       "releaseDate": "2026-02-05"
     },
     {
+      "id": "olafangensan-glm-4.7-flash-heretic",
+      "name": "GLM 4.7 Flash Heretic",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-04"
+    },
+    {
       "id": "zai-org-glm-4.7-flash",
       "name": "GLM 4.7 Flash",
       "contextWindow": 128000,
@@ -113,6 +130,24 @@
       ],
       "default": false,
       "releaseDate": "2026-01-16"
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "name": "Claude Sonnet 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 3.75,
+      "outputPrice": 18.75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-15"
     },
     {
       "id": "zai-org-glm-4.7",
@@ -237,23 +272,6 @@
       "releaseDate": "2025-12-02"
     },
     {
-      "id": "grok-code-fast-1",
-      "name": "Grok Code Fast 1",
-      "contextWindow": 256000,
-      "maxOutput": 64000,
-      "inputPrice": 0.25,
-      "outputPrice": 1.87,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-01"
-    },
-    {
       "id": "grok-41-fast",
       "name": "Grok 4.1 Fast",
       "contextWindow": 256000,
@@ -263,6 +281,23 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "grok-code-fast-1",
+      "name": "Grok Code Fast 1",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 0.25,
+      "outputPrice": 1.87,
+      "capabilities": [
+        "chat",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -351,28 +386,29 @@
       "releaseDate": "2025-04-29"
     },
     {
-      "id": "qwen3-coder-480b-a35b-instruct",
-      "name": "Qwen 3 Coder 480b",
-      "contextWindow": 256000,
-      "maxOutput": 64000,
-      "inputPrice": 0.75,
-      "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-29"
-    },
-    {
       "id": "qwen3-4b",
       "name": "Venice Small",
       "contextWindow": 32000,
       "maxOutput": 8000,
       "inputPrice": 0.05,
       "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-29"
+    },
+    {
+      "id": "qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen 3 235B A22B Thinking 2507",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 0.45,
+      "outputPrice": 3.5,
       "capabilities": [
         "chat",
         "function_calling",
@@ -400,17 +436,16 @@
       "releaseDate": "2025-04-29"
     },
     {
-      "id": "qwen3-235b-a22b-thinking-2507",
-      "name": "Qwen 3 235B A22B Thinking 2507",
-      "contextWindow": 128000,
-      "maxOutput": 32000,
-      "inputPrice": 0.45,
-      "outputPrice": 3.5,
+      "id": "qwen3-coder-480b-a35b-instruct",
+      "name": "Qwen 3 Coder 480b",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 0.75,
+      "outputPrice": 3,
       "capabilities": [
         "chat",
         "function_calling",
         "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -464,12 +499,12 @@
       "releaseDate": "2025-03-18"
     },
     {
-      "id": "openai-gpt-52-codex",
-      "name": "GPT-5.2 Codex",
-      "contextWindow": 256000,
-      "maxOutput": 64000,
-      "inputPrice": 2.19,
-      "outputPrice": 17.5,
+      "id": "claude-sonnet-45",
+      "name": "Claude Sonnet 4.5",
+      "contextWindow": 198000,
+      "maxOutput": 49500,
+      "inputPrice": 3.75,
+      "outputPrice": 18.75,
       "capabilities": [
         "chat",
         "vision",
@@ -482,12 +517,12 @@
       "releaseDate": "2025-01-15"
     },
     {
-      "id": "claude-sonnet-45",
-      "name": "Claude Sonnet 4.5",
-      "contextWindow": 198000,
-      "maxOutput": 49500,
-      "inputPrice": 3.75,
-      "outputPrice": 18.75,
+      "id": "openai-gpt-52-codex",
+      "name": "GPT-5.2 Codex",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 2.19,
+      "outputPrice": 17.5,
       "capabilities": [
         "chat",
         "vision",

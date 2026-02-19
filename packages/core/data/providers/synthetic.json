@@ -377,22 +377,6 @@
       "releaseDate": "2024-11-11"
     },
     {
-      "id": "hf:meta-llama/Llama-3.1-405B-Instruct",
-      "name": "Llama-3.1-405B-Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 3,
-      "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
       "id": "hf:meta-llama/Llama-3.1-70B-Instruct",
       "name": "Llama-3.1-70B-Instruct",
       "contextWindow": 128000,
@@ -415,6 +399,22 @@
       "maxOutput": 32768,
       "inputPrice": 0.2,
       "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "hf:meta-llama/Llama-3.1-405B-Instruct",
+      "name": "Llama-3.1-405B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 3,
+      "outputPrice": 3,
       "capabilities": [
         "chat",
         "function_calling",

@@ -52,6 +52,18 @@ export const workflowsApi = {
 
   logDetail: (logId: string) =>
     apiClient.get<WorkflowLog>(`/workflows/logs/${logId}`),
+
+  /** Copilot — stream AI-generated workflow definitions */
+  copilot: (body: WorkflowCopilotRequest, options?: { signal?: AbortSignal }) =>
+    apiClient.stream('/workflows/copilot', body, { signal: options?.signal }),
 };
+
+export interface WorkflowCopilotRequest {
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  currentWorkflow?: { name: string; nodes: unknown[]; edges: unknown[] };
+  availableTools?: string[];
+  provider?: string;
+  model?: string;
+}
 
 export type { PaginatedWorkflows, PaginatedLogs, Workflow, WorkflowLog, WorkflowProgressEvent };

@@ -116,6 +116,23 @@
       "releaseDate": "2026-02-12"
     },
     {
+      "id": "zai-org/glm-5:thinking",
+      "name": "GLM 5 Thinking",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0.8,
+      "outputPrice": 2.56,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-11"
+    },
+    {
       "id": "zai-org/glm-5-original:thinking",
       "name": "GLM 5 Original Thinking",
       "contextWindow": 200000,
@@ -152,23 +169,6 @@
     {
       "id": "zai-org/glm-5-original",
       "name": "GLM 5 Original",
-      "contextWindow": 200000,
-      "maxOutput": 128000,
-      "inputPrice": 0.8,
-      "outputPrice": 2.56,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-11"
-    },
-    {
-      "id": "zai-org/glm-5:thinking",
-      "name": "GLM 5 Thinking",
       "contextWindow": 200000,
       "maxOutput": 128000,
       "inputPrice": 0.8,

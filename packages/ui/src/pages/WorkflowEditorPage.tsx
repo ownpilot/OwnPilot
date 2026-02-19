@@ -33,10 +33,13 @@ import type { Workflow, WorkflowProgressEvent } from '../api';
 import {
   ToolNode, ToolPalette, NodeConfigPanel, WorkflowSourceModal,
   TriggerNode, LlmNode, ConditionNode, CodeNode, TransformerNode, ForEachNode,
+  WorkflowCopilotPanel, convertDefinitionToReactFlow,
   type ToolNodeData, type ToolNodeType, type TriggerNodeData, type LlmNodeData,
   type ConditionNodeData, type CodeNodeData, type TransformerNodeData, type ForEachNodeData,
+  type WorkflowDefinition,
 } from '../components/workflows';
-import { ChevronLeft, Save, Play, StopCircle, Code } from '../components/icons';
+import { ChevronLeft, Save, Play, StopCircle, Code, Sparkles } from '../components/icons';
+import { toolsApi } from '../api';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
@@ -71,6 +74,8 @@ export function WorkflowEditorPage() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showSource, setShowSource] = useState(false);
+  const [showCopilot, setShowCopilot] = useState(false);
+  const [toolNames, setToolNames] = useState<string[]>([]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -140,6 +145,11 @@ export function WorkflowEditorPage() {
     })();
     return () => { cancelled = true; };
   }, [id]);
+
+  // Fetch available tool names for the copilot
+  useEffect(() => {
+    toolsApi.list().then((tools) => setToolNames(tools.map((t) => t.name))).catch(() => {});
+  }, []);
 
   // Auto-execute if ?execute=true
   useEffect(() => {
@@ -795,6 +805,32 @@ export function WorkflowEditorPage() {
     }
   }, [addTriggerNode, addLlmNode, addConditionNode, addCodeNode, addTransformerNode, addForEachNode]);
 
+  const handleApplyWorkflow = useCallback((definition: WorkflowDefinition) => {
+    if (nodes.length > 0 && !confirm('This will replace all current nodes and edges. Continue?')) return;
+
+    const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(definition);
+
+    // Apply edge label styling
+    const styledEdges = rfEdges.map((e) => ({
+      ...e,
+      ...getEdgeLabelProps(e.sourceHandle),
+    }));
+
+    // Update node ID counter to max
+    const maxId = rfNodes.reduce((max, n) => {
+      const num = parseInt(n.id.replace('node_', ''), 10);
+      return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+    nodeIdCounter.current = maxId;
+
+    setNodes(rfNodes);
+    setEdges(styledEdges);
+    if (definition.name) setWorkflowName(definition.name);
+    setHasUnsavedChanges(true);
+    setSelectedNodeId(null);
+    toast.success('Workflow applied from Copilot');
+  }, [nodes, setNodes, setEdges, toast]);
+
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) ?? null,
     [nodes, selectedNodeId],
@@ -865,6 +901,19 @@ export function WorkflowEditorPage() {
           Source
         </button>
 
+        <button
+          onClick={() => setShowCopilot(!showCopilot)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            showCopilot
+              ? 'bg-primary text-white'
+              : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border'
+          }`}
+          title={showCopilot ? 'Hide Copilot' : 'AI Copilot — build workflows with natural language'}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          Copilot
+        </button>
+
         {isExecuting ? (
           <button
             onClick={handleCancel}
@@ -929,7 +978,7 @@ export function WorkflowEditorPage() {
           )}
         </div>
 
-        {selectedNode && (
+        {selectedNode ? (
           <NodeConfigPanel
             node={selectedNode}
             upstreamNodes={upstreamNodes}
@@ -938,7 +987,16 @@ export function WorkflowEditorPage() {
             onClose={() => setSelectedNodeId(null)}
             className="w-80 shrink-0"
           />
-        )}
+        ) : showCopilot ? (
+          <WorkflowCopilotPanel
+            workflowName={workflowName}
+            nodes={nodes}
+            edges={edges}
+            availableToolNames={toolNames}
+            onApplyWorkflow={handleApplyWorkflow}
+            onClose={() => setShowCopilot(false)}
+          />
+        ) : null}
       </div>
 
       {showSource && (

@@ -111,8 +111,8 @@
       "releaseDate": "2025-08-11"
     },
     {
-      "id": "glm-4.5-flash",
-      "name": "GLM-4.5-Flash",
+      "id": "glm-4.5-air",
+      "name": "GLM-4.5-Air",
       "contextWindow": 131072,
       "maxOutput": 98304,
       "inputPrice": 0,
@@ -143,8 +143,8 @@
       "releaseDate": "2025-07-28"
     },
     {
-      "id": "glm-4.5-air",
-      "name": "GLM-4.5-Air",
+      "id": "glm-4.5-flash",
+      "name": "GLM-4.5-Flash",
       "contextWindow": 131072,
       "maxOutput": 98304,
       "inputPrice": 0,

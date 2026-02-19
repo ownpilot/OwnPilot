@@ -550,6 +550,22 @@ export const updateWorkflowSchema = z.object({
   variables: z.record(z.string(), z.unknown()).optional(),
 });
 
+export const workflowCopilotSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().min(1).max(50000),
+  })).min(1).max(30),
+  currentWorkflow: z.object({
+    name: z.string(),
+    nodes: z.array(z.unknown()),
+    edges: z.array(z.unknown()),
+    variables: z.record(z.string(), z.unknown()).optional(),
+  }).optional(),
+  availableTools: z.array(z.string()).max(500).optional(),
+  provider: z.string().max(100).optional(),
+  model: z.string().max(200).optional(),
+});
+
 // ─── Validation Helper ──────────────────────────────────────────
 
 /**

@@ -80,23 +80,6 @@
       "releaseDate": "2025-11-01"
     },
     {
-      "id": "claude-haiku-4-5-20251001",
-      "name": "Claude Haiku 4.5",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 1,
-      "outputPrice": 5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-10-15"
-    },
-    {
       "id": "claude-haiku-4-5",
       "name": "Claude Haiku 4.5 (latest)",
       "contextWindow": 200000,
@@ -114,8 +97,25 @@
       "releaseDate": "2025-10-15"
     },
     {
-      "id": "claude-sonnet-4-5-20250929",
-      "name": "Claude Sonnet 4.5",
+      "id": "claude-haiku-4-5-20251001",
+      "name": "Claude Haiku 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 1,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-15"
+    },
+    {
+      "id": "claude-sonnet-4-5",
+      "name": "Claude Sonnet 4.5 (latest)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -131,8 +131,8 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "claude-sonnet-4-5",
-      "name": "Claude Sonnet 4.5 (latest)",
+      "id": "claude-sonnet-4-5-20250929",
+      "name": "Claude Sonnet 4.5",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -182,40 +182,6 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "claude-sonnet-4-0",
-      "name": "Claude Sonnet 4 (latest)",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-05-22"
-    },
-    {
-      "id": "claude-opus-4-20250514",
-      "name": "Claude Opus 4",
-      "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-05-22"
-    },
-    {
       "id": "claude-opus-4-0",
       "name": "Claude Opus 4 (latest)",
       "contextWindow": 200000,
@@ -250,8 +216,25 @@
       "releaseDate": "2025-05-22"
     },
     {
-      "id": "claude-3-7-sonnet-latest",
-      "name": "Claude Sonnet 3.7 (latest)",
+      "id": "claude-opus-4-20250514",
+      "name": "Claude Opus 4",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "claude-sonnet-4-0",
+      "name": "Claude Sonnet 4 (latest)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -264,7 +247,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-02-19"
+      "releaseDate": "2025-05-22"
     },
     {
       "id": "claude-3-7-sonnet-20250219",
@@ -284,12 +267,29 @@
       "releaseDate": "2025-02-19"
     },
     {
-      "id": "claude-3-5-haiku-latest",
-      "name": "Claude Haiku 3.5 (latest)",
+      "id": "claude-3-7-sonnet-latest",
+      "name": "Claude Sonnet 3.7 (latest)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-02-19"
+    },
+    {
+      "id": "claude-3-5-sonnet-20241022",
+      "name": "Claude Sonnet 3.5 v2",
       "contextWindow": 200000,
       "maxOutput": 8192,
-      "inputPrice": 0.8,
-      "outputPrice": 4,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -300,12 +300,12 @@
       "releaseDate": "2024-10-22"
     },
     {
-      "id": "claude-3-5-sonnet-20241022",
-      "name": "Claude Sonnet 3.5 v2",
+      "id": "claude-3-5-haiku-latest",
+      "name": "Claude Haiku 3.5 (latest)",
       "contextWindow": 200000,
       "maxOutput": 8192,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "inputPrice": 0.8,
+      "outputPrice": 4,
       "capabilities": [
         "chat",
         "vision",

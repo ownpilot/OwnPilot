@@ -100,8 +100,8 @@
       "releaseDate": "2025-11-18"
     },
     {
-      "id": "gpt-5.1-codex-max",
-      "name": "GPT-5.1 Codex Max",
+      "id": "gpt-5.1-codex",
+      "name": "GPT-5.1 Codex",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.25,
@@ -118,8 +118,8 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "gpt-5.1-codex",
-      "name": "GPT-5.1 Codex",
+      "id": "gpt-5.1-codex-max",
+      "name": "GPT-5.1 Codex Max",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.25,

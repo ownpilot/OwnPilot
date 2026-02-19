@@ -74,8 +74,8 @@
       "releaseDate": "2025-03-13"
     },
     {
-      "id": "c4ai-aya-vision-8b",
-      "name": "Aya Vision 8B",
+      "id": "c4ai-aya-vision-32b",
+      "name": "Aya Vision 32B",
       "contextWindow": 16000,
       "maxOutput": 4000,
       "inputPrice": 0,
@@ -90,8 +90,8 @@
       "releaseDate": "2025-03-04"
     },
     {
-      "id": "c4ai-aya-vision-32b",
-      "name": "Aya Vision 32B",
+      "id": "c4ai-aya-vision-8b",
+      "name": "Aya Vision 8B",
       "contextWindow": 16000,
       "maxOutput": 4000,
       "inputPrice": 0,

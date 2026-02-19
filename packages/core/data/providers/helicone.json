@@ -127,8 +127,8 @@
       "releaseDate": "2025-10-01"
     },
     {
-      "id": "claude-4.5-sonnet",
-      "name": "Anthropic: Claude Sonnet 4.5",
+      "id": "claude-sonnet-4-5-20250929",
+      "name": "Anthropic: Claude Sonnet 4.5 (20250929)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -144,8 +144,8 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "claude-sonnet-4-5-20250929",
-      "name": "Anthropic: Claude Sonnet 4.5 (20250929)",
+      "id": "claude-4.5-sonnet",
+      "name": "Anthropic: Claude Sonnet 4.5",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -471,22 +471,6 @@
       "releaseDate": "2025-04-28"
     },
     {
-      "id": "gpt-4.1-mini-2025-04-14",
-      "name": "OpenAI GPT-4.1 Mini",
-      "contextWindow": 1047576,
-      "maxOutput": 32768,
-      "inputPrice": 0.39999999999999997,
-      "outputPrice": 1.5999999999999999,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
       "id": "gpt-4.1-nano",
       "name": "OpenAI GPT-4.1 Nano",
       "contextWindow": 1047576,
@@ -503,12 +487,12 @@
       "releaseDate": "2025-04-14"
     },
     {
-      "id": "gpt-4.1",
-      "name": "OpenAI GPT-4.1",
+      "id": "gpt-4.1-mini-2025-04-14",
+      "name": "OpenAI GPT-4.1 Mini",
       "contextWindow": 1047576,
       "maxOutput": 32768,
-      "inputPrice": 2,
-      "outputPrice": 8,
+      "inputPrice": 0.39999999999999997,
+      "outputPrice": 1.5999999999999999,
       "capabilities": [
         "chat",
         "vision",
@@ -525,6 +509,22 @@
       "maxOutput": 32768,
       "inputPrice": 0.39999999999999997,
       "outputPrice": 1.5999999999999999,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "gpt-4.1",
+      "name": "OpenAI GPT-4.1",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 8,
       "capabilities": [
         "chat",
         "vision",
@@ -566,12 +566,27 @@
       "releaseDate": "2025-02-19"
     },
     {
-      "id": "sonar-reasoning-pro",
-      "name": "Perplexity Sonar Reasoning Pro",
+      "id": "sonar-deep-research",
+      "name": "Perplexity Sonar Deep Research",
       "contextWindow": 127000,
       "maxOutput": 4096,
       "inputPrice": 2,
       "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-27"
+    },
+    {
+      "id": "sonar-reasoning",
+      "name": "Perplexity Sonar Reasoning",
+      "contextWindow": 127000,
+      "maxOutput": 4096,
+      "inputPrice": 1,
+      "outputPrice": 5,
       "capabilities": [
         "chat",
         "reasoning",
@@ -595,36 +610,6 @@
       "releaseDate": "2025-01-27"
     },
     {
-      "id": "sonar-reasoning",
-      "name": "Perplexity Sonar Reasoning",
-      "contextWindow": 127000,
-      "maxOutput": 4096,
-      "inputPrice": 1,
-      "outputPrice": 5,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-27"
-    },
-    {
-      "id": "sonar-deep-research",
-      "name": "Perplexity Sonar Deep Research",
-      "contextWindow": 127000,
-      "maxOutput": 4096,
-      "inputPrice": 2,
-      "outputPrice": 8,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-27"
-    },
-    {
       "id": "sonar-pro",
       "name": "Perplexity Sonar Pro",
       "contextWindow": 200000,
@@ -639,18 +624,19 @@
       "releaseDate": "2025-01-27"
     },
     {
-      "id": "deepseek-reasoner",
-      "name": "DeepSeek Reasoner",
-      "contextWindow": 128000,
-      "maxOutput": 64000,
-      "inputPrice": 0.56,
-      "outputPrice": 1.68,
+      "id": "sonar-reasoning-pro",
+      "name": "Perplexity Sonar Reasoning Pro",
+      "contextWindow": 127000,
+      "maxOutput": 4096,
+      "inputPrice": 2,
+      "outputPrice": 8,
       "capabilities": [
         "chat",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-01-20"
+      "releaseDate": "2025-01-27"
     },
     {
       "id": "deepseek-r1-distill-llama-70b",
@@ -669,149 +655,26 @@
       "releaseDate": "2025-01-20"
     },
     {
-      "id": "gpt-5-codex",
-      "name": "OpenAI: GPT-5 Codex",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "gpt-5-pro",
-      "name": "OpenAI: GPT-5 Pro",
+      "id": "deepseek-reasoner",
+      "name": "DeepSeek Reasoner",
       "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 15,
-      "outputPrice": 120,
+      "maxOutput": 64000,
+      "inputPrice": 0.56,
+      "outputPrice": 1.68,
       "capabilities": [
         "chat",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-01-01"
+      "releaseDate": "2025-01-20"
     },
     {
-      "id": "llama-4-scout",
-      "name": "Meta Llama 4 Scout 17B 16E",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.08,
-      "outputPrice": 0.3,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "codex-mini-latest",
-      "name": "OpenAI Codex Mini Latest",
-      "contextWindow": 200000,
-      "maxOutput": 100000,
-      "inputPrice": 1.5,
-      "outputPrice": 6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "llama-guard-4",
-      "name": "Meta Llama Guard 4 12B",
-      "contextWindow": 131072,
-      "maxOutput": 1024,
-      "inputPrice": 0.21,
-      "outputPrice": 0.21,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "o1",
-      "name": "OpenAI: o1",
-      "contextWindow": 200000,
-      "maxOutput": 100000,
-      "inputPrice": 15,
-      "outputPrice": 60,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "gpt-5.1",
-      "name": "OpenAI GPT-5.1",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "gpt-5.1-codex-mini",
-      "name": "OpenAI: GPT-5.1 Codex Mini",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0.25,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "kimi-k2-0711",
-      "name": "Kimi K2 (07/11)",
-      "contextWindow": 131072,
+      "id": "qwen3-next-80b-a3b-instruct",
+      "name": "Qwen3 Next 80B A3B Instruct",
+      "contextWindow": 262000,
       "maxOutput": 16384,
-      "inputPrice": 0.5700000000000001,
-      "outputPrice": 2.3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "gpt-5",
-      "name": "OpenAI GPT-5",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 0.14,
+      "outputPrice": 1.4,
       "capabilities": [
         "chat",
         "vision",
@@ -854,15 +717,29 @@
       "releaseDate": "2025-01-01"
     },
     {
-      "id": "qwen3-next-80b-a3b-instruct",
-      "name": "Qwen3 Next 80B A3B Instruct",
-      "contextWindow": 262000,
-      "maxOutput": 16384,
-      "inputPrice": 0.14,
-      "outputPrice": 1.4,
+      "id": "llama-guard-4",
+      "name": "Meta Llama Guard 4 12B",
+      "contextWindow": 131072,
+      "maxOutput": 1024,
+      "inputPrice": 0.21,
+      "outputPrice": 0.21,
       "capabilities": [
         "chat",
         "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "kimi-k2-0711",
+      "name": "Kimi K2 (07/11)",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.5700000000000001,
+      "outputPrice": 2.3,
+      "capabilities": [
+        "chat",
         "function_calling",
         "streaming"
       ],
@@ -870,8 +747,8 @@
       "releaseDate": "2025-01-01"
     },
     {
-      "id": "gpt-5-mini",
-      "name": "OpenAI GPT-5 Mini",
+      "id": "gpt-5.1-codex-mini",
+      "name": "OpenAI: GPT-5.1 Codex Mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0.25,
@@ -886,12 +763,28 @@
       "releaseDate": "2025-01-01"
     },
     {
-      "id": "gpt-5.1-chat-latest",
-      "name": "OpenAI GPT-5.1 Chat",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
+      "id": "gpt-5.1",
+      "name": "OpenAI GPT-5.1",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
       "inputPrice": 1.25,
       "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "codex-mini-latest",
+      "name": "OpenAI Codex Mini Latest",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 1.5,
+      "outputPrice": 6,
       "capabilities": [
         "chat",
         "vision",
@@ -918,6 +811,51 @@
       "releaseDate": "2025-01-01"
     },
     {
+      "id": "gpt-5-codex",
+      "name": "OpenAI: GPT-5 Codex",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "o1",
+      "name": "OpenAI: o1",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 15,
+      "outputPrice": 60,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "gpt-5-mini",
+      "name": "OpenAI GPT-5 Mini",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
       "id": "o1-mini",
       "name": "OpenAI: o1-mini",
       "contextWindow": 128000,
@@ -926,6 +864,68 @@
       "outputPrice": 4.4,
       "capabilities": [
         "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "gpt-5",
+      "name": "OpenAI GPT-5",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "gpt-5-pro",
+      "name": "OpenAI: GPT-5 Pro",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 15,
+      "outputPrice": 120,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "gpt-5.1-chat-latest",
+      "name": "OpenAI GPT-5.1 Chat",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "llama-4-scout",
+      "name": "Meta Llama 4 Scout 17B 16E",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.08,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -992,22 +992,6 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "claude-3.5-haiku",
-      "name": "Anthropic: Claude 3.5 Haiku",
-      "contextWindow": 200000,
-      "maxOutput": 8192,
-      "inputPrice": 0.7999999999999999,
-      "outputPrice": 4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-10-22"
-    },
-    {
       "id": "claude-3.5-sonnet-v2",
       "name": "Anthropic: Claude 3.5 Sonnet v2",
       "contextWindow": 200000,
@@ -1024,8 +1008,24 @@
       "releaseDate": "2024-10-22"
     },
     {
-      "id": "llama-prompt-guard-2-22m",
-      "name": "Meta Llama Prompt Guard 2 22M",
+      "id": "claude-3.5-haiku",
+      "name": "Anthropic: Claude 3.5 Haiku",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
+      "inputPrice": 0.7999999999999999,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-10-22"
+    },
+    {
+      "id": "llama-prompt-guard-2-86m",
+      "name": "Meta Llama Prompt Guard 2 86M",
       "contextWindow": 512,
       "maxOutput": 2,
       "inputPrice": 0.01,
@@ -1038,8 +1038,8 @@
       "releaseDate": "2024-10-01"
     },
     {
-      "id": "llama-prompt-guard-2-86m",
-      "name": "Meta Llama Prompt Guard 2 86M",
+      "id": "llama-prompt-guard-2-22m",
+      "name": "Meta Llama Prompt Guard 2 22M",
       "contextWindow": 512,
       "maxOutput": 2,
       "inputPrice": 0.01,
@@ -1158,22 +1158,6 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "gpt-4o-mini",
-      "name": "OpenAI GPT-4o-mini",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-18"
-    },
-    {
       "id": "glm-4.6",
       "name": "Zai GLM-4.6",
       "contextWindow": 204800,
@@ -1199,6 +1183,22 @@
       "capabilities": [
         "chat",
         "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-18"
+    },
+    {
+      "id": "gpt-4o-mini",
+      "name": "OpenAI GPT-4o-mini",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -1264,44 +1264,12 @@
       "releaseDate": "2024-06-01"
     },
     {
-      "id": "o3",
-      "name": "OpenAI o3",
+      "id": "o4-mini",
+      "name": "OpenAI o4 Mini",
       "contextWindow": 200000,
       "maxOutput": 100000,
-      "inputPrice": 2,
-      "outputPrice": 8,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-06-01"
-    },
-    {
-      "id": "gpt-oss-120b",
-      "name": "OpenAI GPT-OSS 120b",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.04,
-      "outputPrice": 0.16,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-06-01"
-    },
-    {
-      "id": "o3-pro",
-      "name": "OpenAI o3 Pro",
-      "contextWindow": 200000,
-      "maxOutput": 100000,
-      "inputPrice": 20,
-      "outputPrice": 80,
+      "inputPrice": 1.1,
+      "outputPrice": 4.4,
       "capabilities": [
         "chat",
         "vision",
@@ -1327,12 +1295,28 @@
       "releaseDate": "2024-06-01"
     },
     {
-      "id": "o4-mini",
-      "name": "OpenAI o4 Mini",
+      "id": "o3-pro",
+      "name": "OpenAI o3 Pro",
       "contextWindow": 200000,
       "maxOutput": 100000,
-      "inputPrice": 1.1,
-      "outputPrice": 4.4,
+      "inputPrice": 20,
+      "outputPrice": 80,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-06-01"
+    },
+    {
+      "id": "o3",
+      "name": "OpenAI o3",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 2,
+      "outputPrice": 8,
       "capabilities": [
         "chat",
         "vision",
@@ -1349,6 +1333,22 @@
       "maxOutput": 131072,
       "inputPrice": 0.049999999999999996,
       "outputPrice": 0.19999999999999998,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-06-01"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "OpenAI GPT-OSS 120b",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.04,
+      "outputPrice": 0.16,
       "capabilities": [
         "chat",
         "function_calling",

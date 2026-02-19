@@ -74,21 +74,6 @@
       "releaseDate": "2025-01-20"
     },
     {
-      "id": "Intel/Qwen3-Coder-480B-A35B-Instruct-int4-mixed-ar",
-      "name": "Qwen 3 Coder 480B",
-      "contextWindow": 106000,
-      "maxOutput": 4096,
-      "inputPrice": 0.22,
-      "outputPrice": 0.95,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-15"
-    },
-    {
       "id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
       "name": "Llama 4 Maverick 17B 128E Instruct",
       "contextWindow": 430000,
@@ -98,6 +83,21 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-15"
+    },
+    {
+      "id": "Intel/Qwen3-Coder-480B-A35B-Instruct-int4-mixed-ar",
+      "name": "Qwen 3 Coder 480B",
+      "contextWindow": 106000,
+      "maxOutput": 4096,
+      "inputPrice": 0.22,
+      "outputPrice": 0.95,
+      "capabilities": [
+        "chat",
         "function_calling",
         "streaming"
       ],
@@ -135,12 +135,12 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT-OSS 120B",
-      "contextWindow": 131072,
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT-OSS 20B",
+      "contextWindow": 64000,
       "maxOutput": 4096,
-      "inputPrice": 0.04,
-      "outputPrice": 0.4,
+      "inputPrice": 0.03,
+      "outputPrice": 0.14,
       "capabilities": [
         "chat",
         "function_calling",
@@ -150,12 +150,12 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "GPT-OSS 20B",
-      "contextWindow": 64000,
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT-OSS 120B",
+      "contextWindow": 131072,
       "maxOutput": 4096,
-      "inputPrice": 0.03,
-      "outputPrice": 0.14,
+      "inputPrice": 0.04,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "function_calling",
@@ -196,12 +196,12 @@
       "releaseDate": "2024-11-01"
     },
     {
-      "id": "Qwen/Qwen2.5-VL-32B-Instruct",
-      "name": "Qwen 2.5 VL 32B Instruct",
-      "contextWindow": 32000,
+      "id": "mistralai/Mistral-Large-Instruct-2411",
+      "name": "Mistral Large Instruct 2411",
+      "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.05,
-      "outputPrice": 0.22,
+      "inputPrice": 2,
+      "outputPrice": 6,
       "capabilities": [
         "chat",
         "vision",
@@ -212,12 +212,12 @@
       "releaseDate": "2024-11-01"
     },
     {
-      "id": "mistralai/Mistral-Large-Instruct-2411",
-      "name": "Mistral Large Instruct 2411",
-      "contextWindow": 128000,
+      "id": "Qwen/Qwen2.5-VL-32B-Instruct",
+      "name": "Qwen 2.5 VL 32B Instruct",
+      "contextWindow": 32000,
       "maxOutput": 4096,
-      "inputPrice": 2,
-      "outputPrice": 6,
+      "inputPrice": 0.05,
+      "outputPrice": 0.22,
       "capabilities": [
         "chat",
         "vision",

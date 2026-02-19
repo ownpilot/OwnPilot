@@ -1,0 +1,214 @@
+{
+  "id": "evroc",
+  "name": "evroc",
+  "type": "openai-compatible",
+  "apiKeyEnv": "EVROC_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "moonshotai/Kimi-K2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 1.47,
+      "outputPrice": 5.9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "mistralai/devstral-small-2-24b-instruct-2512",
+      "name": "Devstral Small 2 24B Instruct 2512",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.12,
+      "outputPrice": 0.47,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 65536,
+      "maxOutput": 65536,
+      "inputPrice": 0.24,
+      "outputPrice": 0.94,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "Qwen/Qwen3-Embedding-8B",
+      "name": "Qwen3 Embedding 8B",
+      "contextWindow": 40960,
+      "maxOutput": 40960,
+      "inputPrice": 0.12,
+      "outputPrice": 0.12,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-30"
+    },
+    {
+      "id": "Qwen/Qwen3-VL-30B-A3B-Instruct",
+      "name": "Qwen3 VL 30B",
+      "contextWindow": 100000,
+      "maxOutput": 100000,
+      "inputPrice": 0.24,
+      "outputPrice": 0.94,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-30"
+    },
+    {
+      "id": "Qwen/Qwen3-30B-A3B-Instruct-2507-FP8",
+      "name": "Qwen3 30B 2507",
+      "contextWindow": 64000,
+      "maxOutput": 64000,
+      "inputPrice": 0.35,
+      "outputPrice": 1.42,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-30"
+    },
+    {
+      "id": "mistralai/Magistral-Small-2509",
+      "name": "Magistral Small 1.2 24B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.59,
+      "outputPrice": 2.36,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-01"
+    },
+    {
+      "id": "mistralai/Voxtral-Small-24B-2507",
+      "name": "Voxtral Small 24B",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.00236,
+      "outputPrice": 0.00236,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-01"
+    },
+    {
+      "id": "microsoft/Phi-4-multimodal-instruct",
+      "name": "Phi-4 15B",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.24,
+      "outputPrice": 0.47,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "nvidia/Llama-3.3-70B-Instruct-FP8",
+      "name": "Llama 3.3 70B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 1.18,
+      "outputPrice": 1.18,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "KBLab/kb-whisper-large",
+      "name": "KB Whisper",
+      "contextWindow": 448,
+      "maxOutput": 448,
+      "inputPrice": 0.00236,
+      "outputPrice": 0.00236,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-10-01"
+    },
+    {
+      "id": "openai/whisper-large-v3",
+      "name": "Whisper 3 Large",
+      "contextWindow": 448,
+      "maxOutput": 4096,
+      "inputPrice": 0.00236,
+      "outputPrice": 0.00236,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-10-01"
+    },
+    {
+      "id": "intfloat/multilingual-e5-large-instruct",
+      "name": "E5 Multi-Lingual Large Embeddings 0.6B",
+      "contextWindow": 512,
+      "maxOutput": 512,
+      "inputPrice": 0.12,
+      "outputPrice": 0.12,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-06-01"
+    }
+  ],
+  "baseUrl": "https://models.think.evroc.com/v1",
+  "docsUrl": "https://docs.evroc.com/products/think/overview.html"
+}

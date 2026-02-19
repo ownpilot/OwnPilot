@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "zai-org/GLM-5",
+      "name": "GLM-5",
+      "contextWindow": 202752,
+      "maxOutput": 131072,
+      "inputPrice": 0.95,
+      "outputPrice": 3.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-12"
+    },
+    {
       "id": "moonshotai/Kimi-K2.5",
       "name": "Kimi K2.5",
       "contextWindow": 262144,
@@ -24,7 +40,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-01-30"
     },
     {

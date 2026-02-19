@@ -11,3 +11,4 @@ export { ConditionNode, type ConditionNodeData } from './ConditionNode';
 export { CodeNode, type CodeNodeData } from './CodeNode';
 export { TransformerNode, type TransformerNodeData } from './TransformerNode';
 export { ForEachNode, type ForEachNodeData, type ForEachNodeType } from './ForEachNode';
+export { WorkflowCopilotPanel, convertDefinitionToReactFlow, type WorkflowDefinition } from './WorkflowCopilotPanel';

@@ -28,12 +28,12 @@
       "releaseDate": "2025-10-28"
     },
     {
-      "id": "gpt-oss-120b",
-      "name": "gpt-oss-120b",
+      "id": "gpt-oss-20b",
+      "name": "gpt-oss-20b",
       "contextWindow": 131072,
       "maxOutput": 131072,
-      "inputPrice": 0.09,
-      "outputPrice": 0.47,
+      "inputPrice": 0.05,
+      "outputPrice": 0.18,
       "capabilities": [
         "chat",
         "function_calling",
@@ -45,12 +45,12 @@
       "releaseDate": "2025-08-28"
     },
     {
-      "id": "gpt-oss-20b",
-      "name": "gpt-oss-20b",
+      "id": "gpt-oss-120b",
+      "name": "gpt-oss-120b",
       "contextWindow": 131072,
       "maxOutput": 131072,
-      "inputPrice": 0.05,
-      "outputPrice": 0.18,
+      "inputPrice": 0.09,
+      "outputPrice": 0.47,
       "capabilities": [
         "chat",
         "function_calling",
@@ -112,15 +112,14 @@
       "releaseDate": "2025-06-11"
     },
     {
-      "id": "meta-llama-3_3-70b-instruct",
-      "name": "Meta-Llama-3_3-70B-Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.74,
-      "outputPrice": 0.74,
+      "id": "mixtral-8x7b-instruct-v0.1",
+      "name": "Mixtral-8x7B-Instruct-v0.1",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.7,
+      "outputPrice": 0.7,
       "capabilities": [
         "chat",
-        "function_calling",
         "json_mode",
         "streaming"
       ],
@@ -144,14 +143,15 @@
       "releaseDate": "2025-04-01"
     },
     {
-      "id": "mixtral-8x7b-instruct-v0.1",
-      "name": "Mixtral-8x7B-Instruct-v0.1",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.7,
-      "outputPrice": 0.7,
+      "id": "meta-llama-3_3-70b-instruct",
+      "name": "Meta-Llama-3_3-70B-Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.74,
+      "outputPrice": 0.74,
       "capabilities": [
         "chat",
+        "function_calling",
         "json_mode",
         "streaming"
       ],
