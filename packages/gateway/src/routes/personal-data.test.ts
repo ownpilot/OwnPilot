@@ -48,6 +48,7 @@ const mockNotesRepo = {
   update: vi.fn(),
   delete: vi.fn(),
   getPinned: vi.fn(async () => []),
+  getRecent: vi.fn(async () => []),
   getArchived: vi.fn(async () => []),
   getCategories: vi.fn(async () => []),
   togglePin: vi.fn(),
@@ -672,13 +673,15 @@ describe('Personal Data Routes', () => {
     it('returns aggregated summary across all data types', async () => {
       mockTasksRepo.count
         .mockResolvedValueOnce(15)   // total
-        .mockResolvedValueOnce(8);   // pending
+        .mockResolvedValueOnce(8)    // pending
+        .mockResolvedValueOnce(5);   // completed
       mockTasksRepo.getOverdue.mockResolvedValue([{ id: 't1' }, { id: 't2' }]);
       mockTasksRepo.getDueToday.mockResolvedValue([{ id: 't3' }]);
       mockBookmarksRepo.count.mockResolvedValue(20);
       mockBookmarksRepo.getFavorites.mockResolvedValue([{ id: 'b1' }]);
       mockNotesRepo.count.mockResolvedValue(12);
       mockNotesRepo.getPinned.mockResolvedValue([{ id: 'n1' }, { id: 'n2' }]);
+      mockNotesRepo.getRecent.mockResolvedValue([{ id: 'n3' }, { id: 'n4' }, { id: 'n5' }]);
       mockCalendarRepo.count.mockResolvedValue(30);
       mockCalendarRepo.getToday.mockResolvedValue([{ id: 'e1' }]);
       mockCalendarRepo.getUpcoming.mockResolvedValue([{ id: 'e1' }, { id: 'e2' }, { id: 'e3' }]);
@@ -693,12 +696,14 @@ describe('Personal Data Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.tasks.total).toBe(15);
       expect(json.data.tasks.pending).toBe(8);
+      expect(json.data.tasks.completed).toBe(5);
       expect(json.data.tasks.overdue).toBe(2);
       expect(json.data.tasks.dueToday).toBe(1);
       expect(json.data.bookmarks.total).toBe(20);
       expect(json.data.bookmarks.favorites).toBe(1);
       expect(json.data.notes.total).toBe(12);
       expect(json.data.notes.pinned).toBe(2);
+      expect(json.data.notes.recent).toBe(3);
       expect(json.data.calendar.total).toBe(30);
       expect(json.data.calendar.today).toBe(1);
       expect(json.data.calendar.upcoming).toBe(3);

@@ -45,6 +45,7 @@ export {
   goalsApi,
   memoriesApi,
   plansApi,
+  capturesApi,
   triggersApi,
 } from './personal-data';
 
