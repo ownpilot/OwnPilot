@@ -10,6 +10,7 @@ import type { Tool } from '../../types';
 import {
   Search, ChevronDown, ChevronRight, Wrench, Plus,
   Server, Sparkles, Puzzle, X,
+  Zap, Brain, GitBranch, Terminal, RefreshCw, Repeat,
 } from '../icons';
 
 // ============================================================================
@@ -37,7 +38,28 @@ interface ToolPaletteProps {
   className?: string;
   /** Called when user clicks "+" on a tool. If omitted, only drag is available. */
   onAddTool?: (toolName: string, toolDescription?: string) => void;
+  /** Called when user clicks a node-type button in the palette. */
+  onAddNode?: (nodeType: string) => void;
+  /** Whether a trigger node already exists (disables the Trigger button). */
+  hasTriggerNode?: boolean;
 }
+
+// Node type buttons shown at the top of the palette
+const NODE_TYPES: Array<{
+  type: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  bg: string;
+  text: string;
+  border: string;
+}> = [
+  { type: 'triggerNode',     label: 'Trigger',   icon: Zap,       bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-300',   border: 'border-violet-300 dark:border-violet-700' },
+  { type: 'llmNode',         label: 'LLM',       icon: Brain,     bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-300',   border: 'border-indigo-300 dark:border-indigo-700' },
+  { type: 'conditionNode',   label: 'If/Else',   icon: GitBranch, bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-300 dark:border-emerald-700' },
+  { type: 'codeNode',        label: 'Code',      icon: Terminal,  bg: 'bg-teal-100 dark:bg-teal-900/30',    text: 'text-teal-700 dark:text-teal-300',       border: 'border-teal-300 dark:border-teal-700' },
+  { type: 'transformerNode', label: 'Transform',  icon: RefreshCw, bg: 'bg-amber-100 dark:bg-amber-900/30',  text: 'text-amber-700 dark:text-amber-300',     border: 'border-amber-300 dark:border-amber-700' },
+  { type: 'forEachNode',     label: 'ForEach',   icon: Repeat,    bg: 'bg-sky-100 dark:bg-sky-900/30',      text: 'text-sky-700 dark:text-sky-300',         border: 'border-sky-300 dark:border-sky-700' },
+];
 
 // ============================================================================
 // Source detection from namespace prefix
@@ -179,7 +201,7 @@ function getSubGroupLabel(subKey: string, source: ToolSource): string {
 // Component
 // ============================================================================
 
-export function ToolPalette({ className = '', onAddTool }: ToolPaletteProps) {
+export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNode }: ToolPaletteProps) {
   const [groupedData, setGroupedData] = useState<Record<string, ToolCategory>>({});
   const [search, setSearch] = useState('');
   const [openSources, setOpenSources] = useState<Set<ToolSource>>(new Set(['core']));
@@ -355,6 +377,33 @@ export function ToolPalette({ className = '', onAddTool }: ToolPaletteProps) {
           )}
         </div>
       </div>
+
+      {/* Node type buttons */}
+      {onAddNode && (
+        <div className="px-3 py-2.5 border-b border-border dark:border-dark-border">
+          <p className="text-[10px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider mb-2">
+            Nodes
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {NODE_TYPES.map((nt) => {
+              const Icon = nt.icon;
+              const disabled = nt.type === 'triggerNode' && hasTriggerNode;
+              return (
+                <button
+                  key={nt.type}
+                  onClick={() => onAddNode(nt.type)}
+                  disabled={disabled}
+                  className={`flex items-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-md border transition-colors ${nt.bg} ${nt.text} ${nt.border} hover:opacity-80 disabled:opacity-40`}
+                  title={disabled ? 'Trigger node already exists' : `Add ${nt.label} node`}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  {nt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Tool list by source */}
       <div className="flex-1 overflow-y-auto">

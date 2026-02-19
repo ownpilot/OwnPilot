@@ -36,7 +36,7 @@ import {
   type ToolNodeData, type ToolNodeType, type TriggerNodeData, type LlmNodeData,
   type ConditionNodeData, type CodeNodeData, type TransformerNodeData, type ForEachNodeData,
 } from '../components/workflows';
-import { ChevronLeft, Save, Play, StopCircle, Code, Zap, Brain, GitBranch, Terminal, RefreshCw, Repeat } from '../components/icons';
+import { ChevronLeft, Save, Play, StopCircle, Code } from '../components/icons';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
@@ -784,6 +784,17 @@ export function WorkflowEditorPage() {
   // Derived state
   // ========================================================================
 
+  const handleAddNode = useCallback((nodeType: string) => {
+    switch (nodeType) {
+      case 'triggerNode': addTriggerNode(); break;
+      case 'llmNode': addLlmNode(); break;
+      case 'conditionNode': addConditionNode(); break;
+      case 'codeNode': addCodeNode(); break;
+      case 'transformerNode': addTransformerNode(); break;
+      case 'forEachNode': addForEachNode(); break;
+    }
+  }, [addTriggerNode, addLlmNode, addConditionNode, addCodeNode, addTransformerNode, addForEachNode]);
+
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) ?? null,
     [nodes, selectedNodeId],
@@ -846,61 +857,6 @@ export function WorkflowEditorPage() {
         </button>
 
         <button
-          onClick={addTriggerNode}
-          disabled={hasTriggerNode}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900/50 border border-violet-300 dark:border-violet-700 rounded-md transition-colors disabled:opacity-40"
-          title={hasTriggerNode ? 'Trigger node already exists' : 'Add trigger node'}
-        >
-          <Zap className="w-3.5 h-3.5" />
-          Trigger
-        </button>
-
-        <button
-          onClick={addLlmNode}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 border border-indigo-300 dark:border-indigo-700 rounded-md transition-colors"
-          title="Add LLM node"
-        >
-          <Brain className="w-3.5 h-3.5" />
-          LLM
-        </button>
-
-        <button
-          onClick={addConditionNode}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-700 rounded-md transition-colors"
-          title="Add condition (if/else) node"
-        >
-          <GitBranch className="w-3.5 h-3.5" />
-          If/Else
-        </button>
-
-        <button
-          onClick={addCodeNode}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 hover:bg-teal-200 dark:hover:bg-teal-900/50 border border-teal-300 dark:border-teal-700 rounded-md transition-colors"
-          title="Add code execution node"
-        >
-          <Terminal className="w-3.5 h-3.5" />
-          Code
-        </button>
-
-        <button
-          onClick={addTransformerNode}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 border border-amber-300 dark:border-amber-700 rounded-md transition-colors"
-          title="Add data transformer node"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Transform
-        </button>
-
-        <button
-          onClick={addForEachNode}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 hover:bg-sky-200 dark:hover:bg-sky-900/50 border border-sky-300 dark:border-sky-700 rounded-md transition-colors"
-          title="Add ForEach (loop) node"
-        >
-          <Repeat className="w-3.5 h-3.5" />
-          ForEach
-        </button>
-
-        <button
           onClick={() => setShowSource(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border rounded-md transition-colors"
           title="View workflow source"
@@ -931,7 +887,7 @@ export function WorkflowEditorPage() {
 
       {/* Three-panel layout */}
       <div className="flex-1 flex overflow-hidden">
-        <ToolPalette className="w-60 shrink-0" onAddTool={addToolNode} />
+        <ToolPalette className="w-60 shrink-0" onAddTool={addToolNode} onAddNode={handleAddNode} hasTriggerNode={hasTriggerNode} />
 
         <div className="flex-1 relative" onDragOver={onDragOver} onDrop={onDrop}>
           <ReactFlow
