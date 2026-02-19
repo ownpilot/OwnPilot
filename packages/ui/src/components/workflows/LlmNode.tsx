@@ -6,7 +6,7 @@
 
 import { memo } from 'react';
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
-import { Brain, CheckCircle2, XCircle, Activity, AlertCircle } from '../icons';
+import { Brain, CheckCircle2, XCircle, Activity, AlertCircle, AlertTriangle } from '../icons';
 import type { NodeExecutionStatus } from '../../api/types';
 
 export interface LlmNodeData extends Record<string, unknown> {
@@ -96,9 +96,15 @@ function LlmNodeComponent({ data, selected }: NodeProps<LlmNodeType>) {
         </div>
 
         {/* Provider + model summary */}
-        <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 truncate">
-          {data.provider as string}{data.model ? ` / ${data.model}` : ''}
-        </p>
+        <div className="flex items-center gap-1 mt-1">
+          {!(data.provider as string) && (
+            <AlertTriangle className="w-3 h-3 text-warning shrink-0" />
+          )}
+          <p className="text-xs text-indigo-600 dark:text-indigo-400 truncate">
+            {(data.provider as string) || 'No provider'}
+            {data.model ? ` / ${data.model}` : ''}
+          </p>
+        </div>
 
         {/* System prompt preview */}
         {data.systemPrompt && (
