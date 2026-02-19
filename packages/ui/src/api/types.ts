@@ -1066,8 +1066,18 @@ export interface WorkflowTransformerNodeData {
   description?: string;
 }
 
+export interface WorkflowForEachNodeData {
+  label: string;
+  arrayExpression: string;
+  itemVariable?: string;
+  maxIterations?: number;
+  onError?: 'stop' | 'continue';
+  description?: string;
+}
+
 export type WorkflowNodeData = WorkflowToolNodeData | WorkflowTriggerNodeData | WorkflowLlmNodeData
-  | WorkflowConditionNodeData | WorkflowCodeNodeData | WorkflowTransformerNodeData;
+  | WorkflowConditionNodeData | WorkflowCodeNodeData | WorkflowTransformerNodeData
+  | WorkflowForEachNodeData;
 
 export interface WorkflowNode {
   id: string;
@@ -1122,7 +1132,8 @@ export interface WorkflowLog {
 }
 
 export interface WorkflowProgressEvent {
-  type: 'node_start' | 'node_complete' | 'node_error' | 'done' | 'error';
+  type: 'node_start' | 'node_complete' | 'node_error' | 'done' | 'error'
+    | 'foreach_iteration_start' | 'foreach_iteration_complete';
   nodeId?: string;
   toolName?: string;
   status?: NodeExecutionStatus;
@@ -1133,4 +1144,6 @@ export interface WorkflowProgressEvent {
   durationMs?: number;
   logId?: string;
   logStatus?: WorkflowLogStatus;
+  iterationIndex?: number;
+  iterationTotal?: number;
 }

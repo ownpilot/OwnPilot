@@ -72,8 +72,21 @@ export interface TransformerNodeData {
   description?: string;
 }
 
+export interface ForEachNodeData {
+  label: string;
+  /** Template expression resolving to an array, e.g. "{{node_1.output}}" */
+  arrayExpression: string;
+  /** Optional alias for the current item (e.g. "issue" → use {{issue}} in body nodes) */
+  itemVariable?: string;
+  /** Safety cap on iterations. Default: 100 */
+  maxIterations?: number;
+  /** Error strategy: 'stop' aborts on first error, 'continue' collects errors */
+  onError?: 'stop' | 'continue';
+  description?: string;
+}
+
 export type WorkflowNodeData = ToolNodeData | TriggerNodeData | LlmNodeData
-  | ConditionNodeData | CodeNodeData | TransformerNodeData;
+  | ConditionNodeData | CodeNodeData | TransformerNodeData | ForEachNodeData;
 
 export interface WorkflowNode {
   id: string;
@@ -116,6 +129,10 @@ export interface NodeResult {
   completedAt?: string;
   /** For condition nodes: which branch was taken */
   branchTaken?: 'true' | 'false';
+  /** For forEach nodes: number of iterations completed */
+  iterationCount?: number;
+  /** For forEach nodes: total items in the source array */
+  totalItems?: number;
 }
 
 export interface WorkflowLog {

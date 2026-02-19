@@ -11,6 +11,7 @@ import type { LlmNodeData } from './LlmNode';
 import type { ConditionNodeData } from './ConditionNode';
 import type { CodeNodeData } from './CodeNode';
 import type { TransformerNodeData } from './TransformerNode';
+import type { ForEachNodeData } from './ForEachNode';
 import type { Edge, Node } from '@xyflow/react';
 
 interface WorkflowSourceModalProps {
@@ -110,6 +111,23 @@ function buildWorkflowDefinition(
           position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
         };
         if (td.description) node.description = td.description;
+        return node;
+      }
+
+      // ForEach node
+      if (n.type === 'forEachNode') {
+        const fd = n.data as ForEachNodeData;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'forEach',
+          label: fd.label,
+          arrayExpression: fd.arrayExpression,
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (fd.itemVariable) node.itemVariable = fd.itemVariable;
+        if (fd.maxIterations != null) node.maxIterations = fd.maxIterations;
+        if (fd.onError) node.onError = fd.onError;
+        if (fd.description) node.description = fd.description;
         return node;
       }
 

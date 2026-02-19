@@ -502,9 +502,19 @@ const transformerNodeDataSchema = z.object({
   description: z.string().max(2000).optional(),
 });
 
+const forEachNodeDataSchema = z.object({
+  label: z.string().min(1).max(200),
+  arrayExpression: z.string().max(10000),
+  itemVariable: z.string().max(100).regex(/^[a-zA-Z_]\w*$/).optional(),
+  maxIterations: z.number().int().min(1).max(1000).optional(),
+  onError: z.enum(['stop', 'continue']).optional(),
+  description: z.string().max(2000).optional(),
+});
+
 const workflowNodeDataSchema = z.union([
   toolNodeDataSchema, triggerNodeDataSchema, llmNodeDataSchema,
   conditionNodeDataSchema, codeNodeDataSchema, transformerNodeDataSchema,
+  forEachNodeDataSchema,
 ]);
 
 const workflowNodeSchema = z.object({
