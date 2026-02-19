@@ -10,3 +10,4 @@ export { LlmNode, type LlmNodeData, type LlmNodeType } from './LlmNode';
 export { ConditionNode, type ConditionNodeData } from './ConditionNode';
 export { CodeNode, type CodeNodeData } from './CodeNode';
 export { TransformerNode, type TransformerNodeData } from './TransformerNode';
+export { ForEachNode, type ForEachNodeData, type ForEachNodeType } from './ForEachNode';

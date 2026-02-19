@@ -32,9 +32,9 @@ import { workflowsApi, triggersApi, apiClient } from '../api';
 import type { Workflow, WorkflowProgressEvent } from '../api';
 import {
   ToolNode, ToolPalette, NodeConfigPanel, WorkflowSourceModal,
-  TriggerNode, LlmNode, ConditionNode, CodeNode, TransformerNode,
+  TriggerNode, LlmNode, ConditionNode, CodeNode, TransformerNode, ForEachNode,
   type ToolNodeData, type ToolNodeType, type TriggerNodeData, type LlmNodeData,
-  type ConditionNodeData, type CodeNodeData, type TransformerNodeData,
+  type ConditionNodeData, type CodeNodeData, type TransformerNodeData, type ForEachNodeData,
 } from '../components/workflows';
 import { ChevronLeft, Save, Play, StopCircle, Code, Zap, Brain, GitBranch, Terminal, RefreshCw } from '../components/icons';
 import { useToast } from '../components/ToastProvider';
@@ -44,6 +44,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 const nodeTypes = {
   toolNode: ToolNode, triggerNode: TriggerNode, llmNode: LlmNode,
   conditionNode: ConditionNode, codeNode: CodeNode, transformerNode: TransformerNode,
+  forEachNode: ForEachNode,
 };
 
 // Default edge options — arrow markers for flow direction
@@ -94,7 +95,8 @@ export function WorkflowEditorPage() {
         // Convert stored nodes to ReactFlow nodes
         const rfNodes: Node[] = wf.nodes.map((n) => {
           if (n.type === 'triggerNode' || n.type === 'llmNode'
-            || n.type === 'conditionNode' || n.type === 'codeNode' || n.type === 'transformerNode') {
+            || n.type === 'conditionNode' || n.type === 'codeNode' || n.type === 'transformerNode'
+            || n.type === 'forEachNode') {
             return { id: n.id, type: n.type, position: n.position, data: n.data as unknown as Record<string, unknown> };
           }
           const td = n.data as import('../api/types').WorkflowToolNodeData;
@@ -313,6 +315,20 @@ export function WorkflowEditorPage() {
             data: { label: td.label, expression: td.expression, description: td.description },
           };
         }
+        if (n.type === 'forEachNode') {
+          const fd = n.data as unknown as ForEachNodeData;
+          return {
+            id: n.id, type: 'forEachNode', position: n.position,
+            data: {
+              label: fd.label,
+              arrayExpression: fd.arrayExpression,
+              ...(fd.itemVariable ? { itemVariable: fd.itemVariable } : {}),
+              ...(fd.maxIterations != null ? { maxIterations: fd.maxIterations } : {}),
+              ...(fd.onError ? { onError: fd.onError } : {}),
+              ...(fd.description ? { description: fd.description } : {}),
+            },
+          };
+        }
         return {
           id: n.id,
           type: n.type || 'toolNode',
@@ -386,7 +402,7 @@ export function WorkflowEditorPage() {
     setNodes((nds) =>
       nds.map((n) => ({
         ...n,
-        data: { ...n.data, executionStatus: 'pending', executionError: undefined, executionDuration: undefined, executionOutput: undefined, resolvedArgs: undefined, branchTaken: undefined },
+        data: { ...n.data, executionStatus: 'pending', executionError: undefined, executionDuration: undefined, executionOutput: undefined, resolvedArgs: undefined, branchTaken: undefined, currentIteration: undefined, totalIterations: undefined },
       })),
     );
 
@@ -481,6 +497,24 @@ export function WorkflowEditorPage() {
                       ...n.data,
                       executionStatus: 'error',
                       executionError: event.error,
+                    },
+                  }
+                : n,
+            ),
+          );
+          break;
+
+        case 'foreach_iteration_start':
+        case 'foreach_iteration_complete':
+          setNodes((nds) =>
+            nds.map((n) =>
+              n.id === event.nodeId
+                ? {
+                    ...n,
+                    data: {
+                      ...n.data,
+                      currentIteration: event.iterationIndex,
+                      totalIterations: event.iterationTotal,
                     },
                   }
                 : n,
@@ -683,6 +717,32 @@ export function WorkflowEditorPage() {
     setHasUnsavedChanges(true);
   }, [nodes, setNodes]);
 
+  /** Add a ForEach (loop) node from the toolbar button */
+  const addForEachNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+
+    let y = 200;
+    let x = 400;
+    if (nodes.length > 0) {
+      const maxY = Math.max(...nodes.map((n) => n.position.y));
+      y = maxY + 120;
+      const avgX = nodes.reduce((sum, n) => sum + n.position.x, 0) / nodes.length;
+      x = Math.round(avgX / 16) * 16;
+    }
+
+    const newNode: Node = {
+      id: newNodeId,
+      type: 'forEachNode',
+      position: { x, y },
+      data: { label: 'ForEach', arrayExpression: '', maxIterations: 100, onError: 'stop' },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes]);
+
   const syncTrigger = useCallback(async (workflowId: string, wfName: string, td: TriggerNodeData, nodeId: string) => {
     const config: Record<string, unknown> = {};
     if (td.triggerType === 'schedule') {
@@ -827,6 +887,15 @@ export function WorkflowEditorPage() {
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Transform
+        </button>
+
+        <button
+          onClick={addForEachNode}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 hover:bg-sky-200 dark:hover:bg-sky-900/50 border border-sky-300 dark:border-sky-700 rounded-md transition-colors"
+          title="Add ForEach (loop) node"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          ForEach
         </button>
 
         <button
