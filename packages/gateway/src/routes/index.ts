@@ -40,3 +40,4 @@ export { extensionsRoutes } from './extensions.js';
 export { composioRoutes } from './composio.js';
 export { mcpRoutes } from './mcp.js';
 export { webhookRoutes } from './webhooks.js';
+export { workflowRoutes } from './workflows.js';

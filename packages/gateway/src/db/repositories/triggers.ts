@@ -42,7 +42,7 @@ export interface WebhookConfig {
 export type TriggerConfig = ScheduleConfig | EventConfig | ConditionConfig | WebhookConfig;
 
 export interface TriggerAction {
-  type: 'chat' | 'tool' | 'notification' | 'goal_check' | 'memory_summary';
+  type: 'chat' | 'tool' | 'notification' | 'goal_check' | 'memory_summary' | 'workflow';
   payload: Record<string, unknown>;
 }
 

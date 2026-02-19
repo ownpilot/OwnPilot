@@ -35,6 +35,7 @@ export {
 export { extensionsApi } from './extensions';
 export { composioApi } from './composio';
 export { mcpApi } from './mcp';
+export { workflowsApi } from './workflows';
 export type { ComposioApp, ComposioConnection, ComposioConnectionRequest, ComposioStatus, ComposioActionInfo } from './composio';
 export type { McpServer, McpServerTool, CreateMcpServerInput, UpdateMcpServerInput } from './mcp';
 export {
@@ -126,4 +127,20 @@ export type {
   TriggerHistoryEntry,
   TriggerHistoryParams,
   PaginatedHistory,
+  Workflow,
+  WorkflowLog,
+  WorkflowNode,
+  WorkflowEdge,
+  WorkflowNodeData,
+  WorkflowToolNodeData,
+  WorkflowTriggerNodeData,
+  WorkflowLlmNodeData,
+  WorkflowConditionNodeData,
+  WorkflowCodeNodeData,
+  WorkflowTransformerNodeData,
+  NodeResult,
+  WorkflowStatus,
+  WorkflowLogStatus,
+  NodeExecutionStatus,
+  WorkflowProgressEvent,
 } from '../types';

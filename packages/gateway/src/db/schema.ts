@@ -742,6 +742,35 @@ CREATE TABLE IF NOT EXISTS execution_permissions (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Workflows (visual DAG tool pipelines)
+CREATE TABLE IF NOT EXISTS workflows (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  name TEXT NOT NULL,
+  description TEXT,
+  nodes JSONB NOT NULL DEFAULT '[]',
+  edges JSONB NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'inactive' CHECK(status IN ('active', 'inactive')),
+  variables JSONB NOT NULL DEFAULT '{}',
+  last_run TIMESTAMP,
+  run_count INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Workflow execution logs (per-run history)
+CREATE TABLE IF NOT EXISTS workflow_logs (
+  id TEXT PRIMARY KEY,
+  workflow_id TEXT REFERENCES workflows(id) ON DELETE SET NULL,
+  workflow_name TEXT,
+  status TEXT NOT NULL CHECK(status IN ('running', 'completed', 'failed', 'cancelled')),
+  node_results JSONB NOT NULL DEFAULT '{}',
+  error TEXT,
+  duration_ms INTEGER,
+  started_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMP
+);
+
 -- MCP Servers (external MCP server connections)
 CREATE TABLE IF NOT EXISTS mcp_servers (
   id TEXT PRIMARY KEY,
@@ -1546,6 +1575,14 @@ DO $$ BEGIN
     END IF;
   END IF;
 END $$;
+
+-- Workflow indexes
+CREATE INDEX IF NOT EXISTS idx_workflows_user ON workflows(user_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_status ON workflows(status);
+CREATE INDEX IF NOT EXISTS idx_workflows_created ON workflows(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_workflow_logs_workflow ON workflow_logs(workflow_id);
+CREATE INDEX IF NOT EXISTS idx_workflow_logs_status ON workflow_logs(status);
+CREATE INDEX IF NOT EXISTS idx_workflow_logs_started ON workflow_logs(started_at DESC);
 
 -- MCP server indexes
 CREATE INDEX IF NOT EXISTS idx_mcp_servers_user ON mcp_servers(user_id);

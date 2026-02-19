@@ -339,6 +339,26 @@ async function main() {
       throw new Error(result.error?.message ?? 'Chat execution failed');
     });
 
+    // Register 'workflow' action handler
+    triggerEngine.registerActionHandler('workflow', async (payload) => {
+      const { getWorkflowService } = await import('./services/workflow-service.js');
+      const workflowId = payload.workflowId as string;
+      if (!workflowId) return { success: false, error: 'Missing workflowId in payload' };
+      const service = getWorkflowService();
+      if (service.isRunning(workflowId)) return { success: false, error: 'Workflow already running' };
+      try {
+        const wfLog = await service.executeWorkflow(workflowId, 'default');
+        return {
+          success: wfLog.status === 'completed',
+          message: `Workflow ${wfLog.status}`,
+          data: { logId: wfLog.id, status: wfLog.status, durationMs: wfLog.durationMs },
+          error: wfLog.error ?? undefined,
+        };
+      } catch (err) {
+        return { success: false, error: getErrorMessage(err, 'Workflow execution failed') };
+      }
+    });
+
     // Seed default triggers (only creates if not already present)
     const triggerSeed = await initializeDefaultTriggers('default');
     if (triggerSeed.created > 0) {

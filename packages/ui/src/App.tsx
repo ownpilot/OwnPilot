@@ -42,6 +42,8 @@ const AIModelsPage = lazy(() => import('./pages/AIModelsPage').then((m) => ({ de
 const ConnectedAppsPage = lazy(() => import('./pages/ConnectedAppsPage').then((m) => ({ default: m.ConnectedAppsPage })));
 const McpServersPage = lazy(() => import('./pages/McpServersPage').then((m) => ({ default: m.McpServersPage })));
 
+const WorkflowsPage = lazy(() => import('./pages/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
+const WorkflowEditorPage = lazy(() => import('./pages/WorkflowEditorPage').then((m) => ({ default: m.WorkflowEditorPage })));
 const SystemPage = lazy(() => import('./pages/SystemPage').then((m) => ({ default: m.SystemPage })));
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 
@@ -73,6 +75,8 @@ export function App() {
         <Route path="triggers" element={page(<TriggersPage />)} />
         <Route path="plans" element={page(<PlansPage />)} />
         <Route path="autonomy" element={page(<AutonomyPage />)} />
+        <Route path="workflows" element={page(<WorkflowsPage />)} />
+        <Route path="workflows/:id" element={page(<WorkflowEditorPage />)} />
         <Route path="tasks" element={page(<TasksPage />)} />
         <Route path="notes" element={page(<NotesPage />)} />
         <Route path="calendar" element={page(<CalendarPage />)} />

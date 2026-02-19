@@ -447,6 +447,99 @@ export const workspaceExecuteCodeSchema = z.object({
   })).max(50).optional(),
 });
 
+// ─── Workflow Schemas ──────────────────────────────────────────
+
+const toolNodeDataSchema = z.object({
+  toolName: z.string().min(1).max(200),
+  toolArgs: z.record(z.string(), z.unknown()).default({}),
+  label: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+});
+
+const triggerNodeDataSchema = z.object({
+  triggerType: z.enum(['manual', 'schedule', 'event', 'condition', 'webhook']),
+  label: z.string().min(1).max(200),
+  cron: z.string().max(100).optional(),
+  timezone: z.string().max(100).optional(),
+  eventType: z.string().max(200).optional(),
+  filters: z.record(z.string(), z.unknown()).optional(),
+  condition: z.string().max(200).optional(),
+  threshold: z.number().optional(),
+  checkInterval: z.number().optional(),
+  webhookPath: z.string().max(500).optional(),
+  webhookSecret: z.string().max(500).optional(),
+  triggerId: z.string().max(100).optional(),
+});
+
+const llmNodeDataSchema = z.object({
+  label: z.string().min(1).max(200),
+  provider: z.string().min(1).max(100),
+  model: z.string().min(1).max(200),
+  systemPrompt: z.string().max(50000).optional(),
+  userMessage: z.string().min(1).max(100000),
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().int().min(1).max(128000).optional(),
+  apiKey: z.string().max(500).optional(),
+  baseUrl: z.string().max(2048).optional(),
+});
+
+const conditionNodeDataSchema = z.object({
+  label: z.string().min(1).max(200),
+  expression: z.string().min(1).max(10000),
+  description: z.string().max(2000).optional(),
+});
+
+const codeNodeDataSchema = z.object({
+  label: z.string().min(1).max(200),
+  language: z.enum(['javascript', 'python', 'shell']),
+  code: z.string().min(1).max(100000),
+  description: z.string().max(2000).optional(),
+});
+
+const transformerNodeDataSchema = z.object({
+  label: z.string().min(1).max(200),
+  expression: z.string().min(1).max(50000),
+  description: z.string().max(2000).optional(),
+});
+
+const workflowNodeDataSchema = z.union([
+  toolNodeDataSchema, triggerNodeDataSchema, llmNodeDataSchema,
+  conditionNodeDataSchema, codeNodeDataSchema, transformerNodeDataSchema,
+]);
+
+const workflowNodeSchema = z.object({
+  id: z.string().min(1).max(100),
+  type: z.string().max(50).default('toolNode'),
+  position: z.object({ x: z.number(), y: z.number() }),
+  data: workflowNodeDataSchema,
+});
+
+const workflowEdgeSchema = z.object({
+  id: z.string().min(1).max(100),
+  source: z.string().min(1).max(100),
+  target: z.string().min(1).max(100),
+  sourceHandle: z.string().max(100).optional(),
+  targetHandle: z.string().max(100).optional(),
+});
+
+export const createWorkflowSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(5000).optional(),
+  nodes: z.array(workflowNodeSchema).max(100).default([]),
+  edges: z.array(workflowEdgeSchema).max(500).default([]),
+  status: z.enum(['active', 'inactive']).optional(),
+  variables: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const updateWorkflowSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(5000).optional(),
+  nodes: z.array(workflowNodeSchema).max(100).optional(),
+  edges: z.array(workflowEdgeSchema).max(500).optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+  variables: z.record(z.string(), z.unknown()).optional(),
+});
+
 // ─── Validation Helper ──────────────────────────────────────────
 
 /**

@@ -29,6 +29,7 @@ const typeIcons = {
 const actionTypeLabels: Record<TriggerAction['type'], string> = {
   chat: 'Start Chat',
   tool: 'Run Tool',
+  workflow: 'Run Workflow',
   notification: 'Send Notification',
   goal_check: 'Check Goals',
   memory_summary: 'Memory Summary',

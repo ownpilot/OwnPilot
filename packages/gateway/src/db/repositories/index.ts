@@ -298,6 +298,29 @@ export {
   type UpsertExtensionInput,
 } from './extensions.js';
 
+// Workflows repository
+export {
+  WorkflowsRepository,
+  createWorkflowsRepository,
+  type Workflow,
+  type WorkflowLog,
+  type WorkflowNode,
+  type WorkflowEdge,
+  type WorkflowNodeData,
+  type ToolNodeData as WorkflowToolNodeData,
+  type TriggerNodeData as WorkflowTriggerNodeData,
+  type LlmNodeData as WorkflowLlmNodeData,
+  type ConditionNodeData as WorkflowConditionNodeData,
+  type CodeNodeData as WorkflowCodeNodeData,
+  type TransformerNodeData as WorkflowTransformerNodeData,
+  type NodeResult,
+  type WorkflowStatus,
+  type WorkflowLogStatus,
+  type NodeExecutionStatus,
+  type CreateWorkflowInput,
+  type UpdateWorkflowInput,
+} from './workflows.js';
+
 // Workspaces repository
 export {
   WorkspacesRepository,

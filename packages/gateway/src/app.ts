@@ -56,6 +56,7 @@ import {
   composioRoutes,
   mcpRoutes,
   webhookRoutes,
+  workflowRoutes,
 } from './routes/index.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST } from './config/defaults.js';
 
@@ -237,6 +238,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Local AI Providers (LM Studio, Ollama, etc.)
   app.route('/api/v1/local-providers', localProvidersRoutes);
 
+  // Workflows (visual DAG tool pipelines)
+  app.route('/api/v1/workflows', workflowRoutes);
+
   // Root route
   app.get('/', (c) => {
     return c.json({
@@ -307,6 +311,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         extensions: '/api/v1/extensions',
         // Local AI Providers (LM Studio, Ollama)
         localProviders: '/api/v1/local-providers',
+        // Workflows (visual DAG tool pipelines)
+        workflows: '/api/v1/workflows',
         // Webhooks (external service callbacks, no auth required)
         webhooks: '/webhooks/telegram/:secret',
       },

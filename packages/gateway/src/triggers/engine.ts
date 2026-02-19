@@ -295,6 +295,30 @@ export class TriggerEngine {
         error: result.error,
       };
     });
+
+    // Workflow action - executes a workflow via the workflow service
+    this.registerActionHandler('workflow', async (payload) => {
+      const workflowId = payload.workflowId as string;
+      if (!workflowId) {
+        return { success: false, error: 'No workflowId specified' };
+      }
+
+      // Lazy import to avoid circular dependency (triggers/ → services/)
+      const { getWorkflowService } = await import('../services/workflow-service.js');
+      const service = getWorkflowService();
+
+      try {
+        const wfLog = await service.executeWorkflow(workflowId, this.config.userId);
+        return {
+          success: wfLog.status === 'completed',
+          message: `Workflow ${wfLog.status} in ${wfLog.durationMs ?? 0}ms`,
+          data: { logId: wfLog.id, status: wfLog.status, durationMs: wfLog.durationMs },
+          error: wfLog.error ?? undefined,
+        };
+      } catch (error) {
+        return { success: false, error: getErrorMessage(error, 'Workflow execution failed') };
+      }
+    });
   }
 
   // ==========================================================================

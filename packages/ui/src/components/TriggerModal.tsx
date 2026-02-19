@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { triggersApi, apiClient } from '../api';
-import type { Trigger, TriggerConfig, TriggerAction } from '../api';
+import { useState, useEffect } from 'react';
+import { triggersApi, workflowsApi, apiClient } from '../api';
+import type { Trigger, TriggerConfig, TriggerAction, Workflow } from '../api';
 import { useModalClose } from '../hooks';
 
 // Simple cron presets for quick selection
@@ -79,8 +79,16 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
   const [actionPayload, setActionPayload] = useState(
     JSON.stringify(trigger?.action.payload ?? {}, null, 2)
   );
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Fetch workflows when action type is 'workflow'
+  useEffect(() => {
+    if (actionType === 'workflow') {
+      workflowsApi.list({ limit: '100' }).then((res) => setWorkflows(res.workflows)).catch(() => {});
+    }
+  }, [actionType]);
 
   // Cron validation
   const cronValidation = type === 'schedule' ? validateCron(cron) : { valid: true };
@@ -325,28 +333,54 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
               >
                 <option value="chat">Start Chat</option>
                 <option value="tool">Run Tool</option>
+                <option value="workflow">Run Workflow</option>
                 <option value="notification">Send Notification</option>
                 <option value="goal_check">Check Goals</option>
                 <option value="memory_summary">Memory Summary</option>
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                Action Payload
-              </label>
-              <textarea
-                value={actionPayload}
-                onChange={(e) => setActionPayload(e.target.value)}
-                placeholder={
-                  actionType === 'chat'
-                    ? 'Message to send to the AI'
-                    : 'JSON payload for the action'
-                }
-                rows={3}
-                className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none font-mono text-sm"
-              />
-            </div>
+            {actionType === 'workflow' ? (
+              <div>
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Workflow
+                </label>
+                <select
+                  value={(() => { try { return (JSON.parse(actionPayload) as Record<string, unknown>).workflowId as string ?? ''; } catch { return ''; } })()}
+                  onChange={(e) => setActionPayload(JSON.stringify({ workflowId: e.target.value }, null, 2))}
+                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="">Select a workflow...</option>
+                  {workflows.map((wf) => (
+                    <option key={wf.id} value={wf.id}>
+                      {wf.name} {wf.status === 'inactive' ? '(inactive)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {workflows.length === 0 && (
+                  <p className="mt-1 text-xs text-text-muted dark:text-dark-text-muted">
+                    No workflows found. Create one first in the Workflows page.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Action Payload
+                </label>
+                <textarea
+                  value={actionPayload}
+                  onChange={(e) => setActionPayload(e.target.value)}
+                  placeholder={
+                    actionType === 'chat'
+                      ? 'Message to send to the AI'
+                      : 'JSON payload for the action'
+                  }
+                  rows={3}
+                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none font-mono text-sm"
+                />
+              </div>
+            )}
           </div>
 
           <div className="p-4 border-t border-border dark:border-dark-border">

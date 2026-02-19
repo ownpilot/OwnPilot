@@ -42,6 +42,7 @@ import {
   BookOpen,
   Menu,
   X,
+  GitBranch,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
@@ -98,6 +99,7 @@ const navGroups: NavGroup[] = [
       { to: '/goals', icon: Target, label: 'Goals' },
       { to: '/triggers', icon: Zap, label: 'Triggers' },
       { to: '/plans', icon: ListChecks, label: 'Plans' },
+      { to: '/workflows', icon: GitBranch, label: 'Workflows' },
       { to: '/autonomy', icon: Shield, label: 'Autonomy' },
     ],
   },

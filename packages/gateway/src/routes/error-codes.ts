@@ -189,6 +189,8 @@ export const ERROR_CODES = {
   TIMELINE_FAILED: 'TIMELINE_FAILED',
   BRIEFING_FAILED: 'BRIEFING_FAILED',
   BUDGET_FAILED: 'BUDGET_FAILED',
+  WORKFLOW_CYCLE_DETECTED: 'WORKFLOW_CYCLE_DETECTED',
+  WORKFLOW_ALREADY_RUNNING: 'WORKFLOW_ALREADY_RUNNING',
 
   // ============================================================================
   // System & Status

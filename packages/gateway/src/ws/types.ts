@@ -187,7 +187,7 @@ export interface ServerEvents {
       | 'config_service' | 'workspace' | 'plugin'
       | 'pomodoro' | 'habit' | 'capture'
       | 'agent' | 'extension' | 'local_provider' | 'model_config' | 'model_provider' | 'channel'
-      | 'mcp_server';
+      | 'mcp_server' | 'workflow';
     action: 'created' | 'updated' | 'deleted';
     id?: string;
     count?: number;

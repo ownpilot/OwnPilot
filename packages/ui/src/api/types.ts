@@ -961,7 +961,7 @@ export interface TriggerConfig {
 }
 
 export interface TriggerAction {
-  type: 'chat' | 'tool' | 'notification' | 'goal_check' | 'memory_summary';
+  type: 'chat' | 'tool' | 'notification' | 'goal_check' | 'memory_summary' | 'workflow';
   payload: Record<string, unknown>;
 }
 
@@ -1008,4 +1008,129 @@ export interface PaginatedHistory {
   total: number;
   limit: number;
   offset: number;
+}
+
+// ---- Workflows ----
+
+export type WorkflowStatus = 'active' | 'inactive';
+export type WorkflowLogStatus = 'running' | 'completed' | 'failed' | 'cancelled';
+export type NodeExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 'skipped';
+
+export interface WorkflowToolNodeData {
+  toolName: string;
+  toolArgs: Record<string, unknown>;
+  label: string;
+  description?: string;
+}
+
+export interface WorkflowTriggerNodeData {
+  triggerType: 'manual' | 'schedule' | 'event' | 'condition' | 'webhook';
+  label: string;
+  cron?: string;
+  timezone?: string;
+  eventType?: string;
+  condition?: string;
+  threshold?: number;
+  webhookPath?: string;
+  triggerId?: string;
+}
+
+export interface WorkflowLlmNodeData {
+  label: string;
+  provider: string;
+  model: string;
+  systemPrompt?: string;
+  userMessage: string;
+  temperature?: number;
+  maxTokens?: number;
+  apiKey?: string;
+  baseUrl?: string;
+}
+
+export interface WorkflowConditionNodeData {
+  label: string;
+  expression: string;
+  description?: string;
+}
+
+export interface WorkflowCodeNodeData {
+  label: string;
+  language: 'javascript' | 'python' | 'shell';
+  code: string;
+  description?: string;
+}
+
+export interface WorkflowTransformerNodeData {
+  label: string;
+  expression: string;
+  description?: string;
+}
+
+export type WorkflowNodeData = WorkflowToolNodeData | WorkflowTriggerNodeData | WorkflowLlmNodeData
+  | WorkflowConditionNodeData | WorkflowCodeNodeData | WorkflowTransformerNodeData;
+
+export interface WorkflowNode {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  data: WorkflowNodeData;
+}
+
+export interface WorkflowEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description: string | null;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+  status: WorkflowStatus;
+  variables: Record<string, unknown>;
+  lastRun: string | null;
+  runCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NodeResult {
+  nodeId: string;
+  status: NodeExecutionStatus;
+  output?: unknown;
+  resolvedArgs?: Record<string, unknown>;
+  error?: string;
+  durationMs?: number;
+  startedAt?: string;
+  completedAt?: string;
+}
+
+export interface WorkflowLog {
+  id: string;
+  workflowId: string | null;
+  workflowName: string | null;
+  status: WorkflowLogStatus;
+  nodeResults: Record<string, NodeResult>;
+  error: string | null;
+  durationMs: number | null;
+  startedAt: string;
+  completedAt: string | null;
+}
+
+export interface WorkflowProgressEvent {
+  type: 'node_start' | 'node_complete' | 'node_error' | 'done' | 'error';
+  nodeId?: string;
+  toolName?: string;
+  status?: NodeExecutionStatus;
+  output?: unknown;
+  resolvedArgs?: Record<string, unknown>;
+  branchTaken?: 'true' | 'false';
+  error?: string;
+  durationMs?: number;
+  logId?: string;
+  logStatus?: WorkflowLogStatus;
 }
