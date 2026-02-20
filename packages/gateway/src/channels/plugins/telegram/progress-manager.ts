@@ -92,15 +92,18 @@ export class TelegramProgressManager {
     }
     this.pendingText = null;
 
+    // Guard against empty text (Telegram rejects empty messages)
+    const text = finalText.trim() || '(empty response)';
+
     if (!this.messageId) {
       // Progress message was never sent — fall back to regular send
-      return this.sendFresh(finalText);
+      return this.sendFresh(text);
     }
 
     // Convert Markdown → Telegram HTML
-    let htmlText = finalText;
+    let htmlText = text;
     if (this.parseMode === 'HTML') {
-      htmlText = markdownToTelegramHtml(finalText);
+      htmlText = markdownToTelegramHtml(text);
     }
 
     const parts = splitMessage(htmlText, PLATFORM_MESSAGE_LIMITS.telegram!);
@@ -113,7 +116,7 @@ export class TelegramProgressManager {
     } catch (err) {
       log.debug('Failed to edit progress → final message, sending fresh', { error: err });
       // If edit fails (e.g. text unchanged), send as new message
-      return this.sendFresh(finalText);
+      return this.sendFresh(text);
     }
 
     let lastId = String(this.messageId);
@@ -166,7 +169,7 @@ export class TelegramProgressManager {
   // -------------------------------------------------------------------------
 
   private doEdit(text: string): void {
-    if (!this.messageId) return;
+    if (!this.messageId || this.finished) return;
     this.lastEditTime = Date.now();
     this.bot.api.editMessageText(this.chatId, this.messageId, text).catch((err) => {
       log.debug('Progress edit failed', { error: err });
