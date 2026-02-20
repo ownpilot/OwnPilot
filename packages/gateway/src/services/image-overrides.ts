@@ -411,8 +411,11 @@ const generateImageOverride: ToolExecutor = async (params, context): Promise<Too
       savedImages.push({ path: filename, size: stats.size, revisedPrompt: result.revisedPrompt });
     }
 
-    // Build markdown for display
-    const markdown = savedImages.map(img => `![Generated image](${img.path})`).join('\n');
+    // Build markdown for display (use relative paths so UI resolveImageUrl() works)
+    const markdown = savedImages.map(img => {
+      const relativePath = path.relative(workDir, img.path).replace(/\\/g, '/');
+      return `![Generated image](${relativePath})`;
+    }).join('\n');
 
     return {
       content: {
