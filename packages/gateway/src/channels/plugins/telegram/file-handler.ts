@@ -39,6 +39,12 @@ async function downloadTelegramFile(
       return null;
     }
 
+    // Pre-download size check (avoid buffering huge files)
+    if (file.file_size && file.file_size > MAX_FILE_SIZE) {
+      log.warn('File exceeds size limit (pre-download)', { size: file.file_size, max: MAX_FILE_SIZE });
+      return null;
+    }
+
     // Construct download URL
     const token = bot.token;
     const url = `https://api.telegram.org/file/bot${token}/${file.file_path}`;

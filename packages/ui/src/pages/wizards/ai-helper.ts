@@ -14,21 +14,30 @@ interface ChatResponse {
   response?: string;
 }
 
-let cachedDefaults: { provider: string; model: string } | null = null;
+let cachedDefaults: { provider: string; model: string; fetchedAt: number } | null = null;
+
+/** Cache TTL — refetch after 5 minutes. */
+const DEFAULTS_TTL_MS = 5 * 60 * 1000;
+
+const FALLBACK_DEFAULTS = { provider: 'openai', model: 'gpt-4o' };
 
 /** Fetch and cache default provider/model from settings. */
 async function getDefaults(): Promise<{ provider: string; model: string }> {
-  if (cachedDefaults) return cachedDefaults;
+  if (cachedDefaults && Date.now() - cachedDefaults.fetchedAt < DEFAULTS_TTL_MS) {
+    return cachedDefaults;
+  }
   try {
     const settings = await settingsApi.get();
     cachedDefaults = {
       provider: settings.defaultProvider || 'openai',
       model: settings.defaultModel || 'gpt-4o',
+      fetchedAt: Date.now(),
     };
+    return cachedDefaults;
   } catch {
-    cachedDefaults = { provider: 'openai', model: 'gpt-4o' };
+    // Don't cache failure — retry on next call
+    return FALLBACK_DEFAULTS;
   }
-  return cachedDefaults;
 }
 
 /**

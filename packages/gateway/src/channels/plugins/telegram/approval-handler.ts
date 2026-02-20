@@ -31,15 +31,17 @@ const pending = new Map<string, PendingApproval>();
  * Must be called once before any approvals are created.
  */
 export function registerApprovalHandler(bot: Bot): void {
-  bot.on('callback_query:data', async (ctx) => {
+  bot.on('callback_query:data', async (ctx, next) => {
     const data = ctx.callbackQuery.data;
-    if (!data.startsWith('approve:') && !data.startsWith('deny:')) return;
+    if (!data.startsWith('approve:') && !data.startsWith('deny:')) {
+      return next();
+    }
 
     const [action, id] = data.split(':') as [string, string];
     const entry = pending.get(id);
 
     if (!entry) {
-      await ctx.answerCallbackQuery({ text: 'This approval has expired.' });
+      await ctx.answerCallbackQuery({ text: 'This approval has expired.' }).catch(() => {});
       return;
     }
 
@@ -47,7 +49,10 @@ export function registerApprovalHandler(bot: Bot): void {
     clearTimeout(entry.timer);
     pending.delete(id);
 
-    // Edit the message to show the decision
+    // Resolve first — ensure approval decision is delivered even if Telegram API fails
+    entry.resolve(approved);
+
+    // Edit the message to show the decision (best effort)
     try {
       await ctx.editMessageText(
         approved ? '\u2705 Approved' : '\u274c Denied',
@@ -56,11 +61,13 @@ export function registerApprovalHandler(bot: Bot): void {
       log.debug('Failed to edit approval message', { error: err });
     }
 
-    await ctx.answerCallbackQuery({
-      text: approved ? 'Approved' : 'Denied',
-    });
-
-    entry.resolve(approved);
+    try {
+      await ctx.answerCallbackQuery({
+        text: approved ? 'Approved' : 'Denied',
+      });
+    } catch (err) {
+      log.debug('Failed to answer callback query', { error: err });
+    }
   });
 }
 
