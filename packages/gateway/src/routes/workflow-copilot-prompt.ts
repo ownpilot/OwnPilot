@@ -48,7 +48,7 @@ Briefly explain what you built or changed before the JSON block.
   "description": "Optional description"
 }
 \`\`\`
-- \`tool\` (required): name of the tool to execute
+- \`tool\` (required): EXACT tool name including dots (e.g. \`mcp.github.list_repositories\`, \`core.get_time\`). Use the name EXACTLY as listed in Available Tools — do NOT strip dots or merge name segments.
 - \`args\` (optional): arguments passed to the tool — can use template expressions
 - Tool nodes have NO \`type\` field (that's how they're distinguished from other nodes)
 
@@ -207,7 +207,7 @@ export function buildCopilotSystemPrompt(
   const parts = [STATIC_PROMPT];
 
   if (availableTools && availableTools.length > 0) {
-    parts.push(`\n\n## Available Tools\nThese tools can be used as tool nodes in the workflow:\n${availableTools.join(', ')}`);
+    parts.push(`\n\n## Available Tools\nThese tools can be used as tool nodes in the workflow. Use the EXACT name (including dots) as the \`tool\` field value:\n${availableTools.join(', ')}`);
   }
 
   if (currentWorkflow) {

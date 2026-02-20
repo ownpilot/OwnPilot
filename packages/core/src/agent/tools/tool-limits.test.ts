@@ -33,10 +33,8 @@ describe('TOOL_MAX_LIMITS', () => {
       'list_custom_records',
       'search_custom_records',
       'git_log',
-      'get_task_history',
       'search_files',
       'search_web',
-      'semantic_search',
     ];
 
     it.each(expectedTools)('contains an entry for "%s"', (toolName) => {
@@ -91,11 +89,6 @@ describe('TOOL_MAX_LIMITS', () => {
     it('search_files uses maxResults param', () => {
       const limit = TOOL_MAX_LIMITS['search_files'];
       expect(limit.paramName).toBe('maxResults');
-    });
-
-    it('semantic_search uses topK param', () => {
-      const limit = TOOL_MAX_LIMITS['semantic_search'];
-      expect(limit.paramName).toBe('topK');
     });
 
     it('search_web has maxValue=20, default=10', () => {
@@ -162,11 +155,6 @@ describe('applyToolLimits', () => {
       expect(result.maxResults).toBe(100);
     });
 
-    it('caps topK for semantic_search when exceeding', () => {
-      const result = applyToolLimits('semantic_search', { topK: 100 });
-      expect(result.topK).toBe(50);
-    });
-
     it('caps at maxValue when value equals maxValue + 1', () => {
       const result = applyToolLimits('list_emails', { limit: 51 });
       expect(result.limit).toBe(50);
@@ -186,11 +174,6 @@ describe('applyToolLimits', () => {
     it('applies default for search_files when maxResults is absent', () => {
       const result = applyToolLimits('search_files', {});
       expect(result.maxResults).toBe(50);
-    });
-
-    it('applies default for semantic_search when topK is absent', () => {
-      const result = applyToolLimits('semantic_search', {});
-      expect(result.topK).toBe(10);
     });
 
     it('applies default for get_next_actions when limit is absent', () => {

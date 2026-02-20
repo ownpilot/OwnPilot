@@ -6,6 +6,7 @@ export { providersApi } from './providers';
 export type { ProvidersListData, ProviderConfigData } from './providers';
 export { modelsApi } from './models';
 export { settingsApi } from './settings';
+export type { ToolGroupInfo } from './settings';
 export { tasksApi } from './tasks';
 export { summaryApi, costsApi } from './summary';
 export { agentsApi } from './agents';
@@ -37,7 +38,7 @@ export { composioApi } from './composio';
 export { mcpApi } from './mcp';
 export { workflowsApi } from './workflows';
 export type { ComposioApp, ComposioConnection, ComposioConnectionRequest, ComposioStatus, ComposioActionInfo } from './composio';
-export type { McpServer, McpServerTool, CreateMcpServerInput, UpdateMcpServerInput } from './mcp';
+export type { McpServer, McpServerTool, McpServerInfo, CreateMcpServerInput, UpdateMcpServerInput } from './mcp';
 export {
   notesApi,
   bookmarksApi,

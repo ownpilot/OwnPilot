@@ -6,9 +6,11 @@
  */
 
 import { Hono } from 'hono';
+import { getBaseName } from '@ownpilot/core';
 import { getMcpServersRepo } from '../db/repositories/mcp-servers.js';
 import { mcpClientService } from '../services/mcp-client-service.js';
 import { handleMcpRequest } from '../services/mcp-server-service.js';
+import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, sanitizeId } from './helpers.js';
@@ -24,6 +26,95 @@ export const mcpRoutes = new Hono();
 mcpRoutes.all('/serve', async (c) => {
   const response = await handleMcpRequest(c.req.raw);
   return response;
+});
+
+/**
+ * GET /serve/info — MCP server metadata and exposed tools
+ *
+ * Returns the information needed to connect to OwnPilot as an MCP server,
+ * including the endpoint URL, protocol, exposed tools, and config snippets.
+ */
+mcpRoutes.get('/serve/info', async (c) => {
+  try {
+    const registry = getSharedToolRegistry();
+    const allTools = registry.getAllTools();
+
+    // Build the server URL from the current request
+    const proto = c.req.header('x-forwarded-proto') ?? (c.req.url.startsWith('https') ? 'https' : 'http');
+    const host = c.req.header('x-forwarded-host') ?? c.req.header('host') ?? 'localhost:8080';
+    const baseUrl = `${proto}://${host}`;
+    const endpoint = `${baseUrl}/api/v1/mcp/serve`;
+
+    // Categorize tools by source/namespace
+    const tools = allTools.map(t => ({
+      name: getBaseName(t.definition.name),
+      qualifiedName: t.definition.name,
+      description: t.definition.description,
+      category: t.definition.category,
+    }));
+
+    return apiResponse(c, {
+      server: {
+        name: 'OwnPilot',
+        version: '1.0.0',
+        protocol: 'Streamable HTTP (MCP)',
+        endpoint,
+        transport: 'streamable-http',
+      },
+      tools: {
+        count: tools.length,
+        items: tools,
+      },
+      // Ready-to-use config snippets for popular MCP clients
+      configSnippets: {
+        claude_desktop: {
+          label: 'Claude Desktop',
+          description: 'Add to claude_desktop_config.json under "mcpServers"',
+          config: {
+            ownpilot: {
+              transport: 'streamable-http',
+              url: endpoint,
+            },
+          },
+        },
+        cursor: {
+          label: 'Cursor',
+          description: 'Add to .cursor/mcp.json in your project',
+          config: {
+            mcpServers: {
+              ownpilot: {
+                transport: 'streamable-http',
+                url: endpoint,
+              },
+            },
+          },
+        },
+        claude_code: {
+          label: 'Claude Code',
+          description: 'Add to .mcp.json in your project or ~/.claude/mcp.json globally',
+          config: {
+            mcpServers: {
+              ownpilot: {
+                type: 'streamable-http',
+                url: endpoint,
+              },
+            },
+          },
+        },
+        generic_http: {
+          label: 'Generic HTTP Client',
+          description: 'Any MCP client supporting Streamable HTTP',
+          config: {
+            url: endpoint,
+            transport: 'streamable-http',
+          },
+        },
+      },
+    });
+  } catch (err) {
+    log.error('Failed to get MCP server info:', err);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
 });
 
 // =============================================================================

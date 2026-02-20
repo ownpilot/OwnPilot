@@ -24,7 +24,7 @@ export function buildDiscordChannelPlugin() {
       author: { name: 'OwnPilot' },
       capabilities: ['tools', 'events'] as PluginCapability[],
       permissions: ['network'] as PluginPermission[],
-      icon: 'discord',
+      icon: '\uD83D\uDCAC',
       requiredServices: [
         {
           name: 'discord_bot',

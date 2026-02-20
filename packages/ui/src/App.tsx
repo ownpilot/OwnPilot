@@ -44,6 +44,7 @@ const McpServersPage = lazy(() => import('./pages/McpServersPage').then((m) => (
 
 const WorkflowsPage = lazy(() => import('./pages/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
 const WorkflowEditorPage = lazy(() => import('./pages/WorkflowEditorPage').then((m) => ({ default: m.WorkflowEditorPage })));
+const ToolGroupsPage = lazy(() => import('./pages/ToolGroupsPage').then((m) => ({ default: m.ToolGroupsPage })));
 const SystemPage = lazy(() => import('./pages/SystemPage').then((m) => ({ default: m.SystemPage })));
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 
@@ -105,7 +106,7 @@ export function App() {
         <Route path="settings/integrations" element={<Navigate to="/settings/connected-apps" replace />} />
         <Route path="settings/connected-apps" element={page(<ConnectedAppsPage />)} />
         <Route path="settings/mcp-servers" element={page(<McpServersPage />)} />
-
+        <Route path="settings/tool-groups" element={page(<ToolGroupsPage />)} />
         <Route path="settings/system" element={page(<SystemPage />)} />
         <Route path="about" element={page(<AboutPage />)} />
         <Route path="profile" element={page(<ProfilePage />)} />

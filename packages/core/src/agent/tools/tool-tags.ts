@@ -131,8 +131,6 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   // ─────────────────────────────────────────────
   analyze_image: ['image', 'photo', 'analyze', 'describe', 'ocr', 'vision'],
   generate_image: ['generate image', 'dall-e', 'ai art', 'draw', 'create image'],
-  edit_image: ['image edit', 'modify image'],
-  image_variation: ['image variation', 'similar image'],
   resize_image: ['resize', 'scale', 'crop'],
 
   // ─────────────────────────────────────────────
@@ -152,14 +150,6 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   get_pdf_info: ['pdf info', 'document info', 'page count', 'size'],
 
   // ─────────────────────────────────────────────
-  // TRANSLATION
-  // ─────────────────────────────────────────────
-  translate_text: ['translate', 'language', 'english', 'spanish', 'french', 'german'],
-  detect_language: ['detect', 'which language', 'identify language'],
-  list_languages: ['languages', 'supported', 'available'],
-  batch_translate: ['bulk translate', 'batch', 'multiple translate'],
-
-  // ─────────────────────────────────────────────
   // GOALS
   // ─────────────────────────────────────────────
   create_goal: ['goal', 'objective', 'target', 'plan', 'vision', 'create'],
@@ -172,22 +162,10 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   get_goal_stats: ['goal stats', 'progress', 'report'],
 
   // ─────────────────────────────────────────────
-  // SCHEDULER
-  // ─────────────────────────────────────────────
-  create_scheduled_task: ['schedule', 'cron', 'automation', 'timer', 'automatic', 'recurring', 'reminder'],
-  list_scheduled_tasks: ['schedules', 'cron list', 'automations', 'list'],
-  update_scheduled_task: ['schedule update', 'edit schedule'],
-  delete_scheduled_task: ['schedule delete', 'cancel'],
-  get_task_history: ['task history', 'execution log'],
-  trigger_task: ['trigger', 'run now', 'manual run'],
-
-  // ─────────────────────────────────────────────
   // DATA EXTRACTION
   // ─────────────────────────────────────────────
-  extract_structured_data: ['structured data', 'parse', 'extract', 'json', 'table'],
   extract_entities: ['entity extraction', 'ner', 'name', 'date', 'place'],
   extract_table_data: ['table', 'csv', 'excel', 'parse table'],
-  summarize_text: ['summarize', 'summary', 'brief', 'tldr'],
 
   // ─────────────────────────────────────────────
   // CUSTOM DATA
@@ -203,17 +181,6 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   get_custom_record: ['get record', 'detail', 'single record'],
   update_custom_record: ['update record', 'edit', 'change'],
   delete_custom_record: ['delete record', 'remove'],
-
-  // ─────────────────────────────────────────────
-  // VECTOR SEARCH
-  // ─────────────────────────────────────────────
-  create_embedding: ['embedding', 'vector', 'encode', 'semantic'],
-  semantic_search: ['semantic search', 'similarity', 'meaning', 'smart search'],
-  upsert_vectors: ['upsert', 'vector add', 'update vectors'],
-  delete_vectors: ['vector delete', 'remove vectors'],
-  list_vector_collections: ['collections', 'vector list'],
-  create_vector_collection: ['create collection', 'new collection'],
-  similarity_score: ['similarity score', 'compare', 'proximity'],
 
   // ─────────────────────────────────────────────
   // WEATHER

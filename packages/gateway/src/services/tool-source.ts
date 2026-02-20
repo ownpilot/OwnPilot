@@ -201,17 +201,9 @@ const CORE_FILE_TOOLS: Record<string, string[]> = {
     'add_expense', 'batch_add_expenses', 'parse_receipt',
     'query_expenses', 'export_expenses', 'expense_summary', 'delete_expense',
   ],
-  'scheduler-tools': [
-    'create_scheduled_task', 'list_scheduled_tasks', 'update_scheduled_task',
-    'delete_scheduled_task', 'get_task_history', 'trigger_task',
-  ],
   'pdf-tools': ['read_pdf', 'create_pdf', 'get_pdf_info'],
-  'translation-tools': [
-    'translate_text', 'detect_language', 'list_languages', 'batch_translate',
-  ],
   'image-tools': [
-    'analyze_image', 'generate_image', 'edit_image',
-    'image_variation', 'resize_image',
+    'analyze_image', 'generate_image', 'resize_image',
   ],
   'email-tools': [
     'send_email', 'list_emails', 'read_email',
@@ -225,14 +217,8 @@ const CORE_FILE_TOOLS: Record<string, string[]> = {
     'text_to_speech', 'speech_to_text', 'translate_audio',
     'get_audio_info', 'split_audio',
   ],
-  'vector-search-tools': [
-    'create_embedding', 'semantic_search', 'upsert_vectors',
-    'delete_vectors', 'list_vector_collections',
-    'create_vector_collection', 'similarity_score',
-  ],
   'data-extraction-tools': [
-    'extract_structured_data', 'extract_entities',
-    'extract_table_data', 'summarize_text',
+    'extract_entities', 'extract_table_data',
   ],
   'weather-tools': ['get_weather', 'get_weather_forecast'],
   'dynamic-tools': [

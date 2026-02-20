@@ -47,6 +47,30 @@ export interface CreateMcpServerInput {
   autoConnect?: boolean;
 }
 
+export interface McpServerInfo {
+  server: {
+    name: string;
+    version: string;
+    protocol: string;
+    endpoint: string;
+    transport: string;
+  };
+  tools: {
+    count: number;
+    items: Array<{
+      name: string;
+      qualifiedName: string;
+      description: string;
+      category?: string;
+    }>;
+  };
+  configSnippets: Record<string, {
+    label: string;
+    description: string;
+    config: Record<string, unknown>;
+  }>;
+}
+
 export interface UpdateMcpServerInput {
   name?: string;
   displayName?: string;
@@ -61,6 +85,10 @@ export interface UpdateMcpServerInput {
 }
 
 export const mcpApi = {
+  /** Get OwnPilot MCP server info (endpoint URL, exposed tools, config snippets) */
+  serverInfo: () =>
+    apiClient.get<McpServerInfo>('/mcp/serve/info'),
+
   /** List all configured MCP servers */
   list: () =>
     apiClient.get<{ servers: McpServer[]; count: number }>('/mcp'),

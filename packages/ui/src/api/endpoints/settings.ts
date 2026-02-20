@@ -5,6 +5,17 @@
 import { apiClient } from '../client';
 import type { SettingsData } from '../../types';
 
+export interface ToolGroupInfo {
+  id: string;
+  name: string;
+  description: string;
+  toolCount: number;
+  tools: string[];
+  enabled: boolean;
+  alwaysOn: boolean;
+  defaultEnabled: boolean;
+}
+
 export const settingsApi = {
   get: () => apiClient.get<SettingsData>('/settings'),
   getProviders: () =>
@@ -19,4 +30,8 @@ export const settingsApi = {
     apiClient.post<void>('/settings/default-model', { model }),
   deleteApiKey: (provider: string) =>
     apiClient.delete<void>(`/settings/api-keys/${provider}`),
+  getToolGroups: () =>
+    apiClient.get<{ groups: ToolGroupInfo[]; enabledGroupIds: string[] }>('/settings/tool-groups'),
+  saveToolGroups: (enabledGroupIds: string[]) =>
+    apiClient.put<{ enabledGroupIds: string[] }>('/settings/tool-groups', { enabledGroupIds }),
 };

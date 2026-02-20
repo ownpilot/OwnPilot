@@ -426,7 +426,11 @@ const SUGGESTIONS = [
  */
 export function convertDefinitionToReactFlow(
   definition: WorkflowDefinition,
+  availableToolNames?: string[],
 ): { nodes: Node[]; edges: Edge[] } {
+  // Build lookup for resolving AI-generated tool names that may be missing dots
+  const resolveToolName = buildToolNameResolver(availableToolNames);
+
   const nodes: Node[] = definition.nodes.map((def) => {
     const id = (def.id as string) || `node_${Math.random().toString(36).slice(2, 8)}`;
     const position = (def.position as { x: number; y: number }) || { x: 300, y: 100 };
@@ -522,7 +526,8 @@ export function convertDefinitionToReactFlow(
     }
 
     // Default: tool node (no type field, has "tool" field)
-    const toolName = (def.tool as string) || 'unknown_tool';
+    const rawToolName = (def.tool as string) || 'unknown_tool';
+    const toolName = resolveToolName(rawToolName);
     return {
       id,
       type: 'toolNode',
@@ -553,4 +558,53 @@ function formatToolName(name: string): string {
   return base
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Build a tool name resolver that fixes AI-generated names with missing dots.
+ * e.g. "mcpgithublist_repositories" → "mcp.github.list_repositories"
+ */
+function buildToolNameResolver(
+  availableToolNames?: string[],
+): (name: string) => string {
+  if (!availableToolNames || availableToolNames.length === 0) {
+    return (name) => name;
+  }
+
+  // Build a lookup: normalized (dots removed, lowercased) → original name
+  const normalizedMap = new Map<string, string>();
+  for (const toolName of availableToolNames) {
+    const normalized = toolName.replace(/\./g, '').toLowerCase();
+    normalizedMap.set(normalized, toolName);
+  }
+
+  // Also index by base name (last segment after dot) for partial matches
+  const baseNameMap = new Map<string, string>();
+  for (const toolName of availableToolNames) {
+    const dot = toolName.lastIndexOf('.');
+    const baseName = dot >= 0 ? toolName.substring(dot + 1) : toolName;
+    // Only use base name if unambiguous (no duplicates)
+    if (baseNameMap.has(baseName)) {
+      baseNameMap.set(baseName, ''); // Mark as ambiguous
+    } else {
+      baseNameMap.set(baseName, toolName);
+    }
+  }
+
+  return (name: string): string => {
+    // Exact match — name is already correct
+    if (availableToolNames.includes(name)) return name;
+
+    // Try normalized match (removes dots and lowercases)
+    const normalized = name.replace(/\./g, '').toLowerCase();
+    const match = normalizedMap.get(normalized);
+    if (match) return match;
+
+    // Try base name match (e.g. "list_repositories" → "mcp.github.list_repositories")
+    const baseMatch = baseNameMap.get(name);
+    if (baseMatch) return baseMatch;
+
+    // No resolution found — return as-is
+    return name;
+  };
 }

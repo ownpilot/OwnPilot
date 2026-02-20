@@ -14,6 +14,8 @@ import {
   DEFAULT_SANDBOX_SETTINGS,
   type SandboxSettings,
   isDockerAvailable,
+  TOOL_GROUPS,
+  DEFAULT_ENABLED_GROUPS,
 } from '@ownpilot/core';
 import { getDataDirectoryInfo } from '../paths/index.js';
 import { getMigrationStatus } from '../paths/migration.js';
@@ -511,3 +513,70 @@ settingsRoutes.post('/sandbox/disable', async (c) => {
     return apiError(c, { code: ERROR_CODES.SANDBOX_DISABLE_ERROR, message: getErrorMessage(error, 'Failed to disable sandbox') }, 500);
   }
 });
+
+// ============================================
+// Tool Group Settings
+// ============================================
+
+const TOOL_GROUPS_KEY = 'tool_groups';
+
+/**
+ * GET /tool-groups - Get all tool groups with enabled/disabled state
+ */
+settingsRoutes.get('/tool-groups', (c) => {
+  const savedGroups = settingsRepo.get<string[]>(TOOL_GROUPS_KEY);
+  const enabledGroupIds = savedGroups ?? DEFAULT_ENABLED_GROUPS;
+
+  const groups = Object.values(TOOL_GROUPS).map((group) => ({
+    id: group.id,
+    name: group.name,
+    description: group.description,
+    toolCount: group.tools.length,
+    tools: [...group.tools],
+    enabled: enabledGroupIds.includes(group.id),
+    alwaysOn: group.alwaysOn ?? false,
+    defaultEnabled: group.defaultEnabled,
+  }));
+
+  return apiResponse(c, { groups, enabledGroupIds });
+});
+
+/**
+ * PUT /tool-groups - Save enabled tool group IDs
+ */
+settingsRoutes.put('/tool-groups', async (c) => {
+  const body = await c.req.json<{ enabledGroupIds: string[] }>();
+
+  if (!Array.isArray(body.enabledGroupIds)) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'enabledGroupIds must be an array' }, 400);
+  }
+
+  // Validate all IDs reference real groups
+  const invalidIds = body.enabledGroupIds.filter((id) => !TOOL_GROUPS[id]);
+  if (invalidIds.length > 0) {
+    return apiError(c, {
+      code: ERROR_CODES.INVALID_INPUT,
+      message: `Unknown tool group IDs: ${invalidIds.join(', ')}`,
+    }, 400);
+  }
+
+  // Ensure always-on groups are included
+  const enabledSet = new Set(body.enabledGroupIds);
+  for (const group of Object.values(TOOL_GROUPS)) {
+    if (group.alwaysOn) {
+      enabledSet.add(group.id);
+    }
+  }
+
+  const enabledGroupIds = [...enabledSet];
+  await settingsRepo.set(TOOL_GROUPS_KEY, enabledGroupIds);
+
+  return apiResponse(c, { enabledGroupIds });
+});
+
+/**
+ * Get enabled tool group IDs (for use by other modules)
+ */
+export function getEnabledToolGroupIds(): string[] {
+  return settingsRepo.get<string[]>(TOOL_GROUPS_KEY) ?? DEFAULT_ENABLED_GROUPS;
+}

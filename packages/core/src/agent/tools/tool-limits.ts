@@ -67,11 +67,6 @@ export const TOOL_MAX_LIMITS: Record<string, ToolLimit> = {
   git_log: { paramName: 'limit', maxValue: 50, defaultValue: 10 },
 
   // ─────────────────────────────────────────────
-  // SCHEDULER
-  // ─────────────────────────────────────────────
-  get_task_history: { paramName: 'limit', maxValue: 50, defaultValue: 10 },
-
-  // ─────────────────────────────────────────────
   // FILE SYSTEM
   // ─────────────────────────────────────────────
   search_files: { paramName: 'maxResults', maxValue: 100, defaultValue: 50 },
@@ -81,10 +76,6 @@ export const TOOL_MAX_LIMITS: Record<string, ToolLimit> = {
   // ─────────────────────────────────────────────
   search_web: { paramName: 'maxResults', maxValue: 20, defaultValue: 10 },
 
-  // ─────────────────────────────────────────────
-  // VECTOR SEARCH
-  // ─────────────────────────────────────────────
-  semantic_search: { paramName: 'topK', maxValue: 50, defaultValue: 10 },
 };
 
 /**

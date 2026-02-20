@@ -22,7 +22,7 @@ import {
   type WorkflowLogStatus,
 } from '../db/repositories/workflows.js';
 import { createProvider, type ProviderConfig } from '@ownpilot/core';
-import { executeTool, type ToolExecutionResult } from './tool-executor.js';
+import { executeTool, getSharedToolRegistry, type ToolExecutionResult } from './tool-executor.js';
 import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from './log.js';
 import vm from 'node:vm';
@@ -554,8 +554,11 @@ export class WorkflowService {
       const data = node.data as ToolNodeData;
       const resolvedArgs = resolveTemplates(data.toolArgs, nodeOutputs, variables);
 
+      // Resolve tool name — handles cases where dots were stripped (e.g. copilot AI)
+      const toolName = resolveWorkflowToolName(data.toolName);
+
       const result: ToolExecutionResult = await executeTool(
-        data.toolName,
+        toolName,
         resolvedArgs,
         userId,
       );
@@ -1064,6 +1067,39 @@ export class WorkflowService {
       };
     }
   }
+}
+
+// ============================================================================
+// Tool name resolution for workflows
+// ============================================================================
+
+/**
+ * Resolve a tool name that may have dots stripped by the AI copilot.
+ * e.g. "mcpgithublist_repositories" → "mcp.github.list_repositories"
+ *
+ * Resolution order:
+ * 1. Exact match in registry → use as-is
+ * 2. Base name resolution (handled by ToolRegistry.has/resolveToQualified)
+ * 3. Normalized match: remove dots from all registered names, find match
+ */
+function resolveWorkflowToolName(name: string): string {
+  const registry = getSharedToolRegistry();
+
+  // 1. Exact or base-name match (ToolRegistry handles both)
+  if (registry.has(name)) return name;
+
+  // 2. Try normalized match — remove dots from all registered names and compare
+  const normalized = name.replace(/\./g, '').toLowerCase();
+  for (const def of registry.getDefinitions()) {
+    const defNormalized = def.name.replace(/\./g, '').toLowerCase();
+    if (defNormalized === normalized) {
+      _log.info(`Resolved workflow tool name "${name}" → "${def.name}"`);
+      return def.name;
+    }
+  }
+
+  // No match found — return original (will produce a "not found" error)
+  return name;
 }
 
 // ============================================================================

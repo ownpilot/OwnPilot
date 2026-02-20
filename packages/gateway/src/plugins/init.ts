@@ -13,7 +13,6 @@ import {
   buildCorePlugin,
   getServiceRegistry,
   Services,
-  evaluateMathExpression,
   type PluginManifest,
   type PluginCapability,
   type PluginPermission,
@@ -259,23 +258,29 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
     .tool(
       {
         name: 'news_get_latest',
-        description: 'Get latest news items from subscribed feeds',
+        description: 'Get latest news items from subscribed feeds. Optionally filter by feed.',
         parameters: {
           type: 'object',
           properties: {
+            feed_id: { type: 'string', description: 'Filter by specific feed ID (optional)' },
             limit: { type: 'number', description: 'Maximum items to return (default 20)' },
+            unread_only: { type: 'boolean', description: 'Only return unread items (default false)' },
           },
         },
       },
       async (params) => {
         const repo = getServiceRegistry().get(Services.Database);
         const limit = (params.limit as number) || 20;
-        const { records } = await repo.listRecords('plugin_rss_items', { limit });
+        const filter: Record<string, unknown> = {};
+        if (params.feed_id) filter.feed_id = params.feed_id;
+        if (params.unread_only) filter.is_read = false;
+        const { records } = await repo.listRecords('plugin_rss_items', { limit, filter: Object.keys(filter).length ? filter : undefined });
         return {
           content: {
             success: true,
             items: records.map((r) => ({
               id: r.id,
+              feedId: r.data.feed_id,
               title: r.data.title,
               link: r.data.link,
               content: String(r.data.content ?? '').substring(0, 300),
@@ -286,660 +291,96 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         };
       },
     )
-    .build();
-}
-
-// ---------------------------------------------------------------------------
-// 2. Reminder Manager
-// ---------------------------------------------------------------------------
-
-function buildReminderPlugin(): BuiltinPluginEntry {
-  const pluginConfigSchema: ConfigFieldDefinition[] = [
-    {
-      name: 'default_snooze_minutes',
-      label: 'Default Snooze (minutes)',
-      type: 'number',
-      defaultValue: 10,
-      order: 0,
-    },
-    {
-      name: 'max_active',
-      label: 'Max Active Reminders',
-      type: 'number',
-      defaultValue: 100,
-      order: 1,
-    },
-    {
-      name: 'sound_enabled',
-      label: 'Sound Enabled',
-      type: 'boolean',
-      defaultValue: true,
-      order: 2,
-    },
-  ];
-
-  return createPlugin()
-    .meta({
-      id: 'reminder',
-      name: 'Reminder Manager',
-      version: '1.0.0',
-      description: 'Create and manage reminders with notifications',
-      author: { name: 'OwnPilot' },
-      capabilities: ['tools', 'handlers', 'storage', 'notifications'] as PluginCapability[],
-      permissions: ['storage', 'notifications'] as PluginPermission[],
-      icon: '\u23F0',
-      category: 'productivity',
-      pluginConfigSchema,
-      defaultConfig: {
-        default_snooze_minutes: 10,
-        max_active: 100,
-        sound_enabled: true,
-      },
-    })
-    .database('plugin_reminders', 'Reminders', [
-      { name: 'title', type: 'text', required: true, description: 'Reminder title' },
-      { name: 'time', type: 'text', required: true, description: 'Reminder time' },
-      { name: 'note', type: 'text', description: 'Additional notes' },
-      { name: 'status', type: 'text', defaultValue: 'active', description: 'active | done | dismissed' },
-    ], { description: 'Stores user reminders with title, time and status' })
     .tool(
       {
-        name: 'reminder_create',
-        description: 'Create a new reminder',
+        name: 'news_remove_feed',
+        description: 'Remove an RSS feed subscription and its items',
         parameters: {
           type: 'object',
           properties: {
-            title: { type: 'string', description: 'Reminder title' },
-            time: { type: 'string', description: 'When to remind (e.g., "in 30 minutes", "tomorrow 9am")' },
-            note: { type: 'string', description: 'Additional notes' },
+            feed_id: { type: 'string', description: 'Feed ID to remove' },
           },
-          required: ['title', 'time'],
+          required: ['feed_id'],
         },
       },
       async (params) => {
         const repo = getServiceRegistry().get(Services.Database);
-        const record = await repo.addRecord('plugin_reminders', {
-          title: params.title,
-          time: params.time,
-          note: params.note ?? '',
-          status: 'active',
-        });
+        const feedId = String(params.feed_id);
+        // Delete items for this feed
+        const { records: items } = await repo.listRecords('plugin_rss_items', { limit: 1000, filter: { feed_id: feedId } });
+        for (const item of items) {
+          await repo.deleteRecord(item.id);
+        }
+        // Delete the feed itself
+        await repo.deleteRecord(feedId);
         return {
           content: {
             success: true,
-            reminder: { id: record.id, ...record.data, createdAt: record.createdAt },
+            message: `Feed removed along with ${items.length} item(s).`,
           },
         };
       },
     )
     .tool(
       {
-        name: 'reminder_list',
-        description: 'List all reminders',
+        name: 'news_refresh_feed',
+        description: 'Re-fetch a specific RSS feed to get new items',
         parameters: {
           type: 'object',
           properties: {
-            status: { type: 'string', description: 'Filter by status (active, done, dismissed)' },
+            feed_id: { type: 'string', description: 'Feed ID to refresh' },
           },
+          required: ['feed_id'],
         },
       },
       async (params) => {
         const repo = getServiceRegistry().get(Services.Database);
-        const filter = params.status ? { status: params.status } : undefined;
-        const { records, total } = await repo.listRecords('plugin_reminders', { limit: 100, filter });
-        return {
-          content: {
-            success: true,
-            reminders: records.map((r) => ({ id: r.id, ...r.data, createdAt: r.createdAt })),
-            total,
-          },
-        };
-      },
-    )
-    .build();
-}
-
-// ---------------------------------------------------------------------------
-// 3. Clipboard Manager
-// ---------------------------------------------------------------------------
-
-function buildClipboardPlugin(): BuiltinPluginEntry {
-  const pluginConfigSchema: ConfigFieldDefinition[] = [
-    {
-      name: 'max_history',
-      label: 'Max History Items',
-      type: 'number',
-      defaultValue: 100,
-      order: 0,
-    },
-    {
-      name: 'auto_save',
-      label: 'Auto Save',
-      type: 'boolean',
-      defaultValue: true,
-      order: 1,
-    },
-    {
-      name: 'retention_days',
-      label: 'Retention Days',
-      type: 'number',
-      defaultValue: 30,
-      description: 'Days to keep clipboard items',
-      order: 2,
-    },
-  ];
-
-  return createPlugin()
-    .meta({
-      id: 'clipboard-manager',
-      name: 'Clipboard Manager',
-      version: '1.0.0',
-      description: 'Smart clipboard history with search and pinning',
-      author: { name: 'OwnPilot' },
-      capabilities: ['tools', 'handlers', 'storage'] as PluginCapability[],
-      permissions: ['storage'] as PluginPermission[],
-      icon: '\uD83D\uDCCB',
-      category: 'utilities',
-      pluginConfigSchema,
-      defaultConfig: {
-        max_history: 100,
-        auto_save: true,
-        retention_days: 30,
-      },
-    })
-    .database('plugin_clipboard', 'Clipboard History', [
-      { name: 'content', type: 'text', required: true, description: 'Clipboard text content' },
-      { name: 'preview', type: 'text', description: 'Short preview of content' },
-      { name: 'tags', type: 'json', defaultValue: null, description: 'Tags for organization' },
-      { name: 'is_pinned', type: 'boolean', defaultValue: false, description: 'Whether item is pinned' },
-    ], { description: 'Stores clipboard history entries with search and pinning' })
-    .tool(
-      {
-        name: 'clipboard_save',
-        description: 'Save text to clipboard history',
-        parameters: {
-          type: 'object',
-          properties: {
-            content: { type: 'string', description: 'Text to save' },
-            tags: { type: 'array', items: { type: 'string' }, description: 'Tags for organization' },
-          },
-          required: ['content'],
-        },
-      },
-      async (params) => {
-        const repo = getServiceRegistry().get(Services.Database);
-        const content = String(params.content);
-        const record = await repo.addRecord('plugin_clipboard', {
-          content,
-          preview: content.substring(0, 100),
-          tags: params.tags ?? [],
-          is_pinned: false,
-        });
-        return {
-          content: {
-            success: true,
-            id: record.id,
-            preview: content.substring(0, 50),
-          },
-        };
-      },
-    )
-    .tool(
-      {
-        name: 'clipboard_history',
-        description: 'Get clipboard history',
-        parameters: {
-          type: 'object',
-          properties: {
-            limit: { type: 'number', description: 'Max items to return (default 20)' },
-          },
-        },
-      },
-      async (params) => {
-        const repo = getServiceRegistry().get(Services.Database);
-        const limit = (params.limit as number) || 20;
-        const { records, total } = await repo.listRecords('plugin_clipboard', { limit });
-        return {
-          content: {
-            success: true,
-            items: records.map((r) => ({
-              id: r.id,
-              content: r.data.content,
-              preview: r.data.preview,
-              tags: r.data.tags,
-              isPinned: r.data.is_pinned,
-              createdAt: r.createdAt,
-            })),
-            total,
-          },
-        };
-      },
-    )
-    .tool(
-      {
-        name: 'clipboard_search',
-        description: 'Search clipboard history',
-        parameters: {
-          type: 'object',
-          properties: {
-            query: { type: 'string', description: 'Search query' },
-          },
-          required: ['query'],
-        },
-      },
-      async (params) => {
-        const repo = getServiceRegistry().get(Services.Database);
-        const results = await repo.searchRecords('plugin_clipboard', String(params.query), { limit: 20 });
-        return {
-          content: {
-            success: true,
-            query: params.query,
-            results: results.map((r) => ({
-              id: r.id,
-              content: r.data.content,
-              preview: r.data.preview,
-              tags: r.data.tags,
-              createdAt: r.createdAt,
-            })),
-          },
-        };
-      },
-    )
-    .build();
-}
-
-// ---------------------------------------------------------------------------
-// 4. Advanced Calculator
-// ---------------------------------------------------------------------------
-
-function buildCalculatorPlugin(): BuiltinPluginEntry {
-  const pluginConfigSchema: ConfigFieldDefinition[] = [
-    {
-      name: 'precision',
-      label: 'Decimal Precision',
-      type: 'number',
-      defaultValue: 10,
-      description: 'Decimal precision for calculations',
-      order: 0,
-    },
-    {
-      name: 'angle_unit',
-      label: 'Angle Unit',
-      type: 'select',
-      defaultValue: 'degrees',
-      options: [
-        { value: 'degrees', label: 'Degrees' },
-        { value: 'radians', label: 'Radians' },
-      ],
-      order: 1,
-    },
-    {
-      name: 'thousands_separator',
-      label: 'Thousands Separator',
-      type: 'boolean',
-      defaultValue: true,
-      order: 2,
-    },
-  ];
-
-  return createPlugin()
-    .meta({
-      id: 'advanced-calculator',
-      name: 'Advanced Calculator',
-      version: '1.0.0',
-      description: 'Math expressions, unit conversion, statistics, and financial calculations',
-      author: { name: 'OwnPilot' },
-      capabilities: ['tools', 'handlers'] as PluginCapability[],
-      permissions: [] as PluginPermission[],
-      icon: '\uD83D\uDD22',
-      category: 'utilities',
-      pluginConfigSchema,
-      defaultConfig: {
-        precision: 10,
-        angle_unit: 'degrees',
-        thousands_separator: true,
-      },
-    })
-    .tool(
-      {
-        name: 'calc_evaluate',
-        description: 'Evaluate a mathematical expression',
-        parameters: {
-          type: 'object',
-          properties: {
-            expression: { type: 'string', description: 'Math expression (e.g., "2+2", "sqrt(16)")' },
-          },
-          required: ['expression'],
-        },
-      },
-      async (params) => {
-        const input = String(params.expression).trim();
-        const result = evaluateMathExpression(input);
-
-        if (result instanceof Error) {
-          return {
-            content: { error: result.message },
-            isError: true,
-          };
+        const feedId = String(params.feed_id);
+        const feed = await repo.getRecord(feedId);
+        if (!feed || !feed.data.url) {
+          return { content: { error: 'Feed not found' }, isError: true };
         }
 
-        return {
-          content: {
-            expression: params.expression,
-            result,
-          },
-        };
-      },
-    )
-    .tool(
-      {
-        name: 'calc_convert',
-        description: 'Convert between units',
-        parameters: {
-          type: 'object',
-          properties: {
-            value: { type: 'number', description: 'Value to convert' },
-            from: { type: 'string', description: 'Source unit' },
-            to: { type: 'string', description: 'Target unit' },
-          },
-          required: ['value', 'from', 'to'],
-        },
-      },
-      async (params) => {
-        const conversions: Record<string, Record<string, number>> = {
-          km: { mi: 0.621371, m: 1000, ft: 3280.84 },
-          mi: { km: 1.60934, m: 1609.34, ft: 5280 },
-          m: { km: 0.001, mi: 0.000621371, ft: 3.28084, cm: 100 },
-          ft: { m: 0.3048, km: 0.0003048, mi: 0.000189394, cm: 30.48 },
-          cm: { m: 0.01, ft: 0.0328084, in: 0.393701 },
-          in: { cm: 2.54, m: 0.0254, ft: 0.0833333 },
-          kg: { lb: 2.20462, g: 1000, oz: 35.274 },
-          lb: { kg: 0.453592, g: 453.592, oz: 16 },
-          g: { kg: 0.001, lb: 0.00220462, oz: 0.035274 },
-          oz: { g: 28.3495, kg: 0.0283495, lb: 0.0625 },
-          gb: { mb: 1024, kb: 1048576, tb: 0.000976563 },
-          mb: { gb: 0.000976563, kb: 1024, tb: 9.5367e-7 },
-          kb: { mb: 0.000976563, gb: 9.5367e-7 },
-          l: { ml: 1000, gal: 0.264172 },
-          ml: { l: 0.001, gal: 0.000264172 },
-          gal: { l: 3.78541, ml: 3785.41 },
-        };
-        const from = String(params.from).toLowerCase();
-        const to = String(params.to).toLowerCase();
-        const value = Number(params.value);
-
-        // Handle temperature separately
-        if ((from === 'c' || from === 'celsius') && (to === 'f' || to === 'fahrenheit')) {
-          return { content: { original: { value, unit: 'C' }, converted: { value: value * 9 / 5 + 32, unit: 'F' } } };
-        }
-        if ((from === 'f' || from === 'fahrenheit') && (to === 'c' || to === 'celsius')) {
-          return { content: { original: { value, unit: 'F' }, converted: { value: (value - 32) * 5 / 9, unit: 'C' } } };
-        }
-        if ((from === 'c' || from === 'celsius') && (to === 'k' || to === 'kelvin')) {
-          return { content: { original: { value, unit: 'C' }, converted: { value: value + 273.15, unit: 'K' } } };
-        }
-        if ((from === 'k' || from === 'kelvin') && (to === 'c' || to === 'celsius')) {
-          return { content: { original: { value, unit: 'K' }, converted: { value: value - 273.15, unit: 'C' } } };
-        }
-
-        if (conversions[from]?.[to]) {
-          const result = value * conversions[from][to]!;
-          return {
-            content: {
-              original: { value, unit: from },
-              converted: { value: result, unit: to },
-            },
-          };
-        }
-        return {
-          content: { error: `Cannot convert from ${from} to ${to}` },
-          isError: true,
-        };
-      },
-    )
-    .tool(
-      {
-        name: 'calc_statistics',
-        description: 'Calculate statistics for a list of numbers',
-        parameters: {
-          type: 'object',
-          properties: {
-            numbers: { type: 'array', items: { type: 'number' }, description: 'Numbers to analyze' },
-          },
-          required: ['numbers'],
-        },
-      },
-      async (params) => {
-        const nums = params.numbers as number[];
-        if (!nums || nums.length === 0) {
-          return { content: { error: 'No numbers provided' }, isError: true };
-        }
-        const sum = nums.reduce((a, b) => a + b, 0);
-        const mean = sum / nums.length;
-        const sorted = [...nums].sort((a, b) => a - b);
-        const mid = Math.floor(nums.length / 2);
-        const median = nums.length % 2 ? sorted[mid] : (sorted[mid - 1]! + sorted[mid]!) / 2;
-        const variance = nums.reduce((acc, n) => acc + (n - mean) ** 2, 0) / nums.length;
-        const stddev = Math.sqrt(variance);
-        return {
-          content: {
-            count: nums.length,
-            sum,
-            mean,
-            median,
-            min: sorted[0],
-            max: sorted[nums.length - 1],
-            variance,
-            stddev,
-          },
-        };
-      },
-    )
-    .build();
-}
-
-
-// ---------------------------------------------------------------------------
-// 5. Text Utilities
-// ---------------------------------------------------------------------------
-
-function buildTextUtilsPlugin(): BuiltinPluginEntry {
-  const pluginConfigSchema: ConfigFieldDefinition[] = [
-    {
-      name: 'default_encoding',
-      label: 'Default Encoding',
-      type: 'select',
-      defaultValue: 'utf-8',
-      options: [
-        { value: 'utf-8', label: 'UTF-8' },
-        { value: 'ascii', label: 'ASCII' },
-        { value: 'base64', label: 'Base64' },
-      ],
-      order: 0,
-    },
-    {
-      name: 'hash_algorithm',
-      label: 'Hash Algorithm',
-      type: 'select',
-      defaultValue: 'sha256',
-      options: [
-        { value: 'sha256', label: 'SHA-256' },
-        { value: 'md5', label: 'MD5' },
-        { value: 'sha1', label: 'SHA-1' },
-      ],
-      order: 1,
-    },
-  ];
-
-  return createPlugin()
-    .meta({
-      id: 'text-utils',
-      name: 'Text Utilities',
-      version: '1.0.0',
-      description: 'Encode, decode, count, and transform text',
-      author: { name: 'OwnPilot' },
-      capabilities: ['tools'] as PluginCapability[],
-      permissions: [] as PluginPermission[],
-      icon: '\uD83D\uDCDD',
-      category: 'developer',
-      pluginConfigSchema,
-      defaultConfig: {
-        default_encoding: 'utf-8',
-        hash_algorithm: 'sha256',
-      },
-    })
-    .tool(
-      {
-        name: 'text_encode',
-        description: 'Encode text to base64 or hex',
-        parameters: {
-          type: 'object',
-          properties: {
-            text: { type: 'string', description: 'Text to encode' },
-            encoding: { type: 'string', enum: ['base64', 'hex'], description: 'Encoding format' },
-          },
-          required: ['text', 'encoding'],
-        },
-      },
-      async (params) => {
-        const text = String(params.text);
-        const encoding = String(params.encoding) as 'base64' | 'hex';
-        const buffer = Buffer.from(text, 'utf-8');
-        const encoded = buffer.toString(encoding);
-        return {
-          content: {
-            success: true,
-            original: text,
-            encoded,
-            encoding,
-          },
-        };
-      },
-    )
-    .tool(
-      {
-        name: 'text_decode',
-        description: 'Decode text from base64 or hex',
-        parameters: {
-          type: 'object',
-          properties: {
-            text: { type: 'string', description: 'Encoded text to decode' },
-            encoding: { type: 'string', enum: ['base64', 'hex'], description: 'Encoding format of the input' },
-          },
-          required: ['text', 'encoding'],
-        },
-      },
-      async (params) => {
+        let itemCount = 0;
         try {
-          const text = String(params.text);
-          const encoding = String(params.encoding) as 'base64' | 'hex';
-          const buffer = Buffer.from(text, encoding);
-          const decoded = buffer.toString('utf-8');
-          return {
-            content: {
-              success: true,
-              original: text,
-              decoded,
-              encoding,
-            },
-          };
+          const response = await fetch(String(feed.data.url), {
+            headers: { 'User-Agent': 'OwnPilot RSS Reader/1.0' },
+            signal: AbortSignal.timeout(10000),
+          });
+          const xml = await response.text();
+          const items = parseRssItems(xml);
+
+          // Get existing links to avoid duplicates
+          const { records: existing } = await repo.listRecords('plugin_rss_items', { limit: 1000, filter: { feed_id: feedId } });
+          const existingLinks = new Set(existing.map(r => r.data.link));
+
+          for (const item of items.slice(0, 20)) {
+            if (existingLinks.has(item.link)) continue;
+            await repo.addRecord('plugin_rss_items', {
+              feed_id: feedId,
+              title: item.title,
+              link: item.link,
+              content: item.content.substring(0, 2000),
+              published_at: item.published || new Date().toISOString(),
+              is_read: false,
+            });
+            itemCount++;
+          }
+
+          await repo.updateRecord(feedId, {
+            last_fetched: new Date().toISOString(),
+            status: 'active',
+          });
         } catch {
-          return {
-            content: { error: 'Failed to decode: invalid input for the specified encoding' },
-            isError: true,
-          };
-        }
-      },
-    )
-    .tool(
-      {
-        name: 'text_count',
-        description: 'Count words, characters, and lines in text',
-        parameters: {
-          type: 'object',
-          properties: {
-            text: { type: 'string', description: 'Text to analyze' },
-          },
-          required: ['text'],
-        },
-      },
-      async (params) => {
-        const text = String(params.text);
-        const characters = text.length;
-        const charactersNoSpaces = text.replace(/\s/g, '').length;
-        const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-        const lines = text === '' ? 0 : text.split(/\r?\n/).length;
-        const sentences = text.trim() === '' ? 0 : text.split(/[.!?]+\s*/g).filter(Boolean).length;
-        const paragraphs = text.trim() === '' ? 0 : text.split(/\n\s*\n/).filter(s => s.trim()).length;
-        return {
-          content: {
-            success: true,
-            characters,
-            charactersNoSpaces,
-            words,
-            lines,
-            sentences,
-            paragraphs,
-          },
-        };
-      },
-    )
-    .tool(
-      {
-        name: 'text_transform',
-        description: 'Transform text (uppercase, lowercase, capitalize, reverse, slugify)',
-        parameters: {
-          type: 'object',
-          properties: {
-            text: { type: 'string', description: 'Text to transform' },
-            operation: {
-              type: 'string',
-              enum: ['uppercase', 'lowercase', 'capitalize', 'reverse', 'slugify'],
-              description: 'Transformation to apply',
-            },
-          },
-          required: ['text', 'operation'],
-        },
-      },
-      async (params) => {
-        const text = String(params.text);
-        const op = String(params.operation);
-        let result: string;
-
-        switch (op) {
-          case 'uppercase':
-            result = text.toUpperCase();
-            break;
-          case 'lowercase':
-            result = text.toLowerCase();
-            break;
-          case 'capitalize':
-            result = text.replace(/\b\w/g, (c) => c.toUpperCase());
-            break;
-          case 'reverse':
-            result = [...text].reverse().join('');
-            break;
-          case 'slugify':
-            result = text
-              .toLowerCase()
-              .trim()
-              .replace(/[^\w\s-]/g, '')
-              .replace(/[\s_]+/g, '-')
-              .replace(/^-+|-+$/g, '');
-            break;
-          default:
-            return {
-              content: { error: `Unknown operation: ${op}` },
-              isError: true,
-            };
+          await repo.updateRecord(feedId, { status: 'error' });
+          return { content: { error: 'Failed to fetch feed' }, isError: true };
         }
 
         return {
           content: {
             success: true,
-            original: text,
-            result,
-            operation: op,
+            message: `Feed refreshed: ${itemCount} new item(s) added.`,
+            newItems: itemCount,
           },
         };
       },
@@ -948,7 +389,7 @@ function buildTextUtilsPlugin(): BuiltinPluginEntry {
 }
 
 // ---------------------------------------------------------------------------
-// 6. Pomodoro Timer
+// 2. Pomodoro Timer
 // ---------------------------------------------------------------------------
 
 function buildPomodoroPlugin(): BuiltinPluginEntry {
@@ -1142,12 +583,8 @@ function getAllBuiltinPlugins(): BuiltinPluginEntry[] {
     buildCorePlugin(),
     // Gateway plugin — service tools (memory, goals, custom data, personal data, triggers, plans)
     buildGatewayPlugin(),
-    // Built-in plugins (1-6)
+    // Built-in plugins
     buildNewsRssPlugin(),
-    buildReminderPlugin(),
-    buildClipboardPlugin(),
-    buildCalculatorPlugin(),
-    buildTextUtilsPlugin(),
     buildPomodoroPlugin(),
     // Integration plugins
     buildComposioPlugin(),

@@ -17,7 +17,6 @@ import { FILE_SYSTEM_TOOLS } from './file-system.js';
 import { CODE_EXECUTION_TOOLS } from './code-execution.js';
 import { WEB_FETCH_TOOLS } from './web-fetch.js';
 import { EXPENSE_TRACKER_TOOLS } from './expense-tracker.js';
-import { SCHEDULER_TOOLS } from './scheduler-tools.js';
 import { CUSTOM_DATA_TOOLS, CUSTOM_DATA_TOOL_NAMES } from './custom-data.js';
 import { MEMORY_TOOLS, MEMORY_TOOL_NAMES } from './memory-tools.js';
 import { GOAL_TOOLS, GOAL_TOOL_NAMES } from './goal-tools.js';
@@ -25,11 +24,9 @@ import { PERSONAL_DATA_TOOLS, PERSONAL_DATA_TOOL_NAMES } from './personal-data.j
 
 // New tool imports
 import { PDF_TOOLS, PDF_TOOL_NAMES } from './pdf-tools.js';
-import { TRANSLATION_TOOLS, TRANSLATION_TOOL_NAMES } from './translation-tools.js';
 import { IMAGE_TOOLS, IMAGE_TOOL_NAMES } from './image-tools.js';
 import { EMAIL_TOOLS, EMAIL_TOOL_NAMES } from './email-tools.js';
 import { GIT_TOOLS, GIT_TOOL_NAMES } from './git-tools.js';
-import { VECTOR_SEARCH_TOOLS, VECTOR_SEARCH_TOOL_NAMES } from './vector-search-tools.js';
 import { AUDIO_TOOLS, AUDIO_TOOL_NAMES } from './audio-tools.js';
 import { DATA_EXTRACTION_TOOLS, DATA_EXTRACTION_TOOL_NAMES } from './data-extraction-tools.js';
 import { WEATHER_TOOLS, WEATHER_TOOL_NAMES } from './weather-tools.js';
@@ -70,15 +67,12 @@ export const TOOL_SETS = {
   codeExecution: CODE_EXECUTION_TOOLS,
   webFetch: WEB_FETCH_TOOLS,
   expenseTracker: EXPENSE_TRACKER_TOOLS,
-  scheduler: SCHEDULER_TOOLS,
 
   // New tool sets
   pdf: PDF_TOOLS,
-  translation: TRANSLATION_TOOLS,
   image: IMAGE_TOOLS,
   email: EMAIL_TOOLS,
   git: GIT_TOOLS,
-  vectorSearch: VECTOR_SEARCH_TOOLS,
   audio: AUDIO_TOOLS,
   dataExtraction: DATA_EXTRACTION_TOOLS,
   weather: WEATHER_TOOLS,
@@ -96,7 +90,6 @@ export { FILE_SYSTEM_TOOLS };
 export { CODE_EXECUTION_TOOLS };
 export { WEB_FETCH_TOOLS };
 export { EXPENSE_TRACKER_TOOLS };
-export { SCHEDULER_TOOLS };
 
 /**
  * Custom data tools (definitions only - executors are in gateway)
@@ -129,12 +122,6 @@ export { PERSONAL_DATA_TOOLS, PERSONAL_DATA_TOOL_NAMES };
 export { PDF_TOOLS, PDF_TOOL_NAMES };
 
 /**
- * Translation tools
- * Multi-language translation and language detection
- */
-export { TRANSLATION_TOOLS, TRANSLATION_TOOL_NAMES };
-
-/**
  * Image tools
  * Image analysis (Vision API) and generation (DALL-E)
  */
@@ -151,12 +138,6 @@ export { EMAIL_TOOLS, EMAIL_TOOL_NAMES };
  * Version control operations
  */
 export { GIT_TOOLS, GIT_TOOL_NAMES };
-
-/**
- * Vector search tools
- * Semantic search and embeddings for RAG applications
- */
-export { VECTOR_SEARCH_TOOLS, VECTOR_SEARCH_TOOL_NAMES };
 
 /**
  * Audio tools
@@ -219,15 +200,12 @@ export const ALL_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecut
   ...CODE_EXECUTION_TOOLS,
   ...WEB_FETCH_TOOLS,
   ...EXPENSE_TRACKER_TOOLS,
-  ...SCHEDULER_TOOLS,
 
   // New tools
   ...PDF_TOOLS,
-  ...TRANSLATION_TOOLS,
   ...IMAGE_TOOLS,
   ...EMAIL_TOOLS,
   ...GIT_TOOLS,
-  ...VECTOR_SEARCH_TOOLS,
   ...AUDIO_TOOLS,
   ...DATA_EXTRACTION_TOOLS,
   ...WEATHER_TOOLS,
@@ -409,8 +387,6 @@ export const TOOL_CATEGORIES = {
   'Image': [
     'analyze_image',
     'generate_image',
-    'edit_image',
-    'image_variation',
     'resize_image',
   ],
   'Audio': [
@@ -422,26 +398,9 @@ export const TOOL_CATEGORIES = {
   ],
 
   // AI & NLP
-  'Translation': [
-    'translate_text',
-    'detect_language',
-    'list_languages',
-    'batch_translate',
-  ],
   'Data Extraction': [
-    'extract_structured_data',
     'extract_entities',
     'extract_table_data',
-    'summarize_text',
-  ],
-  'Vector Search': [
-    'create_embedding',
-    'semantic_search',
-    'upsert_vectors',
-    'delete_vectors',
-    'list_vector_collections',
-    'create_vector_collection',
-    'similarity_score',
   ],
 
   // Finance
@@ -453,16 +412,6 @@ export const TOOL_CATEGORIES = {
     'export_expenses',
     'expense_summary',
     'delete_expense',
-  ],
-
-  // Automation
-  'Scheduler': [
-    'create_scheduled_task',
-    'list_scheduled_tasks',
-    'update_scheduled_task',
-    'delete_scheduled_task',
-    'get_task_history',
-    'trigger_task',
   ],
 
   // Weather

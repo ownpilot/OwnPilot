@@ -146,14 +146,6 @@ const TOOL_RISK_FACTORS: Record<string, string[]> = {
   web_fetch: ['external_api'],
   api_call: ['external_api'],
 
-  // Scheduler tools (low risk - just scheduling, not immediate execution)
-  create_scheduled_task: [],
-  list_scheduled_tasks: [],
-  update_scheduled_task: [],
-  delete_scheduled_task: ['data_deletion'],
-  get_task_history: [],
-  trigger_task: ['external_api'],  // Manual trigger may have external effects
-
   // Custom data tools (user's personal data storage - low/medium risk)
   list_custom_tables: [],
   describe_custom_table: [],
