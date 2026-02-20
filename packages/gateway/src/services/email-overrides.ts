@@ -362,7 +362,7 @@ const listEmailsOverride: ToolExecutor = async (params, _context): Promise<ToolE
 // read_email Override
 // ============================================================================
 
-const readEmailOverride: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+const readEmailOverride: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
   const emailUid = params.id as string;
   const folder = (params.folder as string) || 'INBOX';
   const _downloadAttachments = params.downloadAttachments === true;
