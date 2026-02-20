@@ -184,14 +184,17 @@ vi.mock('./chat-state.js', () => ({
   promptInitializedConversations: new Set<string>(),
 }));
 
-vi.mock('../config/defaults.js', () => ({
-  MAX_DAYS_LOOKBACK: 365,
-  WS_PORT: 18789,
-  WS_HEARTBEAT_INTERVAL_MS: 30000,
-  WS_SESSION_TIMEOUT_MS: 300000,
-  WS_MAX_PAYLOAD_BYTES: 1048576,
-  WS_MAX_CONNECTIONS: 50,
-}));
+vi.mock('../config/defaults.js', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    WS_PORT: 18789,
+    WS_HEARTBEAT_INTERVAL_MS: 30000,
+    WS_SESSION_TIMEOUT_MS: 300000,
+    WS_MAX_PAYLOAD_BYTES: 1048576,
+    WS_MAX_CONNECTIONS: 50,
+  };
+});
 
 // Import after mocks
 const { chatHistoryRoutes } = await import('./chat-history.js');

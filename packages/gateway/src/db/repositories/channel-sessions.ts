@@ -187,6 +187,16 @@ export class ChannelSessionsRepository extends BaseRepository {
   }
 
   /**
+   * Merge key-value pairs into the session context (JSONB).
+   */
+  async updateContext(sessionId: string, context: Record<string, unknown>): Promise<void> {
+    await this.execute(
+      `UPDATE channel_sessions SET context = context || $1::jsonb WHERE id = $2`,
+      [JSON.stringify(context), sessionId]
+    );
+  }
+
+  /**
    * Delete a session.
    */
   async delete(id: string): Promise<boolean> {
@@ -195,6 +205,21 @@ export class ChannelSessionsRepository extends BaseRepository {
       [id]
     );
     return result.changes > 0;
+  }
+
+  /**
+   * Cleanup old inactive sessions (or sessions with no activity beyond maxAgeDays).
+   * Returns the number of deleted sessions.
+   */
+  async cleanupOld(maxAgeDays = 90): Promise<number> {
+    const result = await this.execute(
+      `DELETE FROM channel_sessions
+       WHERE is_active = FALSE
+          OR (last_message_at IS NOT NULL AND last_message_at < NOW() - INTERVAL '1 day' * $1)
+          OR (last_message_at IS NULL AND created_at < NOW() - INTERVAL '1 day' * $1)`,
+      [maxAgeDays]
+    );
+    return result.changes;
   }
 }
 

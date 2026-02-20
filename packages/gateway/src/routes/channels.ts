@@ -13,6 +13,9 @@ import { apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErro
 import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { refreshChannelApi } from '../plugins/init.js';
 import { wsGateway } from '../ws/server.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('ChannelRoutes');
 
 export const channelRoutes = new Hono();
 
@@ -28,12 +31,18 @@ function addReadMessageId(id: string): void {
 }
 
 interface ChannelAPIWithBotInfo {
-  getBotInfo(): Promise<{ id: string; username: string; [key: string]: unknown }>;
+  getBotInfo(): { username?: string; firstName?: string } | null;
 }
 
 function hasBotInfo(api: unknown): api is ChannelAPIWithBotInfo {
   return typeof api === 'object' && api !== null &&
     'getBotInfo' in api && typeof (api as Record<string, unknown>).getBotInfo === 'function';
+}
+
+/** Extract bot info from a channel API if available. */
+function getChannelBotInfo(api: unknown): { username?: string; firstName?: string } | null {
+  if (!hasBotInfo(api)) return null;
+  return api.getBotInfo();
 }
 
 /**
@@ -46,7 +55,10 @@ channelRoutes.get('/messages/inbox', async (c) => {
 
   try {
     const messagesRepo = new ChannelMessagesRepository();
-    const dbMessages = await messagesRepo.getAll({ channelId: channelId ?? undefined, limit, offset });
+    const [dbMessages, total] = await Promise.all([
+      messagesRepo.getAll({ channelId: channelId ?? undefined, limit, offset }),
+      messagesRepo.count(channelId ?? undefined),
+    ]);
 
     const messages = dbMessages.map((m) => ({
       id: m.id,
@@ -69,7 +81,7 @@ channelRoutes.get('/messages/inbox', async (c) => {
 
     return apiResponse(c, {
       messages,
-      total: messages.length,
+      total,
       unreadCount,
     });
   } catch (error) {
@@ -119,11 +131,7 @@ channelRoutes.get('/', (c) => {
 
   return apiResponse(c, {
     channels: channels.map((ch) => {
-      // Try to get bot info from the channel API (e.g. Telegram username)
-      const api = service.getChannel(ch.pluginId);
-      const botInfo = api && 'getBotInfo' in api && typeof (api as Record<string, unknown>).getBotInfo === 'function'
-        ? (api as unknown as { getBotInfo(): { username?: string; firstName?: string } | null }).getBotInfo()
-        : null;
+      const botInfo = getChannelBotInfo(service.getChannel(ch.pluginId));
 
       return {
         id: ch.pluginId,
@@ -280,10 +288,7 @@ channelRoutes.get('/:id', (c) => {
     return notFoundError(c, 'Channel', pluginId);
   }
 
-  const api = service.getChannel(pluginId);
-  const botInfo = api && 'getBotInfo' in api && typeof (api as Record<string, unknown>).getBotInfo === 'function'
-    ? (api as unknown as { getBotInfo(): { username?: string; firstName?: string } | null }).getBotInfo()
-    : null;
+  const botInfo = getChannelBotInfo(service.getChannel(pluginId));
 
   return apiResponse(c, {
     id: ch.pluginId,
@@ -349,6 +354,103 @@ channelRoutes.post('/:id/send', async (c) => {
     return apiResponse(c, { messageId, pluginId, chatId });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.SEND_FAILED, message: getErrorMessage(error, 'Failed to send message') }, 500);
+  }
+});
+
+/**
+ * POST /channels/:id/reply - Reply to a Telegram conversation from web UI
+ *
+ * Sends a message, saves it to channel_messages, and broadcasts via WebSocket.
+ */
+channelRoutes.post('/:id/reply', async (c) => {
+  const pluginId = c.req.param('id');
+  const service = getChannelService();
+  const api = service.getChannel(pluginId);
+
+  if (!api) {
+    return notFoundError(c, 'Channel', pluginId);
+  }
+
+  if (api.getStatus() !== 'connected') {
+    return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: 'Channel is not connected' }, 400);
+  }
+
+  try {
+    const body = await c.req.json<{
+      text?: string;
+      platformChatId?: string;
+      replyToMessageId?: string;
+    }>();
+
+    const text = body.text?.trim();
+    if (!text) {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'text is required' }, 400);
+    }
+    if (text.length > 4096) {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'text must be 4096 characters or less' }, 400);
+    }
+
+    let chatId = body.platformChatId;
+
+    // If chatId not provided, try to resolve from Config Center
+    if (!chatId) {
+      const registry = await getDefaultPluginRegistry();
+      const plugin = registry.get(pluginId);
+      const requiredServices = plugin?.manifest.requiredServices as Array<{ name: string }> | undefined;
+      if (requiredServices?.length) {
+        const raw = configServicesRepo.getFieldValue(requiredServices[0]!.name, 'allowed_users');
+        if (typeof raw === 'string' && raw.trim()) {
+          chatId = raw.split(',')[0]!.trim();
+        }
+      }
+    }
+
+    if (!chatId) {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'platformChatId is required' }, 400);
+    }
+
+    // Send the message via channel API
+    const platformMessageId = await service.send(pluginId, {
+      platformChatId: chatId,
+      text,
+      replyToId: body.replyToMessageId,
+    });
+
+    // Save to channel_messages
+    const messageId = `${pluginId}:reply:${platformMessageId}`;
+    try {
+      const messagesRepo = new ChannelMessagesRepository();
+      await messagesRepo.create({
+        id: messageId,
+        channelId: pluginId,
+        externalId: platformMessageId,
+        direction: 'outbound',
+        senderId: 'web-ui',
+        senderName: 'You',
+        content: text,
+        contentType: 'text',
+        replyToId: body.replyToMessageId,
+        metadata: { platformChatId: chatId, source: 'web-ui-reply' },
+      });
+    } catch (error) {
+      // Non-critical — message was sent, just DB save failed
+      log.warn('Failed to save reply to channel_messages', { error: getErrorMessage(error) });
+    }
+
+    // Broadcast to WebSocket
+    wsGateway.broadcast('channel:message', {
+      id: messageId,
+      channelId: pluginId,
+      channelType: api.getPlatform(),
+      sender: 'You',
+      content: text,
+      timestamp: new Date().toISOString(),
+      direction: 'outgoing',
+    });
+
+    return apiResponse(c, { messageId, platformMessageId });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.SEND_FAILED, message: getErrorMessage(error, 'Failed to send reply') }, 500);
   }
 });
 

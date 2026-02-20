@@ -4,6 +4,8 @@ import {
   getBaseName,
   getNamespace,
   isQualifiedName,
+  sanitizeToolName,
+  desanitizeToolName,
   UNPREFIXED_META_TOOLS,
 } from './tool-namespace.js';
 
@@ -96,6 +98,85 @@ describe('tool-namespace', () => {
     it('does not contain other tools', () => {
       expect(UNPREFIXED_META_TOOLS.has('read_file')).toBe(false);
       expect(UNPREFIXED_META_TOOLS.has('inspect_tool_source')).toBe(false);
+    });
+  });
+
+  describe('sanitizeToolName', () => {
+    it('replaces dots with double underscores', () => {
+      expect(sanitizeToolName('core.add_task')).toBe('core__add_task');
+      expect(sanitizeToolName('plugin.telegram.send_message')).toBe('plugin__telegram__send_message');
+      expect(sanitizeToolName('ext.web_search.search_web')).toBe('ext__web_search__search_web');
+    });
+
+    it('leaves names without dots unchanged', () => {
+      expect(sanitizeToolName('search_tools')).toBe('search_tools');
+      expect(sanitizeToolName('use_tool')).toBe('use_tool');
+      expect(sanitizeToolName('read_file')).toBe('read_file');
+    });
+
+    it('handles empty string', () => {
+      expect(sanitizeToolName('')).toBe('');
+    });
+  });
+
+  describe('desanitizeToolName', () => {
+    it('replaces double underscores with dots', () => {
+      expect(desanitizeToolName('core__add_task')).toBe('core.add_task');
+      expect(desanitizeToolName('plugin__telegram__send_message')).toBe('plugin.telegram.send_message');
+      expect(desanitizeToolName('ext__web_search__search_web')).toBe('ext.web_search.search_web');
+    });
+
+    it('leaves names without double underscores unchanged', () => {
+      expect(desanitizeToolName('search_tools')).toBe('search_tools');
+      expect(desanitizeToolName('use_tool')).toBe('use_tool');
+      expect(desanitizeToolName('read_file')).toBe('read_file');
+    });
+
+    it('handles empty string', () => {
+      expect(desanitizeToolName('')).toBe('');
+    });
+
+    it('preserves single underscores', () => {
+      expect(desanitizeToolName('add_task')).toBe('add_task');
+      expect(desanitizeToolName('list_calendar_events')).toBe('list_calendar_events');
+    });
+  });
+
+  describe('sanitize/desanitize roundtrip', () => {
+    const names = [
+      'core.read_file',
+      'custom.my_parser',
+      'plugin.telegram.send_message',
+      'ext.web_search.search_web',
+      'search_tools',
+      'use_tool',
+      'batch_use_tool',
+      'get_tool_help',
+    ];
+
+    it.each(names)('roundtrips %s correctly', (name) => {
+      expect(desanitizeToolName(sanitizeToolName(name))).toBe(name);
+    });
+  });
+
+  describe('sanitize edge cases', () => {
+    it('handles name that is just a dot', () => {
+      expect(sanitizeToolName('.')).toBe('__');
+      expect(desanitizeToolName('__')).toBe('.');
+    });
+
+    it('handles multiple consecutive dots', () => {
+      expect(sanitizeToolName('a..b')).toBe('a____b');
+    });
+
+    it('does not corrupt triple underscores (single underscore is NOT a separator)', () => {
+      // A name with ___ should stay ___ after sanitize (no dots to replace)
+      expect(sanitizeToolName('foo___bar')).toBe('foo___bar');
+    });
+
+    it('handles names starting or ending with dot', () => {
+      expect(sanitizeToolName('.leading')).toBe('__leading');
+      expect(sanitizeToolName('trailing.')).toBe('trailing__');
     });
   });
 });

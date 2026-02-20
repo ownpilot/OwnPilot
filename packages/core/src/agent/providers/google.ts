@@ -11,6 +11,7 @@ import { InternalError, TimeoutError, ValidationError } from '../../types/errors
 import { getLog } from '../../services/get-log.js';
 import { getErrorMessage } from '../../services/error-utils.js';
 import { generateId } from '../../services/id-utils.js';
+import { sanitizeToolName, desanitizeToolName } from '../tool-namespace.js';
 
 const log = getLog('Google');
 import type {
@@ -46,6 +47,52 @@ const RETRY_CONFIG = {
 function safeParseToolArgs(args: string | undefined): Record<string, unknown> {
   if (!args) return {};
   try { return JSON.parse(args); } catch { return {}; }
+}
+
+/**
+ * Schema-level keywords that Gemini does NOT support and that are unambiguously
+ * schema keywords (never valid as user-defined property names inside `properties`).
+ * Conservative list — only strip what actually causes 400 errors.
+ */
+const UNSUPPORTED_GEMINI_SCHEMA_KEYWORDS = new Set([
+  '$schema', '$ref', '$id', '$comment', '$defs',
+  'additionalProperties', 'patternProperties', 'unevaluatedProperties', 'unevaluatedItems',
+  'anyOf', 'oneOf', 'allOf', 'not',
+  'if', 'then', 'else',
+  'definitions', 'dependentSchemas', 'dependentRequired',
+  'contentMediaType', 'contentEncoding',
+]);
+
+/**
+ * Recursively strip fields that Gemini doesn't understand from a JSON Schema object.
+ * Returns a cleaned copy (does not mutate the original).
+ *
+ * IMPORTANT: Inside a `properties` map, keys are user-defined property names
+ * (e.g., "title", "default", "pattern") — these must NEVER be stripped.
+ * Only strip schema-level keywords from schema objects themselves.
+ *
+ * @param schema - The schema (or sub-schema) to sanitize
+ * @param insidePropertiesMap - true when processing the direct children of a `properties` object
+ */
+function sanitizeGeminiSchema(schema: unknown, insidePropertiesMap = false): unknown {
+  if (schema === null || schema === undefined) return schema;
+  if (typeof schema !== 'object') return schema;
+  if (Array.isArray(schema)) return schema.map(item => sanitizeGeminiSchema(item));
+
+  const obj = schema as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(obj)) {
+    // Inside `properties`, keys are user-defined names — never strip them
+    if (!insidePropertiesMap && UNSUPPORTED_GEMINI_SCHEMA_KEYWORDS.has(key)) continue;
+
+    // When entering `properties`, mark children as property-name keys
+    result[key] = key === 'properties' && typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? sanitizeGeminiSchema(value, true)
+      : sanitizeGeminiSchema(value);
+  }
+
+  return result;
 }
 
 /**
@@ -299,7 +346,7 @@ export class GoogleProvider {
         if (part.functionCall) {
           toolCalls.push({
             id: generateId('call'),
-            name: part.functionCall.name,
+            name: desanitizeToolName(part.functionCall.name),
             arguments: JSON.stringify(part.functionCall.args),
             // Capture thoughtSignature for Gemini 3+ thinking models
             metadata: part.thoughtSignature ? { thoughtSignature: part.thoughtSignature } : undefined,
@@ -451,7 +498,7 @@ export class GoogleProvider {
                       id: `gemini_${Date.now()}`,
                       toolCalls: [{
                         id: `call_${Date.now()}`,
-                        name: part.functionCall.name,
+                        name: desanitizeToolName(part.functionCall.name),
                         arguments: JSON.stringify(part.functionCall.args),
                         // Capture thoughtSignature for Gemini 3+ thinking models
                         metadata: part.thoughtSignature ? { thoughtSignature: part.thoughtSignature } : undefined,
@@ -600,11 +647,15 @@ export class GoogleProvider {
   }
 
   private buildGeminiContents(messages: readonly Message[]) {
-    // Build a map of tool call IDs to their thoughtSignatures for looking up when building responses
+    // Build maps of tool call IDs to their thoughtSignatures and function names
     const toolCallSignatures = new Map<string, string>();
+    const toolCallNames = new Map<string, string>();
     for (const msg of messages) {
       if (msg.role === 'assistant' && msg.toolCalls) {
         for (const tc of msg.toolCalls) {
+          // Map toolCallId → function name (for functionResponse.name)
+          toolCallNames.set(tc.id, tc.name);
+
           const signature = tc.metadata?.thoughtSignature;
           if (typeof signature === 'string') {
             toolCallSignatures.set(tc.id, signature);
@@ -649,7 +700,7 @@ export class GoogleProvider {
           for (const result of msg.toolResults) {
             const functionResponsePart: Record<string, unknown> = {
               functionResponse: {
-                name: result.toolCallId,
+                name: sanitizeToolName(toolCallNames.get(result.toolCallId) ?? result.toolCallId),
                 response: { result: result.content },
               },
             };
@@ -669,7 +720,7 @@ export class GoogleProvider {
           for (const tc of msg.toolCalls) {
             const functionCallPart: Record<string, unknown> = {
               functionCall: {
-                name: tc.name,
+                name: sanitizeToolName(tc.name),
                 args: safeParseToolArgs(tc.arguments),
               },
             };
@@ -699,9 +750,9 @@ export class GoogleProvider {
     return [
       {
         functionDeclarations: request.tools.map((tool) => ({
-          name: tool.name,
+          name: sanitizeToolName(tool.name),
           description: tool.description,
-          parameters: tool.parameters,
+          parameters: sanitizeGeminiSchema(tool.parameters),
         })),
       },
     ];

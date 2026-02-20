@@ -59,6 +59,7 @@ function makeMessageRow(overrides: Record<string, unknown> = {}) {
     content: 'Hello world',
     tool_calls: null,
     tool_call_id: null,
+    attachments: null,
     created_at: '2024-06-01T12:00:00Z',
     ...overrides,
   };
@@ -96,7 +97,7 @@ describe('MessagesRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO messages'),
-        ['msg-1', 'conv-1', 'user', 'Hello world', null, null],
+        ['msg-1', 'conv-1', 'user', 'Hello world', null, null, null],
       );
 
       expect(result.id).toBe('msg-1');
@@ -127,7 +128,7 @@ describe('MessagesRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO messages'),
-        ['msg-2', 'conv-1', 'assistant', '', JSON.stringify(sampleToolCalls), null],
+        ['msg-2', 'conv-1', 'assistant', '', JSON.stringify(sampleToolCalls), null, null],
       );
 
       expect(result.toolCalls).toEqual(sampleToolCalls);
@@ -153,7 +154,7 @@ describe('MessagesRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO messages'),
-        ['msg-3', 'conv-1', 'tool', '{"result": 42}', null, 'tc-1'],
+        ['msg-3', 'conv-1', 'tool', '{"result": 42}', null, 'tc-1', null],
       );
 
       expect(result.toolCallId).toBe('tc-1');
