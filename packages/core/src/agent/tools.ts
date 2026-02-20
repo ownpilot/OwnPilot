@@ -185,11 +185,11 @@ export class ToolRegistry {
       if (baseNameSet.size === 0) this.baseNameIndex.delete(baseName);
     }
 
-    // Remove from plugin tracking
+    // Remove from plugin tracking (use resolved name, not raw input)
     if (tool.pluginId) {
       const pluginToolSet = this.pluginTools.get(tool.pluginId);
       if (pluginToolSet) {
-        pluginToolSet.delete(name);
+        pluginToolSet.delete(resolved);
         if (pluginToolSet.size === 0) {
           this.pluginTools.delete(tool.pluginId);
         }

@@ -72,6 +72,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 const mockChannelMessagesRepo = {
   getByChannel: vi.fn(async () => []),
   getAll: vi.fn(async () => []),
+  count: vi.fn(async () => 0),
 };
 
 vi.mock('../db/repositories/channel-messages.js', () => ({

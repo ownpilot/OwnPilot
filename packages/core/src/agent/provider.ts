@@ -27,6 +27,7 @@ import {
   calculatePayloadBreakdown,
 } from './debug.js';
 import { getErrorMessage } from '../services/error-utils.js';
+import { sanitizeToolName, desanitizeToolName } from './tool-namespace.js';
 
 /**
  * Default retry configuration for AI provider calls
@@ -260,7 +261,7 @@ export abstract class BaseProvider implements IProvider {
 
     return toolCalls.map((tc) => ({
       id: tc.id ?? '',
-      name: tc.function?.name ?? tc.name ?? '',
+      name: desanitizeToolName(tc.function?.name ?? tc.name ?? ''),
       arguments: tc.function?.arguments ?? tc.arguments ?? '{}',
     }));
   }
@@ -298,7 +299,7 @@ export abstract class BaseProvider implements IProvider {
           id: tc.id,
           type: 'function',
           function: {
-            name: tc.name,
+            name: sanitizeToolName(tc.name),
             arguments: tc.arguments,
           },
         }));
@@ -328,7 +329,7 @@ export abstract class BaseProvider implements IProvider {
     return request.tools.map((tool) => ({
       type: 'function',
       function: {
-        name: tool.name,
+        name: sanitizeToolName(tool.name),
         description: tool.description,
         parameters: tool.parameters,
       },
@@ -535,7 +536,7 @@ export class OpenAIProvider extends BaseProvider {
                 content: delta.content,
                 toolCalls: delta.tool_calls?.map((tc) => ({
                   id: tc.id,
-                  name: tc.function?.name,
+                  name: tc.function?.name ? desanitizeToolName(tc.function.name) : undefined,
                   arguments: tc.function?.arguments,
                 })),
                 done: choice?.finish_reason != null,
@@ -652,6 +653,7 @@ export class AnthropicProvider extends BaseProvider {
       top_p: request.model.topP,
       stop_sequences: request.model.stop as string[] | undefined,
       tools: this.buildAnthropicTools(request),
+      tool_choice: this.mapAnthropicToolChoice(request.toolChoice),
     };
 
     const endpoint = `${this.config.baseUrl}/messages`;
@@ -714,7 +716,7 @@ export class AnthropicProvider extends BaseProvider {
           } else if (block.type === 'tool_use') {
             toolCalls.push({
               id: block.id ?? '',
-              name: block.name ?? '',
+              name: desanitizeToolName(block.name ?? ''),
               arguments: JSON.stringify(block.input ?? {}),
             });
           }
@@ -783,6 +785,8 @@ export class AnthropicProvider extends BaseProvider {
       system: systemMessage ? this.buildSystemBlocks(systemMessage) : undefined,
       messages: this.buildAnthropicMessages(otherMessages),
       temperature: request.model.temperature,
+      tools: this.buildAnthropicTools(request),
+      tool_choice: this.mapAnthropicToolChoice(request.toolChoice),
       stream: true,
     };
 
@@ -978,10 +982,23 @@ export class AnthropicProvider extends BaseProvider {
     if (!request.tools?.length) return undefined;
 
     return request.tools.map((tool) => ({
-      name: tool.name,
+      name: sanitizeToolName(tool.name),
       description: tool.description,
       input_schema: tool.parameters,
     }));
+  }
+
+  private mapAnthropicToolChoice(
+    toolChoice: CompletionRequest['toolChoice']
+  ): Record<string, unknown> | undefined {
+    if (!toolChoice) return undefined;
+    if (toolChoice === 'auto') return { type: 'auto' };
+    if (toolChoice === 'none') return undefined; // Anthropic: omit tool_choice to disable
+    if (toolChoice === 'required') return { type: 'any' };
+    if (typeof toolChoice === 'object' && 'name' in toolChoice) {
+      return { type: 'tool', name: sanitizeToolName(toolChoice.name) };
+    }
+    return undefined;
   }
 
   private mapAnthropicStopReason(

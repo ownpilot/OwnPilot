@@ -93,25 +93,26 @@ function quoteIdentifier(name: string): string {
 
 export const databaseRoutes = new Hono();
 
-// Additional admin guard for destructive database operations.
-// When ADMIN_KEY is set, destructive routes (POST/DELETE) require X-Admin-Key header.
-// GET routes (status, stats, export) are allowed with standard auth only.
+// Additional admin guard for database operations.
+// When ADMIN_KEY is set, destructive routes (POST/DELETE) and export require X-Admin-Key header.
+// Read-only GET routes (status, stats) are allowed with standard auth only.
 const ADMIN_KEY = process.env.ADMIN_KEY;
 
 if (ADMIN_KEY) {
   databaseRoutes.use('*', async (c, next) => {
-    // Allow GET requests with standard auth (read-only)
-    if (c.req.method === 'GET') {
+    // Allow read-only GET requests (status, stats) — but NOT export
+    const path = new URL(c.req.url).pathname;
+    if (c.req.method === 'GET' && !path.endsWith('/export')) {
       return next();
     }
-    // Destructive operations (POST, DELETE) require admin key
+    // Destructive operations (POST, DELETE) and export require admin key
     const providedKey = c.req.header('X-Admin-Key');
     if (!safeKeyCompare(providedKey, ADMIN_KEY)) {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Admin key required for database write operations. Set X-Admin-Key header.' }, 403);
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Admin key required for this operation. Set X-Admin-Key header.' }, 403);
     }
     return next();
   });
-  log.info('Database admin routes: X-Admin-Key guard enabled for write operations');
+  log.info('Database admin routes: X-Admin-Key guard enabled for write operations and export');
 }
 
 // Backup directory
