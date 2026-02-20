@@ -24,7 +24,6 @@ const { mockChatRepo, mockTruncate, mockBroadcast, mockLog } = vi.hoisted(() => 
 }));
 
 vi.mock('../../db/repositories/index.js', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   ChatRepository: vi.fn(function () { return mockChatRepo; }),
 }));
 
