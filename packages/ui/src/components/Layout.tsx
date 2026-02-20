@@ -43,6 +43,7 @@ import {
   Menu,
   X,
   GitBranch,
+  Link,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
@@ -130,8 +131,8 @@ const navGroups: NavGroup[] = [
       { to: '/settings/api-keys', icon: Key, label: 'API Keys' },
       { to: '/settings/providers', icon: Server, label: 'Providers' },
       { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
-      { to: '/settings/connected-apps', icon: Puzzle, label: 'Connected Apps' },
       { to: '/settings/mcp-servers', icon: Zap, label: 'MCP Servers' },
+      { to: '/settings/connected-apps', icon: Link, label: 'Connected Apps' },
       { to: '/settings/tool-groups', icon: Wrench, label: 'Tool Groups' },
       { to: '/settings/system', icon: Container, label: 'System' },
     ],

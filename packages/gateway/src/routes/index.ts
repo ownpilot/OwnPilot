@@ -37,7 +37,7 @@ export { debugRoutes } from './debug.js';
 export { executionPermissionsRoutes } from './execution-permissions.js';
 export { heartbeatsRoutes } from './heartbeats.js';
 export { extensionsRoutes } from './extensions.js';
-export { composioRoutes } from './composio.js';
 export { mcpRoutes } from './mcp.js';
 export { webhookRoutes } from './webhooks.js';
 export { workflowRoutes } from './workflows.js';
+export { composioRoutes } from './composio.js';

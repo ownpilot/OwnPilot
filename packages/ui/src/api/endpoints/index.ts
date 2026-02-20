@@ -34,10 +34,10 @@ export {
   expensesApi,
 } from './misc';
 export { extensionsApi } from './extensions';
-export { composioApi } from './composio';
 export { mcpApi } from './mcp';
-export { workflowsApi } from './workflows';
+export { composioApi } from './composio';
 export type { ComposioApp, ComposioConnection, ComposioConnectionRequest, ComposioStatus, ComposioActionInfo } from './composio';
+export { workflowsApi } from './workflows';
 export type { McpServer, McpServerTool, McpServerInfo, CreateMcpServerInput, UpdateMcpServerInput } from './mcp';
 export {
   notesApi,

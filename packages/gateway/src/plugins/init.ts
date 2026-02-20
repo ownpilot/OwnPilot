@@ -25,7 +25,6 @@ import { pomodoroRepo } from '../db/repositories/pomodoro.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { registerToolConfigRequirements } from '../services/api-service-registrar.js';
 import { buildTelegramChannelPlugin } from '../channels/plugins/telegram/index.js';
-import { buildDiscordChannelPlugin } from '../channels/plugins/discord/index.js';
 import { buildGatewayPlugin } from './gateway-plugin.js';
 import { buildComposioPlugin } from './composio.js';
 import { getLog } from '../services/log.js';
@@ -586,11 +585,10 @@ function getAllBuiltinPlugins(): BuiltinPluginEntry[] {
     // Built-in plugins
     buildNewsRssPlugin(),
     buildPomodoroPlugin(),
-    // Integration plugins
+    // Integrations
     buildComposioPlugin(),
     // Channel plugins
     buildTelegramChannelPlugin(),
-    buildDiscordChannelPlugin(),
   ];
 }
 

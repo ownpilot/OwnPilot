@@ -39,8 +39,8 @@ const ConfigCenterPage = lazy(() => import('./pages/ConfigCenterPage').then((m) 
 const ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then((m) => ({ default: m.ApiKeysPage })));
 const ProvidersPage = lazy(() => import('./pages/ProvidersPage').then((m) => ({ default: m.ProvidersPage })));
 const AIModelsPage = lazy(() => import('./pages/AIModelsPage').then((m) => ({ default: m.AIModelsPage })));
-const ConnectedAppsPage = lazy(() => import('./pages/ConnectedAppsPage').then((m) => ({ default: m.ConnectedAppsPage })));
 const McpServersPage = lazy(() => import('./pages/McpServersPage').then((m) => ({ default: m.McpServersPage })));
+const ConnectedAppsPage = lazy(() => import('./pages/ConnectedAppsPage').then((m) => ({ default: m.ConnectedAppsPage })));
 
 const WorkflowsPage = lazy(() => import('./pages/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
 const WorkflowEditorPage = lazy(() => import('./pages/WorkflowEditorPage').then((m) => ({ default: m.WorkflowEditorPage })));
@@ -103,9 +103,8 @@ export function App() {
         <Route path="settings/api-keys" element={page(<ApiKeysPage />)} />
         <Route path="settings/providers" element={page(<ProvidersPage />)} />
         <Route path="settings/ai-models" element={page(<AIModelsPage />)} />
-        <Route path="settings/integrations" element={<Navigate to="/settings/connected-apps" replace />} />
-        <Route path="settings/connected-apps" element={page(<ConnectedAppsPage />)} />
         <Route path="settings/mcp-servers" element={page(<McpServersPage />)} />
+        <Route path="settings/connected-apps" element={page(<ConnectedAppsPage />)} />
         <Route path="settings/tool-groups" element={page(<ToolGroupsPage />)} />
         <Route path="settings/system" element={page(<SystemPage />)} />
         <Route path="about" element={page(<AboutPage />)} />

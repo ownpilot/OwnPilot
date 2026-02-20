@@ -53,10 +53,10 @@ import {
   executionPermissionsRoutes,
   heartbeatsRoutes,
   extensionsRoutes,
-  composioRoutes,
   mcpRoutes,
   webhookRoutes,
   workflowRoutes,
+  composioRoutes,
 } from './routes/index.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST } from './config/defaults.js';
 
@@ -229,9 +229,6 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // User Extensions (shareable tool + prompt + trigger bundles)
   app.route('/api/v1/extensions', extensionsRoutes);
 
-  // Composio (1000+ OAuth app integrations)
-  app.route('/api/v1/composio', composioRoutes);
-
   // MCP (Model Context Protocol — external server connections + tool exposure)
   app.route('/api/v1/mcp', mcpRoutes);
 
@@ -240,6 +237,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   // Workflows (visual DAG tool pipelines)
   app.route('/api/v1/workflows', workflowRoutes);
+
+  // Composio (OAuth app integrations — Gmail, GitHub, Slack, etc.)
+  app.route('/api/v1/composio', composioRoutes);
 
   // Root route
   app.get('/', (c) => {
@@ -313,6 +313,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         localProviders: '/api/v1/local-providers',
         // Workflows (visual DAG tool pipelines)
         workflows: '/api/v1/workflows',
+        // Composio (OAuth app integrations)
+        composio: '/api/v1/composio',
         // Webhooks (external service callbacks, no auth required)
         webhooks: '/webhooks/telegram/:secret',
       },

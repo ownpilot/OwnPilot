@@ -202,20 +202,8 @@ export const KNOWN_CONFIG_SERVICES: CreateConfigServiceInput[] = [
     configSchema: apiKeySchema('PERPLEXITY_API_KEY', 'https://api.perplexity.ai'),
   },
 
-  // ---------------------------------------------------------------------------
-  // Messaging (channel adapters)
-  // ---------------------------------------------------------------------------
-  {
-    name: 'telegram',
-    displayName: 'Telegram Bot',
-    category: 'messaging',
-    description: 'Telegram Bot API for messaging integration.',
-    docsUrl: 'https://core.telegram.org/bots/api',
-    configSchema: [
-      { name: 'bot_token', label: 'Bot Token', type: 'secret', required: true, envVar: 'TELEGRAM_BOT_TOKEN', order: 0 },
-      { name: 'base_url', label: 'API Base URL', type: 'url', defaultValue: 'https://api.telegram.org', placeholder: 'https://api.telegram.org', order: 1 },
-    ],
-  },
+  // NOTE: Telegram config is handled by the Telegram channel plugin (service: telegram_bot)
+  // No seed entry needed — plugin registers its own requiredServices with full schema.
 ];
 
 // =============================================================================
