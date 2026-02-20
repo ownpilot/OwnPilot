@@ -28,6 +28,9 @@ import {
   type ISessionService,
   type IMessageBus,
   type NormalizedMessage,
+  type StreamCallbacks,
+  type ToolCall,
+  type NormalizedAttachment,
 } from '@ownpilot/core';
 
 import {
@@ -39,6 +42,7 @@ import {
   type ChannelSessionsRepository,
 } from '../db/repositories/channel-sessions.js';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
+import { channelsRepo } from '../db/repositories/channels.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import {
   getChannelVerificationService,
@@ -296,6 +300,19 @@ export class ChannelServiceImpl implements IChannelService {
 
     await api.connect();
 
+    // Upsert channels row so channel_messages FK constraint is satisfied
+    const plugin = this.pluginRegistry.get(channelPluginId);
+    try {
+      await channelsRepo.upsert({
+        id: channelPluginId,
+        type: api.getPlatform(),
+        name: plugin?.manifest.name ?? channelPluginId,
+        status: 'connected',
+      });
+    } catch (err) {
+      log.warn('Failed to upsert channel row', { channelPluginId, error: err });
+    }
+
     try {
       const eventBus = getEventBus();
       eventBus.emit(
@@ -328,6 +345,13 @@ export class ChannelServiceImpl implements IChannelService {
     }
 
     await api.disconnect();
+
+    // Update channel status in DB
+    try {
+      await channelsRepo.updateStatus(channelPluginId, 'disconnected');
+    } catch (err) {
+      log.warn('Failed to update channel status', { channelPluginId, error: err });
+    }
 
     try {
       const eventBus = getEventBus();
@@ -445,35 +469,40 @@ export class ChannelServiceImpl implements IChannelService {
         return;
       }
 
-      // 4. Check verification (auto-verify whitelisted users)
+      // 4. Check verification (auto-verify whitelisted users, or all users when no restriction)
       if (!channelUser.isVerified) {
-        // Check if user is in the plugin's allowed_users whitelist
         const plugin = this.pluginRegistry.get(message.channelPluginId);
         const allowedUsers = plugin
           ? this.getPluginAllowedUsers(plugin)
           : [];
 
-        if (allowedUsers.length > 0 && allowedUsers.includes(message.sender.platformUserId)) {
-          // Auto-verify: user is explicitly whitelisted in Config Center
+        // Auto-verify when:
+        // - No allowed_users restriction set (personal assistant, owner didn't restrict access)
+        // - OR user is explicitly whitelisted in Config Center
+        const shouldAutoVerify =
+          allowedUsers.length === 0 ||
+          allowedUsers.includes(message.sender.platformUserId);
+
+        if (shouldAutoVerify) {
           const verificationSvc = getChannelVerificationService();
           await verificationSvc.verifyViaWhitelist(
             message.platform,
             message.sender.platformUserId,
             message.sender.displayName,
           );
-          // Update local reference so the rest of the pipeline proceeds
           channelUser.isVerified = true;
-          log.info('Auto-verified whitelisted user', {
+          log.info('Auto-verified user', {
             platform: message.platform,
             userId: message.sender.platformUserId,
+            reason: allowedUsers.length === 0 ? 'no-restriction' : 'whitelisted',
           });
         } else {
-          // Send verification prompt
+          // User is NOT in the allowed_users list — block access
           const api = this.getChannel(message.channelPluginId);
           if (api) {
             await api.sendMessage({
               platformChatId: message.platformChatId,
-              text: `Welcome! To use this assistant, you need to verify your identity.\n\nGenerate a verification token in the OwnPilot web interface, then send:\n/connect YOUR_TOKEN`,
+              text: 'Sorry, you are not authorized to use this bot.',
               replyToId: message.id,
             });
           }
@@ -582,8 +611,21 @@ export class ChannelServiceImpl implements IChannelService {
       const api = this.getChannel(message.channelPluginId);
       if (!api) return;
 
-      // Send typing indicator (best-effort)
-      if (api.sendTyping) {
+      // Create progress manager if channel supports it
+      type ProgressCapableAPI = typeof api & {
+        createProgressManager?(chatId: string): { start(text?: string): Promise<string>; update(text: string): void; finish(text: string): Promise<string>; cancel(): Promise<void>; getMessageId(): number | null } | null;
+        trackMessage?(platformMessageId: string, chatId: string): void;
+      };
+      const progressApi = api as ProgressCapableAPI;
+      const progress = typeof progressApi.createProgressManager === 'function'
+        ? progressApi.createProgressManager(message.platformChatId)
+        : null;
+
+      if (progress) {
+        // Send "Thinking..." progress message instead of typing indicator
+        await progress.start();
+      } else if (api.sendTyping) {
+        // Fallback: plain typing indicator
         await api.sendTyping(message.platformChatId).catch((err) => {
           log.debug('Typing indicator failed', { plugin: message.channelPluginId, error: err });
         });
@@ -594,7 +636,7 @@ export class ChannelServiceImpl implements IChannelService {
       // Try MessageBus pipeline first
       const bus = tryGetMessageBus();
       if (bus) {
-        responseText = await this.processViaBus(bus, message, session, channelUser);
+        responseText = await this.processViaBus(bus, message, { conversationId: session.conversationId, context: session.context }, channelUser, progress ?? undefined);
       } else {
         // Legacy fallback: direct agent.chat()
         responseText = await this.processDirectAgent(message);
@@ -604,11 +646,22 @@ export class ChannelServiceImpl implements IChannelService {
       if (!responseText || !responseText.trim()) {
         responseText = '(No response generated)';
       }
-      const sentMessageId = await api.sendMessage({
-        platformChatId: message.platformChatId,
-        text: responseText,
-        replyToId: message.id,
-      });
+
+      let sentMessageId: string;
+      if (progress) {
+        // Replace progress message with final response
+        sentMessageId = await progress.finish(responseText);
+        // Track message ID for edit/delete support
+        if (typeof progressApi.trackMessage === 'function') {
+          progressApi.trackMessage(sentMessageId, message.platformChatId);
+        }
+      } else {
+        sentMessageId = await api.sendMessage({
+          platformChatId: message.platformChatId,
+          text: responseText,
+          replyToId: message.id,
+        });
+      }
 
       // Save outgoing message to channel_messages table
       // (bus persistence middleware handles the main messages table separately)
@@ -678,8 +731,9 @@ export class ChannelServiceImpl implements IChannelService {
   private async processViaBus(
     bus: IMessageBus,
     message: ChannelIncomingMessage,
-    session: { conversationId: string | null },
+    session: { conversationId: string | null; context?: Record<string, unknown> },
     channelUser: { ownpilotUserId: string },
+    progress?: { update(text: string): void },
   ): Promise<string> {
     const { getOrCreateDefaultAgent, isDemoMode } = await import(
       '../routes/agents.js'
@@ -692,16 +746,43 @@ export class ChannelServiceImpl implements IChannelService {
 
     const agent = await getOrCreateDefaultAgent();
 
-    // Resolve provider/model from agent config
+    // Wire tool approval via Telegram inline keyboard (if channel supports it)
+    const api = this.getChannel(message.channelPluginId);
+    if (api && typeof (api as unknown as Record<string, unknown>).requestApproval === 'function') {
+      const telegramApi = api as typeof api & { requestApproval(chatId: string, params: { toolName: string; description: string; riskLevel?: string }): Promise<boolean> };
+      agent.setRequestApproval(async (_category, _actionType, description, params) => {
+        return telegramApi.requestApproval(message.platformChatId, {
+          toolName: (params.toolName as string) ?? 'unknown',
+          description,
+          riskLevel: params.riskLevel as string | undefined,
+        });
+      });
+    }
+
+    // Check session for preferred model override
+    const preferredModel = (session as { context?: Record<string, unknown> }).context?.preferredModel as string | undefined;
+
+    // Resolve provider/model from agent config (or session override)
     const { resolveProviderAndModel } = await import('../routes/settings.js');
-    const resolved = await resolveProviderAndModel('default', 'default');
+    const resolved = await resolveProviderAndModel('default', preferredModel ?? 'default');
+
+    // Convert channel attachments → normalized attachments (base64-encoded)
+    const normalizedAttachments: NormalizedAttachment[] | undefined =
+      message.attachments?.filter(a => a.data).map(a => ({
+        type: a.type,
+        data: `data:${a.mimeType};base64,${Buffer.from(a.data!).toString('base64')}`,
+        mimeType: a.mimeType,
+        filename: a.filename,
+        size: a.size,
+      }));
 
     // Normalize channel message into NormalizedMessage
     const normalized: NormalizedMessage = {
       id: message.id,
       sessionId: session.conversationId ?? randomUUID(),
       role: 'user',
-      content: message.text,
+      content: message.text || (normalizedAttachments?.length ? '[Attachment]' : ''),
+      attachments: normalizedAttachments?.length ? normalizedAttachments : undefined,
       metadata: {
         source: 'channel',
         channelPluginId: message.channelPluginId,
@@ -715,22 +796,39 @@ export class ChannelServiceImpl implements IChannelService {
       timestamp: new Date(),
     };
 
-    // Process through the pipeline with context
-    const result = await bus.process(normalized, {
-      context: {
-        agent,
-        userId: channelUser.ownpilotUserId,
-        agentId: 'default',
-        provider: resolved.provider ?? 'unknown',
-        model: resolved.model ?? 'unknown',
-        conversationId: session.conversationId,
-      },
-    });
+    // Build stream callbacks for progress updates
+    const streamCallbacks: StreamCallbacks | undefined = progress ? {
+      onToolStart: (tc: ToolCall) => progress.update(`\ud83d\udd27 ${tc.name}...`),
+      onToolEnd: (tc: ToolCall, _result: unknown) => progress.update(`\u2705 ${tc.name} done`),
+      onProgress: (msg: string) => progress.update(`\u2699\ufe0f ${msg}`),
+    } : undefined;
 
-    // Strip <memories> and <suggestions> tags from channel response
-    const { extractMemoriesFromResponse } = await import('../utils/memory-extraction.js');
-    const { content: stripped } = extractMemoriesFromResponse(result.response.content);
-    return stripped.replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '').trimEnd();
+    // Process through the pipeline with context
+    // directToolMode: expose all tools directly to the LLM instead of meta-tool indirection
+    // (simpler/local models used via Telegram don't understand use_tool() pattern)
+    try {
+      const result = await bus.process(normalized, {
+        stream: streamCallbacks,
+        context: {
+          agent,
+          userId: channelUser.ownpilotUserId,
+          agentId: 'default',
+          provider: resolved.provider ?? 'unknown',
+          model: resolved.model ?? 'unknown',
+          conversationId: session.conversationId,
+          directToolMode: true,
+        },
+      });
+
+      // Strip <memories> and <suggestions> tags from channel response
+      const { extractMemoriesFromResponse } = await import('../utils/memory-extraction.js');
+      const { content: stripped } = extractMemoriesFromResponse(result.response.content);
+      return stripped.replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '').trimEnd();
+    } finally {
+      // Always cleanup per-request overrides — even if bus.process() throws,
+      // otherwise the Telegram approval handler leaks to subsequent non-channel requests
+      agent.setRequestApproval(undefined);
+    }
   }
 
   /**

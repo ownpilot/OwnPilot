@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
-import { Inbox, Telegram, Discord, Globe, RefreshCw, Check, Plus } from '../components/icons';
+import { Inbox, Telegram, Discord, Globe, RefreshCw, Check, Plus, Send } from '../components/icons';
 import { channelsApi } from '../api';
 import type { Channel, ChannelMessage } from '../api';
 import { SkeletonCard, SkeletonMessage } from '../components/Skeleton';
@@ -55,6 +55,8 @@ export function InboxPage() {
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch channels from API
@@ -69,11 +71,11 @@ export function InboxPage() {
   }, []);
 
   // Fetch inbox messages from API
-  const fetchInbox = useCallback(async (channelType?: string) => {
+  const fetchInbox = useCallback(async (channelId?: string) => {
     try {
       const data = await channelsApi.inbox({
         limit: 200,
-        ...(channelType && { channelType }),
+        ...(channelId && { channelId }),
       });
       setMessages(data.messages);
       setUnreadCount(data.unreadCount);
@@ -96,14 +98,11 @@ export function InboxPage() {
     const unsub = subscribe('channel:message', () => {
       if (wsDebounceRef.current) clearTimeout(wsDebounceRef.current);
       wsDebounceRef.current = setTimeout(() => {
-        const channelType = selectedChannel
-          ? channels.find(c => c.id === selectedChannel)?.type
-          : undefined;
-        fetchInbox(channelType);
+        fetchInbox(selectedChannel ?? undefined);
       }, 1000);
     });
     return () => { unsub(); if (wsDebounceRef.current) clearTimeout(wsDebounceRef.current); };
-  }, [subscribe, fetchInbox, selectedChannel, channels]);
+  }, [subscribe, fetchInbox, selectedChannel]);
 
   // WS-triggered refresh when channel status changes (connect/disconnect/error)
   useEffect(() => {
@@ -121,14 +120,11 @@ export function InboxPage() {
     setIsRefreshing(true);
     setError(null);
     try {
-      const channelType = selectedChannel
-        ? channels.find(c => c.id === selectedChannel)?.type
-        : undefined;
-      await Promise.all([fetchChannels(), fetchInbox(channelType)]);
+      await Promise.all([fetchChannels(), fetchInbox(selectedChannel ?? undefined)]);
     } finally {
       setIsRefreshing(false);
     }
-  }, [fetchChannels, fetchInbox, selectedChannel, channels]);
+  }, [fetchChannels, fetchInbox, selectedChannel]);
 
   // Filter messages by channel
   const filteredMessages = selectedChannel
@@ -408,11 +404,55 @@ export function InboxPage() {
             )}
           </div>
 
-          {/* Read-only footer */}
+          {/* Reply form */}
           <div className="px-6 py-3 border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-            <p className="text-xs text-center text-text-muted dark:text-dark-text-muted">
-              Conversations happen on your channels. This is a read-only log.
-            </p>
+            {selectedChannel && channels.find(c => c.id === selectedChannel)?.status === 'connected' ? (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const text = replyText.trim();
+                  if (!text || isSending || !selectedChannel) return;
+                  setIsSending(true);
+                  try {
+                    await channelsApi.reply(selectedChannel, { text });
+                    setReplyText('');
+                  } catch {
+                    setError('Failed to send reply');
+                  } finally {
+                    setIsSending(false);
+                  }
+                }}
+                className="flex items-end gap-2"
+              >
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      e.currentTarget.form?.requestSubmit();
+                    }
+                  }}
+                  placeholder="Type a reply..."
+                  rows={1}
+                  maxLength={4096}
+                  className="flex-1 resize-none rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  type="submit"
+                  disabled={!replyText.trim() || isSending}
+                  className="p-2 rounded-lg bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            ) : (
+              <p className="text-xs text-center text-text-muted dark:text-dark-text-muted">
+                {selectedChannel
+                  ? 'Channel is disconnected. Connect it to reply.'
+                  : 'Select a channel to reply to messages'}
+              </p>
+            )}
           </div>
         </div>
       </div>

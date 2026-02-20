@@ -186,7 +186,7 @@ export const modelConfigsApi = {
 export const localProvidersApi = {
   list: () => apiClient.get<LocalProvider[]>('/local-providers'),
   templates: () => apiClient.get<LocalProviderTemplate[]>('/local-providers/templates'),
-  create: (data: { providerName: string; url: string; apiKey?: string }) =>
+  create: (data: { name: string; providerType: string; baseUrl: string; apiKey?: string; discoveryEndpoint?: string }) =>
     apiClient.post<LocalProvider>('/local-providers', data),
   models: (id: string) =>
     apiClient.get<Array<{ modelId: string; displayName?: string }>>(`/local-providers/${id}/models`),
@@ -246,7 +246,7 @@ export const channelsApi = {
     apiClient.post<Channel>('/channels', body),
   send: (channelId: string, body: Record<string, unknown>) =>
     apiClient.post<void>(`/channels/${channelId}/send`, body),
-  inbox: (params?: { limit?: number; channelType?: string }) =>
+  inbox: (params?: { limit?: number; channelId?: string }) =>
     apiClient.get<{
       messages: ChannelMessage[];
       total: number;
@@ -264,6 +264,8 @@ export const channelsApi = {
     apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/connect`),
   disconnect: (channelId: string) =>
     apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/disconnect`),
+  reply: (channelId: string, body: { text: string; platformChatId?: string; replyToMessageId?: string }) =>
+    apiClient.post<{ messageId: string; platformMessageId: string }>(`/channels/${channelId}/reply`, body),
 };
 
 // ---- Expenses ----

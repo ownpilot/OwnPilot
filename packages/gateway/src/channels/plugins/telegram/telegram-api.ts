@@ -10,6 +10,13 @@ import { randomBytes } from 'node:crypto';
 import { Bot } from 'grammy';
 import type { Message } from 'grammy/types';
 import {
+  registerApprovalHandler,
+  requestTelegramApproval,
+  clearPendingApprovals,
+} from './approval-handler.js';
+import { TelegramProgressManager } from './progress-manager.js';
+import { downloadTelegramAttachments } from './file-handler.js';
+import {
   type ChannelPluginAPI,
   type ChannelConnectionStatus,
   type ChannelPlatform,
@@ -113,18 +120,182 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     try {
       this.bot = new Bot(this.config.bot_token);
 
-      // Register message handler
-      this.bot.on('message', (ctx) => {
-        this.handleIncomingMessage(ctx.message).catch((err) => {
-          log.error('[Telegram] Error handling message:', err);
-        });
-      });
+      // Register inline keyboard approval handler
+      registerApprovalHandler(this.bot);
+
+      // ── Command handlers (MUST be registered BEFORE bot.on('message')!) ──
+      // Grammy's middleware chain is sequential: if bot.on('message') runs first
+      // and never calls next(), command handlers are never reached.
+      // By registering commands first, /start etc. match and handle, while
+      // non-command messages fall through via Grammy's pass() to the generic handler.
 
       // Handle /start command with welcome
       this.bot.command('start', async (ctx) => {
         await ctx.reply(
           'Welcome to OwnPilot! To verify your identity, generate a token in the OwnPilot web interface and send:\n/connect YOUR_TOKEN'
         );
+      });
+
+      // /model — Set or show the preferred AI model
+      this.bot.command('model', async (ctx) => {
+        const args = (ctx.message?.text ?? '').split(' ').slice(1).join(' ').trim();
+        const chatId = String(ctx.chat.id);
+        const userId = String(ctx.from?.id ?? '');
+
+        try {
+          const { channelUsersRepo } = await import('../../../db/repositories/channel-users.js');
+          const { channelSessionsRepo } = await import('../../../db/repositories/channel-sessions.js');
+
+          const user = await channelUsersRepo.findByPlatform('telegram', userId);
+          if (!user) {
+            await ctx.reply('Please verify your identity first with /connect YOUR_TOKEN');
+            return;
+          }
+
+          const session = await channelSessionsRepo.findActive(user.id, this.pluginId, chatId);
+          if (!session) {
+            await ctx.reply('No active session. Send a message first to start one.');
+            return;
+          }
+
+          if (!args) {
+            const current = (session.context?.preferredModel as string) || 'default';
+            await ctx.reply(
+              `Current model: <code>${current}</code>\n\nUsage: /model &lt;name&gt;\nExamples:\n/model gpt-4o\n/model claude-sonnet-4-5-20250514\n/model default`,
+              { parse_mode: 'HTML' },
+            );
+            return;
+          }
+
+          const modelName = args === 'default' ? undefined : args;
+          await channelSessionsRepo.updateContext(session.id, { preferredModel: modelName ?? null });
+          await ctx.reply(
+            modelName
+              ? `\u2705 Model set to <code>${modelName}</code>`
+              : '\u2705 Model reset to default',
+            { parse_mode: 'HTML' },
+          );
+        } catch (err) {
+          log.error('[Telegram] /model command error:', err);
+          await ctx.reply('Failed to update model preference.');
+        }
+      });
+
+      // /new — Start a new conversation
+      this.bot.command('new', async (ctx) => {
+        const chatId = String(ctx.chat.id);
+        const userId = String(ctx.from?.id ?? '');
+        try {
+          const { channelUsersRepo } = await import('../../../db/repositories/channel-users.js');
+          const { channelSessionsRepo } = await import('../../../db/repositories/channel-sessions.js');
+          const user = await channelUsersRepo.findByPlatform('telegram', userId);
+          if (!user) { await ctx.reply('Please verify first with /connect YOUR_TOKEN'); return; }
+          const session = await channelSessionsRepo.findActive(user.id, this.pluginId, chatId);
+          if (session) {
+            await channelSessionsRepo.deactivate(session.id);
+          }
+          await ctx.reply('\u2728 New conversation started. Your next message begins a fresh session.');
+        } catch (err) {
+          log.error('[Telegram] /new command error:', err);
+          await ctx.reply('Failed to start new conversation.');
+        }
+      });
+
+      // /clear — Clear conversation history
+      this.bot.command('clear', async (ctx) => {
+        const chatId = String(ctx.chat.id);
+        const userId = String(ctx.from?.id ?? '');
+        try {
+          const { channelUsersRepo } = await import('../../../db/repositories/channel-users.js');
+          const { channelSessionsRepo } = await import('../../../db/repositories/channel-sessions.js');
+          const user = await channelUsersRepo.findByPlatform('telegram', userId);
+          if (!user) { await ctx.reply('Please verify first with /connect YOUR_TOKEN'); return; }
+          const session = await channelSessionsRepo.findActive(user.id, this.pluginId, chatId);
+          if (session) {
+            // Deactivate current session so next message starts fresh
+            await channelSessionsRepo.deactivate(session.id);
+            await ctx.reply('\ud83d\uddd1\ufe0f Conversation cleared. Your next message starts a fresh session.');
+          } else {
+            await ctx.reply('No active conversation to clear.');
+          }
+        } catch (err) {
+          log.error('[Telegram] /clear command error:', err);
+          await ctx.reply('Failed to clear history.');
+        }
+      });
+
+      // /history — Show conversation summary
+      this.bot.command('history', async (ctx) => {
+        const chatId = String(ctx.chat.id);
+        const userId = String(ctx.from?.id ?? '');
+        try {
+          const { channelUsersRepo } = await import('../../../db/repositories/channel-users.js');
+          const { channelSessionsRepo } = await import('../../../db/repositories/channel-sessions.js');
+          const user = await channelUsersRepo.findByPlatform('telegram', userId);
+          if (!user) { await ctx.reply('Please verify first with /connect YOUR_TOKEN'); return; }
+          const session = await channelSessionsRepo.findActive(user.id, this.pluginId, chatId);
+          if (!session) { await ctx.reply('No active session.'); return; }
+
+          const startedAgo = session.createdAt
+            ? Math.round((Date.now() - session.createdAt.getTime()) / 60000)
+            : 0;
+
+          const lastMsgAgo = session.lastMessageAt
+            ? Math.round((Date.now() - session.lastMessageAt.getTime()) / 60000)
+            : null;
+
+          await ctx.reply(
+            `<b>Session Info</b>\n\n` +
+            `Conversation: ${session.conversationId ? 'Active' : 'None'}\n` +
+            `Started: ${startedAgo < 60 ? `${startedAgo}m ago` : `${Math.round(startedAgo / 60)}h ago`}\n` +
+            (lastMsgAgo !== null ? `Last message: ${lastMsgAgo < 60 ? `${lastMsgAgo}m ago` : `${Math.round(lastMsgAgo / 60)}h ago`}\n` : '') +
+            `Model: <code>${(session.context?.preferredModel as string) || 'default'}</code>`,
+            { parse_mode: 'HTML' },
+          );
+        } catch (err) {
+          log.error('[Telegram] /history command error:', err);
+          await ctx.reply('Failed to get history.');
+        }
+      });
+
+      // /status — Show current bot and session status
+      this.bot.command('status', async (ctx) => {
+        const chatId = String(ctx.chat.id);
+        const userId = String(ctx.from?.id ?? '');
+        try {
+          const { channelUsersRepo } = await import('../../../db/repositories/channel-users.js');
+          const { channelSessionsRepo } = await import('../../../db/repositories/channel-sessions.js');
+          const user = await channelUsersRepo.findByPlatform('telegram', userId);
+
+          const session = user
+            ? await channelSessionsRepo.findActive(user.id, this.pluginId, chatId)
+            : null;
+
+          const model = (session?.context?.preferredModel as string) || 'default';
+          const verified = user?.isVerified ? '\u2705 Verified' : '\u274c Not verified';
+
+          const lines = [
+            '<b>OwnPilot Status</b>\n',
+            `Status: \ud83d\udfe2 Connected`,
+            `Bot: @${this.bot?.botInfo?.username ?? 'unknown'}`,
+            `Verification: ${verified}`,
+            `Model: <code>${model}</code>`,
+            session?.conversationId ? `Session: Active` : 'Session: None',
+          ];
+
+          await ctx.reply(lines.join('\n'), { parse_mode: 'HTML' });
+        } catch (err) {
+          log.error('[Telegram] /status command error:', err);
+          await ctx.reply('Failed to get status.');
+        }
+      });
+
+      // ── Generic message handler (AFTER all commands) ──
+      // Non-command messages fall through the command filters above and land here.
+      this.bot.on('message', (ctx) => {
+        this.handleIncomingMessage(ctx.message).catch((err) => {
+          log.error('[Telegram] Error handling message:', err);
+        });
       });
 
       // Install error handler
@@ -178,6 +349,9 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
   }
 
   async disconnect(): Promise<void> {
+    // Deny all pending approvals before stopping
+    clearPendingApprovals();
+
     if (this.bot) {
       // In webhook mode, deregister the webhook from Telegram and cleanup handler
       if (this.webhookMode) {
@@ -315,6 +489,38 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     this.messageChatMap.delete(platformMessageId);
   }
 
+  /**
+   * Create a progress manager for a given chat.
+   * Used by ChannelServiceImpl to show tool execution progress.
+   */
+  createProgressManager(chatId: string): TelegramProgressManager | null {
+    if (!this.bot) return null;
+    return new TelegramProgressManager(this.bot, chatId, this.config.parse_mode);
+  }
+
+  /**
+   * Track a message ID → chatId mapping (for edit/delete support).
+   */
+  trackMessage(platformMessageId: string, chatId: string): void {
+    if (this.messageChatMap.size >= MAX_MESSAGE_CHAT_MAP_SIZE) {
+      const oldest = this.messageChatMap.keys().next().value;
+      if (oldest) this.messageChatMap.delete(oldest);
+    }
+    this.messageChatMap.set(platformMessageId, chatId);
+  }
+
+  /**
+   * Request tool approval from the user via inline keyboard buttons.
+   * Returns true if approved, false if denied or timed out.
+   */
+  async requestApproval(
+    chatId: string,
+    params: { toolName: string; description: string; riskLevel?: string },
+  ): Promise<boolean> {
+    if (!this.bot) return false;
+    return requestTelegramApproval(this.bot, chatId, params);
+  }
+
   async resolveUser(_platformUserId: string): Promise<ChannelUser | null> {
     if (!this.bot) return null;
     try {
@@ -331,8 +537,9 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
   // --------------------------------------------------------------------------
 
   private async handleIncomingMessage(message: Message): Promise<void> {
-    // Skip non-text messages for now (handle attachments in future)
-    if (!message.text && !message.caption) return;
+    // Accept text, captions, or messages with media attachments
+    const hasMedia = !!(message.photo || message.document || message.audio || message.voice || message.video);
+    if (!message.text && !message.caption && !hasMedia) return;
 
     const userId = String(message.from?.id ?? '');
     const chatId = String(message.chat.id);
@@ -356,8 +563,18 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
       isBot: message.from?.is_bot,
     };
 
-    // Collect attachments
-    const attachments = this.extractAttachments(message);
+    // Download and process attachments (with actual file data)
+    let attachments: ChannelAttachment[] = [];
+    if (hasMedia && this.bot) {
+      try {
+        attachments = await downloadTelegramAttachments(this.bot, message);
+      } catch (err) {
+        log.warn('[Telegram] Failed to download attachments, using metadata only', { error: err });
+        attachments = this.extractAttachments(message);
+      }
+    } else {
+      attachments = this.extractAttachments(message);
+    }
 
     const normalized: ChannelIncomingMessage = {
       id: `${this.pluginId}:${message.message_id}`,

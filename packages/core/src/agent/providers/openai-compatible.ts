@@ -18,6 +18,7 @@ import type { Result } from '../../types/result.js';
 import { ok, err } from '../../types/result.js';
 import { InternalError, TimeoutError, ValidationError } from '../../types/errors.js';
 import { getErrorMessage } from '../../services/error-utils.js';
+import { sanitizeToolName, desanitizeToolName } from '../tool-namespace.js';
 import type {
   ProviderConfig as LegacyProviderConfig,
   CompletionRequest,
@@ -278,7 +279,7 @@ export class OpenAICompatibleProvider {
                 content: delta.content,
                 toolCalls: delta.tool_calls?.map((tc) => ({
                   id: tc.id,
-                  name: tc.function?.name,
+                  name: tc.function?.name ? desanitizeToolName(tc.function.name) : undefined,
                   arguments: tc.function?.arguments,
                 })),
                 done: choice?.finish_reason != null,
@@ -472,7 +473,7 @@ export class OpenAICompatibleProvider {
           id: tc.id,
           type: 'function',
           function: {
-            name: tc.name,
+            name: sanitizeToolName(tc.name),
             arguments: tc.arguments,
           },
         }));
@@ -499,7 +500,7 @@ export class OpenAICompatibleProvider {
     return request.tools.map((tool) => ({
       type: 'function',
       function: {
-        name: tool.name,
+        name: sanitizeToolName(tool.name),
         description: tool.description,
         parameters: tool.parameters,
       },
@@ -532,7 +533,7 @@ export class OpenAICompatibleProvider {
 
     return toolCalls.map((tc) => ({
       id: tc.id ?? '',
-      name: tc.function?.name ?? tc.name ?? '',
+      name: desanitizeToolName(tc.function?.name ?? tc.name ?? ''),
       arguments: tc.function?.arguments ?? tc.arguments ?? '{}',
     }));
   }

@@ -26,9 +26,11 @@ interface ChatAgent {
     };
     error?: { message: string; stack?: string };
   }>;
-  getConversation(): { id: string };
+  getConversation(): { id: string; systemPrompt?: string };
   setAdditionalTools?(tools: string[]): void;
   clearAdditionalTools?(): void;
+  setDirectToolMode?(enabled: boolean): void;
+  updateSystemPrompt?(prompt: string): void;
 }
 
 /**
@@ -65,6 +67,27 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
     // Expose direct tools if requested
     if (directTools?.length && agent.setAdditionalTools) {
       agent.setAdditionalTools(directTools);
+    }
+
+    // Direct tool mode: expose all tools directly instead of through meta-tool indirection.
+    // Used for channel flows (Telegram) where simpler models can't handle use_tool() pattern.
+    const directToolMode = ctx.get<boolean>('directToolMode');
+    let savedSystemPrompt: string | undefined;
+    if (directToolMode && agent.setDirectToolMode) {
+      agent.setDirectToolMode(true);
+
+      // Swap out the meta-tool instructions for direct-calling instructions
+      if (agent.updateSystemPrompt) {
+        const currentPrompt = agent.getConversation().systemPrompt ?? '';
+        savedSystemPrompt = currentPrompt;
+        const directPrompt = currentPrompt.replace(
+          /## How to Call Tools[\s\S]*?(?=\n## [^#])/,
+          `## How to Call Tools\nCall tools directly by their function name. Tool names use double-underscore (__) as namespace separator in API calls.\nWhen mentioning tool names to users in text, use dot notation (e.g., "core.add_task" not "core__add_task") for readability.\nUse search_tools("keyword") to discover tools, get_tool_help("tool_name") for parameters.\n\n`,
+        );
+        if (directPrompt !== currentPrompt) {
+          agent.updateSystemPrompt(directPrompt);
+        }
+      }
     }
 
     const startTime = Date.now();
@@ -121,6 +144,14 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
       // Clear direct tools after chat
       if (directTools?.length && agent.clearAdditionalTools) {
         agent.clearAdditionalTools();
+      }
+
+      // Restore direct tool mode and system prompt
+      if (directToolMode && agent.setDirectToolMode) {
+        agent.setDirectToolMode(false);
+        if (savedSystemPrompt !== undefined && agent.updateSystemPrompt) {
+          agent.updateSystemPrompt(savedSystemPrompt);
+        }
       }
 
       const durationMs = Date.now() - startTime;
@@ -202,6 +233,14 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
       // Clear direct tools on error too
       if (directTools?.length && agent.clearAdditionalTools) {
         agent.clearAdditionalTools();
+      }
+
+      // Restore direct tool mode and system prompt on error
+      if (directToolMode && agent.setDirectToolMode) {
+        agent.setDirectToolMode(false);
+        if (savedSystemPrompt !== undefined && agent.updateSystemPrompt) {
+          agent.updateSystemPrompt(savedSystemPrompt);
+        }
       }
 
       const err = error instanceof Error ? error : new Error(String(error));
