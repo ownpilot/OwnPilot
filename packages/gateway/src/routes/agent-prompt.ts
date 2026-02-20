@@ -63,7 +63,7 @@ You can create new JavaScript tools or improve existing ones:
 \`execute_javascript\`(code), \`execute_python\`(code), \`execute_shell\`(command), \`compile_code\`(language, code), \`package_manager\`(command)
 
 ### Media (when enabled)
-- Image: \`analyze_image\`, \`generate_image\`, \`resize_image\`, \`edit_image\`
+- Image: \`analyze_image\`, \`generate_image\`, \`resize_image\`
 - PDF: \`read_pdf\`, \`create_pdf\`, \`get_pdf_info\`
 - Audio: \`text_to_speech\`, \`speech_to_text\`, \`get_audio_info\`
 

@@ -24,7 +24,7 @@ import {
 } from '@ownpilot/core';
 import type { SessionInfo } from '../types/index.js';
 import { agentsRepo, type AgentRecord } from '../db/repositories/index.js';
-import { resolveProviderAndModel, getDefaultProvider, getDefaultModel, getConfiguredProviderIds } from './settings.js';
+import { resolveProviderAndModel, getDefaultProvider, getDefaultModel, getConfiguredProviderIds, getEnabledToolGroupIds } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getExtensionService } from '../services/extension-service.js';
 import { getLog } from '../services/log.js';
@@ -61,6 +61,7 @@ import {
   loadProviderConfig,
   resolveContextWindow,
   resolveRecordTools,
+  resolveToolGroups,
   evictAgentFromCache,
   MAX_AGENT_CACHE_SIZE,
   MAX_CHAT_AGENT_CACHE_SIZE,
@@ -149,13 +150,21 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // These tools ALWAYS bypass toolGroup filtering:
   const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...extensionToolDefs, ...mcpToolDefs];
 
-  // Filter tools based on agent's toolGroups configuration
-  const { tools: resolvedToolNames } = resolveRecordTools(record.config);
-  const allowedToolNames = new Set(resolvedToolNames);
+  // Filter tools: per-agent toolGroups first, fall back to global settings
+  const { tools: resolvedToolNames, configuredToolGroups } = resolveRecordTools(record.config);
+  const hasAgentConfig = (configuredToolGroups && configuredToolGroups.length > 0) || resolvedToolNames.length > 0;
 
-  const filteredStandardTools = allowedToolNames.size > 0
-    ? standardToolDefs.filter(tool => allowedToolNames.has(tool.name) || allowedToolNames.has(getBaseName(tool.name)))
-    : standardToolDefs;
+  let filteredStandardTools: typeof standardToolDefs;
+  if (hasAgentConfig) {
+    // Per-agent toolGroups override
+    const agentAllowed = new Set(resolvedToolNames);
+    filteredStandardTools = standardToolDefs.filter(tool => agentAllowed.has(tool.name) || agentAllowed.has(getBaseName(tool.name)));
+  } else {
+    // Fall back to global tool-groups setting
+    const globalGroupIds = getEnabledToolGroupIds();
+    const globalAllowed = new Set(resolveToolGroups(globalGroupIds, undefined));
+    filteredStandardTools = standardToolDefs.filter(tool => globalAllowed.has(tool.name) || globalAllowed.has(getBaseName(tool.name)));
+  }
 
   const toolDefs = [...filteredStandardTools, ...alwaysIncludedToolDefs];
 
@@ -368,7 +377,16 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   const mcpToolDefs = registerMcpTools(tools, false);
 
   const chatCoreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const toolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...EXTENSION_TOOLS, ...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...extensionToolDefs, ...mcpToolDefs];
+  const chatStandardToolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...EXTENSION_TOOLS];
+  const chatAlwaysIncluded = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...extensionToolDefs, ...mcpToolDefs];
+
+  // Filter by global tool-groups setting
+  const enabledGroupIds = getEnabledToolGroupIds();
+  const allowedToolNames = new Set(resolveToolGroups(enabledGroupIds, undefined));
+  const filteredChatTools = chatStandardToolDefs.filter(
+    tool => allowedToolNames.has(tool.name) || allowedToolNames.has(getBaseName(tool.name))
+  );
+  const toolDefs = [...filteredChatTools, ...chatAlwaysIncluded];
 
   const basePrompt = BASE_SYSTEM_PROMPT;
   let { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {

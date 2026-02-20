@@ -15,50 +15,31 @@ import {
 describe('TOOL_GROUPS', () => {
   const groupIds = Object.keys(TOOL_GROUPS);
 
-  it('contains the core group', () => {
-    expect(TOOL_GROUPS.core).toBeDefined();
-  });
-
-  it('contains the filesystem group', () => {
-    expect(TOOL_GROUPS.filesystem).toBeDefined();
-  });
-
-  it('contains personal data groups', () => {
-    for (const id of ['tasks', 'bookmarks', 'notes', 'contacts', 'calendar']) {
+  it('contains always-on groups', () => {
+    for (const id of ['core', 'filesystem', 'personalData', 'customData', 'memory', 'goals', 'utilities', 'customTools']) {
       expect(TOOL_GROUPS[id]).toBeDefined();
     }
   });
 
-  it('contains memory and goals groups', () => {
-    expect(TOOL_GROUPS.memory).toBeDefined();
-    expect(TOOL_GROUPS.goals).toBeDefined();
-  });
-
-  it('contains email group', () => {
-    expect(TOOL_GROUPS.email).toBeDefined();
-  });
-
-  it('contains git group', () => {
-    expect(TOOL_GROUPS.git).toBeDefined();
-  });
-
-  it('contains customData group', () => {
-    expect(TOOL_GROUPS.customData).toBeDefined();
-  });
-
-  it('contains customTools group', () => {
-    expect(TOOL_GROUPS.customTools).toBeDefined();
-  });
-
-  it('contains utility groups', () => {
-    for (const id of ['textUtils', 'dateTime', 'conversion', 'generation', 'extraction', 'validation', 'listOps', 'mathStats']) {
+  it('contains toggleable groups', () => {
+    for (const id of ['codeExecution', 'webFetch', 'media', 'communication', 'devTools', 'finance']) {
       expect(TOOL_GROUPS[id]).toBeDefined();
     }
   });
 
-  it('contains advanced groups', () => {
-    for (const id of ['codeExecution', 'webFetch', 'weather', 'image', 'audio', 'pdf', 'translation', 'vectorSearch', 'dataExtraction']) {
-      expect(TOOL_GROUPS[id]).toBeDefined();
+  it('has exactly 14 groups', () => {
+    expect(groupIds.length).toBe(14);
+  });
+
+  it('always-on groups have alwaysOn flag', () => {
+    for (const id of ['core', 'filesystem', 'personalData', 'memory']) {
+      expect(TOOL_GROUPS[id].alwaysOn).toBe(true);
+    }
+  });
+
+  it('toggleable groups do not have alwaysOn flag', () => {
+    for (const id of ['codeExecution', 'webFetch', 'media', 'communication', 'devTools', 'finance']) {
+      expect(TOOL_GROUPS[id].alwaysOn).toBeFalsy();
     }
   });
 
@@ -86,7 +67,6 @@ describe('TOOL_GROUPS', () => {
 
   describe('no duplicate tool names', () => {
     it('has no duplicate tool names across all groups', () => {
-      const allTools: string[] = [];
       const seen = new Set<string>();
       const duplicates: string[] = [];
 
@@ -96,11 +76,105 @@ describe('TOOL_GROUPS', () => {
             duplicates.push(tool);
           }
           seen.add(tool);
-          allTools.push(tool);
         }
       }
 
       expect(duplicates).toEqual([]);
+    });
+  });
+
+  describe('personalData group merges old groups', () => {
+    it('contains task tools', () => {
+      const tools = TOOL_GROUPS.personalData.tools;
+      expect(tools).toContain('add_task');
+      expect(tools).toContain('list_tasks');
+      expect(tools).toContain('complete_task');
+    });
+
+    it('contains note tools', () => {
+      const tools = TOOL_GROUPS.personalData.tools;
+      expect(tools).toContain('add_note');
+      expect(tools).toContain('list_notes');
+    });
+
+    it('contains bookmark tools', () => {
+      const tools = TOOL_GROUPS.personalData.tools;
+      expect(tools).toContain('add_bookmark');
+      expect(tools).toContain('list_bookmarks');
+    });
+
+    it('contains calendar tools', () => {
+      const tools = TOOL_GROUPS.personalData.tools;
+      expect(tools).toContain('add_calendar_event');
+      expect(tools).toContain('list_calendar_events');
+    });
+
+    it('contains contact tools', () => {
+      const tools = TOOL_GROUPS.personalData.tools;
+      expect(tools).toContain('add_contact');
+      expect(tools).toContain('list_contacts');
+    });
+  });
+
+  describe('media group merges image+audio+pdf', () => {
+    it('contains image tools', () => {
+      const tools = TOOL_GROUPS.media.tools;
+      expect(tools).toContain('analyze_image');
+      expect(tools).toContain('generate_image');
+      expect(tools).toContain('resize_image');
+    });
+
+    it('contains audio tools', () => {
+      const tools = TOOL_GROUPS.media.tools;
+      expect(tools).toContain('text_to_speech');
+      expect(tools).toContain('speech_to_text');
+    });
+
+    it('contains pdf tools', () => {
+      const tools = TOOL_GROUPS.media.tools;
+      expect(tools).toContain('read_pdf');
+      expect(tools).toContain('create_pdf');
+    });
+  });
+
+  describe('communication group merges email+weather', () => {
+    it('contains email tools', () => {
+      const tools = TOOL_GROUPS.communication.tools;
+      expect(tools).toContain('send_email');
+      expect(tools).toContain('list_emails');
+    });
+
+    it('contains weather tools', () => {
+      const tools = TOOL_GROUPS.communication.tools;
+      expect(tools).toContain('get_weather');
+      expect(tools).toContain('get_weather_forecast');
+    });
+  });
+
+  describe('utilities group merges utility sub-groups', () => {
+    const tools = TOOL_GROUPS.utilities.tools;
+
+    it('contains date/time tools', () => {
+      expect(tools).toContain('date_diff');
+      expect(tools).toContain('date_add');
+    });
+
+    it('contains text processing tools', () => {
+      expect(tools).toContain('format_json');
+      expect(tools).toContain('count_text');
+      expect(tools).toContain('transform_text');
+      expect(tools).toContain('run_regex');
+    });
+
+    it('contains conversion tools', () => {
+      expect(tools).toContain('convert_units');
+      expect(tools).toContain('encode_decode');
+      expect(tools).toContain('hash_text');
+    });
+
+    it('contains data extraction tools', () => {
+      expect(tools).toContain('extract_entities');
+      expect(tools).toContain('extract_table_data');
     });
   });
 });
@@ -114,40 +188,24 @@ describe('DEFAULT_ENABLED_GROUPS', () => {
     expect(DEFAULT_ENABLED_GROUPS.length).toBeGreaterThan(0);
   });
 
-  it('contains core and filesystem', () => {
+  it('contains always-on groups', () => {
     expect(DEFAULT_ENABLED_GROUPS).toContain('core');
     expect(DEFAULT_ENABLED_GROUPS).toContain('filesystem');
-  });
-
-  it('contains personal data groups', () => {
-    for (const id of ['tasks', 'bookmarks', 'notes', 'calendar', 'contacts']) {
-      expect(DEFAULT_ENABLED_GROUPS).toContain(id);
-    }
-  });
-
-  it('contains customData', () => {
+    expect(DEFAULT_ENABLED_GROUPS).toContain('personalData');
     expect(DEFAULT_ENABLED_GROUPS).toContain('customData');
-  });
-
-  it('contains memory and goals', () => {
     expect(DEFAULT_ENABLED_GROUPS).toContain('memory');
     expect(DEFAULT_ENABLED_GROUPS).toContain('goals');
+    expect(DEFAULT_ENABLED_GROUPS).toContain('utilities');
+    expect(DEFAULT_ENABLED_GROUPS).toContain('customTools');
   });
 
-  it('does not contain codeExecution by default', () => {
+  it('does not contain disabled-by-default groups', () => {
     expect(DEFAULT_ENABLED_GROUPS).not.toContain('codeExecution');
-  });
-
-  it('does not contain webFetch by default', () => {
     expect(DEFAULT_ENABLED_GROUPS).not.toContain('webFetch');
-  });
-
-  it('does not contain email by default', () => {
-    expect(DEFAULT_ENABLED_GROUPS).not.toContain('email');
-  });
-
-  it('does not contain git by default', () => {
-    expect(DEFAULT_ENABLED_GROUPS).not.toContain('git');
+    expect(DEFAULT_ENABLED_GROUPS).not.toContain('media');
+    expect(DEFAULT_ENABLED_GROUPS).not.toContain('communication');
+    expect(DEFAULT_ENABLED_GROUPS).not.toContain('devTools');
+    expect(DEFAULT_ENABLED_GROUPS).not.toContain('finance');
   });
 
   it('only contains valid group ids', () => {
@@ -180,29 +238,40 @@ describe('getEnabledTools', () => {
     expect(tools).toContain('write_file');
   });
 
+  it('includes personalData tools by default', () => {
+    const tools = getEnabledTools();
+    expect(tools).toContain('add_task');
+    expect(tools).toContain('list_tasks');
+    expect(tools).toContain('add_note');
+  });
+
   it('does not include code execution tools by default', () => {
     const tools = getEnabledTools();
     expect(tools).not.toContain('execute_javascript');
     expect(tools).not.toContain('execute_shell');
   });
 
+  it('does not include media tools by default', () => {
+    const tools = getEnabledTools();
+    expect(tools).not.toContain('analyze_image');
+    expect(tools).not.toContain('text_to_speech');
+  });
+
   it('returns only tools for specified groups', () => {
     const tools = getEnabledTools(['core']);
     expect(tools).toEqual(expect.arrayContaining(['get_current_time', 'calculate', 'generate_uuid']));
-    // Should not contain tools from other groups
     expect(tools).not.toContain('read_file');
     expect(tools).not.toContain('add_task');
   });
 
   it('returns tools from multiple specified groups', () => {
-    const tools = getEnabledTools(['core', 'tasks']);
+    const tools = getEnabledTools(['core', 'personalData']);
     expect(tools).toContain('get_current_time');
     expect(tools).toContain('add_task');
     expect(tools).toContain('list_tasks');
   });
 
   it('deduplicates tool names', () => {
-    // Pass the same group twice
     const tools = getEnabledTools(['core', 'core']);
     const unique = new Set(tools);
     expect(tools.length).toBe(unique.size);
@@ -230,17 +299,24 @@ describe('getEnabledTools', () => {
     expect(tools).toContain('execute_shell');
   });
 
-  it('returns email tools when explicitly enabled', () => {
-    const tools = getEnabledTools(['email']);
+  it('returns communication tools when explicitly enabled', () => {
+    const tools = getEnabledTools(['communication']);
     expect(tools).toContain('send_email');
     expect(tools).toContain('list_emails');
+    expect(tools).toContain('get_weather');
   });
 
-  it('returns git tools when explicitly enabled', () => {
-    const tools = getEnabledTools(['git']);
+  it('returns devTools when explicitly enabled', () => {
+    const tools = getEnabledTools(['devTools']);
     expect(tools).toContain('git_status');
     expect(tools).toContain('git_diff');
     expect(tools).toContain('git_log');
+  });
+
+  it('returns finance tools when explicitly enabled', () => {
+    const tools = getEnabledTools(['finance']);
+    expect(tools).toContain('add_expense');
+    expect(tools).toContain('query_expenses');
   });
 });
 
@@ -274,7 +350,7 @@ describe('getToolGroups', () => {
     const groups = getToolGroups();
     const core = groups.find((g) => g.id === 'core');
     expect(core).toBeDefined();
-    expect(core?.name).toBe('Core Utilities');
+    expect(core?.name).toBe('Core');
   });
 });
 
@@ -295,10 +371,16 @@ describe('getGroupForTool', () => {
     expect(group?.id).toBe('filesystem');
   });
 
-  it('finds the correct group for a task tool', () => {
+  it('finds the correct group for a task tool (personalData)', () => {
     const group = getGroupForTool('add_task');
     expect(group).toBeDefined();
-    expect(group?.id).toBe('tasks');
+    expect(group?.id).toBe('personalData');
+  });
+
+  it('finds the correct group for a note tool (personalData)', () => {
+    const group = getGroupForTool('add_note');
+    expect(group).toBeDefined();
+    expect(group?.id).toBe('personalData');
   });
 
   it('finds the correct group for a memory tool', () => {
@@ -319,22 +401,46 @@ describe('getGroupForTool', () => {
     expect(group?.id).toBe('codeExecution');
   });
 
-  it('finds the correct group for an email tool', () => {
+  it('finds the correct group for an email tool (communication)', () => {
     const group = getGroupForTool('send_email');
     expect(group).toBeDefined();
-    expect(group?.id).toBe('email');
+    expect(group?.id).toBe('communication');
   });
 
-  it('finds the correct group for a git tool', () => {
+  it('finds the correct group for a weather tool (communication)', () => {
+    const group = getGroupForTool('get_weather');
+    expect(group).toBeDefined();
+    expect(group?.id).toBe('communication');
+  });
+
+  it('finds the correct group for a git tool (devTools)', () => {
     const group = getGroupForTool('git_commit');
     expect(group).toBeDefined();
-    expect(group?.id).toBe('git');
+    expect(group?.id).toBe('devTools');
   });
 
   it('finds the correct group for a custom tools tool', () => {
     const group = getGroupForTool('create_tool');
     expect(group).toBeDefined();
     expect(group?.id).toBe('customTools');
+  });
+
+  it('finds the correct group for an image tool (media)', () => {
+    const group = getGroupForTool('analyze_image');
+    expect(group).toBeDefined();
+    expect(group?.id).toBe('media');
+  });
+
+  it('finds the correct group for an expense tool (finance)', () => {
+    const group = getGroupForTool('add_expense');
+    expect(group).toBeDefined();
+    expect(group?.id).toBe('finance');
+  });
+
+  it('finds the correct group for a utility tool', () => {
+    const group = getGroupForTool('format_json');
+    expect(group).toBeDefined();
+    expect(group?.id).toBe('utilities');
   });
 
   it('returns undefined for an unknown tool', () => {
@@ -345,6 +451,12 @@ describe('getGroupForTool', () => {
   it('returns undefined for an empty string', () => {
     const group = getGroupForTool('');
     expect(group).toBeUndefined();
+  });
+
+  it('resolves namespaced tool names via base name', () => {
+    const group = getGroupForTool('core.get_current_time');
+    expect(group).toBeDefined();
+    expect(group?.id).toBe('core');
   });
 });
 

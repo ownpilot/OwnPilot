@@ -10,6 +10,27 @@ import type { PluginInfo, PluginStats } from '../api';
 
 
 
+/** Returns true if icon looks like a URL rather than an emoji/text string */
+function isIconUrl(icon: string): boolean {
+  return icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('/');
+}
+
+/** Render plugin icon — emoji as text, URL as img, fallback to Puzzle */
+function PluginIcon({ icon, size = 'sm' }: { icon?: string; size?: 'sm' | 'lg' }) {
+  const textSize = size === 'lg' ? 'text-2xl' : 'text-xl';
+  const imgSize = size === 'lg' ? 'w-8 h-8' : 'w-6 h-6';
+  const fallbackSize = size === 'lg' ? 'w-6 h-6' : 'w-5 h-5';
+
+  if (!icon) return <Puzzle className={`${fallbackSize} text-primary`} />;
+
+  if (isIconUrl(icon)) {
+    return <img src={icon} alt="" className={imgSize} />;
+  }
+
+  // Emoji or text icon
+  return <span className={textSize} role="img">{icon}</span>;
+}
+
 const CAPABILITY_LABELS: Record<string, { label: string; color: string }> = {
   tools: { label: 'Tools', color: 'bg-blue-500/20 text-blue-600 dark:text-blue-400' },
   handlers: { label: 'Handlers', color: 'bg-purple-500/20 text-purple-600 dark:text-purple-400' },
@@ -34,6 +55,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   utilities: 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400',
   data: 'bg-amber-500/20 text-amber-600 dark:text-amber-400',
   integrations: 'bg-purple-500/20 text-purple-600 dark:text-purple-400',
+  integration: 'bg-purple-500/20 text-purple-600 dark:text-purple-400',
+  channel: 'bg-teal-500/20 text-teal-600 dark:text-teal-400',
   media: 'bg-pink-500/20 text-pink-600 dark:text-pink-400',
   developer: 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400',
   lifestyle: 'bg-rose-500/20 text-rose-600 dark:text-rose-400',
@@ -217,11 +240,7 @@ function PluginCard({ plugin, onToggle, onClick }: PluginCardProps) {
       <div className="flex items-start justify-between mb-3">
         <button onClick={onClick} className="flex items-start gap-3 text-left flex-1 min-w-0">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            {plugin.icon ? (
-              <img src={plugin.icon} alt="" className="w-6 h-6" />
-            ) : (
-              <Puzzle className="w-5 h-5 text-primary" />
-            )}
+            <PluginIcon icon={plugin.icon} size="sm" />
           </div>
           <div className="min-w-0">
             <h3 className="font-medium text-text-primary dark:text-dark-text-primary truncate">
@@ -386,11 +405,7 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                {plugin.icon ? (
-                  <img src={plugin.icon} alt="" className="w-8 h-8" />
-                ) : (
-                  <Puzzle className="w-6 h-6 text-primary" />
-                )}
+                <PluginIcon icon={plugin.icon} size="lg" />
               </div>
               <div>
                 <div className="flex items-center gap-2">

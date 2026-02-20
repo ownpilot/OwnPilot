@@ -808,7 +808,7 @@ export function WorkflowEditorPage() {
   const handleApplyWorkflow = useCallback((definition: WorkflowDefinition) => {
     if (nodes.length > 0 && !confirm('This will replace all current nodes and edges. Continue?')) return;
 
-    const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(definition);
+    const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(definition, toolNames);
 
     // Apply edge label styling
     const styledEdges = rfEdges.map((e) => ({
@@ -829,7 +829,7 @@ export function WorkflowEditorPage() {
     setHasUnsavedChanges(true);
     setSelectedNodeId(null);
     toast.success('Workflow applied from Copilot');
-  }, [nodes, setNodes, setEdges, toast]);
+  }, [nodes, toolNames, setNodes, setEdges, toast]);
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) ?? null,

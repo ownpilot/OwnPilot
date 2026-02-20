@@ -5,9 +5,258 @@ import {
   Server, Terminal, Globe, RefreshCw, Plus, Trash2, Edit2, Check,
   AlertCircle, Zap, X, ChevronDown, ChevronRight,
   Folder, Code, Search, Database, FileText, Download,
+  Copy, Eye, BookOpen, Link, Wrench,
 } from '../components/icons';
 import { mcpApi } from '../api';
-import type { McpServer, McpServerTool, CreateMcpServerInput } from '../api/endpoints/mcp';
+import type { McpServer, McpServerTool, McpServerInfo, CreateMcpServerInput } from '../api/endpoints/mcp';
+
+// =============================================================================
+// OwnPilot MCP Server Section
+// =============================================================================
+
+function OwnPilotServerSection() {
+  const [info, setInfo] = useState<McpServerInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showTools, setShowTools] = useState(false);
+  const [activeSnippet, setActiveSnippet] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const toast = useToast();
+
+  useEffect(() => {
+    mcpApi.serverInfo()
+      .then(setInfo)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const copyToClipboard = useCallback(async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(label);
+      toast.success(`Copied ${label}`);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      toast.error('Failed to copy');
+    }
+  }, [toast]);
+
+  if (loading) {
+    return (
+      <div className="border border-border dark:border-dark-border rounded-xl bg-bg-primary dark:bg-dark-bg-primary p-6">
+        <div className="animate-pulse space-y-3">
+          <div className="h-5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded w-48" />
+          <div className="h-4 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded w-96" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !info) {
+    return (
+      <div className="border border-error/30 rounded-xl bg-error/5 p-4 flex items-center gap-3">
+        <AlertCircle className="w-5 h-5 text-error shrink-0" />
+        <span className="text-sm text-error">{error ?? 'Failed to load MCP server info'}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-border dark:border-dark-border rounded-xl bg-bg-primary dark:bg-dark-bg-primary overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-border dark:border-dark-border bg-gradient-to-r from-primary/5 to-transparent">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Server className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">
+                OwnPilot MCP Server
+              </h2>
+              <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+                Expose OwnPilot tools to external AI clients via MCP protocol
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-success/10 text-success font-medium">
+              <Check className="w-3 h-3" />
+              Active
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted">
+              <Wrench className="w-3 h-3" />
+              {info.tools.count} tools
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Endpoint URL */}
+      <div className="px-5 py-3 border-b border-border dark:border-dark-border">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <label className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1 block">
+              Endpoint URL
+            </label>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 px-3 py-1.5 text-sm font-mono rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary truncate">
+                {info.server.endpoint}
+              </code>
+              <button
+                onClick={() => copyToClipboard(info.server.endpoint, 'endpoint URL')}
+                className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted transition-colors shrink-0"
+                title="Copy URL"
+              >
+                {copied === 'endpoint URL' ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <label className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1 block">
+              Protocol
+            </label>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary">
+              <Globe className="w-3 h-3" />
+              Streamable HTTP
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Setup Tabs */}
+      <div className="px-5 py-3 border-b border-border dark:border-dark-border">
+        <label className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-2 block">
+          Quick Setup — Copy config for your AI client
+        </label>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {Object.entries(info.configSnippets).map(([key, snippet]) => (
+            <button
+              key={key}
+              onClick={() => setActiveSnippet(activeSnippet === key ? null : key)}
+              className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                activeSnippet === key
+                  ? 'border-primary bg-primary/10 text-primary font-medium'
+                  : 'border-border dark:border-dark-border text-text-muted dark:text-dark-text-muted hover:border-primary/40 hover:text-text-primary dark:hover:text-dark-text-primary'
+              }`}
+            >
+              {snippet.label}
+            </button>
+          ))}
+        </div>
+        {activeSnippet && info.configSnippets[activeSnippet] && (
+          <div className="space-y-1.5">
+            <p className="text-xs text-text-muted dark:text-dark-text-muted">
+              {info.configSnippets[activeSnippet]!.description}
+            </p>
+            <div className="relative">
+              <pre className="px-3 py-2.5 text-xs font-mono rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary overflow-x-auto">
+                {JSON.stringify(info.configSnippets[activeSnippet]!.config, null, 2)}
+              </pre>
+              <button
+                onClick={() => copyToClipboard(
+                  JSON.stringify(info.configSnippets[activeSnippet]!.config, null, 2),
+                  `${info.configSnippets[activeSnippet]!.label} config`,
+                )}
+                className="absolute top-2 right-2 p-1.5 rounded-md bg-bg-tertiary/80 dark:bg-dark-bg-tertiary/80 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted transition-colors"
+                title="Copy config"
+              >
+                {copied === `${info.configSnippets[activeSnippet]!.label} config`
+                  ? <Check className="w-3.5 h-3.5 text-success" />
+                  : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Exposed Tools */}
+      <div className="px-5 py-3">
+        <button
+          onClick={() => setShowTools(!showTools)}
+          className="flex items-center gap-2 text-xs font-medium text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors w-full"
+        >
+          {showTools ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+          <Eye className="w-3.5 h-3.5" />
+          View Exposed Tools ({info.tools.count})
+        </button>
+        {showTools && (
+          <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
+            {info.tools.items.map(tool => (
+              <div key={tool.qualifiedName} className="px-3 py-1.5 rounded bg-bg-secondary dark:bg-dark-bg-secondary text-sm flex items-start gap-2">
+                <span className="font-medium text-text-primary dark:text-dark-text-primary whitespace-nowrap shrink-0">{tool.name}</span>
+                {tool.description && (
+                  <span className="text-text-muted dark:text-dark-text-muted text-xs line-clamp-1">{tool.description}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Usage Guide */}
+      <details className="border-t border-border dark:border-dark-border">
+        <summary className="px-5 py-3 flex items-center gap-2 text-xs font-medium text-text-muted dark:text-dark-text-muted cursor-pointer hover:text-text-primary dark:hover:text-dark-text-primary select-none">
+          <BookOpen className="w-3.5 h-3.5" />
+          Usage Guide
+        </summary>
+        <div className="px-5 pb-4 text-xs text-text-secondary dark:text-dark-text-secondary space-y-3">
+          <div>
+            <h4 className="font-semibold text-text-primary dark:text-dark-text-primary mb-1">What is MCP?</h4>
+            <p>
+              Model Context Protocol (MCP) is an open standard that lets AI applications discover and use tools
+              from external servers. OwnPilot exposes all its tools via MCP, so any MCP-compatible AI client
+              can use OwnPilot's capabilities (file management, web search, code execution, task management, etc).
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-text-primary dark:text-dark-text-primary mb-1">How it works</h4>
+            <ol className="list-decimal list-inside space-y-1 text-text-muted dark:text-dark-text-muted">
+              <li>OwnPilot runs a Streamable HTTP server at the endpoint URL shown above</li>
+              <li>MCP clients connect and discover available tools via <code className="px-1 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary">tools/list</code></li>
+              <li>Clients call tools via <code className="px-1 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary">tools/call</code> with JSON arguments</li>
+              <li>Results are returned as structured content (text, images, etc.)</li>
+            </ol>
+          </div>
+          <div>
+            <h4 className="font-semibold text-text-primary dark:text-dark-text-primary mb-1">Claude Desktop Setup</h4>
+            <ol className="list-decimal list-inside space-y-1 text-text-muted dark:text-dark-text-muted">
+              <li>Open Claude Desktop settings</li>
+              <li>Go to <strong>Developer</strong> &rarr; <strong>Edit Config</strong></li>
+              <li>Add the OwnPilot config to the <code className="px-1 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary">mcpServers</code> section</li>
+              <li>Restart Claude Desktop &mdash; OwnPilot tools will appear in the tool picker</li>
+            </ol>
+          </div>
+          <div>
+            <h4 className="font-semibold text-text-primary dark:text-dark-text-primary mb-1">Cursor / Windsurf Setup</h4>
+            <ol className="list-decimal list-inside space-y-1 text-text-muted dark:text-dark-text-muted">
+              <li>Create <code className="px-1 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary">.cursor/mcp.json</code> in your project root (or via Cursor settings)</li>
+              <li>Add the OwnPilot config snippet</li>
+              <li>Restart the editor &mdash; tools available in Composer</li>
+            </ol>
+          </div>
+          <div>
+            <h4 className="font-semibold text-text-primary dark:text-dark-text-primary mb-1">Claude Code Setup</h4>
+            <ol className="list-decimal list-inside space-y-1 text-text-muted dark:text-dark-text-muted">
+              <li>Create <code className="px-1 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary">.mcp.json</code> in your project root (per-project) or <code className="px-1 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary">~/.claude/mcp.json</code> (global)</li>
+              <li>Add the OwnPilot config snippet</li>
+              <li>Restart Claude Code &mdash; tools available automatically</li>
+            </ol>
+          </div>
+          <div>
+            <h4 className="font-semibold text-text-primary dark:text-dark-text-primary mb-1">Security Notes</h4>
+            <ul className="list-disc list-inside space-y-1 text-text-muted dark:text-dark-text-muted">
+              <li>The MCP server runs on the same port as OwnPilot's API</li>
+              <li>Tools execute with the same permissions as OwnPilot</li>
+              <li>For remote access, use a reverse proxy with authentication</li>
+              <li>The server is stateful per-session but ephemeral &mdash; no state persisted between restarts</li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+}
 
 // =============================================================================
 // Status helpers
@@ -510,74 +759,81 @@ export function McpServersPage() {
   });
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-text-primary dark:text-dark-text-primary">MCP Servers</h1>
-          <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
-            Connect to external MCP servers to extend OwnPilot with additional tools.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={fetchServers}
-            className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted transition-colors">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          <button onClick={() => setShowForm({ mode: 'add' })}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors">
-            <Plus className="w-4 h-4" />
-            Add Server
-          </button>
-        </div>
+    <div className="max-w-3xl mx-auto p-6 space-y-8">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-xl font-semibold text-text-primary dark:text-dark-text-primary">MCP Integration</h1>
+        <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
+          Use OwnPilot as an MCP server for external AI clients, or connect to external MCP servers for additional tools.
+        </p>
       </div>
 
-      {/* Server List */}
-      {loading ? (
-        <div className="text-center text-text-muted dark:text-dark-text-muted py-12">Loading...</div>
-      ) : servers.length === 0 ? (
-        <div className="text-center py-12 space-y-3">
-          <Server className="w-12 h-12 mx-auto text-text-muted dark:text-dark-text-muted opacity-40" />
-          <p className="text-text-muted dark:text-dark-text-muted">No MCP servers configured</p>
-          <p className="text-sm text-text-muted dark:text-dark-text-muted">
-            Add an MCP server to extend OwnPilot with external tools.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {servers.map(server => (
-            <ServerCard
-              key={server.id}
-              server={server}
-              onConnect={() => handleConnect(server)}
-              onDisconnect={() => handleDisconnect(server)}
-              onEdit={() => setShowForm({ mode: 'edit', server })}
-              onDelete={() => handleDelete(server)}
-              connecting={connectingId === server.id}
-            />
-          ))}
-        </div>
-      )}
+      {/* Section 1: OwnPilot as MCP Server */}
+      <OwnPilotServerSection />
 
-      {/* Quick Add — Popular MCP Servers */}
-      <div className="space-y-3">
-        <h2 className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Quick Add — Popular MCP Servers</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {MCP_PRESETS.map(preset => (
-            <PresetCard
-              key={preset.name}
-              preset={preset}
-              alreadyAdded={servers.some(s => s.name === preset.name)}
-              onAdd={() => setShowForm({ mode: 'add', preset: preset.form })}
-            />
-          ))}
+      {/* Section 2: External MCP Servers (Client) */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">External MCP Servers</h2>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+              Connect to external MCP servers to add tools to OwnPilot
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={fetchServers}
+              className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted transition-colors">
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <button onClick={() => setShowForm({ mode: 'add' })}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors">
+              <Plus className="w-4 h-4" />
+              Add Server
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Info */}
-      <div className="text-xs text-text-muted dark:text-dark-text-muted space-y-1 pt-4 border-t border-border dark:border-dark-border">
-        <p>MCP (Model Context Protocol) lets you connect OwnPilot to external tool servers.</p>
-        <p>Tools from connected servers appear in the AI's tool catalog with <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded">mcp.servername.</code> prefix.</p>
+        {/* Server List */}
+        {loading ? (
+          <div className="text-center text-text-muted dark:text-dark-text-muted py-8">Loading...</div>
+        ) : servers.length === 0 ? (
+          <div className="text-center py-8 space-y-2 border border-dashed border-border dark:border-dark-border rounded-xl">
+            <Link className="w-8 h-8 mx-auto text-text-muted dark:text-dark-text-muted opacity-40" />
+            <p className="text-sm text-text-muted dark:text-dark-text-muted">No external MCP servers configured</p>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted">
+              Add an MCP server or use a preset below
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {servers.map(server => (
+              <ServerCard
+                key={server.id}
+                server={server}
+                onConnect={() => handleConnect(server)}
+                onDisconnect={() => handleDisconnect(server)}
+                onEdit={() => setShowForm({ mode: 'edit', server })}
+                onDelete={() => handleDelete(server)}
+                connecting={connectingId === server.id}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Quick Add — Popular MCP Servers */}
+        <div className="space-y-3 pt-2">
+          <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Quick Add — Popular MCP Servers</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {MCP_PRESETS.map(preset => (
+              <PresetCard
+                key={preset.name}
+                preset={preset}
+                alreadyAdded={servers.some(s => s.name === preset.name)}
+                onAdd={() => setShowForm({ mode: 'add', preset: preset.form })}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Add/Edit Dialog */}

@@ -69,7 +69,7 @@ Use this ONLY for truly custom data types that don't have built-in support.
 - EXPENSES/FINANCE: Use the expense tracker tools (add_expense, query_expenses, etc.)
 - MEMORIES: Use the memory tools (remember, recall, etc.)
 - GOALS: Use the goal tools (create_goal, update_goal, etc.)
-- SCHEDULED TASKS: Use the scheduler tools (create_scheduled_task, etc.)
+- AUTOMATIONS: Use the trigger tools (create_trigger, etc.)
 
 Custom tables are for user-specific data like: book lending lists, recipe collections,
 inventory tracking, workout logs, custom collections, etc.
