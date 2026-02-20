@@ -918,17 +918,20 @@ describe('ChannelServiceImpl', () => {
     });
 
     describe('verification', () => {
-      it('should send verification prompt to unverified user not in whitelist', async () => {
+      it('should reject unverified user not in whitelist', async () => {
         mockUsersRepo.findOrCreate.mockResolvedValue(
           createChannelUser({ isVerified: false }),
         );
-        mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
+        // allowed_users has entries, but NOT our test user (user-456)
+        mockConfigServicesRepo.getDefaultEntry.mockReturnValue({
+          data: { allowed_users: 'other-user-999' },
+        });
 
         await service.processIncomingMessage(message);
 
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('verify your identity'),
+            text: expect.stringContaining('not authorized'),
           }),
         );
         // Should NOT proceed to message processing
@@ -966,21 +969,35 @@ describe('ChannelServiceImpl', () => {
         expect(mockMessagesRepo.create).toHaveBeenCalled();
       });
 
-      it('should send verification prompt when whitelist is empty', async () => {
-        mockUsersRepo.findOrCreate.mockResolvedValue(
-          createChannelUser({ isVerified: false }),
-        );
+      it('should auto-verify when no allowed_users restriction is set', async () => {
+        const unverifiedUser = createChannelUser({ isVerified: false });
+        mockUsersRepo.findOrCreate.mockResolvedValue(unverifiedUser);
         mockConfigServicesRepo.getDefaultEntry.mockReturnValue({
           data: { allowed_users: '' },
         });
 
+        // Set up MessageBus for continued processing
+        const mockBus = { process: vi.fn().mockResolvedValue({ response: { content: 'Auto-verified response' } }) };
+        mockHasServiceRegistry.mockReturnValue(true);
+        mockGetServiceRegistry.mockReturnValue({
+          get: vi.fn().mockImplementation((token: unknown) => {
+            const name = (token as { name: string }).name;
+            if (name === 'message') return mockBus;
+            if (name === 'session') return null;
+            throw new Error('Not found');
+          }),
+        });
+        mockGetOrCreateDefaultAgent.mockResolvedValue({ id: 'default' });
+
         await service.processIncomingMessage(message);
 
-        expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
-          expect.objectContaining({
-            text: expect.stringContaining('verify your identity'),
-          }),
+        expect(mockVerificationService.verifyViaWhitelist).toHaveBeenCalledWith(
+          'telegram',
+          'user-456',
+          'Test User',
         );
+        // Should proceed to message processing
+        expect(mockMessagesRepo.create).toHaveBeenCalled();
       });
     });
 
@@ -1166,7 +1183,7 @@ describe('ChannelServiceImpl', () => {
             throw new Error('Not found');
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue({ id: 'default' });
+        mockGetOrCreateDefaultAgent.mockResolvedValue({ id: 'default', setRequestApproval: vi.fn() });
       });
 
       it('should route through MessageBus when available', async () => {

@@ -44,6 +44,8 @@ export class Agent {
   private additionalToolNames: string[] = [];
   /** Per-request override for max tool calls (0 = unlimited, undefined = use config) */
   private maxToolCallsOverride?: number;
+  /** When true, expose all tools directly to the LLM instead of through meta-tool indirection */
+  private directToolMode = false;
 
   constructor(
     config: AgentConfig,
@@ -98,6 +100,13 @@ export class Agent {
    * Get available tool definitions
    */
   getTools(): readonly ToolDefinition[] {
+    // Direct tool mode: expose ALL tools except use_tool/batch_use_tool (redundant)
+    if (this.directToolMode) {
+      return this.tools.getDefinitions().filter(
+        (t) => t.name !== 'use_tool' && t.name !== 'batch_use_tool'
+      );
+    }
+
     if (this.config.tools?.length) {
       const names = this.config.tools.map((t) => String(t));
       // Merge additional tool names (from direct tool registration)
@@ -136,6 +145,24 @@ export class Agent {
    */
   clearAdditionalTools(): void {
     this.additionalToolNames = [];
+  }
+
+  /**
+   * Enable/disable direct tool mode.
+   * When enabled, all registered tools are exposed directly to the LLM
+   * (excluding `use_tool` and `batch_use_tool` which become redundant).
+   * Used for channel flows (Telegram) where simpler/local models
+   * can't handle meta-tool indirection.
+   */
+  setDirectToolMode(enabled: boolean): void {
+    this.directToolMode = enabled;
+  }
+
+  /**
+   * Check if direct tool mode is enabled.
+   */
+  isDirectToolMode(): boolean {
+    return this.directToolMode;
   }
 
   /**

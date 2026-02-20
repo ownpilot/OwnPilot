@@ -45,6 +45,8 @@ const ConnectedAppsPage = lazy(() => import('./pages/ConnectedAppsPage').then((m
 const WorkflowsPage = lazy(() => import('./pages/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
 const WorkflowEditorPage = lazy(() => import('./pages/WorkflowEditorPage').then((m) => ({ default: m.WorkflowEditorPage })));
 const ToolGroupsPage = lazy(() => import('./pages/ToolGroupsPage').then((m) => ({ default: m.ToolGroupsPage })));
+const WizardsPage = lazy(() => import('./pages/WizardsPage').then((m) => ({ default: m.WizardsPage })));
+const WizardRouter = lazy(() => import('./pages/wizards/WizardRouter').then((m) => ({ default: m.WizardRouter })));
 const SystemPage = lazy(() => import('./pages/SystemPage').then((m) => ({ default: m.SystemPage })));
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 
@@ -71,6 +73,8 @@ export function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={page(<ChatPage />)} />
         <Route path="dashboard" element={page(<DashboardPage />)} />
+        <Route path="wizards" element={page(<WizardsPage />)} />
+        <Route path="wizards/:wizardId" element={page(<WizardRouter />)} />
         <Route path="memories" element={page(<MemoriesPage />)} />
         <Route path="goals" element={page(<GoalsPage />)} />
         <Route path="triggers" element={page(<TriggersPage />)} />

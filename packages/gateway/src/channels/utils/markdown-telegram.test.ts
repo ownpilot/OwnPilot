@@ -255,4 +255,43 @@ describe('markdownToTelegramHtml', () => {
       '<b>Hello <b>world</b></b>',
     );
   });
+
+  // ---------- nested placeholders: inline code inside italic/bold --------
+
+  it('restores inline code inside italic (nested placeholders)', () => {
+    // Italic wrapping text with inline code: *text `code` more*
+    const result = markdownToTelegramHtml('Check *this `tool_name` works* now');
+    expect(result).toContain('<code>tool_name</code>');
+    expect(result).toContain('<i>');
+    expect(result).not.toMatch(/PH\d+/);
+  });
+
+  it('restores inline code inside bold (nested placeholders)', () => {
+    const result = markdownToTelegramHtml('Use **the `core.add_task` tool** for tasks');
+    expect(result).toContain('<code>core.add_task</code>');
+    expect(result).toContain('<b>');
+    expect(result).not.toMatch(/PH\d+/);
+  });
+
+  it('restores multiple inline codes inside formatting', () => {
+    const result = markdownToTelegramHtml('*Use `add_expense` and `send_email` tools*');
+    expect(result).toContain('<code>add_expense</code>');
+    expect(result).toContain('<code>send_email</code>');
+    expect(result).not.toMatch(/PH\d+/);
+  });
+
+  it('no leaked placeholders in complex mixed content', () => {
+    const input = [
+      '**Tools**: `core.add_task`, `core.search`',
+      '',
+      'Try *using `custom.save_rate` now*',
+      '',
+      '- Use `tool_a` for X',
+      '- Use `tool_b` for Y',
+    ].join('\n');
+    const result = markdownToTelegramHtml(input);
+    expect(result).not.toMatch(/PH\d+/);
+    expect(result).toContain('<code>core.add_task</code>');
+    expect(result).toContain('<code>custom.save_rate</code>');
+  });
 });

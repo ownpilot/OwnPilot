@@ -31,8 +31,13 @@ function makePlaceholder(map: PlaceholderMap, html: string): string {
 }
 
 function restorePlaceholders(text: string, map: PlaceholderMap): string {
+  // Restore in reverse insertion order: outer (later) placeholders first,
+  // so inner (earlier) placeholders are revealed before their turn.
+  // This handles nesting: applyInlineFormatting may wrap text containing
+  // code placeholders, creating an outer PH whose value includes inner PHs.
+  const entries = [...map.entries()].reverse();
   let result = text;
-  for (const [key, html] of map) {
+  for (const [key, html] of entries) {
     result = result.replaceAll(key, html);
   }
   return result;
@@ -97,6 +102,7 @@ function applyInlineFormatting(text: string, ph: PlaceholderMap): string {
 export function markdownToTelegramHtml(markdown: string): string {
   if (!markdown) return '';
 
+  placeholderCounter = 0;
   const ph: PlaceholderMap = new Map();
 
   // ------------------------------------------------------------------

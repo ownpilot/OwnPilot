@@ -72,3 +72,29 @@ export function getNamespace(qualifiedName: string): ToolNamespacePrefix | undef
 export function isQualifiedName(name: string): boolean {
   return name.includes('.');
 }
+
+/**
+ * Sanitize a tool name for LLM API compatibility.
+ *
+ * OpenAI/Google/Anthropic APIs require function names to match `^[a-zA-Z0-9_-]{1,64}$`.
+ * Dot-separated namespaces like `core.add_task` are not allowed.
+ *
+ * This replaces `.` with `__` (double underscore):
+ *   `core.add_task` → `core__add_task`
+ *   `plugin.telegram.send_message` → `plugin__telegram__send_message`
+ *   `search_tools` → `search_tools` (unchanged, no dots)
+ */
+export function sanitizeToolName(name: string): string {
+  return name.replaceAll('.', '__');
+}
+
+/**
+ * Reverse sanitization: convert `__` back to `.` to recover the internal qualified name.
+ *
+ *   `core__add_task` → `core.add_task`
+ *   `plugin__telegram__send_message` → `plugin.telegram.send_message`
+ *   `search_tools` → `search_tools` (unchanged, no double underscores)
+ */
+export function desanitizeToolName(name: string): string {
+  return name.replaceAll('__', '.');
+}

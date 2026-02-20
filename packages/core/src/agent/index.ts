@@ -90,6 +90,8 @@ export {
   getBaseName,
   getNamespace,
   isQualifiedName,
+  sanitizeToolName,
+  desanitizeToolName,
   UNPREFIXED_META_TOOLS,
   type ToolNamespacePrefix,
 } from './tool-namespace.js';

@@ -1,0 +1,154 @@
+/**
+ * Telegram Inline Keyboard Approval Handler
+ *
+ * Enables tool approval via Telegram inline keyboard buttons.
+ * Sends "Approve / Deny" buttons, resolves a Promise on user click or timeout.
+ */
+
+import { randomUUID } from 'node:crypto';
+import { InlineKeyboard } from 'grammy';
+import type { Bot } from 'grammy';
+import { getLog } from '../../../services/log.js';
+
+const log = getLog('TelegramApproval');
+
+/** Default timeout for pending approvals (2 minutes). */
+const APPROVAL_TIMEOUT_MS = 120_000;
+/** Max concurrent pending approvals. */
+const MAX_PENDING = 50;
+
+interface PendingApproval {
+  resolve: (approved: boolean) => void;
+  timer: ReturnType<typeof setTimeout>;
+  chatId: string;
+  messageId: number;
+}
+
+const pending = new Map<string, PendingApproval>();
+
+/**
+ * Register the callback_query handler on the bot.
+ * Must be called once before any approvals are created.
+ */
+export function registerApprovalHandler(bot: Bot): void {
+  bot.on('callback_query:data', async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    if (!data.startsWith('approve:') && !data.startsWith('deny:')) return;
+
+    const [action, id] = data.split(':') as [string, string];
+    const entry = pending.get(id);
+
+    if (!entry) {
+      await ctx.answerCallbackQuery({ text: 'This approval has expired.' });
+      return;
+    }
+
+    const approved = action === 'approve';
+    clearTimeout(entry.timer);
+    pending.delete(id);
+
+    // Edit the message to show the decision
+    try {
+      await ctx.editMessageText(
+        approved ? '\u2705 Approved' : '\u274c Denied',
+      );
+    } catch (err) {
+      log.debug('Failed to edit approval message', { error: err });
+    }
+
+    await ctx.answerCallbackQuery({
+      text: approved ? 'Approved' : 'Denied',
+    });
+
+    entry.resolve(approved);
+  });
+}
+
+/**
+ * Send an inline keyboard approval prompt and wait for user response.
+ * Returns true (approved) or false (denied/timeout).
+ */
+export async function requestTelegramApproval(
+  bot: Bot,
+  chatId: string,
+  params: {
+    toolName: string;
+    description: string;
+    riskLevel?: string;
+  },
+): Promise<boolean> {
+  // Evict oldest if at capacity
+  if (pending.size >= MAX_PENDING) {
+    const oldest = pending.keys().next().value;
+    if (oldest) {
+      const entry = pending.get(oldest)!;
+      clearTimeout(entry.timer);
+      pending.delete(oldest);
+      entry.resolve(false);
+    }
+  }
+
+  const id = randomUUID().slice(0, 8);
+  const riskBadge = params.riskLevel === 'high' ? '\u26a0\ufe0f HIGH RISK' : '';
+
+  const text = [
+    `\ud83d\udd10 <b>Tool Approval Required</b>`,
+    ``,
+    `<b>Tool:</b> <code>${escapeHtml(params.toolName)}</code>`,
+    params.description ? `<b>Action:</b> ${escapeHtml(truncate(params.description, 500))}` : '',
+    riskBadge ? `\n${riskBadge}` : '',
+  ].filter(Boolean).join('\n');
+
+  const keyboard = new InlineKeyboard()
+    .text('\u2705 Approve', `approve:${id}`)
+    .text('\u274c Deny', `deny:${id}`);
+
+  const sent = await bot.api.sendMessage(chatId, text, {
+    parse_mode: 'HTML',
+    reply_markup: keyboard,
+  });
+
+  return new Promise<boolean>((resolve) => {
+    const timer = setTimeout(() => {
+      pending.delete(id);
+      resolve(false);
+
+      // Edit message to show timeout
+      bot.api.editMessageText(chatId, sent.message_id, '\u23f0 Approval timed out — denied automatically.').catch(() => {});
+    }, APPROVAL_TIMEOUT_MS);
+
+    pending.set(id, {
+      resolve,
+      timer,
+      chatId,
+      messageId: sent.message_id,
+    });
+  });
+}
+
+/**
+ * Clear all pending approvals (deny them). Called on disconnect.
+ */
+export function clearPendingApprovals(): void {
+  for (const [id, entry] of pending) {
+    clearTimeout(entry.timer);
+    entry.resolve(false);
+    pending.delete(id);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 1) + '\u2026';
+}

@@ -460,9 +460,11 @@ export function AIModelsTab() {
     setError(null);
     try {
       const data = await localProvidersApi.create({
-        providerName: template.name,
-        url: customUrl || template.baseUrl,
+        name: template.name,
+        providerType: template.providerType,
+        baseUrl: customUrl || template.baseUrl,
         apiKey: customApiKey || undefined,
+        discoveryEndpoint: template.discoveryEndpoint,
       });
       setSuccess(`Added ${template.name} provider. Discovering models...`);
       setShowAddLocalDialog(false);
