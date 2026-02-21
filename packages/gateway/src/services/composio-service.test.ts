@@ -36,7 +36,11 @@ const mockComposioInstance = {
 };
 
 vi.mock('@composio/core', () => ({
-  Composio: vi.fn(() => mockComposioInstance),
+  Composio: class MockComposio {
+    constructor() {
+      return mockComposioInstance;
+    }
+  },
 }));
 
 import { composioService } from './composio-service.js';
