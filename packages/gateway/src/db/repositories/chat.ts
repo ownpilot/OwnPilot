@@ -476,23 +476,29 @@ export class ChatRepository extends BaseRepository {
     return { conversation, messages };
   }
 
-  // Get recent conversations with preview (last message)
+  // Get recent conversations with preview (last message) — single query
   async getRecentConversations(limit = 20): Promise<Array<Conversation & { lastMessage?: string; lastMessageAt?: Date }>> {
-    const conversations = await this.listConversations({ limit, isArchived: false });
+    const rows = await this.query<ConversationRow & { last_message?: string; last_message_at?: string }>(
+      `SELECT c.*,
+              LEFT(lm.content, 100) AS last_message,
+              lm.created_at AS last_message_at
+       FROM conversations c
+       LEFT JOIN LATERAL (
+         SELECT content, created_at FROM messages
+         WHERE conversation_id = c.id
+         ORDER BY created_at DESC LIMIT 1
+       ) lm ON true
+       WHERE c.user_id = $1 AND (c.is_archived = FALSE OR c.is_archived IS NULL)
+       ORDER BY c.updated_at DESC
+       LIMIT $2`,
+      [this.userId, limit]
+    );
 
-    const result: Array<Conversation & { lastMessage?: string; lastMessageAt?: Date }> = [];
-    for (const conv of conversations) {
-      const messages = await this.getMessages(conv.id, { limit: 1 });
-      const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
-
-      result.push({
-        ...conv,
-        lastMessage: lastMsg?.content.slice(0, 100),
-        lastMessageAt: lastMsg?.createdAt,
-      });
-    }
-
-    return result;
+    return rows.map((row) => ({
+      ...rowToConversation(row),
+      lastMessage: row.last_message ?? undefined,
+      lastMessageAt: row.last_message_at ? new Date(row.last_message_at) : undefined,
+    }));
   }
 }
 

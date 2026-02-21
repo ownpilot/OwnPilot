@@ -791,6 +791,8 @@ export class MemoriesRepository extends BaseRepository {
     }
 
     const candidateLimit = limit * 3; // Over-fetch candidates for better ranking
+    const candidateLimitParam = nextParam++;
+    extraParams.push(candidateLimit);
 
     const sql = `
       WITH vector_results AS (
@@ -804,7 +806,7 @@ export class MemoriesRepository extends BaseRepository {
           ${typeFilter}
           ${importanceFilter}
         ORDER BY embedding <=> $2::vector ASC
-        LIMIT ${candidateLimit}
+        LIMIT $${candidateLimitParam}
       ),
       fts_results AS (
         SELECT id, content, type, importance, tags, source, source_id,
@@ -819,7 +821,7 @@ export class MemoriesRepository extends BaseRepository {
           ${typeFilter}
           ${importanceFilter}
         ORDER BY ts_rank_cd(search_vector, websearch_to_tsquery('english', $3)) DESC
-        LIMIT ${candidateLimit}
+        LIMIT $${candidateLimitParam}
       ),
       combined AS (
         SELECT

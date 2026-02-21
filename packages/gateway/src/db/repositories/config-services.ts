@@ -552,13 +552,15 @@ export class ConfigServicesRepository extends BaseRepository {
    * Unsets all other defaults, then marks the given entry.
    */
   async setDefaultEntry(serviceName: string, entryId: string): Promise<void> {
+    // Atomic: unset all defaults then set the new one in a single statement
     await this.execute(
-      'UPDATE config_entries SET is_default = FALSE WHERE service_name = $1 AND is_default = TRUE',
-      [serviceName],
-    );
-    await this.execute(
-      'UPDATE config_entries SET is_default = TRUE, updated_at = $1 WHERE id = $2',
-      [new Date().toISOString(), entryId],
+      `WITH unset AS (
+        UPDATE config_entries SET is_default = FALSE
+        WHERE service_name = $1 AND is_default = TRUE
+      )
+      UPDATE config_entries SET is_default = TRUE, updated_at = $2
+      WHERE id = $3`,
+      [serviceName, new Date().toISOString(), entryId],
     );
 
     await this.refreshServiceCache(serviceName);

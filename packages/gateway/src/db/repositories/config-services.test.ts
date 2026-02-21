@@ -846,13 +846,11 @@ describe('ConfigServicesRepository', () => {
   });
 
   describe('setDefaultEntry', () => {
-    it('should unset other defaults and set the given entry', async () => {
+    it('should unset other defaults and set the given entry atomically', async () => {
       mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
-      // unset existing defaults
-      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      // set new default
+      // Single atomic CTE statement
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // refreshServiceCache
       mockAdapter.queryOne.mockResolvedValueOnce(makeServiceRow());
@@ -860,11 +858,10 @@ describe('ConfigServicesRepository', () => {
 
       await repo.setDefaultEntry('openai', 'entry-2');
 
-      expect(mockAdapter.execute).toHaveBeenCalledTimes(2);
-      const sql1 = mockAdapter.execute.mock.calls[0]![0] as string;
-      expect(sql1).toContain('is_default = FALSE');
-      const sql2 = mockAdapter.execute.mock.calls[1]![0] as string;
-      expect(sql2).toContain('is_default = TRUE');
+      expect(mockAdapter.execute).toHaveBeenCalledTimes(1);
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('is_default = FALSE');
+      expect(sql).toContain('is_default = TRUE');
     });
   });
 

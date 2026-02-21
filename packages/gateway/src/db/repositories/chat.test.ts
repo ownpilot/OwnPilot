@@ -888,21 +888,26 @@ describe('ChatRepository', () => {
 
   describe('getRecentConversations', () => {
     it('should return conversations with last message preview', async () => {
-      // listConversations
-      mockAdapter.query.mockResolvedValueOnce([makeConversationRow()]);
-      // getMessages for the conversation (limit: 1)
-      mockAdapter.query.mockResolvedValueOnce([makeMessageRow({ content: 'Hello world' })]);
+      // Single query with LEFT JOIN LATERAL
+      mockAdapter.query.mockResolvedValueOnce([
+        makeConversationRow({ last_message: 'Hello world', last_message_at: NOW }),
+      ]);
 
       const result = await repo.getRecentConversations(20);
 
       expect(result).toHaveLength(1);
       expect(result[0]!.lastMessage).toBe('Hello world');
       expect(result[0]!.lastMessageAt).toBeInstanceOf(Date);
+      // Verify single query (no N+1)
+      expect(mockAdapter.query).toHaveBeenCalledTimes(1);
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('LEFT JOIN LATERAL');
     });
 
     it('should handle conversations with no messages', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeConversationRow()]);
-      mockAdapter.query.mockResolvedValueOnce([]); // No messages
+      mockAdapter.query.mockResolvedValueOnce([
+        makeConversationRow({ last_message: null, last_message_at: null }),
+      ]);
 
       const result = await repo.getRecentConversations();
 
@@ -911,10 +916,11 @@ describe('ChatRepository', () => {
       expect(result[0]!.lastMessageAt).toBeUndefined();
     });
 
-    it('should truncate last message to 100 chars', async () => {
-      const longContent = 'X'.repeat(200);
-      mockAdapter.query.mockResolvedValueOnce([makeConversationRow()]);
-      mockAdapter.query.mockResolvedValueOnce([makeMessageRow({ content: longContent })]);
+    it('should truncate last message to 100 chars via SQL', async () => {
+      // SQL LEFT() handles truncation; DB returns already truncated
+      mockAdapter.query.mockResolvedValueOnce([
+        makeConversationRow({ last_message: 'X'.repeat(100), last_message_at: NOW }),
+      ]);
 
       const result = await repo.getRecentConversations();
 
