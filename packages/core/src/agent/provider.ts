@@ -272,7 +272,17 @@ export abstract class BaseProvider implements IProvider {
   protected buildMessages(
     messages: readonly Message[]
   ): Array<{ role: string; content: string | unknown[]; tool_calls?: unknown[]; tool_call_id?: string }> {
-    return messages.map((msg) => {
+    type OpenAIMsg = { role: string; content: string | unknown[]; tool_calls?: unknown[]; tool_call_id?: string };
+    return messages.flatMap((msg): OpenAIMsg | OpenAIMsg[] => {
+      // Tool result messages: expand each result into a separate message (OpenAI requires one per tool_call_id)
+      if (msg.role === 'tool' && msg.toolResults?.length) {
+        return msg.toolResults.map((result): OpenAIMsg => ({
+          role: 'tool',
+          content: result.content,
+          tool_call_id: result.toolCallId,
+        }));
+      }
+
       const base: { role: string; content: string | unknown[]; tool_calls?: unknown[]; tool_call_id?: string } = {
         role: msg.role,
         content:
@@ -303,15 +313,6 @@ export abstract class BaseProvider implements IProvider {
             arguments: tc.arguments,
           },
         }));
-      }
-
-      // Add tool result for tool messages
-      if (msg.role === 'tool' && msg.toolResults?.length) {
-        const result = msg.toolResults[0];
-        if (result) {
-          base.tool_call_id = result.toolCallId;
-          base.content = result.content;
-        }
       }
 
       return base;
@@ -538,6 +539,7 @@ export class OpenAIProvider extends BaseProvider {
                   id: tc.id,
                   name: tc.function?.name ? desanitizeToolName(tc.function.name) : undefined,
                   arguments: tc.function?.arguments,
+                  index: (tc as { index?: number }).index,
                 })),
                 done: choice?.finish_reason != null,
                 finishReason: choice?.finish_reason
@@ -577,9 +579,7 @@ export class OpenAIProvider extends BaseProvider {
       }
 
       const data = (await response.json()) as OpenAIModelsResponse;
-      const models = data.data
-        ?.filter((m) => m.id.includes('gpt'))
-        .map((m) => m.id) ?? [];
+      const models = data.data?.map((m) => m.id) ?? [];
 
       return ok(models);
     } catch (error) {
@@ -644,6 +644,7 @@ export class AnthropicProvider extends BaseProvider {
     const systemMessage = request.messages.find((m) => m.role === 'system');
     const otherMessages = request.messages.filter((m) => m.role !== 'system');
 
+    const anthropicTools = this.buildAnthropicTools(request);
     const body = {
       model: request.model.model,
       max_tokens: request.model.maxTokens ?? 4096,
@@ -652,8 +653,8 @@ export class AnthropicProvider extends BaseProvider {
       temperature: request.model.temperature,
       top_p: request.model.topP,
       stop_sequences: request.model.stop as string[] | undefined,
-      tools: this.buildAnthropicTools(request),
-      tool_choice: this.mapAnthropicToolChoice(request.toolChoice),
+      tools: anthropicTools,
+      tool_choice: anthropicTools ? this.mapAnthropicToolChoice(request.toolChoice) : undefined,
     };
 
     const endpoint = `${this.config.baseUrl}/messages`;
@@ -779,14 +780,15 @@ export class AnthropicProvider extends BaseProvider {
     const systemMessage = request.messages.find((m) => m.role === 'system');
     const otherMessages = request.messages.filter((m) => m.role !== 'system');
 
+    const streamTools = this.buildAnthropicTools(request);
     const body = {
       model: request.model.model,
       max_tokens: request.model.maxTokens ?? 4096,
       system: systemMessage ? this.buildSystemBlocks(systemMessage) : undefined,
       messages: this.buildAnthropicMessages(otherMessages),
       temperature: request.model.temperature,
-      tools: this.buildAnthropicTools(request),
-      tool_choice: this.mapAnthropicToolChoice(request.toolChoice),
+      tools: streamTools,
+      tool_choice: streamTools ? this.mapAnthropicToolChoice(request.toolChoice) : undefined,
       stream: true,
     };
 
@@ -834,6 +836,11 @@ export class AnthropicProvider extends BaseProvider {
       try {
         const decoder = new TextDecoder();
         let buffer = '';
+        // Track tool calls across content blocks
+        const toolCallBlocks: Array<{ id: string; name: string; arguments: string }> = [];
+        let currentToolBlockIndex = -1;
+        // Track input tokens from message_start
+        let inputTokens = 0;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -851,27 +858,53 @@ export class AnthropicProvider extends BaseProvider {
             try {
               const parsed = JSON.parse(data) as AnthropicStreamEvent;
 
-              if (parsed.type === 'content_block_delta') {
+              if (parsed.type === 'message_start') {
+                // Capture input token count from the initial message
+                inputTokens = parsed.message?.usage?.input_tokens ?? 0;
+              } else if (parsed.type === 'content_block_start') {
+                // Track tool_use blocks as they start
+                if (parsed.content_block?.type === 'tool_use') {
+                  currentToolBlockIndex = parsed.index ?? toolCallBlocks.length;
+                  toolCallBlocks[currentToolBlockIndex] = {
+                    id: parsed.content_block.id ?? '',
+                    name: parsed.content_block.name ? desanitizeToolName(parsed.content_block.name) : '',
+                    arguments: '',
+                  };
+                }
+              } else if (parsed.type === 'content_block_delta') {
+                if (parsed.delta?.type === 'input_json_delta' && parsed.delta.partial_json != null) {
+                  // Accumulate tool call arguments
+                  const blockIdx = parsed.index ?? currentToolBlockIndex;
+                  if (blockIdx >= 0 && toolCallBlocks[blockIdx]) {
+                    toolCallBlocks[blockIdx].arguments += parsed.delta.partial_json;
+                  }
+                } else {
+                  // Text delta
+                  yield ok({
+                    id: '',
+                    content: parsed.delta?.text,
+                    done: false,
+                  });
+                }
+              } else if (parsed.type === 'message_stop') {
+                // Emit accumulated tool calls if any, then signal done
                 yield ok({
                   id: '',
-                  content: parsed.delta?.text,
-                  done: false,
+                  toolCalls: toolCallBlocks.length > 0 ? toolCallBlocks : undefined,
+                  done: true,
                 });
-              } else if (parsed.type === 'message_stop') {
-                yield ok({ id: '', done: true });
                 return;
               } else if (parsed.type === 'message_delta') {
+                const outputTokens = parsed.usage?.output_tokens ?? 0;
                 yield ok({
                   id: '',
-                  done: true,
+                  done: false,
                   finishReason: this.mapAnthropicStopReason(parsed.delta?.stop_reason ?? 'end_turn'),
-                  usage: parsed.usage
-                    ? {
-                        promptTokens: 0,
-                        completionTokens: parsed.usage.output_tokens ?? 0,
-                        totalTokens: parsed.usage.output_tokens ?? 0,
-                      }
-                    : undefined,
+                  usage: {
+                    promptTokens: inputTokens,
+                    completionTokens: outputTokens,
+                    totalTokens: inputTokens + outputTokens,
+                  },
                 });
               }
             } catch {
@@ -939,24 +972,24 @@ export class AnthropicProvider extends BaseProvider {
 
   private buildAnthropicMessages(messages: readonly Message[]) {
     return messages.map((msg) => {
+      // Tool result messages: include ALL results (not just the first)
       if (msg.role === 'tool' && msg.toolResults?.length) {
-        const result = msg.toolResults[0];
         return {
           role: 'user',
-          content: [
-            {
-              type: 'tool_result',
-              tool_use_id: result?.toolCallId,
-              content: result?.content,
-              is_error: result?.isError,
-            },
-          ],
+          content: msg.toolResults.map((result) => ({
+            type: 'tool_result',
+            tool_use_id: result.toolCallId,
+            content: result.content,
+            is_error: result.isError,
+          })),
         };
       }
 
-      const content =
+      const contentParts: unknown[] =
         typeof msg.content === 'string'
           ? msg.content
+            ? [{ type: 'text', text: msg.content }]
+            : []
           : msg.content.map((part) => {
               if (part.type === 'text') {
                 return { type: 'text', text: part.text };
@@ -970,6 +1003,25 @@ export class AnthropicProvider extends BaseProvider {
               }
               return { type: 'text', text: '[Unsupported content]' };
             });
+
+      // Assistant messages with tool calls: include tool_use blocks in content array
+      if (msg.role === 'assistant' && msg.toolCalls?.length) {
+        for (const tc of msg.toolCalls) {
+          let input: unknown = {};
+          try { input = JSON.parse(tc.arguments); } catch { /* keep empty */ }
+          contentParts.push({
+            type: 'tool_use',
+            id: tc.id,
+            name: sanitizeToolName(tc.name),
+            input,
+          });
+        }
+      }
+
+      // Use string content for simple text-only messages, array for multi-block
+      const content = contentParts.length === 1 && typeof msg.content === 'string' && !msg.toolCalls?.length
+        ? msg.content
+        : contentParts;
 
       return {
         role: msg.role === 'assistant' ? 'assistant' : 'user',

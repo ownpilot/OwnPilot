@@ -418,28 +418,36 @@ export class Agent {
       if (chunk.finishReason) finishReason = chunk.finishReason;
       if (chunk.usage) usage = chunk.usage;
 
-      // Accumulate tool calls
+      // Accumulate tool calls (use index for parallel tool call support)
       if (chunk.toolCalls) {
         for (const tc of chunk.toolCalls) {
+          const idx = (tc as { index?: number }).index;
           if (tc.id) {
-            toolCallsArr.push({
+            // New tool call — place at the correct index slot if provided
+            const targetIdx = idx ?? toolCallsArr.length;
+            while (toolCallsArr.length <= targetIdx) {
+              toolCallsArr.push({ id: '', name: '', arguments: '' });
+            }
+            toolCallsArr[targetIdx] = {
               id: tc.id,
               name: tc.name ?? '',
               arguments: tc.arguments ?? '',
-              metadata: tc.metadata, // Preserve metadata (e.g., thoughtSignature for Gemini)
-            });
-          } else if (toolCallsArr.length > 0) {
-            // Append to last tool call's arguments
-            const last = toolCallsArr[toolCallsArr.length - 1];
-            if (last && tc.arguments) {
-              (last as { arguments: string }).arguments += tc.arguments;
-            }
-            // Also merge metadata if present
-            if (tc.metadata && last) {
-              (last as { metadata?: Record<string, unknown> }).metadata = {
-                ...last.metadata,
-                ...tc.metadata,
-              };
+              metadata: tc.metadata,
+            };
+          } else {
+            // Argument continuation — route to correct slot via index
+            const targetIdx = idx ?? (toolCallsArr.length > 0 ? toolCallsArr.length - 1 : 0);
+            if (targetIdx >= 0 && targetIdx < toolCallsArr.length) {
+              const target = toolCallsArr[targetIdx];
+              if (target && tc.arguments) {
+                (target as { arguments: string }).arguments += tc.arguments;
+              }
+              if (tc.metadata && target) {
+                (target as { metadata?: Record<string, unknown> }).metadata = {
+                  ...target.metadata,
+                  ...tc.metadata,
+                };
+              }
             }
           }
         }

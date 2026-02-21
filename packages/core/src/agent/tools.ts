@@ -920,6 +920,7 @@ export class ToolRegistry {
   clear(): void {
     this.tools.clear();
     this.pluginTools.clear();
+    this.baseNameIndex.clear();
     this.globalMiddleware.length = 0;
     this.perToolMiddleware.clear();
     // Unsubscribe all hook handlers
