@@ -55,9 +55,10 @@ class McpClientService {
 
     await repo.updateStatus(server.id, 'connecting');
 
+    let transport: ReturnType<typeof this.createTransport> | undefined;
     try {
       // Create transport based on type
-      const transport = this.createTransport(server);
+      transport = this.createTransport(server);
 
       // Create MCP client
       const client = new Client(
@@ -93,6 +94,10 @@ class McpClientService {
 
       return mcpTools;
     } catch (err) {
+      // Clean up transport if connection was established but subsequent steps failed
+      if (transport) {
+        try { await transport.close?.(); } catch { /* ignore cleanup error */ }
+      }
       const message = err instanceof Error ? err.message : String(err);
       await repo.updateStatus(server.id, 'error', message);
       log.error(`Failed to connect to MCP server "${server.displayName}":`, err);
@@ -222,12 +227,8 @@ class McpClientService {
           throw new Error('stdio transport requires a command');
         }
 
-        // On Windows, wrap with cmd /c for commands like npx, node, etc.
-        const isWindows = process.platform === 'win32';
-        const command = isWindows ? server.command : server.command;
-
         return new StdioClientTransport({
-          command,
+          command: server.command,
           args: server.args,
           env: {
             ...process.env as Record<string, string>,

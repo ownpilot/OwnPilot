@@ -798,6 +798,11 @@ export class SecurePluginRuntime extends EventEmitter {
             reason: `Worker exited with code ${code}`,
           });
         }
+        // Reject all pending calls for this plugin so callers don't hang
+        for (const [callId, pending] of this.pendingCalls.entries()) {
+          pending.reject(new Error(`Plugin worker exited with code ${code}`));
+          this.pendingCalls.delete(callId);
+        }
       } catch {
         // Prevent exit handler from throwing
       }

@@ -138,12 +138,10 @@ export async function storeSecret(
         const credDir = `${process.env.LOCALAPPDATA || ''}\\OwnPilot`;
         mkdirSync(credDir, { recursive: true });
         const credPath = `${credDir}\\cred.dat`;
-        // Use PowerShell DPAPI to encrypt before writing
+        // Use PowerShell DPAPI to encrypt before writing — pass value via stdin to avoid shell injection
         try {
-          const { stdout } = await execAsync(
-            `powershell -NoProfile -Command "[Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Protect([System.Text.Encoding]::UTF8.GetBytes('${base64Secret}'),[byte[]]@(),'CurrentUser'))"`,
-            { timeout: 10000 }
-          );
+          const script = `$input = [Console]::In.ReadToEnd(); [Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Protect([System.Text.Encoding]::UTF8.GetBytes($input),[byte[]]@(),'CurrentUser'))`;
+          const { stdout } = await spawnAsync('powershell', ['-NoProfile', '-Command', script], { input: base64Secret });
           writeFileSync(credPath, stdout.trim(), { mode: 0o600 });
         } catch {
           // Fallback: write base64 directly if DPAPI unavailable
@@ -209,12 +207,10 @@ export async function retrieveSecret(
           const { readFileSync } = await import('node:fs');
           const content = readFileSync(credPath, 'utf-8').trim();
           if (!content) return ok(null);
-          // Try DPAPI decryption first
+          // Try DPAPI decryption first — pass value via stdin to avoid shell injection
           try {
-            const { stdout } = await execAsync(
-              `powershell -NoProfile -Command "[System.Text.Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String('${content}'),[byte[]]@(),'CurrentUser'))"`,
-              { timeout: 10000 }
-            );
+            const script = `$input = [Console]::In.ReadToEnd(); [System.Text.Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String($input),[byte[]]@(),'CurrentUser'))`;
+            const { stdout } = await spawnAsync('powershell', ['-NoProfile', '-Command', script], { input: content });
             const base64Secret = stdout.trim();
             if (!base64Secret) return ok(null);
             return ok(fromBase64(base64Secret));

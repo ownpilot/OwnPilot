@@ -35,11 +35,13 @@ const log = getLog('Scheduler');
 let schedulerInstance: Scheduler | null = null;
 let notificationBridge: SchedulerNotificationBridge | null = null;
 
+const MAX_WORKFLOW_DEPTH = 10;
+
 /**
  * Execute a scheduled task
  * This is the task executor that handles prompt and tool tasks
  */
-async function executeScheduledTask(task: ScheduledTask): Promise<TaskExecutionResult> {
+async function executeScheduledTask(task: ScheduledTask, depth = 0): Promise<TaskExecutionResult> {
   const startedAt = new Date().toISOString();
 
   try {
@@ -112,6 +114,16 @@ async function executeScheduledTask(task: ScheduledTask): Promise<TaskExecutionR
         };
       }
     } else if (task.payload.type === 'workflow') {
+      if (depth >= MAX_WORKFLOW_DEPTH) {
+        return {
+          taskId: task.id,
+          status: 'failed',
+          startedAt,
+          completedAt: new Date().toISOString(),
+          error: `Workflow nesting exceeded maximum depth of ${MAX_WORKFLOW_DEPTH}`,
+        };
+      }
+
       // Execute workflow steps sequentially
       const results: unknown[] = [];
 
@@ -122,7 +134,7 @@ async function executeScheduledTask(task: ScheduledTask): Promise<TaskExecutionR
           payload: step.payload,
         };
 
-        const stepResult = await executeScheduledTask(stepTask);
+        const stepResult = await executeScheduledTask(stepTask, depth + 1);
         results.push(stepResult.result);
 
         if (stepResult.status === 'failed') {
