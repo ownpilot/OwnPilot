@@ -1022,7 +1022,10 @@ describe('AgentExecutor', () => {
 
       expect(dataGateway.grantAccess).toHaveBeenCalledWith('agent-1', ['notes', 'calendar']);
       expect(dataGateway.revokeAccess).toHaveBeenCalledWith('agent-1', ['notes', 'calendar']);
-      expect(dataGateway.grantAccess).toHaveBeenCalledBefore(dataGateway.revokeAccess);
+      // Verify call order: grantAccess was called before revokeAccess
+      const grantOrder = dataGateway.grantAccess.mock.invocationCallOrder[0];
+      const revokeOrder = dataGateway.revokeAccess.mock.invocationCallOrder[0];
+      expect(grantOrder).toBeLessThan(revokeOrder);
     });
 
     it('agent with empty dataAccess does not call grant/revoke', async () => {
