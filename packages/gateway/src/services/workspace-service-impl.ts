@@ -29,7 +29,7 @@ function toWorkspaceInfo(ws: Workspace): WorkspaceInfo {
     name: ws.config.name,
     description: ws.config.description,
     userId: ws.config.userId,
-    channels: [...ws.config.channels],
+    channels: [...(ws.config.channels ?? [])],
     state: ws.state,
     conversationId: ws.conversationId,
     createdAt: ws.createdAt,

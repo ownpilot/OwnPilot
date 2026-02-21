@@ -146,6 +146,9 @@ export class GoalService {
   // --------------------------------------------------------------------------
 
   async addStep(userId: string, goalId: string, input: CreateStepInput): Promise<GoalStep> {
+    if (!input.title?.trim()) {
+      throw new GoalServiceError('Step title is required', 'VALIDATION_ERROR');
+    }
     const repo = this.getRepo(userId);
     const goal = await repo.get(goalId);
     if (!goal) {
@@ -186,9 +189,10 @@ export class GoalService {
           title: stepInput.title,
           description: stepInput.description,
         });
-        if (step) {
-          createdSteps.push(step);
+        if (!step) {
+          throw new GoalServiceError('Failed to create step during decompose', 'INTERNAL_ERROR');
         }
+        createdSteps.push(step);
       }
 
       // Recalculate progress

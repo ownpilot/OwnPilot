@@ -1350,19 +1350,19 @@ describe('GoalService', () => {
       ).rejects.toThrow(/Goal not found/);
     });
 
-    it('should skip steps where addStep returns null', async () => {
+    it('should throw when addStep returns null during decompose', async () => {
       goalRepo.get.mockResolvedValue(fakeGoal());
       goalRepo.addStep
         .mockResolvedValueOnce(fakeGoalStep({ id: 's1' }))
         .mockResolvedValueOnce(null);
       goalRepo.recalculateProgress.mockResolvedValue(50);
 
-      const result = await service.decomposeGoal('user-1', 'goal-1', [
-        { title: 'A' },
-        { title: 'B' },
-      ]);
-
-      expect(result).toHaveLength(1);
+      await expect(
+        service.decomposeGoal('user-1', 'goal-1', [
+          { title: 'A' },
+          { title: 'B' },
+        ]),
+      ).rejects.toThrow(/Failed to create step/);
     });
 
     it('should use repo.transaction for atomicity', async () => {

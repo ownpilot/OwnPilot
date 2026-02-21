@@ -152,6 +152,9 @@ export class TriggerService {
   }
 
   async cleanupHistory(userId: string, maxAgeDays = 30): Promise<number> {
+    if (maxAgeDays <= 0) {
+      throw new TriggerServiceError('maxAgeDays must be positive', 'VALIDATION_ERROR');
+    }
     const repo = this.getRepo(userId);
     return repo.cleanupHistory(maxAgeDays);
   }
