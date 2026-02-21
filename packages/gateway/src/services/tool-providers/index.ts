@@ -18,6 +18,7 @@ import { executeCustomDataTool } from '../../routes/custom-data.js';
 import { executePersonalDataTool } from '../../routes/personal-data-tools.js';
 import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool, HEARTBEAT_TOOLS, executeHeartbeatTool, EXTENSION_TOOLS, executeExtensionTool } from '../../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
+import { getErrorMessage } from '../../routes/helpers.js';
 
 // ============================================================================
 // Result type from gateway executors
@@ -45,18 +46,26 @@ function wrapGatewayExecutor(
   fallbackUserId?: string,
 ): (args: Record<string, unknown>, context: ToolContext) => Promise<ToolExecutionResult> {
   return async (args, context): Promise<ToolExecutionResult> => {
-    // Prefer userId from execution context (supports multi-user),
-    // fall back to the userId captured at provider creation time.
-    const effectiveUserId = context?.userId ?? fallbackUserId;
-    const result = await execute(toolDef.name, args, effectiveUserId);
-    if (result.success) {
-      return {
-        content: typeof result.result === 'string'
-          ? result.result
-          : JSON.stringify(result.result, null, 2),
-      };
+    try {
+      // Prefer userId from execution context (supports multi-user),
+      // fall back to the userId captured at provider creation time.
+      const effectiveUserId = context?.userId ?? fallbackUserId;
+      const result = await execute(toolDef.name, args, effectiveUserId);
+      if (result.success) {
+        let content: string;
+        try {
+          content = typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2);
+        } catch {
+          content = String(result.result);
+        }
+        return { content };
+      }
+      return { content: result.error ?? 'Unknown error', isError: true };
+    } catch (err) {
+      return { content: getErrorMessage(err, 'Tool execution failed'), isError: true };
     }
-    return { content: result.error ?? 'Unknown error', isError: true };
   };
 }
 

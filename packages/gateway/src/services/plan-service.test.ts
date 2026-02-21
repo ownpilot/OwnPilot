@@ -304,14 +304,18 @@ describe('PlanService', () => {
       mockRepo.addStep.mockResolvedValue(step);
 
       const result = await service.addStep('user-1', 'plan-1', {
-        title: 'Set up CI/CD',
-        order: 1,
-      });
+        name: 'Set up CI/CD',
+        orderNum: 1,
+        type: 'tool',
+        config: {},
+      } as never);
 
       expect(result).toBe(step);
       expect(mockRepo.addStep).toHaveBeenCalledWith('plan-1', {
-        title: 'Set up CI/CD',
-        order: 1,
+        name: 'Set up CI/CD',
+        orderNum: 1,
+        type: 'tool',
+        config: {},
       });
     });
 
@@ -319,11 +323,11 @@ describe('PlanService', () => {
       mockRepo.get.mockResolvedValue(null);
 
       await expect(
-        service.addStep('user-1', 'missing', { title: 'Step', order: 1 }),
+        service.addStep('user-1', 'missing', { name: 'Step', orderNum: 1, type: 'tool', config: {} } as never),
       ).rejects.toThrow(/Plan not found/);
 
       const error = await service
-        .addStep('user-1', 'missing', { title: 'Step', order: 1 })
+        .addStep('user-1', 'missing', { name: 'Step', orderNum: 1, type: 'tool', config: {} } as never)
         .catch((e) => e);
       expect(error).toBeInstanceOf(PlanServiceError);
       expect(error.code).toBe('NOT_FOUND');

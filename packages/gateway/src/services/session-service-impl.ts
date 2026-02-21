@@ -25,6 +25,8 @@ import { MS_PER_HOUR, MS_PER_MINUTE } from '../config/defaults.js';
 const CLEANUP_INTERVAL_MS = 15 * MS_PER_MINUTE;
 /** Default max age for inactive sessions before cleanup (1 hour). */
 const STALE_SESSION_MAX_AGE_MS = MS_PER_HOUR;
+/** Max age for active sessions with no activity before forced eviction (24 hours). */
+const ACTIVE_SESSION_MAX_AGE_MS = 24 * MS_PER_HOUR;
 
 export class SessionService implements ISessionService {
   private readonly sessions = new Map<string, Session>();
@@ -185,10 +187,16 @@ export class SessionService implements ISessionService {
    */
   cleanup(maxAge: number): number {
     const cutoff = Date.now() - maxAge;
+    const activeCutoff = Date.now() - ACTIVE_SESSION_MAX_AGE_MS;
     let removed = 0;
 
     for (const [id, session] of this.sessions) {
-      if (!session.isActive && session.lastActivityAt.getTime() < cutoff) {
+      const lastActivity = session.lastActivityAt.getTime();
+      const shouldRemove =
+        (!session.isActive && lastActivity < cutoff) ||
+        (session.isActive && lastActivity < activeCutoff);
+
+      if (shouldRemove) {
         // Clean up channel index entry before removing session
         if (session.channelPluginId && session.platformChatId) {
           const key = this.channelKey(session.channelPluginId, session.platformChatId);

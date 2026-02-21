@@ -56,6 +56,9 @@ export class ResourceRegistry {
    * Throws if name already registered.
    */
   register(definition: ResourceTypeDefinition): void {
+    if (!definition.name?.trim()) {
+      throw new Error('Resource type name is required');
+    }
     if (this.resources.has(definition.name)) {
       throw new Error(`Resource type already registered: ${definition.name}`);
     }

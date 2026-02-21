@@ -181,6 +181,8 @@ export class CustomDataService {
     tableNameOrId: string,
     records: Array<Record<string, unknown>>,
   ): Promise<CustomDataRecord[]> {
+    if (!records.length) return [];
+
     const repo = this.getRepo();
     // Validate table exists
     const table = await repo.getTable(tableNameOrId);
@@ -246,6 +248,9 @@ export class CustomDataService {
     query: string,
     options?: { limit?: number },
   ): Promise<CustomDataRecord[]> {
+    if (!query?.trim()) {
+      throw new CustomDataServiceError('Search query is required', 'VALIDATION_ERROR');
+    }
     const repo = this.getRepo();
     return repo.searchRecords(tableNameOrId, query, options);
   }

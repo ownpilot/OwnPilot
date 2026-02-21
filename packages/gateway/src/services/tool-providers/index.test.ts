@@ -1055,10 +1055,10 @@ describe('async executor behaviour', () => {
     await expect(tool!.executor({})).resolves.toMatchObject({ isError: true, content: 'oops' });
   });
 
-  it('propagates rejection when the gateway executor itself throws', async () => {
+  it('catches executor rejection and returns structured error', async () => {
     mocks.executeMemoryTool.mockRejectedValueOnce(new Error('network failure'));
     const [tool] = createMemoryToolProvider('u1').getTools();
-    await expect(tool!.executor({})).rejects.toThrow('network failure');
+    await expect(tool!.executor({})).resolves.toMatchObject({ isError: true, content: 'network failure' });
   });
 
   it('handles concurrent executor calls without cross-contamination', async () => {

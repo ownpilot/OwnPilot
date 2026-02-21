@@ -141,6 +141,9 @@ export class PlanService {
   // --------------------------------------------------------------------------
 
   async addStep(userId: string, planId: string, input: CreateStepInput): Promise<PlanStep> {
+    if (!input.name?.trim()) {
+      throw new PlanServiceError('Step name is required', 'VALIDATION_ERROR');
+    }
     const repo = this.getRepo(userId);
     const plan = await repo.get(planId);
     if (!plan) {
