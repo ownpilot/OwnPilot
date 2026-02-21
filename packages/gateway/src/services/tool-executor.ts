@@ -29,6 +29,9 @@ import {
   createPersonalDataToolProvider,
   createTriggerToolProvider,
   createPlanToolProvider,
+  createConfigToolProvider,
+  createHeartbeatToolProvider,
+  createExtensionToolProvider,
 } from './tool-providers/index.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import {
@@ -103,6 +106,9 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   tools.registerProvider(createPersonalDataToolProvider());
   tools.registerProvider(createTriggerToolProvider());
   tools.registerProvider(createPlanToolProvider());
+  tools.registerProvider(createConfigToolProvider());
+  tools.registerProvider(createHeartbeatToolProvider(userId));
+  tools.registerProvider(createExtensionToolProvider(userId));
 
   // Register plugin tools into the shared registry (source: 'plugin')
   initPluginToolsIntoRegistry(tools);
@@ -169,12 +175,15 @@ function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
 /**
  * Sync active custom tools from DB into the shared ToolRegistry.
  * Each custom tool gets a sandboxed executor that delegates to the DynamicToolRegistry.
- * Fire-and-forget — runs async so getSharedToolRegistry() stays synchronous.
+ * The sync runs async so getSharedToolRegistry() stays synchronous.
+ * The returned promise is stored so callers can await completion via waitForToolSync().
  */
+let toolSyncPromise: Promise<void> | null = null;
+
 function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): void {
   const repo = createCustomToolsRepo(userId);
 
-  repo.getActiveTools()
+  toolSyncPromise = repo.getActiveTools()
     .then((tools) => {
       const dynamicRegistry = getCustomToolDynamicRegistry();
 
@@ -221,6 +230,14 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
     .catch((err) => {
       log.warn('[tool-executor] Custom tools sync deferred — DB may not be ready yet', { error: err });
     });
+}
+
+/**
+ * Wait for the initial custom tool sync to complete.
+ * Useful for ensuring all custom tools are registered before first trigger execution.
+ */
+export async function waitForToolSync(): Promise<void> {
+  if (toolSyncPromise) await toolSyncPromise;
 }
 
 /**
@@ -271,6 +288,7 @@ async function executeToolInternal(
     try {
       const result = await tools.execute(toolName, args, {
         conversationId: 'system-execution',
+        userId,
         executionPermissions,
       });
 
@@ -346,4 +364,5 @@ export async function hasTool(toolName: string): Promise<boolean> {
  */
 export function resetSharedToolRegistry(): void {
   sharedRegistry = null;
+  toolSyncPromise = null;
 }

@@ -76,6 +76,23 @@ const mocks = vi.hoisted(() => {
     parameters: { type: 'object' as const, properties: {} },
   };
 
+  // --- new tool definition arrays ---
+  const heartbeatToolDef = {
+    name: 'create_heartbeat',
+    description: 'Create a heartbeat',
+    parameters: { type: 'object' as const, properties: {} },
+  };
+  const extensionToolDef = {
+    name: 'list_extensions',
+    description: 'List extensions',
+    parameters: { type: 'object' as const, properties: {} },
+  };
+  const configToolDef = {
+    name: 'config_list_services',
+    description: 'List config services',
+    parameters: { type: 'object' as const, properties: {} },
+  };
+
   // --- gateway executor mocks ---
   const executeMemoryTool = vi.fn();
   const executeGoalTool = vi.fn();
@@ -83,6 +100,9 @@ const mocks = vi.hoisted(() => {
   const executePersonalDataTool = vi.fn();
   const executeTriggerTool = vi.fn();
   const executePlanTool = vi.fn();
+  const executeHeartbeatTool = vi.fn();
+  const executeExtensionTool = vi.fn();
+  const executeConfigTool = vi.fn();
 
   return {
     // ToolDefinition arrays
@@ -92,6 +112,9 @@ const mocks = vi.hoisted(() => {
     PERSONAL_DATA_TOOLS: [personalDataToolDef],
     TRIGGER_TOOLS: [triggerToolDef1, triggerToolDef2],
     PLAN_TOOLS: [planToolDef1, planToolDef2],
+    HEARTBEAT_TOOLS: [heartbeatToolDef],
+    EXTENSION_TOOLS: [extensionToolDef],
+    CONFIG_TOOLS: [configToolDef],
     // Individual tool defs for assertion
     memoryToolDef1,
     memoryToolDef2,
@@ -103,6 +126,9 @@ const mocks = vi.hoisted(() => {
     triggerToolDef2,
     planToolDef1,
     planToolDef2,
+    heartbeatToolDef,
+    extensionToolDef,
+    configToolDef,
     // Executor spies
     executeMemoryTool,
     executeGoalTool,
@@ -110,6 +136,9 @@ const mocks = vi.hoisted(() => {
     executePersonalDataTool,
     executeTriggerTool,
     executePlanTool,
+    executeHeartbeatTool,
+    executeExtensionTool,
+    executeConfigTool,
   };
 });
 
@@ -145,6 +174,15 @@ vi.mock('../../tools/index.js', () => ({
   executeTriggerTool: mocks.executeTriggerTool,
   PLAN_TOOLS: mocks.PLAN_TOOLS,
   executePlanTool: mocks.executePlanTool,
+  HEARTBEAT_TOOLS: mocks.HEARTBEAT_TOOLS,
+  executeHeartbeatTool: mocks.executeHeartbeatTool,
+  EXTENSION_TOOLS: mocks.EXTENSION_TOOLS,
+  executeExtensionTool: mocks.executeExtensionTool,
+}));
+
+vi.mock('../config-tools.js', () => ({
+  CONFIG_TOOLS: mocks.CONFIG_TOOLS,
+  executeConfigTool: mocks.executeConfigTool,
 }));
 
 // ---------------------------------------------------------------------------
@@ -158,6 +196,9 @@ import {
   createPersonalDataToolProvider,
   createTriggerToolProvider,
   createPlanToolProvider,
+  createConfigToolProvider,
+  createHeartbeatToolProvider,
+  createExtensionToolProvider,
 } from './index.js';
 
 // ---------------------------------------------------------------------------
@@ -177,6 +218,9 @@ beforeEach(() => {
   mocks.executePersonalDataTool.mockResolvedValue(defaultSuccess);
   mocks.executeTriggerTool.mockResolvedValue(defaultSuccess);
   mocks.executePlanTool.mockResolvedValue(defaultSuccess);
+  mocks.executeHeartbeatTool.mockResolvedValue(defaultSuccess);
+  mocks.executeExtensionTool.mockResolvedValue(defaultSuccess);
+  mocks.executeConfigTool.mockResolvedValue(defaultSuccess);
 });
 
 // ===========================================================================
@@ -914,7 +958,7 @@ describe('cross-provider isolation', () => {
     expect(mocks.executeMemoryTool.mock.calls[1]![2]).toBe('y');
   });
 
-  it('all six providers have distinct names', () => {
+  it('all nine providers have distinct names', () => {
     const names = [
       createMemoryToolProvider('u').name,
       createGoalToolProvider('u').name,
@@ -922,12 +966,15 @@ describe('cross-provider isolation', () => {
       createPersonalDataToolProvider().name,
       createTriggerToolProvider().name,
       createPlanToolProvider().name,
+      createConfigToolProvider().name,
+      createHeartbeatToolProvider('u').name,
+      createExtensionToolProvider('u').name,
     ];
     const unique = new Set(names);
-    expect(unique.size).toBe(6);
+    expect(unique.size).toBe(9);
   });
 
-  it('all six getTools() results are non-empty arrays', () => {
+  it('all nine getTools() results are non-empty arrays', () => {
     const allTools = [
       createMemoryToolProvider('u').getTools(),
       createGoalToolProvider('u').getTools(),
@@ -935,6 +982,9 @@ describe('cross-provider isolation', () => {
       createPersonalDataToolProvider().getTools(),
       createTriggerToolProvider().getTools(),
       createPlanToolProvider().getTools(),
+      createConfigToolProvider().getTools(),
+      createHeartbeatToolProvider('u').getTools(),
+      createExtensionToolProvider('u').getTools(),
     ];
     for (const tools of allTools) {
       expect(Array.isArray(tools)).toBe(true);
@@ -950,6 +1000,9 @@ describe('cross-provider isolation', () => {
       ...createPersonalDataToolProvider().getTools(),
       ...createTriggerToolProvider().getTools(),
       ...createPlanToolProvider().getTools(),
+      ...createConfigToolProvider().getTools(),
+      ...createHeartbeatToolProvider('u').getTools(),
+      ...createExtensionToolProvider('u').getTools(),
     ];
     for (const tool of allTools) {
       expect(tool).toHaveProperty('definition');
@@ -966,6 +1019,9 @@ describe('cross-provider isolation', () => {
       ...createPersonalDataToolProvider().getTools(),
       ...createTriggerToolProvider().getTools(),
       ...createPlanToolProvider().getTools(),
+      ...createConfigToolProvider().getTools(),
+      ...createHeartbeatToolProvider('u').getTools(),
+      ...createExtensionToolProvider('u').getTools(),
     ];
     for (const tool of allTools) {
       expect(typeof tool.definition.name).toBe('string');

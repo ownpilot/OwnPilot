@@ -71,6 +71,7 @@ vi.mock('../ws/server.js', () => ({
 vi.mock('../services/tool-executor.js', () => ({
   executeTool: mockExecuteTool,
   hasTool: mockHasTool,
+  waitForToolSync: vi.fn(async () => {}),
 }));
 
 vi.mock('../db/repositories/execution-permissions.js', () => ({
@@ -213,8 +214,10 @@ describe('TriggerEngine', () => {
       const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
       e.start();
 
-      // getDueTriggers is called once for the initial schedule check
-      expect(mockTriggerService.getDueTriggers).toHaveBeenCalledWith('default');
+      // Initial checks now await waitForToolSync() — flush microtasks
+      await vi.waitFor(() => {
+        expect(mockTriggerService.getDueTriggers).toHaveBeenCalledWith('default');
+      });
       // getConditionTriggers is called once for the initial condition check
       expect(mockTriggerService.getConditionTriggers).toHaveBeenCalledWith('default');
       e.stop();

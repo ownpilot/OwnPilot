@@ -14,7 +14,7 @@ import {
   type ConditionConfig,
   type EventConfig,
 } from '../db/repositories/triggers.js';
-import { executeTool, hasTool } from '../services/tool-executor.js';
+import { executeTool, hasTool, waitForToolSync } from '../services/tool-executor.js';
 import { getNextRunTime, getServiceRegistry, Services, type ITriggerService, type IGoalService, type IMemoryService, type ExecutionPermissions } from '@ownpilot/core';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { getLog } from '../services/log.js';
@@ -142,9 +142,11 @@ export class TriggerEngine {
     }, this.config.conditionCheckIntervalMs);
     this.conditionTimer.unref();
 
-    // Run initial checks
-    this.processScheduleTriggers().catch((err) => log.error('Initial schedule trigger poll failed', { error: err }));
-    this.processConditionTriggers().catch((err) => log.error('Initial condition trigger check failed', { error: err }));
+    // Wait for custom tool sync then run initial checks
+    waitForToolSync().then(() => {
+      this.processScheduleTriggers().catch((err) => log.error('Initial schedule trigger poll failed', { error: err }));
+      this.processConditionTriggers().catch((err) => log.error('Initial condition trigger check failed', { error: err }));
+    }).catch((err) => log.error('Tool sync wait failed', { error: err }));
 
     log.info('Started');
   }
