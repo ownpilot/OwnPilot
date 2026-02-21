@@ -52,7 +52,8 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 - **Tool Namespaces** — Qualified tool names with prefixes (`core.`, `custom.`, `plugin.`, `skill.`, `mcp.`) for clear origin tracking
 - **MCP Client** — Connect to external MCP servers (Filesystem, GitHub, Brave Search, etc.) and use their tools natively
 - **MCP Server** — Expose OwnPilot's tools as an MCP endpoint for Claude Desktop and other MCP clients
-- **Skill Packages** — AI-generated installable skill packs with custom tools, prompt templates, and configurations
+- **User Extensions** — Installable tool bundles with custom tools, triggers, services, and configurations
+- **Skills** — Open standard SKILL.md format (AgentSkills.io) for instruction-based AI knowledge packages
 - **Custom Tools** — Create new tools at runtime via LLM (sandboxed JavaScript)
 - **Connected Apps** — 1000+ OAuth app integrations via Composio (Google, GitHub, Slack, Notion, Stripe, etc.)
 - **Tool Limits** — Automatic parameter capping to prevent unbounded queries
@@ -73,10 +74,10 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 - **Risk Assessment** — Automatic risk scoring for tool executions with approval workflows
 
 ### Communication
-- **Web UI** — React 19 + Vite 6 + Tailwind CSS 4 with dark mode, 35 pages, 43+ components, code-split
+- **Web UI** — React 19 + Vite 6 + Tailwind CSS 4 with dark mode, 41 pages, 60+ components, code-split
 - **Telegram Bot** — Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
 - **WebSocket** — Real-time broadcasts for all data mutations, event subscriptions, session management
-- **REST API** — 39 route modules with standardized responses, pagination, and error codes
+- **REST API** — 40 route modules with standardized responses, pagination, and error codes
 
 ### Security
 - **Zero-Dependency Crypto** — AES-256-GCM encryption + PBKDF2 key derivation using only Node.js built-ins
@@ -109,7 +110,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
                        │
               ┌────────▼────────┐
               │    Gateway      │  Hono HTTP API Server
-              │  (Port 8080)    │  39 Route Modules
+              │  (Port 8080)    │  40 Route Modules
               ├─────────────────┤
               │  MessageBus     │  Middleware Pipeline
               │  Agent Engine   │  Tool Orchestration
@@ -125,10 +126,10 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
               └────────┬────────┘
                        │
               ┌────────▼────────┐
-              │   PostgreSQL    │  36 Repositories
+              │   PostgreSQL    │  37 Repositories
               │                 │  Conversations, Personal Data,
               │                 │  Memories, Goals, Triggers, Plans,
-              │                 │  MCP Servers, Skill Packages
+              │                 │  MCP Servers, User Extensions
               └─────────────────┘
 ```
 
@@ -138,7 +139,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 Request → Audit → Persistence → Post-Processing → Context-Injection → Agent-Execution → Response
 ```
 
-All messages (web UI chat, Telegram) flow through the same MessageBus middleware pipeline.
+All messages (web UI chat, Telegram, trigger-initiated chats) flow through the same MessageBus middleware pipeline.
 
 ---
 
@@ -213,10 +214,10 @@ ownpilot/
 │   │
 │   ├── gateway/                 # Hono API server (~67K LOC)
 │   │   ├── src/
-│   │   │   ├── routes/          # 39 route modules
-│   │   │   ├── services/        # 40 business logic services
+│   │   │   ├── routes/          # 40 route modules
+│   │   │   ├── services/        # 45 business logic services
 │   │   │   ├── db/
-│   │   │   │   ├── repositories/  # 36 data access repositories
+│   │   │   │   ├── repositories/  # 37 data access repositories
 │   │   │   │   ├── adapters/      # PostgreSQL adapter
 │   │   │   │   ├── migrations/    # Schema migrations
 │   │   │   │   └── seeds/         # Default data
@@ -234,8 +235,8 @@ ownpilot/
 │   │
 │   ├── ui/                      # React 19 web interface (~36K LOC)
 │   │   ├── src/
-│   │   │   ├── pages/           # 35 page components
-│   │   │   ├── components/      # 43+ reusable components
+│   │   │   ├── pages/           # 41 page components
+│   │   │   ├── components/      # 60+ reusable components
 │   │   │   ├── hooks/           # Custom hooks (chat store, theme, WebSocket)
 │   │   │   ├── api/             # Typed fetch wrapper + endpoint modules
 │   │   │   ├── types/           # UI type definitions
@@ -270,7 +271,7 @@ ownpilot/
 
 The foundational runtime library. Contains the AI engine, tool system, plugin architecture, security primitives, and cryptography. Minimal dependencies (only `googleapis` for Google OAuth).
 
-**~65,000 LOC** across 160+ source files.
+**~62,000 LOC** across 160+ source files.
 
 | Module | Description |
 |--------|-------------|
@@ -292,25 +293,25 @@ The foundational runtime library. Contains the AI engine, tool system, plugin ar
 
 The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, MCP integration, plugin management, and channel connectivity.
 
-**~67,000 LOC** across 200+ source files. **137 test files** with **4,800+ tests**.
+**~72,000 LOC** across 200+ source files. **191 test files** with **9,700+ tests**.
 
-**Route Modules (39):**
+**Route Modules (40):**
 
 | Category | Routes |
 |----------|--------|
-| **Chat & Agents** | `chat.ts`, `chat-history.ts`, `agents.ts` |
+| **Chat & Agents** | `chat.ts`, `chat-history.ts`, `agents.ts`, `chat-streaming.ts`, `chat-persistence.ts`, `chat-state.ts`, `chat-prompt.ts` |
 | **AI Configuration** | `models.ts`, `providers.ts`, `model-configs.ts`, `local-providers.ts` |
 | **Personal Data** | `personal-data.ts`, `personal-data-tools.ts`, `memories.ts`, `goals.ts`, `expenses.ts`, `custom-data.ts` |
 | **Productivity** | `productivity.ts` (Pomodoro, Habits, Captures) |
-| **Automation** | `triggers.ts`, `heartbeats.ts`, `plans.ts`, `autonomy.ts` |
-| **Tools & Extensions** | `tools.ts`, `custom-tools.ts`, `plugins.ts`, `skill-packages.ts`, `mcp.ts`, `composio.ts` |
+| **Automation** | `triggers.ts`, `heartbeats.ts`, `plans.ts`, `autonomy.ts`, `workflows.ts`, `workflow-copilot.ts` |
+| **Tools & Extensions** | `tools.ts`, `custom-tools.ts`, `plugins.ts`, `extensions.ts`, `mcp.ts`, `composio.ts` |
 | **Channels** | `channels.ts`, `channel-auth.ts`, `webhooks.ts` |
 | **Configuration** | `settings.ts`, `config-services.ts` |
-| **System** | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts`, `execution-permissions.ts` |
+| **System** | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts`, `execution-permissions.ts`, `error-codes.ts` |
 
-**Services (40):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, SkillPackageService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, and more.
+**Services (45):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, and more.
 
-**Repositories (36):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, skill-packages, local-providers, heartbeats, embedding-cache.
+**Repositories (37):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows.
 
 ### UI (`@ownpilot/ui`)
 
@@ -324,7 +325,7 @@ Modern web interface built with React 19, Vite 6, and Tailwind CSS 4. Minimal de
 | Tailwind CSS | 4.0.6 |
 | prism-react-renderer | 2.4.1 |
 
-**Pages (35):**
+**Pages (41):**
 
 | Page | Description |
 |------|-------------|
@@ -336,21 +337,23 @@ Modern web interface built with React 19, Vite 6, and Tailwind CSS 4. Minimal de
 | **Expenses** | Financial tracking with categories |
 | **Memories** | AI long-term memory browser |
 | **Goals** | Goal tracking with progress and step management |
-| **Triggers / Plans / Autonomy** | Automation configuration |
+| **Triggers / Plans / Autonomy / Workflows** | Automation configuration |
 | **Agents** | Agent selection and configuration |
 | **Tools / Custom Tools** | Tool browser and custom tool management |
-| **Skill Packages** | Browse and install AI-generated skill packs |
+| **User Extensions** | Install and manage tool bundles with custom tools and configs |
+| **Skills** | Browse and install AgentSkills.io SKILL.md instruction packages |
 | **MCP Servers** | Manage external MCP server connections with preset quick-add |
+| **Tool Groups** | Configure tool group visibility and assignments |
 | **Connected Apps** | Composio OAuth integrations (1000+ apps) |
 | **Models / AI Models / Costs** | AI model browser, configuration, and usage tracking |
 | **Providers** | Provider management and status |
-| **Plugins / Workspaces** | Extension and workspace management |
+| **Plugins / Workspaces / Wizards** | Extension management, workspace management, guided setup wizards |
 | **Data Browser / Custom Data** | Universal data exploration and custom tables |
 | **Settings / Config Center / API Keys** | Service configuration, API key management |
 | **System** | Database backup/restore, sandbox status, theme, notifications |
 | **Profile / Logs / About** | User profile, request logs, system info |
 
-**Key Components (43+):** Layout, ChatInput, MessageList, ContextBar, ContextDetailModal, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, ExecutionSecurityPanel, SuggestionChips, MemoryCards, WorkspaceSelector, ToastProvider, ConfirmDialog, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
+**Key Components (60+):** Layout, ChatInput, MessageList, ContextBar, ContextDetailModal, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, ExecutionSecurityPanel, SuggestionChips, MemoryCards, WorkspaceSelector, ToastProvider, ConfirmDialog, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
 
 **State Management (Context + Hooks):**
 - `useChatStore` — Global chat state with SSE streaming, tool progress, approval flow
@@ -536,7 +539,7 @@ All tools use qualified names with dot-prefixed namespaces:
 | `core.` | Built-in tools | `core.add_task` |
 | `custom.` | User-created tools | `custom.my_helper` |
 | `plugin.{id}.` | Plugin tools | `plugin.telegram.send_message` |
-| `skill.{id}.` | Skill package tools | `skill.web-scraper.scrape` |
+| `skill.{id}.` | Extension/skill tools | `skill.web-scraper.scrape` |
 | `mcp.{server}.` | MCP server tools | `mcp.filesystem.read_file` |
 
 The LLM can use base names (without prefix) for backward compatibility — the registry resolves them automatically.
@@ -680,11 +683,20 @@ Multi-step autonomous execution:
 - **Timeout and retry** logic with configurable backoff
 - **Step dependencies** for execution ordering
 
+### Workflows
+
+Visual multi-step automation with a workflow editor:
+
+- **Drag-and-drop** workflow builder in the web UI
+- **Step types**: prompt, tool, conditional, loop
+- **Workflow Copilot** — AI-assisted workflow creation and editing
+- **Execution logs** with per-step status tracking
+
 ---
 
 ## Database
 
-PostgreSQL with 36 repositories via the `pg` adapter.
+PostgreSQL with 37 repositories via the `pg` adapter.
 
 ### Key Tables
 
@@ -694,11 +706,11 @@ PostgreSQL with 36 repositories via the `pg` adapter.
 
 **Productivity:** `pomodoro_sessions`, `habits`, `captures`
 
-**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`, `heartbeats`
+**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`, `heartbeats`, `workflows`
 
 **Channels:** `channel_messages`, `channel_users`, `channel_sessions`, `channel_verification`
 
-**Extensions:** `plugins`, `custom_tools`, `skill_packages`, `mcp_servers`, `embedding_cache`
+**Extensions:** `plugins`, `custom_tools`, `user_extensions`, `mcp_servers`, `embedding_cache`
 
 **System:** `custom_data_tables`, `config_services`, `execution_permissions`, `workspaces`, `model_configs`, `local_providers`
 
@@ -888,6 +900,7 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 | `GET/POST` | `/api/v1/triggers` | Trigger management |
 | `GET/POST` | `/api/v1/heartbeats` | Heartbeat scheduling |
 | `GET/POST` | `/api/v1/plans` | Plan management |
+| `GET/POST` | `/api/v1/workflows` | Workflow management |
 | `GET/PUT` | `/api/v1/autonomy` | Autonomy settings |
 
 ### Extensions
@@ -896,7 +909,7 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 |--------|----------|-------------|
 | `GET/POST` | `/api/v1/mcp` | MCP server management |
 | `POST` | `/mcp/serve` | MCP server endpoint (Streamable HTTP) |
-| `GET/POST` | `/api/v1/skill-packages` | Skill package management |
+| `GET/POST` | `/api/v1/extensions` | User extension and skill management |
 | `GET/POST` | `/api/v1/plugins` | Plugin management |
 | `GET/POST` | `/api/v1/custom-tools` | Custom tool management |
 | `GET/POST` | `/api/v1/composio` | Connected apps (Composio) |
@@ -1069,7 +1082,7 @@ pnpm clean            # Clear all build artifacts
 | **Database** | PostgreSQL |
 | **Telegram** | Grammy |
 | **MCP** | @modelcontextprotocol/sdk |
-| **Testing** | Vitest 2.x (211 test files, 9,307 tests) |
+| **Testing** | Vitest 2.x (306 test files, 9,800+ tests) |
 | **Linting** | ESLint 9 (flat config) |
 | **Formatting** | Prettier 3.x |
 | **Git Hooks** | Husky (pre-commit: lint + typecheck) |

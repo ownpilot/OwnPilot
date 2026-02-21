@@ -8,7 +8,7 @@ Privacy-first personal AI assistant platform. TypeScript monorepo with Turborepo
 packages/
   core/      - Agent engine, tools, plugins, events, sandbox, privacy
   gateway/   - Hono HTTP API server, routes, services, DB, channels, triggers, WebSocket
-  ui/        - React 19 + Vite + Tailwind frontend (40 routes, code-split)
+  ui/        - React 19 + Vite + Tailwind frontend (43 routes, code-split)
   cli/       - Commander.js CLI (bot, config, start, workspace commands)
   channels/  - Channel manager + Telegram bot
 ```
@@ -22,7 +22,7 @@ packages/
 - **Plugin system**: PluginRegistry with isolation, marketplace, runtime in `packages/core/src/plugins/`
 - **User Extensions**: Native tool bundles (JS code, triggers, services) in `packages/gateway/src/services/extension-service.ts`. DB table: `user_extensions`. API: `/extensions`
 - **Skills (AgentSkills.io)**: Open standard SKILL.md format for agent instructions. Parser: `packages/gateway/src/services/agentskills-parser.ts`. Format field: `'ownpilot' | 'agentskills'`
-- **Test framework**: Vitest across all packages. 211 test files, 9,307 tests total (gateway: 137 files, 4,892 tests; core: 65 files, 4,319 tests)
+- **Test framework**: Vitest across all packages. 306 test files, 9,800+ tests total (gateway: 191 files; core: 105 files; ui: 5 files; cli: 4 files; channels: 2 files)
 
 ## Commands
 
