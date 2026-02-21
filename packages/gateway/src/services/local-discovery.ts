@@ -278,47 +278,54 @@ async function discoverGeneric(provider: LocalProvider): Promise<DiscoveryResult
   const candidateUrls = buildGenericCandidateUrls(provider);
   const headers = authHeaders(provider.apiKey);
 
-  for (const url of candidateUrls) {
-    const response = await timedFetch(url, headers);
+  // Probe all candidate URLs in parallel for faster discovery
+  const probeResults = await Promise.allSettled(
+    candidateUrls.map(async (url): Promise<DiscoveryResult> => {
+      const response = await timedFetch(url, headers);
+      if (!response || !response.ok) {
+        throw new Error(`No response from ${url}`);
+      }
 
-    if (!response || !response.ok) {
-      continue;
+      let text: string;
+      try {
+        text = await response.text();
+      } catch {
+        throw new Error(`Failed to read response from ${url}`);
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        throw new Error(`Invalid JSON from ${url}`);
+      }
+
+      const entries = parseGenericModels(parsed);
+      if (entries.length === 0) {
+        throw new Error(`No models in response from ${url}`);
+      }
+
+      const models: DiscoveredModel[] = entries
+        .map((entry) => {
+          const id = entry.id ?? entry.name;
+          if (!id || typeof id !== 'string') return null;
+          return {
+            modelId: id,
+            displayName: buildDisplayName(id),
+            metadata: { ...entry } as Record<string, unknown>,
+          };
+        })
+        .filter((m): m is NonNullable<typeof m> => m !== null);
+
+      return { models, sourceUrl: url };
+    })
+  );
+
+  // Return the first successful result (preserving URL priority order)
+  for (const result of probeResults) {
+    if (result.status === 'fulfilled' && result.value.models.length > 0) {
+      return result.value;
     }
-
-    // Read as text first to handle non-JSON gracefully
-    let text: string;
-    try {
-      text = await response.text();
-    } catch {
-      continue;
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      // Response is not valid JSON, skip to next URL
-      continue;
-    }
-
-    const entries = parseGenericModels(parsed);
-    if (entries.length === 0) {
-      continue;
-    }
-
-    const models: DiscoveredModel[] = entries
-      .map((entry) => {
-        const id = entry.id ?? entry.name;
-        if (!id || typeof id !== 'string') return null;
-        return {
-          modelId: id,
-          displayName: buildDisplayName(id),
-          metadata: { ...entry } as Record<string, unknown>,
-        };
-      })
-      .filter((m): m is NonNullable<typeof m> => m !== null);
-
-    return { models, sourceUrl: url };
   }
 
   // All candidates failed

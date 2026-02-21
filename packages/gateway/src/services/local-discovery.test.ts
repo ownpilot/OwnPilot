@@ -699,14 +699,15 @@ describe('local-discovery', () => {
       expect(result.sourceUrl).toBe('http://localhost:1234/models');
     });
 
-    it('stops at the first successful response', async () => {
+    it('returns the first successful result (parallel probing)', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(
         jsonResponse({ data: [{ id: 'model-1' }] }),
       );
       const result = await discoverModels(genericProvider());
 
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      // All 3 candidate URLs are probed in parallel
+      expect(mockFetch).toHaveBeenCalledTimes(3);
       expect(result.models).toHaveLength(1);
     });
 
@@ -767,7 +768,8 @@ describe('local-discovery', () => {
         genericProvider({ discoveryEndpoint: '/custom/list' }),
       );
 
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // All 4 candidate URLs probed in parallel (discoveryEndpoint + 3 standard)
+      expect(mockFetch).toHaveBeenCalledTimes(4);
       expect(result.models).toHaveLength(1);
     });
 
@@ -814,7 +816,7 @@ describe('local-discovery', () => {
       expect(result.models[0]!.modelId).toBe('model-a');
     });
 
-    it('skips non-OK responses and tries next URL', async () => {
+    it('skips non-OK responses and uses successful URL', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(jsonResponse({}, 404));
       mockFetch.mockResolvedValueOnce(
@@ -822,11 +824,12 @@ describe('local-discovery', () => {
       );
       const result = await discoverModels(genericProvider());
 
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // All 3 URLs probed in parallel
+      expect(mockFetch).toHaveBeenCalledTimes(3);
       expect(result.models).toHaveLength(1);
     });
 
-    it('skips non-JSON responses and tries next URL', async () => {
+    it('skips non-JSON responses and uses successful URL', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(textResponse('<html>Not Found</html>'));
       mockFetch.mockResolvedValueOnce(
@@ -834,11 +837,12 @@ describe('local-discovery', () => {
       );
       const result = await discoverModels(genericProvider());
 
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // All 3 URLs probed in parallel
+      expect(mockFetch).toHaveBeenCalledTimes(3);
       expect(result.models).toHaveLength(1);
     });
 
-    it('skips empty model lists and tries next URL', async () => {
+    it('skips empty model lists and uses successful URL', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(jsonResponse({ data: [] }));
       mockFetch.mockResolvedValueOnce(
@@ -846,7 +850,8 @@ describe('local-discovery', () => {
       );
       const result = await discoverModels(genericProvider());
 
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // All 3 URLs probed in parallel
+      expect(mockFetch).toHaveBeenCalledTimes(3);
       expect(result.models).toHaveLength(1);
     });
 
@@ -957,7 +962,7 @@ describe('local-discovery', () => {
       });
     });
 
-    it('handles text() throwing by skipping to next URL', async () => {
+    it('handles text() throwing by using successful URL', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -969,7 +974,8 @@ describe('local-discovery', () => {
       );
       const result = await discoverModels(genericProvider());
 
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // All 3 URLs probed in parallel
+      expect(mockFetch).toHaveBeenCalledTimes(3);
       expect(result.models).toHaveLength(1);
     });
 

@@ -106,6 +106,8 @@ export class EmbeddingService {
     for (let i = 0; i < texts.length; i++) {
       const text = texts[i]!.trim();
       if (!text) {
+        // Skip empty texts — return zero-length embedding (consistent with single method throwing)
+        log.debug('Skipping empty text at batch index', { index: i });
         results[i] = { embedding: [], cached: true };
         continue;
       }
@@ -172,9 +174,17 @@ export class EmbeddingService {
 
       // Handle rate limiting with retry-after (one retry)
       if (response.status === 429 && !retried) {
-        const retryAfter = parseInt(response.headers.get('retry-after') ?? '5', 10);
+        const parsed = parseInt(response.headers.get('retry-after') ?? '5', 10);
+        const retryAfter = Number.isNaN(parsed) ? 5 : parsed;
         log.warn(`Rate limited, retrying after ${retryAfter}s`);
         await sleep(retryAfter * 1000);
+        return this.callEmbeddingAPI(inputs, true);
+      }
+
+      // Retry on transient server errors (5xx) once
+      if (response.status >= 500 && !retried) {
+        log.warn(`Server error ${response.status}, retrying after 2s`);
+        await sleep(2000);
         return this.callEmbeddingAPI(inputs, true);
       }
 
