@@ -88,7 +88,7 @@ export function topologicalSort(nodes: WorkflowNode[], edges: WorkflowEdge[]): s
     const nextQueue: string[] = [];
     for (const nodeId of queue) {
       for (const neighbor of adjacency.get(nodeId) ?? []) {
-        const newDegree = (inDegree.get(neighbor) ?? 1) - 1;
+        const newDegree = (inDegree.get(neighbor) ?? 0) - 1;
         inDegree.set(neighbor, newDegree);
         if (newDegree === 0) {
           nextQueue.push(neighbor);
@@ -943,7 +943,10 @@ export class WorkflowService {
               // Skip if already skipped (e.g., condition branch)
               if (nodeOutputs[bodyNodeId]?.status === 'skipped') return nodeOutputs[bodyNodeId]!;
 
-              const bodyNode = nodeMap.get(bodyNodeId)!;
+              const bodyNode = nodeMap.get(bodyNodeId);
+              if (!bodyNode) {
+                return { nodeId: bodyNodeId, status: 'error' as const, output: `Node ${bodyNodeId} not found in workflow graph` };
+              }
               onProgress?.({ type: 'node_start', nodeId: bodyNodeId });
 
               if (bodyNode.type === 'llmNode') return this.executeLlmNode(bodyNode, nodeOutputs, iterationVars);

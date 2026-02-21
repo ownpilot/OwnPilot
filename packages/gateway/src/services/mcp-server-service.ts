@@ -26,6 +26,37 @@ const log = getLog('McpServer');
 // =============================================================================
 
 const sessions = new Map<string, WebStandardStreamableHTTPServerTransport>();
+const sessionLastActivity = new Map<string, number>();
+
+/** Max session age before cleanup (30 minutes) */
+const SESSION_MAX_AGE_MS = 30 * 60 * 1000;
+
+/** Cleanup interval (5 minutes) */
+const SESSION_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+let cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+function startSessionCleanup(): void {
+  if (cleanupTimer) return;
+  cleanupTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [sid, lastActivity] of sessionLastActivity) {
+      if (now - lastActivity > SESSION_MAX_AGE_MS) {
+        const transport = sessions.get(sid);
+        if (transport) {
+          transport.close().catch(() => {});
+        }
+        sessions.delete(sid);
+        sessionLastActivity.delete(sid);
+        log.info('Cleaned up stale MCP session', { sessionId: sid });
+      }
+    }
+  }, SESSION_CLEANUP_INTERVAL_MS);
+}
+
+function touchSession(sid: string): void {
+  sessionLastActivity.set(sid, Date.now());
+}
 
 // =============================================================================
 // LAZY MCP SERVER (created once, reused)
@@ -119,6 +150,7 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
   if (request.method === 'GET' || request.method === 'DELETE') {
     // GET = SSE stream, DELETE = terminate session
     if (sessionId && sessions.has(sessionId)) {
+      touchSession(sessionId);
       const transport = sessions.get(sessionId)!;
       return transport.handleRequest(request);
     }
@@ -135,6 +167,7 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
   if (request.method === 'POST') {
     // Check if this is an existing session
     if (sessionId && sessions.has(sessionId)) {
+      touchSession(sessionId);
       const transport = sessions.get(sessionId)!;
       return transport.handleRequest(request);
     }
@@ -144,9 +177,12 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: (sid) => {
         sessions.set(sid, transport);
+        touchSession(sid);
+        startSessionCleanup();
       },
       onsessionclosed: (sid) => {
         sessions.delete(sid);
+        sessionLastActivity.delete(sid);
       },
     });
 
@@ -172,5 +208,10 @@ export function invalidateMcpServer(): void {
   for (const [sid, transport] of sessions) {
     transport.close().catch(() => {});
     sessions.delete(sid);
+  }
+  sessionLastActivity.clear();
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = null;
   }
 }

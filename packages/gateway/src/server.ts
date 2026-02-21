@@ -486,7 +486,19 @@ async function main() {
       }
     } catch { /* webhook module not loaded */ }
 
-    // 7. Close DB connection pool
+    // 7. Dispose session service (cleanup intervals)
+    try {
+      const sessionSvc = registry.tryGet(Services.Session);
+      if (sessionSvc && 'dispose' in sessionSvc) (sessionSvc as { dispose(): void }).dispose();
+    } catch (e) { log.warn('Session service dispose error', { error: String(e) }); }
+
+    // 8. Invalidate MCP server (close sessions, stop cleanup timer)
+    try {
+      const { invalidateMcpServer } = await import('./services/mcp-server-service.js');
+      invalidateMcpServer();
+    } catch (e) { log.warn('MCP server cleanup error', { error: String(e) }); }
+
+    // 9. Close DB connection pool
     try {
       const adapter = getAdapterSync();
       await adapter.close();

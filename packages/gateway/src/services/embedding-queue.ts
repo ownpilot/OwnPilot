@@ -37,10 +37,14 @@ const MAX_PRIORITY = 20;
 
 export class EmbeddingQueue {
   private queue: QueueItem[] = [];
-  private queuedIds = new Set<string>(); // O(1) dedup lookup
+  private queuedIds = new Set<string>(); // O(1) dedup lookup (composite key: userId:memoryId)
   private processing = false;
   private timer: ReturnType<typeof setInterval> | null = null;
   private running = false;
+
+  private queueKey(memoryId: string, userId: string): string {
+    return `${userId}:${memoryId}`;
+  }
 
   /**
    * Start the background worker.
@@ -72,13 +76,14 @@ export class EmbeddingQueue {
    * Add a memory to the embedding queue.
    */
   enqueue(memoryId: string, userId: string, content: string, priority = 5): void {
-    // Deduplicate: O(1) check via Set
-    if (this.queuedIds.has(memoryId)) return;
+    // Deduplicate: O(1) check via Set (composite key to avoid cross-user collisions)
+    const key = this.queueKey(memoryId, userId);
+    if (this.queuedIds.has(key)) return;
 
     // Cap queue size to prevent unbounded growth
     if (this.queue.length >= EMBEDDING_QUEUE_MAX_SIZE) return;
 
-    this.queuedIds.add(memoryId);
+    this.queuedIds.add(key);
     this.queue.push({ memoryId, userId, content, priority });
 
     // Sort by priority (lower number = higher priority)
@@ -123,7 +128,7 @@ export class EmbeddingQueue {
 
       // Take a batch (remove from dedup Set as well)
       const batch = this.queue.splice(0, EMBEDDING_QUEUE_BATCH_SIZE);
-      for (const item of batch) this.queuedIds.delete(item.memoryId);
+      for (const item of batch) this.queuedIds.delete(this.queueKey(item.memoryId, item.userId));
       const texts = batch.map(item => item.content);
 
       // Generate embeddings in batch

@@ -112,25 +112,29 @@ describe('execution-approval', () => {
       expect(await promise3).toBe(false);
     });
 
-    it('overwrites a previous pending approval when the same ID is used', async () => {
+    it('auto-rejects previous approval and clears its timer when same ID is reused', async () => {
+      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
+
       const promise1 = createApprovalRequest('overwrite-1');
+      const callsBefore = clearTimeoutSpy.mock.calls.length;
+
       const promise2 = createApprovalRequest('overwrite-1');
 
-      // resolveApproval resolves the LATEST entry (Map.set overwrites)
+      // The old timer should have been cleared to prevent leaks
+      expect(clearTimeoutSpy.mock.calls.length).toBeGreaterThan(callsBefore);
+
+      // The first promise is immediately auto-rejected (false)
+      const result1 = await promise1;
+      expect(result1).toBe(false);
+
+      // resolveApproval resolves the LATEST entry
       const found = resolveApproval('overwrite-1', true);
       expect(found).toBe(true);
 
-      // The second promise (latest) gets the resolution
       const result2 = await promise2;
       expect(result2).toBe(true);
 
-      // The first promise's resolve function was replaced in the map,
-      // so it will only resolve via its original timeout
-      vi.advanceTimersByTime(120_000);
-      const result1 = await promise1;
-      // The first timer was NOT cleared (overwrite does not clear the old timer),
-      // so it times out and resolves to false
-      expect(result1).toBe(false);
+      clearTimeoutSpy.mockRestore();
     });
   });
 
