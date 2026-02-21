@@ -206,7 +206,7 @@ export class ExtensionService {
 
   async uninstall(id: string, userId = 'default'): Promise<boolean> {
     const record = extensionsRepo.getById(id);
-    if (!record) return false;
+    if (!record || record.userId !== userId) return false;
 
     // Deactivate triggers
     await this.deactivateExtensionTriggers(id, userId);
@@ -237,7 +237,7 @@ export class ExtensionService {
 
   async enable(id: string, userId = 'default'): Promise<ExtensionRecord | null> {
     const record = extensionsRepo.getById(id);
-    if (!record) return null;
+    if (!record || record.userId !== userId) return null;
 
     if (record.status === 'enabled') return record;
 
@@ -256,7 +256,7 @@ export class ExtensionService {
 
   async disable(id: string, userId = 'default'): Promise<ExtensionRecord | null> {
     const record = extensionsRepo.getById(id);
-    if (!record) return null;
+    if (!record || record.userId !== userId) return null;
 
     if (record.status === 'disabled') return record;
 
@@ -401,7 +401,7 @@ export class ExtensionService {
 
   async reload(id: string, userId = 'default'): Promise<ExtensionRecord | null> {
     const record = extensionsRepo.getById(id);
-    if (!record) return null;
+    if (!record || record.userId !== userId) return null;
     if (!record.sourcePath) {
       throw new ExtensionError('No source path to reload from', 'IO_ERROR');
     }

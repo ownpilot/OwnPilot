@@ -13,7 +13,7 @@ import { handleMcpRequest } from '../services/mcp-server-service.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage, sanitizeId } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, sanitizeId, getUserId } from './helpers.js';
 
 const log = getLog('McpRoutes');
 
@@ -126,8 +126,9 @@ mcpRoutes.get('/serve/info', async (c) => {
  */
 mcpRoutes.get('/', async (c) => {
   try {
+    const userId = getUserId(c);
     const repo = getMcpServersRepo();
-    const servers = await repo.getAll();
+    const servers = await repo.getAll(userId);
 
     // Enrich with live connection status
     const enriched = servers.map(s => ({
@@ -147,6 +148,7 @@ mcpRoutes.get('/', async (c) => {
  */
 mcpRoutes.post('/', async (c) => {
   try {
+    const userId = getUserId(c);
     const body = await c.req.json<{
       name: string;
       displayName: string;
@@ -180,8 +182,8 @@ mcpRoutes.post('/', async (c) => {
 
     const repo = getMcpServersRepo();
 
-    // Check uniqueness
-    const existing = await repo.getByName(body.name.trim());
+    // Check uniqueness scoped to user
+    const existing = await repo.getByName(body.name.trim(), userId);
     if (existing) {
       return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `MCP server "${body.name}" already exists` }, 409);
     }
@@ -197,6 +199,7 @@ mcpRoutes.post('/', async (c) => {
       headers: body.headers,
       enabled: body.enabled,
       autoConnect: body.autoConnect,
+      userId,
     });
 
     wsGateway.broadcast('data:changed', { entity: 'mcp_server', action: 'created', id: server.id });
@@ -212,11 +215,12 @@ mcpRoutes.post('/', async (c) => {
  */
 mcpRoutes.get('/:id', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);
 
-    if (!server) {
+    if (!server || server.userId !== userId) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
     }
 
@@ -235,6 +239,7 @@ mcpRoutes.get('/:id', async (c) => {
  */
 mcpRoutes.put('/:id', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
     const body = await c.req.json<{
       name?: string;
@@ -251,7 +256,7 @@ mcpRoutes.put('/:id', async (c) => {
 
     const repo = getMcpServersRepo();
     const existing = await repo.getById(id);
-    if (!existing) {
+    if (!existing || existing.userId !== userId) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
     }
 
@@ -286,11 +291,12 @@ mcpRoutes.put('/:id', async (c) => {
  */
 mcpRoutes.delete('/:id', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);
 
-    if (!server) {
+    if (!server || server.userId !== userId) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
     }
 
@@ -314,11 +320,12 @@ mcpRoutes.delete('/:id', async (c) => {
  */
 mcpRoutes.post('/:id/connect', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);
 
-    if (!server) {
+    if (!server || server.userId !== userId) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
     }
 
@@ -337,11 +344,12 @@ mcpRoutes.post('/:id/connect', async (c) => {
  */
 mcpRoutes.post('/:id/disconnect', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);
 
-    if (!server) {
+    if (!server || server.userId !== userId) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
     }
 
