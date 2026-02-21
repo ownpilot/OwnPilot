@@ -22,6 +22,14 @@ const APPROVAL_TIMEOUT_MS = 120_000;
  * Called from chat route's requestApproval callback.
  */
 export function createApprovalRequest(approvalId: string): Promise<boolean> {
+  // Clear any existing approval with the same ID to prevent timer leaks
+  const existing = pendingApprovals.get(approvalId);
+  if (existing) {
+    clearTimeout(existing.timer);
+    existing.resolve(false); // Auto-reject the old one
+    pendingApprovals.delete(approvalId);
+  }
+
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       pendingApprovals.delete(approvalId);

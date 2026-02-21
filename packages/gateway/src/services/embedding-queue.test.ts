@@ -77,6 +77,12 @@ describe('EmbeddingQueue', () => {
       expect(queue.getStats().queueSize).toBe(2);
     });
 
+    it('deduplicates by userId:memoryId composite key (not memoryId alone)', () => {
+      queue.enqueue('mem-1', 'user-1', 'content from user 1');
+      queue.enqueue('mem-1', 'user-2', 'content from user 2');
+      expect(queue.getStats().queueSize).toBe(2);
+    });
+
     it('sorts by priority (lower = higher priority)', () => {
       queue.enqueue('mem-low', 'user-1', 'low priority', 10);
       queue.enqueue('mem-high', 'user-1', 'high priority', 1);
