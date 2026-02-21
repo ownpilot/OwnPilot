@@ -106,19 +106,24 @@ export async function startBot(options: BotOptions): Promise<void> {
       const result = await agent.chat(message.text);
 
       if (result.ok) {
-        console.log(`🤖 Response: ${result.value.content.substring(0, 100)}...`);
+        const content = result.value.content || '(No response)';
+        console.log(`🤖 Response: ${content.substring(0, 100)}...`);
         await bot.sendMessage({
           chatId: message.chatId,
-          text: result.value.content,
+          text: content,
           replyToMessageId: message.id,
         });
       } else {
         console.error(`❌ Error: ${result.error.message}`);
-        await bot.sendMessage({
-          chatId: message.chatId,
-          text: `Sorry, I encountered an error: ${result.error.message}`,
-          replyToMessageId: message.id,
-        });
+        try {
+          await bot.sendMessage({
+            chatId: message.chatId,
+            text: `Sorry, I encountered an error: ${result.error.message}`,
+            replyToMessageId: message.id,
+          });
+        } catch (sendErr) {
+          console.error('Failed to send error message:', sendErr instanceof Error ? sendErr.message : sendErr);
+        }
       }
     } catch (err) {
       console.error('Failed to process message:', err instanceof Error ? err.message : err);
