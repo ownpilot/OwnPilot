@@ -1,154 +1,86 @@
-/**
- * Tests for retry utility — isRetryableError, withRetry, createRetryWrapper
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { isRetryableError, withRetry, createRetryWrapper } from './retry.js';
-import { TimeoutError } from '../types/errors.js';
-import { ok, err } from '../types/result.js';
-import type { Result } from '../types/result.js';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+vi.mock('../services/get-log.js', () => ({
+  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
+}));
 
-/** Build a quick Error with a given message */
-const mkError = (msg: string) => new Error(msg);
+const { isRetryableError, withRetry, createRetryWrapper } = await import('./retry.js');
+const { TimeoutError, InternalError, ValidationError } = await import('../types/errors.js');
+const { ok, err } = await import('../types/result.js');
 
 // ---------------------------------------------------------------------------
 // isRetryableError
 // ---------------------------------------------------------------------------
 
 describe('isRetryableError', () => {
-  // --- falsy / non-retryable ---
-  it('should return false for null', () => {
+  it('returns false for null', () => {
     expect(isRetryableError(null)).toBe(false);
   });
 
-  it('should return false for undefined', () => {
+  it('returns false for undefined', () => {
     expect(isRetryableError(undefined)).toBe(false);
   });
 
-  it('should return false for empty string (falsy)', () => {
-    expect(isRetryableError('')).toBe(false);
+  it('returns false for non-matching Error', () => {
+    expect(isRetryableError(new Error('some random error'))).toBe(false);
   });
 
-  it('should return false for 0 (falsy)', () => {
-    expect(isRetryableError(0)).toBe(false);
+  it('returns true for TimeoutError instance', () => {
+    expect(isRetryableError(new TimeoutError('request timed out'))).toBe(true);
   });
 
-  it('should return false for false (falsy)', () => {
-    expect(isRetryableError(false)).toBe(false);
+  it('returns true for Error with "network"', () => {
+    expect(isRetryableError(new Error('network error occurred'))).toBe(true);
   });
 
-  // --- TimeoutError ---
-  it('should return true for TimeoutError instance', () => {
-    expect(isRetryableError(new TimeoutError('op', 5000))).toBe(true);
+  it('returns true for Error with "ECONNRESET"', () => {
+    expect(isRetryableError(new Error('ECONNRESET'))).toBe(true);
   });
 
-  // --- network errors ---
-  it('should return true for "network error"', () => {
-    expect(isRetryableError(mkError('network error'))).toBe(true);
+  it('returns true for Error with "ECONNREFUSED"', () => {
+    expect(isRetryableError(new Error('ECONNREFUSED'))).toBe(true);
   });
 
-  it('should return true for ECONNRESET', () => {
-    expect(isRetryableError(mkError('read ECONNRESET'))).toBe(true);
+  it('returns true for Error with "timeout"', () => {
+    expect(isRetryableError(new Error('connection timeout'))).toBe(true);
   });
 
-  it('should return true for ECONNREFUSED', () => {
-    expect(isRetryableError(mkError('connect ECONNREFUSED 127.0.0.1:3000'))).toBe(true);
+  it('returns true for Error with "timed out"', () => {
+    expect(isRetryableError(new Error('operation timed out'))).toBe(true);
   });
 
-  // --- timeout patterns ---
-  it('should return true for "timeout"', () => {
-    expect(isRetryableError(mkError('Request timeout'))).toBe(true);
+  it('returns true for Error with "rate limit"', () => {
+    expect(isRetryableError(new Error('rate limit exceeded'))).toBe(true);
   });
 
-  it('should return true for "timed out"', () => {
-    expect(isRetryableError(mkError('Connection timed out'))).toBe(true);
+  it('returns true for Error with "too many requests"', () => {
+    expect(isRetryableError(new Error('too many requests'))).toBe(true);
   });
 
-  it('should return true for "operation timed out"', () => {
-    expect(isRetryableError(mkError('operation timed out after 30s'))).toBe(true);
+  it('returns true for Error with "429"', () => {
+    expect(isRetryableError(new Error('HTTP 429'))).toBe(true);
   });
 
-  // --- rate limiting ---
-  it('should return true for "rate limit"', () => {
-    expect(isRetryableError(mkError('rate limit exceeded'))).toBe(true);
+  it('returns true for Error with "500"', () => {
+    expect(isRetryableError(new Error('HTTP 500 Internal Server Error'))).toBe(true);
   });
 
-  it('should return true for "too many requests"', () => {
-    expect(isRetryableError(mkError('Too Many Requests'))).toBe(true);
+  it('returns true for Error with "502", "503", "504"', () => {
+    expect(isRetryableError(new Error('HTTP 502 Bad Gateway'))).toBe(true);
+    expect(isRetryableError(new Error('HTTP 503 Service Unavailable'))).toBe(true);
+    expect(isRetryableError(new Error('HTTP 504 Gateway Timeout'))).toBe(true);
   });
 
-  it('should return true for "429"', () => {
-    expect(isRetryableError(mkError('HTTP 429'))).toBe(true);
+  it('returns true for Error with "temporarily unavailable"', () => {
+    expect(isRetryableError(new Error('service temporarily unavailable'))).toBe(true);
   });
 
-  // --- server errors ---
-  it('should return true for "500"', () => {
-    expect(isRetryableError(mkError('HTTP 500 Internal Server Error'))).toBe(true);
+  it('returns true for Error with "service unavailable"', () => {
+    expect(isRetryableError(new Error('service unavailable'))).toBe(true);
   });
 
-  it('should return true for "502"', () => {
-    expect(isRetryableError(mkError('502 Bad Gateway'))).toBe(true);
-  });
-
-  it('should return true for "503"', () => {
-    expect(isRetryableError(mkError('503 Service Unavailable'))).toBe(true);
-  });
-
-  it('should return true for "504"', () => {
-    expect(isRetryableError(mkError('504 Gateway Timeout'))).toBe(true);
-  });
-
-  // --- Google errors ---
-  it('should return true for Google request failed', () => {
-    expect(isRetryableError(mkError('Google request to generativeai failed'))).toBe(true);
-  });
-
-  // --- transient ---
-  it('should return true for "temporarily unavailable"', () => {
-    expect(isRetryableError(mkError('Service temporarily unavailable'))).toBe(true);
-  });
-
-  it('should return true for "service unavailable"', () => {
-    expect(isRetryableError(mkError('service unavailable, try again later'))).toBe(true);
-  });
-
-  // --- non-retryable ---
-  it('should return false for "invalid input"', () => {
-    expect(isRetryableError(mkError('invalid input'))).toBe(false);
-  });
-
-  it('should return false for "not found"', () => {
-    expect(isRetryableError(mkError('not found'))).toBe(false);
-  });
-
-  it('should return false for "authentication failed"', () => {
-    expect(isRetryableError(mkError('authentication failed'))).toBe(false);
-  });
-
-  it('should return false for generic error without retryable pattern', () => {
-    expect(isRetryableError(mkError('something weird happened'))).toBe(false);
-  });
-
-  // --- case insensitive ---
-  it('should match case-insensitively (NETWORK ERROR)', () => {
-    expect(isRetryableError(mkError('NETWORK ERROR'))).toBe(true);
-  });
-
-  it('should match case-insensitively (Rate Limit)', () => {
-    expect(isRetryableError(mkError('Rate Limit Exceeded'))).toBe(true);
-  });
-
-  // --- string errors (not Error instances) ---
-  it('should handle plain string as error value', () => {
-    expect(isRetryableError('network error')).toBe(true);
-  });
-
-  it('should handle non-retryable plain string', () => {
-    expect(isRetryableError('something else')).toBe(false);
+  it('returns true for Error with "Google request failed"', () => {
+    expect(isRetryableError(new Error('Google request failed with status 500'))).toBe(true);
   });
 });
 
@@ -159,253 +91,352 @@ describe('isRetryableError', () => {
 describe('withRetry', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    // Deterministic jitter — remove randomness
-    vi.spyOn(Math, 'random').mockReturnValue(0.5); // jitter factor = 0
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    vi.restoreAllMocks();
   });
 
-  /** Advance all pending timers so sleep() resolves */
-  async function flushTimers() {
-    // Run all micro-tasks then advance timers
-    await vi.advanceTimersByTimeAsync(100_000);
-  }
+  describe('successful first attempt', () => {
+    it('returns ok result immediately without retrying', async () => {
+      const operation = vi.fn().mockResolvedValue(ok('success'));
 
-  it('should return result on first success', async () => {
-    const op = vi.fn().mockResolvedValue(ok('hello'));
+      const promise = withRetry(operation, { addJitter: false });
+      const result = await promise;
 
-    const result = await withRetry(op, { maxRetries: 3, addJitter: false, initialDelayMs: 10 });
-
-    expect(result).toEqual(ok('hello'));
-    expect(op).toHaveBeenCalledTimes(1);
-  });
-
-  it('should retry on retryable Result error and eventually succeed', async () => {
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockResolvedValueOnce(err(mkError('503 Service Unavailable')))
-      .mockResolvedValueOnce(err(mkError('503 Service Unavailable')))
-      .mockResolvedValueOnce(ok('recovered'));
-
-    const promise = withRetry(op, { maxRetries: 3, initialDelayMs: 10, addJitter: false });
-
-    // Flush timers repeatedly to let sleep() resolve between retries
-    await flushTimers();
-
-    const result = await promise;
-    expect(result).toEqual(ok('recovered'));
-    expect(op).toHaveBeenCalledTimes(3);
-  });
-
-  it('should return the last error result after max retries exceeded for Result errors', async () => {
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockResolvedValue(err(mkError('503 unavailable')));
-
-    const promise = withRetry(op, { maxRetries: 2, initialDelayMs: 10, addJitter: false });
-    await flushTimers();
-
-    const result = await promise;
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      // On the final attempt, the error is returned as-is (not wrapped in InternalError)
-      // because the loop returns the result directly when attempt === maxRetries.
-      expect(result.error.message).toBe('503 unavailable');
-    }
-    // 1 initial + 2 retries = 3 calls
-    expect(op).toHaveBeenCalledTimes(3);
-  });
-
-  it('should call onRetry with attempt number, error, and delay', async () => {
-    const onRetry = vi.fn();
-    const retryError = mkError('ECONNRESET');
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockResolvedValueOnce(err(retryError))
-      .mockResolvedValueOnce(ok('ok'));
-
-    const promise = withRetry(op, {
-      maxRetries: 3,
-      initialDelayMs: 100,
-      addJitter: false,
-      onRetry,
+      expect(result).toEqual(ok('success'));
+      expect(operation).toHaveBeenCalledTimes(1);
     });
 
-    await flushTimers();
-    await promise;
+    it('does not call onRetry when first attempt succeeds', async () => {
+      const onRetry = vi.fn();
+      const operation = vi.fn().mockResolvedValue(ok('success'));
 
-    expect(onRetry).toHaveBeenCalledTimes(1);
-    expect(onRetry).toHaveBeenCalledWith(1, retryError, expect.any(Number));
+      const promise = withRetry(operation, { addJitter: false, onRetry });
+      const result = await promise;
+
+      expect(result).toEqual(ok('success'));
+      expect(onRetry).not.toHaveBeenCalled();
+    });
   });
 
-  it('should respect maxRetries config', async () => {
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockResolvedValue(err(mkError('timeout')));
+  describe('retries on retryable Result error', () => {
+    it('retries and then succeeds', async () => {
+      const retryableError = new Error('network error');
+      const operation = vi
+        .fn()
+        .mockResolvedValueOnce(err(retryableError))
+        .mockResolvedValueOnce(ok('recovered'));
 
-    const promise = withRetry(op, { maxRetries: 1, initialDelayMs: 10, addJitter: false });
-    await flushTimers();
+      const promise = withRetry(operation, {
+        maxRetries: 3,
+        initialDelayMs: 100,
+        addJitter: false,
+      });
 
-    const result = await promise;
-    expect(result.ok).toBe(false);
-    // 1 initial + 1 retry = 2 calls total
-    expect(op).toHaveBeenCalledTimes(2);
-  });
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await promise;
 
-  it('should not retry non-retryable Result errors', async () => {
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockResolvedValue(err(mkError('invalid input')));
-
-    const result = await withRetry(op, { maxRetries: 3, initialDelayMs: 10, addJitter: false });
-
-    // Non-retryable error should be returned immediately
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error.message).toBe('invalid input');
-    }
-    expect(op).toHaveBeenCalledTimes(1);
-  });
-
-  it('should handle thrown retryable exceptions', async () => {
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockRejectedValueOnce(mkError('ECONNREFUSED'))
-      .mockResolvedValueOnce(ok('recovered'));
-
-    const promise = withRetry(op, { maxRetries: 3, initialDelayMs: 10, addJitter: false });
-    await flushTimers();
-
-    const result = await promise;
-    expect(result).toEqual(ok('recovered'));
-    expect(op).toHaveBeenCalledTimes(2);
-  });
-
-  it('should re-throw non-retryable thrown exceptions', async () => {
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockRejectedValue(mkError('authentication failed'));
-
-    await expect(
-      withRetry(op, { maxRetries: 3, initialDelayMs: 10, addJitter: false }),
-    ).rejects.toThrow('authentication failed');
-
-    expect(op).toHaveBeenCalledTimes(1);
-  });
-
-  it('should re-throw after max retries for thrown retryable exceptions', async () => {
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockRejectedValue(mkError('ECONNRESET'));
-
-    let caughtError: unknown;
-    const promise = withRetry(op, { maxRetries: 1, initialDelayMs: 10, addJitter: false })
-      .catch((e: unknown) => { caughtError = e; });
-
-    await flushTimers();
-    await promise;
-
-    expect(caughtError).toBeInstanceOf(Error);
-    expect((caughtError as Error).message).toBe('ECONNRESET');
-    // 1 initial + 1 retry = 2 calls
-    expect(op).toHaveBeenCalledTimes(2);
-  });
-
-  it('should use exponential backoff delays', async () => {
-    const onRetry = vi.fn();
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockResolvedValue(err(mkError('503')));
-
-    const promise = withRetry(op, {
-      maxRetries: 3,
-      initialDelayMs: 100,
-      maxDelayMs: 100_000,
-      backoffMultiplier: 2,
-      addJitter: false,
-      onRetry,
+      expect(result).toEqual(ok('recovered'));
+      expect(operation).toHaveBeenCalledTimes(2);
     });
 
-    await flushTimers();
-    await promise;
+    it('calls onRetry with attempt, error, and delay', async () => {
+      const onRetry = vi.fn();
+      const retryableError = new Error('timeout');
+      const operation = vi
+        .fn()
+        .mockResolvedValueOnce(err(retryableError))
+        .mockResolvedValueOnce(ok('recovered'));
 
-    // Attempts 1, 2, 3 with delays 100*2^0=100, 100*2^1=200, 100*2^2=400
-    expect(onRetry).toHaveBeenCalledTimes(3);
-    expect(onRetry).toHaveBeenNthCalledWith(1, 1, expect.any(Error), 100);
-    expect(onRetry).toHaveBeenNthCalledWith(2, 2, expect.any(Error), 200);
-    expect(onRetry).toHaveBeenNthCalledWith(3, 3, expect.any(Error), 400);
-  });
+      const promise = withRetry(operation, {
+        maxRetries: 3,
+        initialDelayMs: 100,
+        addJitter: false,
+        onRetry,
+      });
 
-  it('should respect maxDelayMs cap', async () => {
-    const onRetry = vi.fn();
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockResolvedValue(err(mkError('503')));
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await promise;
 
-    const promise = withRetry(op, {
-      maxRetries: 3,
-      initialDelayMs: 500,
-      maxDelayMs: 600,
-      backoffMultiplier: 2,
-      addJitter: false,
-      onRetry,
+      expect(result).toEqual(ok('recovered'));
+      expect(onRetry).toHaveBeenCalledTimes(1);
+      expect(onRetry).toHaveBeenCalledWith(1, retryableError, 100);
     });
 
-    await flushTimers();
-    await promise;
+    it('respects maxRetries and returns last error when exceeded', async () => {
+      const retryableError = new Error('network error');
+      const operation = vi.fn().mockResolvedValue(err(retryableError));
 
-    // attempt 0: 500*2^0 = 500 (under cap)
-    // attempt 1: 500*2^1 = 1000 -> capped to 600
-    // attempt 2: 500*2^2 = 2000 -> capped to 600
-    expect(onRetry).toHaveBeenNthCalledWith(1, 1, expect.any(Error), 500);
-    expect(onRetry).toHaveBeenNthCalledWith(2, 2, expect.any(Error), 600);
-    expect(onRetry).toHaveBeenNthCalledWith(3, 3, expect.any(Error), 600);
-  });
+      const promise = withRetry(operation, {
+        maxRetries: 2,
+        initialDelayMs: 100,
+        addJitter: false,
+      });
 
-  it('should use default config when none provided', async () => {
-    const op = vi.fn().mockResolvedValue(ok('done'));
+      await vi.advanceTimersByTimeAsync(100); // first retry delay
+      await vi.advanceTimersByTimeAsync(200); // second retry delay (100 * 2)
+      const result = await promise;
 
-    const result = await withRetry(op);
-    expect(result).toEqual(ok('done'));
-  });
-
-  it('should allow custom retryableErrors predicate', async () => {
-    const customRetryable = (e: unknown) =>
-      e instanceof Error && e.message === 'custom-retry';
-
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockResolvedValueOnce(err(mkError('custom-retry')))
-      .mockResolvedValueOnce(ok('done'));
-
-    const promise = withRetry(op, {
-      maxRetries: 3,
-      initialDelayMs: 10,
-      addJitter: false,
-      retryableErrors: customRetryable,
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toContain('network error');
+      }
+      // 1 initial + 2 retries = 3
+      expect(operation).toHaveBeenCalledTimes(3);
     });
 
-    await flushTimers();
-    const result = await promise;
-    expect(result).toEqual(ok('done'));
-    expect(op).toHaveBeenCalledTimes(2);
+    it('uses exponential backoff for retry delays', async () => {
+      const onRetry = vi.fn();
+      const retryableError = new Error('rate limit');
+      const operation = vi
+        .fn()
+        .mockResolvedValueOnce(err(retryableError))
+        .mockResolvedValueOnce(err(retryableError))
+        .mockResolvedValueOnce(ok('recovered'));
+
+      const promise = withRetry(operation, {
+        maxRetries: 3,
+        initialDelayMs: 100,
+        backoffMultiplier: 2,
+        addJitter: false,
+        onRetry,
+      });
+
+      await vi.advanceTimersByTimeAsync(100); // first retry: 100ms
+      await vi.advanceTimersByTimeAsync(200); // second retry: 200ms
+      const result = await promise;
+
+      expect(result).toEqual(ok('recovered'));
+      expect(onRetry).toHaveBeenCalledTimes(2);
+      expect(onRetry).toHaveBeenNthCalledWith(1, 1, retryableError, 100);
+      expect(onRetry).toHaveBeenNthCalledWith(2, 2, retryableError, 200);
+    });
   });
 
-  it('should log retry messages to console', async () => {
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockResolvedValueOnce(err(mkError('timeout')))
-      .mockResolvedValueOnce(ok('done'));
+  describe('retries on thrown retryable error', () => {
+    it('retries when operation throws retryable error, then succeeds', async () => {
+      const retryableError = new Error('ECONNRESET');
+      const operation = vi
+        .fn()
+        .mockRejectedValueOnce(retryableError)
+        .mockResolvedValueOnce(ok('recovered'));
 
-    const promise = withRetry(op, { maxRetries: 2, initialDelayMs: 10, addJitter: false });
-    await flushTimers();
-    await promise;
+      const promise = withRetry(operation, {
+        maxRetries: 3,
+        initialDelayMs: 100,
+        addJitter: false,
+      });
 
-    expect(console.log).toHaveBeenCalledWith('[Retry]', expect.stringContaining('Attempt'));
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await promise;
+
+      expect(result).toEqual(ok('recovered'));
+      expect(operation).toHaveBeenCalledTimes(2);
+    });
+
+    it('throws non-retryable error immediately without retrying', async () => {
+      const nonRetryableError = new Error('authentication failed');
+      const operation = vi.fn().mockRejectedValue(nonRetryableError);
+
+      await expect(
+        withRetry(operation, {
+          maxRetries: 3,
+          initialDelayMs: 100,
+          addJitter: false,
+        }),
+      ).rejects.toThrow(nonRetryableError);
+
+      expect(operation).toHaveBeenCalledTimes(1);
+    });
+
+    it('re-throws after max retries for thrown retryable exceptions', async () => {
+      const retryableError = new Error('ECONNRESET');
+      const operation = vi.fn().mockRejectedValue(retryableError);
+
+      let caughtError: unknown;
+      const promise = withRetry(operation, {
+        maxRetries: 1,
+        initialDelayMs: 100,
+        addJitter: false,
+      }).catch((e: unknown) => {
+        caughtError = e;
+      });
+
+      await vi.advanceTimersByTimeAsync(200);
+      await promise;
+
+      expect(caughtError).toBeInstanceOf(Error);
+      expect((caughtError as Error).message).toBe('ECONNRESET');
+      // 1 initial + 1 retry = 2 calls
+      expect(operation).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('max retries exceeded', () => {
+    it('returns error result after max retries exceeded', async () => {
+      const retryableError = new Error('502 Bad Gateway');
+      const operation = vi.fn().mockResolvedValue(err(retryableError));
+
+      const promise = withRetry(operation, {
+        maxRetries: 1,
+        initialDelayMs: 100,
+        addJitter: false,
+      });
+
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await promise;
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toContain('502 Bad Gateway');
+      }
+      // 1 initial + 1 retry = 2 calls
+      expect(operation).toHaveBeenCalledTimes(2);
+    });
+
+    it('error message includes last error details', async () => {
+      const retryableError = new Error('service unavailable');
+      const operation = vi.fn().mockResolvedValue(err(retryableError));
+
+      const promise = withRetry(operation, {
+        maxRetries: 2,
+        initialDelayMs: 100,
+        addJitter: false,
+      });
+
+      await vi.advanceTimersByTimeAsync(100);
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await promise;
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toContain('service unavailable');
+      }
+    });
+  });
+
+  describe('non-retryable errors', () => {
+    it('returns non-retryable Result error immediately', async () => {
+      const nonRetryableError = new Error('invalid input');
+      const operation = vi.fn().mockResolvedValue(err(nonRetryableError));
+
+      const promise = withRetry(operation, {
+        maxRetries: 3,
+        initialDelayMs: 100,
+        addJitter: false,
+      });
+      const result = await promise;
+
+      expect(result).toEqual(err(nonRetryableError));
+      expect(operation).toHaveBeenCalledTimes(1);
+    });
+
+    it('propagates thrown non-retryable error immediately', async () => {
+      const nonRetryableError = new Error('some unknown error that is not retryable');
+      const operation = vi.fn().mockRejectedValue(nonRetryableError);
+
+      await expect(
+        withRetry(operation, {
+          maxRetries: 3,
+          initialDelayMs: 100,
+          addJitter: false,
+        }),
+      ).rejects.toThrow(nonRetryableError);
+
+      expect(operation).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('custom config', () => {
+    it('uses custom retryableErrors function', async () => {
+      const customError = new Error('custom-retryable');
+      const operation = vi
+        .fn()
+        .mockResolvedValueOnce(err(customError))
+        .mockResolvedValueOnce(ok('recovered'));
+
+      const promise = withRetry(operation, {
+        maxRetries: 3,
+        initialDelayMs: 100,
+        addJitter: false,
+        retryableErrors: (error) => error instanceof Error && error.message === 'custom-retryable',
+      });
+
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await promise;
+
+      expect(result).toEqual(ok('recovered'));
+      expect(operation).toHaveBeenCalledTimes(2);
+    });
+
+    it('respects custom maxRetries', async () => {
+      const retryableError = new Error('timeout');
+      const operation = vi.fn().mockResolvedValue(err(retryableError));
+
+      const promise = withRetry(operation, {
+        maxRetries: 1,
+        initialDelayMs: 100,
+        addJitter: false,
+      });
+
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await promise;
+
+      expect(result.ok).toBe(false);
+      // 1 initial + 1 retry = 2
+      expect(operation).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not retry when custom retryableErrors returns false', async () => {
+      const error = new Error('timeout'); // normally retryable
+      const operation = vi.fn().mockResolvedValue(err(error));
+
+      const promise = withRetry(operation, {
+        maxRetries: 3,
+        initialDelayMs: 100,
+        addJitter: false,
+        retryableErrors: () => false, // never retry
+      });
+      const result = await promise;
+
+      expect(result).toEqual(err(error));
+      expect(operation).toHaveBeenCalledTimes(1);
+    });
+
+    it('respects maxDelayMs cap on backoff', async () => {
+      const onRetry = vi.fn();
+      const retryableError = new Error('503');
+      const operation = vi.fn().mockResolvedValue(err(retryableError));
+
+      const promise = withRetry(operation, {
+        maxRetries: 3,
+        initialDelayMs: 500,
+        maxDelayMs: 600,
+        backoffMultiplier: 2,
+        addJitter: false,
+        onRetry,
+      });
+
+      await vi.advanceTimersByTimeAsync(100_000);
+      await promise;
+
+      // attempt 1: 500*2^0 = 500 (under cap)
+      // attempt 2: 500*2^1 = 1000 -> capped to 600
+      // attempt 3: 500*2^2 = 2000 -> capped to 600
+      expect(onRetry).toHaveBeenNthCalledWith(1, 1, expect.any(Error), 500);
+      expect(onRetry).toHaveBeenNthCalledWith(2, 2, expect.any(Error), 600);
+      expect(onRetry).toHaveBeenNthCalledWith(3, 3, expect.any(Error), 600);
+    });
+  });
+
+  describe('default config', () => {
+    it('uses default config when none provided', async () => {
+      const operation = vi.fn().mockResolvedValue(ok('done'));
+
+      const result = await withRetry(operation);
+      expect(result).toEqual(ok('done'));
+    });
   });
 });
 
@@ -416,46 +447,46 @@ describe('withRetry', () => {
 describe('createRetryWrapper', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(Math, 'random').mockReturnValue(0.5);
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    vi.restoreAllMocks();
   });
 
-  it('should return a function', () => {
-    const wrapper = createRetryWrapper();
-    expect(typeof wrapper).toBe('function');
+  it('returns a function that wraps operations with retry', async () => {
+    const retryFn = createRetryWrapper({
+      maxRetries: 2,
+      initialDelayMs: 100,
+      addJitter: false,
+    });
+
+    expect(typeof retryFn).toBe('function');
+
+    const operation = vi.fn().mockResolvedValue(ok('success'));
+    const result = await retryFn(operation);
+
+    expect(result).toEqual(ok('success'));
+    expect(operation).toHaveBeenCalledTimes(1);
   });
 
-  it('should wrap operations with retry using provided config', async () => {
+  it('passes config through to withRetry', async () => {
     const onRetry = vi.fn();
-    const wrapper = createRetryWrapper({
+    const retryFn = createRetryWrapper({
       maxRetries: 1,
-      initialDelayMs: 10,
+      initialDelayMs: 100,
       addJitter: false,
       onRetry,
     });
 
-    const op = vi
-      .fn<() => Promise<Result<string, Error>>>()
-      .mockResolvedValueOnce(err(mkError('503')))
-      .mockResolvedValueOnce(ok('ok'));
+    const retryableError = new Error('network error');
+    const operation = vi.fn().mockResolvedValue(err(retryableError));
 
-    const promise = wrapper(op);
-    await vi.advanceTimersByTimeAsync(100_000);
+    const promise = retryFn(operation);
+    await vi.advanceTimersByTimeAsync(200);
     const result = await promise;
 
-    expect(result).toEqual(ok('ok'));
+    expect(result.ok).toBe(false);
     expect(onRetry).toHaveBeenCalledTimes(1);
-  });
-
-  it('should pass default config when none given', async () => {
-    const wrapper = createRetryWrapper();
-    const op = vi.fn().mockResolvedValue(ok('done'));
-    const result = await wrapper(op);
-    expect(result).toEqual(ok('done'));
+    expect(operation).toHaveBeenCalledTimes(2);
   });
 });

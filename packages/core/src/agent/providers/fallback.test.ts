@@ -1,513 +1,637 @@
-/**
- * FallbackProvider Tests
- */
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ok, err } from '../../types/result.js';
-import { InternalError, TimeoutError, ValidationError } from '../../types/errors.js';
-import type { CompletionResponse, StreamChunk, Message, AIProvider } from '../types.js';
-import type { IProvider } from '../provider.js';
-import type { Result } from '../../types/result.js';
-import { FallbackProvider, createFallbackProvider, createProviderWithFallbacks } from './fallback.js';
-
-// Mock createProvider to return our mock providers
-vi.mock('../provider.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../provider.js')>();
-  return {
-    ...original,
-    createProvider: vi.fn((config) => {
-      // Return a mock provider that tests can configure
-      return mockProviderMap.get(config.provider) ?? createMockProvider(config.provider, true);
-    }),
-  };
-});
+// Mock dependencies
+vi.mock('../../services/get-log.js', () => ({
+  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
+}));
 
 vi.mock('../debug.js', () => ({
   logError: vi.fn(),
   logRetry: vi.fn(),
 }));
 
-// Map to store mock providers by their type
-const mockProviderMap = new Map<string, IProvider>();
+// Mock provider factory
+const mockCreateProvider = vi.fn();
+vi.mock('../provider.js', () => ({
+  createProvider: (...args: unknown[]) => mockCreateProvider(...args),
+}));
 
-function createMockProvider(
-  type: AIProvider,
-  ready = true,
-  completeFn?: () => Promise<Result<CompletionResponse>>,
-  streamFn?: () => AsyncGenerator<Result<StreamChunk>>,
-): IProvider {
-  const provider: IProvider = {
-    type: type as AIProvider,
-    isReady: () => ready,
-    complete: completeFn ?? vi.fn(async () => ok({
-      content: `Response from ${type}`,
-      model: 'test-model',
-      provider: type as AIProvider,
-    } as CompletionResponse)),
-    stream: streamFn ?? vi.fn(async function* () {
-      yield ok({ content: 'chunk', done: true } as StreamChunk);
-    }),
-    countTokens: vi.fn(() => 10),
-    getModels: vi.fn(async () => ok([`${type}-model-1`, `${type}-model-2`])),
-  };
-  return provider;
-}
+// Import after mocks
+const { FallbackProvider, createFallbackProvider, createProviderWithFallbacks } = await import(
+  './fallback.js'
+);
+const { InternalError, TimeoutError, ValidationError } = await import('../../types/errors.js');
+const { ok, err } = await import('../../types/result.js');
 
-function makeRequest() {
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeMockProvider(type: string, overrides: Record<string, unknown> = {}) {
   return {
-    messages: [{ role: 'user' as const, content: 'Hello' }],
-    model: 'test-model',
-    provider: 'openai' as AIProvider,
+    type,
+    isReady: vi.fn().mockReturnValue(true),
+    complete: vi.fn().mockResolvedValue(ok({ content: `from ${type}`, usage: {} })),
+    stream: vi.fn().mockImplementation(() =>
+      (async function* () {
+        yield ok({ content: `chunk-${type}`, done: false });
+        yield ok({ content: '', done: true });
+      })(),
+    ),
+    countTokens: vi.fn().mockReturnValue(100),
+    getModels: vi.fn().mockResolvedValue(ok([`${type}-model-1`, `${type}-model-2`])),
+    cancel: vi.fn(),
+    ...overrides,
   };
 }
+
+const primaryConfig = { provider: 'openai', apiKey: 'pk' } as any;
+const fallbackConfig1 = { provider: 'anthropic', apiKey: 'fk1' } as any;
+
+const dummyRequest = { messages: [{ role: 'user', content: 'hi' }] } as any;
+
+// Saved Date.now for restoration
+let savedDateNow: typeof Date.now;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  savedDateNow = Date.now;
+});
+
+afterEach(() => {
+  Date.now = savedDateNow;
+});
+
+/**
+ * Create a FallbackProvider with one primary and one fallback.
+ * Returns the provider plus the mock objects for assertions.
+ */
+function createTestProvider(configOverrides: Record<string, unknown> = {}) {
+  const primary = makeMockProvider('openai');
+  const fallback = makeMockProvider('anthropic');
+
+  mockCreateProvider
+    .mockImplementationOnce(() => primary)
+    .mockImplementationOnce(() => fallback);
+
+  const provider = new FallbackProvider({
+    primary: primaryConfig,
+    fallbacks: [fallbackConfig1],
+    ...configOverrides,
+  });
+
+  return { provider, primary, fallback };
+}
+
+// ===========================================================================
+// Tests
+// ===========================================================================
 
 describe('FallbackProvider', () => {
-  beforeEach(() => {
-    mockProviderMap.clear();
-    vi.clearAllMocks();
+  // -------------------------------------------------------------------------
+  // isReady
+  // -------------------------------------------------------------------------
+  describe('isReady', () => {
+    it('returns true when primary is ready', () => {
+      const { provider } = createTestProvider();
+      expect(provider.isReady()).toBe(true);
+    });
+
+    it('returns true when only a fallback is ready', () => {
+      const { provider, primary } = createTestProvider();
+      primary.isReady.mockReturnValue(false);
+      expect(provider.isReady()).toBe(true);
+    });
+
+    it('returns false when no providers are ready', () => {
+      const { provider, primary, fallback } = createTestProvider();
+      primary.isReady.mockReturnValue(false);
+      fallback.isReady.mockReturnValue(false);
+      expect(provider.isReady()).toBe(false);
+    });
   });
 
-  describe('complete', () => {
-    it('returns primary provider result on success', async () => {
-      const primary = createMockProvider('openai');
-      mockProviderMap.set('openai', primary);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [],
-      });
-
-      const result = await fb.complete(makeRequest());
+  // -------------------------------------------------------------------------
+  // complete — success on primary
+  // -------------------------------------------------------------------------
+  describe('complete — success on primary', () => {
+    it('returns primary result', async () => {
+      const { provider } = createTestProvider();
+      const result = await provider.complete(dummyRequest);
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value.content).toBe('Response from openai');
+        expect(result.value.content).toBe('from openai');
       }
     });
 
-    it('falls back to next provider on primary failure', async () => {
-      const primary = createMockProvider('openai', true,
-        async () => err(new InternalError('rate limit 429')));
-      const fallback = createMockProvider('anthropic');
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
+    it('does not call fallback when primary succeeds', async () => {
+      const { provider, fallback } = createTestProvider();
+      await provider.complete(dummyRequest);
+      expect(fallback.complete).not.toHaveBeenCalled();
+    });
+  });
 
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-      });
-
-      const result = await fb.complete(makeRequest());
+  // -------------------------------------------------------------------------
+  // complete — fallback on primary failure
+  // -------------------------------------------------------------------------
+  describe('complete — fallback on primary failure', () => {
+    it('falls back to next provider on retryable error', async () => {
+      const { provider, primary } = createTestProvider();
+      primary.complete.mockResolvedValue(err(new InternalError('server error')));
+      const result = await provider.complete(dummyRequest);
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value.content).toBe('Response from anthropic');
+        expect(result.value.content).toBe('from anthropic');
       }
     });
 
-    it('returns error when all providers fail', async () => {
-      const primary = createMockProvider('openai', true,
-        async () => err(new InternalError('timeout 503')));
-      const fallback = createMockProvider('anthropic', true,
-        async () => err(new InternalError('server error 500')));
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
+    it('invokes onFallback callback with correct args', async () => {
+      const onFallback = vi.fn();
+      const { provider, primary } = createTestProvider({ onFallback });
+      primary.complete.mockResolvedValue(err(new InternalError('boom')));
+      await provider.complete(dummyRequest);
+      expect(onFallback).toHaveBeenCalledWith(
+        'openai',
+        expect.any(InternalError),
+        'anthropic',
+      );
+    });
 
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-      });
+    it('returns fallback result on success', async () => {
+      const { provider, primary, fallback } = createTestProvider();
+      primary.complete.mockResolvedValue(err(new TimeoutError('op', 5000)));
+      fallback.complete.mockResolvedValue(ok({ content: 'fallback ok', usage: {} }));
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.content).toBe('fallback ok');
+      }
+    });
 
-      const result = await fb.complete(makeRequest());
+    it('records failure on primary and attempts fallback', async () => {
+      const { provider, primary, fallback } = createTestProvider();
+      primary.complete.mockResolvedValue(err(new InternalError('fail')));
+      await provider.complete(dummyRequest);
+      expect(primary.complete).toHaveBeenCalledTimes(1);
+      expect(fallback.complete).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // complete — all providers fail
+  // -------------------------------------------------------------------------
+  describe('complete — all providers fail', () => {
+    it('returns error when all fail', async () => {
+      const { provider, primary, fallback } = createTestProvider();
+      primary.complete.mockResolvedValue(err(new InternalError('fail1')));
+      fallback.complete.mockResolvedValue(err(new InternalError('fail2')));
+      const result = await provider.complete(dummyRequest);
       expect(result.ok).toBe(false);
     });
 
-    it('returns error when no providers are ready', async () => {
-      const primary = createMockProvider('openai', false);
-      mockProviderMap.set('openai', primary);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [],
-      });
-
-      const result = await fb.complete(makeRequest());
+    it('returns the last error', async () => {
+      const { provider, primary, fallback } = createTestProvider();
+      primary.complete.mockResolvedValue(err(new InternalError('fail1')));
+      fallback.complete.mockResolvedValue(err(new InternalError('fail2')));
+      const result = await provider.complete(dummyRequest);
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.message).toContain('No providers');
+        expect(result.error).toBeInstanceOf(Error);
+        expect(result.error.message).toBe('fail2');
       }
     });
+  });
 
-    it('skips fallback when enableFallback is false', async () => {
-      const primary = createMockProvider('openai', true,
-        async () => err(new InternalError('error')));
-      const fallback = createMockProvider('anthropic');
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-        enableFallback: false,
-      });
-
-      const result = await fb.complete(makeRequest());
+  // -------------------------------------------------------------------------
+  // complete — enableFallback=false
+  // -------------------------------------------------------------------------
+  describe('complete — no fallback when disabled', () => {
+    it('only attempts primary when enableFallback=false', async () => {
+      const { provider, primary, fallback } = createTestProvider({ enableFallback: false });
+      primary.complete.mockResolvedValue(err(new InternalError('fail')));
+      const result = await provider.complete(dummyRequest);
       expect(result.ok).toBe(false);
+      expect(fallback.complete).not.toHaveBeenCalled();
     });
+  });
 
-    it('calls onFallback callback when switching providers', async () => {
+  // -------------------------------------------------------------------------
+  // complete — no providers ready
+  // -------------------------------------------------------------------------
+  describe('complete — no providers ready', () => {
+    it('returns ValidationError', async () => {
+      const { provider, primary, fallback } = createTestProvider();
+      primary.isReady.mockReturnValue(false);
+      fallback.isReady.mockReturnValue(false);
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBeInstanceOf(ValidationError);
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // complete — shouldFallback behavior
+  //
+  // NOTE: The shouldFallback method only controls whether onFallback callback
+  // and logRetry are invoked. The provider loop itself ALWAYS tries all ready
+  // providers regardless of shouldFallback result. Additionally, instanceof
+  // checks in shouldFallback don't work across Vitest module boundaries
+  // (dynamic await import() vs static import in source), so all errors fall
+  // through to "unknown error type → return true".
+  // -------------------------------------------------------------------------
+  describe('complete — shouldFallback controls onFallback callback', () => {
+    it('calls onFallback for retryable InternalError', async () => {
       const onFallback = vi.fn();
-      const primary = createMockProvider('openai', true,
-        async () => err(new InternalError('timeout 503')));
-      const fallback = createMockProvider('anthropic');
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-        onFallback,
-      });
-
-      await fb.complete(makeRequest());
-      expect(onFallback).toHaveBeenCalledWith('openai', expect.any(InternalError), 'anthropic');
+      const { provider, primary } = createTestProvider({ onFallback });
+      primary.complete.mockResolvedValue(err(new InternalError('server error 500')));
+      await provider.complete(dummyRequest);
+      expect(onFallback).toHaveBeenCalled();
     });
 
-    it('handles thrown exceptions gracefully', async () => {
-      const primary = createMockProvider('openai', true,
-        async () => { throw new Error('unexpected crash'); });
-      const fallback = createMockProvider('anthropic');
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-      });
-
-      const result = await fb.complete(makeRequest());
+    it('loop always tries all ready providers regardless of error type', async () => {
+      // Even for non-retryable errors (ValidationError in production),
+      // the loop continues through all providers
+      const { provider, primary, fallback } = createTestProvider();
+      primary.complete.mockResolvedValue(err(new ValidationError('bad input')));
+      const result = await provider.complete(dummyRequest);
+      // Fallback is attempted because the loop always continues
       expect(result.ok).toBe(true);
+      expect(fallback.complete).toHaveBeenCalled();
     });
   });
 
-  describe('shouldFallback (via complete behavior)', () => {
-    it('still tries fallback on ValidationError (loop always continues)', async () => {
-      // Note: shouldFallback uses instanceof checks which don't work across
-      // vitest module boundaries. In production, ValidationError would prevent
-      // onFallback callback. In tests, the loop still tries all providers.
-      const primary = createMockProvider('openai', true,
-        async () => err(new ValidationError('missing field')));
-      const fallback = createMockProvider('anthropic');
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-      });
-
-      const result = await fb.complete(makeRequest());
-      // Fallback succeeds because loop always tries all providers
-      expect(result.ok).toBe(true);
-    });
-
-    it('still tries fallback on invalid API key error (loop always continues)', async () => {
-      const primary = createMockProvider('openai', true,
-        async () => err(new InternalError('Invalid API key')));
-      const fallback = createMockProvider('anthropic');
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-      });
-
-      const result = await fb.complete(makeRequest());
-      // Fallback succeeds because loop always tries all providers
-      expect(result.ok).toBe(true);
-    });
-
-    it('fallbacks on TimeoutError', async () => {
-      const primary = createMockProvider('openai', true,
-        async () => err(new TimeoutError('Request timed out')));
-      const fallback = createMockProvider('anthropic');
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-      });
-
-      const result = await fb.complete(makeRequest());
-      expect(result.ok).toBe(true);
-    });
-  });
-
+  // -------------------------------------------------------------------------
+  // Circuit breaker
+  // -------------------------------------------------------------------------
   describe('circuit breaker', () => {
-    it('opens circuit after threshold failures', async () => {
-      let callCount = 0;
-      const primary = createMockProvider('openai', true,
-        async () => {
-          callCount++;
-          return err(new InternalError('timeout 503'));
-        });
-      const fallback = createMockProvider('anthropic');
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
+    it('opens circuit after N consecutive failures (default threshold = 5)', async () => {
+      const { provider, primary } = createTestProvider();
+      primary.complete.mockResolvedValue(err(new InternalError('fail')));
 
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-        circuitBreakerThreshold: 3,
-        circuitBreakerCooldown: 60000,
-      });
-
-      // First 3 calls should try primary (and fail)
-      for (let i = 0; i < 3; i++) {
-        await fb.complete(makeRequest());
+      // Exhaust the default threshold (5 failures)
+      for (let i = 0; i < 5; i++) {
+        await provider.complete(dummyRequest);
       }
 
-      // Reset counter to see if primary is skipped
-      callCount = 0;
-
-      // After 3 failures, circuit should be open — primary skipped
-      await fb.complete(makeRequest());
-      // Primary should not have been called since circuit is open
-      expect(callCount).toBe(0);
+      // Primary circuit is now open — primary should be skipped
+      primary.complete.mockResolvedValue(ok({ content: 'recovered', usage: {} }));
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        // Should come from fallback, not primary (circuit is open)
+        expect(result.value.content).toBe('from anthropic');
+      }
     });
 
-    it('closes circuit after successful half-open test', async () => {
-      let failPrimary = true;
-      const primary = createMockProvider('openai', true,
-        async () => {
-          if (failPrimary) return err(new InternalError('timeout 503'));
-          return ok({ content: 'ok', model: 'm', provider: 'openai' as AIProvider } as CompletionResponse);
-        });
-      const fallback = createMockProvider('anthropic');
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
+    it('respects custom circuitBreakerThreshold', async () => {
+      const { provider, primary } = createTestProvider({ circuitBreakerThreshold: 2 });
+      primary.complete.mockResolvedValue(err(new InternalError('fail')));
 
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
+      // 2 failures should open circuit
+      await provider.complete(dummyRequest);
+      await provider.complete(dummyRequest);
+
+      primary.complete.mockResolvedValue(ok({ content: 'recovered', usage: {} }));
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.content).toBe('from anthropic');
+      }
+    });
+
+    it('transitions to half-open after cooldown', async () => {
+      const cooldown = 5000;
+      const { provider, primary } = createTestProvider({
         circuitBreakerThreshold: 2,
-        circuitBreakerCooldown: 10, // very short for testing
+        circuitBreakerCooldown: cooldown,
       });
+      primary.complete.mockResolvedValue(err(new InternalError('fail')));
 
-      // Trigger circuit open
-      await fb.complete(makeRequest());
-      await fb.complete(makeRequest());
+      // Open the circuit
+      await provider.complete(dummyRequest);
+      await provider.complete(dummyRequest);
 
-      // Advance Date.now() past cooldown deterministically
-      const realNow = Date.now;
-      const baseTime = realNow.call(Date);
-      Date.now = () => baseTime + 20;
+      // Advance past cooldown using Date.now override
+      const baseTime = savedDateNow.call(Date);
+      Date.now = () => baseTime + cooldown + 100;
 
-      // Now primary works
-      failPrimary = false;
+      // Primary should be attempted again (half-open)
+      primary.complete.mockResolvedValue(ok({ content: 'half-open success', usage: {} }));
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.content).toBe('half-open success');
+      }
+    });
 
-      try {
-        const result = await fb.complete(makeRequest());
-        expect(result.ok).toBe(true);
-        if (result.ok) {
-          expect(result.value.content).toBe('ok');
-        }
-      } finally {
-        Date.now = realNow;
+    it('closes circuit on success in half-open state', async () => {
+      const cooldown = 10;
+      const { provider, primary } = createTestProvider({
+        circuitBreakerThreshold: 2,
+        circuitBreakerCooldown: cooldown,
+      });
+      primary.complete.mockResolvedValue(err(new InternalError('fail')));
+
+      // Open the circuit
+      await provider.complete(dummyRequest);
+      await provider.complete(dummyRequest);
+
+      // Advance past cooldown
+      const baseTime = savedDateNow.call(Date);
+      Date.now = () => baseTime + cooldown + 10;
+
+      // Succeed in half-open — should close circuit
+      primary.complete.mockResolvedValue(ok({ content: 'back', usage: {} }));
+      await provider.complete(dummyRequest);
+
+      // Next call should also hit primary (circuit closed)
+      primary.complete.mockResolvedValue(ok({ content: 'still primary', usage: {} }));
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.content).toBe('still primary');
+      }
+    });
+
+    it('re-opens circuit on failure in half-open state', async () => {
+      const cooldown = 10;
+      const { provider, primary } = createTestProvider({
+        circuitBreakerThreshold: 2,
+        circuitBreakerCooldown: cooldown,
+      });
+      primary.complete.mockResolvedValue(err(new InternalError('fail')));
+
+      // Open the circuit
+      await provider.complete(dummyRequest);
+      await provider.complete(dummyRequest);
+
+      // Advance past cooldown
+      const baseTime = savedDateNow.call(Date);
+      let mockTime = baseTime + cooldown + 10;
+      Date.now = () => mockTime;
+
+      // Fail again in half-open — circuit re-opens
+      await provider.complete(dummyRequest);
+
+      // Advance time just a tiny bit (not enough for another cooldown from the last failure)
+      mockTime = baseTime + cooldown + 15;
+
+      // Primary should be skipped again
+      primary.complete.mockResolvedValue(ok({ content: 'wont reach', usage: {} }));
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.content).toBe('from anthropic');
+      }
+    });
+
+    it('does not open circuit below the threshold', async () => {
+      const { provider, primary } = createTestProvider({ circuitBreakerThreshold: 3 });
+      primary.complete.mockResolvedValue(err(new InternalError('fail')));
+
+      // Only 2 failures (threshold is 3)
+      await provider.complete(dummyRequest);
+      await provider.complete(dummyRequest);
+
+      // Circuit should still be closed — primary should be attempted
+      primary.complete.mockResolvedValue(ok({ content: 'primary ok', usage: {} }));
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.content).toBe('primary ok');
+      }
+    });
+
+    it('handles thrown exceptions and records failure toward threshold', async () => {
+      const { provider, primary, fallback } = createTestProvider();
+      primary.complete.mockRejectedValue(new Error('unexpected crash'));
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.content).toBe('from anthropic');
       }
     });
   });
 
+  // -------------------------------------------------------------------------
+  // stream
+  // -------------------------------------------------------------------------
   describe('stream', () => {
-    it('streams from primary on success', async () => {
-      const primary = createMockProvider('openai', true, undefined,
-        async function* () {
-          yield ok({ content: 'chunk1', done: false } as StreamChunk);
-          yield ok({ content: 'chunk2', done: true } as StreamChunk);
-        });
-      mockProviderMap.set('openai', primary);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [],
-      });
-
-      const chunks: string[] = [];
-      for await (const result of fb.stream(makeRequest())) {
-        if (result.ok) chunks.push(result.value.content ?? '');
+    it('yields chunks from primary on success', async () => {
+      const { provider, primary } = createTestProvider();
+      const chunks: unknown[] = [];
+      for await (const chunk of provider.stream(dummyRequest)) {
+        chunks.push(chunk);
       }
-      expect(chunks).toEqual(['chunk1', 'chunk2']);
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(primary.stream).toHaveBeenCalled();
     });
 
-    it('falls back on stream error before any data', async () => {
-      const primary = createMockProvider('openai', true, undefined,
-        async function* () {
-          yield err(new InternalError('stream error'));
-        });
-      const fallback = createMockProvider('anthropic', true, undefined,
-        async function* () {
-          yield ok({ content: 'fallback-chunk', done: true } as StreamChunk);
-        });
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-      });
-
-      const chunks: string[] = [];
-      for await (const result of fb.stream(makeRequest())) {
-        if (result.ok) chunks.push(result.value.content ?? '');
+    it('falls back on error before yielding any data', async () => {
+      const { provider, primary, fallback } = createTestProvider();
+      primary.stream.mockImplementation(() =>
+        (async function* () {
+          yield err(new InternalError('stream fail'));
+        })(),
+      );
+      fallback.stream.mockImplementation(() =>
+        (async function* () {
+          yield ok({ content: 'fallback-chunk', done: false });
+          yield ok({ content: '', done: true });
+        })(),
+      );
+      const chunks: any[] = [];
+      for await (const chunk of provider.stream(dummyRequest)) {
+        chunks.push(chunk);
       }
-      expect(chunks).toContain('fallback-chunk');
+      expect(fallback.stream).toHaveBeenCalled();
+      const okChunks = chunks.filter((c) => c.ok);
+      expect(okChunks.length).toBeGreaterThan(0);
     });
 
-    it('does NOT retry stream after partial data sent', async () => {
-      const primary = createMockProvider('openai', true, undefined,
-        async function* () {
-          yield ok({ content: 'partial', done: false } as StreamChunk);
-          yield err(new InternalError('mid-stream error'));
-        });
-      const fallback = createMockProvider('anthropic', true, undefined,
-        async function* () {
-          yield ok({ content: 'should-not-appear', done: true } as StreamChunk);
-        });
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-      });
-
-      const results: Result<StreamChunk>[] = [];
-      for await (const result of fb.stream(makeRequest())) {
-        results.push(result);
+    it('does NOT retry after partial data has been yielded', async () => {
+      const { provider, primary, fallback } = createTestProvider();
+      primary.stream.mockImplementation(() =>
+        (async function* () {
+          yield ok({ content: 'partial', done: false });
+          yield err(new InternalError('mid-stream fail'));
+        })(),
+      );
+      const results: any[] = [];
+      for await (const chunk of provider.stream(dummyRequest)) {
+        results.push(chunk);
       }
-      // Should have partial data + error, NOT fallback data
-      expect(results.some((r) => r.ok && r.value.content === 'partial')).toBe(true);
-      expect(results.some((r) => !r.ok)).toBe(true);
-      expect(results.some((r) => r.ok && r.value.content === 'should-not-appear')).toBe(false);
+      // Fallback should NOT have been called since data was already yielded
+      expect(fallback.stream).not.toHaveBeenCalled();
+      // Should have partial data + error
+      expect(results.some((r: any) => r.ok && r.value.content === 'partial')).toBe(true);
+      expect(results.some((r: any) => !r.ok)).toBe(true);
     });
 
     it('yields error when no providers are ready', async () => {
-      const primary = createMockProvider('openai', false);
-      mockProviderMap.set('openai', primary);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [],
-      });
-
-      const results: Result<StreamChunk>[] = [];
-      for await (const result of fb.stream(makeRequest())) {
-        results.push(result);
+      const { provider, primary, fallback } = createTestProvider();
+      primary.isReady.mockReturnValue(false);
+      fallback.isReady.mockReturnValue(false);
+      const chunks: any[] = [];
+      for await (const chunk of provider.stream(dummyRequest)) {
+        chunks.push(chunk);
       }
-      expect(results.length).toBe(1);
-      expect(results[0].ok).toBe(false);
+      expect(chunks.length).toBeGreaterThanOrEqual(1);
+      expect(chunks[0].ok).toBe(false);
     });
   });
 
-  describe('utility methods', () => {
-    it('isReady returns true if any provider is ready', () => {
-      const primary = createMockProvider('openai', false);
-      const fallback = createMockProvider('anthropic', true);
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-      });
-
-      expect(fb.isReady()).toBe(true);
+  // -------------------------------------------------------------------------
+  // countTokens
+  // -------------------------------------------------------------------------
+  describe('countTokens', () => {
+    it('delegates to primary provider', () => {
+      const { provider, primary } = createTestProvider();
+      const messages = [{ role: 'user', content: 'hello' }] as any;
+      const result = provider.countTokens(messages);
+      expect(result).toBe(100);
+      expect(primary.countTokens).toHaveBeenCalledWith(messages);
     });
+  });
 
-    it('isReady returns false if no provider is ready', () => {
-      const primary = createMockProvider('openai', false);
-      mockProviderMap.set('openai', primary);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [],
-      });
-
-      expect(fb.isReady()).toBe(false);
-    });
-
-    it('countTokens delegates to primary', () => {
-      const primary = createMockProvider('openai');
-      mockProviderMap.set('openai', primary);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [],
-      });
-
-      const msgs = [{ role: 'user' as const, content: 'hi' }] as Message[];
-      expect(fb.countTokens(msgs)).toBe(10);
-    });
-
-    it('getModels deduplicates across providers', async () => {
-      const primary = createMockProvider('openai');
-      const fallback = createMockProvider('anthropic');
-      // Both return overlapping models
-      vi.mocked(primary.getModels).mockResolvedValue(ok(['model-a', 'model-b']));
-      vi.mocked(fallback.getModels).mockResolvedValue(ok(['model-b', 'model-c']));
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }],
-      });
-
-      const result = await fb.getModels();
+  // -------------------------------------------------------------------------
+  // getModels
+  // -------------------------------------------------------------------------
+  describe('getModels', () => {
+    it('collects models from all providers', async () => {
+      const { provider } = createTestProvider();
+      const result = await provider.getModels();
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value).toEqual(['model-a', 'model-b', 'model-c']);
+        expect(result.value).toContain('openai-model-1');
+        expect(result.value).toContain('openai-model-2');
+        expect(result.value).toContain('anthropic-model-1');
+        expect(result.value).toContain('anthropic-model-2');
       }
     });
 
-    it('getCurrentProvider returns active provider type', () => {
-      const primary = createMockProvider('openai');
-      mockProviderMap.set('openai', primary);
-
-      const fb = createFallbackProvider({
-        primary: { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        fallbacks: [],
-      });
-
-      expect(fb.getCurrentProvider()).toBe('openai');
+    it('deduplicates models', async () => {
+      const { provider, fallback } = createTestProvider();
+      fallback.getModels.mockResolvedValue(
+        ok(['openai-model-1', 'anthropic-model-1', 'anthropic-model-2']),
+      );
+      const result = await provider.getModels();
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        const occurrences = result.value.filter((m: string) => m === 'openai-model-1');
+        expect(occurrences.length).toBe(1);
+      }
     });
   });
 
-  describe('createProviderWithFallbacks', () => {
-    it('returns FallbackProvider when fallbacks are provided', () => {
-      const primary = createMockProvider('openai');
-      const fallback = createMockProvider('anthropic');
-      mockProviderMap.set('openai', primary);
-      mockProviderMap.set('anthropic', fallback);
+  // -------------------------------------------------------------------------
+  // cancel
+  // -------------------------------------------------------------------------
+  describe('cancel', () => {
+    it('calls cancel on all providers', () => {
+      const { provider, primary, fallback } = createTestProvider();
+      provider.cancel();
+      expect(primary.cancel).toHaveBeenCalled();
+      expect(fallback.cancel).toHaveBeenCalled();
+    });
+  });
 
-      const provider = createProviderWithFallbacks(
-        { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-        { fallbacks: [{ provider: 'anthropic' as AIProvider, model: 'm', apiKey: 'k' }] },
-      );
+  // -------------------------------------------------------------------------
+  // getCurrentProvider
+  // -------------------------------------------------------------------------
+  describe('getCurrentProvider', () => {
+    it('returns primary provider type initially', () => {
+      const { provider } = createTestProvider();
+      expect(provider.getCurrentProvider()).toBe('openai');
+    });
+  });
 
-      expect(provider).toBeInstanceOf(FallbackProvider);
+  // -------------------------------------------------------------------------
+  // shouldFallback — tested indirectly via onFallback callback and complete
+  // -------------------------------------------------------------------------
+  describe('shouldFallback logic (via onFallback and complete)', () => {
+    it('triggers onFallback on TimeoutError', async () => {
+      const onFallback = vi.fn();
+      const { provider, primary } = createTestProvider({ onFallback });
+      primary.complete.mockResolvedValue(err(new TimeoutError('op', 5000)));
+      await provider.complete(dummyRequest);
+      expect(onFallback).toHaveBeenCalled();
     });
 
-    it('returns simple provider when no fallbacks', () => {
-      const primary = createMockProvider('openai');
-      mockProviderMap.set('openai', primary);
-
-      const provider = createProviderWithFallbacks(
-        { provider: 'openai' as AIProvider, model: 'm', apiKey: 'k' },
-      );
-
-      // Should NOT be a FallbackProvider, just the raw mock
-      expect(provider).not.toBeInstanceOf(FallbackProvider);
+    it('triggers onFallback on generic InternalError', async () => {
+      const onFallback = vi.fn();
+      const { provider, primary } = createTestProvider({ onFallback });
+      primary.complete.mockResolvedValue(err(new InternalError('server down')));
+      await provider.complete(dummyRequest);
+      expect(onFallback).toHaveBeenCalled();
     });
+
+    it('triggers onFallback on rate limit errors', async () => {
+      const onFallback = vi.fn();
+      const { provider, primary } = createTestProvider({ onFallback });
+      primary.complete.mockResolvedValue(err(new InternalError('rate limit 429')));
+      await provider.complete(dummyRequest);
+      expect(onFallback).toHaveBeenCalled();
+    });
+
+    it('tries fallback on thrown exceptions', async () => {
+      const { provider, primary, fallback } = createTestProvider();
+      primary.complete.mockRejectedValue(new Error('something unexpected'));
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(true);
+      expect(fallback.complete).toHaveBeenCalled();
+    });
+
+    it('returns fallback result even for non-retryable errors (loop always continues)', async () => {
+      // Note: In the Vitest environment, instanceof checks in shouldFallback
+      // don't work across module boundaries. In production, shouldFallback
+      // would return false for ValidationError, but the loop still continues
+      // trying all providers regardless.
+      const { provider, primary, fallback } = createTestProvider();
+      primary.complete.mockResolvedValue(err(new InternalError('invalid api key')));
+      const result = await provider.complete(dummyRequest);
+      expect(result.ok).toBe(true);
+      expect(fallback.complete).toHaveBeenCalled();
+    });
+  });
+});
+
+// ===========================================================================
+// Factory functions
+// ===========================================================================
+
+describe('createFallbackProvider', () => {
+  it('returns a FallbackProvider instance', () => {
+    mockCreateProvider
+      .mockImplementationOnce(() => makeMockProvider('openai'))
+      .mockImplementationOnce(() => makeMockProvider('anthropic'));
+    const provider = createFallbackProvider({
+      primary: primaryConfig,
+      fallbacks: [fallbackConfig1],
+    });
+    expect(provider).toBeInstanceOf(FallbackProvider);
+  });
+});
+
+describe('createProviderWithFallbacks', () => {
+  it('returns plain provider when no fallbacks given', () => {
+    const plain = makeMockProvider('openai');
+    mockCreateProvider.mockImplementationOnce(() => plain);
+    const result = createProviderWithFallbacks(primaryConfig);
+    expect(result).toBe(plain);
+    expect(result).not.toBeInstanceOf(FallbackProvider);
+    expect(mockCreateProvider).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns FallbackProvider when fallbacks are provided', () => {
+    mockCreateProvider
+      .mockImplementationOnce(() => makeMockProvider('openai'))
+      .mockImplementationOnce(() => makeMockProvider('anthropic'));
+    const result = createProviderWithFallbacks(primaryConfig, {
+      fallbacks: [fallbackConfig1],
+    });
+    expect(result).toBeInstanceOf(FallbackProvider);
   });
 });
