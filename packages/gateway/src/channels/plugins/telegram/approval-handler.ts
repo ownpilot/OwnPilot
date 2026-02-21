@@ -110,10 +110,15 @@ export async function requestTelegramApproval(
     .text('\u2705 Approve', `approve:${id}`)
     .text('\u274c Deny', `deny:${id}`);
 
-  const sent = await bot.api.sendMessage(chatId, text, {
-    parse_mode: 'HTML',
-    reply_markup: keyboard,
-  });
+  let sent;
+  try {
+    sent = await bot.api.sendMessage(chatId, text, {
+      parse_mode: 'HTML',
+      reply_markup: keyboard,
+    });
+  } catch {
+    return false; // Gracefully deny if we cannot reach Telegram
+  }
 
   return new Promise<boolean>((resolve) => {
     const timer = setTimeout(() => {

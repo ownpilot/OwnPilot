@@ -89,7 +89,7 @@ export function createAuditMiddleware(): MessageMiddleware {
     // Request log to DB
     try {
       const logsRepo = new LogsRepository(userId);
-      logsRepo.log({
+      await logsRepo.log({
         conversationId,
         type: 'chat',
         provider,

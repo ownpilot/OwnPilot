@@ -21,16 +21,16 @@ export function escapeHtml(text: string): string {
 // ============================================================================
 
 type PlaceholderMap = Map<string, string>;
+interface PlaceholderState { counter: number; map: PlaceholderMap }
 
-let placeholderCounter = 0;
-
-function makePlaceholder(map: PlaceholderMap, html: string): string {
-  const key = `\x00PH${++placeholderCounter}\x00`;
-  map.set(key, html);
+function makePlaceholder(state: PlaceholderState, html: string): string {
+  const key = `\x00PH${++state.counter}\x00`;
+  state.map.set(key, html);
   return key;
 }
 
-function restorePlaceholders(text: string, map: PlaceholderMap): string {
+function restorePlaceholders(text: string, state: PlaceholderState): string {
+  const map = state.map;
   // Restore in reverse insertion order: outer (later) placeholders first,
   // so inner (earlier) placeholders are revealed before their turn.
   // This handles nesting: applyInlineFormatting may wrap text containing
@@ -51,7 +51,7 @@ function restorePlaceholders(text: string, map: PlaceholderMap): string {
  * Apply inline Markdown formatting to already-escaped text.
  * Order matters: bold-italic first, then bold, italic, strikethrough, links.
  */
-function applyInlineFormatting(text: string, ph: PlaceholderMap): string {
+function applyInlineFormatting(text: string, ph: PlaceholderState): string {
   let result = text;
 
   // Bold-italic: ***text*** or ___text___
@@ -102,8 +102,7 @@ function applyInlineFormatting(text: string, ph: PlaceholderMap): string {
 export function markdownToTelegramHtml(markdown: string): string {
   if (!markdown) return '';
 
-  placeholderCounter = 0;
-  const ph: PlaceholderMap = new Map();
+  const ph: PlaceholderState = { counter: 0, map: new Map() };
 
   // ------------------------------------------------------------------
   // Step 1: Extract fenced code blocks

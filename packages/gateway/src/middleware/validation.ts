@@ -440,7 +440,7 @@ export const providerConfigSchema = z.object({
 // ─── Workspace File & Execute Schemas ───────────────────────────
 
 export const workspaceWriteFileSchema = z.object({
-  content: z.string(),
+  content: z.string().max(10_000_000),
 });
 
 export const workspaceExecuteCodeSchema = z.object({

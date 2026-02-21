@@ -38,7 +38,9 @@ export const auditMiddleware: MiddlewareHandler = async (c, next) => {
     action: `${method} ${path}`,
     resource: 'api',
     resourceId: path,
-    ip: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? 'unknown',
+    ip: process.env.TRUSTED_PROXY === 'true'
+      ? (c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ?? c.req.header('x-real-ip') ?? 'unknown')
+      : 'direct',
     details: {
       method,
       path,

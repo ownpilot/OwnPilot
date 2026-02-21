@@ -598,6 +598,9 @@ export class TriggerEngine {
     if (!trigger) {
       return { success: false, error: 'Trigger not found' };
     }
+    if (!trigger.enabled) {
+      return { success: false, error: 'Trigger is disabled' };
+    }
 
     const startTime = Date.now();
 

@@ -102,7 +102,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
   // --------------------------------------------------------------------------
 
   async connect(): Promise<void> {
-    if (this.status === 'connected') return;
+    if (this.status === 'connected' || this.status === 'connecting') return;
     if (!this.config.bot_token) {
       throw new Error('Telegram bot_token is required');
     }
