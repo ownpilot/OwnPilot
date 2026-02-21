@@ -493,7 +493,11 @@ export function getSessionWorkspaceFiles(id: string, subPath: string = ''): Work
   return buildFileTree(targetPath, workspacePath);
 }
 
-function buildFileTree(dirPath: string, rootPath: string): WorkspaceFileInfo[] {
+const MAX_TREE_DEPTH = 20;
+
+function buildFileTree(dirPath: string, rootPath: string, depth = 0): WorkspaceFileInfo[] {
+  if (depth >= MAX_TREE_DEPTH) return [];
+
   const entries = readdirSync(dirPath, { withFileTypes: true });
   const files: WorkspaceFileInfo[] = [];
 
@@ -514,7 +518,7 @@ function buildFileTree(dirPath: string, rootPath: string): WorkspaceFileInfo[] {
     };
 
     if (entry.isDirectory()) {
-      file.children = buildFileTree(fullPath, rootPath);
+      file.children = buildFileTree(fullPath, rootPath, depth + 1);
       // Calculate directory size from children
       file.size = file.children.reduce((sum, child) => sum + child.size, 0);
     }
@@ -765,7 +769,8 @@ function calculateDirSize(dirPath: string): { size: number; fileCount: number } 
   let size = 0;
   let fileCount = 0;
 
-  const traverse = (path: string) => {
+  const traverse = (path: string, depth = 0) => {
+    if (depth >= MAX_TREE_DEPTH) return;
     try {
       const entries = readdirSync(path, { withFileTypes: true });
 
@@ -773,7 +778,7 @@ function calculateDirSize(dirPath: string): { size: number; fileCount: number } 
         const fullPath = join(path, entry.name);
 
         if (entry.isDirectory()) {
-          traverse(fullPath);
+          traverse(fullPath, depth + 1);
         } else {
           try {
             const stat = statSync(fullPath);
