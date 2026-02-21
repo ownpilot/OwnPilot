@@ -50,7 +50,9 @@ import { gatewayConfigCenter } from './services/config-center-impl.js';
 import { startTriggerEngine, stopTriggerEngine, initializeDefaultTriggers } from './triggers/index.js';
 import { seedExamplePlans } from './db/seeds/plans-seed.js';
 import { createChannelServiceImpl } from './channels/service-impl.js';
+import { randomUUID } from 'node:crypto';
 import { initServiceRegistry, Services, getEventSystem, setChannelService, setModuleResolver } from '@ownpilot/core';
+import type { NormalizedMessage, IMessageBus } from '@ownpilot/core';
 import { createLogService } from './services/log-service-impl.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS } from './config/defaults.js';
 import { createSessionService } from './services/session-service-impl.js';
@@ -322,21 +324,43 @@ async function main() {
       wsGateway.broadcast('trigger:executed', data as import('./ws/types.js').ServerEvents['trigger:executed']),
     );
 
-    // Wire up the chat handler once agent system is available
-    // The chat handler uses dynamic import to avoid circular dependencies
+    // Wire up the chat handler once agent system is available.
+    // Routes through the MessageBus pipeline so trigger-initiated chats get
+    // context injection, persistence, audit logging, and post-processing.
     triggerEngine.setChatHandler(async (message, _payload) => {
       const { getOrCreateChatAgent } = await import('./routes/agents.js');
       const { resolveProviderAndModel } = await import('./routes/settings.js');
       const resolved = await resolveProviderAndModel('default', 'default');
-      const agent = await getOrCreateChatAgent(resolved.provider ?? 'openai', resolved.model ?? 'gpt-4o-mini');
-      const result = await agent.chat(message);
-      if (result.ok) {
-        return {
-          content: result.value.content,
-          toolCalls: result.value.toolCalls?.length ?? 0,
-        };
-      }
-      throw new Error(result.error?.message ?? 'Chat execution failed');
+      const provider = resolved.provider ?? 'openai';
+      const model = resolved.model ?? 'gpt-4o-mini';
+      const agent = await getOrCreateChatAgent(provider, model);
+
+      const bus = registry.get<IMessageBus>(Services.Message);
+      const conversationId = agent.getConversation().id;
+      const normalized: NormalizedMessage = {
+        id: randomUUID(),
+        sessionId: conversationId,
+        role: 'user',
+        content: message,
+        metadata: { source: 'scheduler', provider, model },
+        timestamp: new Date(),
+      };
+
+      const result = await bus.process(normalized, {
+        context: {
+          agent,
+          userId: 'default',
+          agentId: 'chat',
+          provider,
+          model,
+          conversationId,
+        },
+      });
+
+      return {
+        content: result.response.content,
+        toolCalls: result.response.metadata?.toolCalls?.length ?? 0,
+      };
     });
 
     // Register 'workflow' action handler

@@ -54,6 +54,7 @@ const { mockExecuteTool, mockHasTool } = vi.hoisted(() => ({
 vi.mock('../services/tool-executor.js', () => ({
   executeTool: mockExecuteTool,
   hasTool: mockHasTool,
+  waitForToolSync: vi.fn(async () => {}),
 }));
 
 vi.mock('../db/repositories/execution-permissions.js', () => ({

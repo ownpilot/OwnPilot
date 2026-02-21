@@ -5,7 +5,7 @@
  * Used by getSharedToolRegistry() via ToolRegistry.registerProvider().
  */
 
-import type { ToolDefinition, ToolExecutionResult, ToolProvider } from '@ownpilot/core';
+import type { ToolDefinition, ToolExecutionResult, ToolProvider, ToolContext } from '@ownpilot/core';
 import {
   MEMORY_TOOLS,
   GOAL_TOOLS,
@@ -16,7 +16,8 @@ import { executeMemoryTool } from '../../routes/memories.js';
 import { executeGoalTool } from '../../routes/goals.js';
 import { executeCustomDataTool } from '../../routes/custom-data.js';
 import { executePersonalDataTool } from '../../routes/personal-data-tools.js';
-import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool } from '../../tools/index.js';
+import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool, HEARTBEAT_TOOLS, executeHeartbeatTool, EXTENSION_TOOLS, executeExtensionTool } from '../../tools/index.js';
+import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 
 // ============================================================================
 // Result type from gateway executors
@@ -41,10 +42,13 @@ type GatewayExecutor = (
 function wrapGatewayExecutor(
   toolDef: ToolDefinition,
   execute: GatewayExecutor,
-  userId?: string,
-): (args: Record<string, unknown>) => Promise<ToolExecutionResult> {
-  return async (args): Promise<ToolExecutionResult> => {
-    const result = await execute(toolDef.name, args, userId);
+  fallbackUserId?: string,
+): (args: Record<string, unknown>, context: ToolContext) => Promise<ToolExecutionResult> {
+  return async (args, context): Promise<ToolExecutionResult> => {
+    // Prefer userId from execution context (supports multi-user),
+    // fall back to the userId captured at provider creation time.
+    const effectiveUserId = context?.userId ?? fallbackUserId;
+    const result = await execute(toolDef.name, args, effectiveUserId);
     if (result.success) {
       return {
         content: typeof result.result === 'string'
@@ -134,6 +138,45 @@ export function createPlanToolProvider(): ToolProvider {
     getTools: () => PLAN_TOOLS.map((def) => ({
       definition: def,
       executor: wrapGatewayExecutor(def, executePlanTool),
+    })),
+  };
+}
+
+/**
+ * Create a provider for config center tools
+ */
+export function createConfigToolProvider(): ToolProvider {
+  return {
+    name: 'config',
+    getTools: () => CONFIG_TOOLS.map((def) => ({
+      definition: def,
+      executor: wrapGatewayExecutor(def, executeConfigTool as GatewayExecutor),
+    })),
+  };
+}
+
+/**
+ * Create a provider for heartbeat tools (requires userId)
+ */
+export function createHeartbeatToolProvider(userId: string): ToolProvider {
+  return {
+    name: 'heartbeat',
+    getTools: () => HEARTBEAT_TOOLS.map((def) => ({
+      definition: def,
+      executor: wrapGatewayExecutor(def, executeHeartbeatTool, userId),
+    })),
+  };
+}
+
+/**
+ * Create a provider for extension management tools (requires userId)
+ */
+export function createExtensionToolProvider(userId: string): ToolProvider {
+  return {
+    name: 'extension',
+    getTools: () => EXTENSION_TOOLS.map((def) => ({
+      definition: def,
+      executor: wrapGatewayExecutor(def, executeExtensionTool, userId),
     })),
   };
 }

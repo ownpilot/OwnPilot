@@ -68,6 +68,9 @@ const mockCustomDataProvider = { name: 'custom-data', getTools: vi.fn(() => []) 
 const mockPersonalDataProvider = { name: 'personal-data', getTools: vi.fn(() => []) };
 const mockTriggerProvider = { name: 'trigger', getTools: vi.fn(() => []) };
 const mockPlanProvider = { name: 'plan', getTools: vi.fn(() => []) };
+const mockConfigProvider = { name: 'config', getTools: vi.fn(() => []) };
+const mockHeartbeatProvider = { name: 'heartbeat', getTools: vi.fn(() => []) };
+const mockExtensionProvider = { name: 'extension', getTools: vi.fn(() => []) };
 
 vi.mock('./tool-providers/index.js', () => ({
   createMemoryToolProvider: vi.fn(() => mockMemoryProvider),
@@ -76,6 +79,9 @@ vi.mock('./tool-providers/index.js', () => ({
   createPersonalDataToolProvider: vi.fn(() => mockPersonalDataProvider),
   createTriggerToolProvider: vi.fn(() => mockTriggerProvider),
   createPlanToolProvider: vi.fn(() => mockPlanProvider),
+  createConfigToolProvider: vi.fn(() => mockConfigProvider),
+  createHeartbeatToolProvider: vi.fn(() => mockHeartbeatProvider),
+  createExtensionToolProvider: vi.fn(() => mockExtensionProvider),
 }));
 
 import {
@@ -92,6 +98,9 @@ import {
   createPersonalDataToolProvider,
   createTriggerToolProvider,
   createPlanToolProvider,
+  createConfigToolProvider,
+  createHeartbeatToolProvider,
+  createExtensionToolProvider,
 } from './tool-providers/index.js';
 
 // ---------------------------------------------------------------------------
@@ -129,7 +138,7 @@ describe('Tool Executor', () => {
       expect(mockToolRegistry.setConfigCenter).toHaveBeenCalledWith({ mocked: true });
     });
 
-    it('registers all 6 gateway tool providers', () => {
+    it('registers all 9 gateway tool providers', () => {
       getSharedToolRegistry('user-1');
 
       expect(createMemoryToolProvider).toHaveBeenCalledWith('user-1');
@@ -138,14 +147,20 @@ describe('Tool Executor', () => {
       expect(createPersonalDataToolProvider).toHaveBeenCalled();
       expect(createTriggerToolProvider).toHaveBeenCalled();
       expect(createPlanToolProvider).toHaveBeenCalled();
+      expect(createConfigToolProvider).toHaveBeenCalled();
+      expect(createHeartbeatToolProvider).toHaveBeenCalledWith('user-1');
+      expect(createExtensionToolProvider).toHaveBeenCalledWith('user-1');
 
-      expect(mockToolRegistry.registerProvider).toHaveBeenCalledTimes(6);
+      expect(mockToolRegistry.registerProvider).toHaveBeenCalledTimes(9);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockMemoryProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockGoalProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockCustomDataProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockPersonalDataProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockTriggerProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockPlanProvider);
+      expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockConfigProvider);
+      expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockHeartbeatProvider);
+      expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockExtensionProvider);
     });
 
     it('returns cached registry on subsequent calls', () => {
@@ -201,6 +216,7 @@ describe('Tool Executor', () => {
       });
       expect(mockToolRegistry.execute).toHaveBeenCalledWith('some_tool', { arg1: 'val' }, {
         conversationId: 'system-execution',
+        userId: 'user-1',
         executionPermissions: undefined,
       });
     });
