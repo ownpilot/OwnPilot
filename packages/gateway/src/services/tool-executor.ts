@@ -89,9 +89,9 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   registerAllTools(tools);
 
   // Override tool placeholders with real implementations
-  registerImageOverrides(tools).catch((err) => log.debug('registerImageOverrides:', String(err)));
-  registerEmailOverrides(tools).catch((err) => log.debug('registerEmailOverrides:', String(err)));
-  registerAudioOverrides(tools).catch((err) => log.debug('registerAudioOverrides:', String(err)));
+  registerImageOverrides(tools).catch((err) => log.warn('registerImageOverrides failed:', String(err)));
+  registerEmailOverrides(tools).catch((err) => log.warn('registerEmailOverrides failed:', String(err)));
+  registerAudioOverrides(tools).catch((err) => log.warn('registerAudioOverrides failed:', String(err)));
 
   // Register legacy core tools (get_current_time, calculate, etc.)
   // Duplicates are safely ignored by ToolRegistry

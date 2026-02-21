@@ -30,11 +30,18 @@ export class ToolService implements IToolService {
     args: Record<string, unknown>,
     context?: { conversationId?: string; userId?: string },
   ): Promise<ToolServiceResult> {
+    let argsJson: string;
+    try {
+      argsJson = JSON.stringify(args);
+    } catch {
+      return { content: 'Invalid tool arguments: cannot serialize to JSON', isError: true };
+    }
+
     const result = await this.registry.executeToolCall(
       {
         id: `call_${Date.now()}`,
         name,
-        arguments: JSON.stringify(args),
+        arguments: argsJson,
       },
       context?.conversationId ?? 'service',
       context?.userId ?? this.userId,

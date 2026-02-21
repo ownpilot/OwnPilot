@@ -231,10 +231,10 @@ describe('EmbeddingService', () => {
 
     it('throws with status and body on non-200 API error', async () => {
       mockEmbeddingCacheRepo.lookup.mockResolvedValue(null);
-      mockFetch.mockResolvedValue(mockErrorResponse(500, 'Internal server error'));
+      mockFetch.mockResolvedValue(mockErrorResponse(403, 'Forbidden'));
 
       await expect(service.generateEmbedding('test')).rejects.toThrow(
-        /Embedding API error: 500 - Internal server error/,
+        /Embedding API error: 403 - Forbidden/,
       );
     });
 
@@ -443,6 +443,36 @@ describe('EmbeddingService', () => {
       );
     });
 
+    it('retries once on 5xx server error then succeeds', async () => {
+      mockEmbeddingCacheRepo.lookup.mockResolvedValue(null);
+
+      mockFetch
+        .mockResolvedValueOnce(mockErrorResponse(500, 'Internal server error'))
+        .mockResolvedValueOnce(mockFetchResponse([fakeEmbedding()]));
+
+      const promise = service.generateEmbedding('test');
+      // 5xx retry waits 2 seconds
+      await vi.advanceTimersByTimeAsync(3000);
+
+      const result = await promise;
+      expect(result.embedding).toBeDefined();
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('throws on second 5xx (does not retry forever)', async () => {
+      vi.useRealTimers();
+      mockEmbeddingCacheRepo.lookup.mockResolvedValue(null);
+
+      // Both calls return 500
+      mockFetch
+        .mockResolvedValueOnce(mockErrorResponse(500, 'Server error'))
+        .mockResolvedValueOnce(mockErrorResponse(500, 'Server error'));
+
+      await expect(service.generateEmbedding('test')).rejects.toThrow(/Embedding API error: 500/);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      vi.useFakeTimers();
+    });
+
     it('sorts response embeddings by index to maintain input order', async () => {
       mockEmbeddingCacheRepo.lookup.mockResolvedValue(null);
 
@@ -616,14 +646,14 @@ describe('EmbeddingService', () => {
 
       const brokenErrorResponse = {
         ok: false,
-        status: 502,
+        status: 400,
         headers: { get: vi.fn() },
         text: vi.fn().mockRejectedValue(new Error('Stream broken')),
       };
       mockFetch.mockResolvedValue(brokenErrorResponse);
 
       await expect(service.generateEmbedding('test')).rejects.toThrow(
-        /Embedding API error: 502 - Unknown error/,
+        /Embedding API error: 400 - Unknown error/,
       );
     });
 

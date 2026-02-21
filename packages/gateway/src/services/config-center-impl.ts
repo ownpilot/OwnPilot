@@ -106,6 +106,18 @@ export class GatewayConfigCenter implements ConfigCenter {
   getServiceDefinition(serviceName: string): ConfigServiceDefinition | null {
     return configServicesRepo.getByName(serviceName);
   }
+
+  // ---------------------------------------------------------------------------
+  // Cache management
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Invalidate the in-memory cache so next read fetches fresh data from DB.
+   * Call after external writes (e.g., API key updates, config imports).
+   */
+  async invalidateCache(): Promise<void> {
+    await configServicesRepo.refreshCache();
+  }
 }
 
 // =============================================================================
