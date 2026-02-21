@@ -144,7 +144,7 @@ function makeNotificationEvent(taskOverrides: Parameters<typeof makeTask>[0] = {
 // ============================================================================
 
 beforeEach(() => {
-  vi.resetAllMocks();
+  vi.clearAllMocks();
   capturedNotificationHandler = null;
 
   // Restore default implementations
