@@ -915,13 +915,13 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   const memory = agent.getMemory();
   const deleted = memory.delete(id);
 
-  // Also delete from database
-  const chatRepo = new ChatRepository(getUserId(c));
-  await chatRepo.deleteConversation(id);
-
   if (!deleted) {
     return notFoundError(c, 'Conversation', id);
   }
+
+  // Delete from database only after confirming it exists in memory
+  const chatRepo = new ChatRepository(getUserId(c));
+  await chatRepo.deleteConversation(id);
 
   return apiResponse(c, {});
 });

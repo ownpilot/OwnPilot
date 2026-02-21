@@ -142,8 +142,8 @@ describe('Database Routes', () => {
     app.route('/database', databaseRoutes);
     vi.clearAllMocks();
 
-    // Set admin key
-    process.env.ADMIN_API_KEY = ADMIN_KEY;
+    // Set admin key (read at request time by route middleware)
+    process.env.ADMIN_KEY = ADMIN_KEY;
 
     // Default mock returns
     mockAdapter.isConnected.mockReturnValue(true);

@@ -34,7 +34,7 @@ export async function tunnelStartNgrok(options: {
 }): Promise<void> {
   if (activeTunnel) {
     console.error('A tunnel is already running. Stop it first with: ownpilot tunnel stop');
-    process.exit(1);
+    return void process.exit(1);
   }
 
   const port = parseInt(options.port ?? '8080', 10);
@@ -78,8 +78,8 @@ export async function tunnelStartNgrok(options: {
         await doTunnelStop();
         resolve();
       };
-      process.on('SIGINT', () => void shutdown());
-      process.on('SIGTERM', () => void shutdown());
+      process.once('SIGINT', () => void shutdown());
+      process.once('SIGTERM', () => void shutdown());
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
@@ -102,7 +102,7 @@ export async function tunnelStartCloudflare(options: {
 }): Promise<void> {
   if (activeTunnel) {
     console.error('A tunnel is already running. Stop it first with: ownpilot tunnel stop');
-    process.exit(1);
+    return void process.exit(1);
   }
 
   const port = options.port ?? '8080';
@@ -146,9 +146,7 @@ export async function tunnelStartCloudflare(options: {
 
       child.on('exit', (code) => {
         clearTimeout(timeout);
-        if (code !== 0 && code !== null) {
-          reject(new Error(`cloudflared exited with code ${code}`));
-        }
+        reject(new Error(`cloudflared exited with code ${code ?? 0} before tunnel URL was found`));
       });
     });
 
@@ -167,8 +165,8 @@ export async function tunnelStartCloudflare(options: {
         await doTunnelStop();
         resolve();
       };
-      process.on('SIGINT', () => void shutdown());
-      process.on('SIGTERM', () => void shutdown());
+      process.once('SIGINT', () => void shutdown());
+      process.once('SIGTERM', () => void shutdown());
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

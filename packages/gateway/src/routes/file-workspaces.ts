@@ -8,7 +8,7 @@
 
 import { Hono } from 'hono';
 import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { stat, unlink } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { apiResponse, apiError, ERROR_CODES, getUserId, getErrorMessage } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
@@ -309,8 +309,10 @@ app.get('/:id/download', async (c) => {
     c.header('Content-Disposition', `attachment; filename="${filename}"`);
     c.header('Content-Length', String(stats.size));
 
-    // Stream the file
+    // Stream the file, then clean up temp ZIP
     const stream = createReadStream(zipPath);
+    stream.on('end', () => { unlink(zipPath).catch(() => {}); });
+    stream.on('error', () => { unlink(zipPath).catch(() => {}); });
     return new Response(stream as unknown as ReadableStream, {
       headers: {
         'Content-Type': 'application/zip',

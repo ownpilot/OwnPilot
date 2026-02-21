@@ -333,7 +333,7 @@ triggersRoutes.post('/cleanup', async (c) => {
   const body = await c.req.json<{ maxAgeDays?: number }>().catch((): { maxAgeDays?: number } => ({}));
 
   const service = getServiceRegistry().get(Services.Trigger);
-  let raw = Number(body.maxAgeDays) || 30;
+  let raw = body.maxAgeDays != null ? Number(body.maxAgeDays) : 30;
   if (!Number.isFinite(raw)) raw = 30;
   const maxAgeDays = Math.max(1, Math.min(MAX_DAYS_LOOKBACK, raw));
   const deleted = await service.cleanupHistory(userId, maxAgeDays);

@@ -93,27 +93,26 @@ function quoteIdentifier(name: string): string {
 
 export const databaseRoutes = new Hono();
 
-// Additional admin guard for database operations.
-// When ADMIN_KEY is set, destructive routes (POST/DELETE) and export require X-Admin-Key header.
+// Admin guard for database operations (fail-closed).
+// Destructive routes (POST/DELETE) and export always require X-Admin-Key header.
 // Read-only GET routes (status, stats) are allowed with standard auth only.
-const ADMIN_KEY = process.env.ADMIN_KEY;
-
-if (ADMIN_KEY) {
-  databaseRoutes.use('*', async (c, next) => {
-    // Allow read-only GET requests (status, stats) — but NOT export
-    const path = new URL(c.req.url).pathname;
-    if (c.req.method === 'GET' && !path.endsWith('/export')) {
-      return next();
-    }
-    // Destructive operations (POST, DELETE) and export require admin key
-    const providedKey = c.req.header('X-Admin-Key');
-    if (!safeKeyCompare(providedKey, ADMIN_KEY)) {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Admin key required for this operation. Set X-Admin-Key header.' }, 403);
-    }
+databaseRoutes.use('*', async (c, next) => {
+  // Allow read-only GET requests (status, stats) — but NOT export
+  const path = new URL(c.req.url).pathname;
+  if (c.req.method === 'GET' && !path.endsWith('/export')) {
     return next();
-  });
-  log.info('Database admin routes: X-Admin-Key guard enabled for write operations and export');
-}
+  }
+  // Destructive operations (POST, DELETE) and export require admin key
+  const adminKey = process.env.ADMIN_KEY;
+  if (!adminKey) {
+    return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'ADMIN_KEY environment variable must be set for database write operations.' }, 403);
+  }
+  const providedKey = c.req.header('X-Admin-Key');
+  if (!safeKeyCompare(providedKey, adminKey)) {
+    return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Admin key required for this operation. Set X-Admin-Key header.' }, 403);
+  }
+  return next();
+});
 
 // Backup directory
 const getBackupDir = () => {
@@ -216,6 +215,14 @@ databaseRoutes.post('/backup', async (c) => {
     return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
   }
 
+  // Set running flag immediately to prevent TOCTOU race
+  operationStatus = {
+    isRunning: true,
+    operation: 'backup',
+    lastRun: new Date().toISOString(),
+    output: [],
+  };
+
   const config = getDatabaseConfig();
 
   // Check PostgreSQL is connected
@@ -228,6 +235,7 @@ databaseRoutes.post('/backup', async (c) => {
   }
 
   if (!connected) {
+    operationStatus.isRunning = false;
     return apiError(c, { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected.' }, 400);
   }
 
@@ -237,13 +245,6 @@ databaseRoutes.post('/backup', async (c) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const filename = `backup-${timestamp}.${ext}`;
   const backupPath = join(getBackupDir(), filename);
-
-  operationStatus = {
-    isRunning: true,
-    operation: 'backup',
-    lastRun: new Date().toISOString(),
-    output: [],
-  };
 
   // Build pg_dump command
   const args = [
@@ -316,9 +317,18 @@ databaseRoutes.post('/restore', async (c) => {
     return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
   }
 
+  // Set running flag immediately to prevent TOCTOU race
+  operationStatus = {
+    isRunning: true,
+    operation: 'restore',
+    lastRun: new Date().toISOString(),
+    output: [],
+  };
+
   const body: { filename: string } = await c.req.json().catch(() => ({ filename: '' }));
 
   if (!body.filename) {
+    operationStatus.isRunning = false;
     return apiError(c, { code: ERROR_CODES.MISSING_FILENAME, message: 'Backup filename is required' }, 400);
   }
 
@@ -326,15 +336,9 @@ databaseRoutes.post('/restore', async (c) => {
   const backupPath = join(getBackupDir(), basename(body.filename)); // Sanitize path
 
   if (!existsSync(backupPath)) {
+    operationStatus.isRunning = false;
     return apiError(c, { code: ERROR_CODES.BACKUP_NOT_FOUND, message: `Backup file not found: ${sanitizeId(basename(body.filename))}` }, 404);
   }
-
-  operationStatus = {
-    isRunning: true,
-    operation: 'restore',
-    lastRun: new Date().toISOString(),
-    output: [],
-  };
 
   const isCustomFormat = body.filename.endsWith('.dump');
   const command = isCustomFormat ? 'pg_restore' : 'psql';

@@ -9,7 +9,7 @@
 import { Hono } from 'hono';
 import { composioService } from '../services/composio-service.js';
 import { getLog } from '../services/log.js';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 
 const log = getLog('ComposioRoutes');
 
@@ -62,7 +62,7 @@ composioRoutes.get('/apps', async (c) => {
 
 composioRoutes.get('/connections', async (c) => {
   try {
-    const userId = c.req.query('userId') ?? 'default';
+    const userId = getUserId(c);
     const connections = await composioService.getConnections(userId);
     return apiResponse(c, { connections, count: connections.length });
   } catch (err) {

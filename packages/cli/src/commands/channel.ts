@@ -161,7 +161,6 @@ export async function channelAdd(): Promise<void> {
       message: 'Select channel type:',
       choices: [
         { name: 'Telegram', value: 'telegram', description: 'Telegram bot via Bot API' },
-        { name: 'Discord', value: 'discord', description: 'Discord bot via Gateway API' },
       ],
     });
 
@@ -181,21 +180,6 @@ export async function channelAdd(): Promise<void> {
       if (restrictUsers) {
         config.allowed_users = await input({
           message: 'Allowed user IDs (comma-separated):',
-        });
-      }
-    } else if (type === 'discord') {
-      config.bot_token = await input({
-        message: 'Bot token (from Discord Developer Portal):',
-        validate: (v: string) => (v.length > 50 ? true : 'Token seems too short'),
-      });
-
-      const restrictGuilds = await confirm({
-        message: 'Restrict to specific servers?',
-        default: false,
-      });
-      if (restrictGuilds) {
-        config.guild_ids = await input({
-          message: 'Allowed server IDs (comma-separated):',
         });
       }
     }

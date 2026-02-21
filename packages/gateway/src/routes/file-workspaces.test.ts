@@ -32,6 +32,7 @@ vi.mock('node:fs', () => ({
 
 vi.mock('node:fs/promises', () => ({
   stat: vi.fn(),
+  unlink: vi.fn().mockResolvedValue(undefined),
 }));
 
 import {
@@ -596,7 +597,7 @@ describe('File Workspaces Routes', () => {
     it('should download workspace as ZIP', async () => {
       const mockWorkspace = { id: 'ws-123', name: 'Test Workspace', path: '/tmp/ws-123' };
       const mockZipPath = '/tmp/ws-123.zip';
-      const mockStream = {};
+      const mockStream = { on: vi.fn().mockReturnThis() };
       vi.mocked(getSessionWorkspace).mockReturnValue(mockWorkspace);
       vi.mocked(zipSessionWorkspace).mockResolvedValue(mockZipPath);
       vi.mocked(stat).mockResolvedValue({ size: 1024 } as unknown as Awaited<ReturnType<typeof stat>>);
