@@ -491,8 +491,10 @@ export class GoalsRepository extends BaseRepository {
 
     values.push(id);
 
+    values.push(this.userId);
     await this.execute(
-      `UPDATE goal_steps SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      `UPDATE goal_steps SET ${updates.join(', ')}
+       WHERE id = $${paramIndex} AND goal_id IN (SELECT id FROM goals WHERE user_id = $${paramIndex + 1})`,
       values
     );
 
@@ -509,7 +511,10 @@ export class GoalsRepository extends BaseRepository {
     const step = await this.getStep(id);
     if (!step) return false;
 
-    const result = await this.execute('DELETE FROM goal_steps WHERE id = $1', [id]);
+    const result = await this.execute(
+      'DELETE FROM goal_steps WHERE id = $1 AND goal_id IN (SELECT id FROM goals WHERE user_id = $2)',
+      [id, this.userId]
+    );
     const deleted = result.changes > 0;
 
     // Recalculate goal progress

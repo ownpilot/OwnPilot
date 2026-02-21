@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.mock('react', () => ({
   useCallback: (fn: (...args: unknown[]) => void) => fn,
   useRef: <T>(initial: T) => ({ current: initial }),
+  useEffect: () => {},
 }));
 
 import { useDebouncedCallback } from './useDebouncedCallback.js';

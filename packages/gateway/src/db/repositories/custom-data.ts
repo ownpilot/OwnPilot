@@ -346,41 +346,43 @@ export class CustomDataRepository extends BaseRepository {
     const limit = options?.limit ?? 100;
     const offset = options?.offset ?? 0;
 
-    // Get total count
+    // Build filter conditions for JSONB data
+    const conditions: string[] = ['table_id = $1'];
+    const params: unknown[] = [table.id];
+    let paramIndex = 2;
+
+    if (options?.filter) {
+      for (const [key, value] of Object.entries(options.filter)) {
+        conditions.push(`data->>$${paramIndex++} = $${paramIndex++}`);
+        params.push(key, String(value));
+      }
+    }
+
+    const whereSql = conditions.join(' AND ');
+
+    // Get total count (with filter applied)
     const countResult = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM custom_data_records WHERE table_id = $1',
-      [table.id]
+      `SELECT COUNT(*) as count FROM custom_data_records WHERE ${whereSql}`,
+      params
     );
     const total = parseInt(countResult?.count ?? '0', 10);
 
-    // Get records
+    // Get records (with filter applied)
     const rows = await this.query<RecordRow>(
       `SELECT * FROM custom_data_records
-       WHERE table_id = $1
+       WHERE ${whereSql}
        ORDER BY created_at DESC
-       LIMIT $2 OFFSET $3`,
-      [table.id, limit, offset]
+       LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+      [...params, limit, offset]
     );
 
-    let records = rows.map((row) => ({
+    const records = rows.map((row) => ({
       id: row.id,
       tableId: row.table_id,
       data: parseJsonField<Record<string, unknown>>(row.data, {}),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
-
-    // Apply filter in memory (for JSON data)
-    if (options?.filter) {
-      records = records.filter((rec) => {
-        for (const [key, value] of Object.entries(options.filter!)) {
-          if (rec.data[key] !== value) {
-            return false;
-          }
-        }
-        return true;
-      });
-    }
 
     return { records, total };
   }

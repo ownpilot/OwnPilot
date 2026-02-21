@@ -720,18 +720,22 @@ describe('CustomDataRepository', () => {
       expect(sql).toContain('ORDER BY created_at DESC');
     });
 
-    it('should apply in-memory filter', async () => {
+    it('should apply filter via SQL', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeSchemaRow());
-      mockAdapter.queryOne.mockResolvedValueOnce({ count: '2' });
+      // Count returns filtered count
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '1' });
+      // Query returns only matching records (filter applied in SQL)
       mockAdapter.query.mockResolvedValueOnce([
-        makeRecordRow({ id: 'rec_1', data: '{"email":"a@b.com","age":25}' }),
         makeRecordRow({ id: 'rec_2', data: '{"email":"c@d.com","age":30}' }),
       ]);
 
       const result = await repo.listRecords('contacts', { filter: { age: 30 } });
 
       expect(result.records).toHaveLength(1);
-      expect(result.records[0]!.data.age).toBe(30);
+      expect(result.total).toBe(1);
+      // Verify filter was pushed into SQL
+      const countSql = mockAdapter.queryOne.mock.calls[1]![0] as string;
+      expect(countSql).toContain('data->>');
     });
 
     it('should return total as 0 when no count result', async () => {
@@ -746,14 +750,15 @@ describe('CustomDataRepository', () => {
 
     it('should return empty records with filter that matches nothing', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeSchemaRow());
-      mockAdapter.queryOne.mockResolvedValueOnce({ count: '1' });
-      mockAdapter.query.mockResolvedValueOnce([
-        makeRecordRow({ data: '{"email":"a@b.com","age":25}' }),
-      ]);
+      // Count returns 0 for no matches
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '0' });
+      // Query returns empty (filter applied in SQL)
+      mockAdapter.query.mockResolvedValueOnce([]);
 
       const result = await repo.listRecords('contacts', { filter: { age: 99 } });
 
       expect(result.records).toHaveLength(0);
+      expect(result.total).toBe(0);
     });
   });
 

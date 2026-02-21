@@ -492,9 +492,9 @@ export class TriggersRepository extends BaseRepository {
     const limit = query.limit ?? 25;
     const offset = query.offset ?? 0;
 
-    // Base: LEFT JOIN so detached history (deleted triggers) is included
-    // Filter by user via trigger ownership OR detached rows (trigger_id IS NULL)
-    let whereSql = 'WHERE (t.user_id = $1 OR h.trigger_id IS NULL)';
+    // INNER JOIN so only history for existing triggers owned by this user is returned.
+    // Detached rows (deleted triggers) are excluded to prevent cross-user leaks.
+    let whereSql = 'WHERE t.user_id = $1';
     const params: unknown[] = [this.userId];
     let paramIndex = 2;
 
@@ -517,7 +517,7 @@ export class TriggersRepository extends BaseRepository {
 
     const countResult = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM trigger_history h
-       LEFT JOIN triggers t ON h.trigger_id = t.id
+       JOIN triggers t ON h.trigger_id = t.id
        ${whereSql}`,
       params
     );
@@ -526,7 +526,7 @@ export class TriggersRepository extends BaseRepository {
     const dataParams = [...params, limit, offset];
     const rows = await this.query<HistoryRow>(
       `SELECT h.*, COALESCE(h.trigger_name, t.name) as trigger_name FROM trigger_history h
-       LEFT JOIN triggers t ON h.trigger_id = t.id
+       JOIN triggers t ON h.trigger_id = t.id
        ${whereSql}
        ORDER BY h.fired_at DESC
        LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
@@ -537,20 +537,28 @@ export class TriggersRepository extends BaseRepository {
   }
 
   /**
-   * Clean up old history (includes detached rows from deleted triggers)
+   * Clean up old history for this user's triggers, plus orphaned rows with no trigger.
    */
   async cleanupHistory(maxAgeDays = 30): Promise<number> {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - maxAgeDays);
 
+    // Delete old history for user's triggers
     const result = await this.execute(
       `DELETE FROM trigger_history
        WHERE fired_at < $1
-         AND (trigger_id IN (SELECT id FROM triggers WHERE user_id = $2) OR trigger_id IS NULL)`,
+         AND trigger_id IN (SELECT id FROM triggers WHERE user_id = $2)`,
       [cutoff.toISOString(), this.userId]
     );
 
-    return result.changes;
+    // Also clean up orphaned rows (deleted triggers) older than cutoff
+    const orphaned = await this.execute(
+      `DELETE FROM trigger_history
+       WHERE fired_at < $1 AND trigger_id IS NULL`,
+      [cutoff.toISOString()]
+    );
+
+    return result.changes + orphaned.changes;
   }
 
   // ==========================================================================

@@ -177,69 +177,73 @@ export function WorkflowCopilotPanel({
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No stream available');
 
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let accumulated = '';
+      try {
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let accumulated = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
 
-        for (const line of lines) {
-          if (!line.startsWith('data:')) continue;
-          const dataStr = line.slice(5).trim();
-          if (!dataStr) continue;
+          for (const line of lines) {
+            if (!line.startsWith('data:')) continue;
+            const dataStr = line.slice(5).trim();
+            if (!dataStr) continue;
 
-          let event: { delta?: string; done?: boolean; content?: string; error?: string };
-          try {
-            event = JSON.parse(dataStr);
-          } catch {
-            continue;
-          }
+            let event: { delta?: string; done?: boolean; content?: string; error?: string };
+            try {
+              event = JSON.parse(dataStr);
+            } catch {
+              continue;
+            }
 
-          if (event.error) {
-            throw new Error(event.error);
-          }
+            if (event.error) {
+              throw new Error(event.error);
+            }
 
-          if (event.delta) {
-            accumulated += event.delta;
-            setStreamingContent(accumulated);
-          }
+            if (event.delta) {
+              accumulated += event.delta;
+              setStreamingContent(accumulated);
+            }
 
-          if (event.done) {
-            const finalContent = event.content ?? accumulated;
-            const workflowJson = extractWorkflowJson(finalContent);
-            const assistantMsg: CopilotMessage = {
-              id: `msg_${Date.now()}_a`,
-              role: 'assistant',
-              content: finalContent,
-              workflowJson,
-            };
-            setMessages((prev) => [...prev, assistantMsg]);
-            setStreamingContent('');
+            if (event.done) {
+              const finalContent = event.content ?? accumulated;
+              const workflowJson = extractWorkflowJson(finalContent);
+              const assistantMsg: CopilotMessage = {
+                id: `msg_${Date.now()}_a`,
+                role: 'assistant',
+                content: finalContent,
+                workflowJson,
+              };
+              setMessages((prev) => [...prev, assistantMsg]);
+              setStreamingContent('');
+            }
           }
         }
-      }
 
-      // If stream ended without a done event, add whatever we accumulated
-      if (accumulated && !messages.some((m) => m.content === accumulated)) {
-        const workflowJson = extractWorkflowJson(accumulated);
-        setMessages((prev) => {
-          // Only add if we haven't already added via done event
-          const lastMsg = prev[prev.length - 1];
-          if (lastMsg?.role === 'assistant' && lastMsg.content === accumulated) return prev;
-          return [...prev, {
-            id: `msg_${Date.now()}_a`,
-            role: 'assistant',
-            content: accumulated,
-            workflowJson,
-          }];
-        });
-        setStreamingContent('');
+        // If stream ended without a done event, add whatever we accumulated
+        if (accumulated && !messages.some((m) => m.content === accumulated)) {
+          const workflowJson = extractWorkflowJson(accumulated);
+          setMessages((prev) => {
+            // Only add if we haven't already added via done event
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg?.role === 'assistant' && lastMsg.content === accumulated) return prev;
+            return [...prev, {
+              id: `msg_${Date.now()}_a`,
+              role: 'assistant',
+              content: accumulated,
+              workflowJson,
+            }];
+          });
+          setStreamingContent('');
+        }
+      } finally {
+        reader.cancel().catch(() => {});
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {

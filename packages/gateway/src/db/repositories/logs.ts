@@ -230,8 +230,8 @@ export class LogsRepository extends BaseRepository {
 
   async getLog(id: string): Promise<RequestLog | null> {
     const row = await this.queryOne<LogRow>(
-      'SELECT * FROM request_logs WHERE id = $1',
-      [id]
+      'SELECT * FROM request_logs WHERE id = $1 AND user_id = $2',
+      [id, this.userId]
     );
     return row ? rowToLog(row) : null;
   }

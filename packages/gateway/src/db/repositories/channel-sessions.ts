@@ -132,6 +132,7 @@ export class ChannelSessionsRepository extends BaseRepository {
 
   /**
    * Find or create an active session.
+   * Uses find-then-create with retry to handle concurrent requests safely.
    */
   async findOrCreate(input: CreateChannelSessionInput): Promise<ChannelSessionEntity> {
     const existing = await this.findActive(
@@ -140,7 +141,19 @@ export class ChannelSessionsRepository extends BaseRepository {
       input.platformChatId
     );
     if (existing) return existing;
-    return this.create(input);
+
+    try {
+      return await this.create(input);
+    } catch {
+      // Concurrent insert may have succeeded — retry lookup
+      const retried = await this.findActive(
+        input.channelUserId,
+        input.channelPluginId,
+        input.platformChatId
+      );
+      if (retried) return retried;
+      throw new Error('Failed to find or create channel session');
+    }
   }
 
   /**

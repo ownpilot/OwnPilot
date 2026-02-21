@@ -303,18 +303,21 @@ export class ChatRepository extends BaseRepository {
   async deleteConversations(ids: string[]): Promise<number> {
     if (ids.length === 0) return 0;
 
-    // Delete messages first (they reference conversations)
+    // Delete messages only for conversations owned by this user
     const placeholders = ids.map((_, i) => `$${i + 1}`).join(', ');
+    const userParamIdx = ids.length + 1;
     await this.execute(
-      `DELETE FROM messages WHERE conversation_id IN (${placeholders})`,
-      ids
+      `DELETE FROM messages WHERE conversation_id IN (
+        SELECT id FROM conversations WHERE id IN (${placeholders}) AND user_id = $${userParamIdx}
+      )`,
+      [...ids, this.userId]
     );
 
     // Delete conversations scoped to user
     const convPlaceholders = ids.map((_, i) => `$${i + 1}`).join(', ');
-    const userParamIdx = ids.length + 1;
+    const userParamIdx2 = ids.length + 1;
     const result = await this.execute(
-      `DELETE FROM conversations WHERE id IN (${convPlaceholders}) AND user_id = $${userParamIdx}`,
+      `DELETE FROM conversations WHERE id IN (${convPlaceholders}) AND user_id = $${userParamIdx2}`,
       [...ids, this.userId]
     );
     return result.changes;
@@ -389,12 +392,12 @@ export class ChatRepository extends BaseRepository {
       ]
     );
 
-    // Update conversation message count and updated_at
+    // Update conversation message count and updated_at (scoped to user)
     await this.execute(
       `UPDATE conversations
        SET message_count = message_count + 1, updated_at = NOW()
-       WHERE id = $1`,
-      [input.conversationId]
+       WHERE id = $1 AND user_id = $2`,
+      [input.conversationId, this.userId]
     );
 
     const message = await this.getMessage(id);
@@ -445,8 +448,8 @@ export class ChatRepository extends BaseRepository {
       await this.execute(
         `UPDATE conversations
          SET message_count = message_count - 1, updated_at = NOW()
-         WHERE id = $1`,
-        [msg.conversationId]
+         WHERE id = $1 AND user_id = $2`,
+        [msg.conversationId, this.userId]
       );
     }
 

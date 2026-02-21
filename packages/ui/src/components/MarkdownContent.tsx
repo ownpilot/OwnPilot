@@ -2,6 +2,20 @@ import { memo, useMemo, useState } from 'react';
 import { CodeBlock } from './CodeBlock';
 
 // =============================================================================
+// URL safety
+// =============================================================================
+
+/** Only allow http/https URLs to prevent javascript: XSS */
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+// =============================================================================
 // Image URL helpers
 // =============================================================================
 
@@ -117,17 +131,23 @@ export const MarkdownContent = memo(function MarkdownContent({ content, classNam
       // Links
       const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
       if (linkMatch) {
-        elements.push(
-          <a
-            key={key++}
-            href={linkMatch[2]}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
-            {linkMatch[1]}
-          </a>
-        );
+        const url = linkMatch[2]!;
+        if (isSafeUrl(url)) {
+          elements.push(
+            <a
+              key={key++}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              {linkMatch[1]}
+            </a>
+          );
+        } else {
+          // Render as plain text for unsafe URLs (javascript:, data:, etc.)
+          elements.push(<span key={key++}>{linkMatch[1]}</span>);
+        }
         remaining = remaining.slice(linkMatch[0].length);
         continue;
       }

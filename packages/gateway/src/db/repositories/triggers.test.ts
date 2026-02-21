@@ -547,13 +547,19 @@ describe('TriggersRepository', () => {
 
   describe('cleanupHistory', () => {
     it('deletes old history entries', async () => {
-      mockAdapter.execute.mockResolvedValue({ changes: 15 });
+      mockAdapter.execute
+        .mockResolvedValueOnce({ changes: 15 })  // user's triggers
+        .mockResolvedValueOnce({ changes: 3 });   // orphaned rows
 
       const count = await repo.cleanupHistory(30);
 
-      expect(count).toBe(15);
-      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
-      expect(sql).toContain('DELETE FROM trigger_history');
+      expect(count).toBe(18);
+      expect(mockAdapter.execute).toHaveBeenCalledTimes(2);
+      const sql1 = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql1).toContain('DELETE FROM trigger_history');
+      expect(sql1).toContain('user_id');
+      const sql2 = mockAdapter.execute.mock.calls[1]![0] as string;
+      expect(sql2).toContain('trigger_id IS NULL');
     });
 
     it('defaults to 30 days', async () => {
@@ -561,7 +567,7 @@ describe('TriggersRepository', () => {
 
       await repo.cleanupHistory();
 
-      expect(mockAdapter.execute).toHaveBeenCalledTimes(1);
+      expect(mockAdapter.execute).toHaveBeenCalledTimes(2);
     });
   });
 

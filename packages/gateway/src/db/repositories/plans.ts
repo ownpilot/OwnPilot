@@ -558,11 +558,11 @@ export class PlansRepository extends BaseRepository {
 
     if (updates.length === 0) return step;
 
-    values.push(id);
+    values.push(id, this.userId);
 
     await this.execute(
       `UPDATE plan_steps SET ${updates.join(', ')}
-       WHERE id = $${paramIndex}`,
+       WHERE id = $${paramIndex} AND plan_id IN (SELECT id FROM plans WHERE user_id = $${paramIndex + 1})`,
       values
     );
 
