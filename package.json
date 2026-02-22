@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.19.11",
+    "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^10.0.1",
     "husky": "^9.1.7",
     "prettier": "^3.8.1",

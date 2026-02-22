@@ -17,6 +17,9 @@ importers:
       '@types/node':
         specifier: ^22.19.11
         version: 22.19.11
+      '@vitest/coverage-v8':
+        specifier: ^2.1.9
+        version: 2.1.9(vitest@2.1.9(@types/node@22.19.11)(lightningcss@1.31.1))
       eslint:
         specifier: ^10.0.1
         version: 10.0.1(jiti@2.6.1)
@@ -98,9 +101,6 @@ importers:
       '@types/node':
         specifier: ^22.19.7
         version: 22.19.7
-      '@vitest/coverage-v8':
-        specifier: ^2.1.8
-        version: 2.1.9(vitest@2.1.9(@types/node@22.19.7)(lightningcss@1.31.1))
       eslint:
         specifier: ^10.0.1
         version: 10.0.1(jiti@2.6.1)
@@ -4775,7 +4775,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@22.19.7)(lightningcss@1.31.1))':
+  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@22.19.11)(lightningcss@1.31.1))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -4789,7 +4789,7 @@ snapshots:
       std-env: 3.10.0
       test-exclude: 7.0.1
       tinyrainbow: 1.2.0
-      vitest: 2.1.9(@types/node@22.19.7)(lightningcss@1.31.1)
+      vitest: 2.1.9(@types/node@22.19.11)(lightningcss@1.31.1)
     transitivePeerDependencies:
       - supports-color
 
