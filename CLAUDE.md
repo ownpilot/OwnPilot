@@ -22,7 +22,7 @@ packages/
 - **Plugin system**: PluginRegistry with isolation, marketplace, runtime in `packages/core/src/plugins/`
 - **User Extensions**: Native tool bundles (JS code, triggers, services) in `packages/gateway/src/services/extension-service.ts`. DB table: `user_extensions`. API: `/extensions`
 - **Skills (AgentSkills.io)**: Open standard SKILL.md format for agent instructions. Parser: `packages/gateway/src/services/agentskills-parser.ts`. Format field: `'ownpilot' | 'agentskills'`
-- **Test framework**: Vitest across all packages. 306 test files, 9,800+ tests total (gateway: 191 files; core: 105 files; ui: 5 files; cli: 4 files; channels: 2 files)
+- **Test framework**: Vitest across all packages. 306 test files, 9,845+ tests total (gateway: 191 files; core: 105 files; ui: 5 files; cli: 4 files; channels: 2 files)
 
 ## Commands
 
