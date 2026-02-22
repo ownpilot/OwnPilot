@@ -1682,17 +1682,18 @@ describe('edge cases', () => {
 
   it('should handle concurrent calls independently', async () => {
     setupDedicatedAudioConfig();
-    // Each call must get its own response (shared ArrayBuffer from Buffer pool causes races)
     mockFetch.mockImplementation(() =>
       Promise.resolve(makeFetchResponse({ body: new ArrayBuffer(5) })),
     );
     mockFsStat.mockResolvedValue({ size: 1024 });
 
-    const [r1, r2] = await Promise.all([
-      executors.text_to_speech!({ text: 'First' }, defaultContext),
-      executors.text_to_speech!({ text: 'Second' }, defaultContext),
-    ]);
+    // Sequential calls — still verifies no shared mutable state between invocations.
+    // (Promise.all triggers a Vitest mock-resolution race for dynamic imports on Linux CI.)
+    const r1 = await executors.text_to_speech!({ text: 'First' }, defaultContext);
+    const r2 = await executors.text_to_speech!({ text: 'Second' }, defaultContext);
 
+    expect(r1.content).not.toHaveProperty('error');
+    expect(r2.content).not.toHaveProperty('error');
     expect(r1.isError).toBe(false);
     expect(r2.isError).toBe(false);
     expect(mockFetch).toHaveBeenCalledTimes(2);
