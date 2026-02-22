@@ -187,12 +187,13 @@ On error: \`{ content: { error: "message" } }\`
  * GET / - List extensions
  */
 extensionsRoutes.get('/', async (c) => {
+  const userId = getUserId(c);
   const status = c.req.query('status');
   const category = c.req.query('category');
   const format = c.req.query('format'); // 'ownpilot' | 'agentskills'
 
   const service = getExtensionService();
-  let packages = service.getAll();
+  let packages = service.getAll().filter(p => p.userId === userId);
 
   if (format) {
     packages = packages.filter(p => (p.manifest.format ?? 'ownpilot') === format);
@@ -356,12 +357,13 @@ extensionsRoutes.post('/generate', async (c) => {
  * GET /:id - Get package details
  */
 extensionsRoutes.get('/:id', async (c) => {
+  const userId = getUserId(c);
   const id = c.req.param('id');
 
   const service = getExtensionService();
   const pkg = service.getById(id);
 
-  if (!pkg) {
+  if (!pkg || pkg.userId !== userId) {
     return notFoundError(c, 'Extension', id);
   }
 
