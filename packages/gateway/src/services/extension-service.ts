@@ -326,11 +326,12 @@ export class ExtensionService {
           else continue; // Skip unsupported script types
 
           const fullPath = join(skillDir, scriptPath).replace(/\\/g, '/');
+          const safeFullPath = JSON.stringify(fullPath);
           const code = `
             const fs = require('fs');
-            const script = fs.readFileSync('${fullPath}', 'utf-8');
+            const script = fs.readFileSync(${safeFullPath}, 'utf-8');
             const argsJson = JSON.stringify(args);
-            return { content: { script_path: '${fullPath}', exec_tool: '${execTool}', args: argsJson, note: 'Use ${execTool} to run this script with the provided arguments.' } };
+            return { content: { script_path: ${safeFullPath}, exec_tool: ${JSON.stringify(execTool)}, args: argsJson, note: 'Use ${execTool} to run this script with the provided arguments.' } };
           `.trim();
 
           defs.push({

@@ -161,6 +161,11 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+    // GET without valid session
+    return new Response(JSON.stringify({ error: 'Invalid or missing session' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   // For POST requests — create transport per session (or stateless)

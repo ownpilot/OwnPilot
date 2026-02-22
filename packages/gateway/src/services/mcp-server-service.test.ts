@@ -290,14 +290,18 @@ describe('handleMcpRequest — GET', () => {
     expect(mockTransportHandleRequest).toHaveBeenCalledWith(req);
   });
 
-  it('falls through to 405 for GET without session ID', async () => {
+  it('returns 400 for GET without session ID', async () => {
     const res = await handleMcpRequest(makeRequest('GET'));
-    expect(res.status).toBe(405);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('session');
   });
 
-  it('falls through to 405 for GET with unknown session ID', async () => {
+  it('returns 400 for GET with unknown session ID', async () => {
     const res = await handleMcpRequest(makeRequest('GET', 'nonexistent'));
-    expect(res.status).toBe(405);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('session');
   });
 });
 

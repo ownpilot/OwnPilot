@@ -709,11 +709,17 @@ export class Scheduler {
       const timeoutMs = task.timeout ?? this.config.defaultTimeout;
       const executionPromise = this.taskExecutor(task);
 
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Task execution timeout')), timeoutMs);
+        timeoutId = setTimeout(() => reject(new Error('Task execution timeout')), timeoutMs);
       });
 
-      const executionResult = await Promise.race([executionPromise, timeoutPromise]);
+      let executionResult: TaskExecutionResult;
+      try {
+        executionResult = await Promise.race([executionPromise, timeoutPromise]);
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       const completedAt = new Date().toISOString();
       const duration = new Date(completedAt).getTime() - new Date(startedAt).getTime();

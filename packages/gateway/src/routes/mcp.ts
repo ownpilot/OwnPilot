@@ -368,11 +368,12 @@ mcpRoutes.post('/:id/disconnect', async (c) => {
  */
 mcpRoutes.get('/:id/tools', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);
 
-    if (!server) {
+    if (!server || server.userId !== userId) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
     }
 
