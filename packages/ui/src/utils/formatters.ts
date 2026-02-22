@@ -20,6 +20,16 @@ export function formatNumber(
 /**
  * Format bytes to human-readable size (B, KB, MB, GB).
  */
+/**
+ * Strip namespace prefix (e.g. 'core.get_time') and title-case underscored names.
+ */
+export function formatToolName(name: string): string {
+  const base = name.includes('.') ? name.split('.').pop()! : name;
+  return base
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function formatBytes(bytes: number, decimals = 1): string {
   if (bytes === 0) return '0 B';
   const k = 1024;

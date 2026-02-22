@@ -201,6 +201,16 @@ export function parseJsonField<T>(value: unknown, fallback: T): T {
 /**
  * Parse a nullable JSON column. Returns null when the value is null, undefined, or empty.
  */
+/**
+ * Parse a boolean value that may arrive as a real boolean, a string
+ * ('true'/'false'), or a numeric (0/1) depending on the driver.
+ */
+export function parseBool(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value === 'true';
+  return value === 1;
+}
+
 export function parseJsonFieldNullable<T>(value: unknown): T | null {
   if (value == null) return null;
   if (typeof value === 'string') {

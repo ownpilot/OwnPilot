@@ -133,6 +133,11 @@ export class HeartbeatService {
     const existing = await repo.get(id);
     if (!existing) return null;
 
+    // Validate taskDescription if provided
+    if (input.taskDescription !== undefined && !input.taskDescription.trim()) {
+      throw new HeartbeatServiceError('Task description cannot be empty', 'VALIDATION_ERROR');
+    }
+
     let newCron = existing.cron;
     let newScheduleText = existing.scheduleText;
 

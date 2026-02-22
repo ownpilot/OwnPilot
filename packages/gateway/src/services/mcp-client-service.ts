@@ -299,7 +299,13 @@ class McpClientService implements IMcpClientService {
       const executor = async (args: Record<string, unknown>): Promise<ToolExecutionResult> => {
         try {
           const result = await this.callTool(serverName, tool.name, args);
-          return { content: typeof result === 'string' ? result : JSON.stringify(result, null, 2) };
+          let content: string;
+          if (typeof result === 'string') {
+            content = result;
+          } else {
+            try { content = JSON.stringify(result, null, 2); } catch { content = String(result); }
+          }
+          return { content };
         } catch (err) {
           return {
             content: `MCP tool error: ${err instanceof Error ? err.message : String(err)}`,

@@ -182,9 +182,13 @@ export class ExtensionService implements IExtensionService {
       triggerCount: manifest.triggers?.length ?? 0,
     });
 
-    // Create triggers for enabled extensions
+    // Create triggers for enabled extensions (non-fatal — triggers can be retried via reload)
     if (record.status === 'enabled') {
-      await this.activateExtensionTriggers(manifest, userId);
+      try {
+        await this.activateExtensionTriggers(manifest, userId);
+      } catch (e) {
+        log.warn('Failed to activate triggers during install', { id: manifest.id, error: String(e) });
+      }
     }
 
     getEventBus().emit(createEvent<ResourceCreatedData>(

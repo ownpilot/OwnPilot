@@ -93,6 +93,7 @@ vi.mock('../db/repositories/index.js', () => ({
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    upsertForResync: vi.fn(),
   },
   localProvidersRepo: {
     getProviderSync: vi.fn(() => null),
@@ -147,10 +148,15 @@ vi.mock('./custom-tools.js', () => ({
   executeCustomToolTool: vi.fn(),
   executeActiveCustomTool: vi.fn(),
   getActiveCustomToolDefinitions: vi.fn(async () => []),
+}));
+vi.mock('../services/custom-tool-registry.js', () => ({
   getCustomToolDynamicRegistry: vi.fn(() => ({
     has: vi.fn(() => false),
     register: vi.fn(),
   })),
+  syncToolToRegistry: vi.fn(),
+  executeCustomToolUnified: vi.fn(),
+  unregisterToolFromRegistries: vi.fn(),
 }));
 
 vi.mock('../services/tool-executor.js', () => ({
@@ -916,12 +922,11 @@ describe('Agent Routes', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
-      expect(data.data.updated).toBe(0);
-      expect(data.data.created).toBe(0);
+      expect(data.data.synced).toBe(0);
       expect(data.data.total).toBe(0);
     });
 
-    it('should update existing agents from defaults', async () => {
+    it('should upsert agents from defaults', async () => {
       const { getDefaultAgents } = await import('../db/seeds/default-agents.js');
       vi.mocked(getDefaultAgents).mockReturnValue([
         {
@@ -934,9 +939,7 @@ describe('Agent Routes', () => {
         },
       ]);
 
-      const existingRecord = mockAgentRecord({ id: 'default' });
-      vi.mocked(agentsRepo.getById).mockResolvedValue(existingRecord);
-      vi.mocked(agentsRepo.update).mockResolvedValue(existingRecord);
+      vi.mocked(agentsRepo.upsertForResync).mockResolvedValue(undefined);
 
       const res = await app.request('/agents/resync', {
         method: 'POST',
@@ -944,17 +947,16 @@ describe('Agent Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.data.updated).toBe(1);
-      expect(data.data.created).toBe(0);
+      expect(data.data.synced).toBe(1);
       expect(data.data.total).toBe(1);
-      expect(agentsRepo.update).toHaveBeenCalledWith('default', expect.objectContaining({
-        config: expect.objectContaining({
-          toolGroups: ['core', 'memory'],
-        }),
+      expect(agentsRepo.upsertForResync).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'default',
+        name: 'Default Agent',
+        config: { toolGroups: ['core', 'memory'] },
       }));
     });
 
-    it('should create new agents from defaults', async () => {
+    it('should sync new agents from defaults', async () => {
       const { getDefaultAgents } = await import('../db/seeds/default-agents.js');
       vi.mocked(getDefaultAgents).mockReturnValue([
         {
@@ -967,8 +969,7 @@ describe('Agent Routes', () => {
         },
       ]);
 
-      vi.mocked(agentsRepo.getById).mockResolvedValue(null);
-      vi.mocked(agentsRepo.create).mockResolvedValue(mockAgentRecord({ id: 'new-agent' }));
+      vi.mocked(agentsRepo.upsertForResync).mockResolvedValue(undefined);
 
       const res = await app.request('/agents/resync', {
         method: 'POST',
@@ -976,9 +977,8 @@ describe('Agent Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.data.updated).toBe(0);
-      expect(data.data.created).toBe(1);
-      expect(agentsRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(data.data.synced).toBe(1);
+      expect(agentsRepo.upsertForResync).toHaveBeenCalledWith(expect.objectContaining({
         id: 'new-agent',
         name: 'New Default',
       }));
@@ -1005,12 +1005,9 @@ describe('Agent Routes', () => {
         },
       ]);
 
-      vi.mocked(agentsRepo.getById)
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
-      vi.mocked(agentsRepo.create)
+      vi.mocked(agentsRepo.upsertForResync)
         .mockRejectedValueOnce(new Error('Disk full'))
-        .mockResolvedValueOnce(mockAgentRecord({ id: 'success-agent' }));
+        .mockResolvedValueOnce(undefined);
 
       const res = await app.request('/agents/resync', {
         method: 'POST',
@@ -1018,14 +1015,14 @@ describe('Agent Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.data.created).toBe(1);
+      expect(data.data.synced).toBe(1);
       expect(data.data.errors).toBeDefined();
       expect(data.data.errors).toHaveLength(1);
       expect(data.data.errors[0]).toContain('failing-agent');
       expect(data.data.errors[0]).toContain('Disk full');
     });
 
-    it('should handle mixed updates and creates', async () => {
+    it('should handle multiple agents', async () => {
       const { getDefaultAgents } = await import('../db/seeds/default-agents.js');
       vi.mocked(getDefaultAgents).mockReturnValue([
         {
@@ -1046,11 +1043,7 @@ describe('Agent Routes', () => {
         },
       ]);
 
-      vi.mocked(agentsRepo.getById)
-        .mockResolvedValueOnce(mockAgentRecord({ id: 'existing-1' }))
-        .mockResolvedValueOnce(null);
-      vi.mocked(agentsRepo.update).mockResolvedValue(mockAgentRecord());
-      vi.mocked(agentsRepo.create).mockResolvedValue(mockAgentRecord({ id: 'new-1' }));
+      vi.mocked(agentsRepo.upsertForResync).mockResolvedValue(undefined);
 
       const res = await app.request('/agents/resync', {
         method: 'POST',
@@ -1058,8 +1051,7 @@ describe('Agent Routes', () => {
 
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.data.updated).toBe(1);
-      expect(data.data.created).toBe(1);
+      expect(data.data.synced).toBe(2);
       expect(data.data.total).toBe(2);
       expect(data.data.errors).toBeUndefined();
     });

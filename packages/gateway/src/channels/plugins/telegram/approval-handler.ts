@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { InlineKeyboard } from 'grammy';
 import type { Bot } from 'grammy';
 import { getLog } from '../../../services/log.js';
+import { escapeHtml } from '../../utils/markdown-telegram.js';
 
 const log = getLog('TelegramApproval');
 
@@ -37,7 +38,9 @@ export function registerApprovalHandler(bot: Bot): void {
       return next();
     }
 
-    const [action, id] = data.split(':') as [string, string];
+    const colonIdx = data.indexOf(':');
+    const action = data.slice(0, colonIdx);
+    const id = data.slice(colonIdx + 1);
     const entry = pending.get(id);
 
     if (!entry) {
@@ -152,13 +155,6 @@ export function clearPendingApprovals(): void {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
 
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;

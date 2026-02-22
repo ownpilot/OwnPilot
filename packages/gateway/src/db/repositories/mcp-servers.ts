@@ -5,7 +5,7 @@
  * Supports stdio, SSE, and Streamable HTTP transports.
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('McpServersRepo');
@@ -95,13 +95,6 @@ export interface UpdateMcpServerInput {
 // HELPERS
 // =============================================================================
 
-function parseJsonb<T>(raw: unknown, fallback: T): T {
-  if (raw == null) return fallback;
-  if (typeof raw === 'string') {
-    try { return JSON.parse(raw) as T; } catch { return fallback; }
-  }
-  return raw as T;
-}
 
 function rowToRecord(row: McpServerRow): McpServerRecord {
   return {
@@ -111,16 +104,16 @@ function rowToRecord(row: McpServerRow): McpServerRecord {
     displayName: row.display_name,
     transport: row.transport as McpTransport,
     command: row.command ?? undefined,
-    args: parseJsonb<string[]>(row.args, []),
-    env: parseJsonb<Record<string, string>>(row.env, {}),
+    args: parseJsonField<string[]>(row.args, []),
+    env: parseJsonField<Record<string, string>>(row.env, {}),
     url: row.url ?? undefined,
-    headers: parseJsonb<Record<string, string>>(row.headers, {}),
+    headers: parseJsonField<Record<string, string>>(row.headers, {}),
     enabled: Boolean(row.enabled),
     autoConnect: Boolean(row.auto_connect),
     status: row.status as McpStatus,
     errorMessage: row.error_message ?? undefined,
     toolCount: row.tool_count,
-    metadata: parseJsonb<Record<string, unknown>>(row.metadata, {}),
+    metadata: parseJsonField<Record<string, unknown>>(row.metadata, {}),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

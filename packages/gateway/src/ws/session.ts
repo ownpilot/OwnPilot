@@ -13,15 +13,13 @@ import {
   WS_RATE_LIMIT_MESSAGES_PER_SEC,
   WS_RATE_LIMIT_BURST,
   WS_MAX_METADATA_VALUE_BYTES,
+  WS_MAX_METADATA_KEY_LENGTH,
+  WS_READY_STATE_OPEN,
 } from '../config/defaults.js';
 
 const log = getLog('SessionManager');
-import {
-  hasServiceRegistry,
-  getServiceRegistry,
-  Services,
-  type ISessionService,
-} from '@ownpilot/core';
+import { Services, type ISessionService } from '@ownpilot/core';
+import { tryGetService } from '../services/service-helpers.js';
 
 /**
  * Token bucket state for per-session rate limiting
@@ -39,18 +37,9 @@ interface ManagedSession extends Session {
   rateLimitBucket: RateLimitBucket;
 }
 
-/**
- * Try to get ISessionService from the registry (returns null if unavailable).
- */
+/** Try to get ISessionService from the registry (returns null if unavailable). */
 function tryGetSessionService(): ISessionService | null {
-  if (hasServiceRegistry()) {
-    try {
-      return getServiceRegistry().get(Services.Session);
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return tryGetService(Services.Session);
 }
 
 /**
@@ -191,8 +180,8 @@ export class SessionManager {
     const session = this.sessions.get(sessionId);
     if (!session) return;
 
-    // Enforce key length limit (max 100 chars)
-    if (key.length > 100) return;
+    // Enforce key length limit
+    if (key.length > WS_MAX_METADATA_KEY_LENGTH) return;
 
     // Enforce value size limit
     try {
@@ -247,7 +236,7 @@ export class SessionManager {
     payload: ServerEvents[K]
   ): boolean {
     const session = this.sessions.get(sessionId);
-    if (session && session.socket.readyState === 1) {
+    if (session && session.socket.readyState === WS_READY_STATE_OPEN) {
       const message: WSMessage<ServerEvents[K]> = {
         type: event,
         payload,
@@ -282,7 +271,7 @@ export class SessionManager {
 
     const stale: string[] = [];
     for (const session of this.sessions.values()) {
-      if (session.socket.readyState === 1) {
+      if (session.socket.readyState === WS_READY_STATE_OPEN) {
         try {
           session.socket.send(data);
           count++;
@@ -318,7 +307,7 @@ export class SessionManager {
 
     const stale: string[] = [];
     for (const session of this.sessions.values()) {
-      if (session.channels.has(channelId) && session.socket.readyState === 1) {
+      if (session.channels.has(channelId) && session.socket.readyState === WS_READY_STATE_OPEN) {
         try {
           session.socket.send(data);
           count++;

@@ -47,6 +47,79 @@ const statusIcons: Partial<Record<NodeExecutionStatus, React.ComponentType<{ cla
   skipped: AlertCircle,
 };
 
+// ============================================================================
+// Retry & Timeout constants
+// ============================================================================
+
+const RETRY_OPTIONS = [
+  { value: 0, label: 'No retry' },
+  { value: 1, label: '1x' },
+  { value: 2, label: '2x' },
+  { value: 3, label: '3x' },
+  { value: 5, label: '5x' },
+] as const;
+
+const TIMEOUT_OPTIONS = [
+  { value: 0, label: 'No limit' },
+  { value: 5000, label: '5s' },
+  { value: 10000, label: '10s' },
+  { value: 30000, label: '30s' },
+  { value: 60000, label: '1m' },
+  { value: 120000, label: '2m' },
+  { value: 300000, label: '5m' },
+] as const;
+
+function RetryTimeoutFields({ data, nodeId, onUpdate }: {
+  data: Record<string, unknown>;
+  nodeId: string;
+  onUpdate: (id: string, data: Record<string, unknown>) => void;
+}) {
+  return (
+    <div className="space-y-2 pt-3 border-t border-border dark:border-dark-border">
+      <div className="text-[10px] font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wider">
+        Error Handling
+      </div>
+      <div className="flex items-center justify-between">
+        <label className="text-xs text-text-secondary dark:text-dark-text-secondary">Retry on failure</label>
+        <select
+          value={(data.retryCount as number) ?? 0}
+          onChange={(e) => onUpdate(nodeId, { ...data, retryCount: Number(e.target.value) || undefined })}
+          className="px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          {RETRY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center justify-between">
+        <label className="text-xs text-text-secondary dark:text-dark-text-secondary">Timeout</label>
+        <select
+          value={(data.timeoutMs as number) ?? 0}
+          onChange={(e) => onUpdate(nodeId, { ...data, timeoutMs: Number(e.target.value) || undefined })}
+          className="px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          {TIMEOUT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function RetryAttemptsDisplay({ retryAttempts, status }: { retryAttempts: number; status: string }) {
+  const label = status === 'success'
+    ? `Succeeded after ${retryAttempts} ${retryAttempts === 1 ? 'retry' : 'retries'}`
+    : `Failed after ${retryAttempts} ${retryAttempts === 1 ? 'retry' : 'retries'}`;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${
+      status === 'success' ? 'bg-warning/10 text-warning' : 'bg-error/10 text-error'
+    }`}>
+      {label}
+    </span>
+  );
+}
+
 /** Module-level cache — persists for the page lifetime */
 const schemaCache = new Map<string, ToolParams>();
 
@@ -267,6 +340,9 @@ function ToolConfigPanel({
                         : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
                     </span>
                   )}
+                  {(data.retryAttempts as number) > 0 && (
+                    <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                  )}
                 </>
               );
             })()}
@@ -428,6 +504,8 @@ function ToolConfigPanel({
                 onInsert={injectTemplate}
               />
             )}
+
+            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
           </div>
 
           {/* Test Run + Delete */}
@@ -879,6 +957,9 @@ function LlmConfigPanel({
                         : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
                     </span>
                   )}
+                  {(data.retryAttempts as number) > 0 && (
+                    <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                  )}
                 </>
               );
             })()}
@@ -1161,6 +1242,8 @@ function LlmConfigPanel({
                 onInsert={injectTemplate}
               />
             )}
+
+            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
           </div>
 
           {/* Delete */}
@@ -1281,6 +1364,9 @@ function ConditionConfigPanel({
                         : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
                     </span>
                   )}
+                  {(data.retryAttempts as number) > 0 && (
+                    <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                  )}
                 </>
               );
             })()}
@@ -1377,6 +1463,8 @@ function ConditionConfigPanel({
             {upstreamNodes.length > 0 && (
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
+
+            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
           </div>
 
           <div className="p-3 border-t border-border dark:border-dark-border">
@@ -1502,6 +1590,9 @@ function CodeConfigPanel({
                       {(data.executionDuration as number) < 1000 ? `${data.executionDuration}ms` : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
                     </span>
                   )}
+                  {(data.retryAttempts as number) > 0 && (
+                    <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                  )}
                 </>
               );
             })()}
@@ -1558,6 +1649,7 @@ function CodeConfigPanel({
                 className={`${INPUT_CLS} resize-none`} placeholder="Optional description..." />
             </div>
             {upstreamNodes.length > 0 && <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />}
+            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
           </div>
           <div className="p-3 border-t border-border dark:border-dark-border">
             <button onClick={() => onDelete(node.id)} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-error bg-error/10 hover:bg-error/20 rounded-md transition-colors">
@@ -1659,6 +1751,9 @@ function TransformerConfigPanel({
                       {(data.executionDuration as number) < 1000 ? `${data.executionDuration}ms` : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
                     </span>
                   )}
+                  {(data.retryAttempts as number) > 0 && (
+                    <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                  )}
                 </>
               );
             })()}
@@ -1724,6 +1819,7 @@ function TransformerConfigPanel({
                 className={`${INPUT_CLS} resize-none`} placeholder="Optional: what does this transformation do?" />
             </div>
             {upstreamNodes.length > 0 && <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />}
+            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
           </div>
           <div className="p-3 border-t border-border dark:border-dark-border">
             <button onClick={() => onDelete(node.id)} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-error bg-error/10 hover:bg-error/20 rounded-md transition-colors">
@@ -1818,16 +1914,23 @@ function ForEachConfigPanel({
       {activeTab === 'results' ? (
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {/* Status badge */}
-          <div>
-            <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Status</label>
-            <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-              data.executionStatus === 'success' ? 'bg-success/20 text-success' :
-              data.executionStatus === 'error' ? 'bg-error/20 text-error' :
-              data.executionStatus === 'running' ? 'bg-warning/20 text-warning' :
-              'bg-text-muted/20 text-text-muted'
-            }`}>
-              {String(data.executionStatus ?? 'pending')}
-            </span>
+          <div className="flex items-center gap-2">
+            <div>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Status</label>
+              <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                data.executionStatus === 'success' ? 'bg-success/20 text-success' :
+                data.executionStatus === 'error' ? 'bg-error/20 text-error' :
+                data.executionStatus === 'running' ? 'bg-warning/20 text-warning' :
+                'bg-text-muted/20 text-text-muted'
+              }`}>
+                {String(data.executionStatus ?? 'pending')}
+              </span>
+            </div>
+            {(data.retryAttempts as number) > 0 && (
+              <div className="pt-4">
+                <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+              </div>
+            )}
           </div>
 
           {/* Iteration count */}
@@ -2007,6 +2110,8 @@ function ForEachConfigPanel({
             {upstreamNodes.length > 0 && (
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
+
+            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
           </div>
 
           {/* Delete */}

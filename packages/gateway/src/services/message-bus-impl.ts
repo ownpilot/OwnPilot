@@ -144,9 +144,11 @@ export class MessageBus implements IMessageBus {
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
 
-        // Notify stream callbacks of error
-        const stream = ctx.get<StreamCallbacks>('stream');
-        stream?.onError?.(err);
+        // Notify stream callbacks of error (guard against callback throwing)
+        try {
+          const stream = ctx.get<StreamCallbacks>('stream');
+          stream?.onError?.(err);
+        } catch { /* stream callback error should not override pipeline error */ }
 
         return {
           response: {

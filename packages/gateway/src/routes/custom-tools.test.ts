@@ -63,8 +63,18 @@ const mockDynamicRegistry = {
   execute: vi.fn(async () => ({ content: 'result data', isError: false, metadata: {} })),
 };
 
+const mockSyncToolToRegistry = vi.fn();
+const mockExecuteCustomToolUnified = vi.fn(async () => ({ content: 'result data', isError: false, metadata: {} }));
+const mockUnregisterToolFromRegistries = vi.fn();
+
 vi.mock('../db/repositories/custom-tools.js', () => ({
   createCustomToolsRepo: vi.fn(() => mockRepo),
+}));
+
+vi.mock('../services/custom-tool-registry.js', () => ({
+  syncToolToRegistry: (...args: unknown[]) => mockSyncToolToRegistry(...args),
+  executeCustomToolUnified: (...args: unknown[]) => mockExecuteCustomToolUnified(...args),
+  unregisterToolFromRegistries: (...args: unknown[]) => mockUnregisterToolFromRegistries(...args),
 }));
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
@@ -215,6 +225,7 @@ describe('Custom Tools Routes', () => {
       id === 'ct_002' ? { ...pendingTool, status: 'rejected' } : null
     );
     mockDynamicRegistry.execute.mockResolvedValue({ content: 'result data', isError: false, metadata: {} });
+    mockExecuteCustomToolUnified.mockResolvedValue({ content: 'result data', isError: false, metadata: {} });
     app = createApp();
   });
 
@@ -418,7 +429,7 @@ describe('Custom Tools Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.deleted).toBe(true);
-      expect(mockDynamicRegistry.unregister).toHaveBeenCalledWith('test_tool');
+      expect(mockUnregisterToolFromRegistries).toHaveBeenCalledWith('test_tool');
     });
 
     it('returns 404 for unknown tool', async () => {
@@ -1006,11 +1017,11 @@ describe('Custom Tools Routes', () => {
       expect(json.data.name).toBe('valid_name_123');
     });
 
-    it('DELETE unregisters tool from dynamic registry', async () => {
+    it('DELETE unregisters tool from registries', async () => {
       const res = await app.request('/custom-tools/ct_001', { method: 'DELETE' });
 
       expect(res.status).toBe(200);
-      expect(mockDynamicRegistry.unregister).toHaveBeenCalledWith('test_tool');
+      expect(mockUnregisterToolFromRegistries).toHaveBeenCalledWith('test_tool');
     });
 
     it('POST execute records usage after execution', async () => {

@@ -73,7 +73,7 @@ describe('ToolService', () => {
       await svc.execute('tool_a', {});
 
       const [toolCall] = mockExecuteToolCall.mock.calls[0];
-      expect(toolCall.id).toMatch(/^call_\d+$/);
+      expect(toolCall.id).toMatch(/^call_[0-9a-f-]+$/);
     });
 
     it('returns string content as-is', async () => {

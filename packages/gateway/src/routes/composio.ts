@@ -9,7 +9,7 @@
 import { Hono } from 'hono';
 import { composioService } from '../services/composio-service.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage, getIntParam } from './helpers.js';
 
 const log = getLog('ComposioRoutes');
 
@@ -168,7 +168,7 @@ composioRoutes.get('/actions/search', async (c) => {
   try {
     const query = c.req.query('q') ?? '';
     const app = c.req.query('app');
-    const limit = parseInt(c.req.query('limit') ?? '10', 10);
+    const limit = getIntParam(c, 'limit', 10, 1, 100);
 
     if (!query) {
       return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Missing required query parameter: q' }, 400);

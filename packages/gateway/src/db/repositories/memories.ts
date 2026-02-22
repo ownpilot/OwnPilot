@@ -5,7 +5,7 @@
  * Stores facts, preferences, conversation summaries, and events.
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import type { StandardQuery } from './interfaces.js';
 import {
   getEventBus,
@@ -80,19 +80,6 @@ interface MemoryRow {
   updated_at: string;
   accessed_at: string | null;
   metadata: string;
-}
-
-function parseJsonField<T>(value: unknown, defaultValue: T): T {
-  if (value === null || value === undefined) return defaultValue;
-  if (typeof value === 'object') return value as T; // Already parsed (PostgreSQL JSONB)
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value) as T;
-    } catch {
-      return defaultValue;
-    }
-  }
-  return defaultValue;
 }
 
 function parseEmbedding(value: number[] | string | null): number[] | undefined {

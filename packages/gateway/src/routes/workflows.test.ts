@@ -74,6 +74,7 @@ vi.mock('./workflow-copilot.js', () => ({
 // Import after mocks
 const { workflowRoutes } = await import('./workflows.js');
 const { topologicalSort: mockTopologicalSort } = await import('../services/workflow-service.js');
+const { validateBody: mockValidateBody } = await import('../middleware/validation.js');
 
 // ---------------------------------------------------------------------------
 // App setup
@@ -653,6 +654,134 @@ describe('Workflow Routes', () => {
 
       const json = await res.json() as { data: string[] };
       expect(json.data).toEqual(['real_tool']);
+    });
+  });
+
+  // ========================================================================
+  // retryCount / timeoutMs validation
+  // ========================================================================
+
+  describe('retryCount / timeoutMs validation', () => {
+    beforeEach(async () => {
+      // Use real validation for these tests
+      const actual = await vi.importActual<typeof import('../middleware/validation.js')>('../middleware/validation.js');
+      vi.mocked(mockValidateBody).mockImplementation(
+        (_schema, body) => actual.validateBody(actual.createWorkflowSchema, body),
+      );
+    });
+
+    it('accepts valid retryCount and timeoutMs on tool nodes', async () => {
+      mockRepo.create.mockResolvedValue(sampleWorkflow);
+      vi.mocked(mockTopologicalSort).mockReturnValue([['n1']]);
+
+      const res = await app.request('/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Retry Test',
+          nodes: [{
+            id: 'n1', type: 'toolNode',
+            position: { x: 0, y: 0 },
+            data: { toolName: 'test', toolArgs: {}, label: 'T', retryCount: 3, timeoutMs: 60000 },
+          }],
+          edges: [],
+        }),
+      });
+
+      expect(res.status).toBe(201);
+    });
+
+    it('rejects retryCount > 5', async () => {
+      const res = await app.request('/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Bad Retry',
+          nodes: [{
+            id: 'n1', type: 'toolNode',
+            position: { x: 0, y: 0 },
+            data: { toolName: 'test', toolArgs: {}, label: 'T', retryCount: 6 },
+          }],
+          edges: [],
+        }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects retryCount < 0', async () => {
+      const res = await app.request('/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Negative Retry',
+          nodes: [{
+            id: 'n1', type: 'toolNode',
+            position: { x: 0, y: 0 },
+            data: { toolName: 'test', toolArgs: {}, label: 'T', retryCount: -1 },
+          }],
+          edges: [],
+        }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects timeoutMs > 300000', async () => {
+      const res = await app.request('/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Bad Timeout',
+          nodes: [{
+            id: 'n1', type: 'toolNode',
+            position: { x: 0, y: 0 },
+            data: { toolName: 'test', toolArgs: {}, label: 'T', timeoutMs: 400000 },
+          }],
+          edges: [],
+        }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects timeoutMs < 0', async () => {
+      const res = await app.request('/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Negative Timeout',
+          nodes: [{
+            id: 'n1', type: 'toolNode',
+            position: { x: 0, y: 0 },
+            data: { toolName: 'test', toolArgs: {}, label: 'T', timeoutMs: -1 },
+          }],
+          edges: [],
+        }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('accepts retryCount and timeoutMs on LLM nodes', async () => {
+      mockRepo.create.mockResolvedValue(sampleWorkflow);
+      vi.mocked(mockTopologicalSort).mockReturnValue([['n1']]);
+
+      const res = await app.request('/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'LLM Retry',
+          nodes: [{
+            id: 'n1', type: 'llmNode',
+            position: { x: 0, y: 0 },
+            data: { label: 'AI', provider: 'openai', model: 'gpt-4', userMessage: 'Hi', retryCount: 2, timeoutMs: 30000 },
+          }],
+          edges: [],
+        }),
+      });
+
+      expect(res.status).toBe(201);
     });
   });
 });

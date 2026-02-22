@@ -33,6 +33,8 @@ vi.mock('./custom-tools.js', () => ({
   executeCustomToolTool: vi.fn(),
   executeActiveCustomTool: vi.fn(),
   getActiveCustomToolDefinitions: vi.fn().mockResolvedValue([]),
+}));
+vi.mock('../services/custom-tool-registry.js', () => ({
   getCustomToolDynamicRegistry: vi.fn(),
 }));
 vi.mock('../services/tool-source.js', () => ({ getToolSource: vi.fn() }));

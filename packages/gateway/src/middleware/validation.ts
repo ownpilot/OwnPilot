@@ -460,6 +460,8 @@ const toolNodeDataSchema = z.object({
   toolArgs: z.record(z.string(), z.unknown()).default({}),
   label: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
+  retryCount: z.number().int().min(0).max(5).optional(),
+  timeoutMs: z.number().int().min(0).max(300000).optional(),
 });
 
 const triggerNodeDataSchema = z.object({
@@ -487,12 +489,16 @@ const llmNodeDataSchema = z.object({
   maxTokens: z.number().int().min(1).max(128000).optional(),
   apiKey: z.string().max(500).optional(),
   baseUrl: z.string().max(2048).optional(),
+  retryCount: z.number().int().min(0).max(5).optional(),
+  timeoutMs: z.number().int().min(0).max(300000).optional(),
 });
 
 const conditionNodeDataSchema = z.object({
   label: z.string().min(1).max(200),
   expression: z.string().max(10000),
   description: z.string().max(2000).optional(),
+  retryCount: z.number().int().min(0).max(5).optional(),
+  timeoutMs: z.number().int().min(0).max(300000).optional(),
 });
 
 const codeNodeDataSchema = z.object({
@@ -500,12 +506,16 @@ const codeNodeDataSchema = z.object({
   language: z.enum(['javascript', 'python', 'shell']),
   code: z.string().max(100000),
   description: z.string().max(2000).optional(),
+  retryCount: z.number().int().min(0).max(5).optional(),
+  timeoutMs: z.number().int().min(0).max(300000).optional(),
 });
 
 const transformerNodeDataSchema = z.object({
   label: z.string().min(1).max(200),
   expression: z.string().max(50000),
   description: z.string().max(2000).optional(),
+  retryCount: z.number().int().min(0).max(5).optional(),
+  timeoutMs: z.number().int().min(0).max(300000).optional(),
 });
 
 const forEachNodeDataSchema = z.object({
@@ -515,6 +525,8 @@ const forEachNodeDataSchema = z.object({
   maxIterations: z.number().int().min(1).max(1000).optional(),
   onError: z.enum(['stop', 'continue']).optional(),
   description: z.string().max(2000).optional(),
+  retryCount: z.number().int().min(0).max(5).optional(),
+  timeoutMs: z.number().int().min(0).max(300000).optional(),
 });
 
 const workflowNodeDataSchema = z.union([

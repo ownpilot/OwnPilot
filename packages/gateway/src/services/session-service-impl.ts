@@ -211,7 +211,7 @@ export class SessionService implements ISessionService {
   }
 
   private channelKey(pluginId: string, chatId: string): string {
-    return `${pluginId}:${chatId}`;
+    return `${pluginId}\0${chatId}`;
   }
 }
 

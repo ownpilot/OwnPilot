@@ -6,7 +6,7 @@
  * PluginsRepository and ConfigServicesRepository).
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import { getLog } from '../../services/log.js';
 import type { ExtensionManifest, ExtensionFormat } from '../../services/extension-types.js';
 
@@ -92,18 +92,6 @@ let cacheInitialized = false;
 // ROW-TO-MODEL CONVERSION
 // =============================================================================
 
-function parseJsonb<T>(raw: unknown, fallback: T): T {
-  if (raw == null) return fallback;
-  if (typeof raw === 'string') {
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      return fallback;
-    }
-  }
-  return raw as T;
-}
-
 function rowToRecord(row: ExtensionRow): ExtensionRecord {
   return {
     id: row.id,
@@ -115,10 +103,10 @@ function rowToRecord(row: ExtensionRow): ExtensionRecord {
     format: (row.format ?? 'ownpilot') as ExtensionRecord['format'],
     icon: row.icon ?? undefined,
     authorName: row.author_name ?? undefined,
-    manifest: parseJsonb<ExtensionManifest>(row.manifest, { id: '', name: '', version: '', description: '', tools: [] }),
+    manifest: parseJsonField<ExtensionManifest>(row.manifest, { id: '', name: '', version: '', description: '', tools: [] }),
     status: row.status as ExtensionRecord['status'],
     sourcePath: row.source_path ?? undefined,
-    settings: parseJsonb<Record<string, unknown>>(row.settings, {}),
+    settings: parseJsonField<Record<string, unknown>>(row.settings, {}),
     errorMessage: row.error_message ?? undefined,
     toolCount: row.tool_count,
     triggerCount: row.trigger_count,

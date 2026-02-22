@@ -21,6 +21,8 @@ export interface ToolNodeData {
   toolArgs: Record<string, unknown>;
   label: string;
   description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export interface TriggerNodeData {
@@ -48,6 +50,8 @@ export interface LlmNodeData {
   maxTokens?: number;
   apiKey?: string;
   baseUrl?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export interface ConditionNodeData {
@@ -55,6 +59,8 @@ export interface ConditionNodeData {
   /** JS expression evaluated against upstream outputs — must return truthy/falsy */
   expression: string;
   description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export interface CodeNodeData {
@@ -63,6 +69,8 @@ export interface CodeNodeData {
   /** The script source code */
   code: string;
   description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export interface TransformerNodeData {
@@ -70,6 +78,8 @@ export interface TransformerNodeData {
   /** JS expression that transforms input data. `data` variable holds upstream output. */
   expression: string;
   description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export interface ForEachNodeData {
@@ -83,6 +93,8 @@ export interface ForEachNodeData {
   /** Error strategy: 'stop' aborts on first error, 'continue' collects errors */
   onError?: 'stop' | 'continue';
   description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export type WorkflowNodeData = ToolNodeData | TriggerNodeData | LlmNodeData
@@ -133,6 +145,8 @@ export interface NodeResult {
   iterationCount?: number;
   /** For forEach nodes: total items in the source array */
   totalItems?: number;
+  /** Number of retry attempts (0 = succeeded on first try) */
+  retryAttempts?: number;
 }
 
 export interface WorkflowLog {

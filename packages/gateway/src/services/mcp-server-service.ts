@@ -52,6 +52,7 @@ function startSessionCleanup(): void {
       }
     }
   }, SESSION_CLEANUP_INTERVAL_MS);
+  cleanupTimer.unref();
 }
 
 function touchSession(sid: string): void {

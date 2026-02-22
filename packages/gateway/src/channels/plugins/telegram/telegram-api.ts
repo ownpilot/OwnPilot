@@ -402,7 +402,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         const msgId = message.replyToId.includes(':')
           ? message.replyToId.split(':').pop()
           : message.replyToId;
-        if (msgId && !isNaN(Number(msgId))) {
+        if (msgId && !Number.isNaN(Number(msgId))) {
           options.reply_parameters = { message_id: Number(msgId) };
         }
       }

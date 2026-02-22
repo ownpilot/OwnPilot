@@ -1021,6 +1021,8 @@ export interface WorkflowToolNodeData {
   toolArgs: Record<string, unknown>;
   label: string;
   description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export interface WorkflowTriggerNodeData {
@@ -1045,12 +1047,16 @@ export interface WorkflowLlmNodeData {
   maxTokens?: number;
   apiKey?: string;
   baseUrl?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export interface WorkflowConditionNodeData {
   label: string;
   expression: string;
   description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export interface WorkflowCodeNodeData {
@@ -1058,12 +1064,16 @@ export interface WorkflowCodeNodeData {
   language: 'javascript' | 'python' | 'shell';
   code: string;
   description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export interface WorkflowTransformerNodeData {
   label: string;
   expression: string;
   description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export interface WorkflowForEachNodeData {
@@ -1073,6 +1083,8 @@ export interface WorkflowForEachNodeData {
   maxIterations?: number;
   onError?: 'stop' | 'continue';
   description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
 export type WorkflowNodeData = WorkflowToolNodeData | WorkflowTriggerNodeData | WorkflowLlmNodeData
@@ -1117,6 +1129,7 @@ export interface NodeResult {
   durationMs?: number;
   startedAt?: string;
   completedAt?: string;
+  retryAttempts?: number;
 }
 
 export interface WorkflowLog {
@@ -1132,7 +1145,7 @@ export interface WorkflowLog {
 }
 
 export interface WorkflowProgressEvent {
-  type: 'node_start' | 'node_complete' | 'node_error' | 'done' | 'error'
+  type: 'node_start' | 'node_complete' | 'node_error' | 'node_retry' | 'done' | 'error'
     | 'foreach_iteration_start' | 'foreach_iteration_complete';
   nodeId?: string;
   toolName?: string;
@@ -1146,4 +1159,5 @@ export interface WorkflowProgressEvent {
   logStatus?: WorkflowLogStatus;
   iterationIndex?: number;
   iterationTotal?: number;
+  retryAttempt?: number;
 }

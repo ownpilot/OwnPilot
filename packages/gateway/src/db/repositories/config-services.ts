@@ -10,7 +10,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { BaseRepository, parseJsonField } from './base.js';
+import { BaseRepository, parseJsonField, parseBool } from './base.js';
 import type {
   ConfigFieldDefinition,
   ConfigServiceRequiredBy,
@@ -102,15 +102,6 @@ let cacheInitialized = false;
 // ROW-TO-MODEL CONVERSION
 // =============================================================================
 
-/**
- * Parse a boolean value that may arrive as a real boolean, a string
- * ('true'/'false'), or a numeric (0/1) depending on the driver.
- */
-function parseBool(value: unknown): boolean {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'string') return value === 'true';
-  return value === 1;
-}
 
 function rowToService(row: ConfigServiceRow): ConfigServiceDefinition {
   return {

@@ -21,7 +21,7 @@ import {
   type WorkflowLog,
   type WorkflowLogStatus,
 } from '../db/repositories/workflows.js';
-import { createProvider, type ProviderConfig, type IWorkflowService } from '@ownpilot/core';
+import { createProvider, type ProviderConfig, type IWorkflowService, sleep, withTimeout } from '@ownpilot/core';
 import { executeTool, getSharedToolRegistry, type ToolExecutionResult } from './tool-executor.js';
 import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from './log.js';
@@ -34,7 +34,7 @@ const _log = getLog('WorkflowService');
 // ============================================================================
 
 export interface WorkflowProgressEvent {
-  type: 'node_start' | 'node_complete' | 'node_error' | 'done' | 'error'
+  type: 'node_start' | 'node_complete' | 'node_error' | 'node_retry' | 'done' | 'error'
     | 'foreach_iteration_start' | 'foreach_iteration_complete';
   nodeId?: string;
   toolName?: string;
@@ -50,6 +50,8 @@ export interface WorkflowProgressEvent {
   iterationIndex?: number;
   /** ForEach: total items being iterated */
   iterationTotal?: number;
+  /** Retry: current attempt number (1-based) */
+  retryAttempt?: number;
 }
 
 // ============================================================================
@@ -370,40 +372,47 @@ export class WorkflowService implements IWorkflowService {
 
             if (node.type === 'forEachNode') {
               onProgress?.({ type: 'node_start', nodeId, toolName: 'forEach' });
-              return await this.executeForEachNode(
-                node, nodeOutputs, workflow.variables, workflow.edges,
-                nodeMap, userId, abortController.signal, onProgress, repo, wfLog.id,
-              );
+              return await this.executeWithRetryAndTimeout(node,
+                () => this.executeForEachNode(node, nodeOutputs, workflow.variables, workflow.edges,
+                  nodeMap, userId, abortController.signal, onProgress, repo, wfLog.id),
+                onProgress);
             }
 
             if (node.type === 'llmNode') {
               onProgress?.({ type: 'node_start', nodeId, toolName: `llm:${(node.data as LlmNodeData).provider}` });
-              return await this.executeLlmNode(node, nodeOutputs, workflow.variables);
+              return await this.executeWithRetryAndTimeout(node,
+                () => this.executeLlmNode(node, nodeOutputs, workflow.variables),
+                onProgress);
             }
 
             if (node.type === 'conditionNode') {
               onProgress?.({ type: 'node_start', nodeId, toolName: 'condition' });
-              return this.executeConditionNode(node, nodeOutputs, workflow.variables);
+              return await this.executeWithRetryAndTimeout(node,
+                async () => this.executeConditionNode(node, nodeOutputs, workflow.variables),
+                onProgress);
             }
 
             if (node.type === 'codeNode') {
               const cd = node.data as CodeNodeData;
               onProgress?.({ type: 'node_start', nodeId, toolName: `code:${cd.language}` });
-              return await this.executeCodeNode(node, nodeOutputs, workflow.variables, userId);
+              return await this.executeWithRetryAndTimeout(node,
+                () => this.executeCodeNode(node, nodeOutputs, workflow.variables, userId),
+                onProgress);
             }
 
             if (node.type === 'transformerNode') {
               onProgress?.({ type: 'node_start', nodeId, toolName: 'transformer' });
-              return this.executeTransformerNode(node, nodeOutputs, workflow.variables);
+              return await this.executeWithRetryAndTimeout(node,
+                async () => this.executeTransformerNode(node, nodeOutputs, workflow.variables),
+                onProgress);
             }
 
             const toolData = node.data as ToolNodeData;
             onProgress?.({ type: 'node_start', nodeId, toolName: toolData.toolName });
 
-            const result = await this.executeNode(
-              node, nodeOutputs, workflow.variables, userId
-            );
-            return result;
+            return await this.executeWithRetryAndTimeout(node,
+              () => this.executeNode(node, nodeOutputs, workflow.variables, userId),
+              onProgress);
           })
         );
 
@@ -537,6 +546,58 @@ export class WorkflowService implements IWorkflowService {
    */
   isRunning(workflowId: string): boolean {
     return this.activeExecutions.has(workflowId);
+  }
+
+  /**
+   * Wrap a node execution with optional retry and timeout.
+   * Retries with exponential backoff on error. Timeout wraps async execution.
+   * For condition/transformer nodes (sync vm), timeout is handled via vm options — skip outer timeout.
+   */
+  private async executeWithRetryAndTimeout(
+    node: WorkflowNode,
+    executeFn: () => Promise<NodeResult>,
+    onProgress?: (event: WorkflowProgressEvent) => void,
+  ): Promise<NodeResult> {
+    const data = node.data as unknown as Record<string, unknown>;
+    const retryCount = (typeof data.retryCount === 'number' ? data.retryCount : 0);
+    const timeoutMs = (typeof data.timeoutMs === 'number' ? data.timeoutMs : 0);
+    const isVmNode = node.type === 'conditionNode' || node.type === 'transformerNode';
+
+    let lastResult!: NodeResult;
+
+    for (let attempt = 0; attempt <= retryCount; attempt++) {
+      if (attempt > 0) {
+        const delay = Math.min(100 * Math.pow(2, attempt - 1), 5000);
+        onProgress?.({ type: 'node_retry', nodeId: node.id, retryAttempt: attempt });
+        await sleep(delay);
+      }
+
+      const attemptStart = Date.now();
+      try {
+        if (timeoutMs > 0 && !isVmNode) {
+          lastResult = await withTimeout(executeFn(), timeoutMs);
+        } else {
+          lastResult = await executeFn();
+        }
+      } catch (error) {
+        lastResult = {
+          nodeId: node.id,
+          status: 'error',
+          error: getErrorMessage(error, 'Node execution failed'),
+          durationMs: Date.now() - attemptStart,
+          startedAt: new Date(attemptStart).toISOString(),
+          completedAt: new Date().toISOString(),
+        };
+      }
+
+      if (lastResult.status !== 'error') {
+        lastResult.retryAttempts = attempt;
+        return lastResult;
+      }
+    }
+
+    lastResult.retryAttempts = retryCount;
+    return lastResult;
   }
 
   /**
@@ -703,7 +764,8 @@ export class WorkflowService implements IWorkflowService {
         evalContext[nid] = result.output;
       }
 
-      const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: 5000 });
+      const vmTimeout = (node.data as ConditionNodeData).timeoutMs || 5000;
+      const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: vmTimeout });
       const branch = Boolean(result);
 
       return {
@@ -807,7 +869,8 @@ export class WorkflowService implements IWorkflowService {
       }
       evalContext.data = lastOutput; // convenience alias for the most recent upstream output
 
-      const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: 5000 });
+      const vmTimeout = (node.data as TransformerNodeData).timeoutMs || 5000;
+      const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: vmTimeout });
 
       return {
         nodeId: node.id,

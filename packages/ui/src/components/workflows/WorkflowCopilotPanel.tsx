@@ -8,6 +8,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 import { workflowsApi } from '../../api';
+import { formatToolName } from '../../utils/formatters';
 import { MarkdownContent } from '../MarkdownContent';
 import { Sparkles, Send, StopCircle, X, Play, AlertCircle } from '../icons';
 
@@ -50,7 +51,8 @@ function extractWorkflowJson(content: string): WorkflowDefinition | null {
   if (!match?.[1]) return null;
   try {
     const parsed = JSON.parse(match[1]);
-    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.nodes)) {
+      if (!Array.isArray(parsed.edges)) parsed.edges = [];
       return parsed as WorkflowDefinition;
     }
   } catch {
@@ -435,8 +437,18 @@ export function convertDefinitionToReactFlow(
   // Build lookup for resolving AI-generated tool names that may be missing dots
   const resolveToolName = buildToolNameResolver(availableToolNames);
 
+  // Compute max existing node ID for deterministic sequential fallback IDs
+  let maxIdNum = 0;
+  for (const def of definition.nodes) {
+    const existingId = def.id as string;
+    if (existingId) {
+      const num = parseInt(existingId.replace('node_', ''), 10);
+      if (!isNaN(num) && num > maxIdNum) maxIdNum = num;
+    }
+  }
+
   const nodes: Node[] = definition.nodes.map((def) => {
-    const id = (def.id as string) || `node_${Math.random().toString(36).slice(2, 8)}`;
+    const id = (def.id as string) || `node_${++maxIdNum}`;
     const position = (def.position as { x: number; y: number }) || { x: 300, y: 100 };
 
     if (def.type === 'trigger') {
@@ -466,7 +478,7 @@ export function convertDefinitionToReactFlow(
           provider: def.provider ?? '',
           model: def.model ?? '',
           ...(def.systemPrompt != null ? { systemPrompt: def.systemPrompt } : {}),
-          ...(def.userMessage != null ? { userMessage: def.userMessage } : {}),
+          userMessage: (def.userMessage as string) ?? '',
           ...(def.temperature != null ? { temperature: def.temperature } : {}),
           ...(def.maxTokens != null ? { maxTokens: def.maxTokens } : {}),
         },
@@ -556,13 +568,6 @@ export function convertDefinitionToReactFlow(
   return { nodes, edges: rfEdges };
 }
 
-/** Strip namespace prefix and title-case */
-function formatToolName(name: string): string {
-  const base = name.includes('.') ? name.split('.').pop()! : name;
-  return base
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 /**
  * Build a tool name resolver that fixes AI-generated names with missing dots.

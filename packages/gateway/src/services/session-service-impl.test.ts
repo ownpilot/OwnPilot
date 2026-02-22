@@ -2,7 +2,7 @@
  * SessionService Tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SessionService } from './session-service-impl.js';
 
 describe('SessionService', () => {
@@ -10,6 +10,10 @@ describe('SessionService', () => {
 
   beforeEach(() => {
     service = new SessionService();
+  });
+
+  afterEach(() => {
+    service.dispose();
   });
 
   describe('create', () => {

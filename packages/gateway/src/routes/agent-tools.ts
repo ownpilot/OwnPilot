@@ -36,8 +36,8 @@ import {
   executeCustomToolTool,
   executeActiveCustomTool,
   getActiveCustomToolDefinitions,
-  getCustomToolDynamicRegistry,
 } from './custom-tools.js';
+import { getCustomToolDynamicRegistry } from '../services/custom-tool-registry.js';
 import { getToolSource } from '../services/tool-source.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';

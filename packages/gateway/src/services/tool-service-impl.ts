@@ -10,6 +10,7 @@
  *   await tools.execute('get_current_time', {});
  */
 
+import { randomUUID } from 'node:crypto';
 import type { IToolService, ToolServiceResult } from '@ownpilot/core';
 import type { ToolDefinition, ToolMiddleware, ToolSource } from '@ownpilot/core';
 import { getSharedToolRegistry } from './tool-executor.js';
@@ -39,7 +40,7 @@ export class ToolService implements IToolService {
 
     const result = await this.registry.executeToolCall(
       {
-        id: `call_${Date.now()}`,
+        id: `call_${randomUUID()}`,
         name,
         arguments: argsJson,
       },
@@ -47,10 +48,18 @@ export class ToolService implements IToolService {
       context?.userId ?? this.userId,
     );
 
-    return {
-      content: typeof result.content === 'string' ? result.content : JSON.stringify(result.content),
-      isError: result.isError,
-    };
+    let content: string;
+    if (typeof result.content === 'string') {
+      content = result.content;
+    } else {
+      try {
+        content = JSON.stringify(result.content);
+      } catch {
+        content = String(result.content);
+      }
+    }
+
+    return { content, isError: result.isError };
   }
 
   getDefinition(name: string): ToolDefinition | undefined {

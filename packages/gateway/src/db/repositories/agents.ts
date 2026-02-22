@@ -147,6 +147,36 @@ export class AgentsRepository extends BaseRepository {
     return this.getById(id);
   }
 
+  /**
+   * Atomic upsert for resync: creates if missing, merges config if exists.
+   * Uses INSERT...ON CONFLICT to avoid check-then-act race conditions.
+   */
+  async upsertForResync(data: {
+    id: string;
+    name: string;
+    systemPrompt?: string;
+    provider: string;
+    model: string;
+    config?: Record<string, unknown>;
+  }): Promise<void> {
+    const configJson = JSON.stringify(data.config ?? {});
+    await this.execute(
+      `INSERT INTO agents (id, name, system_prompt, provider, model, config)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (id) DO UPDATE SET
+         config = agents.config::jsonb || $6::jsonb,
+         updated_at = NOW()`,
+      [
+        data.id,
+        data.name,
+        data.systemPrompt ?? null,
+        data.provider,
+        data.model,
+        configJson,
+      ]
+    );
+  }
+
   async delete(id: string): Promise<boolean> {
     const result = await this.execute(
       `DELETE FROM agents WHERE id = $1`,

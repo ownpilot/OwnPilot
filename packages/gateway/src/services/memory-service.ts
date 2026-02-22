@@ -391,8 +391,12 @@ export class MemoryService implements IMemoryService {
 
     // Also evict stale embedding cache entries (fire-and-forget)
     import('../db/repositories/embedding-cache.js').then(({ embeddingCacheRepo }) => {
-      embeddingCacheRepo.evict().catch(() => {});
-    }).catch(() => {});
+      embeddingCacheRepo.evict().catch(err => {
+        log.warn('Failed to evict embedding cache', String(err));
+      });
+    }).catch(err => {
+      log.warn('Failed to load embedding cache module', String(err));
+    });
 
     return deleted;
   }

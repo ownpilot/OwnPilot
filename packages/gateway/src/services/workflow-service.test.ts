@@ -702,4 +702,135 @@ describe('WorkflowService', () => {
       expect(service.isRunning('wf-b')).toBe(true);
     });
   });
+
+  // ========================================================================
+  // executeWithRetryAndTimeout
+  // ========================================================================
+
+  describe('executeWithRetryAndTimeout', () => {
+    function callRetry(
+      svc: InstanceType<typeof WorkflowService>,
+      node: ReturnType<typeof makeNode>,
+      executeFn: () => Promise<{ nodeId: string; status: string; error?: string; [k: string]: unknown }>,
+      onProgress?: (e: { type: string; nodeId?: string; retryAttempt?: number }) => void,
+    ) {
+      return (svc as unknown as {
+        executeWithRetryAndTimeout: (
+          node: unknown,
+          fn: () => Promise<unknown>,
+          progress?: (e: unknown) => void,
+        ) => Promise<{ nodeId: string; status: string; error?: string; retryAttempts?: number }>;
+      }).executeWithRetryAndTimeout(node, executeFn, onProgress);
+    }
+
+    it('succeeds on first try with retryAttempts = 0', async () => {
+      const node = makeNode('n1', 'toolNode', { retryCount: 2 });
+      const executeFn = vi.fn().mockResolvedValue({ nodeId: 'n1', status: 'success', output: 42 });
+
+      const result = await callRetry(service, node, executeFn);
+
+      expect(result.status).toBe('success');
+      expect(result.retryAttempts).toBe(0);
+      expect(executeFn).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries on failure and succeeds on second attempt', async () => {
+      const node = makeNode('n1', 'toolNode', { retryCount: 2 });
+      const executeFn = vi.fn()
+        .mockResolvedValueOnce({ nodeId: 'n1', status: 'error', error: 'fail' })
+        .mockResolvedValueOnce({ nodeId: 'n1', status: 'success', output: 'ok' });
+
+      const result = await callRetry(service, node, executeFn);
+
+      expect(result.status).toBe('success');
+      expect(result.retryAttempts).toBe(1);
+      expect(executeFn).toHaveBeenCalledTimes(2);
+    });
+
+    it('fails after all retry attempts exhausted', async () => {
+      const node = makeNode('n1', 'toolNode', { retryCount: 2 });
+      const executeFn = vi.fn().mockResolvedValue({ nodeId: 'n1', status: 'error', error: 'persistent failure' });
+
+      const result = await callRetry(service, node, executeFn);
+
+      expect(result.status).toBe('error');
+      expect(result.retryAttempts).toBe(2);
+      expect(result.error).toBe('persistent failure');
+      expect(executeFn).toHaveBeenCalledTimes(3); // 1 initial + 2 retries
+    });
+
+    it('does not retry when retryCount is 0 (default)', async () => {
+      const node = makeNode('n1', 'toolNode', {});
+      const executeFn = vi.fn().mockResolvedValue({ nodeId: 'n1', status: 'error', error: 'oops' });
+
+      const result = await callRetry(service, node, executeFn);
+
+      expect(result.status).toBe('error');
+      expect(result.retryAttempts).toBe(0);
+      expect(executeFn).toHaveBeenCalledTimes(1);
+    });
+
+    it('emits node_retry progress events on retries', async () => {
+      const node = makeNode('n1', 'toolNode', { retryCount: 2 });
+      const executeFn = vi.fn()
+        .mockResolvedValueOnce({ nodeId: 'n1', status: 'error', error: 'fail1' })
+        .mockResolvedValueOnce({ nodeId: 'n1', status: 'error', error: 'fail2' })
+        .mockResolvedValueOnce({ nodeId: 'n1', status: 'success', output: 'ok' });
+
+      const progressEvents: Array<{ type: string; nodeId?: string; retryAttempt?: number }> = [];
+      await callRetry(service, node, executeFn, (e) => progressEvents.push(e));
+
+      expect(progressEvents).toHaveLength(2);
+      expect(progressEvents[0]).toEqual({ type: 'node_retry', nodeId: 'n1', retryAttempt: 1 });
+      expect(progressEvents[1]).toEqual({ type: 'node_retry', nodeId: 'n1', retryAttempt: 2 });
+    });
+
+    it('handles thrown errors from executeFn', async () => {
+      const node = makeNode('n1', 'toolNode', { retryCount: 1 });
+      const executeFn = vi.fn()
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({ nodeId: 'n1', status: 'success', output: 'recovered' });
+
+      const result = await callRetry(service, node, executeFn);
+
+      expect(result.status).toBe('success');
+      expect(result.retryAttempts).toBe(1);
+    });
+
+    it('handles timeout wrapping for async nodes', async () => {
+      const node = makeNode('n1', 'toolNode', { timeoutMs: 50 });
+      const executeFn = vi.fn().mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve({ nodeId: 'n1', status: 'success' }), 200)),
+      );
+
+      const result = await callRetry(service, node, executeFn);
+
+      expect(result.status).toBe('error');
+      expect(result.error).toContain('Timeout');
+    });
+
+    it('skips outer timeout for conditionNode (vm-based)', async () => {
+      const node = makeNode('n1', 'conditionNode', { timeoutMs: 50 });
+      const executeFn = vi.fn().mockResolvedValue({ nodeId: 'n1', status: 'success', output: true });
+
+      const result = await callRetry(service, node, executeFn);
+
+      expect(result.status).toBe('success');
+      expect(executeFn).toHaveBeenCalledTimes(1);
+    });
+
+    it('combines retry + timeout: retries after timeout', async () => {
+      const node = makeNode('n1', 'toolNode', { retryCount: 1, timeoutMs: 50 });
+      const executeFn = vi.fn()
+        .mockImplementationOnce(
+          () => new Promise((resolve) => setTimeout(() => resolve({ nodeId: 'n1', status: 'success' }), 200)),
+        )
+        .mockResolvedValueOnce({ nodeId: 'n1', status: 'success', output: 'fast' });
+
+      const result = await callRetry(service, node, executeFn);
+
+      expect(result.status).toBe('success');
+      expect(result.retryAttempts).toBe(1);
+    });
+  });
 });

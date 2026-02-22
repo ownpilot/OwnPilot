@@ -287,45 +287,28 @@ agentRoutes.post('/resync', async (c) => {
   const { getDefaultAgents } = await import('../db/seeds/default-agents.js');
   const defaultAgents = getDefaultAgents();
 
-  let updated = 0;
-  let created = 0;
+  let synced = 0;
   const errors: string[] = [];
 
   for (const agent of defaultAgents) {
     try {
-      const existing = await agentsRepo.getById(agent.id);
-
-      if (existing) {
-        // Update existing agent config with new toolGroups
-        await agentsRepo.update(agent.id, {
-          config: {
-            ...existing.config,
-            ...agent.config,
-          },
-        });
-        // Clear cache to force recreation
-        evictAgentFromCache(agent.id);
-        updated++;
-      } else {
-        // Create new agent
-        await agentsRepo.create({
-          id: agent.id,
-          name: agent.name,
-          systemPrompt: agent.systemPrompt,
-          provider: agent.provider,
-          model: agent.model,
-          config: agent.config,
-        });
-        created++;
-      }
+      await agentsRepo.upsertForResync({
+        id: agent.id,
+        name: agent.name,
+        systemPrompt: agent.systemPrompt,
+        provider: agent.provider,
+        model: agent.model,
+        config: agent.config,
+      });
+      evictAgentFromCache(agent.id);
+      synced++;
     } catch (error) {
       errors.push(`${agent.id}: ${getErrorMessage(error)}`);
     }
   }
 
   return apiResponse(c, {
-    updated,
-    created,
+    synced,
     total: defaultAgents.length,
     errors: errors.length > 0 ? errors : undefined,
   });

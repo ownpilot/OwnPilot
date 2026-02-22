@@ -111,7 +111,7 @@ export const DEFAULT_AGENTS: AgentSeed[] = new Proxy([] as AgentSeed[], {
     const agents = getDefaultAgents();
     if (prop === 'length') return agents.length;
     if (prop === Symbol.iterator) return agents[Symbol.iterator].bind(agents);
-    if (typeof prop === 'string' && !isNaN(Number(prop))) {
+    if (typeof prop === 'string' && !Number.isNaN(Number(prop))) {
       return agents[Number(prop)];
     }
     // @ts-expect-error - proxy handler

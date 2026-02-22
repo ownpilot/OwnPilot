@@ -138,7 +138,9 @@ export class EmbeddingService implements IEmbeddingService {
 
         // Cache (fire-and-forget)
         const hash = EmbeddingCacheRepository.contentHash(batch[j]!);
-        this.cache.store(hash, this.modelName, embedding).catch(() => {});
+        this.cache.store(hash, this.modelName, embedding).catch(err => {
+          log.warn('Failed to cache batch embedding', String(err));
+        });
       }
 
       // Rate limit between batches
@@ -200,6 +202,10 @@ export class EmbeddingService implements IEmbeddingService {
     const data = await response.json() as {
       data: Array<{ embedding: number[]; index: number }>;
     };
+
+    if (!Array.isArray(data?.data)) {
+      throw new Error(`Invalid embedding API response: expected data array, got ${typeof data?.data}`);
+    }
 
     // Sort by index to maintain order
     return data.data

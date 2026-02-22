@@ -30,6 +30,7 @@ import '@xyflow/react/dist/style.css';
 
 import { workflowsApi, triggersApi, apiClient } from '../api';
 import type { Workflow, WorkflowProgressEvent } from '../api';
+import { formatToolName } from '../utils/formatters';
 import {
   ToolNode, ToolPalette, NodeConfigPanel, WorkflowSourceModal,
   TriggerNode, LlmNode, ConditionNode, CodeNode, TransformerNode, ForEachNode,
@@ -287,7 +288,24 @@ export function WorkflowEditorPage() {
     try {
       const wfNodes = nodes.map((n) => {
         if (n.type === 'triggerNode') {
-          return { id: n.id, type: 'triggerNode', position: n.position, data: n.data as Record<string, unknown> };
+          const td = n.data as unknown as TriggerNodeData;
+          return {
+            id: n.id, type: 'triggerNode', position: n.position,
+            data: {
+              triggerType: td.triggerType,
+              label: td.label,
+              ...(td.cron ? { cron: td.cron } : {}),
+              ...(td.timezone ? { timezone: td.timezone } : {}),
+              ...(td.eventType ? { eventType: td.eventType } : {}),
+              ...(td.filters ? { filters: td.filters } : {}),
+              ...(td.condition ? { condition: td.condition } : {}),
+              ...(td.threshold != null ? { threshold: td.threshold } : {}),
+              ...(td.checkInterval != null ? { checkInterval: td.checkInterval } : {}),
+              ...(td.webhookPath ? { webhookPath: td.webhookPath } : {}),
+              ...(td.webhookSecret ? { webhookSecret: td.webhookSecret } : {}),
+              ...(td.triggerId ? { triggerId: td.triggerId } : {}),
+            },
+          };
         }
         if (n.type === 'llmNode') {
           const ld = n.data as unknown as LlmNodeData;
@@ -305,6 +323,8 @@ export function WorkflowEditorPage() {
               maxTokens: ld.maxTokens,
               ...(ld.apiKey ? { apiKey: ld.apiKey } : {}),
               ...(ld.baseUrl ? { baseUrl: ld.baseUrl } : {}),
+              ...(ld.retryCount != null ? { retryCount: ld.retryCount } : {}),
+              ...(ld.timeoutMs != null ? { timeoutMs: ld.timeoutMs } : {}),
             },
           };
         }
@@ -312,21 +332,33 @@ export function WorkflowEditorPage() {
           const cd = n.data as unknown as ConditionNodeData;
           return {
             id: n.id, type: 'conditionNode', position: n.position,
-            data: { label: cd.label, expression: cd.expression, description: cd.description },
+            data: {
+              label: cd.label, expression: cd.expression, description: cd.description,
+              ...(cd.retryCount != null ? { retryCount: cd.retryCount } : {}),
+              ...(cd.timeoutMs != null ? { timeoutMs: cd.timeoutMs } : {}),
+            },
           };
         }
         if (n.type === 'codeNode') {
           const cd = n.data as unknown as CodeNodeData;
           return {
             id: n.id, type: 'codeNode', position: n.position,
-            data: { label: cd.label, language: cd.language, code: cd.code, description: cd.description },
+            data: {
+              label: cd.label, language: cd.language, code: cd.code, description: cd.description,
+              ...(cd.retryCount != null ? { retryCount: cd.retryCount } : {}),
+              ...(cd.timeoutMs != null ? { timeoutMs: cd.timeoutMs } : {}),
+            },
           };
         }
         if (n.type === 'transformerNode') {
           const td = n.data as unknown as TransformerNodeData;
           return {
             id: n.id, type: 'transformerNode', position: n.position,
-            data: { label: td.label, expression: td.expression, description: td.description },
+            data: {
+              label: td.label, expression: td.expression, description: td.description,
+              ...(td.retryCount != null ? { retryCount: td.retryCount } : {}),
+              ...(td.timeoutMs != null ? { timeoutMs: td.timeoutMs } : {}),
+            },
           };
         }
         if (n.type === 'forEachNode') {
@@ -340,18 +372,23 @@ export function WorkflowEditorPage() {
               ...(fd.maxIterations != null ? { maxIterations: fd.maxIterations } : {}),
               ...(fd.onError ? { onError: fd.onError } : {}),
               ...(fd.description ? { description: fd.description } : {}),
+              ...(fd.retryCount != null ? { retryCount: fd.retryCount } : {}),
+              ...(fd.timeoutMs != null ? { timeoutMs: fd.timeoutMs } : {}),
             },
           };
         }
+        const toolData = n.data as ToolNodeData;
         return {
           id: n.id,
           type: n.type || 'toolNode',
           position: n.position,
           data: {
-            toolName: (n.data as ToolNodeData).toolName,
-            toolArgs: (n.data as ToolNodeData).toolArgs,
-            label: (n.data as ToolNodeData).label,
-            description: (n.data as ToolNodeData).description,
+            toolName: toolData.toolName,
+            toolArgs: toolData.toolArgs,
+            label: toolData.label,
+            description: toolData.description,
+            ...(toolData.retryCount != null ? { retryCount: toolData.retryCount } : {}),
+            ...(toolData.timeoutMs != null ? { timeoutMs: toolData.timeoutMs } : {}),
           },
         };
       });
@@ -511,6 +548,23 @@ export function WorkflowEditorPage() {
                       ...n.data,
                       executionStatus: 'error',
                       executionError: event.error,
+                    },
+                  }
+                : n,
+            ),
+          );
+          break;
+
+        case 'node_retry':
+          setNodes((nds) =>
+            nds.map((n) =>
+              n.id === event.nodeId
+                ? {
+                    ...n,
+                    data: {
+                      ...n.data,
+                      executionStatus: 'running',
+                      retryAttempt: event.retryAttempt,
                     },
                   }
                 : n,
@@ -1014,13 +1068,6 @@ export function WorkflowEditorPage() {
   );
 }
 
-/** Strip namespace prefix and title-case */
-function formatToolName(name: string): string {
-  const base = name.includes('.') ? name.split('.').pop()! : name;
-  return base
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 /** Edge label + color config for named source handles */
 const HANDLE_EDGE_PROPS: Record<string, { label: string; style: Record<string, string> }> = {

@@ -51,6 +51,12 @@ export const WS_RATE_LIMIT_BURST = 50;
 /** Maximum size (bytes) for a single metadata value */
 export const WS_MAX_METADATA_VALUE_BYTES = 1024;
 
+/** Max length for a WebSocket metadata key (chars). */
+export const WS_MAX_METADATA_KEY_LENGTH = 100;
+
+/** WebSocket ready state: OPEN (matches ws.OPEN / WebSocket.OPEN) */
+export const WS_READY_STATE_OPEN = 1;
+
 // ============================================================================
 // Scheduler
 // ============================================================================
@@ -125,6 +131,9 @@ export const MS_PER_HOUR = 3_600_000; // 1000 * 60 * 60
 
 /** Milliseconds in one day (for date difference calculations) */
 export const MS_PER_DAY = 86_400_000; // 1000 * 60 * 60 * 24
+
+/** Seconds in one day (for CORS maxAge, etc.) */
+export const SECONDS_PER_DAY = 86_400;
 
 /** Maximum lookback period for date-range queries (days) */
 export const MAX_DAYS_LOOKBACK = 365;
@@ -231,3 +240,6 @@ export const EMBEDDING_QUEUE_INTERVAL_MS = 5_000;
 
 /** Maximum items in the embedding queue (prevents unbounded growth during backfill) */
 export const EMBEDDING_QUEUE_MAX_SIZE = 5_000;
+
+/** Maximum memories to load in a single backfill run */
+export const EMBEDDING_BACKFILL_LIMIT = 1_000;

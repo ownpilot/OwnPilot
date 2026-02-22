@@ -37,7 +37,7 @@ import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import {
   getCustomToolDynamicRegistry,
   setSharedRegistryForCustomTools,
-} from '../routes/custom-tools.js';
+} from './custom-tool-registry.js';
 import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from './log.js';
 import { registerImageOverrides } from './image-overrides.js';
@@ -260,19 +260,21 @@ export async function executeTool(
 
   // Audit log (fire-and-forget)
   if (hasServiceRegistry()) {
-    const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
-    audit?.logAudit({
-      userId,
-      action: 'tool_execute',
-      resource: 'tool',
-      resourceId: toolName,
-      details: {
-        tool: toolName,
-        success: result.success,
-        durationMs: Date.now() - start,
-        error: result.error,
-      },
-    });
+    try {
+      const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
+      audit?.logAudit({
+        userId,
+        action: 'tool_execute',
+        resource: 'tool',
+        resourceId: toolName,
+        details: {
+          tool: toolName,
+          success: result.success,
+          durationMs: Date.now() - start,
+          error: result.error,
+        },
+      });
+    } catch { /* audit failure should not affect tool execution */ }
   }
 
   return result;

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatToolName, formatBytes } from '../utils/formatters';
 import {
   Wrench,
   Check,
@@ -248,7 +249,7 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
             </span>
             {file.size !== undefined && (
               <span className="text-xs text-text-muted dark:text-dark-text-muted">
-                {formatFileSize(file.size)}
+                {formatBytes(file.size)}
               </span>
             )}
           </div>
@@ -412,22 +413,6 @@ function getToolCategory(name: string): string {
     return 'Web & API';
   }
   return 'Other';
-}
-
-function formatToolName(name: string): string {
-  // Strip namespace prefix (e.g. "core.read_file" → "read_file")
-  const baseName = name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name;
-  return baseName
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
 /**

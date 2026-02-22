@@ -58,7 +58,7 @@ import {
   workflowRoutes,
   composioRoutes,
 } from './routes/index.js';
-import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST } from './config/defaults.js';
+import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST, SECONDS_PER_DAY } from './config/defaults.js';
 
 /**
  * Default configuration
@@ -108,7 +108,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID'],
       exposeHeaders: ['X-Request-ID', 'X-Response-Time', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
-      maxAge: 86400,
+      maxAge: SECONDS_PER_DAY,
       credentials: true,
     })
   );

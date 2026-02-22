@@ -95,7 +95,7 @@ describe('LogService', () => {
       const log = new LogService({ level: 'info', json: false });
       log.info('bare message');
 
-      expect(consoleSpy.log).toHaveBeenCalledWith(' bare message');
+      expect(consoleSpy.log).toHaveBeenCalledWith('bare message');
     });
   });
 
@@ -127,6 +127,25 @@ describe('LogService', () => {
 
       const output = JSON.parse(consoleSpy.log.mock.calls[0][0] as string);
       expect(output.module).toBeUndefined();
+    });
+
+    it('serializes Error objects with message and stack', () => {
+      const log = new LogService({ level: 'info', json: true });
+      const err = new Error('something broke');
+      log.error('failed', err);
+
+      const output = JSON.parse(consoleSpy.error.mock.calls[0][0] as string);
+      expect(output.error).toBe('something broke');
+      expect(output.stack).toContain('something broke');
+      expect(output.data).toBeUndefined();
+    });
+
+    it('serializes array data in { data } wrapper', () => {
+      const log = new LogService({ level: 'info', json: true });
+      log.info('items', [1, 2, 3]);
+
+      const output = JSON.parse(consoleSpy.log.mock.calls[0][0] as string);
+      expect(output.data).toEqual([1, 2, 3]);
     });
   });
 
