@@ -235,7 +235,13 @@ workflowRoutes.post('/:id/execute', async (c) => {
 // ============================================================================
 
 workflowRoutes.post('/:id/cancel', async (c) => {
+  const userId = getUserId(c);
   const id = sanitizeId(c.req.param('id'));
+
+  // Verify workflow ownership before allowing cancel
+  const repo = createWorkflowsRepository(userId);
+  const workflow = await repo.get(id);
+  if (!workflow) return notFoundError(c, 'Workflow', id);
 
   const service = getWorkflowService();
   const cancelled = service.cancelExecution(id);
