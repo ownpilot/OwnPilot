@@ -193,7 +193,7 @@ export class CustomDataService {
     return repo.transaction(async () => {
       const created: CustomDataRecord[] = [];
       for (const data of records) {
-        const record = await repo.addRecord(tableNameOrId, data);
+        const record = await repo.insertRecord(table, data);
         created.push(record);
       }
       return created;

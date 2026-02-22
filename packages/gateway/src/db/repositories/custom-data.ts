@@ -269,7 +269,13 @@ export class CustomDataRepository extends BaseRepository {
     if (!table) {
       throw new Error(`Table not found: ${tableNameOrId}`);
     }
+    return this.insertRecord(table, data);
+  }
 
+  /**
+   * Add a record to a pre-resolved table (avoids repeated getTable() lookups in batch).
+   */
+  async insertRecord(table: CustomTableSchema, data: Record<string, unknown>): Promise<CustomDataRecord> {
     // Validate required fields
     for (const col of table.columns) {
       if (col.required && (data[col.name] === undefined || data[col.name] === null)) {

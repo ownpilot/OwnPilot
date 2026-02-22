@@ -64,14 +64,13 @@
     "typecheck:ci": "tsc --noEmit --skipLibCheck false",
     "clean": "rimraf dist coverage"
   },
-  "dependencies": {},
   "devDependencies": {
     "@types/node": "^22.19.7",
     "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^9.17.0",
-    "rimraf": "^6.1.2",
+    "rimraf": "^6.1.3",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.19.1",
+    "typescript-eslint": "^8.56.0",
     "vitest": "^2.1.9"
   },
   "engines": {
