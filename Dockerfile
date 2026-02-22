@@ -23,7 +23,7 @@ COPY packages/ui/package.json ./packages/ui/
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
-COPY tsconfig.base.json ./
+COPY tsconfig.base.json turbo.json ./
 COPY packages/core/ ./packages/core/
 COPY packages/gateway/ ./packages/gateway/
 COPY packages/channels/ ./packages/channels/
