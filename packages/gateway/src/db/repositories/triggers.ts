@@ -430,14 +430,14 @@ export class TriggersRepository extends BaseRepository {
   }
 
   /**
-   * Get history entry by ID
+   * Get history entry by ID (scoped to current user's triggers)
    */
   async getHistory(id: string): Promise<TriggerHistory | null> {
     const row = await this.queryOne<HistoryRow>(
       `SELECT h.*, COALESCE(h.trigger_name, t.name) as trigger_name FROM trigger_history h
-       LEFT JOIN triggers t ON h.trigger_id = t.id
-       WHERE h.id = $1`,
-      [id]
+       JOIN triggers t ON h.trigger_id = t.id
+       WHERE h.id = $1 AND t.user_id = $2`,
+      [id, this.userId]
     );
     return row ? this.mapHistory(row) : null;
   }
@@ -600,22 +600,22 @@ export class TriggersRepository extends BaseRepository {
     weekAgo.setDate(weekAgo.getDate() - 7);
     const firesThisWeek = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM trigger_history h
-       LEFT JOIN triggers t ON h.trigger_id = t.id
-       WHERE (t.user_id = $1 OR h.trigger_id IS NULL) AND h.fired_at >= $2`,
+       JOIN triggers t ON h.trigger_id = t.id
+       WHERE t.user_id = $1 AND h.fired_at >= $2`,
       [this.userId, weekAgo.toISOString()]
     );
 
     const successCount = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM trigger_history h
-       LEFT JOIN triggers t ON h.trigger_id = t.id
-       WHERE (t.user_id = $1 OR h.trigger_id IS NULL) AND h.status = 'success'`,
+       JOIN triggers t ON h.trigger_id = t.id
+       WHERE t.user_id = $1 AND h.status = 'success'`,
       [this.userId]
     );
 
     const totalHistory = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM trigger_history h
-       LEFT JOIN triggers t ON h.trigger_id = t.id
-       WHERE (t.user_id = $1 OR h.trigger_id IS NULL)`,
+       JOIN triggers t ON h.trigger_id = t.id
+       WHERE t.user_id = $1`,
       [this.userId]
     );
 

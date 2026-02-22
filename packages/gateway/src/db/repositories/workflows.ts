@@ -429,39 +429,52 @@ export class WorkflowsRepository extends BaseRepository {
 
   async getLog(id: string): Promise<WorkflowLog | null> {
     const row = await this.queryOne<WorkflowLogRow>(
-      'SELECT * FROM workflow_logs WHERE id = $1',
-      [id]
+      `SELECT wl.* FROM workflow_logs wl
+       JOIN workflows w ON wl.workflow_id = w.id
+       WHERE wl.id = $1 AND w.user_id = $2`,
+      [id, this.userId]
     );
     return row ? mapLog(row) : null;
   }
 
   async getLogsForWorkflow(workflowId: string, limit = 20, offset = 0): Promise<WorkflowLog[]> {
     const rows = await this.query<WorkflowLogRow>(
-      'SELECT * FROM workflow_logs WHERE workflow_id = $1 ORDER BY started_at DESC LIMIT $2 OFFSET $3',
-      [workflowId, limit, offset]
+      `SELECT wl.* FROM workflow_logs wl
+       JOIN workflows w ON wl.workflow_id = w.id
+       WHERE wl.workflow_id = $1 AND w.user_id = $2
+       ORDER BY wl.started_at DESC LIMIT $3 OFFSET $4`,
+      [workflowId, this.userId, limit, offset]
     );
     return rows.map(mapLog);
   }
 
   async countLogsForWorkflow(workflowId: string): Promise<number> {
     const row = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM workflow_logs WHERE workflow_id = $1',
-      [workflowId]
+      `SELECT COUNT(*) as count FROM workflow_logs wl
+       JOIN workflows w ON wl.workflow_id = w.id
+       WHERE wl.workflow_id = $1 AND w.user_id = $2`,
+      [workflowId, this.userId]
     );
     return parseInt(row?.count ?? '0', 10);
   }
 
   async getRecentLogs(limit = 20, offset = 0): Promise<WorkflowLog[]> {
     const rows = await this.query<WorkflowLogRow>(
-      'SELECT * FROM workflow_logs ORDER BY started_at DESC LIMIT $1 OFFSET $2',
-      [limit, offset]
+      `SELECT wl.* FROM workflow_logs wl
+       JOIN workflows w ON wl.workflow_id = w.id
+       WHERE w.user_id = $1
+       ORDER BY wl.started_at DESC LIMIT $2 OFFSET $3`,
+      [this.userId, limit, offset]
     );
     return rows.map(mapLog);
   }
 
   async countLogs(): Promise<number> {
     const row = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM workflow_logs'
+      `SELECT COUNT(*) as count FROM workflow_logs wl
+       JOIN workflows w ON wl.workflow_id = w.id
+       WHERE w.user_id = $1`,
+      [this.userId]
     );
     return parseInt(row?.count ?? '0', 10);
   }

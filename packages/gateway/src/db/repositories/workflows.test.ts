@@ -657,8 +657,9 @@ describe('WorkflowsRepository', () => {
       await repo.getLog('wflog-42');
 
       const sql = mockAdapter.queryOne.mock.calls[0]![0] as string;
-      expect(sql).toContain('SELECT * FROM workflow_logs WHERE id = $1');
-      expect(mockAdapter.queryOne.mock.calls[0]![1]).toEqual(['wflog-42']);
+      expect(sql).toContain('workflow_logs');
+      expect(sql).toContain('WHERE wl.id = $1 AND w.user_id = $2');
+      expect(mockAdapter.queryOne.mock.calls[0]![1]).toEqual(['wflog-42', 'default']);
     });
   });
 
@@ -682,12 +683,12 @@ describe('WorkflowsRepository', () => {
       expect(result[1]!.status).toBe('completed');
 
       const sql = mockAdapter.query.mock.calls[0]![0] as string;
-      expect(sql).toContain('SELECT * FROM workflow_logs WHERE workflow_id = $1');
-      expect(sql).toContain('ORDER BY started_at DESC');
-      expect(sql).toContain('LIMIT $2 OFFSET $3');
+      expect(sql).toContain('workflow_logs');
+      expect(sql).toContain('WHERE wl.workflow_id = $1 AND w.user_id = $2');
+      expect(sql).toContain('LIMIT $3 OFFSET $4');
 
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
-      expect(params).toEqual(['wf-1', 10, 5]);
+      expect(params).toEqual(['wf-1', 'default', 10, 5]);
     });
 
     it('should use default limit and offset', async () => {
@@ -696,7 +697,7 @@ describe('WorkflowsRepository', () => {
       await repo.getLogsForWorkflow('wf-1');
 
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
-      expect(params).toEqual(['wf-1', 20, 0]);
+      expect(params).toEqual(['wf-1', 'default', 20, 0]);
     });
 
     it('should return empty array when no logs exist', async () => {
@@ -721,8 +722,9 @@ describe('WorkflowsRepository', () => {
       expect(result).toBe(7);
 
       const sql = mockAdapter.queryOne.mock.calls[0]![0] as string;
-      expect(sql).toContain('SELECT COUNT(*) as count FROM workflow_logs WHERE workflow_id = $1');
-      expect(mockAdapter.queryOne.mock.calls[0]![1]).toEqual(['wf-1']);
+      expect(sql).toContain('SELECT COUNT(*) as count FROM workflow_logs');
+      expect(sql).toContain('WHERE wl.workflow_id = $1 AND w.user_id = $2');
+      expect(mockAdapter.queryOne.mock.calls[0]![1]).toEqual(['wf-1', 'default']);
     });
 
     it('should return 0 when queryOne returns null', async () => {
@@ -752,13 +754,12 @@ describe('WorkflowsRepository', () => {
       expect(result[0]!.id).toBe('wflog-3');
 
       const sql = mockAdapter.query.mock.calls[0]![0] as string;
-      expect(sql).toContain('SELECT * FROM workflow_logs ORDER BY started_at DESC');
-      expect(sql).toContain('LIMIT $1 OFFSET $2');
-      // No WHERE clause — all logs
-      expect(sql).not.toContain('WHERE');
+      expect(sql).toContain('workflow_logs');
+      expect(sql).toContain('WHERE w.user_id = $1');
+      expect(sql).toContain('LIMIT $2 OFFSET $3');
 
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
-      expect(params).toEqual([50, 10]);
+      expect(params).toEqual(['default', 50, 10]);
     });
 
     it('should use default limit and offset', async () => {
@@ -767,7 +768,7 @@ describe('WorkflowsRepository', () => {
       await repo.getRecentLogs();
 
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
-      expect(params).toEqual([20, 0]);
+      expect(params).toEqual(['default', 20, 0]);
     });
   });
 
@@ -785,8 +786,8 @@ describe('WorkflowsRepository', () => {
 
       const sql = mockAdapter.queryOne.mock.calls[0]![0] as string;
       expect(sql).toContain('SELECT COUNT(*) as count FROM workflow_logs');
-      // No WHERE clause, no params
-      expect(sql).not.toContain('WHERE');
+      expect(sql).toContain('WHERE w.user_id = $1');
+      expect(mockAdapter.queryOne.mock.calls[0]![1]).toEqual(['default']);
     });
 
     it('should return 0 when queryOne returns null', async () => {
