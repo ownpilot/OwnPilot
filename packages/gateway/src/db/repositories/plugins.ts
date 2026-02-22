@@ -9,7 +9,7 @@
  * ConfigServicesRepository and SettingsRepository).
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('PluginsRepo');
@@ -66,21 +66,6 @@ let cacheInitialized = false;
 // ROW-TO-MODEL CONVERSION
 // =============================================================================
 
-/**
- * Parse a JSONB value that may arrive as a string or as an already-parsed
- * object, depending on the database driver.
- */
-function parseJsonb<T>(raw: unknown, fallback: T): T {
-  if (raw == null) return fallback;
-  if (typeof raw === 'string') {
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      return fallback;
-    }
-  }
-  return raw as T;
-}
 
 function rowToRecord(row: PluginRow): PluginRecord {
   return {
@@ -88,8 +73,8 @@ function rowToRecord(row: PluginRow): PluginRecord {
     name: row.name,
     version: row.version,
     status: row.status as PluginRecord['status'],
-    settings: parseJsonb<Record<string, unknown>>(row.settings, {}),
-    grantedPermissions: parseJsonb<string[]>(row.granted_permissions, []),
+    settings: parseJsonField<Record<string, unknown>>(row.settings, {}),
+    grantedPermissions: parseJsonField<string[]>(row.granted_permissions, []),
     errorMessage: row.error_message ?? undefined,
     installedAt: row.installed_at,
     updatedAt: row.updated_at,

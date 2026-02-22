@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toolsApi } from '../../api';
 import type { Tool } from '../../types';
+import { formatToolName } from '../../utils/formatters';
 import {
   Search, ChevronDown, ChevronRight, Wrench, Plus,
   Server, Sparkles, Puzzle, X,
@@ -537,11 +538,4 @@ function ToolItem({
 // Helpers
 // ============================================================================
 
-/** Strip namespace prefix (e.g. 'core.get_time' → 'Get Time') and title-case */
-function formatToolName(name: string): string {
-  const base = name.includes('.') ? name.split('.').pop()! : name;
-  return base
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
 

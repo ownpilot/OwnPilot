@@ -5,7 +5,8 @@
  * buildToolCatalog, generateDemoResponse, tryGetMessageBus.
  */
 
-import { hasServiceRegistry, getServiceRegistry, Services, getBaseName, type ToolDefinition, type ExecutionPermissions, type IMessageBus } from '@ownpilot/core';
+import { Services, getBaseName, type ToolDefinition, type ExecutionPermissions, type IMessageBus } from '@ownpilot/core';
+import { tryGetService } from '../services/service-helpers.js';
 import { AI_META_TOOL_NAMES } from '../config/defaults.js';
 
 export const PERM_LABELS: Record<string, string> = {
@@ -78,7 +79,8 @@ export async function buildToolCatalog(allTools: readonly ToolDefinition[]): Pro
 
   // 2. Fetch custom data tables
   try {
-    const service = getServiceRegistry().get(Services.Database);
+    const service = tryGetService(Services.Database);
+    if (!service) throw new Error('no registry');
     const tables = await service.listTables();
     if (tables.length > 0) {
       if (lines.length === 0) {
@@ -119,15 +121,17 @@ export function generateDemoResponse(message: string, provider: string, model: s
   const name = providerName[provider] ?? provider;
 
   // Simple demo responses
-  if (message.toLowerCase().includes('help') || message.toLowerCase().includes('what can you')) {
+  const lower = message.toLowerCase();
+
+  if (lower.includes('help') || lower.includes('what can you')) {
     return `Hello! I'm running in **demo mode** using ${name} (${model}).\n\nTo enable full functionality, please configure your API key in Settings.\n\nIn demo mode, I can:\n- Show you the UI capabilities\n- Demonstrate the chat interface\n- Help you configure your API keys\n\nOnce configured, I'll be able to:\n- Answer questions with AI\n- Execute tools\n- Remember conversation context`;
   }
 
-  if (message.toLowerCase().includes('capabilities') || message.toLowerCase().includes('yetenekler')) {
+  if (lower.includes('capabilities')) {
     return `**OwnPilot Capabilities**\n\nThis is a privacy-first AI assistant platform. Currently in demo mode with ${name}.\n\n**Supported Providers:**\n- OpenAI (GPT-4o, o1, o1-mini)\n- Anthropic (Claude Sonnet 4, Opus 4)\n- Zhipu AI (GLM-4)\n- DeepSeek (DeepSeek-V3)\n- Groq (Llama 3.3)\n- Google AI (Gemini 1.5)\n- xAI (Grok 2)\n- And more!\n\n**Features:**\n- Multi-provider support\n- Tool/function calling\n- Conversation memory\n- Encrypted credential storage\n- Privacy-first design`;
   }
 
-  if (message.toLowerCase().includes('tool')) {
+  if (lower.includes('tool')) {
     return `**Tools in OwnPilot**\n\nTools allow the AI to perform actions:\n\n- **get_current_time**: Get current date/time\n- **calculate**: Perform calculations\n- **search_web**: Search the internet\n- **read_file**: Read local files\n\nTo use tools, configure your API key and the AI will automatically use them when needed.`;
   }
 
@@ -139,12 +143,5 @@ export function generateDemoResponse(message: string, provider: string, model: s
  * Returns null if not available (graceful fallback to direct path).
  */
 export function tryGetMessageBus(): IMessageBus | null {
-  if (hasServiceRegistry()) {
-    try {
-      return getServiceRegistry().get(Services.Message);
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return tryGetService(Services.Message);
 }

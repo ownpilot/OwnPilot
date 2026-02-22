@@ -237,7 +237,7 @@ function sanitizeForAudit(data: unknown, maxLength = 1000): unknown {
 
   if (typeof data === 'object') {
     const sanitized: Record<string, unknown> = {};
-    const sensitiveKeys = ['password', 'apiKey', 'api_key', 'secret', 'token', 'authorization', 'credential'];
+    const sensitiveKeys = ['password', 'apikey', 'api_key', 'secret', 'token', 'authorization', 'credential'];
 
     for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
       // Mask sensitive fields

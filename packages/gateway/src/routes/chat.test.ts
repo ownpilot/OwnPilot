@@ -94,16 +94,8 @@ vi.mock('../workspace/file-workspace.js', () => ({
 }));
 
 vi.mock('../utils/index.js', () => ({
-  parseLimit: vi.fn((val: string | undefined, def: number) => {
-    if (!val) return def;
-    const n = parseInt(val, 10);
-    return isNaN(n) ? def : Math.min(Math.max(1, n), 1000);
-  }),
-  parseOffset: vi.fn((val: string | undefined) => {
-    if (!val) return 0;
-    const n = parseInt(val, 10);
-    return isNaN(n) ? 0 : Math.max(0, n);
-  }),
+  extractSuggestions: vi.fn(() => []),
+  extractMemoriesFromResponse: vi.fn(() => []),
 }));
 
 vi.mock('../ws/server.js', () => ({
@@ -212,6 +204,7 @@ vi.mock('@ownpilot/core', () => ({
   CUSTOM_DATA_TOOLS: [],
   PERSONAL_DATA_TOOLS: [],
   DYNAMIC_TOOL_DEFINITIONS: [],
+  ALL_TOOLS: [],
   TOOL_GROUPS: {},
   TOOL_SEARCH_TAGS: {},
   TOOL_MAX_LIMITS: {},

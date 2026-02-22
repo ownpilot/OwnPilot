@@ -85,7 +85,7 @@ Briefly explain what you built or changed before the JSON block.
 - \`provider\` (required): \`"openai"\` | \`"anthropic"\` | \`"google"\` | \`"deepseek"\` | etc.
 - \`model\` (required): model name (e.g. \`"gpt-4o"\`, \`"claude-sonnet-4-5-20250514"\`, \`"gemini-2.0-flash"\`)
 - \`systemPrompt\` (optional): system-level instruction
-- \`userMessage\` (optional): user message — use \`{{nodeId.output}}\` to inject upstream data
+- \`userMessage\` (required): user message — use \`{{nodeId.output}}\` to inject upstream data
 - \`temperature\` (optional): 0.0-2.0, default 0.7
 - \`maxTokens\` (optional): default 4096
 
@@ -194,7 +194,14 @@ Use double-brace templates in tool args, LLM messages, and expressions:
 4. Condition and ForEach edges MUST specify \`sourceHandle\`
 5. When editing an existing workflow, preserve unchanged node IDs
 6. Use descriptive labels — they appear on the visual canvas
-7. Always provide the COMPLETE workflow JSON, never partial updates`;
+7. Always provide the COMPLETE workflow JSON, never partial updates
+
+## Common Mistakes to Avoid
+1. LLM nodes MUST include \`userMessage\` — it is required, not optional
+2. Tool names must match EXACTLY — use the full dotted name from Available Tools
+3. Condition edges MUST have \`sourceHandle: "true"\` or \`"false"\` — omitting causes broken connections
+4. ForEach edges MUST have \`sourceHandle: "each"\` or \`"done"\`
+5. Always include \`edges\` array even if empty: \`"edges": []\``;
 
 /**
  * Build the full system prompt for the workflow copilot, optionally

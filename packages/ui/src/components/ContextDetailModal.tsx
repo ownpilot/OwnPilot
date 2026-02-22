@@ -2,16 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Trash2, RefreshCw } from './icons';
 import { chatApi } from '../api';
 import type { ContextBreakdown, SessionInfo } from '../types';
-
-// =============================================================================
-// Token formatting helpers
-// =============================================================================
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
+import { formatNumber } from '../utils/formatters';
 
 // =============================================================================
 // Segmented bar colors
@@ -102,7 +93,7 @@ export function ContextDetailModal({
           <div className="text-xs text-text-muted dark:text-dark-text-muted">
             {breakdown?.providerName ?? provider} / {breakdown?.modelName ?? model}
             <span className="ml-2 text-text-secondary dark:text-dark-text-secondary">
-              (max {formatTokens(maxTokens)} tokens)
+              (max {formatNumber(maxTokens)} tokens)
             </span>
           </div>
 
@@ -111,25 +102,25 @@ export function ContextDetailModal({
             <div className="flex items-center gap-2 mb-1.5">
               <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{fillPct}% used</span>
               <span className="text-xs text-text-muted dark:text-dark-text-muted">
-                {formatTokens(totalUsed)} / {formatTokens(maxTokens)}
+                {formatNumber(totalUsed)} / {formatNumber(maxTokens)}
               </span>
             </div>
             <div className="h-3 rounded-full overflow-hidden flex bg-bg-tertiary dark:bg-dark-bg-tertiary">
               {systemPct > 0 && (
-                <div className={`${COLORS.system} transition-all duration-300`} style={{ width: `${systemPct}%` }} title={`System: ${formatTokens(systemTokens)}`} />
+                <div className={`${COLORS.system} transition-all duration-300`} style={{ width: `${systemPct}%` }} title={`System: ${formatNumber(systemTokens)}`} />
               )}
               {messagePct > 0 && (
-                <div className={`${COLORS.messages} transition-all duration-300`} style={{ width: `${messagePct}%` }} title={`Messages: ${formatTokens(messageTokens)}`} />
+                <div className={`${COLORS.messages} transition-all duration-300`} style={{ width: `${messagePct}%` }} title={`Messages: ${formatNumber(messageTokens)}`} />
               )}
             </div>
             <div className="flex items-center gap-4 mt-1.5 text-[10px] text-text-muted dark:text-dark-text-muted">
               <span className="flex items-center gap-1">
                 <span className={`inline-block w-2 h-2 rounded-sm ${LABEL_COLORS.system}`} />
-                System ({formatTokens(systemTokens)})
+                System ({formatNumber(systemTokens)})
               </span>
               <span className="flex items-center gap-1">
                 <span className={`inline-block w-2 h-2 rounded-sm ${LABEL_COLORS.messages}`} />
-                Messages ({formatTokens(messageTokens)})
+                Messages ({formatNumber(messageTokens)})
               </span>
               <span className="ml-auto">{sessionInfo.messageCount} msgs</span>
             </div>
@@ -148,7 +139,7 @@ export function ContextDetailModal({
                     <div key={i} className="flex items-center justify-between px-2 py-1 rounded text-xs hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary">
                       <span className="text-text-primary dark:text-dark-text-primary truncate flex-1">{section.name}</span>
                       <span className="text-text-muted dark:text-dark-text-muted ml-2 tabular-nums whitespace-nowrap">
-                        ~{formatTokens(section.tokens)} ({sectionPct}%)
+                        ~{formatNumber(section.tokens)} ({sectionPct}%)
                       </span>
                     </div>
                   );

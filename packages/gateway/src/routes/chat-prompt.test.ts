@@ -182,11 +182,6 @@ describe('generateDemoResponse', () => {
     expect(result).toContain('Anthropic');
   });
 
-  it('detects Turkish "yetenekler" keyword and returns capabilities response', () => {
-    const result = generateDemoResponse('yetenekler neler?', 'anthropic', 'claude-3');
-    expect(result).toContain('Supported Providers');
-  });
-
   it('detects "tool" keyword and returns tools response', () => {
     const result = generateDemoResponse('what tools do you have?', 'openai', 'gpt-4o');
     expect(result).toContain('Tools in OwnPilot');
@@ -338,6 +333,7 @@ describe('buildToolCatalog', () => {
   });
 
   it('lists custom data tables when available', async () => {
+    mockHasServiceRegistry.mockReturnValue(true);
     mockGetServiceRegistry.mockReturnValue({
       get: vi.fn().mockReturnValue({
         listTables: vi.fn().mockResolvedValue([
@@ -354,6 +350,7 @@ describe('buildToolCatalog', () => {
   });
 
   it('uses plain name when displayName equals name', async () => {
+    mockHasServiceRegistry.mockReturnValue(true);
     mockGetServiceRegistry.mockReturnValue({
       get: vi.fn().mockReturnValue({
         listTables: vi.fn().mockResolvedValue([

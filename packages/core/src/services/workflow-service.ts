@@ -27,7 +27,7 @@ export interface WorkflowLog {
 }
 
 export interface WorkflowProgressEvent {
-  type: 'node_start' | 'node_complete' | 'node_error' | 'done' | 'error'
+  type: 'node_start' | 'node_complete' | 'node_error' | 'node_retry' | 'done' | 'error'
     | 'foreach_iteration_start' | 'foreach_iteration_complete';
   nodeId?: string;
   toolName?: string;
@@ -39,6 +39,7 @@ export interface WorkflowProgressEvent {
   durationMs?: number;
   logId?: string;
   logStatus?: WorkflowLogStatus;
+  retryAttempt?: number;
   iterationIndex?: number;
   iterationTotal?: number;
 }

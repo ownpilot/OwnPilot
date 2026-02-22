@@ -210,14 +210,24 @@ export class CustomDataService implements IDatabaseService {
       throw new CustomDataServiceError(`Table not found: ${tableNameOrId}`, 'NOT_FOUND');
     }
 
-    return repo.transaction(async () => {
-      const created: CustomDataRecord[] = [];
+    const created = await repo.transaction(async () => {
+      const results: CustomDataRecord[] = [];
       for (const data of records) {
         const record = await repo.insertRecord(table, data);
-        created.push(record);
+        results.push(record);
       }
-      return created;
+      return results;
     });
+
+    // Emit events after transaction commits (outside transaction to avoid event ordering issues)
+    for (const record of created) {
+      getEventBus().emit(createEvent<ResourceCreatedData>(
+        EventTypes.RESOURCE_CREATED, 'resource', 'custom-data-service',
+        { resourceType: 'custom_record', id: record.id },
+      ));
+    }
+
+    return created;
   }
 
   async getRecord(recordId: string): Promise<CustomDataRecord | null> {

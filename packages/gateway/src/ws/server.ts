@@ -20,6 +20,7 @@ import {
   WS_SESSION_TIMEOUT_MS,
   WS_MAX_PAYLOAD_BYTES,
   WS_MAX_CONNECTIONS,
+  WS_READY_STATE_OPEN,
 } from '../config/defaults.js';
 import { getOrCreateDefaultAgent, isDemoMode } from '../routes/agents.js';
 import { getErrorMessage } from '../routes/helpers.js';
@@ -765,7 +766,7 @@ export class WSGateway {
     if (!this.wss) return;
 
     for (const socket of this.wss.clients) {
-      if (socket.readyState === 1) {
+      if (socket.readyState === WS_READY_STATE_OPEN) {
         socket.ping();
       }
     }

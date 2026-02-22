@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, getPaginationParams, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { resetChatAgentContext, clearAllChatAgentCaches, getDefaultModel, getContextBreakdown, compactContext } from './agents.js';
 import { promptInitializedConversations } from './chat-state.js';
@@ -14,7 +14,6 @@ import { clearInjectionCache } from '../services/middleware/context-injection.js
 import { getDefaultProvider } from './settings.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
-import { parseLimit, parseOffset } from '../utils/index.js';
 
 export const chatHistoryRoutes = new Hono();
 
@@ -27,8 +26,7 @@ export const chatHistoryRoutes = new Hono();
  */
 chatHistoryRoutes.get('/history', async (c) => {
   const userId = getUserId(c);
-  const limit = parseLimit(c.req.query('limit'), 50);
-  const offset = parseOffset(c.req.query('offset'));
+  const { limit, offset } = getPaginationParams(c, 50);
   const search = c.req.query('search');
   const agentId = c.req.query('agentId');
   const archived = c.req.query('archived') === 'true';
@@ -225,8 +223,7 @@ chatHistoryRoutes.patch('/history/:id/archive', async (c) => {
  */
 chatHistoryRoutes.get('/logs', async (c) => {
   const userId = getUserId(c);
-  const limit = parseLimit(c.req.query('limit'), 100);
-  const offset = parseOffset(c.req.query('offset'));
+  const { limit, offset } = getPaginationParams(c, 100);
   const type = validateQueryEnum(c.req.query('type'), ['chat', 'completion', 'embedding', 'tool', 'agent', 'other'] as const);
   const hasError = c.req.query('errors') === 'true' ? true : c.req.query('errors') === 'false' ? false : undefined;
   const conversationId = c.req.query('conversationId');

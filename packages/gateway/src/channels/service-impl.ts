@@ -22,8 +22,6 @@ import {
   createEvent,
   type PluginRegistry,
   type Plugin,
-  hasServiceRegistry,
-  getServiceRegistry,
   Services,
   type ISessionService,
   type IMessageBus,
@@ -51,6 +49,7 @@ import {
 import { wsGateway } from '../ws/server.js';
 import { truncate, getErrorMessage } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
+import { tryGetService } from '../services/service-helpers.js';
 
 const log = getLog('ChannelService');
 
@@ -59,32 +58,14 @@ function demoModeReply(text: string): string {
   return `[Demo Mode] I received your message: "${truncate(text, 100)}"\n\nTo get real AI responses, configure an API key in OwnPilot settings.`;
 }
 
-/**
- * Try to get ISessionService from the registry.
- */
+/** Try to get ISessionService from the registry. */
 function tryGetSessionService(): ISessionService | null {
-  if (hasServiceRegistry()) {
-    try {
-      return getServiceRegistry().get(Services.Session);
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return tryGetService(Services.Session);
 }
 
-/**
- * Try to get IMessageBus from the registry.
- */
+/** Try to get IMessageBus from the registry. */
 function tryGetMessageBus(): IMessageBus | null {
-  if (hasServiceRegistry()) {
-    try {
-      return getServiceRegistry().get(Services.Message);
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return tryGetService(Services.Message);
 }
 
 // ============================================================================

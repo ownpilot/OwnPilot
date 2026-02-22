@@ -94,6 +94,7 @@ vi.mock('../config/defaults.js', () => ({
   WS_SESSION_TIMEOUT_MS: 300000,
   WS_MAX_PAYLOAD_BYTES: 1048576,
   WS_MAX_CONNECTIONS: 100,
+  WS_READY_STATE_OPEN: 1,
 }));
 
 // ---------------------------------------------------------------------------

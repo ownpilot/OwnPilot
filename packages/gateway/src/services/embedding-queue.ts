@@ -10,6 +10,7 @@ import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { createMemoriesRepository } from '../db/repositories/memories.js';
 import {
+  EMBEDDING_BACKFILL_LIMIT,
   EMBEDDING_QUEUE_BATCH_SIZE,
   EMBEDDING_QUEUE_INTERVAL_MS,
   EMBEDDING_QUEUE_MAX_SIZE,
@@ -97,7 +98,7 @@ export class EmbeddingQueue {
    */
   async backfill(userId: string): Promise<number> {
     const repo = createMemoriesRepository(userId);
-    const memories = await repo.getWithoutEmbeddings(1000);
+    const memories = await repo.getWithoutEmbeddings(EMBEDDING_BACKFILL_LIMIT);
 
     let count = 0;
     for (const memory of memories) {
@@ -126,21 +127,37 @@ export class EmbeddingQueue {
         return;
       }
 
-      // Take a batch (remove from dedup Set as well)
+      // Take a batch from the queue (keep in dedup Set until processed)
       const batch = this.queue.splice(0, EMBEDDING_QUEUE_BATCH_SIZE);
-      for (const item of batch) this.queuedIds.delete(this.queueKey(item.memoryId, item.userId));
       const texts = batch.map(item => item.content);
 
       // Generate embeddings in batch
-      const results = await embeddingService.generateBatchEmbeddings(texts);
+      let results: Awaited<ReturnType<typeof embeddingService.generateBatchEmbeddings>>;
+      try {
+        results = await embeddingService.generateBatchEmbeddings(texts);
+      } catch (err) {
+        // Batch generation failed — re-enqueue all items with lower priority
+        log.warn('Batch embedding generation failed, re-enqueueing', { batchSize: batch.length, error: String(err) });
+        for (const item of batch) {
+          this.queuedIds.delete(this.queueKey(item.memoryId, item.userId));
+          if (item.priority < MAX_PRIORITY) {
+            this.enqueue(item.memoryId, item.userId, item.content, item.priority + 5);
+          }
+        }
+        return;
+      }
 
       // Update each memory with its embedding (reuse repos per userId)
       const repoCache = new Map<string, ReturnType<typeof createMemoriesRepository>>();
       for (let i = 0; i < batch.length; i++) {
         const item = batch[i]!;
         const result = results[i]!;
+        const key = this.queueKey(item.memoryId, item.userId);
 
-        if (result.embedding.length === 0) continue;
+        if (result.embedding.length === 0) {
+          this.queuedIds.delete(key);
+          continue;
+        }
 
         try {
           let repo = repoCache.get(item.userId);
@@ -149,12 +166,14 @@ export class EmbeddingQueue {
             repoCache.set(item.userId, repo);
           }
           await repo.updateEmbedding(item.memoryId, result.embedding);
+          this.queuedIds.delete(key);
 
           log.debug('Embedding generated', {
             memoryId: item.memoryId,
             cached: result.cached,
           });
         } catch (err) {
+          this.queuedIds.delete(key);
           log.warn('Failed to update memory embedding', {
             memoryId: item.memoryId,
             error: String(err),

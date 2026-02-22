@@ -10,7 +10,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField, parseBool } from './base.js';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('LocalProvidersRepo');
@@ -119,31 +119,7 @@ let cacheInitialized = false;
 // ROW-TO-MODEL CONVERSION
 // =============================================================================
 
-/**
- * Parse a JSONB value that may arrive as a string or as an already-parsed
- * object, depending on the database driver.
- */
-function parseJsonb<T>(raw: unknown, fallback: T): T {
-  if (raw == null) return fallback;
-  if (typeof raw === 'string') {
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      return fallback;
-    }
-  }
-  return raw as T;
-}
 
-/**
- * Parse a boolean value that may arrive as a real boolean, a string
- * ('true'/'false'), or a numeric (0/1) depending on the driver.
- */
-function parseBool(value: unknown): boolean {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'string') return value === 'true';
-  return value === 1;
-}
 
 function rowToProvider(row: LocalProviderRow): LocalProvider {
   return {
@@ -157,7 +133,7 @@ function rowToProvider(row: LocalProviderRow): LocalProvider {
     isDefault: parseBool(row.is_default),
     discoveryEndpoint: row.discovery_endpoint ?? undefined,
     lastDiscoveredAt: row.last_discovered_at ?? undefined,
-    metadata: parseJsonb<Record<string, unknown>>(row.metadata, {}),
+    metadata: parseJsonField<Record<string, unknown>>(row.metadata, {}),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -170,11 +146,11 @@ function rowToModel(row: LocalModelRow): LocalModel {
     localProviderId: row.local_provider_id,
     modelId: row.model_id,
     displayName: row.display_name,
-    capabilities: parseJsonb<string[]>(row.capabilities, []),
+    capabilities: parseJsonField<string[]>(row.capabilities, []),
     contextWindow: row.context_window,
     maxOutput: row.max_output,
     isEnabled: parseBool(row.is_enabled),
-    metadata: parseJsonb<Record<string, unknown>>(row.metadata, {}),
+    metadata: parseJsonField<Record<string, unknown>>(row.metadata, {}),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

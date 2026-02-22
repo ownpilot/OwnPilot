@@ -76,9 +76,11 @@ export class LogService implements ILogService {
           : console.log;
 
     if (this.json) {
-      const record = data && typeof data === 'object' && !Array.isArray(data) && !(data instanceof Error)
-        ? data as Record<string, unknown>
-        : data !== undefined ? { data } : {};
+      const record = data instanceof Error
+        ? { error: data.message, stack: data.stack }
+        : data && typeof data === 'object' && !Array.isArray(data)
+          ? data as Record<string, unknown>
+          : data !== undefined ? { data } : {};
       fn(JSON.stringify({
         level,
         ts: new Date().toISOString(),
@@ -87,11 +89,11 @@ export class LogService implements ILogService {
         ...record,
       }));
     } else {
-      const prefix = this.module ? `[${this.module}]` : '';
+      const prefix = this.module ? `[${this.module}] ` : '';
       if (data !== undefined) {
-        fn(`${prefix} ${message}`, data);
+        fn(`${prefix}${message}`, data);
       } else {
-        fn(`${prefix} ${message}`);
+        fn(`${prefix}${message}`);
       }
     }
   }

@@ -1,4 +1,5 @@
 import type { SessionInfo } from '../types';
+import { formatNumber } from '../utils/formatters';
 import { Plus } from './icons';
 
 interface ContextBarProps {
@@ -9,11 +10,6 @@ interface ContextBarProps {
   onShowDetail?: () => void;
 }
 
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
 
 function getFillColor(percent: number): string {
   if (percent >= 80) return 'bg-red-500';
@@ -55,7 +51,7 @@ export function ContextBar({ sessionInfo, defaultMaxTokens, onNewSession, onShow
           />
         </div>
         <span className="text-text-secondary dark:text-dark-text-secondary whitespace-nowrap group-hover:text-text-primary dark:group-hover:text-dark-text-primary transition-colors">
-          {formatTokens(estimatedTokens)} / {formatTokens(maxContextTokens)}
+          {formatNumber(estimatedTokens)} / {formatNumber(maxContextTokens)}
         </span>
       </button>
 
@@ -64,8 +60,8 @@ export function ContextBar({ sessionInfo, defaultMaxTokens, onNewSession, onShow
         {contextFillPercent}%
       </span>
       {cachedTokens != null && cachedTokens > 0 && (
-        <span className="text-text-tertiary dark:text-dark-text-tertiary whitespace-nowrap" title={`${formatTokens(cachedTokens)} tokens served from prompt cache`}>
-          {formatTokens(cachedTokens)} cached
+        <span className="text-text-tertiary dark:text-dark-text-tertiary whitespace-nowrap" title={`${formatNumber(cachedTokens)} tokens served from prompt cache`}>
+          {formatNumber(cachedTokens)} cached
         </span>
       )}
 
