@@ -49,6 +49,7 @@ COPY packages/core/package.json ./packages/core/
 COPY packages/gateway/package.json ./packages/gateway/
 COPY packages/channels/package.json ./packages/channels/
 COPY packages/cli/package.json ./packages/cli/
+COPY packages/ui/package.json ./packages/ui/
 
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
