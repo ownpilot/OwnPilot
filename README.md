@@ -1,5 +1,11 @@
 # OwnPilot
 
+[![CI](https://github.com/ownpilot/ownpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/ownpilot/ownpilot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/ghcr.io-ownpilot-blue?logo=docker)](https://ghcr.io/ownpilot/ownpilot)
+[![Node.js](https://img.shields.io/badge/Node.js-≥22-green?logo=node.js)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
+
 Privacy-first personal AI assistant platform with autonomous agents, tool orchestration, multi-provider support, MCP integration, and Telegram connectivity.
 
 **Self-hosted. Your data stays yours.**
@@ -79,7 +85,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 
 ### Communication
 
-- **Web UI** — React 19 + Vite 6 + Tailwind CSS 4 with dark mode, 41 pages, 60+ components, code-split
+- **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 41 pages, 60+ components, code-split
 - **Telegram Bot** — Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
 - **WebSocket** — Real-time broadcasts for all data mutations, event subscriptions, session management
 - **REST API** — 40 route modules with standardized responses, pagination, and error codes
@@ -101,7 +107,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 
 ```
                          ┌──────────────┐
-                         │   Web UI     │  React 19 + Vite 6
+                         │   Web UI     │  React 19 + Vite 7
                          │  (Port 5173) │  Tailwind CSS 4
                          └──────┬───────┘
                                 │ HTTP + SSE + WebSocket
@@ -151,13 +157,34 @@ All messages (web UI chat, Telegram, trigger-initiated chats) flow through the s
 
 ## Quick Start
 
-### Prerequisites
+### Docker (Recommended)
+
+```bash
+git clone https://github.com/ownpilot/ownpilot.git
+cd ownpilot
+cp .env.example .env
+
+# Start OwnPilot + PostgreSQL
+docker compose --profile postgres up -d
+
+# UI + API: http://localhost:8080
+```
+
+Or use the pre-built image:
+
+```bash
+docker pull ghcr.io/ownpilot/ownpilot:latest
+```
+
+### From Source
+
+#### Prerequisites
 
 - **Node.js** >= 22.0.0
 - **pnpm** >= 10.0.0
 - **PostgreSQL** (via Docker or native)
 
-### Setup
+#### Setup
 
 ```bash
 # Clone and install
@@ -265,7 +292,7 @@ ownpilot/
 │
 ├── turbo.json                   # Turborepo pipeline config
 ├── tsconfig.base.json           # Shared TypeScript strict config
-├── eslint.config.js             # ESLint 9 flat config
+├── eslint.config.js             # ESLint 10 flat config
 ├── .env.example                 # Environment variable template
 └── package.json                 # Monorepo root
 ```
@@ -300,7 +327,7 @@ The foundational runtime library. Contains the AI engine, tool system, plugin ar
 
 The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, MCP integration, plugin management, and channel connectivity.
 
-**~72,000 LOC** across 200+ source files. **191 test files** with **9,700+ tests**.
+**~72,000 LOC** across 200+ source files. **188 test files** with **9,800+ tests**.
 
 **Route Modules (40):**
 
@@ -322,14 +349,14 @@ The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket commun
 
 ### UI (`@ownpilot/ui`)
 
-Modern web interface built with React 19, Vite 6, and Tailwind CSS 4. Minimal dependencies — no Redux/Zustand, no axios, no component library.
+Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal dependencies — no Redux/Zustand, no axios, no component library.
 
 | Technology           | Version |
 | -------------------- | ------- |
-| React                | 19.0.0  |
+| React                | 19.2.4  |
 | React Router DOM     | 7.1.3   |
-| Vite                 | 6.4.1   |
-| Tailwind CSS         | 4.0.6   |
+| Vite                 | 7.3.1   |
+| Tailwind CSS         | 4.2.0   |
 | prism-react-renderer | 2.4.1   |
 
 **Pages (41):**
@@ -976,7 +1003,7 @@ Error responses include error codes from a standardized `ERROR_CODES` enum.
 # ─── Server ────────────────────────────────────────
 PORT=8080                       # Gateway port
 UI_PORT=5173                    # UI dev server port
-HOST=0.0.0.0
+HOST=127.0.0.1
 NODE_ENV=development
 # CORS_ORIGINS=                 # Additional origins (localhost:UI_PORT auto-included)
 # BODY_SIZE_LIMIT=1048576       # Max request body size in bytes (default: 1MB)
@@ -1037,13 +1064,38 @@ LOG_LEVEL=info
 
 ## Deployment
 
-### Docker
+### Docker Compose
+
+The simplest way to run OwnPilot in production:
 
 ```bash
-# Build and run production image
-docker build -t ownpilot .
-docker run -p 8080:8080 --env-file .env ownpilot
+cp .env.example .env
+# Edit .env with your settings
+
+# Start OwnPilot + PostgreSQL
+docker compose --profile postgres up -d
+
+# UI + API: http://localhost:8080
 ```
+
+The gateway container serves the bundled UI — no separate frontend deployment needed.
+
+### Pre-built Image
+
+A multi-arch image (amd64 + arm64) is published to GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/ownpilot/ownpilot:latest
+
+docker run -d \
+  --name ownpilot \
+  -p 8080:8080 \
+  -e DATABASE_URL=postgresql://user:pass@host:5432/ownpilot \
+  -e NODE_ENV=production \
+  ghcr.io/ownpilot/ownpilot:latest
+```
+
+Health check endpoint: `GET /health`
 
 ### Manual
 
@@ -1051,12 +1103,11 @@ docker run -p 8080:8080 --env-file .env ownpilot
 # Build all packages
 pnpm build
 
-# Start production server
+# Start production server (gateway + channels)
 ownpilot start
 
-# Or start individually
+# Or start gateway only
 pnpm --filter @ownpilot/gateway start
-pnpm --filter @ownpilot/ui preview
 ```
 
 ---
@@ -1081,21 +1132,23 @@ pnpm clean            # Clear all build artifacts
 
 ### Tech Stack
 
-| Layer          | Technology                                |
-| -------------- | ----------------------------------------- |
-| **Monorepo**   | pnpm 10+ workspaces + Turborepo 2.x       |
-| **Language**   | TypeScript 5.9 (strict, ES2023, NodeNext) |
-| **Runtime**    | Node.js 22+                               |
-| **API Server** | Hono 4.x                                  |
-| **Web UI**     | React 19 + Vite 6 + Tailwind CSS 4        |
-| **Database**   | PostgreSQL                                |
-| **Telegram**   | Grammy                                    |
-| **MCP**        | @modelcontextprotocol/sdk                 |
-| **Testing**    | Vitest 2.x (306 test files, 9,800+ tests) |
-| **Linting**    | ESLint 9 (flat config)                    |
-| **Formatting** | Prettier 3.x                              |
-| **Git Hooks**  | Husky (pre-commit: lint + typecheck)      |
-| **CI**         | GitHub Actions (Node 22, Ubuntu)          |
+| Layer          | Technology                                    |
+| -------------- | --------------------------------------------- |
+| **Monorepo**   | pnpm 10+ workspaces + Turborepo 2.x           |
+| **Language**   | TypeScript 5.9 (strict, ES2023, NodeNext)     |
+| **Runtime**    | Node.js 22+                                   |
+| **API Server** | Hono 4.12                                     |
+| **Web UI**     | React 19 + Vite 7 + Tailwind CSS 4            |
+| **Database**   | PostgreSQL (with pgvector)                    |
+| **Telegram**   | Grammy 1.40                                   |
+| **CLI**        | Commander.js 14                               |
+| **MCP**        | @modelcontextprotocol/sdk                     |
+| **Testing**    | Vitest 2.x (307 test files, 19,200+ tests)    |
+| **Linting**    | ESLint 10 (flat config)                       |
+| **Formatting** | Prettier 3.8                                  |
+| **Container**  | Docker multi-arch (ghcr.io/ownpilot/ownpilot) |
+| **Git Hooks**  | Husky (pre-commit: lint + typecheck)          |
+| **CI**         | GitHub Actions (Node 22, Ubuntu)              |
 
 ### Architecture Patterns
 
