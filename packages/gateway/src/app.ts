@@ -114,7 +114,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   );
 
   // Body size limit (configurable via BODY_SIZE_LIMIT env var, default 1 MB)
-  const maxBodySize = parseInt(process.env.BODY_SIZE_LIMIT ?? '1048576', 10);
+  const maxBodySize = parseInt(process.env.BODY_SIZE_LIMIT ?? '1048576', 10) || 1048576;
   app.use('/api/*', bodyLimit({
     maxSize: maxBodySize,
     onError: (c) => c.json({ error: { code: 'PAYLOAD_TOO_LARGE', message: `Request body exceeds ${Math.round(maxBodySize / 1024 / 1024)} MB limit` } }, 413),
