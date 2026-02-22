@@ -128,6 +128,7 @@ export interface Tool {
   description: string;
   parameters: Record<string, unknown>;
   category?: string;
+  workflowUsable?: boolean;
 }
 
 export interface ApiResponse<T = unknown> {

@@ -30,6 +30,7 @@ const mockMcpClientService = {
   connect: vi.fn(),
   disconnect: vi.fn(),
   getServerTools: vi.fn().mockReturnValue([]),
+  refreshToolRegistration: vi.fn(),
 };
 
 const mockHandleMcpRequest = vi.fn();
@@ -40,10 +41,6 @@ const mockToolRegistry = {
 
 vi.mock('../db/repositories/mcp-servers.js', () => ({
   getMcpServersRepo: () => mockRepo,
-}));
-
-vi.mock('../services/mcp-client-service.js', () => ({
-  mcpClientService: mockMcpClientService,
 }));
 
 vi.mock('../services/mcp-server-service.js', () => ({
@@ -64,6 +61,13 @@ vi.mock('../services/log.js', () => ({
 
 vi.mock('@ownpilot/core', () => ({
   getBaseName: vi.fn((name: string) => name.split('.').pop() ?? name),
+  getServiceRegistry: () => ({
+    get: (token: { key: string }) => {
+      if (token.key === 'mcp-client') return mockMcpClientService;
+      throw new Error(`Unexpected token: ${token.key}`);
+    },
+  }),
+  Services: { McpClient: { key: 'mcp-client' } },
 }));
 
 // Import after mocks
@@ -981,6 +985,179 @@ describe('MCP Routes', () => {
       const json = await res.json() as { error: { code: string; message: string } };
       expect(json.error.code).toBe('NOT_FOUND');
       expect(json.error.message).toContain('MCP server not found');
+    });
+  });
+
+  // ========================================================================
+  // PATCH /mcp/:id/tool-settings
+  // ========================================================================
+
+  describe('PATCH /mcp/:id/tool-settings', () => {
+    it('updates workflowUsable for a tool and returns result', async () => {
+      mockRepo.getById.mockResolvedValue(sampleServer);
+      mockRepo.update.mockResolvedValue({ ...sampleServer, metadata: { toolSettings: { my_tool: { workflowUsable: false } } } });
+      mockMcpClientService.isConnected.mockReturnValue(false);
+
+      const res = await app.request('/mcp/mcp-1/tool-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolName: 'my_tool', workflowUsable: false }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as { data: { toolName: string; workflowUsable: boolean } };
+      expect(json.data.toolName).toBe('my_tool');
+      expect(json.data.workflowUsable).toBe(false);
+      expect(mockRepo.update).toHaveBeenCalledWith('mcp-1', {
+        metadata: expect.objectContaining({
+          toolSettings: { my_tool: { workflowUsable: false } },
+        }),
+      });
+    });
+
+    it('merges with existing toolSettings', async () => {
+      const serverWithSettings = {
+        ...sampleServer,
+        metadata: { toolSettings: { existing_tool: { workflowUsable: true } } },
+      };
+      mockRepo.getById.mockResolvedValue(serverWithSettings);
+      mockRepo.update.mockResolvedValue(serverWithSettings);
+      mockMcpClientService.isConnected.mockReturnValue(false);
+
+      const res = await app.request('/mcp/mcp-1/tool-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolName: 'new_tool', workflowUsable: false }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockRepo.update).toHaveBeenCalledWith('mcp-1', {
+        metadata: expect.objectContaining({
+          toolSettings: {
+            existing_tool: { workflowUsable: true },
+            new_tool: { workflowUsable: false },
+          },
+        }),
+      });
+    });
+
+    it('calls refreshToolRegistration when server is connected', async () => {
+      mockRepo.getById.mockResolvedValue(sampleServer);
+      mockRepo.update.mockResolvedValue(sampleServer);
+      mockMcpClientService.isConnected.mockReturnValue(true);
+      mockMcpClientService.refreshToolRegistration.mockResolvedValue(undefined);
+
+      const res = await app.request('/mcp/mcp-1/tool-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolName: 'my_tool', workflowUsable: false }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockMcpClientService.refreshToolRegistration).toHaveBeenCalledWith('test-server');
+    });
+
+    it('skips refreshToolRegistration when server is disconnected', async () => {
+      mockRepo.getById.mockResolvedValue(sampleServer);
+      mockRepo.update.mockResolvedValue(sampleServer);
+      mockMcpClientService.isConnected.mockReturnValue(false);
+
+      await app.request('/mcp/mcp-1/tool-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolName: 'my_tool', workflowUsable: true }),
+      });
+
+      expect(mockMcpClientService.refreshToolRegistration).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when toolName is missing', async () => {
+      const res = await app.request('/mcp/mcp-1/tool-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflowUsable: false }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json() as { error: { code: string } };
+      expect(json.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('returns 400 when workflowUsable is not boolean', async () => {
+      const res = await app.request('/mcp/mcp-1/tool-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolName: 'my_tool', workflowUsable: 'yes' }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json() as { error: { code: string } };
+      expect(json.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('returns 404 for unknown server id', async () => {
+      mockRepo.getById.mockResolvedValue(null);
+
+      const res = await app.request('/mcp/nonexistent/tool-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolName: 'my_tool', workflowUsable: false }),
+      });
+
+      expect(res.status).toBe(404);
+      const json = await res.json() as { error: { code: string } };
+      expect(json.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 404 when userId does not match server owner', async () => {
+      mockRepo.getById.mockResolvedValue(sampleServer);
+
+      const user2App = createApp('user-2');
+      const res = await user2App.request('/mcp/mcp-1/tool-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolName: 'my_tool', workflowUsable: false }),
+      });
+
+      expect(res.status).toBe(404);
+      const json = await res.json() as { error: { code: string } };
+      expect(json.error.code).toBe('NOT_FOUND');
+    });
+
+    it('broadcasts update event via WebSocket', async () => {
+      mockRepo.getById.mockResolvedValue(sampleServer);
+      mockRepo.update.mockResolvedValue(sampleServer);
+      mockMcpClientService.isConnected.mockReturnValue(false);
+
+      const { wsGateway } = await import('../ws/server.js');
+
+      await app.request('/mcp/mcp-1/tool-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolName: 'my_tool', workflowUsable: false }),
+      });
+
+      expect(wsGateway.broadcast).toHaveBeenCalledWith('data:changed', {
+        entity: 'mcp_server',
+        action: 'updated',
+        id: 'mcp-1',
+      });
+    });
+
+    it('returns 500 on repo failure', async () => {
+      mockRepo.getById.mockResolvedValue(sampleServer);
+      mockRepo.update.mockRejectedValue(new Error('DB error'));
+      mockMcpClientService.isConnected.mockReturnValue(false);
+
+      const res = await app.request('/mcp/mcp-1/tool-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolName: 'my_tool', workflowUsable: false }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json() as { error: { code: string } };
+      expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
 });

@@ -205,6 +205,11 @@ export class ChannelMessagesRepository extends BaseRepository {
     return result.changes;
   }
 
+  async deleteAll(): Promise<number> {
+    const result = await this.execute(`DELETE FROM channel_messages`);
+    return result.changes;
+  }
+
   async count(channelId?: string): Promise<number> {
     if (channelId) {
       const row = await this.queryOne<{ count: string }>(

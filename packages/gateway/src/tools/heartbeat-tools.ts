@@ -13,6 +13,7 @@ import { getHeartbeatService } from '../services/heartbeat-service.js';
 
 const createHeartbeatDef: ToolDefinition = {
   name: 'create_heartbeat',
+  workflowUsable: false,
   description: `Create a periodic task using natural language scheduling.
 
 Write the schedule in plain English and the system converts it to a cron-based trigger automatically.
@@ -53,6 +54,7 @@ The task description is what the AI should do when the heartbeat fires.`,
 
 const listHeartbeatsDef: ToolDefinition = {
   name: 'list_heartbeats',
+  workflowUsable: false,
   description: 'List all heartbeat periodic tasks with their schedules, status, and linked triggers.',
   parameters: {
     type: 'object',
@@ -68,6 +70,7 @@ const listHeartbeatsDef: ToolDefinition = {
 
 const updateHeartbeatDef: ToolDefinition = {
   name: 'update_heartbeat',
+  workflowUsable: false,
   description: 'Update an existing heartbeat. Can change the schedule, task description, name, or enabled status.',
   parameters: {
     type: 'object',
@@ -100,6 +103,7 @@ const updateHeartbeatDef: ToolDefinition = {
 
 const deleteHeartbeatDef: ToolDefinition = {
   name: 'delete_heartbeat',
+  workflowUsable: false,
   description: 'Delete a heartbeat and its backing trigger permanently.',
   parameters: {
     type: 'object',

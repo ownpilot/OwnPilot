@@ -82,7 +82,7 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
         savedSystemPrompt = currentPrompt;
         const directPrompt = currentPrompt.replace(
           /## How to Call Tools[\s\S]*?(?=\n## [^#]|$)/,
-          `## How to Call Tools\nCall tools directly by their function name. Tool names use double-underscore (__) as namespace separator in API calls.\nWhen mentioning tool names to users in text, use dot notation (e.g., "core.add_task" not "core__add_task") for readability.\nUse search_tools("keyword") to discover tools, get_tool_help("tool_name") for parameters.\n\n`,
+          `## How to Call Tools\nCall tools directly by function name. Names use __ (double underscore) instead of dots as namespace separator.\nNamespaces: core__ = built-in, custom__ = user-created, plugin__<id>__ = plugins, ext__<id>__ = extensions, mcp__<server>__ = MCP servers.\nExample: core__add_task({title:"Buy milk"}) calls the built-in add_task tool.\nWhen mentioning tools to users, use dot notation for readability (e.g., "core.add_task" not "core__add_task").\nUse search_tools("keyword") to discover tools, get_tool_help("tool_name") for parameters.\n\n`,
         );
         if (directPrompt !== currentPrompt) {
           agent.updateSystemPrompt(directPrompt);

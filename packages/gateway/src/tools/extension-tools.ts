@@ -13,6 +13,7 @@ import { getExtensionService } from '../services/extension-service.js';
 
 const listExtensionsDef: ToolDefinition = {
   name: 'list_extensions',
+  workflowUsable: false,
   description: 'List installed extensions with their status, tools, and triggers.',
   parameters: {
     type: 'object',
@@ -33,6 +34,7 @@ const listExtensionsDef: ToolDefinition = {
 
 const toggleExtensionDef: ToolDefinition = {
   name: 'toggle_extension',
+  workflowUsable: false,
   description: 'Enable or disable a extension. Enabling activates its tools and triggers; disabling deactivates them.',
   parameters: {
     type: 'object',
@@ -53,6 +55,7 @@ const toggleExtensionDef: ToolDefinition = {
 
 const getExtensionInfoDef: ToolDefinition = {
   name: 'get_extension_info',
+  workflowUsable: false,
   description: 'Get detailed information about a extension including its tools, triggers, and configuration.',
   parameters: {
     type: 'object',

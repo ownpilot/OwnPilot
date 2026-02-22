@@ -891,7 +891,7 @@ export interface Memory {
   importance: number;
   createdAt: string;
   updatedAt: string;
-  accessedAt?: string;
+  lastAccessedAt?: string;
   metadata?: Record<string, unknown>;
 }
 

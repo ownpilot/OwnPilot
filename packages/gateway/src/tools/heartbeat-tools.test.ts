@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { executeHeartbeatTool } from './heartbeat-tools.js';
+import { executeHeartbeatTool, HEARTBEAT_TOOLS } from './heartbeat-tools.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -163,5 +163,13 @@ describe('executeHeartbeatTool', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unknown');
     });
+  });
+});
+
+describe('workflowUsable flag', () => {
+  it('all heartbeat tools are marked workflowUsable: false', () => {
+    for (const def of HEARTBEAT_TOOLS) {
+      expect(def.workflowUsable, `${def.name} should have workflowUsable: false`).toBe(false);
+    }
   });
 });

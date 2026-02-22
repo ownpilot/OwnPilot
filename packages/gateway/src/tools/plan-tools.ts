@@ -17,6 +17,7 @@ const log = getLog('PlanTools');
 
 const createPlanDef: ToolDefinition = {
   name: 'create_plan',
+  workflowUsable: false,
   description: 'Create a new execution plan with a goal. After creating, add steps with add_plan_step.',
   parameters: {
     type: 'object',
@@ -45,6 +46,7 @@ const createPlanDef: ToolDefinition = {
 
 const addPlanStepDef: ToolDefinition = {
   name: 'add_plan_step',
+  workflowUsable: false,
   description: `Add a step to an existing plan. Steps execute in order by their order number.
 
 Step types:
@@ -120,6 +122,7 @@ Failed steps retry automatically with exponential backoff (up to max_retries).`,
 
 const listPlansDef: ToolDefinition = {
   name: 'list_plans',
+  workflowUsable: false,
   description: 'List all plans with their status and progress.',
   parameters: {
     type: 'object',
@@ -136,6 +139,7 @@ const listPlansDef: ToolDefinition = {
 
 const getPlanDetailsDef: ToolDefinition = {
   name: 'get_plan_details',
+  workflowUsable: false,
   description: 'Get detailed info about a plan including all its steps and execution history.',
   parameters: {
     type: 'object',
@@ -152,6 +156,7 @@ const getPlanDetailsDef: ToolDefinition = {
 
 const executePlanDef: ToolDefinition = {
   name: 'execute_plan',
+  workflowUsable: false,
   description: 'Start executing a plan. The plan must have steps and be in pending status. Steps run in order, respecting dependencies. Failed steps retry with exponential backoff. Circular dependencies are detected and rejected. Use get_plan_details to check progress.',
   parameters: {
     type: 'object',
@@ -168,6 +173,7 @@ const executePlanDef: ToolDefinition = {
 
 const pausePlanDef: ToolDefinition = {
   name: 'pause_plan',
+  workflowUsable: false,
   description: 'Pause a running plan. Can be resumed later.',
   parameters: {
     type: 'object',
@@ -184,6 +190,7 @@ const pausePlanDef: ToolDefinition = {
 
 const deletePlanDef: ToolDefinition = {
   name: 'delete_plan',
+  workflowUsable: false,
   description: 'Delete a plan permanently.',
   parameters: {
     type: 'object',

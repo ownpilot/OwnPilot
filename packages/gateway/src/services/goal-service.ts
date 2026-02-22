@@ -10,6 +10,7 @@ import {
   getEventBus,
   createEvent,
   EventTypes,
+  type IGoalService,
   type ResourceCreatedData,
   type ResourceUpdatedData,
   type ResourceDeletedData,
@@ -52,7 +53,7 @@ export interface DecomposeStepInput {
 // GoalService
 // ============================================================================
 
-export class GoalService {
+export class GoalService implements IGoalService {
   private getRepo(userId: string): GoalsRepository {
     return createGoalsRepository(userId);
   }
@@ -284,10 +285,6 @@ export class GoalServiceError extends Error {
 
 let instance: GoalService | null = null;
 
-/**
- * @internal Used only by GoalServiceImpl adapter.
- * @deprecated Use `getServiceRegistry().get(Services.Goal)` instead.
- */
 export function getGoalService(): GoalService {
   if (!instance) {
     instance = new GoalService();

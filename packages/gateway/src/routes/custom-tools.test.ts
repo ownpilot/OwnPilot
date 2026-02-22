@@ -1024,4 +1024,96 @@ describe('Custom Tools Routes', () => {
       expect(mockRepo.recordUsage).toHaveBeenCalledWith('ct_001');
     });
   });
+
+  // ========================================================================
+  // PATCH /custom-tools/:id/workflow-usable
+  // ========================================================================
+
+  describe('PATCH /custom-tools/:id/workflow-usable', () => {
+    it('sets workflowUsable to false and returns result', async () => {
+      mockRepo.get.mockResolvedValue(sampleTool);
+      mockRepo.update.mockResolvedValue({ ...sampleTool, metadata: { workflowUsable: false } });
+
+      const res = await app.request('/custom-tools/ct_001/workflow-usable', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: false }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as { data: { workflowUsable: boolean } };
+      expect(json.data.workflowUsable).toBe(false);
+      expect(mockRepo.update).toHaveBeenCalledWith('ct_001', {
+        metadata: expect.objectContaining({ workflowUsable: false }),
+      });
+    });
+
+    it('sets workflowUsable to true', async () => {
+      const toolWithDisabledWf = { ...sampleTool, metadata: { workflowUsable: false } };
+      mockRepo.get.mockResolvedValue(toolWithDisabledWf);
+      mockRepo.update.mockResolvedValue({ ...sampleTool, metadata: { workflowUsable: true } });
+
+      const res = await app.request('/custom-tools/ct_001/workflow-usable', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: true }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as { data: { workflowUsable: boolean } };
+      expect(json.data.workflowUsable).toBe(true);
+    });
+
+    it('returns 400 when enabled is not boolean', async () => {
+      const res = await app.request('/custom-tools/ct_001/workflow-usable', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: 'yes' }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json() as { error: { code: string } };
+      expect(json.error.code).toBe('INVALID_INPUT');
+    });
+
+    it('returns 400 when body is missing', async () => {
+      const res = await app.request('/custom-tools/ct_001/workflow-usable', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 404 for unknown tool id', async () => {
+      mockRepo.get.mockResolvedValue(null);
+
+      const res = await app.request('/custom-tools/nonexistent/workflow-usable', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: false }),
+      });
+
+      expect(res.status).toBe(404);
+      const json = await res.json() as { error: { code: string } };
+      expect(json.error.code).toBe('NOT_FOUND');
+    });
+
+    it('preserves existing metadata fields', async () => {
+      const toolWithMeta = { ...sampleTool, metadata: { someKey: 'value', other: 42 } };
+      mockRepo.get.mockResolvedValue(toolWithMeta);
+      mockRepo.update.mockResolvedValue({ ...toolWithMeta, metadata: { someKey: 'value', other: 42, workflowUsable: false } });
+
+      await app.request('/custom-tools/ct_001/workflow-usable', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: false }),
+      });
+
+      expect(mockRepo.update).toHaveBeenCalledWith('ct_001', {
+        metadata: { someKey: 'value', other: 42, workflowUsable: false },
+      });
+    });
+  });
 });

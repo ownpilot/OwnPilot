@@ -131,6 +131,9 @@ function syncToolToRegistry(tool: CustomToolRecord): void {
           category: k.category,
           docsUrl: k.docsUrl,
         })),
+        workflowUsable: tool.metadata?.workflowUsable !== undefined
+          ? Boolean(tool.metadata.workflowUsable)
+          : undefined,
       };
       const executor = (args: Record<string, unknown>, context: ToolContext) =>
         dynamicRegistry.execute(tool.name, args, context);
@@ -381,6 +384,36 @@ customToolsRoutes.delete('/:id', async (c) => {
   wsGateway.broadcast('data:changed', { entity: 'custom_tool', action: 'deleted', id });
 
   return apiResponse(c, { deleted: true });
+});
+
+// =============================================================================
+// WORKFLOW USABLE TOGGLE
+// =============================================================================
+
+/**
+ * Toggle workflowUsable flag for a custom tool
+ */
+customToolsRoutes.patch('/:id/workflow-usable', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => null) as { enabled: boolean } | null;
+  if (!body || typeof body.enabled !== 'boolean') {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'enabled (boolean) is required' }, 400);
+  }
+
+  const repo = createCustomToolsRepo(getUserId(c));
+  const tool = await repo.get(id);
+  if (!tool) {
+    return notFoundError(c, 'Custom tool', id);
+  }
+
+  const metadata = { ...tool.metadata, workflowUsable: body.enabled };
+  const updated = await repo.update(id, { metadata });
+  if (updated) {
+    syncToolToRegistry(updated);
+    invalidateAgentCache();
+  }
+
+  return apiResponse(c, { workflowUsable: body.enabled });
 });
 
 // =============================================================================
@@ -940,6 +973,9 @@ customToolsRoutes.get('/active/definitions', async (c) => {
     parameters: tool.parameters,
     category: tool.category ?? 'Custom',
     requiresConfirmation: tool.requiresApproval,
+    workflowUsable: tool.metadata?.workflowUsable !== undefined
+      ? Boolean(tool.metadata.workflowUsable)
+      : undefined,
   }));
 
   return apiResponse(c, {
@@ -1399,6 +1435,9 @@ export async function getActiveCustomToolDefinitions(userId = 'default'): Promis
     parameters: t.parameters as ToolDefinition['parameters'],
     category: t.category ?? 'Custom',
     requiresConfirmation: t.requiresApproval,
+    workflowUsable: t.metadata?.workflowUsable !== undefined
+      ? Boolean(t.metadata.workflowUsable)
+      : undefined,
   }));
 }
 

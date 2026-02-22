@@ -137,6 +137,14 @@ describe('agent-prompt', () => {
     it('contains plugin. namespace prefix', () => {
       expect(BASE_SYSTEM_PROMPT).toContain('plugin.');
     });
+
+    it('contains ext. namespace prefix', () => {
+      expect(BASE_SYSTEM_PROMPT).toContain('ext.');
+    });
+
+    it('contains mcp. namespace prefix', () => {
+      expect(BASE_SYSTEM_PROMPT).toContain('mcp.');
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -366,6 +374,12 @@ describe('agent-prompt', () => {
       const behaviorSection = BASE_SYSTEM_PROMPT.split('## Behavior')[1]!.split('\n##')[0]!;
       expect(behaviorSection).toContain('summarize results');
     });
+
+    it('instructs never to expose internal tool names to user', () => {
+      const behaviorSection = BASE_SYSTEM_PROMPT.split('## Behavior')[1]!.split('\n##')[0]!;
+      expect(behaviorSection).toContain('Never expose internal tool names');
+      expect(behaviorSection).toContain('friendly display name');
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -445,6 +459,12 @@ describe('agent-prompt', () => {
 
     it('uses PostgreSQL as the data store reference', () => {
       expect(BASE_SYSTEM_PROMPT).toContain('PostgreSQL');
+    });
+
+    it('capabilities section references core namespace for listed tools', () => {
+      const section = BASE_SYSTEM_PROMPT.split('## Capabilities & Key Tools')[1]!.split('\n##')[0]!;
+      expect(section).toContain('core');
+      expect(section).toContain('core.<tool_name>');
     });
 
     it('instructs never to fabricate data', () => {

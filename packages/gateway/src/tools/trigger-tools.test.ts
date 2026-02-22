@@ -349,3 +349,11 @@ describe('Trigger Tools', () => {
     });
   });
 });
+
+describe('workflowUsable flag', () => {
+  it('all trigger tools are marked workflowUsable: false', () => {
+    for (const def of TRIGGER_TOOLS) {
+      expect(def.workflowUsable, `${def.name} should have workflowUsable: false`).toBe(false);
+    }
+  });
+});

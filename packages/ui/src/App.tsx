@@ -47,6 +47,7 @@ const WorkflowEditorPage = lazy(() => import('./pages/WorkflowEditorPage').then(
 const ToolGroupsPage = lazy(() => import('./pages/ToolGroupsPage').then((m) => ({ default: m.ToolGroupsPage })));
 const WizardsPage = lazy(() => import('./pages/WizardsPage').then((m) => ({ default: m.WizardsPage })));
 const WizardRouter = lazy(() => import('./pages/wizards/WizardRouter').then((m) => ({ default: m.WizardRouter })));
+const WorkflowToolSettingsPage = lazy(() => import('./pages/WorkflowToolSettingsPage').then((m) => ({ default: m.WorkflowToolSettingsPage })));
 const SystemPage = lazy(() => import('./pages/SystemPage').then((m) => ({ default: m.SystemPage })));
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 
@@ -110,6 +111,7 @@ export function App() {
         <Route path="settings/mcp-servers" element={page(<McpServersPage />)} />
         <Route path="settings/connected-apps" element={page(<ConnectedAppsPage />)} />
         <Route path="settings/tool-groups" element={page(<ToolGroupsPage />)} />
+        <Route path="settings/workflow-tools" element={page(<WorkflowToolSettingsPage />)} />
         <Route path="settings/system" element={page(<SystemPage />)} />
         <Route path="about" element={page(<AboutPage />)} />
         <Route path="profile" element={page(<ProfilePage />)} />

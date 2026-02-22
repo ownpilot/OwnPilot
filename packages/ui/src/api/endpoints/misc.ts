@@ -266,6 +266,8 @@ export const channelsApi = {
     apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/disconnect`),
   reply: (channelId: string, body: { text: string; platformChatId?: string; replyToMessageId?: string }) =>
     apiClient.post<{ messageId: string; platformMessageId: string }>(`/channels/${channelId}/reply`, body),
+  clearMessages: (channelId?: string) =>
+    apiClient.delete<{ deleted: number }>('/channels/messages', { params: channelId ? { channelId } : undefined }),
 };
 
 // ---- Expenses ----

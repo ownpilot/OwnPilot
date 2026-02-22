@@ -5,6 +5,7 @@
  * Uses EmbeddingCacheRepository for LRU caching to avoid redundant API calls.
  */
 
+import type { IEmbeddingService } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { EmbeddingCacheRepository, embeddingCacheRepo } from '../db/repositories/embedding-cache.js';
@@ -30,7 +31,7 @@ export interface EmbeddingResult {
 // Service
 // ============================================================================
 
-export class EmbeddingService {
+export class EmbeddingService implements IEmbeddingService {
   private modelName: string;
   private dimensions: number;
   private cache: EmbeddingCacheRepository;

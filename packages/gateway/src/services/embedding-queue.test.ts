@@ -24,11 +24,17 @@ vi.mock('./log.js', () => ({
 const mockIsAvailable = vi.fn().mockReturnValue(true);
 const mockGenerateBatch = vi.fn();
 
-vi.mock('./embedding-service.js', () => ({
-  getEmbeddingService: () => ({
-    isAvailable: mockIsAvailable,
-    generateBatchEmbeddings: mockGenerateBatch,
+vi.mock('@ownpilot/core', () => ({
+  getServiceRegistry: () => ({
+    get: (token: { key: string }) => {
+      if (token.key === 'embedding') return {
+        isAvailable: mockIsAvailable,
+        generateBatchEmbeddings: mockGenerateBatch,
+      };
+      throw new Error(`Unexpected token: ${token.key}`);
+    },
   }),
+  Services: { Embedding: { key: 'embedding' } },
 }));
 
 const mockUpdateEmbedding = vi.fn();

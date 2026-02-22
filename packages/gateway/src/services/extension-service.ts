@@ -17,6 +17,7 @@ import {
   type ResourceCreatedData,
   type ResourceUpdatedData,
   type ResourceDeletedData,
+  type IExtensionService,
 } from '@ownpilot/core';
 import {
   extensionsRepo,
@@ -66,7 +67,7 @@ export interface ToolDefinitionForRegistry {
 // Service
 // =============================================================================
 
-export class ExtensionService {
+export class ExtensionService implements IExtensionService {
   // --------------------------------------------------------------------------
   // Install
   // --------------------------------------------------------------------------

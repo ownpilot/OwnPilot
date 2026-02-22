@@ -372,6 +372,21 @@ describe('McpServersRepository', () => {
       expect(params).toContain('{"X-Custom":"header"}');
     });
 
+    it('should serialize metadata JSON on update', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeRow()]);
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.query.mockResolvedValueOnce([makeRow()]);
+
+      await repo.update('mcp-1', {
+        metadata: { toolSettings: { my_tool: { workflowUsable: false } } },
+      });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('metadata = ?');
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params).toContain(JSON.stringify({ toolSettings: { my_tool: { workflowUsable: false } } }));
+    });
+
     it('should build dynamic SET clause for partial updates', async () => {
       mockAdapter.query.mockResolvedValueOnce([makeRow()]);
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });

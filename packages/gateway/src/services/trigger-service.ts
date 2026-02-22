@@ -10,6 +10,7 @@ import {
   getEventBus,
   createEvent,
   EventTypes,
+  type ITriggerService,
   type ResourceCreatedData,
   type ResourceUpdatedData,
   type ResourceDeletedData,
@@ -42,7 +43,7 @@ export interface TriggerStats {
 // TriggerService
 // ============================================================================
 
-export class TriggerService {
+export class TriggerService implements ITriggerService {
   private getRepo(userId: string): TriggersRepository {
     return createTriggersRepository(userId);
   }
@@ -191,10 +192,6 @@ export class TriggerServiceError extends Error {
 
 let instance: TriggerService | null = null;
 
-/**
- * @internal Used only by TriggerServiceImpl adapter.
- * @deprecated Use `getServiceRegistry().get(Services.Trigger)` instead.
- */
 export function getTriggerService(): TriggerService {
   if (!instance) {
     instance = new TriggerService();

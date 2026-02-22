@@ -270,6 +270,7 @@ export interface ToolInfo {
   description: string;
   parameters: ToolDefinition['parameters'];
   category?: string;
+  workflowUsable?: boolean;
 }
 
 /**

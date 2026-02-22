@@ -16,6 +16,7 @@ import { maskSecret, getErrorMessage } from '../routes/helpers.js';
 
 const listConfigServicesTool: ToolDefinition = {
   name: 'config_list_services',
+  workflowUsable: false,
   description:
     'List all available Config Center services (API integrations, email providers, etc.). ' +
     'Shows which services are configured and which still need setup.',
@@ -32,6 +33,7 @@ const listConfigServicesTool: ToolDefinition = {
 
 const getConfigServiceTool: ToolDefinition = {
   name: 'config_get_service',
+  workflowUsable: false,
   description:
     'Get full details for a Config Center service: its schema (required fields), ' +
     'current entries/accounts, and status. Use this before setting values to see what fields are needed.',
@@ -49,6 +51,7 @@ const getConfigServiceTool: ToolDefinition = {
 
 const setConfigEntryTool: ToolDefinition = {
   name: 'config_set_entry',
+  workflowUsable: false,
   description:
     'Create or update a Config Center entry for a service. ' +
     'Pass the service name and a data object with field values matching the service schema. ' +

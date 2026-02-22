@@ -21,7 +21,7 @@ import {
   type WorkflowLog,
   type WorkflowLogStatus,
 } from '../db/repositories/workflows.js';
-import { createProvider, type ProviderConfig } from '@ownpilot/core';
+import { createProvider, type ProviderConfig, type IWorkflowService } from '@ownpilot/core';
 import { executeTool, getSharedToolRegistry, type ToolExecutionResult } from './tool-executor.js';
 import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from './log.js';
@@ -300,7 +300,7 @@ function getNestedValue(obj: unknown, path: string[]): unknown {
 // Workflow Service
 // ============================================================================
 
-export class WorkflowService {
+export class WorkflowService implements IWorkflowService {
   private activeExecutions = new Map<string, AbortController>();
 
   /**

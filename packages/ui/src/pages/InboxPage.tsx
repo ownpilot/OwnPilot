@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
-import { Inbox, Telegram, Discord, Globe, RefreshCw, Check, Plus, Send } from '../components/icons';
+import { Inbox, Telegram, Discord, Globe, RefreshCw, Check, Plus, Send, Trash2 } from '../components/icons';
 import { channelsApi } from '../api';
 import type { Channel, ChannelMessage } from '../api';
 import { SkeletonCard, SkeletonMessage } from '../components/Skeleton';
@@ -57,6 +57,8 @@ export function InboxPage() {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch channels from API
@@ -125,6 +127,22 @@ export function InboxPage() {
       setIsRefreshing(false);
     }
   }, [fetchChannels, fetchInbox, selectedChannel]);
+
+  // Clear all messages (or for selected channel)
+  const handleClear = useCallback(async () => {
+    setIsClearing(true);
+    try {
+      await channelsApi.clearMessages(selectedChannel ?? undefined);
+      setMessages([]);
+      setUnreadCount(0);
+      setShowClearConfirm(false);
+      setError(null);
+    } catch {
+      setError('Failed to clear messages');
+    } finally {
+      setIsClearing(false);
+    }
+  }, [selectedChannel]);
 
   // Filter messages by channel
   const filteredMessages = selectedChannel
@@ -214,6 +232,16 @@ export function InboxPage() {
               {channels.filter(c => c.status === 'connected').length} connected
             </span>
           </div>
+
+          {messages.length > 0 && (
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              className="p-2 rounded-lg hover:bg-error/10 transition-colors"
+              title={selectedChannel ? 'Clear channel messages' : 'Clear all messages'}
+            >
+              <Trash2 className="w-5 h-5 text-text-secondary dark:text-dark-text-secondary hover:text-error" />
+            </button>
+          )}
 
           <button
             onClick={handleRefresh}
@@ -465,6 +493,38 @@ export function InboxPage() {
             fetchInbox();
           }}
         />
+      )}
+
+      {/* Clear Confirmation Dialog */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-bg-primary dark:bg-dark-bg-primary rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 border border-border dark:border-dark-border">
+            <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary mb-2">
+              Clear Messages
+            </h3>
+            <p className="text-sm text-text-secondary dark:text-dark-text-secondary mb-4">
+              {selectedChannel
+                ? 'Are you sure you want to delete all messages for this channel? This cannot be undone.'
+                : 'Are you sure you want to delete all inbox messages? This cannot be undone.'}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="px-4 py-2 text-sm rounded-lg border border-border dark:border-dark-border hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                disabled={isClearing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClear}
+                disabled={isClearing}
+                className="px-4 py-2 text-sm rounded-lg bg-error text-white hover:bg-error/90 disabled:opacity-50 transition-colors"
+              >
+                {isClearing ? 'Clearing...' : 'Clear All'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

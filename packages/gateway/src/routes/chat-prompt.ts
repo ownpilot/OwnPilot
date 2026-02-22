@@ -5,7 +5,7 @@
  * buildToolCatalog, generateDemoResponse, tryGetMessageBus.
  */
 
-import { hasServiceRegistry, getServiceRegistry, Services, type ToolDefinition, type ExecutionPermissions, type IMessageBus } from '@ownpilot/core';
+import { hasServiceRegistry, getServiceRegistry, Services, getBaseName, type ToolDefinition, type ExecutionPermissions, type IMessageBus } from '@ownpilot/core';
 import { AI_META_TOOL_NAMES } from '../config/defaults.js';
 
 export const PERM_LABELS: Record<string, string> = {
@@ -67,10 +67,12 @@ export async function buildToolCatalog(allTools: readonly ToolDefinition[]): Pro
   if (customTools.length > 0) {
     lines.push('');
     lines.push('---');
-    lines.push('## Active Custom Tools');
+    lines.push('## Active Custom & Extension Tools');
+    lines.push('Call these with their qualified name shown below via use_tool.');
     for (const t of customTools) {
       const brief = t.brief ?? t.description.slice(0, 80);
-      lines.push(`  ${t.name} — ${brief}`);
+      const displayName = getBaseName(t.name);
+      lines.push(`  ${displayName} — ${brief}`);
     }
   }
 

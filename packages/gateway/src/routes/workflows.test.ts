@@ -40,8 +40,17 @@ vi.mock('../db/repositories/workflows.js', () => ({
 }));
 
 vi.mock('../services/workflow-service.js', () => ({
-  getWorkflowService: () => mockService,
   topologicalSort: vi.fn(), // default: no throw = valid DAG
+}));
+
+vi.mock('@ownpilot/core', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@ownpilot/core')>(),
+  getServiceRegistry: () => ({
+    get: (token: { name: string }) => {
+      if (token.name === 'workflow') return mockService;
+      throw new Error(`Unexpected token: ${token.name}`);
+    },
+  }),
 }));
 
 vi.mock('../ws/server.js', () => ({
@@ -551,6 +560,99 @@ describe('Workflow Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(false);
       expect(json.error.code).toBe('NOT_FOUND');
+    });
+  });
+
+  // ========================================================================
+  // GET /workflows/active-tool-names
+  // ========================================================================
+
+  describe('GET /workflows/active-tool-names', () => {
+    it('returns tool names from active workflows only', async () => {
+      mockRepo.getPage.mockResolvedValue([
+        {
+          ...sampleWorkflow,
+          id: 'wf-active',
+          status: 'active',
+          nodes: [
+            { id: 'n1', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'core.read_file', toolArgs: {}, label: 'Read' } },
+            { id: 'n2', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'custom.my_tool', toolArgs: {}, label: 'My Tool' } },
+          ],
+        },
+        {
+          ...sampleWorkflow,
+          id: 'wf-inactive',
+          status: 'inactive',
+          nodes: [
+            { id: 'n3', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'should_not_appear', toolArgs: {}, label: 'Skip' } },
+          ],
+        },
+      ]);
+
+      const res = await app.request('/workflows/active-tool-names');
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as { data: string[] };
+      expect(json.data).toContain('core.read_file');
+      expect(json.data).toContain('custom.my_tool');
+      expect(json.data).not.toContain('should_not_appear');
+    });
+
+    it('returns empty array when no active workflows', async () => {
+      mockRepo.getPage.mockResolvedValue([]);
+
+      const res = await app.request('/workflows/active-tool-names');
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as { data: string[] };
+      expect(json.data).toEqual([]);
+    });
+
+    it('deduplicates tool names across workflows', async () => {
+      mockRepo.getPage.mockResolvedValue([
+        {
+          ...sampleWorkflow,
+          id: 'wf-a',
+          status: 'active',
+          nodes: [
+            { id: 'n1', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'shared_tool', toolArgs: {}, label: 'T' } },
+          ],
+        },
+        {
+          ...sampleWorkflow,
+          id: 'wf-b',
+          status: 'active',
+          nodes: [
+            { id: 'n2', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'shared_tool', toolArgs: {}, label: 'T' } },
+          ],
+        },
+      ]);
+
+      const res = await app.request('/workflows/active-tool-names');
+
+      const json = await res.json() as { data: string[] };
+      expect(json.data).toHaveLength(1);
+      expect(json.data[0]).toBe('shared_tool');
+    });
+
+    it('skips non-tool nodes', async () => {
+      mockRepo.getPage.mockResolvedValue([
+        {
+          ...sampleWorkflow,
+          id: 'wf-mix',
+          status: 'active',
+          nodes: [
+            { id: 'n1', type: 'trigger', position: { x: 0, y: 0 }, data: { triggerType: 'manual', label: 'Start' } },
+            { id: 'n2', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'real_tool', toolArgs: {}, label: 'Tool' } },
+            { id: 'n3', type: 'condition', position: { x: 0, y: 0 }, data: { expression: 'true', label: 'Check' } },
+          ],
+        },
+      ]);
+
+      const res = await app.request('/workflows/active-tool-names');
+
+      const json = await res.json() as { data: string[] };
+      expect(json.data).toEqual(['real_tool']);
     });
   });
 });

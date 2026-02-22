@@ -11,6 +11,7 @@ vi.mock('@ownpilot/core', () => ({
   hasServiceRegistry: (...args: unknown[]) => mockHasServiceRegistry(...args),
   getServiceRegistry: (...args: unknown[]) => mockGetServiceRegistry(...args),
   Services: { Message: 'message', Database: 'database' },
+  getBaseName: (name: string) => name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name,
 }));
 
 vi.mock('../config/defaults.js', () => ({
@@ -292,7 +293,7 @@ describe('buildToolCatalog', () => {
     const tool = makeTool({ name: 'my_custom_tool', description: 'Does something custom', category: 'Custom' });
     const result = await buildToolCatalog([tool]);
 
-    expect(result).toContain('Active Custom Tools');
+    expect(result).toContain('Active Custom & Extension Tools');
     expect(result).toContain('my_custom_tool');
   });
 
@@ -320,7 +321,7 @@ describe('buildToolCatalog', () => {
     const tool = makeTool({ name: 'user_tool', category: 'User' });
     const result = await buildToolCatalog([tool]);
 
-    expect(result).toContain('Active Custom Tools');
+    expect(result).toContain('Active Custom & Extension Tools');
     expect(result).toContain('user_tool');
   });
 
@@ -332,7 +333,7 @@ describe('buildToolCatalog', () => {
     const tool = makeTool({ name: 'dynamic_tool', category: 'Dynamic Tools' });
     const result = await buildToolCatalog([tool]);
 
-    expect(result).toContain('Active Custom Tools');
+    expect(result).toContain('Active Custom & Extension Tools');
     expect(result).toContain('dynamic_tool');
   });
 
@@ -413,7 +414,7 @@ describe('buildToolCatalog', () => {
     const systemTool = makeTool({ name: 'get_current_time', category: 'Time' });
     const result = await buildToolCatalog([systemTool]);
 
-    expect(result).not.toContain('Active Custom Tools');
+    expect(result).not.toContain('Active Custom & Extension Tools');
     expect(result).not.toContain('get_current_time');
   });
 });

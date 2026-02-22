@@ -146,9 +146,11 @@ export function WorkflowEditorPage() {
     return () => { cancelled = true; };
   }, [id]);
 
-  // Fetch available tool names for the copilot
+  // Fetch available tool names for the copilot (only workflow-usable tools)
   useEffect(() => {
-    toolsApi.list().then((tools) => setToolNames(tools.map((t) => t.name))).catch(() => {});
+    toolsApi.list().then((tools) =>
+      setToolNames(tools.filter((t) => t.workflowUsable !== false).map((t) => t.name))
+    ).catch(() => {});
   }, []);
 
   // Auto-execute if ?execute=true

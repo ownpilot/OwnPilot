@@ -26,7 +26,6 @@ import type { SessionInfo } from '../types/index.js';
 import { agentsRepo, type AgentRecord } from '../db/repositories/index.js';
 import { resolveProviderAndModel, getDefaultProvider, getDefaultModel, getConfiguredProviderIds, getEnabledToolGroupIds } from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
-import { getExtensionService } from '../services/extension-service.js';
 import { getLog } from '../services/log.js';
 import { BASE_SYSTEM_PROMPT } from './agent-prompt.js';
 import {
@@ -181,7 +180,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   // Inject extension system prompts
   try {
-    const extPromptSections = getExtensionService().getSystemPromptSections();
+    const extPromptSections = getServiceRegistry().get(Services.Extension).getSystemPromptSections();
     if (extPromptSections.length > 0) {
       enhancedPrompt += '\n\n' + extPromptSections.join('\n\n');
     }
@@ -399,7 +398,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   });
 
   try {
-    const extPromptSections = getExtensionService().getSystemPromptSections();
+    const extPromptSections = getServiceRegistry().get(Services.Extension).getSystemPromptSections();
     if (extPromptSections.length > 0) {
       enhancedPrompt += '\n\n' + extPromptSections.join('\n\n');
     }

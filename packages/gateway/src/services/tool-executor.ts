@@ -212,6 +212,9 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
             category: k.category,
             docsUrl: k.docsUrl,
           })),
+          workflowUsable: tool.metadata?.workflowUsable !== undefined
+            ? Boolean(tool.metadata.workflowUsable)
+            : undefined,
         };
 
         // Executor delegates to dynamic registry which handles sandboxing

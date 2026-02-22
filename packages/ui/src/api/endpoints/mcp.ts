@@ -120,4 +120,11 @@ export const mcpApi = {
   /** List tools from a connected server */
   tools: (id: string) =>
     apiClient.get<{ tools: McpServerTool[]; count: number }>(`/mcp/${id}/tools`),
+
+  /** Update per-tool settings (e.g. workflowUsable) */
+  setToolSettings: (serverId: string, toolName: string, workflowUsable: boolean) =>
+    apiClient.patch<{ toolName: string; workflowUsable: boolean }>(
+      `/mcp/${serverId}/tool-settings`,
+      { toolName, workflowUsable },
+    ),
 };

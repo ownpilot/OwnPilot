@@ -6,9 +6,8 @@
  */
 
 import { Hono } from 'hono';
-import { getBaseName } from '@ownpilot/core';
+import { getBaseName, getServiceRegistry, Services } from '@ownpilot/core';
 import { getMcpServersRepo } from '../db/repositories/mcp-servers.js';
-import { mcpClientService } from '../services/mcp-client-service.js';
 import { handleMcpRequest } from '../services/mcp-server-service.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { wsGateway } from '../ws/server.js';
@@ -131,9 +130,10 @@ mcpRoutes.get('/', async (c) => {
     const servers = await repo.getAll(userId);
 
     // Enrich with live connection status
+    const mcpService = getServiceRegistry().get(Services.McpClient);
     const enriched = servers.map(s => ({
       ...s,
-      connected: mcpClientService.isConnected(s.name),
+      connected: mcpService.isConnected(s.name),
     }));
 
     return apiResponse(c, { servers: enriched, count: enriched.length });
@@ -226,7 +226,7 @@ mcpRoutes.get('/:id', async (c) => {
 
     return apiResponse(c, {
       ...server,
-      connected: mcpClientService.isConnected(server.name),
+      connected: getServiceRegistry().get(Services.McpClient).isConnected(server.name),
     });
   } catch (err) {
     log.error('Failed to get MCP server:', err);
@@ -261,8 +261,9 @@ mcpRoutes.put('/:id', async (c) => {
     }
 
     // If connected, disconnect first (config is changing)
-    if (mcpClientService.isConnected(existing.name)) {
-      await mcpClientService.disconnect(existing.name);
+    const mcpService = getServiceRegistry().get(Services.McpClient);
+    if (mcpService.isConnected(existing.name)) {
+      await mcpService.disconnect(existing.name);
     }
 
     const updated = await repo.update(id, {
@@ -301,8 +302,9 @@ mcpRoutes.delete('/:id', async (c) => {
     }
 
     // Disconnect if connected
-    if (mcpClientService.isConnected(server.name)) {
-      await mcpClientService.disconnect(server.name);
+    const mcpService = getServiceRegistry().get(Services.McpClient);
+    if (mcpService.isConnected(server.name)) {
+      await mcpService.disconnect(server.name);
     }
 
     await repo.delete(id);
@@ -329,7 +331,7 @@ mcpRoutes.post('/:id/connect', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
     }
 
-    const tools = await mcpClientService.connect(server);
+    const tools = await getServiceRegistry().get(Services.McpClient).connect(server);
 
     wsGateway.broadcast('data:changed', { entity: 'mcp_server', action: 'updated', id });
     return apiResponse(c, { connected: true, tools, toolCount: tools.length });
@@ -353,12 +355,57 @@ mcpRoutes.post('/:id/disconnect', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
     }
 
-    await mcpClientService.disconnect(server.name);
+    await getServiceRegistry().get(Services.McpClient).disconnect(server.name);
 
     wsGateway.broadcast('data:changed', { entity: 'mcp_server', action: 'updated', id });
     return apiResponse(c, { disconnected: true });
   } catch (err) {
     log.error('Failed to disconnect MCP server:', err);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+/**
+ * PATCH /:id/tool-settings — Update per-tool settings (e.g. workflowUsable)
+ */
+mcpRoutes.patch('/:id/tool-settings', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const id = sanitizeId(c.req.param('id'));
+    const body = await c.req.json<{
+      toolName: string;
+      workflowUsable: boolean;
+    }>();
+
+    if (!body.toolName || typeof body.toolName !== 'string') {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'toolName is required' }, 400);
+    }
+    if (typeof body.workflowUsable !== 'boolean') {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'workflowUsable (boolean) is required' }, 400);
+    }
+
+    const repo = getMcpServersRepo();
+    const server = await repo.getById(id);
+    if (!server || server.userId !== userId) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
+    }
+
+    const existingToolSettings = (server.metadata?.toolSettings ?? {}) as Record<string, Record<string, unknown>>;
+    const toolSettings = { ...existingToolSettings };
+    toolSettings[body.toolName] = { ...(toolSettings[body.toolName] ?? {}), workflowUsable: body.workflowUsable };
+    const metadata = { ...server.metadata, toolSettings };
+    await repo.update(id, { metadata });
+
+    // Re-register tools if server is connected
+    const mcpService = getServiceRegistry().get(Services.McpClient);
+    if (mcpService.isConnected(server.name)) {
+      await mcpService.refreshToolRegistration?.(server.name);
+    }
+
+    wsGateway.broadcast('data:changed', { entity: 'mcp_server', action: 'updated', id });
+    return apiResponse(c, { toolName: body.toolName, workflowUsable: body.workflowUsable });
+  } catch (err) {
+    log.error('Failed to update MCP tool settings:', err);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -377,11 +424,12 @@ mcpRoutes.get('/:id/tools', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
     }
 
-    if (!mcpClientService.isConnected(server.name)) {
+    const mcpService = getServiceRegistry().get(Services.McpClient);
+    if (!mcpService.isConnected(server.name)) {
       return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Server is not connected. Connect first.' }, 400);
     }
 
-    const tools = mcpClientService.getServerTools(server.name);
+    const tools = mcpService.getServerTools(server.name);
     return apiResponse(c, { tools, count: tools.length });
   } catch (err) {
     log.error('Failed to list MCP server tools:', err);
