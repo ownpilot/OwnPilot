@@ -98,6 +98,11 @@ export class PlanService {
     return repo.list(options);
   }
 
+  async countPlans(userId: string, options?: { status?: PlanStatus; goalId?: string; triggerId?: string }): Promise<number> {
+    const repo = this.getRepo(userId);
+    return repo.count(options);
+  }
+
   async updatePlan(userId: string, id: string, input: UpdatePlanInput): Promise<Plan | null> {
     const repo = this.getRepo(userId);
     const updated = await repo.update(id, input);

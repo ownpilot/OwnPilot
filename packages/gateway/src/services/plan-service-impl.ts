@@ -65,6 +65,13 @@ export class PlanServiceImpl implements IPlanService {
     return this.service.listPlans(userId, options);
   }
 
+  async countPlans(
+    userId: string,
+    options?: { status?: PlanStatus; goalId?: string; triggerId?: string },
+  ): Promise<number> {
+    return this.service.countPlans(userId, options);
+  }
+
   async updatePlan(userId: string, id: string, input: UpdatePlanInput): Promise<Plan | null> {
     return this.service.updatePlan(userId, id, input);
   }

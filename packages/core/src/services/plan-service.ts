@@ -187,6 +187,14 @@ export interface IPlanService {
       offset?: number;
     },
   ): Promise<Plan[]>;
+  countPlans(
+    userId: string,
+    options?: {
+      status?: PlanStatus;
+      goalId?: string;
+      triggerId?: string;
+    },
+  ): Promise<number>;
   updatePlan(userId: string, id: string, input: UpdatePlanInput): Promise<Plan | null>;
   deletePlan(userId: string, id: string): Promise<boolean>;
 

@@ -16,6 +16,7 @@ import { errorHandler } from '../middleware/error-handler.js';
 
 const mockPlanService = {
   listPlans: vi.fn(async () => []),
+  countPlans: vi.fn(async () => 0),
   createPlan: vi.fn(),
   getPlan: vi.fn(),
   updatePlan: vi.fn(),
@@ -105,7 +106,8 @@ describe('Plans Routes', () => {
   // ========================================================================
 
   describe('GET /plans', () => {
-    it('returns plans list', async () => {
+    it('returns plans list with total count', async () => {
+      mockPlanService.countPlans.mockResolvedValue(3);
       mockPlanService.listPlans.mockResolvedValue([
         { id: 'p1', name: 'Deploy App', status: 'pending' },
       ]);
@@ -116,14 +118,21 @@ describe('Plans Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.plans).toHaveLength(1);
-      expect(json.data.total).toBe(1);
+      expect(json.data.total).toBe(3);
+      expect(json.data.hasMore).toBe(false);
     });
 
     it('passes query params to service', async () => {
+      mockPlanService.countPlans.mockResolvedValue(0);
       mockPlanService.listPlans.mockResolvedValue([]);
 
       await app.request('/plans?status=running&goalId=g1&limit=5&offset=10');
 
+      expect(mockPlanService.countPlans).toHaveBeenCalledWith('u1', {
+        status: 'running',
+        goalId: 'g1',
+        triggerId: undefined,
+      });
       expect(mockPlanService.listPlans).toHaveBeenCalledWith('u1', {
         status: 'running',
         goalId: 'g1',

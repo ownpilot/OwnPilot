@@ -414,6 +414,34 @@ export class PlansRepository extends BaseRepository {
   }
 
   /**
+   * Count plans (with same filters as list)
+   */
+  async count(options: { status?: PlanStatus; goalId?: string; triggerId?: string } = {}): Promise<number> {
+    const conditions = ['user_id = $1'];
+    const values: unknown[] = [this.userId];
+    let paramIndex = 2;
+
+    if (options.status) {
+      conditions.push(`status = $${paramIndex++}`);
+      values.push(options.status);
+    }
+    if (options.goalId) {
+      conditions.push(`goal_id = $${paramIndex++}`);
+      values.push(options.goalId);
+    }
+    if (options.triggerId) {
+      conditions.push(`trigger_id = $${paramIndex++}`);
+      values.push(options.triggerId);
+    }
+
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM plans WHERE ${conditions.join(' AND ')}`,
+      values
+    );
+    return parseInt(row?.count ?? '0', 10);
+  }
+
+  /**
    * Get active (running or paused) plans
    */
   async getActive(): Promise<Plan[]> {

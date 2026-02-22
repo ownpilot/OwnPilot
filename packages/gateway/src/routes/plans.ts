@@ -41,13 +41,17 @@ plansRoutes.get('/', async (c) => {
   const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
 
   const service = getServiceRegistry().get(Services.Plan);
-  const plans = await service.listPlans(userId, { status, goalId, triggerId, limit, offset });
+  const [total, plans] = await Promise.all([
+    service.countPlans(userId, { status, goalId, triggerId }),
+    service.listPlans(userId, { status, goalId, triggerId, limit, offset }),
+  ]);
 
   return apiResponse(c, {
       plans,
-      total: plans.length,
+      total,
       limit,
       offset,
+      hasMore: offset + limit < total,
     });
 });
 
