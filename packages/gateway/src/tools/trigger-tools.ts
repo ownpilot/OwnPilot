@@ -13,6 +13,7 @@ import { getTriggerEngine } from '../triggers/index.js';
 
 const createTriggerDef: ToolDefinition = {
   name: 'create_trigger',
+  workflowUsable: false,
   description: `Create a proactive trigger that automates actions on schedule, event, or condition.
 
 IMPORTANT for schedule triggers: You MUST provide a valid 5-field cron expression. Invalid cron will be rejected.
@@ -78,6 +79,7 @@ Examples: "0 8 * * *" (daily 8AM), "0 9 * * 1-5" (weekdays 9AM), "*/15 * * * *" 
 
 const listTriggersDef: ToolDefinition = {
   name: 'list_triggers',
+  workflowUsable: false,
   description: 'List all triggers with their status, type, and last fired time.',
   parameters: {
     type: 'object',
@@ -98,6 +100,7 @@ const listTriggersDef: ToolDefinition = {
 
 const enableTriggerDef: ToolDefinition = {
   name: 'enable_trigger',
+  workflowUsable: false,
   description: 'Enable or disable a trigger by its ID.',
   parameters: {
     type: 'object',
@@ -118,6 +121,7 @@ const enableTriggerDef: ToolDefinition = {
 
 const fireTriggerDef: ToolDefinition = {
   name: 'fire_trigger',
+  workflowUsable: false,
   description: 'Manually fire a trigger immediately, regardless of its schedule or conditions.',
   parameters: {
     type: 'object',
@@ -134,6 +138,7 @@ const fireTriggerDef: ToolDefinition = {
 
 const deleteTriggerDef: ToolDefinition = {
   name: 'delete_trigger',
+  workflowUsable: false,
   description: 'Delete a trigger permanently.',
   parameters: {
     type: 'object',
@@ -150,6 +155,7 @@ const deleteTriggerDef: ToolDefinition = {
 
 const triggerStatsDef: ToolDefinition = {
   name: 'trigger_stats',
+  workflowUsable: false,
   description: 'Get statistics about triggers: total count, enabled count, fires this week, success rate.',
   parameters: {
     type: 'object',

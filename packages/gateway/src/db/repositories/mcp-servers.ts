@@ -88,6 +88,7 @@ export interface UpdateMcpServerInput {
   headers?: Record<string, string>;
   enabled?: boolean;
   autoConnect?: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 // =============================================================================
@@ -211,6 +212,7 @@ class McpServersRepository extends BaseRepository {
     if (input.headers !== undefined) { setClauses.push('headers = ?'); values.push(JSON.stringify(input.headers)); }
     if (input.enabled !== undefined) { setClauses.push('enabled = ?'); values.push(input.enabled); }
     if (input.autoConnect !== undefined) { setClauses.push('auto_connect = ?'); values.push(input.autoConnect); }
+    if (input.metadata !== undefined) { setClauses.push('metadata = ?'); values.push(JSON.stringify(input.metadata)); }
 
     if (setClauses.length === 0) return existing;
 

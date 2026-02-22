@@ -30,10 +30,10 @@ export interface Memory {
   sourceId?: string;
   importance: number;
   tags: string[];
-  accessedCount: number;
+  accessCount: number;
   createdAt: Date;
   updatedAt: Date;
-  accessedAt?: Date;
+  lastAccessedAt?: Date;
   metadata: Record<string, unknown>;
 }
 
@@ -121,10 +121,10 @@ function rowToMemory(row: MemoryRow): Memory {
     sourceId: row.source_id ?? undefined,
     importance: row.importance,
     tags: parseJsonField<string[]>(row.tags, []),
-    accessedCount: row.accessed_count,
+    accessCount: row.accessed_count,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    accessedAt: row.accessed_at ? new Date(row.accessed_at) : undefined,
+    lastAccessedAt: row.accessed_at ? new Date(row.accessed_at) : undefined,
     metadata: parseJsonField<Record<string, unknown>>(row.metadata, {}),
   };
 }

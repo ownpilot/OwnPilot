@@ -522,6 +522,29 @@ describe('ChannelMessagesRepository', () => {
     });
   });
 
+  // ---- deleteAll ----
+
+  describe('deleteAll', () => {
+    it('returns number of deleted messages', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 12 });
+
+      const result = await repo.deleteAll();
+
+      expect(result).toBe(12);
+      const sql = mockAdapter.execute.mock.calls[0][0] as string;
+      expect(sql).toContain('DELETE FROM channel_messages');
+      expect(sql).not.toContain('WHERE');
+    });
+
+    it('returns 0 when no messages exist', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 0 });
+
+      const result = await repo.deleteAll();
+
+      expect(result).toBe(0);
+    });
+  });
+
   // ---- Row mapping edge cases ----
 
   describe('row mapping', () => {

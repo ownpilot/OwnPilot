@@ -901,6 +901,7 @@ export function createDynamicToolRegistry(
 export const createToolDefinition: ToolDefinition = {
   name: 'create_tool',
   brief: 'Create a new custom tool with JavaScript code',
+  workflowUsable: false,
   description: `Create a new reusable tool that can be called in future conversations.
 The tool will be saved and available for use. Write JavaScript code that:
 - Receives arguments via the 'args' object
@@ -984,6 +985,7 @@ The tool will be saved and available for use. Write JavaScript code that:
 export const listToolsDefinition: ToolDefinition = {
   name: 'list_custom_tools',
   brief: 'List all user-created custom tools',
+  workflowUsable: false,
   description: 'List all custom tools that have been created',
   parameters: {
     type: 'object',
@@ -1008,6 +1010,7 @@ export const listToolsDefinition: ToolDefinition = {
 export const deleteToolDefinition: ToolDefinition = {
   name: 'delete_custom_tool',
   brief: 'Delete an LLM-created custom tool',
+  workflowUsable: false,
   description:
     'Delete a custom tool by name. IMPORTANT: Can only delete LLM-created tools. User-created tools are protected and cannot be deleted by the LLM.',
   parameters: {
@@ -1034,6 +1037,7 @@ export const deleteToolDefinition: ToolDefinition = {
 export const toggleToolDefinition: ToolDefinition = {
   name: 'toggle_custom_tool',
   brief: 'Enable or disable a custom tool',
+  workflowUsable: false,
   description: 'Enable or disable a custom tool',
   parameters: {
     type: 'object',
@@ -1063,6 +1067,7 @@ export const toggleToolDefinition: ToolDefinition = {
 export const searchToolsDefinition: ToolDefinition = {
   name: 'search_tools',
   brief: 'Find tools by keyword and get their parameter docs',
+  workflowUsable: false,
   description: 'Search for tools by keyword or intent. AND matching: "email send" finds send_email. Use "all" to list every tool. Returns parameter docs by default.',
   parameters: {
     type: 'object',
@@ -1092,17 +1097,18 @@ export const searchToolsDefinition: ToolDefinition = {
 export const getToolHelpDefinition: ToolDefinition = {
   name: 'get_tool_help',
   brief: 'Get parameter docs for one or more tools by name',
+  workflowUsable: false,
   description: 'Get parameter info for one or more tools. Accepts tool_name (single) or tool_names (array).',
   parameters: {
     type: 'object',
     properties: {
       tool_name: {
         type: 'string',
-        description: 'Exact tool name (e.g. "add_task", "search_web").',
+        description: 'Qualified tool name (e.g., "core.add_task", "core.search_web").',
       },
       tool_names: {
         type: 'array',
-        description: 'Array of tool names for batch lookup (e.g. ["add_task", "list_tasks"]).',
+        description: 'Array of qualified tool names (e.g., ["core.add_task", "core.list_tasks"]).',
         items: { type: 'string' },
       },
     },
@@ -1118,13 +1124,14 @@ export const getToolHelpDefinition: ToolDefinition = {
 export const useToolDefinition: ToolDefinition = {
   name: 'use_tool',
   brief: 'Execute any tool by name with arguments',
-  description: 'Execute a tool by name. For familiar tools (catalog shows params), call directly. For others, check params via search_tools first. Errors show correct params — read and retry.',
+  workflowUsable: false,
+  description: 'Execute a tool by its qualified name (namespace.tool_name). Core tools: "core.*", custom: "custom.*". Check params via search_tools first. Errors show correct params — read and retry.',
   parameters: {
     type: 'object',
     properties: {
       tool_name: {
         type: 'string',
-        description: 'Exact tool name from TOOL CATALOG or search_tools results.',
+        description: 'Qualified tool name with namespace prefix (e.g., "core.add_task", "custom.fetch_weather"). Use search_tools to discover names.',
       },
       arguments: {
         type: 'object',
@@ -1143,6 +1150,7 @@ export const useToolDefinition: ToolDefinition = {
 export const batchUseToolDefinition: ToolDefinition = {
   name: 'batch_use_tool',
   brief: 'Execute multiple tools in parallel',
+  workflowUsable: false,
   description: 'Execute multiple tools in parallel. Faster than sequential use_tool calls.',
   parameters: {
     type: 'object',
@@ -1155,7 +1163,7 @@ export const batchUseToolDefinition: ToolDefinition = {
           properties: {
             tool_name: {
               type: 'string',
-              description: 'Exact tool name',
+              description: 'Qualified tool name with namespace (e.g., "core.add_task")',
             },
             arguments: {
               type: 'object',
@@ -1178,6 +1186,7 @@ export const batchUseToolDefinition: ToolDefinition = {
 export const inspectToolSourceDefinition: ToolDefinition = {
   name: 'inspect_tool_source',
   brief: 'View source code of any tool (built-in or custom)',
+  workflowUsable: false,
   description: 'Get the implementation source code of a tool. For built-in tools, returns TypeScript source. For custom tools, returns JavaScript code, parameters, and metadata. Use this to understand how a tool works before improving or replacing it.',
   parameters: {
     type: 'object',
@@ -1199,6 +1208,7 @@ export const inspectToolSourceDefinition: ToolDefinition = {
 export const updateCustomToolDefinition: ToolDefinition = {
   name: 'update_custom_tool',
   brief: 'Update code or config of an existing custom tool',
+  workflowUsable: false,
   description: 'Update an existing custom tool. Can change code, description, parameters, category, or permissions. Use this after inspect_tool_source to improve a custom tool.',
   parameters: {
     type: 'object',

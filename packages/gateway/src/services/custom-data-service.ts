@@ -9,6 +9,8 @@ import {
   getEventBus,
   createEvent,
   EventTypes,
+  type IDatabaseService,
+  type DatabaseTableStats,
   type ResourceCreatedData,
   type ResourceUpdatedData,
   type ResourceDeletedData,
@@ -35,7 +37,7 @@ export interface TableStats {
 // CustomDataService
 // ============================================================================
 
-export class CustomDataService {
+export class CustomDataService implements IDatabaseService {
   private getRepo(): CustomDataRepository {
     return createCustomDataRepository();
   }
@@ -71,8 +73,11 @@ export class CustomDataService {
     return repo.getTable(nameOrId);
   }
 
-  async listTables(): Promise<CustomTableSchema[]> {
+  async listTables(filter?: { pluginId?: string }): Promise<CustomTableSchema[]> {
     const repo = this.getRepo();
+    if (filter?.pluginId) {
+      return repo.getTablesByPlugin(filter.pluginId);
+    }
     return repo.listTables();
   }
 
@@ -85,23 +90,38 @@ export class CustomDataService {
    * List tables with record count stats attached.
    */
   async listTablesWithStats(
-    options?: { pluginId?: string },
-  ): Promise<Array<CustomTableSchema & { recordCount: number }>> {
+    filter?: { pluginId?: string },
+  ): Promise<Array<CustomTableSchema & { stats: DatabaseTableStats }>> {
     const repo = this.getRepo();
 
     // For plugin-specific queries, fall back to per-table stats (rare path)
-    if (options?.pluginId) {
-      const tables = await repo.getTablesByPlugin(options.pluginId);
+    if (filter?.pluginId) {
+      const tables = await repo.getTablesByPlugin(filter.pluginId);
       return Promise.all(
         tables.map(async (table) => {
           const stats = await repo.getTableStats(table.id);
-          return { ...table, recordCount: stats?.recordCount ?? 0 };
+          return {
+            ...table,
+            stats: {
+              recordCount: stats?.recordCount ?? 0,
+              firstRecord: undefined,
+              lastRecord: undefined,
+            },
+          };
         }),
       );
     }
 
     // Single JOIN query instead of N+1 per-table queries
-    return repo.listTablesWithCounts();
+    const results = await repo.listTablesWithCounts();
+    return results.map((t) => ({
+      ...t,
+      stats: {
+        recordCount: t.recordCount,
+        firstRecord: undefined,
+        lastRecord: undefined,
+      },
+    }));
   }
 
   async updateTable(
@@ -287,10 +307,6 @@ export class CustomDataServiceError extends Error {
 
 let instance: CustomDataService | null = null;
 
-/**
- * @internal Used only by DatabaseServiceImpl adapter.
- * @deprecated Use `getServiceRegistry().get(Services.Database)` instead.
- */
 export function getCustomDataService(): CustomDataService {
   if (!instance) {
     instance = new CustomDataService();

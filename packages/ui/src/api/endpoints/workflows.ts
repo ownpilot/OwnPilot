@@ -56,6 +56,10 @@ export const workflowsApi = {
   /** Copilot — stream AI-generated workflow definitions */
   copilot: (body: WorkflowCopilotRequest, options?: { signal?: AbortSignal }) =>
     apiClient.stream('/workflows/copilot', body, { signal: options?.signal }),
+
+  /** Get tool names used in active workflows */
+  activeToolNames: () =>
+    apiClient.get<string[]>('/workflows/active-tool-names'),
 };
 
 export interface WorkflowCopilotRequest {

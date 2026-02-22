@@ -197,8 +197,8 @@ describe('CustomDataService', () => {
       const result = await service.listTablesWithStats();
 
       expect(result).toHaveLength(2);
-      expect(result[0]!.recordCount).toBe(10);
-      expect(result[1]!.recordCount).toBe(25);
+      expect(result[0]!.stats.recordCount).toBe(10);
+      expect(result[1]!.stats.recordCount).toBe(25);
       expect(mockRepo.listTablesWithCounts).toHaveBeenCalled();
     });
 
@@ -217,7 +217,7 @@ describe('CustomDataService', () => {
       mockRepo.listTablesWithCounts.mockResolvedValue([{ ...fakeTable(), recordCount: 0 }]);
 
       const result = await service.listTablesWithStats();
-      expect(result[0]!.recordCount).toBe(0);
+      expect(result[0]!.stats.recordCount).toBe(0);
     });
   });
 

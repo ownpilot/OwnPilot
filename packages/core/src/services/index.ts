@@ -163,6 +163,35 @@ export type {
   ResourceSummaryEntry,
 } from './resource-service.js';
 
+// Workflow Service
+export type {
+  IWorkflowService,
+  WorkflowLog as ServiceWorkflowLog,
+  WorkflowLogStatus,
+  WorkflowProgressEvent,
+} from './workflow-service.js';
+
+// MCP Client Service
+export type {
+  IMcpClientService,
+  McpToolInfo as ServiceMcpToolInfo,
+  McpServerConfig,
+  McpServerStatus,
+} from './mcp-client-service.js';
+
+// Extension Service
+export type {
+  IExtensionService,
+  ExtensionInfo,
+  ExtensionScanResult,
+} from './extension-service.js';
+
+// Embedding Service
+export type {
+  IEmbeddingService,
+  EmbeddingResult,
+} from './embedding-service.js';
+
 // Config Center
 export * from './config-center.js';
 

@@ -6,8 +6,8 @@
  * without blocking memory creation.
  */
 
+import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getLog } from './log.js';
-import { getEmbeddingService } from './embedding-service.js';
 import { createMemoriesRepository } from '../db/repositories/memories.js';
 import {
   EMBEDDING_QUEUE_BATCH_SIZE,
@@ -119,7 +119,7 @@ export class EmbeddingQueue {
 
     this.processing = true;
     try {
-      const embeddingService = getEmbeddingService();
+      const embeddingService = getServiceRegistry().get(Services.Embedding);
 
       // Check if embedding service is available
       if (!embeddingService.isAvailable()) {

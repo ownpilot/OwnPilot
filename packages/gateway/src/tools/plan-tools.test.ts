@@ -393,3 +393,11 @@ describe('Plan Tools', () => {
     });
   });
 });
+
+describe('workflowUsable flag', () => {
+  it('all plan tools are marked workflowUsable: false', () => {
+    for (const def of PLAN_TOOLS) {
+      expect(def.workflowUsable, `${def.name} should have workflowUsable: false`).toBe(false);
+    }
+  });
+});

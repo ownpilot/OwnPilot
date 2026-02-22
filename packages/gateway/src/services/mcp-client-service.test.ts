@@ -837,4 +837,118 @@ describe('McpClientService', () => {
       expect(result.content).toContain('MCP tool error: string error');
     });
   });
+
+  // ===========================================================================
+  // workflowUsable from server metadata
+  // ===========================================================================
+
+  describe('workflowUsable from server metadata', () => {
+    it('sets workflowUsable on tool definition from server metadata', async () => {
+      const tools = makeMcpTools(['read_file', 'write_file']);
+      mockClient.listTools.mockResolvedValue({ tools });
+
+      const server = makeServer({
+        metadata: {
+          toolSettings: {
+            read_file: { workflowUsable: false },
+          },
+        },
+      });
+
+      await mcpClientService.connect(server);
+
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, { definition: { workflowUsable?: boolean } }>;
+      expect(toolsMap.get('read_file')!.definition.workflowUsable).toBe(false);
+      expect(toolsMap.get('write_file')!.definition.workflowUsable).toBeUndefined();
+    });
+
+    it('sets workflowUsable: true when metadata says true', async () => {
+      const tools = makeMcpTools(['my_tool']);
+      mockClient.listTools.mockResolvedValue({ tools });
+
+      const server = makeServer({
+        metadata: {
+          toolSettings: {
+            my_tool: { workflowUsable: true },
+          },
+        },
+      });
+
+      await mcpClientService.connect(server);
+
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, { definition: { workflowUsable?: boolean } }>;
+      expect(toolsMap.get('my_tool')!.definition.workflowUsable).toBe(true);
+    });
+
+    it('leaves workflowUsable undefined when no toolSettings in metadata', async () => {
+      const tools = makeMcpTools(['plain_tool']);
+      mockClient.listTools.mockResolvedValue({ tools });
+
+      const server = makeServer({ metadata: {} });
+
+      await mcpClientService.connect(server);
+
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, { definition: { workflowUsable?: boolean } }>;
+      expect(toolsMap.get('plain_tool')!.definition.workflowUsable).toBeUndefined();
+    });
+  });
+
+  // ===========================================================================
+  // refreshToolRegistration()
+  // ===========================================================================
+
+  describe('refreshToolRegistration()', () => {
+    it('re-registers tools with updated metadata from DB', async () => {
+      const tools = makeMcpTools(['tool_a']);
+      mockClient.listTools.mockResolvedValue({ tools });
+      const server = makeServer();
+
+      await mcpClientService.connect(server);
+      expect(mockRegistry.registerMcpTools).toHaveBeenCalledTimes(1);
+
+      // Now simulate DB update with new toolSettings
+      const updatedServer = makeServer({
+        metadata: {
+          toolSettings: {
+            tool_a: { workflowUsable: false },
+          },
+        },
+      });
+      mockRepo.getByName.mockResolvedValue(updatedServer);
+
+      await mcpClientService.refreshToolRegistration('test-server');
+
+      // Should have been called again
+      expect(mockRegistry.registerMcpTools).toHaveBeenCalledTimes(2);
+
+      // Verify the second call has updated workflowUsable
+      const secondCallToolsMap = mockRegistry.registerMcpTools.mock.calls[1]![1] as Map<string, { definition: { workflowUsable?: boolean } }>;
+      expect(secondCallToolsMap.get('tool_a')!.definition.workflowUsable).toBe(false);
+    });
+
+    it('does nothing when server is not connected', async () => {
+      // Reset counters after beforeEach cleanup
+      const getByNameCallsBefore = mockRepo.getByName.mock.calls.length;
+      const registerCallsBefore = mockRegistry.registerMcpTools.mock.calls.length;
+
+      await mcpClientService.refreshToolRegistration('nonexistent');
+
+      expect(mockRepo.getByName.mock.calls.length).toBe(getByNameCallsBefore);
+      expect(mockRegistry.registerMcpTools.mock.calls.length).toBe(registerCallsBefore);
+    });
+
+    it('does nothing when server not found in DB', async () => {
+      const tools = makeMcpTools(['tool_a']);
+      mockClient.listTools.mockResolvedValue({ tools });
+      const server = makeServer();
+      await mcpClientService.connect(server);
+
+      mockRepo.getByName.mockResolvedValue(null);
+
+      await mcpClientService.refreshToolRegistration('test-server');
+
+      // Only the initial registration call
+      expect(mockRegistry.registerMcpTools).toHaveBeenCalledTimes(1);
+    });
+  });
 });

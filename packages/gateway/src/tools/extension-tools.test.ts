@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { executeExtensionTool } from './extension-tools.js';
+import { executeExtensionTool, EXTENSION_TOOLS } from './extension-tools.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -207,5 +207,13 @@ describe('executeExtensionTool', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unknown');
     });
+  });
+});
+
+describe('workflowUsable flag', () => {
+  it('all extension tools are marked workflowUsable: false', () => {
+    for (const def of EXTENSION_TOOLS) {
+      expect(def.workflowUsable, `${def.name} should have workflowUsable: false`).toBe(false);
+    }
   });
 });

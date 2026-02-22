@@ -9,6 +9,9 @@ import {
   getEventBus,
   createEvent,
   EventTypes,
+  getServiceRegistry,
+  Services,
+  type IMemoryService,
   type ResourceCreatedData,
   type ResourceUpdatedData,
   type ResourceDeletedData,
@@ -23,7 +26,6 @@ import {
   type UpdateMemoryInput,
 } from '../db/repositories/memories.js';
 import { getEmbeddingQueue } from './embedding-queue.js';
-import { getEmbeddingService } from './embedding-service.js';
 import { shouldChunk, chunkMarkdown } from './chunking.js';
 import { getLog } from './log.js';
 
@@ -44,7 +46,7 @@ export interface MemoryStats {
 // MemoryService
 // ============================================================================
 
-export class MemoryService {
+export class MemoryService implements IMemoryService {
   private getRepo(userId: string): MemoriesRepository {
     return createMemoriesRepository(userId);
   }
@@ -286,7 +288,7 @@ export class MemoryService {
     // Try to generate embedding for the query
     let queryEmbedding: number[] | undefined;
     try {
-      const embeddingService = getEmbeddingService();
+      const embeddingService = getServiceRegistry().get(Services.Embedding);
       if (embeddingService.isAvailable()) {
         const result = await embeddingService.generateEmbedding(query);
         queryEmbedding = result.embedding;
@@ -322,11 +324,10 @@ export class MemoryService {
 
   async getImportantMemories(
     userId: string,
-    threshold = 0.7,
-    limit = 20,
+    options?: { threshold?: number; limit?: number },
   ): Promise<Memory[]> {
     const repo = this.getRepo(userId);
-    return repo.getImportant(threshold, limit);
+    return repo.getImportant(options?.threshold ?? 0.7, options?.limit ?? 20);
   }
 
   async getRecentMemories(userId: string, limit = 20): Promise<Memory[]> {
@@ -419,10 +420,6 @@ export class MemoryServiceError extends Error {
 
 let instance: MemoryService | null = null;
 
-/**
- * @internal Used only by MemoryServiceImpl adapter.
- * @deprecated Use `getServiceRegistry().get(Services.Memory)` instead.
- */
 export function getMemoryService(): MemoryService {
   if (!instance) {
     instance = new MemoryService();

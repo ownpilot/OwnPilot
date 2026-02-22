@@ -61,13 +61,13 @@ import { registerPipelineMiddleware } from './services/middleware/index.js';
 import { createToolService } from './services/tool-service-impl.js';
 import { createProviderService } from './services/provider-service-impl.js';
 import { createAuditService } from './services/audit-service-impl.js';
-import { createDatabaseServiceImpl } from './services/database-service-impl.js';
+import { getCustomDataService } from './services/custom-data-service.js';
 import { createPluginService } from './services/plugin-service-impl.js';
-import { createMemoryServiceImpl } from './services/memory-service-impl.js';
+import { getMemoryService } from './services/memory-service.js';
 import { createWorkspaceServiceImpl } from './services/workspace-service-impl.js';
-import { createGoalServiceImpl } from './services/goal-service-impl.js';
-import { createTriggerServiceImpl } from './services/trigger-service-impl.js';
-import { createPlanServiceImpl } from './services/plan-service-impl.js';
+import { getGoalService } from './services/goal-service.js';
+import { getTriggerService } from './services/trigger-service.js';
+import { getPlanService } from './services/plan-service.js';
 import { createResourceServiceImpl } from './services/resource-service-impl.js';
 import { stopAllRateLimiters } from './middleware/rate-limit.js';
 import { getAdapterSync } from './db/adapters/index.js';
@@ -200,8 +200,12 @@ async function main() {
   const { getEmbeddingQueue } = await import('./services/embedding-queue.js');
   getEmbeddingQueue().start();
 
-  // 6. Database Service (wraps CustomDataService)
-  registry.register(Services.Database, createDatabaseServiceImpl());
+  // 6. Embedding Service
+  const { getEmbeddingService } = await import('./services/embedding-service.js');
+  registry.register(Services.Embedding, getEmbeddingService());
+
+  // 7. Database Service
+  registry.register(Services.Database, getCustomDataService());
 
   // 7. Resource Service (wraps ResourceRegistry)
   registry.register(Services.Resource, createResourceServiceImpl());
@@ -221,6 +225,9 @@ async function main() {
     } else if (totalExtensions > 0) {
       log.info(`Extensions: ${totalExtensions} installed`);
     }
+
+    // 8. Extension Service
+    registry.register(Services.Extension, extService);
   } catch (error) {
     log.warn('Extensions initialization failed', { error: String(error) });
   }
@@ -268,6 +275,9 @@ async function main() {
   try {
     const { mcpClientService } = await import('./services/mcp-client-service.js');
     await mcpClientService.autoConnect();
+
+    // 9. MCP Client Service
+    registry.register(Services.McpClient, mcpClientService);
   } catch (err) {
     log.warn('MCP auto-connect had errors', { error: String(err) });
   }
@@ -290,17 +300,17 @@ async function main() {
   // 9. Plugin Service (wraps PluginRegistry)
   registry.register(Services.Plugin, await createPluginService());
 
-  // 10. Memory Service (wraps MemoryService)
-  registry.register(Services.Memory, createMemoryServiceImpl());
+  // 10. Memory Service
+  registry.register(Services.Memory, getMemoryService());
 
-  // 11. Goal Service (wraps GoalService)
-  registry.register(Services.Goal, createGoalServiceImpl());
+  // 11. Goal Service
+  registry.register(Services.Goal, getGoalService());
 
-  // 12. Trigger Service (wraps TriggerService)
-  registry.register(Services.Trigger, createTriggerServiceImpl());
+  // 12. Trigger Service
+  registry.register(Services.Trigger, getTriggerService());
 
-  // 13. Plan Service (wraps PlanService)
-  registry.register(Services.Plan, createPlanServiceImpl());
+  // 13. Plan Service
+  registry.register(Services.Plan, getPlanService());
 
   // 14. Tool Service (wraps ToolRegistry)
   registry.register(Services.Tool, createToolService());
@@ -313,6 +323,10 @@ async function main() {
 
   // 17. Workspace Service (wraps WorkspaceManager)
   registry.register(Services.Workspace, createWorkspaceServiceImpl());
+
+  // 18. Workflow Service
+  const { getWorkflowService } = await import('./services/workflow-service.js');
+  registry.register(Services.Workflow, getWorkflowService());
 
   // Start trigger engine (proactive automation)
   log.info('Starting Trigger Engine...');

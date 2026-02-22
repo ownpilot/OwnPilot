@@ -102,6 +102,36 @@ channelRoutes.post('/messages/:messageId/read', (c) => {
 });
 
 /**
+ * DELETE /channels/messages - Clear all inbox messages
+ */
+channelRoutes.delete('/messages', async (c) => {
+  try {
+    const channelId = c.req.query('channelId');
+    const messagesRepo = new ChannelMessagesRepository();
+
+    let deleted: number;
+    if (channelId) {
+      deleted = await messagesRepo.deleteByChannel(channelId);
+    } else {
+      deleted = await messagesRepo.deleteAll();
+    }
+
+    // Clear read tracking
+    readMessageIds.clear();
+
+    wsGateway.broadcast('data:changed', { entity: 'channel', action: 'deleted' });
+
+    return apiResponse(c, { deleted });
+  } catch (error) {
+    log.error('Failed to clear messages:', error);
+    return apiError(c, {
+      code: ERROR_CODES.INTERNAL_ERROR,
+      message: getErrorMessage(error, 'Failed to clear messages'),
+    }, 500);
+  }
+});
+
+/**
  * GET /channels/status - Channel status summary
  */
 channelRoutes.get('/status', (c) => {

@@ -128,23 +128,23 @@ export {
   PluginServiceImpl,
   createPluginService,
   // Memory
-  MemoryServiceImpl,
-  createMemoryServiceImpl,
+  MemoryService,
+  getMemoryService,
   // Database
-  DatabaseServiceImpl,
-  createDatabaseServiceImpl,
+  CustomDataService,
+  getCustomDataService,
   // Workspace
   WorkspaceServiceImpl,
   createWorkspaceServiceImpl,
   // Goal
-  GoalServiceImpl,
-  createGoalServiceImpl,
+  GoalService,
+  getGoalService,
   // Trigger
-  TriggerServiceImpl,
-  createTriggerServiceImpl,
+  TriggerService,
+  getTriggerService,
   // Plan
-  PlanServiceImpl,
-  createPlanServiceImpl,
+  PlanService,
+  getPlanService,
   // Resource
   ResourceServiceImpl,
   createResourceServiceImpl,

@@ -11,6 +11,7 @@ import {
   getEventBus,
   createEvent,
   EventTypes,
+  type IPlanService,
   type ResourceCreatedData,
   type ResourceUpdatedData,
   type ResourceDeletedData,
@@ -50,7 +51,7 @@ export interface PlanStats {
 // PlanService
 // ============================================================================
 
-export class PlanService {
+export class PlanService implements IPlanService {
   private getRepo(userId: string): PlansRepository {
     return createPlansRepository(userId);
   }
@@ -244,10 +245,6 @@ export class PlanServiceError extends Error {
 
 let instance: PlanService | null = null;
 
-/**
- * @internal Used only by PlanServiceImpl adapter.
- * @deprecated Use `getServiceRegistry().get(Services.Plan)` instead.
- */
 export function getPlanService(): PlanService {
   if (!instance) {
     instance = new PlanService();

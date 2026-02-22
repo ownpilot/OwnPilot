@@ -26,4 +26,8 @@ export const customToolsApi = {
   delete: (id: string) => apiClient.delete<void>(`/custom-tools/${id}`),
   execute: (id: string, args: Record<string, unknown>) =>
     apiClient.post<Record<string, unknown>>(`/custom-tools/${id}/execute`, { arguments: args }),
+
+  /** Toggle workflowUsable flag for a custom tool */
+  setWorkflowUsable: (id: string, enabled: boolean) =>
+    apiClient.patch<{ workflowUsable: boolean }>(`/custom-tools/${id}/workflow-usable`, { enabled }),
 };

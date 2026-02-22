@@ -135,6 +135,7 @@ const navGroups: NavGroup[] = [
       { to: '/settings/mcp-servers', icon: Zap, label: 'MCP Servers' },
       { to: '/settings/connected-apps', icon: Link, label: 'Connected Apps' },
       { to: '/settings/tool-groups', icon: Wrench, label: 'Tool Groups' },
+      { to: '/settings/workflow-tools', icon: GitBranch, label: 'Workflow Tools' },
       { to: '/settings/system', icon: Container, label: 'System' },
     ],
   },

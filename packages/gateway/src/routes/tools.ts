@@ -207,9 +207,10 @@ toolsRoutes.get('/meta/grouped', async (c) => {
 toolsRoutes.get('/', async (c) => {
   const agentId = c.req.query('agentId');
   const grouped = c.req.query('grouped') === 'true';
+  const workflowUsableFilter = c.req.query('workflowUsable');
 
   // Get tools from agent or use all tools
-  let tools: Array<ToolInfo & { source?: string }>;
+  let tools: Array<ToolInfo & { source?: string; workflowUsable?: boolean }>;
 
   if (agentId) {
     const agent = await getAgent(agentId);
@@ -222,6 +223,7 @@ toolsRoutes.get('/', async (c) => {
       description: t.description,
       parameters: t.parameters,
       category: t.category,
+      workflowUsable: t.workflowUsable,
     }));
   } else {
     // Return ALL tools
@@ -232,7 +234,15 @@ toolsRoutes.get('/', async (c) => {
       parameters: t.parameters,
       category: t.category,
       source: t.source,
+      workflowUsable: t.workflowUsable,
     }));
+  }
+
+  // Filter by workflowUsable if requested
+  if (workflowUsableFilter === 'true') {
+    tools = tools.filter((t) => t.workflowUsable !== false);
+  } else if (workflowUsableFilter === 'false') {
+    tools = tools.filter((t) => t.workflowUsable === false);
   }
 
   // If grouped query param, return grouped by category
@@ -327,6 +337,7 @@ toolsRoutes.get('/:name', async (c) => {
     description: tool.description,
     parameters: tool.parameters,
     category: tool.category,
+    workflowUsable: tool.workflowUsable,
   });
 });
 

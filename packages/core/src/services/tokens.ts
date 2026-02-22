@@ -28,6 +28,10 @@ import type { IGoalService } from './goal-service.js';
 import type { ITriggerService } from './trigger-service.js';
 import type { IPlanService } from './plan-service.js';
 import type { IResourceService } from './resource-service.js';
+import type { IWorkflowService } from './workflow-service.js';
+import type { IMcpClientService } from './mcp-client-service.js';
+import type { IExtensionService } from './extension-service.js';
+import type { IEmbeddingService } from './embedding-service.js';
 
 /**
  * All service tokens.
@@ -83,4 +87,16 @@ export const Services = {
 
   /** Resource type registry (metadata for tools & audit) */
   Resource: new ServiceToken<IResourceService>('resource'),
+
+  /** Workflow execution engine */
+  Workflow: new ServiceToken<IWorkflowService>('workflow'),
+
+  /** MCP client (external tool server connections) */
+  McpClient: new ServiceToken<IMcpClientService>('mcp-client'),
+
+  /** User extensions (native bundles + AgentSkills) */
+  Extension: new ServiceToken<IExtensionService>('extension'),
+
+  /** Embedding generation for semantic search */
+  Embedding: new ServiceToken<IEmbeddingService>('embedding'),
 } as const;

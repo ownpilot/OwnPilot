@@ -795,8 +795,8 @@ describe('useToolDefinition', () => {
     expect(useToolDefinition.parameters.properties.arguments.type).toBe('object');
   });
 
-  it('description mentions familiar tools', () => {
-    expect(useToolDefinition.description).toContain('familiar tools');
+  it('description mentions qualified name', () => {
+    expect(useToolDefinition.description).toContain('qualified name');
   });
 });
 
@@ -908,5 +908,17 @@ describe('DYNAMIC_TOOL_NAMES', () => {
 
   it('contains no duplicates', () => {
     expect(new Set(DYNAMIC_TOOL_NAMES).size).toBe(DYNAMIC_TOOL_NAMES.length);
+  });
+});
+
+// ==========================================================================
+// workflowUsable flag
+// ==========================================================================
+
+describe('workflowUsable flag', () => {
+  it('all dynamic tool definitions are marked workflowUsable: false', () => {
+    for (const def of DYNAMIC_TOOL_DEFINITIONS) {
+      expect(def.workflowUsable, `${def.name} should have workflowUsable: false`).toBe(false);
+    }
   });
 });

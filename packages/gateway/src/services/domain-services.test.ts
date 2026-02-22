@@ -173,10 +173,10 @@ function fakeMemory(overrides: Partial<Memory> = {}): Memory {
     tags: ['dev'],
     source: 'conversation',
     sourceId: 'conv-1',
-    accessedCount: 1,
+    accessCount: 1,
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
-    accessedAt: new Date('2025-01-02'),
+    lastAccessedAt: new Date('2025-01-02'),
     metadata: {},
     ...overrides,
   } as Memory;

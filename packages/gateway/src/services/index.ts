@@ -36,22 +36,22 @@ export { AuditService, createAuditService } from './audit-service-impl.js';
 export { PluginServiceImpl, createPluginService } from './plugin-service-impl.js';
 
 // Memory Service
-export { MemoryServiceImpl, createMemoryServiceImpl } from './memory-service-impl.js';
+export { MemoryService, getMemoryService } from './memory-service.js';
 
 // Database Service
-export { DatabaseServiceImpl, createDatabaseServiceImpl } from './database-service-impl.js';
+export { CustomDataService, getCustomDataService } from './custom-data-service.js';
 
 // Workspace Service
 export { WorkspaceServiceImpl, createWorkspaceServiceImpl } from './workspace-service-impl.js';
 
 // Goal Service
-export { GoalServiceImpl, createGoalServiceImpl } from './goal-service-impl.js';
+export { GoalService, getGoalService } from './goal-service.js';
 
 // Trigger Service
-export { TriggerServiceImpl, createTriggerServiceImpl } from './trigger-service-impl.js';
+export { TriggerService, getTriggerService } from './trigger-service.js';
 
 // Plan Service
-export { PlanServiceImpl, createPlanServiceImpl } from './plan-service-impl.js';
+export { PlanService, getPlanService } from './plan-service.js';
 
 // Resource Service
 export { ResourceServiceImpl, createResourceServiceImpl } from './resource-service-impl.js';

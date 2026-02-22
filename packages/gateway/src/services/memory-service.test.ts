@@ -30,6 +30,16 @@ vi.mock('@ownpilot/core', () => ({
     RESOURCE_UPDATED: 'resource.updated',
     RESOURCE_DELETED: 'resource.deleted',
   },
+  getServiceRegistry: () => ({
+    get: (token: { key: string }) => {
+      if (token.key === 'embedding') return {
+        isAvailable: () => mockEmbeddingAvailable(),
+        generateEmbedding: (...args: unknown[]) => mockGenerateEmbedding(...args),
+      };
+      throw new Error(`Unexpected token: ${token.key}`);
+    },
+  }),
+  Services: { Embedding: { key: 'embedding' } },
 }));
 
 const mockRepo = {
@@ -69,16 +79,9 @@ vi.mock('./embedding-queue.js', () => ({
   }),
 }));
 
-// Mock embedding service
+// Mock embedding service (used via registry in @ownpilot/core mock above)
 const mockEmbeddingAvailable = vi.fn().mockReturnValue(false);
 const mockGenerateEmbedding = vi.fn();
-
-vi.mock('./embedding-service.js', () => ({
-  getEmbeddingService: () => ({
-    isAvailable: () => mockEmbeddingAvailable(),
-    generateEmbedding: (...args: unknown[]) => mockGenerateEmbedding(...args),
-  }),
-}));
 
 // Mock chunking (default: nothing should chunk in unit tests)
 vi.mock('./chunking.js', () => ({
@@ -327,7 +330,7 @@ describe('MemoryService', () => {
 
     it('getImportantMemories delegates to repo', async () => {
       mockRepo.getImportant.mockResolvedValue([]);
-      await service.getImportantMemories('user-1', 0.8, 10);
+      await service.getImportantMemories('user-1', { threshold: 0.8, limit: 10 });
       expect(mockRepo.getImportant).toHaveBeenCalledWith(0.8, 10);
     });
 

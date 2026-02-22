@@ -73,6 +73,8 @@ const mockChannelMessagesRepo = {
   getByChannel: vi.fn(async () => []),
   getAll: vi.fn(async () => []),
   count: vi.fn(async () => 0),
+  deleteAll: vi.fn(async () => 5),
+  deleteByChannel: vi.fn(async () => 3),
 };
 
 vi.mock('../db/repositories/channel-messages.js', () => ({
@@ -674,6 +676,56 @@ describe('Channels Routes', () => {
       expect(res.status).toBe(500);
       const json = await res.json();
       expect(json.error.code).toBe('FETCH_FAILED');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // DELETE /channels/messages — Clear messages
+  // ---------------------------------------------------------------------------
+
+  describe('DELETE /channels/messages', () => {
+    it('clears all messages when no channelId is given', async () => {
+      mockChannelMessagesRepo.deleteAll.mockResolvedValue(5);
+
+      const res = await app.request('/channels/messages', { method: 'DELETE' });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.deleted).toBe(5);
+      expect(mockChannelMessagesRepo.deleteAll).toHaveBeenCalled();
+      expect(mockChannelMessagesRepo.deleteByChannel).not.toHaveBeenCalled();
+    });
+
+    it('clears messages for specific channel when channelId is given', async () => {
+      mockChannelMessagesRepo.deleteByChannel.mockResolvedValue(3);
+
+      const res = await app.request('/channels/messages?channelId=channel.telegram', { method: 'DELETE' });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.deleted).toBe(3);
+      expect(mockChannelMessagesRepo.deleteByChannel).toHaveBeenCalledWith('channel.telegram');
+      expect(mockChannelMessagesRepo.deleteAll).not.toHaveBeenCalled();
+    });
+
+    it('broadcasts WebSocket event on clear', async () => {
+      const res = await app.request('/channels/messages', { method: 'DELETE' });
+
+      expect(res.status).toBe(200);
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', {
+        entity: 'channel',
+        action: 'deleted',
+      });
+    });
+
+    it('returns 500 on DB error', async () => {
+      mockChannelMessagesRepo.deleteAll.mockRejectedValue(new Error('DB error'));
+
+      const res = await app.request('/channels/messages', { method: 'DELETE' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
 });

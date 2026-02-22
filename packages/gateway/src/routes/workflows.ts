@@ -7,10 +7,11 @@
 
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
+import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getUserId, apiResponse, apiError, getIntParam, notFoundError, getErrorMessage, sanitizeId } from './helpers.js';
 import { ERROR_CODES } from './error-codes.js';
 import { createWorkflowsRepository } from '../db/repositories/workflows.js';
-import { getWorkflowService, topologicalSort } from '../services/workflow-service.js';
+import { topologicalSort } from '../services/workflow-service.js';
 import { wsGateway } from '../ws/server.js';
 import { validateBody } from '../middleware/validation.js';
 import { createWorkflowSchema, updateWorkflowSchema } from '../middleware/validation.js';
@@ -123,6 +124,28 @@ workflowRoutes.get('/logs/:logId', async (c) => {
 });
 
 // ============================================================================
+// Active Tool Names (for workflow-usable toggle warnings)
+// ============================================================================
+
+workflowRoutes.get('/active-tool-names', async (c) => {
+  const userId = getUserId(c);
+  const repo = createWorkflowsRepository(userId);
+  const workflows = await repo.getPage(1000, 0);
+
+  const activeToolNames = new Set<string>();
+  for (const wf of workflows) {
+    if (wf.status !== 'active') continue;
+    for (const node of wf.nodes) {
+      if (node.type === 'tool' && (node.data as { toolName?: string }).toolName) {
+        activeToolNames.add((node.data as { toolName: string }).toolName);
+      }
+    }
+  }
+
+  return apiResponse(c, [...activeToolNames]);
+});
+
+// ============================================================================
 // Get Workflow
 // ============================================================================
 
@@ -208,7 +231,7 @@ workflowRoutes.post('/:id/execute', async (c) => {
   const workflow = await repo.get(id);
   if (!workflow) return notFoundError(c, 'Workflow', id);
 
-  const service = getWorkflowService();
+  const service = getServiceRegistry().get(Services.Workflow);
   if (service.isRunning(id)) {
     return apiError(c, { code: ERROR_CODES.WORKFLOW_ALREADY_RUNNING, message: 'Workflow is already running' }, 409);
   }
@@ -243,7 +266,7 @@ workflowRoutes.post('/:id/cancel', async (c) => {
   const workflow = await repo.get(id);
   if (!workflow) return notFoundError(c, 'Workflow', id);
 
-  const service = getWorkflowService();
+  const service = getServiceRegistry().get(Services.Workflow);
   const cancelled = service.cancelExecution(id);
 
   if (!cancelled) {

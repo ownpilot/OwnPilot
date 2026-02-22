@@ -11,7 +11,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import type { ToolDefinition, ToolExecutionResult, ToolExecutor } from '@ownpilot/core';
+import type { ToolDefinition, ToolExecutionResult, ToolExecutor, IMcpClientService } from '@ownpilot/core';
 import { getMcpServersRepo, type McpServerRecord } from '../db/repositories/mcp-servers.js';
 import { getSharedToolRegistry } from './tool-executor.js';
 import { getLog } from './log.js';
@@ -39,7 +39,7 @@ interface McpConnection {
 // SERVICE
 // =============================================================================
 
-class McpClientService {
+class McpClientService implements IMcpClientService {
   private connections = new Map<string, McpConnection>();
 
   /**
@@ -78,7 +78,7 @@ class McpClientService {
       }));
 
       // Register tools in ToolRegistry
-      this.registerToolsInRegistry(server.name, mcpTools);
+      this.registerToolsInRegistry(server, mcpTools);
 
       // Store connection
       this.connections.set(server.name, {
@@ -262,11 +262,28 @@ class McpClientService {
     }
   }
 
-  private registerToolsInRegistry(serverName: string, mcpTools: McpToolInfo[]): void {
+  /**
+   * Re-read server metadata from DB and re-register tools with updated settings.
+   */
+  async refreshToolRegistration(serverName: string): Promise<void> {
+    const conn = this.connections.get(serverName);
+    if (!conn) return;
+    const repo = getMcpServersRepo();
+    const server = await repo.getByName(serverName);
+    if (!server) return;
+    this.registerToolsInRegistry(server, conn.tools);
+  }
+
+  private registerToolsInRegistry(server: McpServerRecord, mcpTools: McpToolInfo[]): void {
     const registry = getSharedToolRegistry();
     const toolsMap = new Map<string, { definition: ToolDefinition; executor: ToolExecutor }>();
+    const serverName = server.name;
+
+    // Read per-tool settings from server metadata
+    const toolSettings = (server.metadata?.toolSettings ?? {}) as Record<string, { workflowUsable?: boolean }>;
 
     for (const tool of mcpTools) {
+      const overrides = toolSettings[tool.name];
       const definition: ToolDefinition = {
         name: tool.name,
         description: tool.description ?? `Tool from MCP server "${serverName}"`,
@@ -276,6 +293,7 @@ class McpClientService {
         },
         category: 'MCP',
         tags: ['mcp', serverName],
+        workflowUsable: overrides?.workflowUsable !== undefined ? overrides.workflowUsable : undefined,
       };
 
       const executor = async (args: Record<string, unknown>): Promise<ToolExecutionResult> => {

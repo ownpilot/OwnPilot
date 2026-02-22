@@ -235,6 +235,8 @@ export interface ToolDefinition {
   readonly tags?: readonly string[];
   /** Config Center services this tool depends on. Auto-registered on tool registration. */
   readonly configRequirements?: readonly ToolConfigRequirement[];
+  /** Whether this tool can be used as a workflow node. Defaults to true. */
+  readonly workflowUsable?: boolean;
 }
 
 /**
