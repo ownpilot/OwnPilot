@@ -36,4 +36,38 @@ export const extensionsApi = {
       manifest: Record<string, unknown>;
       validation: { valid: boolean; errors: string[] };
     }>('/extensions/generate', { description }),
+
+  generateSkill: (description: string) =>
+    apiClient.post<{
+      content: string;
+      name: string;
+      validation: { valid: boolean; errors: string[] };
+    }>('/extensions/generate-skill', { description }),
+
+  upload: async (file: File): Promise<{ package: ExtensionInfo; message: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Use raw fetch for multipart upload (apiClient only supports JSON)
+    const headers: Record<string, string> = {};
+    try {
+      const token = localStorage.getItem('ownpilot-session-token');
+      if (token) headers['X-Session-Token'] = token;
+    } catch { /* ignore */ }
+
+    const response = await fetch('/api/v1/extensions/upload', {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    const body = await response.json();
+
+    if (!response.ok || !body.success) {
+      const msg = typeof body.error === 'string' ? body.error : body.error?.message ?? 'Upload failed';
+      throw new Error(msg);
+    }
+
+    return body.data;
+  },
 };

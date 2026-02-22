@@ -6,7 +6,7 @@
  * Separate from User Extensions (which are executable tool bundles).
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BookOpen,
   Power,
@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Trash2,
   RefreshCw,
+  Upload,
+  Sparkles,
 } from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
@@ -99,6 +101,29 @@ export function SkillsPage() {
     }
   };
 
+  const [showCreator, setShowCreator] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    setIsUploading(true);
+    try {
+      const result = await extensionsApi.upload(file);
+      toast.success(result.message || `Uploaded "${file.name}"`);
+      fetchSkills();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const filteredSkills = skills.filter((s) => {
     if (filter === 'enabled') return s.status === 'enabled';
     if (filter === 'disabled') return s.status === 'disabled';
@@ -131,6 +156,30 @@ export function SkillsPage() {
           >
             <FolderOpen className="w-4 h-4" />
             Scan
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,.json,.zip"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors disabled:opacity-50"
+            title="Upload skill file (.md, .json, or .zip)"
+          >
+            <Upload className="w-4 h-4" />
+            {isUploading ? 'Uploading...' : 'Upload'}
+          </button>
+          <button
+            onClick={() => setShowCreator(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors"
+            title="Create a new skill with AI"
+          >
+            <Sparkles className="w-4 h-4" />
+            Create
           </button>
           <button
             onClick={() => {
@@ -224,6 +273,17 @@ export function SkillsPage() {
           onClose={() => setSelectedSkill(null)}
           onToggle={() => handleToggle(selectedSkill)}
           onUninstall={() => handleUninstall(selectedSkill.id)}
+        />
+      )}
+
+      {/* Skill Creator Modal */}
+      {showCreator && (
+        <SkillCreatorModal
+          onClose={() => setShowCreator(false)}
+          onInstalled={() => {
+            setShowCreator(false);
+            fetchSkills();
+          }}
         />
       )}
     </div>
@@ -510,6 +570,176 @@ function SkillDetailModal({
           >
             {skill.status === 'enabled' ? 'Disable' : 'Enable'}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Skill Creator Modal
+// ---------------------------------------------------------------------------
+
+function SkillCreatorModal({
+  onClose,
+  onInstalled,
+}: {
+  onClose: () => void;
+  onInstalled: () => void;
+}) {
+  const toast = useToast();
+  const [step, setStep] = useState<'describe' | 'preview'>('describe');
+  const [description, setDescription] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState('');
+  const [generatedName, setGeneratedName] = useState('');
+  const [isInstalling, setIsInstalling] = useState(false);
+
+  const handleGenerate = async () => {
+    if (!description.trim()) return;
+
+    setIsGenerating(true);
+    try {
+      const result = await extensionsApi.generateSkill(description.trim());
+      setGeneratedContent(result.content);
+      setGeneratedName(result.name);
+
+      if (!result.validation.valid) {
+        toast.warning(
+          `Generated with warnings: ${result.validation.errors.join(', ')}`
+        );
+      }
+
+      setStep('preview');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Generation failed');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleInstall = async () => {
+    if (!generatedContent.trim()) return;
+
+    setIsInstalling(true);
+    try {
+      const blob = new Blob([generatedContent], { type: 'text/markdown' });
+      const file = new File([blob], 'SKILL.md', { type: 'text/markdown' });
+      await extensionsApi.upload(file);
+      toast.success(`Skill "${generatedName}" installed`);
+      onInstalled();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Install failed');
+    } finally {
+      setIsInstalling(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[85vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-5 border-b border-border dark:border-dark-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                Create Skill with AI
+              </h2>
+              <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                {step === 'describe'
+                  ? 'Describe what the skill should do'
+                  : 'Review and install the generated skill'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary rounded"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {step === 'describe' ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
+                  What should this skill do?
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="e.g., A code review skill that checks for security vulnerabilities, performance issues, and code quality best practices..."
+                  rows={6}
+                  className="w-full px-3 py-2 text-sm bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+              </div>
+              <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                The AI will generate a SKILL.md file following the AgentSkills.io open standard.
+                Be specific about the workflow steps, checks, and output format you want.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary">
+                  Generated: {generatedName}
+                </h3>
+                <button
+                  onClick={() => setStep('describe')}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Back to description
+                </button>
+              </div>
+              <textarea
+                value={generatedContent}
+                onChange={(e) => setGeneratedContent(e.target.value)}
+                rows={20}
+                className="w-full px-3 py-2 text-xs font-mono bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-border dark:border-dark-border flex items-center justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          {step === 'describe' ? (
+            <button
+              onClick={handleGenerate}
+              disabled={!description.trim() || isGenerating}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <Sparkles className="w-4 h-4" />
+              {isGenerating ? 'Generating...' : 'Generate with AI'}
+            </button>
+          ) : (
+            <button
+              onClick={handleInstall}
+              disabled={!generatedContent.trim() || isInstalling}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <BookOpen className="w-4 h-4" />
+              {isInstalling ? 'Installing...' : 'Install Skill'}
+            </button>
+          )}
         </div>
       </div>
     </div>

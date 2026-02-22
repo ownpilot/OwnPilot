@@ -27,8 +27,13 @@ describe('tool-namespace', () => {
       expect(qualifyToolName('email_send', 'plugin', 'email')).toBe('plugin.email.email_send');
     });
 
-    it('prefixes extension tools with ext.{id}.', () => {
-      expect(qualifyToolName('search_web', 'ext', 'web_search')).toBe('ext.web_search.search_web');
+    it('prefixes ext tools with ext.{id}.', () => {
+      expect(qualifyToolName('fetch_page', 'ext', 'scraper')).toBe('ext.scraper.fetch_page');
+      expect(qualifyToolName('run_query', 'ext', 'db_tools')).toBe('ext.db_tools.run_query');
+    });
+
+    it('prefixes skill tools with skill.{id}.', () => {
+      expect(qualifyToolName('search_web', 'skill', 'web_search')).toBe('skill.web_search.search_web');
     });
 
     it('does NOT prefix meta-tools', () => {
@@ -40,7 +45,7 @@ describe('tool-namespace', () => {
 
     it('meta-tools stay unprefixed even with plugin/ext prefix', () => {
       expect(qualifyToolName('use_tool', 'plugin', 'some_plugin')).toBe('use_tool');
-      expect(qualifyToolName('search_tools', 'ext', 'some_ext')).toBe('search_tools');
+      expect(qualifyToolName('search_tools', 'skill', 'some_ext')).toBe('search_tools');
     });
   });
 
@@ -49,6 +54,7 @@ describe('tool-namespace', () => {
       expect(getBaseName('core.read_file')).toBe('read_file');
       expect(getBaseName('custom.my_parser')).toBe('my_parser');
       expect(getBaseName('plugin.telegram.send_message')).toBe('send_message');
+      expect(getBaseName('ext.scraper.fetch_page')).toBe('fetch_page');
       expect(getBaseName('skill.web_search.search_web')).toBe('search_web');
     });
 
@@ -67,6 +73,7 @@ describe('tool-namespace', () => {
       expect(getNamespace('core.read_file')).toBe('core');
       expect(getNamespace('custom.my_tool')).toBe('custom');
       expect(getNamespace('plugin.telegram.send_message')).toBe('plugin');
+      expect(getNamespace('ext.scraper.fetch_page')).toBe('ext');
       expect(getNamespace('skill.web_search.search_web')).toBe('skill');
     });
 
@@ -109,7 +116,8 @@ describe('tool-namespace', () => {
       expect(sanitizeToolName('plugin.telegram.send_message')).toBe(
         'plugin__telegram__send_message'
       );
-      expect(sanitizeToolName('ext.web_search.search_web')).toBe('ext__web_search__search_web');
+      expect(sanitizeToolName('ext.scraper.fetch_page')).toBe('ext__scraper__fetch_page');
+      expect(sanitizeToolName('skill.web_search.search_web')).toBe('skill__web_search__search_web');
     });
 
     it('leaves names without dots unchanged', () => {
@@ -129,7 +137,8 @@ describe('tool-namespace', () => {
       expect(desanitizeToolName('plugin__telegram__send_message')).toBe(
         'plugin.telegram.send_message'
       );
-      expect(desanitizeToolName('ext__web_search__search_web')).toBe('ext.web_search.search_web');
+      expect(desanitizeToolName('ext__scraper__fetch_page')).toBe('ext.scraper.fetch_page');
+      expect(desanitizeToolName('skill__web_search__search_web')).toBe('skill.web_search.search_web');
     });
 
     it('leaves names without double underscores unchanged', () => {
@@ -153,7 +162,8 @@ describe('tool-namespace', () => {
       'core.read_file',
       'custom.my_parser',
       'plugin.telegram.send_message',
-      'ext.web_search.search_web',
+      'ext.scraper.fetch_page',
+      'skill.web_search.search_web',
       'search_tools',
       'use_tool',
       'batch_use_tool',

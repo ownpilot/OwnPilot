@@ -2,13 +2,14 @@
  * Tool Namespace System
  *
  * Provides dot-separated namespace prefixes for all tools:
- *   core.read_file, custom.my_tool, plugin.telegram.send_message, ext.web_search.search_web
+ *   core.read_file, custom.my_tool, plugin.telegram.send_message,
+ *   ext.my_ext.tool_name, skill.code_review.analyze
  *
  * The 4 LLM-facing meta-tools stay unprefixed (LLM APIs don't support dots in function names).
  * All other tools are accessed via use_tool("core.read_file", args) where the name is a string parameter.
  */
 
-export type ToolNamespacePrefix = 'core' | 'custom' | 'plugin' | 'ext' | 'mcp';
+export type ToolNamespacePrefix = 'core' | 'custom' | 'plugin' | 'ext' | 'skill' | 'mcp';
 
 /**
  * Meta-tools that MUST stay unprefixed — they appear in LLM native tool schemas
@@ -25,7 +26,7 @@ export const UNPREFIXED_META_TOOLS = new Set([
  * Build a qualified tool name with namespace prefix.
  *
  * @param baseName - Original tool name (e.g., 'read_file')
- * @param prefix - Namespace prefix ('core', 'custom', 'plugin', 'ext')
+ * @param prefix - Namespace prefix ('core', 'custom', 'plugin', 'ext', 'skill', 'mcp')
  * @param subId - Sub-namespace ID for plugin/ext (e.g., 'telegram', 'web_search')
  * @returns Qualified name (e.g., 'core.read_file', 'plugin.telegram.send_message')
  *

@@ -30,7 +30,7 @@ import {
 // Types
 // ============================================================================
 
-type ToolSource = 'core' | 'mcp' | 'custom' | 'plugin';
+type ToolSource = 'core' | 'mcp' | 'custom' | 'plugin' | 'ext' | 'skill';
 
 interface SourceSection {
   source: ToolSource;
@@ -124,6 +124,8 @@ function getToolSource(name: string): ToolSource {
   if (name.startsWith('mcp.')) return 'mcp';
   if (name.startsWith('custom.')) return 'custom';
   if (name.startsWith('plugin.')) return 'plugin';
+  if (name.startsWith('ext.')) return 'ext';
+  if (name.startsWith('skill.')) return 'skill';
   return 'core'; // core.*, gateway tools, unprefixed meta-tools
 }
 
@@ -133,7 +135,7 @@ function getNamespaceMiddle(name: string): string | undefined {
   return parts.length >= 3 ? parts[1] : undefined;
 }
 
-const SOURCE_ORDER: ToolSource[] = ['core', 'mcp', 'custom', 'plugin'];
+const SOURCE_ORDER: ToolSource[] = ['core', 'ext', 'skill', 'mcp', 'custom', 'plugin'];
 
 const SOURCE_CONFIG: Record<
   ToolSource,
@@ -161,6 +163,18 @@ const SOURCE_CONFIG: Record<
     icon: Sparkles,
     accent: 'text-amber-600 dark:text-amber-400',
     badgeClass: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
+  },
+  ext: {
+    label: 'Extensions',
+    icon: Wrench,
+    accent: 'text-teal-600 dark:text-teal-400',
+    badgeClass: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300',
+  },
+  skill: {
+    label: 'Skills',
+    icon: Sparkles,
+    accent: 'text-rose-600 dark:text-rose-400',
+    badgeClass: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300',
   },
   plugin: {
     label: 'Plugins',
@@ -291,8 +305,8 @@ export function ToolPalette({
 
       // Determine sub-group key
       let subKey: string;
-      if (src === 'mcp' || src === 'plugin') {
-        // Extract server/plugin name from namespace: mcp.serverName.tool → serverName
+      if (src === 'mcp' || src === 'plugin' || src === 'ext' || src === 'skill') {
+        // Extract server/plugin/extension name from namespace: mcp.serverName.tool → serverName
         subKey = getNamespaceMiddle(tool.name) ?? tool.categoryKey;
       } else {
         subKey = tool.categoryKey;

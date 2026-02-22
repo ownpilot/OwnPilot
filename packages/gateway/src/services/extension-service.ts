@@ -10,6 +10,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import {
   getEventBus,
+  getEventSystem,
   createEvent,
   EventTypes,
   getServiceRegistry,
@@ -58,6 +59,8 @@ export interface ToolDefinitionForRegistry {
   extensionId: string;
   /** Original extension tool definition (for code execution) */
   extensionTool: ExtensionToolDefinition;
+  /** Format of the parent extension ('ownpilot' or 'agentskills') */
+  format?: 'ownpilot' | 'agentskills';
 }
 
 // =============================================================================
@@ -199,6 +202,12 @@ export class ExtensionService implements IExtensionService {
         { resourceType: 'extension', id: manifest.id }
       )
     );
+    getEventSystem().emit('extension.installed', 'extension-service', {
+      extensionId: manifest.id,
+      userId,
+      name: manifest.name,
+      format: manifest.format ?? 'ownpilot',
+    });
 
     log.info(`Installed extension "${manifest.name}" v${manifest.version}`, {
       id: manifest.id,
@@ -238,6 +247,10 @@ export class ExtensionService implements IExtensionService {
           { resourceType: 'extension', id }
         )
       );
+      getEventSystem().emit('extension.uninstalled', 'extension-service', {
+        extensionId: id,
+        userId,
+      });
       log.info(`Uninstalled extension "${record.name}"`, { id });
     }
 
@@ -266,6 +279,11 @@ export class ExtensionService implements IExtensionService {
           { resourceType: 'extension', id, changes: { status: 'enabled' } }
         )
       );
+      getEventSystem().emit('extension.enabled', 'extension-service', {
+        extensionId: id,
+        userId,
+        triggers: record.manifest.triggers?.length ?? 0,
+      });
     }
 
     return updated;
@@ -289,6 +307,10 @@ export class ExtensionService implements IExtensionService {
           { resourceType: 'extension', id, changes: { status: 'disabled' } }
         )
       );
+      getEventSystem().emit('extension.disabled', 'extension-service', {
+        extensionId: id,
+        userId,
+      });
     }
 
     return updated;
@@ -320,6 +342,7 @@ export class ExtensionService implements IExtensionService {
 
     for (const pkg of enabled) {
       // OwnPilot extensions: register their inline JS tools
+      const pkgFormat = (pkg.manifest.format ?? 'ownpilot') as 'ownpilot' | 'agentskills';
       for (const tool of pkg.manifest.tools) {
         defs.push({
           name: tool.name,
@@ -328,6 +351,7 @@ export class ExtensionService implements IExtensionService {
           category: pkg.manifest.category ?? 'other',
           extensionId: pkg.id,
           extensionTool: tool,
+          format: pkgFormat,
         });
       }
 
@@ -374,6 +398,7 @@ export class ExtensionService implements IExtensionService {
             },
             category: pkg.manifest.category ?? 'other',
             extensionId: pkg.id,
+            format: 'agentskills',
             extensionTool: {
               name: toolName,
               description: `Run ${scriptPath}`,

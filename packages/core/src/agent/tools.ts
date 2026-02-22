@@ -567,6 +567,60 @@ export class ToolRegistry {
   }
 
   /**
+   * Register tools from an OwnPilot extension with sandboxed trust level.
+   * Qualifies names with ext.{extensionId}.{toolName}.
+   */
+  registerExtTools(
+    extensionId: string,
+    tools: Map<string, { definition: ToolDefinition; executor: ToolExecutor }>
+  ): void {
+    const pid = `ext:${extensionId}` as PluginId;
+    for (const [, { definition, executor }] of tools) {
+      const qName = qualifyToolName(definition.name, 'ext', extensionId);
+      this.register({ ...definition, name: qName }, executor, {
+        source: 'dynamic',
+        pluginId: pid,
+        trustLevel: 'sandboxed',
+        providerName: `ext:${extensionId}`,
+      });
+    }
+  }
+
+  /**
+   * Unregister all tools from an OwnPilot extension.
+   */
+  unregisterExtTools(extensionId: string): number {
+    return this.unregisterPlugin(`ext:${extensionId}` as PluginId);
+  }
+
+  /**
+   * Register tools from an AgentSkills.io skill with sandboxed trust level.
+   * Qualifies names with skill.{extensionId}.{toolName}.
+   */
+  registerSkillTools(
+    extensionId: string,
+    tools: Map<string, { definition: ToolDefinition; executor: ToolExecutor }>
+  ): void {
+    const pid = `skill:${extensionId}` as PluginId;
+    for (const [, { definition, executor }] of tools) {
+      const qName = qualifyToolName(definition.name, 'skill', extensionId);
+      this.register({ ...definition, name: qName }, executor, {
+        source: 'dynamic',
+        pluginId: pid,
+        trustLevel: 'sandboxed',
+        providerName: `skill:${extensionId}`,
+      });
+    }
+  }
+
+  /**
+   * Unregister all tools from an AgentSkills.io skill.
+   */
+  unregisterSkillTools(extensionId: string): number {
+    return this.unregisterPlugin(`skill:${extensionId}` as PluginId);
+  }
+
+  /**
    * Register a custom (user/LLM-created) tool with sandboxed trust level.
    */
   registerCustomTool(
@@ -798,6 +852,10 @@ export class ToolRegistry {
       let qName: string;
       if (source === 'plugin' && provider.pluginId) {
         qName = qualifyToolName(definition.name, 'plugin', provider.pluginId);
+      } else if (source === 'dynamic' && provider.pluginId) {
+        // ext:{id} → ext namespace, skill:{id} → skill namespace
+        const nsPrefix = provider.pluginId.startsWith('ext:') ? 'ext' : 'skill';
+        qName = qualifyToolName(definition.name, nsPrefix, provider.pluginId.replace(/^(ext|skill):/, ''));
       } else if (source === 'custom') {
         qName = qualifyToolName(definition.name, 'custom');
       } else {

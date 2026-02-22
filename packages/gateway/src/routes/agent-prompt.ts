@@ -20,7 +20,8 @@ Parallel: \`batch_use_tool([{tool:"core.add_task",args:{...}},{tool:"core.add_no
 - \`core.*\` — built-in tools (all tools listed below)
 - \`custom.*\` — user-created tools (via create_tool)
 - \`plugin.<id>.*\` — plugin-provided tools (e.g., \`plugin.telegram.send_message\`)
-- \`ext.<id>.*\` — extension tools (e.g., \`ext.scraper.fetch_page\`)
+- \`ext.<id>.*\` — extension tools (JS tool bundles, e.g., \`ext.scraper.fetch_page\`)
+- \`skill.<id>.*\` — skill tools (AgentSkills.io scripts, e.g., \`skill.code_review.analyze\`)
 - \`mcp.<server>.*\` — external MCP server tools
 
 Discovery: \`search_tools("keyword")\` → find tools; \`get_tool_help("core.add_task")\` → parameter docs.

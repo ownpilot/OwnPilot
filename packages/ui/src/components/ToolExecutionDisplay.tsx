@@ -457,6 +457,9 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
 }
 
 function getToolCategory(name: string): string {
+  // Extension and skill tools get their own categories
+  if (name.startsWith('ext.')) return 'Extension';
+  if (name.startsWith('skill.')) return 'Skill';
   // Strip namespace prefix for category matching
   const baseName = name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name;
   if (

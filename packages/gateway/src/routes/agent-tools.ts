@@ -52,7 +52,7 @@ import {
   executeExtensionTool,
 } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
-import { getExtensionService } from '../services/extension-service.js';
+import type { ExtensionService } from '../services/extension-service.js';
 import {
   traceToolCallStart,
   traceToolCallEnd,
@@ -385,9 +385,9 @@ export function registerExtensionTools(
   _userId: string,
   trace: boolean
 ): ToolDefinition[] {
-  let service: ReturnType<typeof getExtensionService>;
+  let service: ExtensionService;
   try {
-    service = getExtensionService();
+    service = getServiceRegistry().get(Services.Extension) as ExtensionService;
   } catch {
     log.debug('Extension service not initialized, skipping tool registration');
     return [];
@@ -418,7 +418,9 @@ export function registerExtensionTools(
       }
     }
 
-    const qName = qualifyToolName(def.name, 'ext', def.extensionId);
+    // Choose namespace based on format: ownpilot → ext.*, agentskills → skill.*
+    const nsPrefix = def.format === 'agentskills' ? 'skill' : 'ext';
+    const qName = qualifyToolName(def.name, nsPrefix, def.extensionId);
     const toolDef: ToolDefinition = {
       name: def.name,
       description: def.description,
@@ -426,6 +428,7 @@ export function registerExtensionTools(
       category: def.category,
     };
 
+    const pluginId = `${nsPrefix}:${def.extensionId}` as import('@ownpilot/core').PluginId;
     const registerResult = tools.register(
       { ...toolDef, name: qName },
       async (args, context): Promise<CoreToolResult> => {
@@ -456,6 +459,12 @@ export function registerExtensionTools(
           if (trace) traceToolCallEnd(def.name, startTime, false, undefined, errorMsg);
           return { content: errorMsg, isError: true };
         }
+      },
+      {
+        source: 'dynamic',
+        pluginId,
+        trustLevel: 'sandboxed',
+        providerName: `${nsPrefix}:${def.extensionId}`,
       }
     );
 
